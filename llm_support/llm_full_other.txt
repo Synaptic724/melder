@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 0df387b49e72842d9704f1490a1a8363e3ff8f53f3359c99ed123cb40e639950
+SOURCE FINGERPRINT: 672e05c9834f7097574228a8e54388017a6680de8504657b380e769ba1a490e2
 FILE COUNT: 358
 
 ================================================================================
@@ -32304,7 +32304,7 @@ END FILE: benchmarks/testing_other_di/diagnose_cache_integration_flows.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/dump_emitted_executor_source.py
-CONTENT SHA256: efd357537aec02ee7484cdbc9560f63c112775321f8662f715d625975dfa9492
+CONTENT SHA256: 1c04aebe7bb11e929454ff629376556412cc4009c432f1d57905a919a494a95c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -32473,9 +32473,9 @@ def main() -> None:
         request_id = spell_ids[_support.REQUEST_SCOPED_TYPES[0]]
         lesser = root.create_lesser_conduit()
         try:
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             with lesser.enter_spellspace() as space:
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
         finally:
             lesser.cleanup()
         root.cleanup()
@@ -34019,7 +34019,7 @@ END FILE: benchmarks/testing_other_di/optimistic/test_optimistic_meld_plan.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/profile_bind_conjure_cycle.py
-CONTENT SHA256: 65aeff37d101b54c62e0e8c028d27db59f73cf9db66f738e3a8bb1a722ab17c3
+CONTENT SHA256: 9fdd4b8a99ad909593b91a8dcceffdd27c239a106e3af3c65ab4dc664be5f738
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -34400,7 +34400,7 @@ def run_cycle(
                 meld_profiler.enable()
             meld_t0 = time.perf_counter_ns()
             for cls, spell_id in direct_ids:
-                resolved = conduit.meld(spell=spell_id)
+                resolved = conduit.meld(spell_id=spell_id)
                 if not isinstance(resolved, cls):
                     raise AssertionError(
                         f"meld returned wrong type for {cls.__name__}"
@@ -34410,7 +34410,7 @@ def run_cycle(
                 try:
                     with lesser.enter_spellspace() as space:
                         for cls, spell_id in spellspace_ids:
-                            resolved = space.meld(spell=spell_id)
+                            resolved = space.meld(spell_id=spell_id)
                             if not isinstance(resolved, cls):
                                 raise AssertionError(
                                     "spellspace meld returned wrong type "
@@ -34715,7 +34715,7 @@ END FILE: benchmarks/testing_other_di/profile_bind_conjure_cycle.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/profile_construction_lane.py
-CONTENT SHA256: 87f1b69a41f10cedaf2aa4730e2df5c47ebcbdb0c8099f6e0b3875a209fa7b91
+CONTENT SHA256: bb7becba709230a3b99b7df60c2381cbc17f309f47e33d8613a5d251e83aec70
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -34857,11 +34857,11 @@ def _run_cycles(root: Any, outer_id: str, request_id: str, count: int) -> int:
     for _ in range(count):
         lesser = root.create_lesser_conduit()
         try:
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             space_cm = lesser.enter_spellspace()
             space = space_cm.__enter__()
             try:
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
             finally:
                 space_cm.__exit__(None, None, None)
         finally:
@@ -34925,7 +34925,7 @@ END FILE: benchmarks/testing_other_di/profile_construction_lane.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/profile_deep_all_di_transient_only_no_singletons.py
-CONTENT SHA256: 0f90ccb8e6fb840d9d51fe2b0c6912d1419ca097d294582f80443909f7e812d1
+CONTENT SHA256: 244411264af150737d8dc99b6a63b9e5f14e748972c85f27676715d13921b6fa
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -35159,7 +35159,7 @@ def _melder_get_root(state: Dict[str, Any]) -> Any:
     Returns:
         Any: Resolved root instance.
     """
-    return state["conduit"].meld(spell=state["root_id"])
+    return state["conduit"].meld(spell_id=state["root_id"])
 
 
 def _melder_get_by_id(state: Dict[str, Any], spell_id: str) -> Any:
@@ -35173,7 +35173,7 @@ def _melder_get_by_id(state: Dict[str, Any], spell_id: str) -> Any:
     Returns:
         Any: Resolved instance.
     """
-    return state["conduit"].meld(spell=spell_id)
+    return state["conduit"].meld(spell_id=spell_id)
 
 
 def _melder_cleanup(state: Dict[str, Any]) -> None:
@@ -36778,7 +36778,7 @@ END FILE: benchmarks/testing_other_di/profile_phase_scheduler_breakdown.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/profile_scope_cycle_contention.py
-CONTENT SHA256: d592d5f982a2b4f8000834d0bce2beb8832771826f4ac5d0ccce7a756070dc09
+CONTENT SHA256: ff495e37e275aef04cd68942c35a4a80ee2b050ee56751a97f8d800523c8615e
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -36990,10 +36990,10 @@ def _worker(
             # is the pure repeat-door lane (cached instance read). Timing
             # them separately attributes per-cycle cost to the right lane.
             seg_t0 = time.perf_counter_ns()
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             outer1_ns = time.perf_counter_ns() - seg_t0
             seg_t0 = time.perf_counter_ns()
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             outer2_ns = time.perf_counter_ns() - seg_t0
             space_cm = lesser.enter_spellspace()
             seg_t0 = time.perf_counter_ns()
@@ -37001,10 +37001,10 @@ def _worker(
             enter_ns = time.perf_counter_ns() - seg_t0
             try:
                 seg_t0 = time.perf_counter_ns()
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
                 request1_ns = time.perf_counter_ns() - seg_t0
                 seg_t0 = time.perf_counter_ns()
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
                 request2_ns = time.perf_counter_ns() - seg_t0
             finally:
                 seg_t0 = time.perf_counter_ns()
@@ -37170,11 +37170,11 @@ def _micro_worker(
     lesser = root.create_lesser_conduit()
     try:
         for _ in range(1000):
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
         barrier.wait(timeout=10)
         loop_t0 = time.perf_counter_ns()
         for _ in range(MICRO_ITERS):
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
         results["outer_door_ns"] = (
             (time.perf_counter_ns() - loop_t0) / MICRO_ITERS
         )
@@ -37182,11 +37182,11 @@ def _micro_worker(
         space = space_cm.__enter__()
         try:
             for _ in range(1000):
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
             barrier.wait(timeout=10)
             loop_t0 = time.perf_counter_ns()
             for _ in range(MICRO_ITERS):
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
             results["request_door_ns"] = (
                 (time.perf_counter_ns() - loop_t0) / MICRO_ITERS
             )
@@ -37269,7 +37269,7 @@ END FILE: benchmarks/testing_other_di/profile_scope_cycle_contention.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/profile_tail_stall_attribution.py
-CONTENT SHA256: e96068a6a0f2dfd2de50032dac4080483acfddf272f99de6a7449261fb7420a0
+CONTENT SHA256: 02137abcbd4bbb6b0a9e351e111216a6a0ea48082f7c31206ee174a72244e967
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -37411,11 +37411,11 @@ def _worker(
             log.records.append(("create", seg_start, seg_dur))
 
         seg_start = time.perf_counter_ns()
-        lesser.meld(spell=outer_id)
-        lesser.meld(spell=outer_id)
+        lesser.meld(spell_id=outer_id)
+        lesser.meld(spell_id=outer_id)
         with lesser.enter_spellspace() as space:
-            space.meld(spell=request_id)
-            space.meld(spell=request_id)
+            space.meld(spell_id=request_id)
+            space.meld(spell_id=request_id)
         seg_dur = time.perf_counter_ns() - seg_start
         if seg_dur >= STALL_NS:
             log.records.append(("melds", seg_start, seg_dur))
@@ -37595,7 +37595,7 @@ END FILE: benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/run_codegen_benchmark_deltas.py
-CONTENT SHA256: ac05403f885d5c94d96e6ad1314526cd4c4042bbe919d53b26265ee3e76263da
+CONTENT SHA256: ffa9b2c3cd7ec1ab877fb86262241aaa383ed1a5faef6e0d1d70d6470b307d7b
 SOURCE ENCODING: utf-8
 ================================================================================
 import cProfile
@@ -37830,7 +37830,7 @@ class CodegenBenchmarkSession:
             - Performs one `Conduit.meld` on the root spell id.
             - Raises AssertionError if the returned type is unexpected.
         """
-        root = self._conduit.meld(spell=self._root_id)
+        root = self._conduit.meld(spell_id=self._root_id)
         if not isinstance(root, BenchmarkRoot):
             raise AssertionError("Expected BenchmarkRoot from root meld.")
 
@@ -37857,7 +37857,7 @@ class CodegenBenchmarkSession:
             - Raises AssertionError if the returned type is unexpected.
         """
         with self._conduit.enter_spellspace() as spellspace:
-            scoped = spellspace.meld(spell=self._spellspace_root_id)
+            scoped = spellspace.meld(spell_id=self._spellspace_root_id)
             if not isinstance(scoped, BenchmarkSpellspaceRoot):
                 raise AssertionError(
                     "Expected BenchmarkSpellspaceRoot from spellspace meld."
@@ -37872,8 +37872,8 @@ class CodegenBenchmarkSession:
             - Uses many-scoped root so repeated override calls remain valid.
         """
         overridden = self._conduit.meld(
-            spell=self._override_args_root_id,
-            spell_override=[7],
+            spell_id=self._override_args_root_id,
+            override=[7],
         )
         if not isinstance(overridden, BenchmarkOverrideArgsRoot):
             raise AssertionError("Expected BenchmarkOverrideArgsRoot from __args__ override meld.")
@@ -37887,8 +37887,8 @@ class CodegenBenchmarkSession:
             - Uses many-scoped root so repeated override calls remain valid.
         """
         overridden = self._conduit.meld(
-            spell=self._override_root_id,
-            spell_override={"left": BenchmarkLeafA()},
+            spell_id=self._override_root_id,
+            override={"left": BenchmarkLeafA()},
         )
         if not isinstance(overridden, BenchmarkOverrideRoot):
             raise AssertionError("Expected BenchmarkOverrideRoot from targeted override meld.")
@@ -39884,7 +39884,7 @@ END FILE: benchmarks/testing_other_di/run_snapshot_timings.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_all_di_systems.py
-CONTENT SHA256: 6529e036e4aa106eb64b3b2ff11cbbd8043f276083a92171aa17d91c1b236b67
+CONTENT SHA256: 76e70a53a05e2efc575cd89e7ae514d26c4f67b544bfc899e4353b1cfa11cf32
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -40021,7 +40021,7 @@ def _build_melder_depth9(*, existence: Existence, frame: str, conjure_name: str)
 
 
 def _melder_get(state: _MelderState) -> Any:
-    return state.conduit.meld(spell=state.root_id)
+    return state.conduit.meld(spell_id=state.root_id)
 
 
 def _melder_cleanup(state: _MelderState) -> None:
@@ -40813,7 +40813,7 @@ END FILE: benchmarks/testing_other_di/test_bool_vs_len_perf.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_conduit_integration_perf_deep_graphs.py
-CONTENT SHA256: 6ec1d8081ae16c95a3d09ca8c4a8ad1ae78f18b08a2408eb96201f849a58a7a4
+CONTENT SHA256: e5f414a8a02f6167dcbe7ae2bc3c4a81ed677e5f3ff219f194b5aef834da3f7c
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -40965,7 +40965,7 @@ def test_perf_conjure_scaling_depth3_5_7_9_automatic() -> None:
         conjure_s = time.perf_counter() - t0
         try:
             t0 = time.perf_counter()
-            _ = conduit.meld(spell=spell_ids[root_cls])
+            _ = conduit.meld(spell_id=spell_ids[root_cls])
             meld_s = time.perf_counter() - t0
             print(
                 f"Perf scaling depth={depth} (ms): "
@@ -40995,12 +40995,12 @@ def test_perf_depth9_unique_conjure_and_meld_cold_warm() -> None:
     conjure_s = time.perf_counter() - t0
     try:
         t0 = time.perf_counter()
-        root1 = conduit.meld(spell=root_id)
+        root1 = conduit.meld(spell_id=root_id)
         cold_s = time.perf_counter() - t0
         assert isinstance(root1, Depth9Root)
 
         t0 = time.perf_counter()
-        root2 = conduit.meld(spell=root_id)
+        root2 = conduit.meld(spell_id=root_id)
         warm_s = time.perf_counter() - t0
         assert root1 is root2
 
@@ -41031,14 +41031,14 @@ def test_perf_depth9_many_all_nodes_avg() -> None:
     conduit = spellbook.conjure(name="perf-depth9-many")
     try:
         # Warm up interpreter/method caches a bit.
-        _ = conduit.meld(spell=root_id)
+        _ = conduit.meld(spell_id=root_id)
 
         iterations = 250
         t0 = time.perf_counter()
         leaf_a_id = 0
         leaf_b_id = 0
         for _i in range(iterations):
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
             assert isinstance(root, Depth9Root)
             leaf_a_id, leaf_b_id = _depth9_leaf_ids(root)
         total_s = time.perf_counter() - t0
@@ -41078,14 +41078,14 @@ def test_perf_spellspace_depth3_unique_per_spellspace() -> None:
         # One spellspace: cold + warm within the same scope.
         with conduit.enter_spellspace() as space:
             t0 = time.perf_counter()
-            root1 = space.meld(spell=root_id)
+            root1 = space.meld(spell_id=root_id)
             cold_s = time.perf_counter() - t0
             assert isinstance(root1, Depth3Root)
 
             warm_iters = 10_000
             t0 = time.perf_counter()
             for _ in range(warm_iters):
-                root2 = space.meld(spell=root_id)
+                root2 = space.meld(spell_id=root_id)
             warm_total_s = time.perf_counter() - t0
             assert root1 is root2
 
@@ -41096,7 +41096,7 @@ def test_perf_spellspace_depth3_unique_per_spellspace() -> None:
         last_id = None
         for i in range(spaces):
             with conduit.enter_spellspace() as space:
-                root = space.meld(spell=root_id)
+                root = space.meld(spell_id=root_id)
                 if i == 0:
                     first_id = id(root)
                 last_id = id(root)
@@ -41138,12 +41138,12 @@ def test_perf_depth9_many_with_cached_leaves_and_cleanup() -> None:
     try:
         # Cold build + verify leaf reuse across calls.
         t0 = time.perf_counter()
-        root1 = conduit.meld(spell=root_id)
+        root1 = conduit.meld(spell_id=root_id)
         cold_s = time.perf_counter() - t0
         assert isinstance(root1, Depth9Root)
         leaf_a_1, leaf_b_1 = _depth9_leaf_ids(root1)
 
-        root2 = conduit.meld(spell=root_id)
+        root2 = conduit.meld(spell_id=root_id)
         assert isinstance(root2, Depth9Root)
         leaf_a_2, leaf_b_2 = _depth9_leaf_ids(root2)
         assert leaf_a_1 == leaf_a_2
@@ -41152,7 +41152,7 @@ def test_perf_depth9_many_with_cached_leaves_and_cleanup() -> None:
         iterations = 200
         t0 = time.perf_counter()
         for _ in range(iterations):
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
             assert isinstance(root, Depth9Root)
         total_s = time.perf_counter() - t0
 
@@ -41211,17 +41211,17 @@ def test_perf_mixed_workload_alternating_depth7_depth9_and_spellspace_cleanup() 
         t0 = time.perf_counter()
         for i in range(iterations):
             if i % 2 == 0:
-                root = conduit.meld(spell=root9_id)
+                root = conduit.meld(spell_id=root9_id)
                 assert isinstance(root, Depth9Root)
             else:
-                root = conduit.meld(spell=root7_id)
+                root = conduit.meld(spell_id=root7_id)
                 assert isinstance(root, Depth7Root)
 
             if (i + 1) % spellspace_every == 0:
                 spellspace_count += 1
                 t_space = time.perf_counter()
                 with conduit.enter_spellspace() as space:
-                    obj = space.meld(spell=root3_space_id)
+                    obj = space.meld(spell_id=root3_space_id)
                     assert isinstance(obj, Depth3Root)
                 spellspace_total_s += time.perf_counter() - t_space
 
@@ -41274,7 +41274,7 @@ def test_perf_cycle_conjure_meld_cleanup_depth9_unique_per_conduit() -> None:
         conjure_total += conjure_s
         try:
             t0 = time.perf_counter()
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
             meld_s = time.perf_counter() - t0
             meld_total += meld_s
             assert isinstance(root, Depth9Root)
@@ -41318,7 +41318,7 @@ def test_perf_spellspace_depth9_unique_per_spellspace_repeated_cleanup() -> None
         t0 = time.perf_counter()
         for _ in range(spaces):
             with conduit.enter_spellspace() as space:
-                root = space.meld(spell=root_id)
+                root = space.meld(spell_id=root_id)
                 assert isinstance(root, Depth9Root)
         total_s = time.perf_counter() - t0
 
@@ -42846,7 +42846,7 @@ END FILE: benchmarks/testing_other_di/test_data_gc_extended_fixed.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_deep_all_di_transient_only_no_singletons.py
-CONTENT SHA256: 6455334a9b93805bad9115b49cbbd4ef45f9144cb153faf4a7d87d41d7860476
+CONTENT SHA256: ad80f9a731330443491f4ee9fe7795b62dea8c882a9adad3dfad5628abe0dfc5
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -43010,7 +43010,7 @@ def _melder_build_transient(*, frame: str, classes: tuple[type, ...], root_cls: 
 
 
 def _melder_get(state: _MelderState) -> Any:
-    return state.conduit.meld(spell=state.root_id)
+    return state.conduit.meld(spell_id=state.root_id)
 
 
 def _melder_get_alias(state: _MelderState) -> Any:
@@ -43023,7 +43023,7 @@ def _melder_get_alias(state: _MelderState) -> Any:
     """
     conduit = state.conduit
     root_id = state.root_id
-    return conduit.meld(spell=root_id)
+    return conduit.meld(spell_id=root_id)
 
 
 def _melder_cleanup(state: _MelderState) -> None:
@@ -43540,10 +43540,10 @@ def test_perf_mixed_workload_depth7_depth9_transient(lib: str) -> None:
             t0 = time.perf_counter()
             for i in range(iterations):
                 if i % 2 == 0:
-                    r = conduit.meld(spell=root9_id)
+                    r = conduit.meld(spell_id=root9_id)
                     assert isinstance(r, Depth9Root)
                 else:
-                    r = conduit.meld(spell=root7_id)
+                    r = conduit.meld(spell_id=root7_id)
                     assert isinstance(r, Depth7Root)
             total_s = time.perf_counter() - t0
         finally:
@@ -43686,7 +43686,7 @@ END FILE: benchmarks/testing_other_di/test_deep_all_di_transient_only_no_singlet
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_di_perf_basic.py
-CONTENT SHA256: 94b726a8372e155469308b13d3facc1b80652d9b277d6e70daeb5d38fa9e059f
+CONTENT SHA256: 24359687d2e949dde1a94ac8bec545a022eff74347fecbe401b93582c5e3cab3
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -43929,11 +43929,11 @@ def _melder_run(mode: str) -> _PerfRow:
 
     try:
         # “cold” sanity resolves (NOT timed)
-        cfg_obj = conduit.meld(spell=config_id)
+        cfg_obj = conduit.meld(spell_id=config_id)
         assert isinstance(cfg_obj, PerfConfig)
-        log1 = conduit.meld(spell=logger_id)
+        log1 = conduit.meld(spell_id=logger_id)
         assert isinstance(log1, PerfLogger)
-        log2 = conduit.meld(spell=logger_id)
+        log2 = conduit.meld(spell_id=logger_id)
         assert isinstance(log2, PerfLogger)
 
         logger_is_cached: Optional[bool]
@@ -43943,12 +43943,12 @@ def _melder_run(mode: str) -> _PerfRow:
         else:
             logger_is_cached = None
 
-        svc_obj = conduit.meld(spell=service_id)
+        svc_obj = conduit.meld(spell_id=service_id)
         assert isinstance(svc_obj, PerfService)
 
-        cfg_total_ns = _time_loop(lambda: conduit.meld(spell=config_id), warmup=WARMUP, tries=TRIES)
-        log_total_ns = _time_loop(lambda: conduit.meld(spell=logger_id), warmup=WARMUP, tries=TRIES)
-        svc_total_ns = _time_loop(lambda: conduit.meld(spell=service_id), warmup=WARMUP, tries=TRIES)
+        cfg_total_ns = _time_loop(lambda: conduit.meld(spell_id=config_id), warmup=WARMUP, tries=TRIES)
+        log_total_ns = _time_loop(lambda: conduit.meld(spell_id=logger_id), warmup=WARMUP, tries=TRIES)
+        svc_total_ns = _time_loop(lambda: conduit.meld(spell_id=service_id), warmup=WARMUP, tries=TRIES)
 
         return _PerfRow(
             name="melder",
@@ -44282,7 +44282,7 @@ END FILE: benchmarks/testing_other_di/test_di_perf_basic.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_di_perf_overhead_suite.py
-CONTENT SHA256: 53e2f7ed2219a54c30c8bce5f3169ab46466f5f6c918968feb061f347095c83a
+CONTENT SHA256: 0508c3f56d9cb801f1d035bf08177453e979aa7d56f0e1d3888aec3cc11487bf
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -44568,17 +44568,17 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
         meld = conduit.meld
 
         # --- sanity (NOT timed) ---
-        cfg1 = meld(spell=config_id)
-        cfg2 = meld(spell=config_id)
+        cfg1 = meld(spell_id=config_id)
+        cfg2 = meld(spell_id=config_id)
         assert isinstance(cfg1, s.config_cls)
         assert isinstance(cfg2, s.config_cls)
 
-        log1 = meld(spell=logger_id)
-        log2 = meld(spell=logger_id)
+        log1 = meld(spell_id=logger_id)
+        log2 = meld(spell_id=logger_id)
         assert isinstance(log1, s.logger_cls)
         assert isinstance(log2, s.logger_cls)
 
-        svc1 = meld(spell=service_id)
+        svc1 = meld(spell_id=service_id)
         assert isinstance(svc1, s.service_cls)
 
         if mode == "singleton":
@@ -44589,13 +44589,13 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
 
         # --- WRAPPER GETTERS (fair, explicit, stable) ---
         def get_cfg() -> object:
-            return meld(spell=config_id)
+            return meld(spell_id=config_id)
 
         def get_log() -> object:
-            return meld(spell=logger_id)
+            return meld(spell_id=logger_id)
 
         def get_svc() -> object:
-            return meld(spell=service_id)
+            return meld(spell_id=service_id)
 
         tries = s.settings.tries
         warmup = s.settings.warmup
@@ -45105,7 +45105,7 @@ END FILE: benchmarks/testing_other_di/test_di_perf_overhead_suite.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_family_lane_harness.py
-CONTENT SHA256: aacc116d17717783c7d94d76be21830bd04bb9aaea518b627d0b1b182ae9d970
+CONTENT SHA256: 8d232ff04399e76fcd1ee6be34ed6802520b4c056eb5be26e0d3f50ccaeacccd
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -45423,7 +45423,7 @@ def _capture_sources(
         root_id = bind_fn(spellbook)
         conduit = spellbook.conjure(name=f"lane-{tag}")
         try:
-            conduit.meld(spell=root_id)
+            conduit.meld(spell_id=root_id)
         finally:
             conduit.cleanup()
     finally:
@@ -45454,15 +45454,15 @@ def _warm_per_meld_us(
         root_id = bind_fn(spellbook)
         conduit = spellbook.conjure(name=f"lane-{tag}")
         try:
-            conduit.meld(spell=root_id)  # cold: compile + first build
+            conduit.meld(spell_id=root_id)  # cold: compile + first build
             for _ in range(warmup):
-                conduit.meld(spell=root_id)
+                conduit.meld(spell_id=root_id)
             gc.collect()
             gc.disable()
             try:
                 start = time.perf_counter()
                 for _ in range(iterations):
-                    conduit.meld(spell=root_id)
+                    conduit.meld(spell_id=root_id)
                 elapsed = time.perf_counter() - start
             finally:
                 gc.enable()
@@ -50094,7 +50094,7 @@ END FILE: benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_melder_gauntlet.py
-CONTENT SHA256: 8768c710c4b2ac975c9b6e0807a7f988c41e4363c5e38e5b10b6051d918b34b5
+CONTENT SHA256: 2eed3245c8a80d43637a994517b0f7990a1d70e21e85da7e55a86c451023fbea
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -50225,7 +50225,7 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     conduit = spellbook.conjure(name="real-world-gauntlet", dynamic=False)
 
     def _get(cls: type) -> Any:
-        resolved = conduit.meld(spell=spell_ids[cls])
+        resolved = conduit.meld(spell_id=spell_ids[cls])
         if not isinstance(resolved, cls):
             raise AssertionError("Melder: resolve returned wrong type")
         return resolved
@@ -50254,8 +50254,8 @@ def _build_runtime_melder() -> _support.RuntimeOps:
         lesser = conduit.create_lesser_conduit()
         outer_create_ns = _support.time.perf_counter_ns() - outer_create_t0
         try:
-            outer1 = lesser.meld(spell=spell_ids[outer_cls])
-            outer2 = lesser.meld(spell=spell_ids[outer_cls])
+            outer1 = lesser.meld(spell_id=spell_ids[outer_cls])
+            outer2 = lesser.meld(spell_id=spell_ids[outer_cls])
             if not isinstance(outer1, outer_cls):
                 raise AssertionError(
                     f"Melder: {variant_error_prefix} outer resolve returned wrong type"
@@ -50271,9 +50271,9 @@ def _build_runtime_melder() -> _support.RuntimeOps:
             space = request_cm.__enter__()
             request_create_ns = _support.time.perf_counter_ns() - request_create_t0
             try:
-                marker1 = space.meld(spell=spell_ids[request_marker_cls])
+                marker1 = space.meld(spell_id=spell_ids[request_marker_cls])
 
-                marker2 = space.meld(spell=spell_ids[request_marker_cls])
+                marker2 = space.meld(spell_id=spell_ids[request_marker_cls])
                 if not isinstance(marker1, request_marker_cls):
                     raise AssertionError(
                         f"Melder: {variant_error_prefix} request marker wrong type"
@@ -50282,7 +50282,7 @@ def _build_runtime_melder() -> _support.RuntimeOps:
                     raise AssertionError(
                         f"Melder: {variant_error_prefix} request scope marker not cached"
                     )
-                inherited = space.meld(spell=spell_ids[outer_cls])
+                inherited = space.meld(spell_id=spell_ids[outer_cls])
                 if inherited is not outer1:
                     raise AssertionError(
                         f"Melder: {variant_error_prefix} outer scope did not propagate into request"
@@ -50310,19 +50310,19 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     def request_scope_cycle(variant: int) -> _support.ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[_support.RequestRoot])
+                root = space.meld(spell_id=spell_ids[_support.RequestRoot])
                 if not isinstance(root, _support.RequestRoot):
                     raise AssertionError("Melder: request root resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[_support.RequestGroup])
-                root = space.meld(spell=spell_ids[_support.RequestRoot])
+                group = space.meld(spell_id=spell_ids[_support.RequestGroup])
+                root = space.meld(spell_id=spell_ids[_support.RequestRoot])
                 if not isinstance(group, _support.RequestGroup) or not isinstance(
                     root, _support.RequestRoot
                 ):
                     raise AssertionError("Melder: request scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[_support.RequestRoot])
-                root2 = space.meld(spell=spell_ids[_support.RequestRoot])
+                root1 = space.meld(spell_id=spell_ids[_support.RequestRoot])
+                root2 = space.meld(spell_id=spell_ids[_support.RequestRoot])
                 if not isinstance(root1, _support.RequestRoot) or not isinstance(
                     root2, _support.RequestRoot
                 ):
@@ -50338,19 +50338,19 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     def worker_a_scope_cycle(variant: int) -> _support.ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
+                root = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
                 if not isinstance(root, _support.WorkerAJobRoot):
                     raise AssertionError("Melder: worker A resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[_support.WorkerAGroup])
-                root = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
+                group = space.meld(spell_id=spell_ids[_support.WorkerAGroup])
+                root = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
                 if not isinstance(group, _support.WorkerAGroup) or not isinstance(
                     root, _support.WorkerAJobRoot
                 ):
                     raise AssertionError("Melder: worker A scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
-                root2 = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
+                root1 = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
+                root2 = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
                 if not isinstance(root1, _support.WorkerAJobRoot) or not isinstance(
                     root2, _support.WorkerAJobRoot
                 ):
@@ -50366,19 +50366,19 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     def worker_b_scope_cycle(variant: int) -> _support.ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
+                root = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
                 if not isinstance(root, _support.WorkerBJobRoot):
                     raise AssertionError("Melder: worker B resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[_support.WorkerBGroup])
-                root = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
+                group = space.meld(spell_id=spell_ids[_support.WorkerBGroup])
+                root = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
                 if not isinstance(group, _support.WorkerBGroup) or not isinstance(
                     root, _support.WorkerBJobRoot
                 ):
                     raise AssertionError("Melder: worker B scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
-                root2 = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
+                root1 = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
+                root2 = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
                 if not isinstance(root1, _support.WorkerBJobRoot) or not isinstance(
                     root2, _support.WorkerBJobRoot
                 ):
@@ -50616,7 +50616,7 @@ END FILE: benchmarks/testing_other_di/test_melder_gauntlet_gc_probe.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_melder_hotpath_profiles.py
-CONTENT SHA256: 3ece6a97ef98be46eb57e787aac680345e2e55cb2fb34b01d8f77a5a80a1ffab
+CONTENT SHA256: c87777b11437bef384a1af27f05d12eb908c7377a4f979c81ecfb4b7fe07d298
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -50886,12 +50886,12 @@ def test_profile_meld_depth9_hotpaths() -> None:
     conduit = spellbook.conjure(name="profile-meld-depth9", dynamic=False)
     try:
         t0 = time.perf_counter()
-        root1 = conduit.meld(spell=root_id)
+        root1 = conduit.meld(spell_id=root_id)
         cold_s = time.perf_counter() - t0
         assert isinstance(root1, Depth9Root)
 
         t0 = time.perf_counter()
-        root2 = conduit.meld(spell=root_id)
+        root2 = conduit.meld(spell_id=root_id)
         warm_s = time.perf_counter() - t0
         assert root1 is root2
 
@@ -50912,7 +50912,7 @@ def test_profile_meld_depth9_hotpaths() -> None:
             sb, root = _build_depth9_spellbook("profile-meld-depth9-cold")
             cd = sb.conjure(name="profile-meld-depth9-cold", dynamic=False)
             try:
-                _ = cd.meld(spell=root)
+                _ = cd.meld(spell_id=root)
             finally:
                 cd.cleanup()
 
@@ -50920,8 +50920,8 @@ def test_profile_meld_depth9_hotpaths() -> None:
             sb, root = _build_depth9_spellbook("profile-meld-depth9-warm")
             cd = sb.conjure(name="profile-meld-depth9-warm", dynamic=False)
             try:
-                _ = cd.meld(spell=root)
-                _ = cd.meld(spell=root)
+                _ = cd.meld(spell_id=root)
+                _ = cd.meld(spell_id=root)
             finally:
                 cd.cleanup()
 
@@ -50959,7 +50959,7 @@ def test_profile_cycle_conjure_meld_cleanup_depth9() -> None:
         conjure_times.append(time.perf_counter() - t0)
         try:
             t0 = time.perf_counter()
-            _ = conduit.meld(spell=root_id)
+            _ = conduit.meld(spell_id=root_id)
             meld_times.append(time.perf_counter() - t0)
         finally:
             t0 = time.perf_counter()
@@ -51904,7 +51904,7 @@ END FILE: benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_melder_single_meld_lock_and_check_cleaned.py
-CONTENT SHA256: 37f023607172dd4e657dd68c309b05b060c23b7c3ddf39b29f9faaf6088583cf
+CONTENT SHA256: 216d23fca0623b1ffba568c4cf769b2db2148201665e7ed76986cfc9d05cf804
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -52316,7 +52316,7 @@ def test_melder_single_meld_lock_and_check_cleaned() -> None:
         Cleanable.check_cleaned = _make_check_cleaned_counter(check_counts)
 
         def resolve_request_root() -> Any:
-            return space.meld(spell=spell_ids[_support.RequestRoot])
+            return space.meld(spell_id=spell_ids[_support.RequestRoot])
 
         first_report = _capture_one_meld_report(
             resolver=resolve_request_root,
@@ -52353,7 +52353,7 @@ END FILE: benchmarks/testing_other_di/test_melder_single_meld_lock_and_check_cle
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_multithreading_di.py
-CONTENT SHA256: 0685f27ae11ba5d71db53dd788ed2ae51d77a052d0f043ebc1e488ba31d36189
+CONTENT SHA256: abd84c14e6aff146eb58a904b94ae0be74a366f17c4ebb7f43cb058c8fa4e835
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -52852,19 +52852,19 @@ def _build_runtime_melder() -> _RuntimeOps:
     conduit = spellbook.conjure(name="threaded-di-stress")
 
     def resolve_depth9() -> None:
-        root = conduit.meld(spell=root9_id)
+        root = conduit.meld(spell_id=root9_id)
         if not isinstance(root, Depth9Root):
             raise AssertionError("Melder: Depth9Root meld returned wrong type")
 
     def resolve_depth7() -> None:
-        root = conduit.meld(spell=root7_id)
+        root = conduit.meld(spell_id=root7_id)
         if not isinstance(root, Depth7Root):
             raise AssertionError("Melder: Depth7Root meld returned wrong type")
 
     def spellspace_cycle() -> None:
         with conduit.enter_spellspace() as space:
-            r1 = space.meld(spell=root3_id)
-            r2 = space.meld(spell=root3_id)
+            r1 = space.meld(spell_id=root3_id)
+            r2 = space.meld(spell_id=root3_id)
             if not isinstance(r1, Depth3Root):
                 raise AssertionError("Melder: Depth3Root meld returned wrong type")
             if r1 is not r2:
@@ -53014,7 +53014,7 @@ END FILE: benchmarks/testing_other_di/test_multithreading_di.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_overrides_all.py
-CONTENT SHA256: 8eacc242bef29f8a94cc2a5029c623313c7036783de384a6f3d47ecea3d60d9e
+CONTENT SHA256: 5a8adde1490e7a084768ec364f4310d54c8c2373a64ad884abc303b5b1af9fff
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -53591,9 +53591,9 @@ def _build_override_melder(g: _OverrideGraphSpec) -> _OverrideOps:
 
     def get_root() -> Any:
         if g.melder_override_mode == "existing":
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
         else:
-            root = conduit.meld(spell=root_id, spell_override={g.melder_override_key: override_instance})
+            root = conduit.meld(spell_id=root_id, override={g.melder_override_key: override_instance})
         if not isinstance(root, g.root_type):
             raise AssertionError("Melder: root resolve returned wrong type")
         return root
@@ -54634,7 +54634,7 @@ END FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_real_world_gauntlet.py
-CONTENT SHA256: 75197362c8e1539109dbc623e26986a809c9f326984480e2896f1b2e495fad69
+CONTENT SHA256: 56e1579121344b45b9da7fe42c20e620d584316ed33660e74ab83001aea6bdc9
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -55621,7 +55621,7 @@ def _build_runtime_melder() -> _RuntimeOps:
     conduit = spellbook.conjure(name="real-world-gauntlet", dynamic=False)
 
     def _get(cls: type) -> Any:
-        root = conduit.meld(spell=spell_ids[cls])
+        root = conduit.meld(spell_id=spell_ids[cls])
         if not isinstance(root, cls):
             raise AssertionError("Melder: resolve returned wrong type")
         return root
@@ -55650,8 +55650,8 @@ def _build_runtime_melder() -> _RuntimeOps:
         lesser = conduit.create_lesser_conduit()
         outer_create_ns = time.perf_counter_ns() - outer_create_t0
         try:
-            outer1 = lesser.meld(spell=spell_ids[outer_cls])
-            outer2 = lesser.meld(spell=spell_ids[outer_cls])
+            outer1 = lesser.meld(spell_id=spell_ids[outer_cls])
+            outer2 = lesser.meld(spell_id=spell_ids[outer_cls])
             if not isinstance(outer1, outer_cls):
                 raise AssertionError(f"Melder: {variant_error_prefix} outer resolve returned wrong type")
             if outer1 is not outer2:
@@ -55663,13 +55663,13 @@ def _build_runtime_melder() -> _RuntimeOps:
             space = request_cm.__enter__()
             request_create_ns = time.perf_counter_ns() - request_create_t0
             try:
-                marker1 = space.meld(spell=spell_ids[request_marker_cls])
-                marker2 = space.meld(spell=spell_ids[request_marker_cls])
+                marker1 = space.meld(spell_id=spell_ids[request_marker_cls])
+                marker2 = space.meld(spell_id=spell_ids[request_marker_cls])
                 if not isinstance(marker1, request_marker_cls):
                     raise AssertionError(f"Melder: {variant_error_prefix} request marker wrong type")
                 if marker1 is not marker2:
                     raise AssertionError(f"Melder: {variant_error_prefix} request scope marker not cached")
-                inherited = space.meld(spell=spell_ids[outer_cls])
+                inherited = space.meld(spell_id=spell_ids[outer_cls])
                 if inherited is not outer1:
                     raise AssertionError(f"Melder: {variant_error_prefix} outer scope did not propagate into request")
                 variant_call(space)
@@ -55695,17 +55695,17 @@ def _build_runtime_melder() -> _RuntimeOps:
     def request_scope_cycle(variant: int) -> _ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[RequestRoot])
+                root = space.meld(spell_id=spell_ids[RequestRoot])
                 if not isinstance(root, RequestRoot):
                     raise AssertionError("Melder: request root resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[RequestGroup])
-                root = space.meld(spell=spell_ids[RequestRoot])
+                group = space.meld(spell_id=spell_ids[RequestGroup])
+                root = space.meld(spell_id=spell_ids[RequestRoot])
                 if not isinstance(group, RequestGroup) or not isinstance(root, RequestRoot):
                     raise AssertionError("Melder: request scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[RequestRoot])
-                root2 = space.meld(spell=spell_ids[RequestRoot])
+                root1 = space.meld(spell_id=spell_ids[RequestRoot])
+                root2 = space.meld(spell_id=spell_ids[RequestRoot])
                 if not isinstance(root1, RequestRoot) or not isinstance(root2, RequestRoot):
                     raise AssertionError("Melder: request scope variant returned wrong type")
 
@@ -55719,17 +55719,17 @@ def _build_runtime_melder() -> _RuntimeOps:
     def worker_a_scope_cycle(variant: int) -> _ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[WorkerAJobRoot])
+                root = space.meld(spell_id=spell_ids[WorkerAJobRoot])
                 if not isinstance(root, WorkerAJobRoot):
                     raise AssertionError("Melder: worker A resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[WorkerAGroup])
-                root = space.meld(spell=spell_ids[WorkerAJobRoot])
+                group = space.meld(spell_id=spell_ids[WorkerAGroup])
+                root = space.meld(spell_id=spell_ids[WorkerAJobRoot])
                 if not isinstance(group, WorkerAGroup) or not isinstance(root, WorkerAJobRoot):
                     raise AssertionError("Melder: worker A scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[WorkerAJobRoot])
-                root2 = space.meld(spell=spell_ids[WorkerAJobRoot])
+                root1 = space.meld(spell_id=spell_ids[WorkerAJobRoot])
+                root2 = space.meld(spell_id=spell_ids[WorkerAJobRoot])
                 if not isinstance(root1, WorkerAJobRoot) or not isinstance(root2, WorkerAJobRoot):
                     raise AssertionError("Melder: worker A scope variant returned wrong type")
 
@@ -55743,17 +55743,17 @@ def _build_runtime_melder() -> _RuntimeOps:
     def worker_b_scope_cycle(variant: int) -> _ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[WorkerBJobRoot])
+                root = space.meld(spell_id=spell_ids[WorkerBJobRoot])
                 if not isinstance(root, WorkerBJobRoot):
                     raise AssertionError("Melder: worker B resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[WorkerBGroup])
-                root = space.meld(spell=spell_ids[WorkerBJobRoot])
+                group = space.meld(spell_id=spell_ids[WorkerBGroup])
+                root = space.meld(spell_id=spell_ids[WorkerBJobRoot])
                 if not isinstance(group, WorkerBGroup) or not isinstance(root, WorkerBJobRoot):
                     raise AssertionError("Melder: worker B scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[WorkerBJobRoot])
-                root2 = space.meld(spell=spell_ids[WorkerBJobRoot])
+                root1 = space.meld(spell_id=spell_ids[WorkerBJobRoot])
+                root2 = space.meld(spell_id=spell_ids[WorkerBJobRoot])
                 if not isinstance(root1, WorkerBJobRoot) or not isinstance(root2, WorkerBJobRoot):
                     raise AssertionError("Melder: worker B scope variant returned wrong type")
 
@@ -56672,7 +56672,7 @@ END FILE: benchmarks/testing_other_di/test_real_world_gauntlet_cprofile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_shallow_all.py
-CONTENT SHA256: 36c358567675fc9be3959b989e3c781b471ef8d296586b09edcf062c58cb63b7
+CONTENT SHA256: e854922e9ea33a80df7c6eeb9e0a33662f7c21a218507aceaff68a11f349c52d
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -57892,21 +57892,21 @@ def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
     conduit = spellbook.conjure(name="threaded-di-stress")
 
     def get_root_a() -> Any:
-        root = conduit.meld(spell=root_a_id)
+        root = conduit.meld(spell_id=root_a_id)
         if not isinstance(root, g.root_a):
             raise AssertionError("Melder: root_a meld returned wrong type")
         return root
 
     def get_root_b() -> Any:
-        root = conduit.meld(spell=root_b_id)
+        root = conduit.meld(spell_id=root_b_id)
         if not isinstance(root, g.root_b):
             raise AssertionError("Melder: root_b meld returned wrong type")
         return root
 
     def spellspace_cycle() -> None:
         with conduit.enter_spellspace() as space:
-            r1 = space.meld(spell=root_space_id)
-            r2 = space.meld(spell=root_space_id)
+            r1 = space.meld(spell_id=root_space_id)
+            r2 = space.meld(spell_id=root_space_id)
             if not isinstance(r1, g.spellspace_root):
                 raise AssertionError("Melder: spellspace root meld returned wrong type")
             if r1 is not r2:
@@ -57919,7 +57919,7 @@ def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
 
     def spellspace_resolve(handle: Any) -> Any:
         _, space = handle
-        root = space.meld(spell=root_space_id)
+        root = space.meld(spell_id=root_space_id)
         if not isinstance(root, g.spellspace_root):
             raise AssertionError("Melder: spellspace root meld returned wrong type")
         return root
@@ -58302,14 +58302,14 @@ def _build_rotation_melder(graphs: list[_GraphSpec]) -> _RotationOps:
 
     def get_root_a(ix: int) -> Any:
         g = graphs[ix]
-        root = conduit.meld(spell=root_a_ids[ix])
+        root = conduit.meld(spell_id=root_a_ids[ix])
         if not isinstance(root, g.root_a):
             raise AssertionError("Melder: root_a meld returned wrong type")
         return root
 
     def get_root_b(ix: int) -> Any:
         g = graphs[ix]
-        root = conduit.meld(spell=root_b_ids[ix])
+        root = conduit.meld(spell_id=root_b_ids[ix])
         if not isinstance(root, g.root_b):
             raise AssertionError("Melder: root_b meld returned wrong type")
         return root
@@ -58317,8 +58317,8 @@ def _build_rotation_melder(graphs: list[_GraphSpec]) -> _RotationOps:
     def spellspace_cycle(ix: int) -> None:
         g = graphs[ix]
         with conduit.enter_spellspace() as space:
-            r1 = space.meld(spell=space_root_ids[ix])
-            r2 = space.meld(spell=space_root_ids[ix])
+            r1 = space.meld(spell_id=space_root_ids[ix])
+            r2 = space.meld(spell_id=space_root_ids[ix])
             if not isinstance(r1, g.spellspace_root):
                 raise AssertionError("Melder: spellspace root meld returned wrong type")
             if r1 is not r2:
@@ -58736,7 +58736,7 @@ END FILE: benchmarks/testing_other_di/test_shallow_all.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_shallow_all_diagnostics.py
-CONTENT SHA256: bd71cb7bce51cf56c4045d7821bada10ba8744748c5449331a985be04931f3ec
+CONTENT SHA256: fd9bd411f3e4693742030feb2360f6a277a9a309847f2ea9ab6f5b67e0cf723f
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -59074,7 +59074,7 @@ def _time_meld(conduit: Any, root_id: str, iterations: int) -> float:
         return 0.0
     start = time.perf_counter()
     for _ in range(iterations):
-        conduit.meld(spell=root_id)
+        conduit.meld(spell_id=root_id)
     elapsed = time.perf_counter() - start
     return elapsed / float(iterations)
 
@@ -59173,7 +59173,7 @@ def test_shallow_all_melder_route_diagnostics(graph: object) -> None:
             ("B", root_b_id, graph.root_b),
         ):
             for _ in range(warmup_iters):
-                conduit.meld(spell=root_id)
+                conduit.meld(spell_id=root_id)
 
             spell = _lookup_spell(meld, root_id)
             expected_route = _expected_route(meld, spell)
@@ -59927,7 +59927,7 @@ END FILE: benchmarks/testing_other_di/test_shallow_diagnostics.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_unroll_locals_microbench.py
-CONTENT SHA256: ab62442e3e2946b9e364b240680aad435f2e5f160e4da2f9b07426290ad4787c
+CONTENT SHA256: fd37689f9434810fae37ddb92fb3c41ac31f08b615baf480be293ac1d742e141
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -60039,15 +60039,15 @@ def _warm_per_meld_us(
             root_id = spell_ids[root_cls]
             conduit = spellbook.conjure(name=f"unroll-mb-d{depth}-{label}")
             try:
-                conduit.meld(spell=root_id)  # cold: compiles the executor + builds deps
+                conduit.meld(spell_id=root_id)  # cold: compiles the executor + builds deps
                 for _ in range(warmup):
-                    conduit.meld(spell=root_id)
+                    conduit.meld(spell_id=root_id)
                 gc.collect()
                 gc.disable()
                 try:
                     start = time.perf_counter()
                     for _ in range(iterations):
-                        conduit.meld(spell=root_id)
+                        conduit.meld(spell_id=root_id)
                     elapsed = time.perf_counter() - start
                 finally:
                     gc.enable()
@@ -60115,7 +60115,7 @@ END FILE: benchmarks/testing_other_di/test_unroll_locals_microbench.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_unroll_path_diagnostic.py
-CONTENT SHA256: c19ed4366f17e835a642eaf99527b6db0e5b3e7cd3f3710dce72ffa934e40d7f
+CONTENT SHA256: dedd7934b0c6ddbd5869bc8b0c1a120ca948ad5183c3dd7de73c6b6c76faf82a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -60222,7 +60222,7 @@ def _capture_compiles(
             )
         conduit = spellbook.conjure(name="lane-diag")
         try:
-            conduit.meld(spell=spell_ids[root_cls])
+            conduit.meld(spell_id=spell_ids[root_cls])
         finally:
             conduit.cleanup()
     finally:

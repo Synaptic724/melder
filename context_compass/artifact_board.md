@@ -64,6 +64,8 @@ Disposition values
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_artifacts -->
+| tickets/tasks/2026-09-19_repair_benchmark_spell_id_lookup_task.md | artifacts/benchmark_spell_id_repair_20260919/ | benchmark_compatibility | review | retain_as_reference | Safe codemod, passing checks and separate setup failure retained. | 2026-09-20T01:15:40Z | REQUIRED |
+| tickets/tasks/2026-09-19_draft_purge_epic_and_refresh_assets_task.md | artifacts/purge_epic_assets_20260919/ | build_validation | review | retain_as_reference | Source assets rebuilt; all source/repository freshness checks pass at 0.2.43. | 2026-09-20T00:56:30Z | HELPFUL |
 | tickets/tasks/2026-09-19_document_positional_meld_calls_task.md | artifacts/positional_meld_docs_20260919/ | codemod_evidence | review | retain_as_reference | 150 replacements, passing docs/publication checks and recorded runtime failures. | 2026-09-19T21:56:08Z | REQUIRED |
 | tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md | artifacts/existing_object_di_comparison_20260913/comparison.md | deferred_design_reference | backlog | retain_as_reference | Parked by owner; resume only on explicit request. | 2026-09-19T14:53:20Z | HELPFUL |
 | tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md | artifacts/existing_instance_planning_20260913/existing_object_disposal_blast_radius.md | deferred_design_reference | backlog | retain_as_reference | Parked by owner; resume only on explicit request. | 2026-09-19T14:53:20Z | HELPFUL |

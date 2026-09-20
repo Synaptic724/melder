@@ -376,7 +376,7 @@ def run_cycle(
                 meld_profiler.enable()
             meld_t0 = time.perf_counter_ns()
             for cls, spell_id in direct_ids:
-                resolved = conduit.meld(spell=spell_id)
+                resolved = conduit.meld(spell_id=spell_id)
                 if not isinstance(resolved, cls):
                     raise AssertionError(
                         f"meld returned wrong type for {cls.__name__}"
@@ -386,7 +386,7 @@ def run_cycle(
                 try:
                     with lesser.enter_spellspace() as space:
                         for cls, spell_id in spellspace_ids:
-                            resolved = space.meld(spell=spell_id)
+                            resolved = space.meld(spell_id=spell_id)
                             if not isinstance(resolved, cls):
                                 raise AssertionError(
                                     "spellspace meld returned wrong type "

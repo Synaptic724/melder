@@ -572,9 +572,9 @@ def _build_override_melder(g: _OverrideGraphSpec) -> _OverrideOps:
 
     def get_root() -> Any:
         if g.melder_override_mode == "existing":
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
         else:
-            root = conduit.meld(spell=root_id, spell_override={g.melder_override_key: override_instance})
+            root = conduit.meld(spell_id=root_id, override={g.melder_override_key: override_instance})
         if not isinstance(root, g.root_type):
             raise AssertionError("Melder: root resolve returned wrong type")
         return root

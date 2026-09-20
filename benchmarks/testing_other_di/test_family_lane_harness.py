@@ -313,7 +313,7 @@ def _capture_sources(
         root_id = bind_fn(spellbook)
         conduit = spellbook.conjure(name=f"lane-{tag}")
         try:
-            conduit.meld(spell=root_id)
+            conduit.meld(spell_id=root_id)
         finally:
             conduit.cleanup()
     finally:
@@ -344,15 +344,15 @@ def _warm_per_meld_us(
         root_id = bind_fn(spellbook)
         conduit = spellbook.conjure(name=f"lane-{tag}")
         try:
-            conduit.meld(spell=root_id)  # cold: compile + first build
+            conduit.meld(spell_id=root_id)  # cold: compile + first build
             for _ in range(warmup):
-                conduit.meld(spell=root_id)
+                conduit.meld(spell_id=root_id)
             gc.collect()
             gc.disable()
             try:
                 start = time.perf_counter()
                 for _ in range(iterations):
-                    conduit.meld(spell=root_id)
+                    conduit.meld(spell_id=root_id)
                 elapsed = time.perf_counter() - start
             finally:
                 gc.enable()

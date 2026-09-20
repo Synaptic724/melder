@@ -126,7 +126,7 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     conduit = spellbook.conjure(name="real-world-gauntlet", dynamic=False)
 
     def _get(cls: type) -> Any:
-        resolved = conduit.meld(spell=spell_ids[cls])
+        resolved = conduit.meld(spell_id=spell_ids[cls])
         if not isinstance(resolved, cls):
             raise AssertionError("Melder: resolve returned wrong type")
         return resolved
@@ -155,8 +155,8 @@ def _build_runtime_melder() -> _support.RuntimeOps:
         lesser = conduit.create_lesser_conduit()
         outer_create_ns = _support.time.perf_counter_ns() - outer_create_t0
         try:
-            outer1 = lesser.meld(spell=spell_ids[outer_cls])
-            outer2 = lesser.meld(spell=spell_ids[outer_cls])
+            outer1 = lesser.meld(spell_id=spell_ids[outer_cls])
+            outer2 = lesser.meld(spell_id=spell_ids[outer_cls])
             if not isinstance(outer1, outer_cls):
                 raise AssertionError(
                     f"Melder: {variant_error_prefix} outer resolve returned wrong type"
@@ -172,9 +172,9 @@ def _build_runtime_melder() -> _support.RuntimeOps:
             space = request_cm.__enter__()
             request_create_ns = _support.time.perf_counter_ns() - request_create_t0
             try:
-                marker1 = space.meld(spell=spell_ids[request_marker_cls])
+                marker1 = space.meld(spell_id=spell_ids[request_marker_cls])
 
-                marker2 = space.meld(spell=spell_ids[request_marker_cls])
+                marker2 = space.meld(spell_id=spell_ids[request_marker_cls])
                 if not isinstance(marker1, request_marker_cls):
                     raise AssertionError(
                         f"Melder: {variant_error_prefix} request marker wrong type"
@@ -183,7 +183,7 @@ def _build_runtime_melder() -> _support.RuntimeOps:
                     raise AssertionError(
                         f"Melder: {variant_error_prefix} request scope marker not cached"
                     )
-                inherited = space.meld(spell=spell_ids[outer_cls])
+                inherited = space.meld(spell_id=spell_ids[outer_cls])
                 if inherited is not outer1:
                     raise AssertionError(
                         f"Melder: {variant_error_prefix} outer scope did not propagate into request"
@@ -211,19 +211,19 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     def request_scope_cycle(variant: int) -> _support.ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[_support.RequestRoot])
+                root = space.meld(spell_id=spell_ids[_support.RequestRoot])
                 if not isinstance(root, _support.RequestRoot):
                     raise AssertionError("Melder: request root resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[_support.RequestGroup])
-                root = space.meld(spell=spell_ids[_support.RequestRoot])
+                group = space.meld(spell_id=spell_ids[_support.RequestGroup])
+                root = space.meld(spell_id=spell_ids[_support.RequestRoot])
                 if not isinstance(group, _support.RequestGroup) or not isinstance(
                     root, _support.RequestRoot
                 ):
                     raise AssertionError("Melder: request scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[_support.RequestRoot])
-                root2 = space.meld(spell=spell_ids[_support.RequestRoot])
+                root1 = space.meld(spell_id=spell_ids[_support.RequestRoot])
+                root2 = space.meld(spell_id=spell_ids[_support.RequestRoot])
                 if not isinstance(root1, _support.RequestRoot) or not isinstance(
                     root2, _support.RequestRoot
                 ):
@@ -239,19 +239,19 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     def worker_a_scope_cycle(variant: int) -> _support.ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
+                root = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
                 if not isinstance(root, _support.WorkerAJobRoot):
                     raise AssertionError("Melder: worker A resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[_support.WorkerAGroup])
-                root = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
+                group = space.meld(spell_id=spell_ids[_support.WorkerAGroup])
+                root = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
                 if not isinstance(group, _support.WorkerAGroup) or not isinstance(
                     root, _support.WorkerAJobRoot
                 ):
                     raise AssertionError("Melder: worker A scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
-                root2 = space.meld(spell=spell_ids[_support.WorkerAJobRoot])
+                root1 = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
+                root2 = space.meld(spell_id=spell_ids[_support.WorkerAJobRoot])
                 if not isinstance(root1, _support.WorkerAJobRoot) or not isinstance(
                     root2, _support.WorkerAJobRoot
                 ):
@@ -267,19 +267,19 @@ def _build_runtime_melder() -> _support.RuntimeOps:
     def worker_b_scope_cycle(variant: int) -> _support.ScopeCycleMetrics:
         def variant_call(space: Any) -> None:
             if variant == 0:
-                root = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
+                root = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
                 if not isinstance(root, _support.WorkerBJobRoot):
                     raise AssertionError("Melder: worker B resolve returned wrong type")
             elif variant == 1:
-                group = space.meld(spell=spell_ids[_support.WorkerBGroup])
-                root = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
+                group = space.meld(spell_id=spell_ids[_support.WorkerBGroup])
+                root = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
                 if not isinstance(group, _support.WorkerBGroup) or not isinstance(
                     root, _support.WorkerBJobRoot
                 ):
                     raise AssertionError("Melder: worker B scope variant returned wrong type")
             else:
-                root1 = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
-                root2 = space.meld(spell=spell_ids[_support.WorkerBJobRoot])
+                root1 = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
+                root2 = space.meld(spell_id=spell_ids[_support.WorkerBJobRoot])
                 if not isinstance(root1, _support.WorkerBJobRoot) or not isinstance(
                     root2, _support.WorkerBJobRoot
                 ):

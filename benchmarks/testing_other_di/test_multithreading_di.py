@@ -494,19 +494,19 @@ def _build_runtime_melder() -> _RuntimeOps:
     conduit = spellbook.conjure(name="threaded-di-stress")
 
     def resolve_depth9() -> None:
-        root = conduit.meld(spell=root9_id)
+        root = conduit.meld(spell_id=root9_id)
         if not isinstance(root, Depth9Root):
             raise AssertionError("Melder: Depth9Root meld returned wrong type")
 
     def resolve_depth7() -> None:
-        root = conduit.meld(spell=root7_id)
+        root = conduit.meld(spell_id=root7_id)
         if not isinstance(root, Depth7Root):
             raise AssertionError("Melder: Depth7Root meld returned wrong type")
 
     def spellspace_cycle() -> None:
         with conduit.enter_spellspace() as space:
-            r1 = space.meld(spell=root3_id)
-            r2 = space.meld(spell=root3_id)
+            r1 = space.meld(spell_id=root3_id)
+            r2 = space.meld(spell_id=root3_id)
             if not isinstance(r1, Depth3Root):
                 raise AssertionError("Melder: Depth3Root meld returned wrong type")
             if r1 is not r2:

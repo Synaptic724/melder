@@ -137,11 +137,11 @@ def _worker(
             log.records.append(("create", seg_start, seg_dur))
 
         seg_start = time.perf_counter_ns()
-        lesser.meld(spell=outer_id)
-        lesser.meld(spell=outer_id)
+        lesser.meld(spell_id=outer_id)
+        lesser.meld(spell_id=outer_id)
         with lesser.enter_spellspace() as space:
-            space.meld(spell=request_id)
-            space.meld(spell=request_id)
+            space.meld(spell_id=request_id)
+            space.meld(spell_id=request_id)
         seg_dur = time.perf_counter_ns() - seg_start
         if seg_dur >= STALL_NS:
             log.records.append(("melds", seg_start, seg_dur))

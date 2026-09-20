@@ -107,15 +107,15 @@ def _warm_per_meld_us(
             root_id = spell_ids[root_cls]
             conduit = spellbook.conjure(name=f"unroll-mb-d{depth}-{label}")
             try:
-                conduit.meld(spell=root_id)  # cold: compiles the executor + builds deps
+                conduit.meld(spell_id=root_id)  # cold: compiles the executor + builds deps
                 for _ in range(warmup):
-                    conduit.meld(spell=root_id)
+                    conduit.meld(spell_id=root_id)
                 gc.collect()
                 gc.disable()
                 try:
                     start = time.perf_counter()
                     for _ in range(iterations):
-                        conduit.meld(spell=root_id)
+                        conduit.meld(spell_id=root_id)
                     elapsed = time.perf_counter() - start
                 finally:
                     gc.enable()

@@ -10,8 +10,8 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | 0df387b49e72842d9704f1490a1a8363e3ff8f53f3359c99ed123cb40e639950 |
-| bundle_sha256 | c96853d4250d99bedd8544118fbdf6de997d16b3cabc95b02fdeb92a97e53ac0 |
+| source_fingerprint | 672e05c9834f7097574228a8e54388017a6680de8504657b380e769ba1a490e2 |
+| bundle_sha256 | 7ff3630d3622197b98257ef2c64b1106c9fe3a7f2984ae7e5ffa60709ebb16f6 |
 | bundle_line_count | 66514 |
 | bundle_line_ending | lf |
 | files | 358 |
@@ -257,53 +257,53 @@ Line numbers are 1-based and inclusive.
 | 31549-31972 | 31554-31969 | 13929 | utf-8 | 92536acae1f4e0d804ba01bd775f59679896da1777beca09984bcb7818bec0b2 | benchmarks/p_core_affinity/p_core_affinity.py |
 | 31973-32118 | 31978-32115 | 6140 | utf-8 | 76f3462848568a7443dd975a26e3a35721f77702ce6008f15dc779456842a1aa | benchmarks/testing_other_di/benchmarks.md |
 | 32119-32304 | 32124-32301 | 6707 | utf-8 | 612f06762493d25fcc29e4e083710c0b49fe659bf9262c2b0de943ab801f0a62 | benchmarks/testing_other_di/diagnose_cache_integration_flows.py |
-| 32305-32521 | 32310-32518 | 7757 | utf-8 | efd357537aec02ee7484cdbc9560f63c112775321f8662f715d625975dfa9492 | benchmarks/testing_other_di/dump_emitted_executor_source.py |
+| 32305-32521 | 32310-32518 | 7763 | utf-8 | 1c04aebe7bb11e929454ff629376556412cc4009c432f1d57905a919a494a95c | benchmarks/testing_other_di/dump_emitted_executor_source.py |
 | 32522-32718 | 32527-32715 | 5704 | utf-8 | 02c37b24740d394cd3b991caa641fe7528cd2de0e77a2d86e8995eba874eb236 | benchmarks/testing_other_di/melder_gauntlet_cprofile_runner.py |
 | 32719-33593 | 32724-33590 | 28211 | utf-8 | 5b03e077de8137037b02511f069f083325c8f714a649ca3205c25135e45e8ef1 | benchmarks/testing_other_di/melder_gauntlet_support.py |
 | 33594-34019 | 33599-34016 | 13016 | utf-8 | 80e58a3bede0009d518960d8b0b1bd49d143588cca4bc3d21e6f6b8d45331606 | benchmarks/testing_other_di/optimistic/test_optimistic_meld_plan.py |
-| 34020-34715 | 34025-34712 | 25645 | utf-8 | 65aeff37d101b54c62e0e8c028d27db59f73cf9db66f738e3a8bb1a722ab17c3 | benchmarks/testing_other_di/profile_bind_conjure_cycle.py |
-| 34716-34925 | 34721-34922 | 7373 | utf-8 | 87f1b69a41f10cedaf2aa4730e2df5c47ebcbdb0c8099f6e0b3875a209fa7b91 | benchmarks/testing_other_di/profile_construction_lane.py |
-| 34926-35872 | 34931-35869 | 26779 | utf-8 | 0f90ccb8e6fb840d9d51fe2b0c6912d1419ca097d294582f80443909f7e812d1 | benchmarks/testing_other_di/profile_deep_all_di_transient_only_no_singletons.py |
+| 34020-34715 | 34025-34712 | 25651 | utf-8 | 9fdd4b8a99ad909593b91a8dcceffdd27c239a106e3af3c65ab4dc664be5f738 | benchmarks/testing_other_di/profile_bind_conjure_cycle.py |
+| 34716-34925 | 34721-34922 | 7379 | utf-8 | bb7becba709230a3b99b7df60c2381cbc17f309f47e33d8613a5d251e83aec70 | benchmarks/testing_other_di/profile_construction_lane.py |
+| 34926-35872 | 34931-35869 | 26785 | utf-8 | 244411264af150737d8dc99b6a63b9e5f14e748972c85f27676715d13921b6fa | benchmarks/testing_other_di/profile_deep_all_di_transient_only_no_singletons.py |
 | 35873-36136 | 35878-36133 | 8469 | utf-8 | 80b26d9979c2178712627fbc2ffd7127690795b934e2949eb4b85e4f57910af3 | benchmarks/testing_other_di/profile_meld_entry_frame_overhead.py |
 | 36137-36278 | 36142-36275 | 4844 | utf-8 | f2e55220685322ce535936ad00addcde8f918349b8e6f0c76c436044995df8e6 | benchmarks/testing_other_di/profile_melder_hot_path.py |
 | 36279-36398 | 36284-36395 | 3900 | utf-8 | 6bf318b6c9fc888db4d8c2c885b38b4dcc343c77a03092850ea40bd52ce3557d | benchmarks/testing_other_di/profile_melder_setup.py |
 | 36399-36778 | 36404-36775 | 12972 | utf-8 | 09f2c23e8e45c9144dc45296ec066c07647e911cfc9d69fd572a79f39f596afa | benchmarks/testing_other_di/profile_phase_scheduler_breakdown.py |
-| 36779-37269 | 36784-37266 | 18143 | utf-8 | d592d5f982a2b4f8000834d0bce2beb8832771826f4ac5d0ccce7a756070dc09 | benchmarks/testing_other_di/profile_scope_cycle_contention.py |
-| 37270-37549 | 37275-37546 | 9119 | utf-8 | e96068a6a0f2dfd2de50032dac4080483acfddf272f99de6a7449261fb7420a0 | benchmarks/testing_other_di/profile_tail_stall_attribution.py |
+| 36779-37269 | 36784-37266 | 18167 | utf-8 | ff495e37e275aef04cd68942c35a4a80ee2b050ee56751a97f8d800523c8615e | benchmarks/testing_other_di/profile_scope_cycle_contention.py |
+| 37270-37549 | 37275-37546 | 9131 | utf-8 | 02137abcbd4bbb6b0a9e351e111216a6a0ea48082f7c31206ee174a72244e967 | benchmarks/testing_other_di/profile_tail_stall_attribution.py |
 | 37550-37595 | 37555-37592 | 1015 | utf-8 | 6ea47e224025b9fd1a5b89837baa97e4e25fa1ec820a331885551fb68d6d7ecd | benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py |
-| 37596-39128 | 37601-39125 | 54151 | utf-8 | ac05403f885d5c94d96e6ad1314526cd4c4042bbe919d53b26265ee3e76263da | benchmarks/testing_other_di/run_codegen_benchmark_deltas.py |
+| 37596-39128 | 37601-39125 | 54151 | utf-8 | ffa9b2c3cd7ec1ab877fb86262241aaa383ed1a5faef6e0d1d70d6470b307d7b | benchmarks/testing_other_di/run_codegen_benchmark_deltas.py |
 | 39129-39884 | 39134-39881 | 26077 | utf-8 | 8a74b09d9b1be947c13a19c56352c50a1d662d69d8d6237ad1f94ab21b8fb73d | benchmarks/testing_other_di/run_snapshot_timings.py |
-| 39885-40523 | 39890-40520 | 19890 | utf-8 | 6529e036e4aa106eb64b3b2ff11cbbd8043f276083a92171aa17d91c1b236b67 | benchmarks/testing_other_di/test_all_di_systems.py |
+| 39885-40523 | 39890-40520 | 19893 | utf-8 | 76e70a53a05e2efc575cd89e7ae514d26c4f67b544bfc899e4353b1cfa11cf32 | benchmarks/testing_other_di/test_all_di_systems.py |
 | 40524-40643 | 40529-40640 | 3886 | utf-8 | 4bf203a3ed9a2162b6939694433ad93e74505e362982ae79b0c43288a450580b | benchmarks/testing_other_di/test_bind_conjure_cycle_benchmark.py |
 | 40644-40813 | 40649-40810 | 4456 | utf-8 | c953a51749541f84a39c432419058b224a236b27cbba1a41982554d82a97850f | benchmarks/testing_other_di/test_bool_vs_len_perf.py |
-| 40814-41333 | 40819-41330 | 16763 | utf-8 | 6ec1d8081ae16c95a3d09ca8c4a8ad1ae78f18b08a2408eb96201f849a58a7a4 | benchmarks/testing_other_di/test_conduit_integration_perf_deep_graphs.py |
+| 40814-41333 | 40819-41330 | 16811 | utf-8 | e5f414a8a02f6167dcbe7ae2bc3c4a81ed677e5f3ff219f194b5aef834da3f7c | benchmarks/testing_other_di/test_conduit_integration_perf_deep_graphs.py |
 | 41334-42485 | 41339-42482 | 34974 | utf-8 | 40940def7d45b152f154e37333bce25a332a5a035fbc90f97bae2b7d93628b6e | benchmarks/testing_other_di/test_creation_gate_primitives_perf.py |
 | 42486-42629 | 42491-42626 | 4033 | utf-8 | 426b195fd341f17ddaacea32aaf0c180ad030faea12103b1c651f0b4131a15da | benchmarks/testing_other_di/test_data_gc.py |
 | 42630-42846 | 42635-42843 | 6136 | utf-8 | 9df36aff363a3f61171f7015522d10d22a4d31d791e1c106b49fcce1ea8ecf92 | benchmarks/testing_other_di/test_data_gc_extended_fixed.py |
-| 42847-43686 | 42852-43683 | 26905 | utf-8 | 6455334a9b93805bad9115b49cbbd4ef45f9144cb153faf4a7d87d41d7860476 | benchmarks/testing_other_di/test_deep_all_di_transient_only_no_singletons.py |
-| 43687-44282 | 43692-44279 | 19352 | utf-8 | 94b726a8372e155469308b13d3facc1b80652d9b277d6e70daeb5d38fa9e059f | benchmarks/testing_other_di/test_di_perf_basic.py |
-| 44283-45105 | 44288-45102 | 26635 | utf-8 | 53e2f7ed2219a54c30c8bce5f3169ab46466f5f6c918968feb061f347095c83a | benchmarks/testing_other_di/test_di_perf_overhead_suite.py |
-| 45106-45529 | 45111-45526 | 14164 | utf-8 | aacc116d17717783c7d94d76be21830bd04bb9aaea518b627d0b1b182ae9d970 | benchmarks/testing_other_di/test_family_lane_harness.py |
+| 42847-43686 | 42852-43683 | 26917 | utf-8 | ad80f9a731330443491f4ee9fe7795b62dea8c882a9adad3dfad5628abe0dfc5 | benchmarks/testing_other_di/test_deep_all_di_transient_only_no_singletons.py |
+| 43687-44282 | 43692-44279 | 19373 | utf-8 | 24359687d2e949dde1a94ac8bec545a022eff74347fecbe401b93582c5e3cab3 | benchmarks/testing_other_di/test_di_perf_basic.py |
+| 44283-45105 | 44288-45102 | 26659 | utf-8 | 0508c3f56d9cb801f1d035bf08177453e979aa7d56f0e1d3888aec3cc11487bf | benchmarks/testing_other_di/test_di_perf_overhead_suite.py |
+| 45106-45529 | 45111-45526 | 14176 | utf-8 | 8d232ff04399e76fcd1ee6be34ed6802520b4c056eb5be26e0d3f50ccaeacccd | benchmarks/testing_other_di/test_family_lane_harness.py |
 | 45530-46831 | 45535-46828 | 34870 | utf-8 | 6615ad81b2d2fca259813ef86f5383c67dca5fcc390f43fd12f63e7c17f3a865 | benchmarks/testing_other_di/test_fast_switch_three_mode_orchestrated_perf.py |
 | 46832-49133 | 46837-49130 | 70779 | utf-8 | 280479bb4032c6bffe167efb20d3f502312297b72507b46b4365635b8b1e3ec1 | benchmarks/testing_other_di/test_local_alias_vs_direct_attr_perf.py |
 | 49134-50094 | 49139-50091 | 33845 | utf-8 | 5588e39298874a9be637460d3bc359a019f23163752cef5c2f5c1124cf140004 | benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py |
-| 50095-50431 | 50100-50428 | 13774 | utf-8 | 8768c710c4b2ac975c9b6e0807a7f988c41e4363c5e38e5b10b6051d918b34b5 | benchmarks/testing_other_di/test_melder_gauntlet.py |
+| 50095-50431 | 50100-50428 | 13837 | utf-8 | 2eed3245c8a80d43637a994517b0f7990a1d70e21e85da7e55a86c451023fbea | benchmarks/testing_other_di/test_melder_gauntlet.py |
 | 50432-50510 | 50437-50507 | 2265 | utf-8 | d73d82244f0aba1c18514aabfd724a826a118c9484dfb754aec4f0d73323c96f | benchmarks/testing_other_di/test_melder_gauntlet_cprofile.py |
 | 50511-50616 | 50516-50613 | 3619 | utf-8 | b02ff63cf3b2c8251c6f185de5b029f03d15f4b28566264e398f10a43617676b | benchmarks/testing_other_di/test_melder_gauntlet_gc_probe.py |
-| 50617-50975 | 50622-50972 | 11435 | utf-8 | 3ece6a97ef98be46eb57e787aac680345e2e55cb2fb34b01d8f77a5a80a1ffab | benchmarks/testing_other_di/test_melder_hotpath_profiles.py |
+| 50617-50975 | 50622-50972 | 11453 | utf-8 | c87777b11437bef384a1af27f05d12eb908c7377a4f979c81ecfb4b7fe07d298 | benchmarks/testing_other_di/test_melder_hotpath_profiles.py |
 | 50976-51904 | 50981-51901 | 32910 | utf-8 | 4ac3a0a3e07feae063f725ad18e761a5156ca4028fb471dd79047bb34a2eb2c2 | benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py |
-| 51905-52353 | 51910-52350 | 14160 | utf-8 | 37f023607172dd4e657dd68c309b05b060c23b7c3ddf39b29f9faaf6088583cf | benchmarks/testing_other_di/test_melder_single_meld_lock_and_check_cleaned.py |
-| 52354-53014 | 52359-53011 | 22251 | utf-8 | 0685f27ae11ba5d71db53dd788ed2ae51d77a052d0f043ebc1e488ba31d36189 | benchmarks/testing_other_di/test_multithreading_di.py |
-| 53015-53787 | 53020-53784 | 22651 | utf-8 | 8eacc242bef29f8a94cc2a5029c623313c7036783de384a6f3d47ecea3d60d9e | benchmarks/testing_other_di/test_overrides_all.py |
+| 51905-52353 | 51910-52350 | 14163 | utf-8 | 216d23fca0623b1ffba568c4cf769b2db2148201665e7ed76986cfc9d05cf804 | benchmarks/testing_other_di/test_melder_single_meld_lock_and_check_cleaned.py |
+| 52354-53014 | 52359-53011 | 22263 | utf-8 | abd84c14e6aff146eb58a904b94ae0be74a366f17c4ebb7f43cb058c8fa4e835 | benchmarks/testing_other_di/test_multithreading_di.py |
+| 53015-53787 | 53020-53784 | 22651 | utf-8 | 5a8adde1490e7a084768ec364f4310d54c8c2373a64ad884abc303b5b1af9fff | benchmarks/testing_other_di/test_overrides_all.py |
 | 53788-54634 | 53793-54631 | 31891 | utf-8 | 413ae6045e3d9f45c81aef773fb7295c3795a6d043d8f281a0c6f447053c8c4b | benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py |
-| 54635-56600 | 54640-56597 | 76096 | utf-8 | 75197362c8e1539109dbc623e26986a809c9f326984480e2896f1b2e495fad69 | benchmarks/testing_other_di/test_real_world_gauntlet.py |
+| 54635-56600 | 54640-56597 | 76159 | utf-8 | 56e1579121344b45b9da7fe42c20e620d584316ed33660e74ab83001aea6bdc9 | benchmarks/testing_other_di/test_real_world_gauntlet.py |
 | 56601-56672 | 56606-56669 | 2072 | utf-8 | 9fa0217039115330bdc6ccb77ca6c5505996ae4b869698751da4c1f6b9da0c91 | benchmarks/testing_other_di/test_real_world_gauntlet_cprofile.py |
-| 56673-58736 | 56678-58733 | 65574 | utf-8 | 36c358567675fc9be3959b989e3c781b471ef8d296586b09edcf062c58cb63b7 | benchmarks/testing_other_di/test_shallow_all.py |
-| 58737-59216 | 58742-59213 | 14686 | utf-8 | bd71cb7bce51cf56c4045d7821bada10ba8744748c5449331a985be04931f3ec | benchmarks/testing_other_di/test_shallow_all_diagnostics.py |
+| 56673-58736 | 56678-58733 | 65601 | utf-8 | e854922e9ea33a80df7c6eeb9e0a33662f7c21a218507aceaff68a11f349c52d | benchmarks/testing_other_di/test_shallow_all.py |
+| 58737-59216 | 58742-59213 | 14692 | utf-8 | fd9bd411f3e4693742030feb2360f6a277a9a309847f2ea9ab6f5b67e0cf723f | benchmarks/testing_other_di/test_shallow_all_diagnostics.py |
 | 59217-59604 | 59222-59601 | 13193 | utf-8 | ec7dc25f77830eb63031dcc6973ba4a5f09a580dbff61a1f17fab8c6d3ea6924 | benchmarks/testing_other_di/test_shallow_all_thread_scalling.py |
 | 59605-59927 | 59610-59924 | 10691 | utf-8 | 6c855270ef0e421afc0e2467375d46c3092c036b2e190c3cdd12bd303ce7417e | benchmarks/testing_other_di/test_shallow_diagnostics.py |
-| 59928-60115 | 59933-60112 | 6721 | utf-8 | ab62442e3e2946b9e364b240680aad435f2e5f160e4da2f9b07426290ad4787c | benchmarks/testing_other_di/test_unroll_locals_microbench.py |
-| 60116-60290 | 60121-60287 | 6497 | utf-8 | c19ed4366f17e835a642eaf99527b6db0e5b3e7cd3f3710dce72ffa934e40d7f | benchmarks/testing_other_di/test_unroll_path_diagnostic.py |
+| 59928-60115 | 59933-60112 | 6730 | utf-8 | fd37689f9434810fae37ddb92fb3c41ac31f08b615baf480be293ac1d742e141 | benchmarks/testing_other_di/test_unroll_locals_microbench.py |
+| 60116-60290 | 60121-60287 | 6500 | utf-8 | dedd7934b0c6ddbd5869bc8b0c1a120ca948ad5183c3dd7de73c6b6c76faf82a | benchmarks/testing_other_di/test_unroll_path_diagnostic.py |
 | 60291-60304 | 60296-60301 | 152 | utf-8 | 30cc1a9ea0d0d685304c649e8f00219402c3f8cb355c88a7c6cc4db0bc1b9c91 | codecov.yml |
 | 60305-60334 | 60310-60331 | 1174 | utf-8 | 8583142ae796edc8b024ee04d054914ecd9771bb1b80749e9d486767291f183c | docs/advanced/checkpoints.md |
 | 60335-60363 | 60340-60360 | 1032 | utf-8 | 1fe5c463e34e4b0e01a8e8442012192a645231db19da32fbefb7340369f3e4d4 | docs/advanced/clusters.md |

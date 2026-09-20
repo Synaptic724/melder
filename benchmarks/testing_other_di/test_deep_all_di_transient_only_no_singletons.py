@@ -159,7 +159,7 @@ def _melder_build_transient(*, frame: str, classes: tuple[type, ...], root_cls: 
 
 
 def _melder_get(state: _MelderState) -> Any:
-    return state.conduit.meld(spell=state.root_id)
+    return state.conduit.meld(spell_id=state.root_id)
 
 
 def _melder_get_alias(state: _MelderState) -> Any:
@@ -172,7 +172,7 @@ def _melder_get_alias(state: _MelderState) -> Any:
     """
     conduit = state.conduit
     root_id = state.root_id
-    return conduit.meld(spell=root_id)
+    return conduit.meld(spell_id=root_id)
 
 
 def _melder_cleanup(state: _MelderState) -> None:
@@ -689,10 +689,10 @@ def test_perf_mixed_workload_depth7_depth9_transient(lib: str) -> None:
             t0 = time.perf_counter()
             for i in range(iterations):
                 if i % 2 == 0:
-                    r = conduit.meld(spell=root9_id)
+                    r = conduit.meld(spell_id=root9_id)
                     assert isinstance(r, Depth9Root)
                 else:
-                    r = conduit.meld(spell=root7_id)
+                    r = conduit.meld(spell_id=root7_id)
                     assert isinstance(r, Depth7Root)
             total_s = time.perf_counter() - t0
         finally:

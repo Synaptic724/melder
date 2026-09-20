@@ -2,12 +2,12 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2694582,
+        "bytes": 2694966,
         "lines": 66514,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "c96853d4250d99bedd8544118fbdf6de997d16b3cabc95b02fdeb92a97e53ac0"
+        "sha256": "7ff3630d3622197b98257ef2c64b1106c9fe3a7f2984ae7e5ffa60709ebb16f6"
       },
-      "content_bytes": 2494619,
+      "content_bytes": 2495003,
       "content_lines": 63644,
       "file_count": 358,
       "files": {
@@ -1434,9 +1434,9 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/dump_emitted_executor_source.py": {
-          "content_bytes": 7757,
+          "content_bytes": 7763,
           "content_lines": 209,
-          "content_sha256": "efd357537aec02ee7484cdbc9560f63c112775321f8662f715d625975dfa9492",
+          "content_sha256": "1c04aebe7bb11e929454ff629376556412cc4009c432f1d57905a919a494a95c",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/melder_gauntlet_cprofile_runner.py": {
@@ -1458,21 +1458,21 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/profile_bind_conjure_cycle.py": {
-          "content_bytes": 25645,
+          "content_bytes": 25651,
           "content_lines": 688,
-          "content_sha256": "65aeff37d101b54c62e0e8c028d27db59f73cf9db66f738e3a8bb1a722ab17c3",
+          "content_sha256": "9fdd4b8a99ad909593b91a8dcceffdd27c239a106e3af3c65ab4dc664be5f738",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/profile_construction_lane.py": {
-          "content_bytes": 7373,
+          "content_bytes": 7379,
           "content_lines": 202,
-          "content_sha256": "87f1b69a41f10cedaf2aa4730e2df5c47ebcbdb0c8099f6e0b3875a209fa7b91",
+          "content_sha256": "bb7becba709230a3b99b7df60c2381cbc17f309f47e33d8613a5d251e83aec70",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/profile_deep_all_di_transient_only_no_singletons.py": {
-          "content_bytes": 26779,
+          "content_bytes": 26785,
           "content_lines": 939,
-          "content_sha256": "0f90ccb8e6fb840d9d51fe2b0c6912d1419ca097d294582f80443909f7e812d1",
+          "content_sha256": "244411264af150737d8dc99b6a63b9e5f14e748972c85f27676715d13921b6fa",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/profile_meld_entry_frame_overhead.py": {
@@ -1500,15 +1500,15 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/profile_scope_cycle_contention.py": {
-          "content_bytes": 18143,
+          "content_bytes": 18167,
           "content_lines": 483,
-          "content_sha256": "d592d5f982a2b4f8000834d0bce2beb8832771826f4ac5d0ccce7a756070dc09",
+          "content_sha256": "ff495e37e275aef04cd68942c35a4a80ee2b050ee56751a97f8d800523c8615e",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/profile_tail_stall_attribution.py": {
-          "content_bytes": 9119,
+          "content_bytes": 9131,
           "content_lines": 272,
-          "content_sha256": "e96068a6a0f2dfd2de50032dac4080483acfddf272f99de6a7449261fb7420a0",
+          "content_sha256": "02137abcbd4bbb6b0a9e351e111216a6a0ea48082f7c31206ee174a72244e967",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py": {
@@ -1520,7 +1520,7 @@
         "benchmarks/testing_other_di/run_codegen_benchmark_deltas.py": {
           "content_bytes": 54151,
           "content_lines": 1525,
-          "content_sha256": "ac05403f885d5c94d96e6ad1314526cd4c4042bbe919d53b26265ee3e76263da",
+          "content_sha256": "ffa9b2c3cd7ec1ab877fb86262241aaa383ed1a5faef6e0d1d70d6470b307d7b",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/run_snapshot_timings.py": {
@@ -1530,9 +1530,9 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_all_di_systems.py": {
-          "content_bytes": 19890,
+          "content_bytes": 19893,
           "content_lines": 631,
-          "content_sha256": "6529e036e4aa106eb64b3b2ff11cbbd8043f276083a92171aa17d91c1b236b67",
+          "content_sha256": "76e70a53a05e2efc575cd89e7ae514d26c4f67b544bfc899e4353b1cfa11cf32",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_bind_conjure_cycle_benchmark.py": {
@@ -1548,9 +1548,9 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_conduit_integration_perf_deep_graphs.py": {
-          "content_bytes": 16763,
+          "content_bytes": 16811,
           "content_lines": 512,
-          "content_sha256": "6ec1d8081ae16c95a3d09ca8c4a8ad1ae78f18b08a2408eb96201f849a58a7a4",
+          "content_sha256": "e5f414a8a02f6167dcbe7ae2bc3c4a81ed677e5f3ff219f194b5aef834da3f7c",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_creation_gate_primitives_perf.py": {
@@ -1572,27 +1572,27 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_deep_all_di_transient_only_no_singletons.py": {
-          "content_bytes": 26905,
+          "content_bytes": 26917,
           "content_lines": 832,
-          "content_sha256": "6455334a9b93805bad9115b49cbbd4ef45f9144cb153faf4a7d87d41d7860476",
+          "content_sha256": "ad80f9a731330443491f4ee9fe7795b62dea8c882a9adad3dfad5628abe0dfc5",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_di_perf_basic.py": {
-          "content_bytes": 19352,
+          "content_bytes": 19373,
           "content_lines": 588,
-          "content_sha256": "94b726a8372e155469308b13d3facc1b80652d9b277d6e70daeb5d38fa9e059f",
+          "content_sha256": "24359687d2e949dde1a94ac8bec545a022eff74347fecbe401b93582c5e3cab3",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_di_perf_overhead_suite.py": {
-          "content_bytes": 26635,
+          "content_bytes": 26659,
           "content_lines": 815,
-          "content_sha256": "53e2f7ed2219a54c30c8bce5f3169ab46466f5f6c918968feb061f347095c83a",
+          "content_sha256": "0508c3f56d9cb801f1d035bf08177453e979aa7d56f0e1d3888aec3cc11487bf",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_family_lane_harness.py": {
-          "content_bytes": 14164,
+          "content_bytes": 14176,
           "content_lines": 416,
-          "content_sha256": "aacc116d17717783c7d94d76be21830bd04bb9aaea518b627d0b1b182ae9d970",
+          "content_sha256": "8d232ff04399e76fcd1ee6be34ed6802520b4c056eb5be26e0d3f50ccaeacccd",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_fast_switch_three_mode_orchestrated_perf.py": {
@@ -1614,9 +1614,9 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_melder_gauntlet.py": {
-          "content_bytes": 13774,
+          "content_bytes": 13837,
           "content_lines": 329,
-          "content_sha256": "8768c710c4b2ac975c9b6e0807a7f988c41e4363c5e38e5b10b6051d918b34b5",
+          "content_sha256": "2eed3245c8a80d43637a994517b0f7990a1d70e21e85da7e55a86c451023fbea",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_melder_gauntlet_cprofile.py": {
@@ -1632,9 +1632,9 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_melder_hotpath_profiles.py": {
-          "content_bytes": 11435,
+          "content_bytes": 11453,
           "content_lines": 351,
-          "content_sha256": "3ece6a97ef98be46eb57e787aac680345e2e55cb2fb34b01d8f77a5a80a1ffab",
+          "content_sha256": "c87777b11437bef384a1af27f05d12eb908c7377a4f979c81ecfb4b7fe07d298",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py": {
@@ -1644,21 +1644,21 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_melder_single_meld_lock_and_check_cleaned.py": {
-          "content_bytes": 14160,
+          "content_bytes": 14163,
           "content_lines": 441,
-          "content_sha256": "37f023607172dd4e657dd68c309b05b060c23b7c3ddf39b29f9faaf6088583cf",
+          "content_sha256": "216d23fca0623b1ffba568c4cf769b2db2148201665e7ed76986cfc9d05cf804",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_multithreading_di.py": {
-          "content_bytes": 22251,
+          "content_bytes": 22263,
           "content_lines": 653,
-          "content_sha256": "0685f27ae11ba5d71db53dd788ed2ae51d77a052d0f043ebc1e488ba31d36189",
+          "content_sha256": "abd84c14e6aff146eb58a904b94ae0be74a366f17c4ebb7f43cb058c8fa4e835",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_overrides_all.py": {
           "content_bytes": 22651,
           "content_lines": 765,
-          "content_sha256": "8eacc242bef29f8a94cc2a5029c623313c7036783de384a6f3d47ecea3d60d9e",
+          "content_sha256": "5a8adde1490e7a084768ec364f4310d54c8c2373a64ad884abc303b5b1af9fff",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py": {
@@ -1668,9 +1668,9 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_real_world_gauntlet.py": {
-          "content_bytes": 76096,
+          "content_bytes": 76159,
           "content_lines": 1958,
-          "content_sha256": "75197362c8e1539109dbc623e26986a809c9f326984480e2896f1b2e495fad69",
+          "content_sha256": "56e1579121344b45b9da7fe42c20e620d584316ed33660e74ab83001aea6bdc9",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_real_world_gauntlet_cprofile.py": {
@@ -1680,15 +1680,15 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_shallow_all.py": {
-          "content_bytes": 65574,
+          "content_bytes": 65601,
           "content_lines": 2056,
-          "content_sha256": "36c358567675fc9be3959b989e3c781b471ef8d296586b09edcf062c58cb63b7",
+          "content_sha256": "e854922e9ea33a80df7c6eeb9e0a33662f7c21a218507aceaff68a11f349c52d",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_shallow_all_diagnostics.py": {
-          "content_bytes": 14686,
+          "content_bytes": 14692,
           "content_lines": 472,
-          "content_sha256": "bd71cb7bce51cf56c4045d7821bada10ba8744748c5449331a985be04931f3ec",
+          "content_sha256": "fd9bd411f3e4693742030feb2360f6a277a9a309847f2ea9ab6f5b67e0cf723f",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_shallow_all_thread_scalling.py": {
@@ -1704,15 +1704,15 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_unroll_locals_microbench.py": {
-          "content_bytes": 6721,
+          "content_bytes": 6730,
           "content_lines": 180,
-          "content_sha256": "ab62442e3e2946b9e364b240680aad435f2e5f160e4da2f9b07426290ad4787c",
+          "content_sha256": "fd37689f9434810fae37ddb92fb3c41ac31f08b615baf480be293ac1d742e141",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_unroll_path_diagnostic.py": {
-          "content_bytes": 6497,
+          "content_bytes": 6500,
           "content_lines": 167,
-          "content_sha256": "c19ed4366f17e835a642eaf99527b6db0e5b3e7cd3f3710dce72ffa934e40d7f",
+          "content_sha256": "dedd7934b0c6ddbd5869bc8b0c1a120ca948ad5183c3dd7de73c6b6c76faf82a",
           "source_encoding": "utf-8"
         },
         "codecov.yml": {
@@ -2164,9 +2164,9 @@
         "bytes": 60369,
         "lines": 380,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "a1dd23ad8d3284ccaab8bb0e5459ed0d01582587ffb1f1da67060ce187b76725"
+        "sha256": "ca48e5b28d3ba6ba2789efcb8bcc89ae6341fa0e1cd94ecb0361bc0d97208cc3"
       },
-      "source_fingerprint": "0df387b49e72842d9704f1490a1a8363e3ff8f53f3359c99ed123cb40e639950"
+      "source_fingerprint": "672e05c9834f7097574228a8e54388017a6680de8504657b380e769ba1a490e2"
     },
     "src": {
       "bundle": {
