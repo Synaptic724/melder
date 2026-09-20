@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell.py",
- "source_sha256": "4b0fe3c2aa973b6e3b58f76647d41e60013c8a555e02c307f33174f7254a873b",
+ "source_sha256": "b6f2704ed6b7e97d073fca6a2d325c4ec866aa3b21055912cb4ffe113c5f7e4e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell": {
@@ -43,6 +43,7 @@
     "owner_conduit_info",
     "requirements",
     "resolution_frame",
+    "resolvable",
     "symbolic_graph",
     "system_state",
     "validated",
@@ -50,20 +51,22 @@
     "validation_result_phase6"
    ],
    "shape": {
-    "method_count": 31,
+    "method_count": 32,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c22141a59e9588ed297385ff13d20dbf528de2b4d4d09c90a532ad7f82bbde05",
+   "span_sha256": "bc89f608bd842a33f6402079a14a77b32fec75ed9d5153a6823163f85e6bf0d7",
    "role": "Canonical bound spell runtime record.",
    "responsibilities": [
     "wraps one bound target with lineage, lifecycle, and permission policy",
+    "retains read-only per-version resolution capability independently of activity and compilation validity",
     "retains the bind-resolved ordered disposal list without copying or clearing borrowed contents at cleanup",
     "owns spell-local hooks, build artifacts, and execution-plan metadata",
     "lazily owns the SpellCompiler and spell-owned creation-context machinery",
     "records conduit ownership changes and publishes structural changes into SpellSystemStates"
    ],
    "owns_state": [
+    "_resolvable",
     "_compiler_artifact",
     "_creation_context",
     "_creation_context_factory",

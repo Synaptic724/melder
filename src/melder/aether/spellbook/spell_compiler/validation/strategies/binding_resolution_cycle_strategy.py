@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
@@ -36,6 +37,8 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
 
     Contract:
         - Builds a binding-key graph from available requirements.
+        - Excludes non-resolvable constructors and resolved OVERRIDE_REQUIRED sockets.
+          Descriptive references are never reconstruction of a construction edge.
         - Reports cycles reachable from the spell under validation.
         - Does not mutate spells, spellbooks, or requirements.
 
@@ -108,6 +111,8 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         spell = context.spell
         spellbook = context.spellbook
         if spell is None or spellbook is None:
+            return
+        if not spell.resolvable:
             return
 
         root_key = spell.key
@@ -185,6 +190,9 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
               canonical key, so no per-build re-normalization happens here.
             - The result is treated as immutable by all consumers; pass-cache
               reuse depends on that.
+            - Consults durable Phase-3 topology when present to exclude required
+              supplied inputs. Before topology exists, declaration-only analysis
+              remains available; non-resolvable constructors never contribute edges.
         Args:
             spellbook: Owning Spellbook whose local pool should be modeled.
             cancel_event: Optional cancellation signal checked per spell.
@@ -201,6 +209,9 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
+            if not spell_instance.resolvable:
+                continue
+
             requirements = spell_instance.requirements
             if requirements is None:
                 continue
@@ -212,8 +223,14 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
                 continue
 
             spell_key = spell_instance.key
+            topology = spell_instance._spell_system_states.get_local_topology(spell_instance.spell_index)
             adjacency: Optional[Set[Tuple[str, str]]] = None
             for param in parameters:
+                if topology is not None and any(
+                        socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
+                        for socket in topology.get_sockets_for_param(param.name)
+                ):
+                    continue
                 target_key = self._binding_key_for_requirement(param)
                 if target_key is None:
                     continue

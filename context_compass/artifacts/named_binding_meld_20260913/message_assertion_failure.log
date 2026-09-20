@@ -1,0 +1,36 @@
+human and machine identity lanes resolved one live service
+.meld('MyService') before/after explicit success: "[MELD] No spell found for frame='myservice', binding='__default__'."
+.meld('MyService') before/after explicit success: "[MELD] No spell found for frame='myservice', binding='__default__'."
+.meld('MyService') before/after explicit success: "[MELD] No spell found for frame='myservice', binding='__default__'."
+.Explicit string/class binding and spell_id: same MyService instance
+.Explicit string/class binding and spell_id: same MyService instance
+.Explicit string/class binding and spell_id: same MyService instance
+.meld(binding_name='test'): normalize_spell_key requires at least one of `spell` or `spellframe`.
+.meld(binding_name='test'): normalize_spell_key requires at least one of `spell` or `spellframe`.
+.meld(binding_name='test'): normalize_spell_key requires at least one of `spell` or `spellframe`.
+.meld('test'): "[MELD] No spell found for frame='test', binding='__default__'."
+.F
+================================== FAILURES ===================================
+_ test_binding_value_or_assignment_text_is_not_a_spell_name[automatic_prebind-binding_name="test"] _
+
+named_binding_runtime = (<Conduit name=default id=01M2D9PQH5XGABSKR8BVHZQP65>, 'f9ef50ef19cd816df68076c7b8dd4173d13c7bf5d0572d6800783090102d2f8a')
+positional_text = 'binding_name="test"'
+
+    @pytest.mark.parametrize("positional_text", ("test", 'binding_name="test"'))
+    def test_binding_value_or_assignment_text_is_not_a_spell_name(
+            named_binding_runtime: tuple[Conduit, str],
+            positional_text: str,
+    ) -> None:
+        """Prove positional text is interpreted as a spell name, without keyword parsing."""
+        conduit, _ = named_binding_runtime
+>       with pytest.raises(KeyError, match="binding='__default__'") as failure:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: "binding='__default__'"
+E         Actual message: '\'[MELD] No spell found for frame=\\\'binding_name="test"\\\', binding=\\\'__default__\\\'.\''
+
+tests\experimentation\test_meld_human_spell_name_string_experiment.py:138: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/experimentation/test_meld_human_spell_name_string_experiment.py::test_binding_value_or_assignment_text_is_not_a_spell_name[automatic_prebind-binding_name="test"]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 11 passed in 0.50s

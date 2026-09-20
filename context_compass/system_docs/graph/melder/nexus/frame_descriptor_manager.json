@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/frame_descriptor_manager.py",
- "source_sha256": "48dd3f40e1554f793289600e3a63c7c29913766f56804bc456fd8e8b12ed2ef7",
+ "source_sha256": "35af138e3a44bdfc6818dc00a4a0aaa46ea29bea9b366e4e053863061e52daa6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.frame_descriptor_manager": {
@@ -14,7 +14,8 @@
    "role": "Sole owner of the frame-name to FrameDescriptor registry and canonical record publication.",
    "responsibilities": [
     "publish and remove frame, conduit and spell records",
-    "refresh frame posture before passive publication"
+    "refresh frame posture before passive publication",
+    "publishes native resolution capability and value-only selected dependency, supplied-reference and base links"
    ],
    "phases": [
     "runtime",
@@ -37,17 +38,18 @@
     "list_published_frame_names"
    ],
    "shape": {
-    "method_count": 18,
+    "method_count": 19,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "fcfc90be29a0b333eae809c61104a01c42b145edca70a59d712c021ef2a8355e",
+   "span_sha256": "ee92aca13a2b1974aba5219fb51b613f6348cc718b58f3d185d8e9365b9d6fe2",
    "role": "Nexus-owned frame descriptor and canonical record manager.",
    "responsibilities": [
     "owns frame descriptors by frame name",
     "publishes frame, conduit, and spell records",
     "owns Nexus-managed frame record creation and lookup",
-    "refreshes frame posture cache from Aether"
+    "refreshes frame posture cache from Aether",
+    "publishes native resolution capability and value-only selected dependency, supplied-reference and base links"
    ],
    "owns_state": [
     "_frame_descriptors_by_name",

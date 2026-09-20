@@ -84,21 +84,20 @@ class CompilerPhase10(Cleanable):
 
         Contract:
             - Delegates directly to `SpellCodegenPlanner.build(...)`.
-            - Treats the `spell` parameter as compatibility-only for the
-              current public phase signature.
+            - Uses the Spell capability to skip non-resolvable definitions before
+              constructing the planner or requiring an executable model.
 
         Args:
             spell:
-                Legacy phase argument retained so the public compiler method
-                shape stays stable while this wrapper substitutes the live
-                implementation.
+                Spell whose native capability determines plan eligibility.
             artifact:
                 Compiler artifact receiving `SpellCodegenPlan`.
 
         Returns:
             None.
         """
-        _ = spell
+        if not spell.resolvable:
+            return
         planner = self._codegen_planner
         if planner is None:
             with CompilerPhase10._lazy_import_lock:

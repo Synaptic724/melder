@@ -1,0 +1,18 @@
+{
+  "src_architecture.md": {
+    "- Updated: 2026-09-13": 1,
+    "`src/melder/aether/spellbook/bind/bind.py:364` -": 1,
+    "verified_at: 2026-09-05T12:55:45Z": 1,
+    "end_line: 915": 1,
+    "loc: 915": 1
+  },
+  "src_components.md": {
+    "- Updated: 2026-09-13": 1,
+    "- src/melder/aether/spellbook/bind/bind.py:241-274 (`bind` return contract)": 1,
+    "`src/melder/aether/spellbook/bind/bind.py:364` -": 1,
+    "in `src_architecture.md`; the call is on 364. The two documents disagreeing": 1,
+    "verified_at: 2026-09-05T12:55:45Z": 1,
+    "end_line: 915": 1,
+    "loc: 915": 1
+  }
+}

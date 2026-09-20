@@ -25,7 +25,7 @@ def main() -> None:
 
     # scopes within the world: lesser conduits
     child = root.create_lesser_conduit()
-    assert root.meld(spell=WorldState) is child.meld(spell=WorldState)
+    assert root.meld(WorldState) is child.meld(WorldState)
     print("scopes via lesser conduits; roots via separate books")
 
 

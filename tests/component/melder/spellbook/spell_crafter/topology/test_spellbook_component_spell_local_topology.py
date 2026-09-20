@@ -74,7 +74,7 @@ def test_component_topology_records_positions_and_optional_flags() -> None:
     Contract:
         - Positions match constructor order.
         - Optional parameters are marked as optional.
-        - Target spell ids include resolved dependencies.
+        - Target spell ids include required DI dependencies, not ordinary defaults.
     Returns:
         None.
     """
@@ -83,12 +83,12 @@ def test_component_topology_records_positions_and_optional_flags() -> None:
     class Consumer:
         """
         Purpose:
-            Provide a spell with required and optional dependencies.
+            Provide a spell with a required dependency and a plain default.
         Contract:
             - Declares a required service and an optional config.
         Args:
             service: Injected BasicService dependency.
-            config: BasicConfig dependency with a default fallback.
+            config: Plain None default; registering BasicConfig must not create an edge.
         """
 
         def __init__(
@@ -103,7 +103,7 @@ def test_component_topology_records_positions_and_optional_flags() -> None:
                 - Stores the service and config on the instance.
             Args:
                 service: Injected BasicService dependency.
-                config: BasicConfig dependency with a default fallback.
+                config: Plain None default; registering BasicConfig must not create an edge.
             Returns:
                 None.
             """
@@ -147,7 +147,8 @@ def test_component_topology_records_positions_and_optional_flags() -> None:
         assert service_socket.socket_kind is SocketKind.NORMAL
         assert config_socket.socket_kind is SocketKind.NORMAL
         assert set(service_socket.target_spell_ids) == {service_id}
-        assert set(config_socket.target_spell_ids) == {config_id}
+        assert not config_socket.target_spell_ids
+        assert config_id not in spell.dependencies
     finally:
         spellbook.cleanup()
 

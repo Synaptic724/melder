@@ -11,6 +11,7 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_pr
 from melder.utilities.custom_exceptions.meld_execution_error import (
     MeldExecutionError,
 )
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -135,6 +136,8 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
               in SpellSystemStates (same surface phase 6 and phase 8 read) and
               stamped per parameter source; it is NEVER inferred from
               dependency count, so one-member collections stay collections.
+            - OVERRIDE_REQUIRED sources are retained even without occurrence edges;
+              signature/reference metadata comes from the same durable topology.
         """
         instance_specs_by_instance_key: Dict[InstanceKey, SpellInjectionInstanceSpec] = {}
         # Per-spell collection-socket sets, resolved lazily once per spell id.
@@ -231,6 +234,20 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                         is_collection=param_is_collection,
                     )
 
+                topology = spell_system_states.get_local_topology_by_id(spell_id)
+                if topology is not None:
+                    for socket in topology.sockets:
+                        if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED:
+                            continue
+                        param_sources[socket.param_name] = SpellInjectionParamSource(
+                            kind="override_required",
+                            dependency_keys=(),
+                            override_key=socket.param_name,
+                            position=socket.position,
+                            parameter_kind=socket.parameter_kind,
+                            referenced_spell_ids=socket.referenced_spell_ids,
+                        )
+
                 if normalized_contract_payload is not None:
                     if "__args__" in normalized_contract_payload:
                         uses_positional_override = True
@@ -252,6 +269,9 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                                 override_key=existing_param_source.override_key or param_name,
                                 contract_key=param_name,
                                 is_collection=existing_param_source.is_collection,
+                                position=existing_param_source.position,
+                                parameter_kind=existing_param_source.parameter_kind,
+                                referenced_spell_ids=existing_param_source.referenced_spell_ids,
                             )
 
                 instance_specs_by_instance_key[instance_key] = SpellInjectionInstanceSpec(

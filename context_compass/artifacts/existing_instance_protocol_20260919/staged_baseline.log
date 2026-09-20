@@ -1,0 +1,44 @@
+FF.                                                                      [100%]
+================================== FAILURES ===================================
+________ test_inactive_bind_rejects_incompatible_protocol_value[False] ________
+
+instance_book = <melder.aether.spellbook.spellbook.Spellbook object at 0x00000247A1AE0010>
+late_bind = False
+
+    @pytest.mark.parametrize("late_bind", (False, True))
+    def test_inactive_bind_rejects_incompatible_protocol_value(instance_book: Spellbook, late_bind: bool) -> None:
+        """The common admission boundary must also reject bad parked values before any selection."""
+        active_id = instance_book.bind(
+            spell=ValidReader(), existence="unique", spellframe=ReaderContract, binding_name="primary",
+        )
+        index = instance_book._spells_by_id[active_id].spell_index
+        if late_bind:
+            instance_book.conjure(dynamic=True)
+>       with pytest.raises(TypeError, match=r"Protocol.*ReaderContract.*Missing members: read"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+context_compass\artifacts\existing_instance_protocol_20260919\test_protocol_paths.py:230: Failed
+________ test_inactive_bind_rejects_incompatible_protocol_value[True] _________
+
+instance_book = <melder.aether.spellbook.spellbook.Spellbook object at 0x00000247A1AE0310>
+late_bind = True
+
+    @pytest.mark.parametrize("late_bind", (False, True))
+    def test_inactive_bind_rejects_incompatible_protocol_value(instance_book: Spellbook, late_bind: bool) -> None:
+        """The common admission boundary must also reject bad parked values before any selection."""
+        active_id = instance_book.bind(
+            spell=ValidReader(), existence="unique", spellframe=ReaderContract, binding_name="primary",
+        )
+        index = instance_book._spells_by_id[active_id].spell_index
+        if late_bind:
+            instance_book.conjure(dynamic=True)
+>       with pytest.raises(TypeError, match=r"Protocol.*ReaderContract.*Missing members: read"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TypeError
+
+context_compass\artifacts\existing_instance_protocol_20260919\test_protocol_paths.py:230: Failed
+=========================== short test summary info ===========================
+FAILED context_compass/artifacts/existing_instance_protocol_20260919/test_protocol_paths.py::test_inactive_bind_rejects_incompatible_protocol_value[False]
+FAILED context_compass/artifacts/existing_instance_protocol_20260919/test_protocol_paths.py::test_inactive_bind_rejects_incompatible_protocol_value[True]
+2 failed, 1 passed, 22 deselected in 0.45s

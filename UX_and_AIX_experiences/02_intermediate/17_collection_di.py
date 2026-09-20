@@ -40,7 +40,7 @@ def main() -> None:
     book.bind(spell=Dispatcher, existence="unique")
     conduit = book.conjure()
 
-    dispatcher = conduit.meld(spell=Dispatcher)
+    dispatcher = conduit.meld(Dispatcher)
     results = [h.handle() for h in dispatcher.handlers]
     assert results == ["email", "sms"]
     print("collection DI delivered all implementations:", results)

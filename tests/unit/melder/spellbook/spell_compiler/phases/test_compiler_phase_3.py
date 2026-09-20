@@ -1,5 +1,6 @@
 """Unit tests for current-surface compiler phase 3 local DAG build."""
 
+import inspect
 import typing
 from types import SimpleNamespace
 from typing import Any, Optional, Union
@@ -82,6 +83,7 @@ def _make_spell_stub(
         spell_name: str,
         binding_name: Optional[str] = None,
         spell_type: SpellType = SpellType.SPELL,
+        resolvable: bool = True,
 ) -> Any:
     """Build a minimal spell stub for Phase 3 matching and run tests."""
     build_details: list[dict[str, Any]] = []
@@ -101,6 +103,7 @@ def _make_spell_stub(
         spell_name=spell_name,
         binding_name=binding_name,
         spell_type=spell_type,
+        resolvable=resolvable,
         spell_index=_SpellIndexStub(spell_id),
         _add_build_details=_add_build_details,
         _build_details_calls=build_details,
@@ -311,7 +314,9 @@ def test_build_local_topology_requires_bound_spell_id(
     )
 
     with pytest.raises(RuntimeError, match=expected_message):
-        phase._build_local_topology(root_spell, graph, {})
+        phase._build_local_topology(
+            root_spell, graph, {}, requirements=SimpleNamespace(parameters=[]), socket_references={},
+        )
 
 
 def test_build_local_topology_builds_descriptors() -> None:
@@ -343,7 +348,14 @@ def test_build_local_topology_builds_descriptors() -> None:
     )
     socket_targets = {("alpha", 0): ["dep1", "dep2"]}
 
-    topology = phase._build_local_topology(root_spell, graph, socket_targets)
+    topology = phase._build_local_topology(
+        root_spell, graph, socket_targets,
+        requirements=SimpleNamespace(parameters=[
+            SimpleNamespace(name="alpha", kind=inspect.Parameter.POSITIONAL_ONLY),
+            SimpleNamespace(name="beta", kind=inspect.Parameter.KEYWORD_ONLY),
+        ]),
+        socket_references={},
+    )
 
     assert topology.spell_id == "root"
     assert len(topology.sockets) == 2
@@ -356,6 +368,8 @@ def test_build_local_topology_builds_descriptors() -> None:
     assert alpha_socket.is_collection is False
     assert alpha_socket.is_optional is False
     assert alpha_socket.target_spell_ids == ("dep1", "dep2")
+    assert alpha_socket.parameter_kind == "POSITIONAL_ONLY"
+    assert beta_socket.parameter_kind == "KEYWORD_ONLY"
 
     assert beta_socket.param_name == "beta"
     assert beta_socket.position == 1
@@ -420,7 +434,7 @@ def test_build_local_frame_dag_requires_bound_spell_index() -> None:
             spell=root_spell,
             spellbook=SimpleNamespace(_spell_id_pool={}),
             spell_system_states=_SpellSystemStatesStub(),
-            requirements=object(),
+            requirements=SimpleNamespace(parameters=[]),
             graph=SpellSymbolicGraph(spell_id="root", dependencies=[]),
             cancellation_event=_CancelStub(is_set=False),
         )
@@ -838,7 +852,7 @@ def test_build_local_frame_dag_skips_unresolved_collection() -> None:
         spell=root_spell,
         spellbook=SimpleNamespace(_spell_id_pool={}),
         spell_system_states=spell_system_states,
-        requirements=object(),
+        requirements=SimpleNamespace(parameters=[]),
         graph=graph,
         cancellation_event=_CancelStub(is_set=False),
     )
@@ -888,7 +902,7 @@ def test_build_local_frame_dag_handles_spellmap_default_success() -> None:
         spell=root_spell,
         spellbook=SimpleNamespace(_spell_id_pool={"dep": dependency_spell}),
         spell_system_states=spell_system_states,
-        requirements=object(),
+        requirements=SimpleNamespace(parameters=[]),
         graph=graph,
         cancellation_event=_CancelStub(is_set=False),
     )
@@ -926,7 +940,7 @@ def test_build_local_frame_dag_ignores_contract_shapes() -> None:
         spell=root_spell,
         spellbook=SimpleNamespace(_spell_id_pool={}),
         spell_system_states=spell_system_states,
-        requirements=object(),
+        requirements=SimpleNamespace(parameters=[]),
         graph=graph,
         cancellation_event=_CancelStub(is_set=False),
     )
@@ -971,7 +985,7 @@ def test_run_phase_local_frame_requires_spell_system_states() -> None:
         spell_name="RootSpell",
     )
     artifact = SpellCompilerArtifact("root")
-    artifact._requirements = SimpleNamespace()
+    artifact._requirements = SimpleNamespace(parameters=[])
     artifact._symbolic_graph = SpellSymbolicGraph(
         spell_id="root",
         dependencies=[],
@@ -1007,10 +1021,10 @@ def test_run_builds_resolution_frame_and_updates_topology(
         spellframe=_ServiceFrame,
         spell_name="DependencySpell",
     )
-    spellbook = SimpleNamespace(_spell_id_pool={"dep": dependency_spell})
+    spellbook = SimpleNamespace(_spell_id_pool={"dep": dependency_spell}, _nexus_publish_enabled=False)
     spell_system_states = _SpellSystemStatesStub()
     artifact = SpellCompilerArtifact("root")
-    artifact._requirements = SimpleNamespace()
+    artifact._requirements = SimpleNamespace(parameters=[])
     artifact._symbolic_graph = SpellSymbolicGraph(
         spell_id="root",
         dependencies=[
@@ -1080,7 +1094,7 @@ def test_run_honors_cancellation_before_local_dag_build() -> None:
         spell_name="RootSpell",
     )
     artifact = SpellCompilerArtifact("root")
-    artifact._requirements = SimpleNamespace()
+    artifact._requirements = SimpleNamespace(parameters=[])
     artifact._symbolic_graph = SpellSymbolicGraph(
         spell_id="root",
         dependencies=[],

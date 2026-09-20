@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/graft_runner.py",
- "source_sha256": "4dedb612226d94b78c675176677e2640195a39c64e35d985a651808054f5191d",
+ "source_sha256": "89a67aab7fd43a1d110f5e0b674157cec39b8f31b47b89514f1f20be3a0e1bd0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.graft_runner": {
@@ -14,7 +14,8 @@
    "role": "Restore grain below the conduit slice: re-integrates one captured spell index into a live host book.",
    "responsibilities": [
     "replay index membership, custody and selection through public verbs only",
-    "fresh index by default; explicit merge uses public bind/notch verbs without mutating index internals"
+    "fresh index by default; explicit merge uses public bind/notch verbs without mutating index internals",
+    "preserves each member resolution capability through selected, parked and merged graft bindings"
    ],
    "phases": [
     "runtime"
@@ -40,7 +41,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "7dc4c9eca8c864546f0470a231120067f23b3272da3f6a27bed79359a4f55b09",
+   "span_sha256": "106fc62cbf00a0327c2bf69ff655a3bf817b62ca02000809a364f5ed7240b1e7",
    "role": "Single-use spell-index graft executor: re-integrates one captured index (members, custody, selection) into a live conjured host book through normal verbs only.",
    "responsibilities": [
     "gates the versioned graft record (RecordVersion MAJOR + graft_kind)",
@@ -50,7 +51,8 @@
     "binds the selected member ACTIVE (fresh index) and parks the rest via bind_inactive",
     "forwards ordered disposal names for every member and carries the new index directly to fresh-graft parking",
     "adopts only a successfully grafted selected member using its returned live binding ID",
-    "emits a detached membership and index-identity report with explicit shortfalls"
+    "emits a detached membership and index-identity report with explicit shortfalls",
+    "preserves each member resolution capability through selected, parked and merged graft bindings"
    ],
    "owns_state": [
     "_record",

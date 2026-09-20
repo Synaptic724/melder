@@ -290,6 +290,7 @@ class _SpellStub:
             resolution_complete: Deferred runtime-resolution completion flag.
         """
         self.spell_id = spell_id
+        self._resolvable = True
         self.spell_name = spell_name
         self.spellframe = spellframe
         self.spell_index = spell_index or _SpellIndexStub(current=spell_id)
@@ -1530,20 +1531,32 @@ def test_ensure_lineage_resolvable_revalidates_unknown_success() -> None:
 
     Contract:
         - run_structural_phases is called for unknown validity.
-        - validation succeeds when validity becomes valid.
+        - Successful structural validation gates and rebuilds conduit-local resolution.
     """
-    meld = _make_meld()
+    spellbook = _SpellbookStub()
+    meld = _make_meld(spellbook=spellbook)
+    resolution_state = _ResolutionStateStub()
     state = _SystemStateStub(validity=SpellValidity.unknown)
     spell = _SpellStub(
         spell_id="spell-1",
         system_state=state,
         validity_after_run=SpellValidity.valid,
+        spellbook=spellbook,
+        spell_system_states=_SpellSystemStatesStub(resolution_state),
     )
+
+    def rebuild_resolution(conduit_id: str, target_spell: _SpellStub) -> None:
+        """Model successful target-local compilation after the old verdict is gated."""
+        assert target_spell is spell
+        resolution_state.set_spell_validity(spell.spell_id, SpellValidity.valid)
+
+    spellbook._run_resolution_phases_for_target_spell = MagicMock(side_effect=rebuild_resolution)
 
     meld._ensure_lineage_resolvable(spell)
 
     assert spell.run_structural_phases_calls == 1
     assert state.validity is SpellValidity.valid
+    spellbook._run_resolution_phases_for_target_spell.assert_called_once_with("conduit-1", spell)
 
 
 def test_ensure_lineage_resolvable_marks_invalid_for_broken() -> None:

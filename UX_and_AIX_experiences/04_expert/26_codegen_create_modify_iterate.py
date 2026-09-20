@@ -178,7 +178,7 @@ def main() -> None:
     # Now mint versions the only way that works: bind / bind_inactive.
     index = conduit.get_spell_by_id(v1).spell_index
     assert index.spells_in_index() == {v1}
-    assert conduit.meld(spell=Rate, binding_name="iterate-rate").value == 1
+    assert conduit.meld(Rate, binding_name="iterate-rate").value == 1
 
     staged = conduit.bind_inactive(
         spell=RateV2, spell_index=index,
@@ -186,7 +186,7 @@ def main() -> None:
     )
     assert index.spells_in_index() == {v1, staged}
     assert index.selected_spell_id == v1, "staging must NOT move selection"
-    assert conduit.meld(spell=Rate, binding_name="iterate-rate").value == 1
+    assert conduit.meld(Rate, binding_name="iterate-rate").value == 1
     print("v2 STAGED: 2 members, selection unchanged, candidate inert")
 
     walked_default = commands.research_walk("default")

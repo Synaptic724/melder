@@ -1113,13 +1113,16 @@ class SpellSystemStates(Cleanable):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> Set[str]:
         """
-        Mark list[Frame] consumers dirty for a specific Spellbook scope.
+        Mark collection and OVERRIDE_REQUIRED consumers dirty within one Spellbook.
 
         This is the targeted fan-out path used when a spell's local topology
         changes collection membership. Instead of dirtying every spell index in
         the frame, the method consults the spellbook-scoped reverse index and
         only marks spell indexes that consume one of the affected collection
         frame keys.
+
+        The historical collection index also tracks reference-only required inputs:
+        provider selection can change even though they have no executable dependency IDs.
 
         Args:
             spellbook_id:
@@ -1266,8 +1269,8 @@ class SpellSystemStates(Cleanable):
 
         This is called by :class:`SpellCrafter` during Phase 3 and is the
         primary entry point for building higher-level blueprints in phases 5-7.
-        It also refreshes the collection-dependency index used for targeted
-        list[Frame] revalidation within the owning Spellbook scope.
+        It also refreshes the frame-key sensitivity index used for targeted
+        list[Frame] and OVERRIDE_REQUIRED revalidation within the owning Spellbook scope.
 
         Contract:
             - Stores the live topology object under `spell_index.selected_spell_id`.
@@ -1361,13 +1364,15 @@ class SpellSystemStates(Cleanable):
             topology: SpellLocalTopology,
     ) -> Set[str]:
         """
-        Extract collection frame keys from a local topology.
+        Extract selector-sensitive frame keys from a local topology.
 
         These frame keys feed the spellbook-scoped collection-dependent index
-        used later for targeted invalidation of list[Frame] consumers.
+        used for targeted invalidation of list[Frame] and OVERRIDE_REQUIRED consumers.
 
         Contract:
-            - Only NORMAL sockets that are marked as collections participate.
+            - NORMAL collection sockets and OVERRIDE_REQUIRED inputs participate.
+            - Required inputs are watched without creating construction dependency edges.
+            - False-root declarations carry no dependency_key and therefore add no watcher.
             - The frame key is taken from `socket.dependency_key[0]`.
             - Returns a detached set suitable for index replacement.
         """
@@ -1375,9 +1380,9 @@ class SpellSystemStates(Cleanable):
         if topology is None:
             return frames
         for socket in topology.iter_sockets():
-            if socket.socket_kind is not SocketKind.NORMAL:
-                continue
-            if not socket.is_collection:
+            if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED and not (
+                    socket.socket_kind is SocketKind.NORMAL and socket.is_collection
+            ):
                 continue
             if socket.dependency_key is None:
                 continue

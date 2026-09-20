@@ -41,7 +41,7 @@ def main() -> None:
     # must OWN the spell being pulled.
     borrower.add_spell_to_contract(spell_id=spell_id, conduit=owner,
                                    permissions="create")
-    shared = borrower.meld(spell=SharedDirectory)
+    shared = borrower.meld(SharedDirectory)
     print("borrower melded the owner's spell:", shared.lookup())
     print("settled once at first conjure; every later conduit inherited")
 

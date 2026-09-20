@@ -31,34 +31,39 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
+        id: python
         with:
           python-version-file: pyproject.toml
           freethreaded: true
           allow-prereleases: false
-          cache: pip
-          cache-dependency-path: pyproject.toml
-      - name: Install build tools
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --group build
+      - name: Set up uv for locked build tools
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version-file: pyproject.toml
+          resolution-strategy: lowest
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          cache-suffix: build-${{ steps.python.outputs.python-version }}-${{ runner.arch }}
+      - name: Install locked build tools
+        run: uv sync --locked --only-group build --python "${{ steps.python.outputs.python-path }}"
       - name: Verify durable source assets
-        run: python src/melder/_build_assets/_build_asset_runner.py --check
+        run: uv run --no-sync python src/melder/_build_assets/_build_asset_runner.py --check
       - name: Set deterministic source timestamps for same-commit retries
         run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
       - name: Build wheel and source distribution
-        run: python -m build --sdist --wheel
+        run: uv run --no-sync python -m build --no-isolation --sdist --wheel
       - name: Normalize source archive metadata for identical retries
-        run: python .github/scripts/normalize_sdist.py
+        run: uv run --no-sync python .github/scripts/normalize_sdist.py
       - name: Verify archive boundaries and versions
         env:
           RELEASE_TAG: ${{ inputs.release-tag }}
-        run: python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
+        run: uv run --no-sync python .github/scripts/verify_distributions.py --release-tag "$RELEASE_TAG"
       - name: Install and verify the wheel in isolation
         env:
           PYTHON_GIL: "0"
         run: |
-          python -m venv "$RUNNER_TEMP/melder-wheel-probe"
-          "$RUNNER_TEMP/melder-wheel-probe/bin/python" -m pip install --quiet --no-deps dist/*.whl
+          uv venv --python "${{ steps.python.outputs.python-path }}" "$RUNNER_TEMP/melder-wheel-probe"
+          uv pip install --python "$RUNNER_TEMP/melder-wheel-probe/bin/python" --no-deps dist/*.whl
           "$RUNNER_TEMP/melder-wheel-probe/bin/python" -I .github/scripts/smoke_wheel.py
       - name: Retain verified distributions
         uses: actions/upload-artifact@v7

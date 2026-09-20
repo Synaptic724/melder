@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="14" skipped="0" tests="21" time="2.402" timestamp="2026-09-13T14:48:51.637185-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_values_expose_no_constructor_contracts_to_either_planner[SpellOccurrenceGraphAnalyzerStrategy]" time="0.007"><failure message="TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000002331F73AF90&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:109: in test_existing_values_expose_no_constructor_contracts_to_either_planner
+    assert tuple(planner_type._iter_spell_contract_defaults(spell)) == ()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\spell_analyzer\strategies\spell_occurrence_graph_analyzer_strategy.py:995: in _iter_spell_contract_defaults
+    signature = inspect.signature(spell.spell)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2441: in _signature_from_callable
+    raise TypeError('{!r} is not a callable object'.format(obj))
+E   TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000002331F73AF90&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_values_expose_no_constructor_contracts_to_either_planner[SpellOccurrenceContractProcessorStrategy]" time="0.005"><failure message="TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x0000023321487810&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:109: in test_existing_values_expose_no_constructor_contracts_to_either_planner
+    assert tuple(planner_type._iter_spell_contract_defaults(spell)) == ()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\artifact_processor\strategies\spell_occurrence_contract_processor_strategy.py:226: in _iter_spell_contract_defaults
+    signature = inspect.signature(spell.spell)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3332: in signature
+    return Signature.from_callable(obj, follow_wrapped=follow_wrapped,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:3047: in from_callable
+    return _signature_from_callable(obj, sigcls=cls,
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\inspect.py:2441: in _signature_from_callable
+    raise TypeError('{!r} is not a callable object'.format(obj))
+E   TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x0000023321487810&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_root_returns_original_without_factory_execution[unqualified]" time="0.009" /><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_root_returns_original_without_factory_execution[typed]" time="0.009" /><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_root_returns_original_without_factory_execution[named]" time="0.009" /><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_dependency_retains_identity_without_contract_inspection" time="0.010"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x0000023321488990&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:135: in test_existing_value_dependency_retains_identity_without_contract_inspection
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x0000023321488990&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_value_transitive_dependency_retains_identity" time="0.011"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 2 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x0000023321483350&gt; is not a callable object; TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x0000023321483350&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:145: in test_existing_value_transitive_dependency_retains_identity
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 2 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x0000023321483350&gt; is not a callable object; TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x0000023321483350&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_existing_values_in_collection_retain_identity" time="0.009"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x0000023321485DD0&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:154: in test_existing_values_in_collection_retain_identity
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x0000023321485DD0&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_explicit_map_injects_existing_value" time="0.009"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000002331E6BAD10&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:166: in test_explicit_map_injects_existing_value
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000002331E6BAD10&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_planning" name="test_late_bound_consumer_injects_existing_value" time="0.010"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'occurrence_plan_local' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000002331E6B9510&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_planning.py:176: in test_late_bound_consumer_injects_existing_value
+    assert root.meld(spell_id=consumer_id).value is supplied
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:643: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:884: in _ensure_resolution_resolvable
+    spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+src\melder\aether\spellbook\spellbook.py:6759: in _run_resolution_phases_for_target_spell
+    return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+src\melder\aether\spellbook\spellbook_creation_system.py:1606: in run_resolution_phases_for_target_spell
+    SpellbookCreationSystem._run_target_plan_resolution_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:2287: in _run_target_plan_resolution_phases
+    return SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'occurrence_plan_local' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;test_existing_instance_planning.ExistingValue object at 0x000002331E6B9510&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_additional_regressions" name="test_existing_provider_satisfies_repeated_parameters" time="0.008"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x000002331F73AC90&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_additional_regressions.py:68: in test_existing_provider_satisfies_repeated_parameters
+    consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x000002331F73AC90&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_additional_regressions" name="test_existing_provider_can_be_injected_into_function" time="0.008"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x0000023321489D90&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_additional_regressions.py:77: in test_existing_provider_can_be_injected_into_function
+    consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x0000023321489D90&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_additional_regressions" name="test_existing_provider_typechecking_annotation_does_not_raise_nameerror" time="0.009"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x000002332148A3D0&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_additional_regressions.py:86: in test_existing_provider_typechecking_annotation_does_not_raise_nameerror
+    consumer = instance_book.conjure(dynamic=True).meld(spell_id=target)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x000002332148A3D0&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_additional_regressions" name="test_existing_provider_survives_consumer_scope_release[lesser-unique_per_conduit]" time="0.007"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x000002332148AF10&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_additional_regressions.py:100: in test_existing_provider_survives_consumer_scope_release
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x000002332148AF10&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_additional_regressions" name="test_existing_provider_survives_consumer_scope_release[spellspace-unique_per_spell_space]" time="0.007"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x0000023321489890&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_additional_regressions.py:100: in test_existing_provider_survives_consumer_scope_release
+    root = instance_book.conjure(dynamic=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:237: in conjure
+    conduit_id = SpellbookCreationSystem._prepare_resolution_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:340: in _prepare_resolution_for_conjure
+    SpellbookCreationSystem.run_resolution_phases_for_conduit(
+src\melder\aether\spellbook\spellbook_creation_system.py:1512: in run_resolution_phases_for_conduit
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'plan_group' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x0000023321489890&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_additional_regressions" name="test_existing_provider_is_injected_across_read_contract[annotation]" time="0.012"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'occurrence_plan_local' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x000002332148B190&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_additional_regressions.py:127: in test_existing_provider_is_injected_across_read_contract
+    assert borrower.meld(spell_id=target).value is supplied
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:643: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:884: in _ensure_resolution_resolvable
+    spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+src\melder\aether\spellbook\spellbook.py:6759: in _run_resolution_phases_for_target_spell
+    return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+src\melder\aether\spellbook\spellbook_creation_system.py:1606: in run_resolution_phases_for_target_spell
+    SpellbookCreationSystem._run_target_plan_resolution_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:2287: in _run_target_plan_resolution_phases
+    return SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'occurrence_plan_local' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x000002332148B190&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_additional_regressions" name="test_existing_provider_is_injected_across_read_contract[spell_contract]" time="0.012"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'occurrence_plan_local' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x000002332148C1D0&gt; is not a callable object">tests\integration\melder\spellbook\test_existing_instance_additional_regressions.py:127: in test_existing_provider_is_injected_across_read_contract
+    assert borrower.meld(spell_id=target).value is supplied
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:359: in meld
+    self._ensure_lineage_resolvable(target_spell)
+src\melder\aether\conduit\meld\meld.py:643: in _ensure_lineage_resolvable
+    self._ensure_resolution_resolvable(spell)
+src\melder\aether\conduit\meld\meld.py:884: in _ensure_resolution_resolvable
+    spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+src\melder\aether\spellbook\spellbook.py:6759: in _run_resolution_phases_for_target_spell
+    return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+src\melder\aether\spellbook\spellbook_creation_system.py:1606: in run_resolution_phases_for_target_spell
+    SpellbookCreationSystem._run_target_plan_resolution_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:2287: in _run_target_plan_resolution_phases
+    return SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'occurrence_plan_local' encountered 1 error(s). Resolution pipeline aborted. Errors: TypeError: &lt;tests.integration.melder.spellbook.test_existing_instance_planning.ExistingValue object at 0x000002332148C1D0&gt; is not a callable object</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_existing_instance_additional_regressions" name="test_existing_root_public_lookup_preserves_identity[instance]" time="0.007" /><testcase classname="tests.integration.melder.spellbook.test_existing_instance_additional_regressions" name="test_existing_root_public_lookup_preserves_identity[frame]" time="0.008" /><testcase classname="tests.integration.melder.spellbook.test_existing_instance_additional_regressions" name="test_empty_existing_container_is_present[list]" time="0.006" /><testcase classname="tests.integration.melder.spellbook.test_existing_instance_additional_regressions" name="test_empty_existing_container_is_present[dict]" time="0.007" /></testsuite></testsuites>

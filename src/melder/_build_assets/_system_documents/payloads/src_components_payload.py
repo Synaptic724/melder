@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 8445
-CONTENT_SHA256 = '2829aea0622756d344f6fdf11d8bf79e21da5b82ed0bbf664a57c75b0e90f1c7'
+LINE_COUNT = 8655
+CONTENT_SHA256 = 'fb28da249dac8f75a89386ac8f9d657c37b26209c0a1460f039becb13bd28912'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-05
+- Updated: 2026-09-19
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -359,6 +359,17 @@ Key Files (C1):
 Purpose:
 - Provide the primary binding and conjure surface for the DGR.
 
+Native registration capability foundation (2026-09-19):
+- bind/bind_inactive explicitly forward resolvable: bool = True into Bind. The value belongs to
+  each Spell version, not the book or selected index. Generic metadata never owns this native flag.
+- describe_spells_in_spellbook adds resolvable to each visible record. Parked members remain absent
+  from this active description; exact parked-version inspection must not follow the selected member.
+- SpellBinder already forwards and resets this choice through bind/with_kwargs/finalize.
+- Compiler classification, root eligibility and direct runtime capability refusal are implemented.
+  Ordinary overrides, Nexus graph publication and crystal replay retain the same per-version policy.
+- EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.bind`, `Spellbook.bind_inactive`,
+  `Spellbook.describe_spells_in_spellbook`; `src/melder/aether/spellbook/spellbinder.py:SpellBinder`.
+
 Responsibilities:
 - Manage configuration lifecycle and logger initialization.
 - Register spells into local maps and spell-id caches.
@@ -519,6 +530,30 @@ Text is preserved as authored; only its location changed.
 Purpose:
 - Convert user objects into registered spell metadata with stable index identities.
 
+Native resolution capability (S2 foundation, 2026-09-19):
+- Bind validates resolvable as a strict bool before reflection; independent hash/inspector calls do
+  the same. Omitted/True keep the v4-binding hash sequence unchanged; False changes only the domain
+  to v4-binding-non-resolvable. Method bodies remain outside existing class-version identity.
+- Spell stores the value in a private field with a read-only resolvable property and removes it on
+  cleanup. Metadata, active/parked state, permissions and compilation readiness remain independent.
+- False permits application Protocol definitions while preserving kernel/module, naming, lifetime
+  and Protocol spellframe member checks. A different SHA does not bypass active signature uniqueness.
+- Compiler/runtime consumers honor the capability; Nexus publishes it and crystal replay preserves it.
+- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`, `Bind.sha256_profile`,
+  `Bind.spell_id_inspector`; `src/melder/aether/spellbook/spell.py:Spell.resolvable`.
+
+Protocol admission for supplied values (2026-09-19):
+- `Bind._bind_logic` applies the shared member check to ClassBindingProfile and existing
+  InstanceBindingProfile/OtherBindingProfile targets after ordinary binding-policy validation.
+- The helper reads the actual supplied target. Instance-only callable members satisfy the check;
+  shadowing a required method with a non-callable value fails before Spell creation/publication.
+- Member coverage remains public entries directly in the Protocol dictionary, with presence and
+  callability checks. Inherited Protocol declarations, annotation-only fields and signatures are
+  outside this boundary. Normal attribute access can execute user descriptors and propagate errors.
+- Active and inactive bind share admission. Valid existing providers retain unique-only lifetime
+  and exact-reference injection; compiler selection and meld add no repeated Protocol reflection.
+- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic` and `Bind._structurally_implements_protocol`.
+
 Ordered disposal contract (2026-09-05):
 - Spellbook forwards configured candidates and each bind's explicit candidates separately.
 - Bind matches the existing class profile once into one ordered list. Missing names disappear
@@ -536,7 +571,7 @@ Responsibilities:
 - Compute fingerprints and create SpellIndex entries (the stable index that categorizes and targets spells).
 - Determine canonical SpellType from binding profile + name/spellframe.
 - Enforce Protocol and module binding constraints.
-- Reject module and Protocol concrete binding targets while allowing class,
+- Reject module targets and resolvable Protocol targets while allowing class,
   callable, and existing-object bindings under profile/existence rules.
 - Enforce existence constraints for method/lambda spells.
 - Construct Spell objects with metadata and hooks.
@@ -547,14 +582,13 @@ Inputs:
 Outputs:
 - TWO SHAPES FROM ONE ENTRYPOINT, decided by whether `spell` was supplied.
   Called directly with a target, `bind` creates and returns the `Spell`. Called
-  without one it returns a DECORATOR, and the decorated object comes back to the
-  caller rather than the Spell - so the return type is not stable across call
-  styles and callers cannot assume a `Spell` came back.
+  without one it returns a DECORATOR that produces the Spell when applied to its
+  target. The decorator itself is not a Spell; both completed call forms produce one.
 - A `SpellIndex` carrying the stable ULID identity the spell is addressed by.
 - Nothing at all from the internal-registration guard on the success path: it
   returns `None` when the candidate is bindable and raises otherwise.
   EVIDENCE:
-  - src/melder/aether/spellbook/bind/bind.py:241-274 (`bind` return contract)
+  - src/melder/aether/spellbook/bind/bind.py:244-292 (`bind` contract)
   - src/melder/aether/spellbook/bind/bind.py:84-97 (`assert_allowed`)
 
 Owned State:
@@ -569,7 +603,7 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - SpellIndex hash identity is stable and never changes.
-- Protocols cannot be bound as concrete spells.
+- Protocol targets require explicit resolvable=False.
 - Method/lambda spells must use `Existence.unique`.
 - SpellType classification is stable for a given binding profile + metadata.
 - Resolution style policy is maintained in
@@ -578,6 +612,7 @@ Invariants/Guarantees:
 
 Failure Modes:
 - TypeError for invalid binding targets or protocol misuse.
+- Incompatible Protocol declarations report the class or existing object, Protocol name and failing members.
 - ValueError for invalid bindings (existence rules, binding name conflicts).
 - ValueError if method/lambda spells are bound with non-unique existence.
 
@@ -621,9 +656,10 @@ Text is preserved as authored; only its location changed.
 Binding flow (local spell):
 1) `Spellbook.bind` converts permissions and existence enums.
 2) `Bind._bind_logic`:
-   - Rejects modules and Protocols as concrete spells.
+   - Rejects modules and resolvable Protocol targets; validates the native capability bool.
    - Uses SpellExaminer to build a binding profile.
    - Fingerprints the profile and constructs a SpellIndex.
+   - Validates lifecycle policy, then Protocol members on class and existing-object targets.
    - Creates a Spell with metadata (existence, permissions, spellframe).
 3) Spellbook attaches hooks and registers the spell into local maps.
 4) SpellSystemStates registers the lineage and marks it dirty.
@@ -643,6 +679,8 @@ Responsibilities:
 - ParameterDIShape classification drives Phase 1 socket interpretation. It has SIX
   members: `IGNORE`, `PLAIN`, `SINGLE_BY_ANNOTATION`, `COLLECTION_BY_ANNOTATION`,
   `SPELLMAP_DEFAULT`, `SPELL_CONTRACT`.
+- Resolved SocketKind adds OVERRIDE_REQUIRED without changing those declaration shapes. It retains
+  a selected non-resolvable reference while requiring caller supply when constructing the consumer.
 
 Inputs:
 - Spell/frame/binding identifiers and optional override payloads (dict/list/tuple).
@@ -667,10 +705,11 @@ Invariants/Guarantees:
 
 Failure Modes:
 - ValueError when both `spell` and `spellframe` are None.
-- `ContractProviderPresenceStrategy.validate` emits exactly four codes:
+- `ContractProviderPresenceStrategy.validate` emits five codes:
   `CONTRACT_IN_AUTOMATIC_MODE` for SpellContract sockets in automatic mode,
   `SPELL_CONTRACT_INVALID` and `SPELL_CONTRACT_AMBIGUOUS` for invalid or
-  multi-provider defaults, and the warning `SPELL_CONTRACT_MISSING_PROVIDER`.
+  multi-provider defaults, `SPELL_CONTRACT_NON_RESOLVABLE_PROVIDER` for an incompatible selected
+  provider, and the warning `SPELL_CONTRACT_MISSING_PROVIDER`.
 
 Observability:
 - Exceptions on invalid construction; validation issues reported in Phase 4.
@@ -1071,6 +1110,20 @@ Purpose:
 - Provide the hosted crystallizer policy root, the passive persistence RECORD
   (digital-twin custody of the configured world), and the retained/live module
   world surfaces used for crystallized spell loading and activation.
+
+Non-resolvable definitions:
+- SpellCrystal captures native resolvable as a bool and releases it on cleanup. describe() carries the
+  value alongside existing binding policy. No live application instance is serialized by this feature.
+- RestoreEngine forwards the bool for active and staged binds. GraftRunner does so for selected,
+  parked and merged members. Legacy absence means True; malformed values reach Bind's bool validation.
+- RecordVersion uses major 2 because ignoring False would change executable behavior. Existing older
+  record support remains; older readers reject new envelopes through the existing major gate.
+- Graph references reconstruct through normal compilation of restored bindings and selected versions.
+  Process-wide uniqueness still requires releasing source claims before grafting detached custody.
+- EVIDENCE: `src/melder/crystallizer/crystals/spell_crystal.py`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py`,
+  `src/melder/crystallizer/crystal_loader_system/graft_runner.py`,
+  `src/melder/crystallizer/persistence/record_version.py`.
 
 Ordered capture/replay (2026-09-05):
 - SpellCrystal captures detached method-name values in resolved order, never sorting.
@@ -1854,6 +1907,21 @@ Purpose:
 - Own the frame-scoped descriptor publication and ACL registry layers beneath
   the public `Nexus` facade.
 
+Published definition graph:
+- FrameDescriptorManager adds resolvable and value-only relationships to the fresh binding payload.
+  Selected executable dependencies, override_required references and actual registered direct bases
+  have distinct kinds. Target source IDs pin the published book/version; no raw Spell/class is exposed.
+- Initial conjure publishes complete local topology. Late Phase3 compilation republishes via the
+  book's enabled sink after topology exists. Projection refresh remains the existing explicit Rift API.
+- ViewSpell/FrameViewer.describe_spell_relationships joins visible payloads for incoming/outgoing
+  navigation. Hidden binding sections and hidden endpoints remain absent from query results.
+  Normal describe_spell also filters hidden relationship targets on its detached payload copy.
+- Existing MR source/history commands work for False definitions; source-body identity rules and
+  active/parked publication lifecycle are unchanged. No internal-use or lifecycle ownership is inferred.
+- EVIDENCE: `src/melder/nexus/frame_descriptor_manager.py:FrameDescriptorManager._build_published_relationships`,
+  `src/melder/nexus/rift/frame_viewer/view_spell.py:ViewSpell.describe_spell_relationships`,
+  `src/melder/nexus/rift/frame_viewer/frame_viewer.py:FrameViewer.describe_spell_relationships`.
+
 Responsibilities:
 - `FrameDescriptorManager` owns `frame_name -> FrameDescriptor`.
 - Refresh frame posture and frame-handle cache before passive publication.
@@ -2076,6 +2144,11 @@ Key Files (C1):
 ### Component: Conduit Runtime (Normal and Lesser)
 Purpose:
 - Execution scope for resolving spells and managing object lifecycles.
+
+Registration capability forwarding (2026-09-19): bind and bind_inactive explicitly forward
+resolvable: bool = True to the owning Spellbook. Neither creates another policy copy or changes
+conduit posture; normal/dynamic admission stays at the existing facade boundaries.
+EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.bind` and `Conduit.bind_inactive`.
 
 Responsibilities:
 - Register normal conduits into Aether and ConduitCloud.
@@ -2481,6 +2554,21 @@ Purpose:
   object, which is why both the hook system and the dirty-root refusal live
   behind it rather than in the binding pipeline.
 
+Non-resolvable registration admission:
+- ConduitMeld and SpellSpaceMeld check the selected native _resolvable field in both meld and
+  meld_existing_spell before override normalization, optional validation, hooks or object retrieval.
+- False calls Meld._raise_non_resolvable_registration, which raises MeldExecutionError carrying the
+  selected name/id and guidance to use a consumer override or select a resolvable registration.
+- Lookup/status helpers remain observational. A supplied existing object may be described as live
+  while its False registration still refuses runtime retrieval.
+- Capability is immutable per Spell version. A fast-door entry is inserted only after successful
+  admitted execution, so False cannot mint one. Existing epoch/context guards remain unchanged.
+- Ordinary required inputs use existing override execution and Python constructor errors. No additional
+  argument preflight is introduced; existing eager whole-child construction remains unchanged.
+- EVIDENCE: `src/melder/aether/conduit/meld/conduit_meld.py:ConduitMeld.meld`,
+  `ConduitMeld.meld_existing_spell`, `src/melder/aether/conduit/meld/spellspace_meld.py:SpellSpaceMeld`,
+  `src/melder/aether/conduit/meld/meld.py:Meld._raise_non_resolvable_registration`.
+
 Responsibilities:
 - Provide a shared abstract `Meld` core for lookup, validation, lazy
   recompilation, and creation-context dispatch.
@@ -2560,6 +2648,10 @@ Invariants/Guarantees:
 - Change control may block dirty roots.
 - Change-control checks are best-effort; failures to access change control do not block.
 - Gated validity triggers Phase 1-4 and Phase 5-11 reruns under spell lock.
+- A successful structural rerun explicitly gates the previous conduit-local resolution verdict.
+  Otherwise a new selected dependency could leave an old valid executor in place. The existing
+  _force_resolution_revalidation helper accepts the reason; contract callers retain their default.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._ensure_lineage_resolvable`.
 - A cold context build cannot interleave with a Phase 5-11 rebuild for the same
   spell; the ready context/executor hot path remains outside the spell lock.
 
@@ -2715,6 +2807,52 @@ Spec vs implementation notes:
 Purpose:
 - Compile per-spell artifacts and validate correctness before resolution.
 
+Non-resolvable definitions and required inputs (S3, 2026-09-19):
+- Phase 3 retains original declarations but distinguishes executable target_spell_ids from
+  referenced_spell_ids on OVERRIDE_REQUIRED sockets. Required supplied inputs retain signature
+  position/kind; ordinary defaults stay PLAIN. Implicit matching prefers True providers, otherwise
+  requires one False definition. Explicit SpellMap selection keeps its target/cardinality and rejects
+  construction payloads for False. Collections include True providers only, preserving order and emptiness.
+- False roots retain local topology without constructor lookup, DI-shape/variadic restrictions or
+  provider obligations. Registration/profile/descriptor checks remain. Phase-4 required-input warnings
+  name the parameter and referenced target; binding cycles omit reference-only construction edges.
+- Phase 5 builds its executable snapshot/index/blueprints from resolvable entries. False definitions
+  remain in registration/local topology stores. The existing publication-authority boundary is preserved.
+- Phase-8 signatures include complete socket policy. Late contract selection refuses a False provider.
+  Phase 9 emits override_required sources even with no occurrence edge; Phase 10 keeps immutable
+  required_override_params rows (name, position, kind, reference IDs) in both variants of all families.
+- Source kind override_required appends position/kind/reference data to injection IR/signature rows;
+  ordinary row layouts remain unchanged. Direct Phase8-11 wrappers and cache eligibility skip False roots.
+- Direct runtime admission refuses False registrations. Ordinary/falsey/None supplied values, nested
+  overrides, reuse and manifest hydration use existing executor paths. Python reports missing real
+  required arguments; there is no extra per-call missing-input preflight. Nexus and crystal consumers
+  preserve the definition/reference distinction through publication and replay.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3`,
+  `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:SpellSocketDescriptor`,
+  `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:SpellInjectionInstanceSpec`.
+
+Phase-5 publication authority (2026-09-19):
+- Snapshot visibility remains local plus contracted dependencies. The graph and system index retain
+  those dependencies so consumer validation and compilation continue to see the complete closure.
+- `_attach_phase5_artifacts_for_snapshot` takes explicit `publication_spell_ids`. Conduit-wide runs
+  publish only to `spellbook._spells_by_id`; local runs publish only to their selected target Spell.
+- Attachment setters invalidate downstream codegen and creation contexts. Excluding unselected
+  dependencies prevents clearing provider plans that the current pass will not rebuild, including
+  providers in the same book during target-local compilation. Selected targets still invalidate normally.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:CompilerPhase5`.
+
+Constructor default precedence (2026-09-13):
+- Phase 1 preserves ordinary explicit defaults by classifying them as PLAIN before annotation
+  inference. This includes None, falsey scalars, selected instances and collection defaults.
+- Such parameters contribute no inferred provider edge; providers are neither required nor created
+  for them. Requirement metadata retains the annotation and exact default object.
+- Existing SpellContract and SpellMap branches run first and remain explicit DI requests.
+  Parameters without defaults retain their previous single/collection/nullable inference.
+- Cache version 8 invokes the existing automatic mismatch invalidation. Constructor fingerprints
+  are unchanged by this compiler-policy correction, so previous plans must miss by semantic version.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:SpellRequirementsFinder._classify_parameter`.
+- EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem._normalize_loaded_cache_data`.
+
 Disposal metadata propagation (2026-09-05):
 - Runtime records, generalized/many-only plans, and solo namespaces retain the established
   Spell list. Generalized inline registration follows the same reference rule as Creations.
@@ -2770,8 +2908,8 @@ Concurrency/Threading:
 Invariants/Guarantees:
 - Phase artifacts are keyed by `spell_index.selected_spell_id`.
 - Broken spells halt conjure via SpellbookValidationError.
-- Single-annotation DI resolves to exactly one class/creation spell (methods/lambdas excluded).
-- Collection DI (list[FrameType]) can resolve zero or more spells, including methods/lambdas.
+- Single-annotation DI selects one resolvable class/creation provider or one reference-only definition.
+- Collection DI (list[FrameType]) can resolve zero or more eligible spells, including methods/lambdas.
 - SpellMap defaults must resolve to exactly one candidate.
 - `phase8_11` IR dirty state means "refresh export payload before read/compile",
   not "runtime root requires revalidation."
@@ -2789,6 +2927,7 @@ Extension Points:
 
 Key Files (C1):
 - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
+- `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
 - `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
 - `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py`
 
@@ -2840,8 +2979,12 @@ Dirty terminology guardrail for this pipeline:
   - `src/melder/aether/conduit/meld/meld.py:760`
     (`_gated_validation_required` - NOT :502-532)
 
-PhaseScheduler coordinates these phases using worker threads and a shared
-cancellation event; broken spells trigger SpellbookValidationError.
+PhaseScheduler coordinates these phases using persistent worker threads and a fresh cancellation
+event per run; broken spells trigger SpellbookValidationError. Local Phase-5/6 registration defers
+capturing that event until the unit factory runs. Capturing it during registration would retain the
+previous run's signal, causing false cancellation after failure and missing current cancellation.
+EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._register_target_single_phase`
+and `src/melder/utilities/synchronization/phase_scheduler.py:PhaseScheduler.run_all_phases`.
 
 Phase 4 strategy coverage (non-exhaustive):
 - Circular/self-dependency detection and dangling dependency checks.
@@ -3757,9 +3900,9 @@ Concurrency/Threading:
   - src/melder/utilities/synchronization/phase_scheduler.py:399-440
 
 Invariants/Guarantees:
-- One-shot. `cleanup` is idempotent and double-checked under `_lock`, and once
-  `_cleaned` is set the scheduler cannot be restarted - the sentinels have been
-  consumed and the workers have exited, so there is nothing left to feed.
+- Runs reuse the same worker pool with a new cancellation scope each time. `cleanup` is idempotent
+  and double-checked under `_lock`; once `_cleaned` is set the scheduler cannot be restarted because
+  the sentinels have been consumed and the workers have exited.
 
 Failure Modes:
 - PhaseTimeoutError or PhaseExecutionError on failures.
@@ -3859,9 +4002,9 @@ Concurrency/Threading:
   module-level object, so it adds no contention to bind.
 Enforcement Surface:
 - Exactly one live call site:
-  `src/melder/aether/spellbook/bind/bind.py:364` -
+  `src/melder/aether/spellbook/bind/bind.py:404` -
   `assert_allowed(spell, context="bind")`. (Was cited as `:363` here and `:364`
-  in `src_architecture.md`; the call is on 364. The two documents disagreeing
+  in `src_architecture.md` before subsequent edits; the current call is on 404. The documents disagreeing
   about the same line is the failure a bare `bind.py:NNN` invites - no checker
   can resolve a filename with no path.)
 Key Files (C1):
@@ -3977,6 +4120,7 @@ Purpose:
 - Register a spell and update local maps and SpellSystemStates.
 Contract/Interface:
 - `Spellbook.bind(...)` and `Bind._bind_logic(...)`.
+- The shared Bind path also admits inactive values; a Protocol mismatch fails before a Spell is returned.
 Data Structures:
 - SpellIndex, Spell, lookup maps.
 Concurrency/Threading:
@@ -4066,6 +4210,9 @@ Purpose:
 - Classify constructor parameters into DI shapes (single, collection, SpellMap, contracts).
 Contract/Interface:
 - `ParameterDIShape` enumeration and Phase 1 requirements capture.
+- `_classify_parameter` handles explicit SpellContract/SpellMap defaults first, ordinary defaults
+  as PLAIN second, then infers DI only for parameters without defaults. Default presence is tested
+  independently of truthiness; Optional without a default does not suppress inferred DI.
 Data Structures:
 - `ParameterDIShape` values attached to SpellRequirements.
 Concurrency/Threading:
@@ -4134,6 +4281,8 @@ Purpose:
 - Build per-spell requirements, symbolic graphs, and resolution frames.
 Contract/Interface:
 - `SpellCompilerArtifact.cleanup_phase_artifacts()` and phase methods.
+- Phase-5 canonical publication is restricted to the current compilation targets; visible dependencies
+  outside that set keep their existing artifacts and creation contexts.
 Data Structures:
 - Requirements, symbolic graph, resolution frame, validation results.
 - RootResolutionBlueprint uses a PathRegistry (PathId interning) and DagIndex
@@ -4830,6 +4979,10 @@ Key Files (C1):
 Parent Component: DevOps Control Plane
 Purpose:
 - Track lineage validity, dependencies, dirty sets, and per-conduit resolution state.
+- The historical collection-frame sensitivity index also tracks OVERRIDE_REQUIRED consumers.
+  Bind/notch/removal notifications invalidate those consumers without executable dependency IDs.
+  False roots publish no watched constructor key; Optional/ForwardRef keys normalize as matching does.
+  EVIDENCE: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates._extract_collection_frame_keys`.
 Contract/Interface:
 - `register_lineage`, `update_dependencies`, `consume_dirty_lineages`.
 - `get_or_create_conduit_resolution_state`, `set_conduit_spell_validity`,
@@ -5361,6 +5514,7 @@ These flows describe concrete method sequences for core behaviors.
 1. `Spellbook.bind(...)`:
    - Converts permissions and existence enums.
    - Calls `Bind._bind_logic` to create SpellIndex and Spell.
+   - Bind validates required direct Protocol members on classes and supplied values before Spell publication.
    - Attaches hooks and registers local lookup keys.
    - Registers lineage in SpellSystemStates (marks dirty).
    - If Conduit exists, stamps ownership and registers existing objects into Creations.
@@ -5552,9 +5706,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 6800
-  loc: 6800
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 6814
+  loc: 6814
+  verified_at: 2026-09-19T19:57:57Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 870
@@ -5567,9 +5721,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 915
-  loc: 915
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 979
+  loc: 979
+  verified_at: 2026-09-19T19:57:57Z
 - path: `src/melder/aether/spellbook/bind/spell_index.py`
   start_line: 1
   end_line: 507
@@ -5577,9 +5731,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1663
-  loc: 1663
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 1690
+  loc: 1690
+  verified_at: 2026-09-19T19:57:57Z
 - path: `src/melder/aether/spellbook/spell_types/spell_types.py`
   start_line: 1
   end_line: 101
@@ -5687,9 +5841,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/frame_descriptor_manager.py`
   start_line: 1
-  end_line: 806
-  loc: 806
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 857
+  loc: 857
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/nexus/frame_acl_manager.py`
   start_line: 1
   end_line: 814
@@ -5727,9 +5881,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
   start_line: 1
-  end_line: 6649
-  loc: 6649
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 6673
+  loc: 6673
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/nexus/rift/frame_viewer/view_multiframe.py`
   start_line: 1
   end_line: 3134
@@ -5747,9 +5901,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/rift/frame_viewer/view_spell.py`
   start_line: 1
-  end_line: 3092
-  loc: 3092
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 3145
+  loc: 3145
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/nexus/rift/rift.py`
   start_line: 1
   end_line: 1151
@@ -5902,9 +6056,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6214
-  loc: 6214
-  verified_at: 2026-08-02T16:30:22Z
+  end_line: 6299
+  loc: 6299
+  verified_at: 2026-09-19T19:57:57Z
 - path: `src/melder/utilities/synchronization/creation_gate.py`
   start_line: 1
   end_line: 603
@@ -5947,24 +6101,29 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 1560
-  loc: 1560
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1604
+  loc: 1604
+  verified_at: 2026-09-19T22:06:30Z
 - path: `src/melder/aether/conduit/meld/conduit_meld.py`
   start_line: 1
-  end_line: 820
-  loc: 820
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 832
+  loc: 832
+  verified_at: 2026-09-19T22:06:30Z
 - path: `src/melder/aether/conduit/meld/spellspace_meld.py`
   start_line: 1
-  end_line: 819
-  loc: 819
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 831
+  loc: 831
+  verified_at: 2026-09-19T22:06:30Z
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
   end_line: 309
   loc: 309
   verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
+  start_line: 1
+  end_line: 713
+  loc: 713
+  verified_at: 2026-09-19T21:23:18Z
 - path: `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
   start_line: 1
   end_line: 693
@@ -5992,9 +6151,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
   start_line: 1
-  end_line: 1509
-  loc: 1509
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1514
+  loc: 1514
+  verified_at: 2026-09-19T21:23:18Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
   end_line: 676
@@ -6242,9 +6401,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`
   start_line: 1
-  end_line: 223
-  loc: 223
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 244
+  loc: 244
+  verified_at: 2026-09-19T21:23:18Z
 - path: `src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py`
   start_line: 1
   end_line: 298
@@ -6262,9 +6421,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystals/spell_crystal.py`
   start_line: 1
-  end_line: 1165
-  loc: 1165
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 1170
+  loc: 1170
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
   start_line: 1
   end_line: 1445
@@ -6277,9 +6436,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
   start_line: 1
-  end_line: 2702
-  loc: 2702
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 2706
+  loc: 2706
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/mutation_research/mutation_configuration.py`
   start_line: 1
   end_line: 659
@@ -6345,9 +6504,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`
   start_line: 1
-  end_line: 655
-  loc: 655
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 663
+  loc: 663
+  verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/crystallizer/crystal_loader_system/load_admission.py`
   start_line: 1
   end_line: 615
@@ -7971,7 +8130,7 @@ completed epics/stories of 2026-07-11/12).
   mid-describe) and ships AFTER (local truth leads the mirror);
   lenient + counted; untapped worlds pay one property read.
 - persistence/record_version.py - RecordVersion (static authority,
-  CURRENT "1.0.0", key "record_version"): stamps to_cached_item,
+  CURRENT "2.0.0", key "record_version"): stamps to_cached_item,
   capture_formation_record, and tap envelopes; check_readable refuses
   NEWER-major artifacts at from_cached_item (covers cache + external
   reloads) and load_formation_record; absent stamps read "0.0.0"
@@ -8076,6 +8235,48 @@ completed epics/stories of 2026-07-11/12).
 
 
 ## Diagrams
+### Direct Resolution Admission
+```text
+selector -> target Spell -> immutable capability -> ordinary resolution/reuse -> warm entry
+                                    |
+                                  False -> MeldExecutionError
+lookup/status probes -> target metadata and live-state observation
+```
+
+```mermaid
+flowchart LR
+  Q[Runtime selector] --> S[Selected Spell]
+  S --> C{Resolvable?}
+  C -->|False| E[MeldExecutionError]
+  C -->|True| R[Existing validation and execution]
+  R --> W[Success-only warm entry]
+  P[Observational probe] --> S
+  S --> D[Metadata and live status]
+```
+
+### Required-Input Compiler Flow
+```text
+Phase 1/2 declaration -> Phase 3 selection -> True provider -> executable target IDs
+                                        -> False target -> OVERRIDE_REQUIRED + reference IDs
+                                                             |
+                                                     Phase 9 input values
+                                                             |
+                                                   Phase 10 both variants
+```
+
+```mermaid
+flowchart LR
+  D[Original declaration] --> P[Phase 3 selection]
+  P --> T[True: executable dependency]
+  P --> F[False: required input and descriptive reference]
+  F --> I[Phase 9 signature and reference values]
+  I --> L[Both Phase 10 variants]
+  F --> W[Existing frame-key watcher]
+  W --> R[Structural rerun and resolution rebuild]
+```
+
+Runtime argument enforcement and persisted replay of required-input policy remain later feature layers.
+
 
 ### Mermaid: Conduit Upgrade
 ```mermaid
@@ -8332,6 +8533,15 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-19: native registration and S3 compiler consumers are implemented. Required inputs preserve
+descriptive references through topology/model/plans; executable roots exclude False definitions.
+Frame-key watchers and the structural-to-resolution handoff support provider selection changes.
+Direct runtime admission refuses False before optional validation and object access, preserving
+observational lookup and success-only warm entries. Existing override execution and ordinary Python
+argument errors are retained. Nexus publishes and navigates typed references under existing ACLs;
+crystal capture/restore/graft preserves the bool with record major 2. Existing eager branch replacement
+and version identity remain unchanged; this feature does not redesign supplied-object ownership.
 
 RELEASE-MATRIX CONCURRENCY REPAIR (2026-08-30): the Meld Resolution Runtime
 contract now records the shared-spell boundary exposed by concurrent owner and

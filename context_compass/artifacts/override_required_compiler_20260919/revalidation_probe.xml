@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="0.539" timestamp="2026-09-19T14:54:58.731889-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_notch_from_definition_to_provider_revalidates_its_consumer" time="0.064"><failure message="TypeError: Consumer.__init__() missing 1 required positional argument: 'value'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:497: in test_notch_from_definition_to_provider_revalidates_its_consumer
+    result = conduit.meld(spell=Consumer)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:385: in meld
+    instance = creation_context.execute_no_hooks(
+src\melder\aether\conduit\meld\creation_context\creation_context.py:305: in execute_no_hooks
+    return self._no_overrides_instance_executor(meld)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\solo\hydration\solo_hydrator.py:180: in _cold_no_overrides_instance_door
+    return hydrated.no_overrides_instance_executor(meld)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;creation_context_no_overrides_only_template:many:0:0&gt;:11: in _creation_context_execute_no_overrides_only
+    ???
+&lt;solo_no_overrides_codegen_creation:many:1:0&gt;:2: in _solo_no_overrides_codegen_creation_executor
+    ???
+E   TypeError: Consumer.__init__() missing 1 required positional argument: 'value'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_new_provider_revalidates_an_existing_override_required_consumer" time="0.009"><failure message="TypeError: Consumer.__init__() missing 1 required positional argument: 'value'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:510: in test_new_provider_revalidates_an_existing_override_required_consumer
+    result = conduit.meld(spell=Consumer)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4098: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:385: in meld
+    instance = creation_context.execute_no_hooks(
+src\melder\aether\conduit\meld\creation_context\creation_context.py:305: in execute_no_hooks
+    return self._no_overrides_instance_executor(meld)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\solo\hydration\solo_hydrator.py:180: in _cold_no_overrides_instance_door
+    return hydrated.no_overrides_instance_executor(meld)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;creation_context_no_overrides_only_template:many:0:0&gt;:11: in _creation_context_execute_no_overrides_only
+    ???
+&lt;solo_no_overrides_codegen_creation:many:1:0&gt;:2: in _solo_no_overrides_codegen_creation_executor
+    ???
+E   TypeError: Consumer.__init__() missing 1 required positional argument: 'value'</failure></testcase></testsuite></testsuites>

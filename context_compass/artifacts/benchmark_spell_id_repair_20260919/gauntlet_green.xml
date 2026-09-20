@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.319" timestamp="2026-09-19T19:01:31.704532-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="benchmarks.testing_other_di.test_melder_gauntlet" name="test_melder_gauntlet" time="0.288" /></testsuite></testsuites>

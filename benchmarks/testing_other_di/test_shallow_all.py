@@ -1215,21 +1215,21 @@ def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
     conduit = spellbook.conjure(name="threaded-di-stress")
 
     def get_root_a() -> Any:
-        root = conduit.meld(spell=root_a_id)
+        root = conduit.meld(spell_id=root_a_id)
         if not isinstance(root, g.root_a):
             raise AssertionError("Melder: root_a meld returned wrong type")
         return root
 
     def get_root_b() -> Any:
-        root = conduit.meld(spell=root_b_id)
+        root = conduit.meld(spell_id=root_b_id)
         if not isinstance(root, g.root_b):
             raise AssertionError("Melder: root_b meld returned wrong type")
         return root
 
     def spellspace_cycle() -> None:
         with conduit.enter_spellspace() as space:
-            r1 = space.meld(spell=root_space_id)
-            r2 = space.meld(spell=root_space_id)
+            r1 = space.meld(spell_id=root_space_id)
+            r2 = space.meld(spell_id=root_space_id)
             if not isinstance(r1, g.spellspace_root):
                 raise AssertionError("Melder: spellspace root meld returned wrong type")
             if r1 is not r2:
@@ -1242,7 +1242,7 @@ def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
 
     def spellspace_resolve(handle: Any) -> Any:
         _, space = handle
-        root = space.meld(spell=root_space_id)
+        root = space.meld(spell_id=root_space_id)
         if not isinstance(root, g.spellspace_root):
             raise AssertionError("Melder: spellspace root meld returned wrong type")
         return root
@@ -1625,14 +1625,14 @@ def _build_rotation_melder(graphs: list[_GraphSpec]) -> _RotationOps:
 
     def get_root_a(ix: int) -> Any:
         g = graphs[ix]
-        root = conduit.meld(spell=root_a_ids[ix])
+        root = conduit.meld(spell_id=root_a_ids[ix])
         if not isinstance(root, g.root_a):
             raise AssertionError("Melder: root_a meld returned wrong type")
         return root
 
     def get_root_b(ix: int) -> Any:
         g = graphs[ix]
-        root = conduit.meld(spell=root_b_ids[ix])
+        root = conduit.meld(spell_id=root_b_ids[ix])
         if not isinstance(root, g.root_b):
             raise AssertionError("Melder: root_b meld returned wrong type")
         return root
@@ -1640,8 +1640,8 @@ def _build_rotation_melder(graphs: list[_GraphSpec]) -> _RotationOps:
     def spellspace_cycle(ix: int) -> None:
         g = graphs[ix]
         with conduit.enter_spellspace() as space:
-            r1 = space.meld(spell=space_root_ids[ix])
-            r2 = space.meld(spell=space_root_ids[ix])
+            r1 = space.meld(spell_id=space_root_ids[ix])
+            r2 = space.meld(spell_id=space_root_ids[ix])
             if not isinstance(r1, g.spellspace_root):
                 raise AssertionError("Melder: spellspace root meld returned wrong type")
             if r1 is not r2:

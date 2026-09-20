@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
- "source_sha256": "63de1d5e8c58f6618aafd6e3b9d555a955a664857d9c008c245c5e6525ef7637",
+ "source_sha256": "ca46babfc4b3dbf200b5f47a56ee2352f15f5024e01fad4ed52dc0d81bd93bed",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.dag.socket_kind": {
@@ -30,15 +30,15 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b33cd45ea8754579da29160e15701bc20cac1d62213425d823283d2df16b7d19",
+   "span_sha256": "b7104b0500e6d59e804881dfb1261d95db7bf03eb0b6347de210b3258df1a12c",
    "role": "Enum classifying the kind of socket represented by a DAG edge.",
    "responsibilities": [
-    "labels normal, spell-contract, and mutation-contract socket kinds"
+    "labels the current NORMAL, SPELL_CONTRACT, OVERRIDE_REQUIRED categories"
    ],
    "owns_state": [
     "NORMAL",
     "SPELL_CONTRACT",
-    "MUTATION_CONTRACT"
+    "OVERRIDE_REQUIRED"
    ],
    "phases": [
     "validation",

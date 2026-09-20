@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_8.py",
- "source_sha256": "8d1278804f20a9d409491ef449240e99df3e95886139466b81d8faf7061edcb0",
+ "source_sha256": "e689adb5ed8f6c8fccd719086be71cfef69b39f214daa830688e9969a0f6f0aa",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_8": {
@@ -33,12 +33,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "23f6eb20fcfff04f43a600500ed7fc44d9f39ef35c0cdd007d0c320f6a578156",
+   "span_sha256": "8f42e12516f671d05252c3da12382ffa43a1d98d96b5ff432370f25d6f84c42b",
    "role": "Live compiler phase-8 wrapper over SpellAnalyzer.",
    "responsibilities": [
     "owns and reuses SpellAnalyzer as the live phase-8 collaborator",
     "publishes analyzer-owned occurrence graph truth onto SpellCompilerArtifact",
-    "bridges the current phase scheduler onto the analyzer seam without reviving old occurrence-plan code"
+    "bridges the current phase scheduler onto the analyzer seam without reviving old occurrence-plan code",
+    "skips non-resolvable definitions before executable occurrence analysis"
    ],
    "owns_state": [
     "_spell_analyzer"

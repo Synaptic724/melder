@@ -1,0 +1,18 @@
+human and machine identity lanes resolved one live service
+.meld('MyService') before/after explicit success: "[MELD] No spell found for frame='myservice', binding='__default__'."
+.meld('MyService') before/after explicit success: "[MELD] No spell found for frame='myservice', binding='__default__'."
+.meld('MyService') before/after explicit success: "[MELD] No spell found for frame='myservice', binding='__default__'."
+.Explicit string/class binding and spell_id: same MyService instance
+.Explicit string/class binding and spell_id: same MyService instance
+.Explicit string/class binding and spell_id: same MyService instance
+.meld(binding_name='test'): normalize_spell_key requires at least one of `spell` or `spellframe`.
+.meld(binding_name='test'): normalize_spell_key requires at least one of `spell` or `spellframe`.
+.meld(binding_name='test'): normalize_spell_key requires at least one of `spell` or `spellframe`.
+.meld('test'): "[MELD] No spell found for frame='test', binding='__default__'."
+.meld('binding_name="test"'): '[MELD] No spell found for frame=\'binding_name="test"\', binding=\'__default__\'.'
+.meld('test'): "[MELD] No spell found for frame='test', binding='__default__'."
+.meld('binding_name="test"'): '[MELD] No spell found for frame=\'binding_name="test"\', binding=\'__default__\'.'
+.meld('test'): "[MELD] No spell found for frame='test', binding='__default__'."
+.meld('binding_name="test"'): '[MELD] No spell found for frame=\'binding_name="test"\', binding=\'__default__\'.'
+.
+16 passed in 0.41s

@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="9" time="0.920" timestamp="2026-09-13T17:02:13.280709-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="context_compass.artifacts.existing_object_di_comparison_20260913.test_melder_existing_identity_probe" name="test_melder_existing_identity_matrix[same_reference_same_key-True-True-True-True-main-instance-unique-False]" time="0.010" /><testcase classname="context_compass.artifacts.existing_object_di_comparison_20260913.test_melder_existing_identity_probe" name="test_melder_existing_identity_matrix[same_reference_two_names-True-True-True-True-alternate-instance-unique-True]" time="0.009"><failure message="AssertionError: same_reference_two_names: unexpected refusal: Spellbook validation failed; one or more spells are broken. Broken spells: IdentityService (id=b32249461762d0ed9a66f3e58cb8c476200e87276dbe5fd1772f6653a79bd5f5, frame='identity-services')&#10;  Diagnostics:&#10;  Phase 4 issues:&#10;  - Spell 'IdentityService' (id=b32249461762d0ed9a66f3e58cb8c476200e87276dbe5fd1772f6653a79bd5f5, frame='identity-services'):&#10;      - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'IdentityService'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.&#10;        details: {'spell_name': 'IdentityService', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M2EG3GTZVGRCBVVE7TPE0DGF', 'spell_id': '7023e6af1361d39a215165c36f4971aaaa2420fec7052ec30fa322a3b5f73665', 'spellframe': 'identity-services', 'binding_name': 'main'}, {'spell_index_id': '01M2EG3GV25PTYME499BD4AZ5B', 'spell_id': 'b32249461762d0ed9a66f3e58cb8c476200e87276dbe5fd1772f6653a79bd5f5', 'spellframe': 'identity-services', 'binding_name': 'alternate'}]}&#10;  Phase 6 diagnostics:&#10;    (none recorded)&#10;assert not True">identity_world = &lt;melder.aether.aether.Aether object at 0x000002AE391526D0&gt;
+case = 'same_reference_two_names', process_unique = True, same_book = True
+same_frame = True, same_reference = True, second_name = 'alternate'
+kind = 'instance', existence = 'unique', accepted = True
+
+    @pytest.mark.parametrize(
+        "case,process_unique,same_book,same_frame,same_reference,second_name,kind,existence,accepted",
+        [
+            ("same_reference_same_key", True, True, True, True, "main", "instance", "unique", False),
+            ("same_reference_two_names", True, True, True, True, "alternate", "instance", "unique", True),
+            ("two_objects_two_names", True, True, True, False, "alternate", "instance", "unique", True),
+            ("two_objects_same_key", True, True, True, False, "main", "instance", "unique", False),
+            ("same_reference_cross_frame_strict", True, False, False, True, "main", "instance", "unique", False),
+            ("same_reference_cross_frame_relaxed", False, False, False, True, "main", "instance", "unique", True),
+            ("same_reference_same_frame_relaxed", False, False, True, True, "main", "instance", "unique", False),
+            ("class_singletons_cross_frame_relaxed", False, False, False, False, "main", "class", "unique", True),
+            ("prebuilt_many_refused", True, True, True, True, "alternate", "instance", "many", False),
+        ],
+        ids=lambda value: value if isinstance(value, str) else None,
+    )
+    def test_melder_existing_identity_matrix(
+            identity_world: Aether,
+            case: str,
+            process_unique: bool,
+            same_book: bool,
+            same_frame: bool,
+            same_reference: bool,
+            second_name: str,
+            kind: str,
+            existence: str,
+            accepted: bool,
+    ) -&gt; None:
+        """Assert each sequential admission result and the actual references returned by meld.
+    
+        The first root is live before the second registration, so cross-frame spell-ID
+        checks see an already published provider. This does not test concurrent admission.
+        """
+        configuration = AetherConfiguration().with_defaults()
+        configuration.with_process_wide_unique_spell_ids(process_unique)
+        identity_world.configure(configuration)
+        first_book = Spellbook(aetheric_frame="identity-a")
+        first_book.configure_aether_frame(
+            system_state="dynamic", system_caching_enabled=False,
+            disposal=None, disposal_method_names=None,
+        )
+        first_input = IdentityService if kind == "class" else IdentityService()
+        second_input = (
+            IdentityService if kind == "class"
+            else first_input if same_reference else IdentityService()
+        )
+        first_id = first_book.bind(
+            spell=first_input, existence="unique", spellframe="identity-services", binding_name="main",
+        )
+        first_root = first_book.conjure(dynamic=True)
+        second_book = first_book
+        try:
+            if not same_book:
+                second_book = Spellbook(aetheric_frame="identity-a" if same_frame else "identity-b")
+                if not same_frame:
+                    second_book.configure_aether_frame(
+                        system_state="dynamic", system_caching_enabled=False,
+                        disposal=None, disposal_method_names=None,
+                    )
+            try:
+&gt;               second_id = second_book.bind(
+                    spell=second_input, existence=existence,
+                    spellframe="identity-services", binding_name=second_name,
+                )
+
+context_compass\artifacts\existing_object_di_comparison_20260913\test_melder_existing_identity_probe.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\spellbook\spellbook.py:5126: in bind
+    with self.transaction(
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\contextlib.py:148: in __exit__
+    next(self.gen)
+src\melder\aether\spellbook\spellbook.py:4527: in transaction
+    self.end_transaction(transaction_type, success=True)
+src\melder\aether\spellbook\spellbook.py:4415: in end_transaction
+    mediator.end_transaction_for_identity(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:744: in end_transaction_for_identity
+    return self.end_transaction_by_request_id(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:889: in end_transaction_by_request_id
+    self._finalize_root_session(session)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:1073: in _finalize_root_session
+    self._orchestrator.commit_request(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\orchestrator\orchestrator.py:504: in commit_request
+    commit_validator(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:584: in _dispatch_commit_validator
+    structural(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:835: in _default_structural_validator
+    spellbook._run_post_conjure_structural_phases(pending)
+src\melder\aether\spellbook\spellbook.py:6700: in _run_post_conjure_structural_phases
+    SpellbookCreationSystem.run_post_conjure_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1440: in run_post_conjure_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+spellbook = &lt;melder.aether.spellbook.spellbook.Spellbook object at 0x000002AE3C390310&gt;
+broken_spells = [Spell(name=IdentityService, binding=alternate, frame=identity-services, SHA256=b32249461762d0ed9a66f3e58cb8c476200e87276dbe5fd1772f6653a79bd5f5)]
+context_name = '_run_post_conjure_structural_phases'
+message_prefix = 'Post-conjure structural pipeline completed with broken spells; '
+
+    @staticmethod
+    def _raise_structural_validation_error(
+            *,
+            spellbook: Spellbook,
+            broken_spells: list[Spell],
+            context_name: str,
+            message_prefix: str,
+    ) -&gt; None:
+        """
+        Purpose:
+            Log and raise SpellbookValidationError for broken structural results.
+        Contract:
+            - Includes broken spell ids/names in error logs.
+            - Always raises `SpellbookValidationError`.
+        Args:
+            spellbook: Owning Spellbook instance.
+            broken_spells: Broken spells to report.
+            context_name: Logging context label.
+            message_prefix: Prefix for the log message body.
+        Returns:
+            None.
+        Raises:
+            SpellbookValidationError: Always rose with `broken_spells`.
+        """
+        broken_spell_ids = [spell.spell_id for spell in broken_spells]
+        broken_spell_names = [spell.spell_name for spell in broken_spells]
+        spellbook._logger.error(
+            f"{message_prefix}"
+            f"raising SpellbookValidationError. "
+            f"broken_spell_ids={broken_spell_ids}, "
+            f"broken_spell_names={broken_spell_names}",
+            context_name,
+        )
+&gt;       raise SpellbookValidationError(broken_spells)
+E       melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: IdentityService (id=b32249461762d0ed9a66f3e58cb8c476200e87276dbe5fd1772f6653a79bd5f5, frame='identity-services')
+E       Diagnostics:
+E       Phase 4 issues:
+E       - Spell 'IdentityService' (id=b32249461762d0ed9a66f3e58cb8c476200e87276dbe5fd1772f6653a79bd5f5, frame='identity-services'):
+E           - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'IdentityService'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.
+E             details: {'spell_name': 'IdentityService', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M2EG3GTZVGRCBVVE7TPE0DGF', 'spell_id': '7023e6af1361d39a215165c36f4971aaaa2420fec7052ec30fa322a3b5f73665', 'spellframe': 'identity-services', 'binding_name': 'main'}, {'spell_index_id': '01M2EG3GV25PTYME499BD4AZ5B', 'spell_id': 'b32249461762d0ed9a66f3e58cb8c476200e87276dbe5fd1772f6653a79bd5f5', 'spellframe': 'identity-services', 'binding_name': 'alternate'}]}
+E       Phase 6 diagnostics:
+E         (none recorded)
+
+src\melder\aether\spellbook\spellbook_creation_system.py:1993: SpellbookValidationError
+
+During handling of the above exception, another exception occurred:
+
+identity_world = &lt;melder.aether.aether.Aether object at 0x000002AE391526D0&gt;
+case = 'same_reference_two_names', process_unique = True, same_book = True
+same_frame = True, same_reference = True, second_name = 'alternate'
+kind = 'instance', existence = 'unique', accepted = True
+
+    @pytest.mark.parametrize(
+        "case,process_unique,same_book,same_frame,same_reference,second_name,kind,existence,accepted",
+        [
+            ("same_reference_same_key", True, True, True, True, "main", "instance", "unique", False),
+            ("same_reference_two_names", True, True, True, True, "alternate", "instance", "unique", True),
+            ("two_objects_two_names", True, True, True, False, "alternate", "instance", "unique", True),
+            ("two_objects_same_key", True, True, True, False, "main", "instance", "unique", False),
+            ("same_reference_cross_frame_strict", True, False, False, True, "main", "instance", "unique", False),
+            ("same_reference_cross_frame_relaxed", False, False, False, True, "main", "instance", "unique", True),
+            ("same_reference_same_frame_relaxed", False, False, True, True, "main", "instance", "unique", False),
+            ("class_singletons_cross_frame_relaxed", False, False, False, False, "main", "class", "unique", True),
+            ("prebuilt_many_refused", True, True, True, True, "alternate", "instance", "many", False),
+        ],
+        ids=lambda value: value if isinstance(value, str) else None,
+    )
+    def test_melder_existing_identity_matrix(
+            identity_world: Aether,
+            case: str,
+            process_unique: bool,
+            same_book: bool,
+            same_frame: bool,
+            same_reference: bool,
+            second_name: str,
+            kind: str,
+            existence: str,
+            accepted: bool,
+    ) -&gt; None:
+        """Assert each sequential admission result and the actual references returned by meld.
+    
+        The first root is live before the second registration, so cross-frame spell-ID
+        checks see an already published provider. This does not test concurrent admission.
+        """
+        configuration = AetherConfiguration().with_defaults()
+        configuration.with_process_wide_unique_spell_ids(process_unique)
+        identity_world.configure(configuration)
+        first_book = Spellbook(aetheric_frame="identity-a")
+        first_book.configure_aether_frame(
+            system_state="dynamic", system_caching_enabled=False,
+            disposal=None, disposal_method_names=None,
+        )
+        first_input = IdentityService if kind == "class" else IdentityService()
+        second_input = (
+            IdentityService if kind == "class"
+            else first_input if same_reference else IdentityService()
+        )
+        first_id = first_book.bind(
+            spell=first_input, existence="unique", spellframe="identity-services", binding_name="main",
+        )
+        first_root = first_book.conjure(dynamic=True)
+        second_book = first_book
+        try:
+            if not same_book:
+                second_book = Spellbook(aetheric_frame="identity-a" if same_frame else "identity-b")
+                if not same_frame:
+                    second_book.configure_aether_frame(
+                        system_state="dynamic", system_caching_enabled=False,
+                        disposal=None, disposal_method_names=None,
+                    )
+            try:
+                second_id = second_book.bind(
+                    spell=second_input, existence=existence,
+                    spellframe="identity-services", binding_name=second_name,
+                )
+                second_root = first_root if same_book else second_book.conjure(dynamic=True)
+            except (RuntimeError, ValueError) as error:
+&gt;               assert not accepted, f"{case}: unexpected refusal: {error}"
+E               AssertionError: same_reference_two_names: unexpected refusal: Spellbook validation failed; one or more spells are broken. Broken spells: IdentityService (id=b32249461762d0ed9a66f3e58cb8c476200e87276dbe5fd1772f6653a79bd5f5, frame='identity-services')
+E                 Diagnostics:
+E                 Phase 4 issues:
+E                 - Spell 'IdentityService' (id=b32249461762d0ed9a66f3e58cb8c476200e87276dbe5fd1772f6653a79bd5f5, frame='identity-services'):
+E                     - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'IdentityService'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.
+E                       details: {'spell_name': 'IdentityService', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M2EG3GTZVGRCBVVE7TPE0DGF', 'spell_id': '7023e6af1361d39a215165c36f4971aaaa2420fec7052ec30fa322a3b5f73665', 'spellframe': 'identity-services', 'binding_name': 'main'}, {'spell_index_id': '01M2EG3GV25PTYME499BD4AZ5B', 'spell_id': 'b32249461762d0ed9a66f3e58cb8c476200e87276dbe5fd1772f6653a79bd5f5', 'spellframe': 'identity-services', 'binding_name': 'alternate'}]}
+E                 Phase 6 diagnostics:
+E                   (none recorded)
+E               assert not True
+
+context_compass\artifacts\existing_object_di_comparison_20260913\test_melder_existing_identity_probe.py:111: AssertionError</failure></testcase><testcase classname="context_compass.artifacts.existing_object_di_comparison_20260913.test_melder_existing_identity_probe" name="test_melder_existing_identity_matrix[two_objects_two_names-True-True-True-False-alternate-instance-unique-True]" time="0.011"><failure message="AssertionError: two_objects_two_names: unexpected refusal: Spellbook validation failed; one or more spells are broken. Broken spells: IdentityService (id=c412c73053ac1df5f28b7a07ee3275708cc37f305de38d5ccde1719ae900846d, frame='identity-services')&#10;  Diagnostics:&#10;  Phase 4 issues:&#10;  - Spell 'IdentityService' (id=c412c73053ac1df5f28b7a07ee3275708cc37f305de38d5ccde1719ae900846d, frame='identity-services'):&#10;      - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'IdentityService'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.&#10;        details: {'spell_name': 'IdentityService', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M2EG3H4Q8JKDFQKENH9H2AAY', 'spell_id': 'f0a9a71741c1a6b48956bf8e02cd4ab7263dd9cb3a4339dbb1e2f4d7a38eca20', 'spellframe': 'identity-services', 'binding_name': 'main'}, {'spell_index_id': '01M2EG3H4VM3XRCMG615W8JKVV', 'spell_id': 'c412c73053ac1df5f28b7a07ee3275708cc37f305de38d5ccde1719ae900846d', 'spellframe': 'identity-services', 'binding_name': 'alternate'}]}&#10;  Phase 6 diagnostics:&#10;    (none recorded)&#10;assert not True">identity_world = &lt;melder.aether.aether.Aether object at 0x000002AE39155A10&gt;
+case = 'two_objects_two_names', process_unique = True, same_book = True
+same_frame = True, same_reference = False, second_name = 'alternate'
+kind = 'instance', existence = 'unique', accepted = True
+
+    @pytest.mark.parametrize(
+        "case,process_unique,same_book,same_frame,same_reference,second_name,kind,existence,accepted",
+        [
+            ("same_reference_same_key", True, True, True, True, "main", "instance", "unique", False),
+            ("same_reference_two_names", True, True, True, True, "alternate", "instance", "unique", True),
+            ("two_objects_two_names", True, True, True, False, "alternate", "instance", "unique", True),
+            ("two_objects_same_key", True, True, True, False, "main", "instance", "unique", False),
+            ("same_reference_cross_frame_strict", True, False, False, True, "main", "instance", "unique", False),
+            ("same_reference_cross_frame_relaxed", False, False, False, True, "main", "instance", "unique", True),
+            ("same_reference_same_frame_relaxed", False, False, True, True, "main", "instance", "unique", False),
+            ("class_singletons_cross_frame_relaxed", False, False, False, False, "main", "class", "unique", True),
+            ("prebuilt_many_refused", True, True, True, True, "alternate", "instance", "many", False),
+        ],
+        ids=lambda value: value if isinstance(value, str) else None,
+    )
+    def test_melder_existing_identity_matrix(
+            identity_world: Aether,
+            case: str,
+            process_unique: bool,
+            same_book: bool,
+            same_frame: bool,
+            same_reference: bool,
+            second_name: str,
+            kind: str,
+            existence: str,
+            accepted: bool,
+    ) -&gt; None:
+        """Assert each sequential admission result and the actual references returned by meld.
+    
+        The first root is live before the second registration, so cross-frame spell-ID
+        checks see an already published provider. This does not test concurrent admission.
+        """
+        configuration = AetherConfiguration().with_defaults()
+        configuration.with_process_wide_unique_spell_ids(process_unique)
+        identity_world.configure(configuration)
+        first_book = Spellbook(aetheric_frame="identity-a")
+        first_book.configure_aether_frame(
+            system_state="dynamic", system_caching_enabled=False,
+            disposal=None, disposal_method_names=None,
+        )
+        first_input = IdentityService if kind == "class" else IdentityService()
+        second_input = (
+            IdentityService if kind == "class"
+            else first_input if same_reference else IdentityService()
+        )
+        first_id = first_book.bind(
+            spell=first_input, existence="unique", spellframe="identity-services", binding_name="main",
+        )
+        first_root = first_book.conjure(dynamic=True)
+        second_book = first_book
+        try:
+            if not same_book:
+                second_book = Spellbook(aetheric_frame="identity-a" if same_frame else "identity-b")
+                if not same_frame:
+                    second_book.configure_aether_frame(
+                        system_state="dynamic", system_caching_enabled=False,
+                        disposal=None, disposal_method_names=None,
+                    )
+            try:
+&gt;               second_id = second_book.bind(
+                    spell=second_input, existence=existence,
+                    spellframe="identity-services", binding_name=second_name,
+                )
+
+context_compass\artifacts\existing_object_di_comparison_20260913\test_melder_existing_identity_probe.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\spellbook\spellbook.py:5126: in bind
+    with self.transaction(
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\contextlib.py:148: in __exit__
+    next(self.gen)
+src\melder\aether\spellbook\spellbook.py:4527: in transaction
+    self.end_transaction(transaction_type, success=True)
+src\melder\aether\spellbook\spellbook.py:4415: in end_transaction
+    mediator.end_transaction_for_identity(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:744: in end_transaction_for_identity
+    return self.end_transaction_by_request_id(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:889: in end_transaction_by_request_id
+    self._finalize_root_session(session)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:1073: in _finalize_root_session
+    self._orchestrator.commit_request(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\orchestrator\orchestrator.py:504: in commit_request
+    commit_validator(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:584: in _dispatch_commit_validator
+    structural(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:835: in _default_structural_validator
+    spellbook._run_post_conjure_structural_phases(pending)
+src\melder\aether\spellbook\spellbook.py:6700: in _run_post_conjure_structural_phases
+    SpellbookCreationSystem.run_post_conjure_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1440: in run_post_conjure_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+spellbook = &lt;melder.aether.spellbook.spellbook.Spellbook object at 0x000002AE3C390010&gt;
+broken_spells = [Spell(name=IdentityService, binding=alternate, frame=identity-services, SHA256=c412c73053ac1df5f28b7a07ee3275708cc37f305de38d5ccde1719ae900846d)]
+context_name = '_run_post_conjure_structural_phases'
+message_prefix = 'Post-conjure structural pipeline completed with broken spells; '
+
+    @staticmethod
+    def _raise_structural_validation_error(
+            *,
+            spellbook: Spellbook,
+            broken_spells: list[Spell],
+            context_name: str,
+            message_prefix: str,
+    ) -&gt; None:
+        """
+        Purpose:
+            Log and raise SpellbookValidationError for broken structural results.
+        Contract:
+            - Includes broken spell ids/names in error logs.
+            - Always raises `SpellbookValidationError`.
+        Args:
+            spellbook: Owning Spellbook instance.
+            broken_spells: Broken spells to report.
+            context_name: Logging context label.
+            message_prefix: Prefix for the log message body.
+        Returns:
+            None.
+        Raises:
+            SpellbookValidationError: Always rose with `broken_spells`.
+        """
+        broken_spell_ids = [spell.spell_id for spell in broken_spells]
+        broken_spell_names = [spell.spell_name for spell in broken_spells]
+        spellbook._logger.error(
+            f"{message_prefix}"
+            f"raising SpellbookValidationError. "
+            f"broken_spell_ids={broken_spell_ids}, "
+            f"broken_spell_names={broken_spell_names}",
+            context_name,
+        )
+&gt;       raise SpellbookValidationError(broken_spells)
+E       melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: IdentityService (id=c412c73053ac1df5f28b7a07ee3275708cc37f305de38d5ccde1719ae900846d, frame='identity-services')
+E       Diagnostics:
+E       Phase 4 issues:
+E       - Spell 'IdentityService' (id=c412c73053ac1df5f28b7a07ee3275708cc37f305de38d5ccde1719ae900846d, frame='identity-services'):
+E           - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'IdentityService'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.
+E             details: {'spell_name': 'IdentityService', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M2EG3H4Q8JKDFQKENH9H2AAY', 'spell_id': 'f0a9a71741c1a6b48956bf8e02cd4ab7263dd9cb3a4339dbb1e2f4d7a38eca20', 'spellframe': 'identity-services', 'binding_name': 'main'}, {'spell_index_id': '01M2EG3H4VM3XRCMG615W8JKVV', 'spell_id': 'c412c73053ac1df5f28b7a07ee3275708cc37f305de38d5ccde1719ae900846d', 'spellframe': 'identity-services', 'binding_name': 'alternate'}]}
+E       Phase 6 diagnostics:
+E         (none recorded)
+
+src\melder\aether\spellbook\spellbook_creation_system.py:1993: SpellbookValidationError
+
+During handling of the above exception, another exception occurred:
+
+identity_world = &lt;melder.aether.aether.Aether object at 0x000002AE39155A10&gt;
+case = 'two_objects_two_names', process_unique = True, same_book = True
+same_frame = True, same_reference = False, second_name = 'alternate'
+kind = 'instance', existence = 'unique', accepted = True
+
+    @pytest.mark.parametrize(
+        "case,process_unique,same_book,same_frame,same_reference,second_name,kind,existence,accepted",
+        [
+            ("same_reference_same_key", True, True, True, True, "main", "instance", "unique", False),
+            ("same_reference_two_names", True, True, True, True, "alternate", "instance", "unique", True),
+            ("two_objects_two_names", True, True, True, False, "alternate", "instance", "unique", True),
+            ("two_objects_same_key", True, True, True, False, "main", "instance", "unique", False),
+            ("same_reference_cross_frame_strict", True, False, False, True, "main", "instance", "unique", False),
+            ("same_reference_cross_frame_relaxed", False, False, False, True, "main", "instance", "unique", True),
+            ("same_reference_same_frame_relaxed", False, False, True, True, "main", "instance", "unique", False),
+            ("class_singletons_cross_frame_relaxed", False, False, False, False, "main", "class", "unique", True),
+            ("prebuilt_many_refused", True, True, True, True, "alternate", "instance", "many", False),
+        ],
+        ids=lambda value: value if isinstance(value, str) else None,
+    )
+    def test_melder_existing_identity_matrix(
+            identity_world: Aether,
+            case: str,
+            process_unique: bool,
+            same_book: bool,
+            same_frame: bool,
+            same_reference: bool,
+            second_name: str,
+            kind: str,
+            existence: str,
+            accepted: bool,
+    ) -&gt; None:
+        """Assert each sequential admission result and the actual references returned by meld.
+    
+        The first root is live before the second registration, so cross-frame spell-ID
+        checks see an already published provider. This does not test concurrent admission.
+        """
+        configuration = AetherConfiguration().with_defaults()
+        configuration.with_process_wide_unique_spell_ids(process_unique)
+        identity_world.configure(configuration)
+        first_book = Spellbook(aetheric_frame="identity-a")
+        first_book.configure_aether_frame(
+            system_state="dynamic", system_caching_enabled=False,
+            disposal=None, disposal_method_names=None,
+        )
+        first_input = IdentityService if kind == "class" else IdentityService()
+        second_input = (
+            IdentityService if kind == "class"
+            else first_input if same_reference else IdentityService()
+        )
+        first_id = first_book.bind(
+            spell=first_input, existence="unique", spellframe="identity-services", binding_name="main",
+        )
+        first_root = first_book.conjure(dynamic=True)
+        second_book = first_book
+        try:
+            if not same_book:
+                second_book = Spellbook(aetheric_frame="identity-a" if same_frame else "identity-b")
+                if not same_frame:
+                    second_book.configure_aether_frame(
+                        system_state="dynamic", system_caching_enabled=False,
+                        disposal=None, disposal_method_names=None,
+                    )
+            try:
+                second_id = second_book.bind(
+                    spell=second_input, existence=existence,
+                    spellframe="identity-services", binding_name=second_name,
+                )
+                second_root = first_root if same_book else second_book.conjure(dynamic=True)
+            except (RuntimeError, ValueError) as error:
+&gt;               assert not accepted, f"{case}: unexpected refusal: {error}"
+E               AssertionError: two_objects_two_names: unexpected refusal: Spellbook validation failed; one or more spells are broken. Broken spells: IdentityService (id=c412c73053ac1df5f28b7a07ee3275708cc37f305de38d5ccde1719ae900846d, frame='identity-services')
+E                 Diagnostics:
+E                 Phase 4 issues:
+E                 - Spell 'IdentityService' (id=c412c73053ac1df5f28b7a07ee3275708cc37f305de38d5ccde1719ae900846d, frame='identity-services'):
+E                     - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'IdentityService'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.
+E                       details: {'spell_name': 'IdentityService', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M2EG3H4Q8JKDFQKENH9H2AAY', 'spell_id': 'f0a9a71741c1a6b48956bf8e02cd4ab7263dd9cb3a4339dbb1e2f4d7a38eca20', 'spellframe': 'identity-services', 'binding_name': 'main'}, {'spell_index_id': '01M2EG3H4VM3XRCMG615W8JKVV', 'spell_id': 'c412c73053ac1df5f28b7a07ee3275708cc37f305de38d5ccde1719ae900846d', 'spellframe': 'identity-services', 'binding_name': 'alternate'}]}
+E                 Phase 6 diagnostics:
+E                   (none recorded)
+E               assert not True
+
+context_compass\artifacts\existing_object_di_comparison_20260913\test_melder_existing_identity_probe.py:111: AssertionError</failure></testcase><testcase classname="context_compass.artifacts.existing_object_di_comparison_20260913.test_melder_existing_identity_probe" name="test_melder_existing_identity_matrix[two_objects_same_key-True-True-True-False-main-instance-unique-False]" time="0.008" /><testcase classname="context_compass.artifacts.existing_object_di_comparison_20260913.test_melder_existing_identity_probe" name="test_melder_existing_identity_matrix[same_reference_cross_frame_strict-True-False-False-True-main-instance-unique-False]" time="0.008" /><testcase classname="context_compass.artifacts.existing_object_di_comparison_20260913.test_melder_existing_identity_probe" name="test_melder_existing_identity_matrix[same_reference_cross_frame_relaxed-False-False-False-True-main-instance-unique-True]" time="0.011" /><testcase classname="context_compass.artifacts.existing_object_di_comparison_20260913.test_melder_existing_identity_probe" name="test_melder_existing_identity_matrix[same_reference_same_frame_relaxed-False-False-True-True-main-instance-unique-False]" time="0.008" /><testcase classname="context_compass.artifacts.existing_object_di_comparison_20260913.test_melder_existing_identity_probe" name="test_melder_existing_identity_matrix[class_singletons_cross_frame_relaxed-False-False-False-False-main-class-unique-True]" time="0.066" /><testcase classname="context_compass.artifacts.existing_object_di_comparison_20260913.test_melder_existing_identity_probe" name="test_melder_existing_identity_matrix[prebuilt_many_refused-True-True-True-True-alternate-instance-many-False]" time="0.007" /></testsuite></testsuites>

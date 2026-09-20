@@ -1136,6 +1136,7 @@ def test_run_target_foundational_and_plan_resolution_phase_wrappers_register_exp
 
     target_spell = types.SimpleNamespace(
         is_existing_creation=False,
+        resolvable=True,
         _compiler_artifact=types.SimpleNamespace(_root_blueprint_phase5=object()),
         run_phase_root_blueprints_local=lambda conduit_id, cancel_event: None,
         run_phase_system_validation_local=lambda conduit_id, cancel_event: None,
@@ -1426,7 +1427,7 @@ def test_build_conjure_cache_state_reports_disabled_path() -> None:
         None.
     """
     spellbook = types.SimpleNamespace(
-        _spell_id_pool={"spell-a": types.SimpleNamespace(is_existing_creation=False)},
+        _spell_id_pool={"spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True)},
         _system_caching_enabled_in_aether=lambda: False,
     )
 
@@ -1459,8 +1460,8 @@ def test_build_conjure_cache_state_reports_full_hit_path() -> None:
     )
     spellbook = types.SimpleNamespace(
         _spell_id_pool={
-            "spell-a": types.SimpleNamespace(is_existing_creation=False),
-            "spell-b": types.SimpleNamespace(is_existing_creation=False),
+            "spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
+            "spell-b": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
@@ -1498,8 +1499,8 @@ def test_build_conjure_cache_state_reports_mixed_path() -> None:
     )
     spellbook = types.SimpleNamespace(
         _spell_id_pool={
-            "spell-a": types.SimpleNamespace(is_existing_creation=False),
-            "spell-b": types.SimpleNamespace(is_existing_creation=False),
+            "spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
+            "spell-b": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,
@@ -1535,8 +1536,8 @@ def test_build_conjure_cache_state_treats_stale_surplus_cache_as_full_hit() -> N
     )
     spellbook = types.SimpleNamespace(
         _spell_id_pool={
-            "spell-a": types.SimpleNamespace(is_existing_creation=False),
-            "spell-b": types.SimpleNamespace(is_existing_creation=False),
+            "spell-a": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
+            "spell-b": types.SimpleNamespace(is_existing_creation=False, resolvable=True),
         },
         _system_caching_enabled_in_aether=lambda: True,
         _get_or_create_caching_system=lambda conduit_name=None: caching_system,

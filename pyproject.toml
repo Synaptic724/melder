@@ -80,9 +80,8 @@ LinkedIn = "https://www.linkedin.com/in/mark-geleta-4b59b752/"
 
 # PEP 735 dependency groups: development-only requirements that are NEVER
 # published in any built distribution. Install with `pip install --group dev`
-# (pip >= 25.1). Transitive pins (pluggy, iniconfig, execnet, mypy_extensions,
-# typing_extensions, packaging, ...) are deliberately omitted - the resolver
-# owns those.
+# (pip >= 25.1). Direct requirements stay broad here; uv.lock records the exact
+# transitive resolution for reproducible repository environments. See CONTRIBUTING.md.
 [dependency-groups]
 # Only pytest built-in markers are used suite-wide (parametrize, xfail, skip);
 # test tiers are split by directory, not marker. pytest-mock/-timeout/
@@ -129,6 +128,10 @@ dev = [
     { include-group = "lint" },
     { include-group = "build" },
 ]
+
+[tool.uv]
+# The generated lock and contributor setup are validated with this uv release.
+required-version = ">=0.11.23"
 
 [tool.setuptools]
 package-dir = { "" = "src" }

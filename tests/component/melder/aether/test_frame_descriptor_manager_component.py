@@ -114,6 +114,9 @@ def test_component_manager_keeps_frame_conduit_and_spell_records_coherent() -> N
     )
     spell = types.SimpleNamespace(
         profile=_PayloadProfile(),
+        resolvable=True,
+        spell=object(),
+        _spell_system_states=types.SimpleNamespace(get_local_topology=lambda _index: None),
         spell_id="spell-1",
         spell_index=types.SimpleNamespace(id="lineage-1"),
         spell_name="SpellOne",

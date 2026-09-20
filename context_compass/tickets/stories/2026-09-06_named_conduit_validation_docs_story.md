@@ -5,9 +5,9 @@
 - Epic: EPIC-2026-09-06-named-lesser-conduit-discovery
 - Status: draft
 - Owner: codex
-- Agent Name: codex_1
+- Agent Name: codex_1, updater_0
 - Created: 2026-09-06T17:17:54Z
-- Updated: 2026-09-06T17:17:54Z
+- Updated: 2026-09-07T11:46:34Z
 
 ## User Narrative
 As a library user, I want clear examples and dependable naming/cleanup semantics so I can replace
@@ -25,8 +25,15 @@ an application-maintained scope registry without inheriting hidden lifecycle pro
 - Root versus lesser capabilities and unchanged Existence-based ownership/sharing.
 - Concurrent creation/collision/lookup versus cleanup at the documented ownership boundary.
 - Pool return removes the old name; reacquisition does not expose stale name/projection/record state.
+- Creation-only naming works with prewarmed shells; later lesser naming/renaming is rejected.
 - Upgrade and parent/root destruction preserve directory/root accounting and cleanup exactly once.
-- Nexus/Crystallizer consumers follow their selected inclusion/exclusion and replay contracts.
+- Crystallizer restores named lesser structure with the recorded names/parents and shared book ownership.
+- Created instance data is not serialized or restored; later resolution follows normal creation/existence rules.
+- A checkpoint made during an active named scope retains it; a later checkpoint after removal omits it.
+- Same pooled id under successive names folds correctly within one checkpoint window and across windows.
+- Parent/child restoration, unnamed supporting ancestry, both replay drivers and rollback follow the agreed contract.
+- New child-bearing records are refused by incompatible old readers; old root-only records remain readable.
+- Nexus tests separate live descriptor updates from compiled id-set membership and raw name resolution.
 - Explain when naming is useful and when a direct reference is simpler.
 - Explicitly distinguish cloud names from Autofac-style matching-lifetime tags.
 
@@ -47,8 +54,10 @@ Existing naming evidence is retained in tasks/2026-09-06_named_conduit_semantics
 - Future cases: names with/without pooling, multiple parents/frames, collisions with live roots and
   lessers, acquisition-hook failures, same/different-name upgrades, explicit and parent cleanup.
 - Root-only Aether/cluster behavior versus broader directory behavior; unchanged creation-store routing.
-- Nexus active/pooled/removed records, names and ACL-filtered lookup.
-- Crystallizer-off/on exclusion or approved inclusion, and live-host root-name collisions on restore.
+- Nexus active/pooled/removed records, names, existing projection membership and ACL-filtered lookup.
+- Required named-lesser recording/replay with recorder off/on controls and consistent frame/book mode support.
+- Restored roots with multiple/nested named lessers, selected ancestor closure and formation anchors.
+- Missing/cyclic parent records, root/book mismatch, root/lesser name collisions and schema-version refusal.
 
 ## Notes
 - DATETIME: 2026-09-06T17:37:21Z
@@ -63,5 +72,20 @@ Existing naming evidence is retained in tasks/2026-09-06_named_conduit_semantics
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-07T11:46:34Z
+  TYPE: PLAN
+  CLAIM: Owner requires named-lesser structural recording/replay. Add acceptance cases for hierarchy,
+    same-id pooled reuse chronology, historical versus current checkpoints, both restore drivers,
+    fresh resolved-instance state, reader compatibility and Nexus compiled-membership behavior.
+  EVIDENCE:
+  - tasks/2026-09-06_named_conduit_cross_system_discovery_task.md
+  - stories/2026-09-06_named_conduit_crystallizer_contract_story.md
+  - stories/2026-09-06_named_conduit_nexus_consumers_story.md
+  IMPACT: Validation now proves required structural persistence rather than an ephemeral-only exclusion.
+  NEXT: Map tests to the approved structural/lifecycle patch before implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Draft validation contract. No new testing suite, documentation rewrite or asset rebuild is authorized yet.
+Draft validation contract includes creation-only naming and named-lesser structural persistence.
+The source trace is complete for the recorded boundaries; runtime implementation and test execution remain future work.

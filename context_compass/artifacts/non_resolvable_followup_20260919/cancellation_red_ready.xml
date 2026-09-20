@@ -1,0 +1,585 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="0.807" timestamp="2026-09-19T18:14:54.291540-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_revalidation_recovers_after_previous_scheduler_failure[1]" time="0.064"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'system_validation_local' encountered 1 error(s). Resolution pipeline aborted. Errors: OperationCancelledError: Operation cancelled via CancellationEvent signal.">local_runtime = (&lt;melder.aether.spellbook.spellbook.Spellbook object at 0x0000021170260010&gt;, &lt;Conduit name=default id=01M2Y2MXMM598GMWSSTSRW4HDR&gt;, 'b273b0f01d04b2a8e7f7640e04f928642260aef31d8fbbe4ae8e220456cb6fbe')
+
+    def test_local_revalidation_recovers_after_previous_scheduler_failure(
+        local_runtime: tuple[Spellbook, Conduit, str],
+    ) -&gt; None:
+        """A real failed run must not cancel the next local validation or prevent subsequent meld."""
+        book, conduit, spell_id = local_runtime
+        scheduler = book._get_or_create_phase_scheduler(PhaseScheduler)
+    
+        def fail_previous_run() -&gt; None:
+            """Raise the original failure that cancels one completed scheduler run."""
+            raise ValueError("previous run failed")
+    
+        def failure_factory() -&gt; list[UnitOfWork]:
+            """Create the failing unit only after the scheduler installs its run scope."""
+            return [scheduler.create_unit_of_work(fail_previous_run)]
+    
+        scheduler.register_phase("previous_failure", failure_factory)
+        with pytest.raises(PhaseExecutionError, match="previous run failed"):
+            scheduler.run_all_phases()
+    
+&gt;       book._run_resolution_phases_for_target_spell(conduit.id, book._spells_by_id[spell_id])
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\spellbook\spellbook.py:6773: in _run_resolution_phases_for_target_spell
+    return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+src\melder\aether\spellbook\spellbook_creation_system.py:1576: in run_resolution_phases_for_target_spell
+    SpellbookCreationSystem._run_target_foundational_resolution_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:2184: in _run_target_foundational_resolution_phases
+    return SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;melder.utilities.synchronization.phase_scheduler.PhaseScheduler object at 0x000002116DF488E0&gt;
+phase_name = 'system_validation_local'
+factory = &lt;function SpellbookCreationSystem._register_target_single_phase.&lt;locals&gt;.&lt;lambda&gt; at 0x0000021170224380&gt;
+
+    def _run_single_phase(
+            self,
+            phase_name: str,
+            factory: Callable[[], Sequence[UnitOfWork]],
+    ) -&gt; Sequence[UnitOfWork]:
+        """
+        Internal
+    
+        Run a single phase:
+    
+            1. Ask the factory for UnitsOfWork.
+            2. Enqueue all units (each paired with this phase's latch).
+            3. Wait on the latch: all-done, first-error, or timeout.
+            4. On first-error: cancel the run, quiesce in-flight stragglers
+               (bounded by the barrier budget), then aggregate exceptions
+               and raise PhaseExecutionError.
+    
+        Args:
+            phase_name:
+                Logical name of the phase.
+            factory:
+                Callable[[] -&gt; Sequence[UnitOfWork]] used to build the phase's
+                UnitsOfWork.
+    
+        Returns:
+            Sequence[UnitOfWork]:
+                The sequence produced by the factory. Callers may inspect
+                `result()` or `exception()` on these as needed.
+    
+        Raises:
+            PhaseTimeoutError: If the barrier timeout is exceeded.
+            PhaseExecutionError: If any UoW raises an exception.
+            PhaseSchedulerError: If the run was cancelled before/with no unit
+                error of its own.
+        """
+        if self._cancel_signal.is_set:
+            # Upstream failure or explicit cancel - short-circuit this phase.
+            raise PhaseSchedulerError(
+                f"Phase '{phase_name}' skipped because cancellation has already been signalled."
+            )
+    
+        # Build the work for this phase.
+        units: Sequence[UnitOfWork] = factory()
+    
+        # No work = trivial barrier.
+        if not units:
+            return units
+    
+        # NOTE: units always execute on worker threads, even with one worker.
+        # An inline workers==1 fast path was tried and reverted: synchronous
+        # execution in the caller thread cannot honor the scheduler's async
+        # control contract. A unit blocked on an external signal deadlocks
+        # the caller (external cancel can never be observed), and preemptive
+        # barrier timeouts (PhaseTimeoutError while a unit is still running)
+        # are impossible without a separate execution thread. The persistent
+        # pool IS the sanctioned single-worker-overhead answer.
+    
+        # Make sure workers are up (first run only).
+        self._start_workers_if_needed()
+    
+        # One latch per phase: the only barrier synchronization object.
+        latch = PhaseLatch(len(units))
+        queue_put = self._queue.put
+        for uow in units:
+            queue_put((uow, latch))
+    
+        timeout_sec = self._barrier_timeout_ms / 1000.0
+    
+        # One event wait:
+        # - wakes early on first unit error (fail-fast)
+        # - otherwise wakes when all units complete
+        # - or returns False at timeout
+        finished = latch.wait(timeout_sec)
+        errors = latch.errors
+    
+        if errors:
+            # Cancel the rest of this run; stragglers of this phase observe
+            # the cancel event at their pre-run check and report cancelled.
+            self._cancel_signal.cancel()
+    
+            # Best-effort: mark unfinished units as cancelled so nothing is left "pending forever".
+            # IMPORTANT: do NOT call uow.cancel() here because workers still dequeue and call the unit;
+            # the unit-side outcome writes are race-guarded.
+            for uow in units:
+                if not uow.done():
+                    try:
+                        uow.set_exception(
+                            OperationCancelledError(
+                                f"Phase '{phase_name}' aborted due to an earlier failure."
+                            )
+                        )
+                    except Exception:
+                        # Ignore races with workers completing the unit.
+                        pass
+    
+            # QUIESCE before unwinding (parallel_restore lane, 2026-07-19):
+            # the fail-fast wake fires while sibling unit BODIES may still
+            # be executing on pool workers, and raising immediately lets a
+            # caller's failure handler (the restore engine's all-or-nothing
+            # teardown) run concurrently with those stragglers - a straggler
+            # can then register runtime state mid-teardown (the cleaned-husk
+            # frame leak on the owner's red run). Every dequeued unit
+            # reports into its latch exactly once (worker-loop contract) and
+            # already-done units no-op to complete(), so the all-reported
+            # barrier terminates. Bounded by the same barrier budget: a hung
+            # straggler times the quiesce out and the raise proceeds (the
+            # scheduler never kills threads; documented residual).
+            latch.wait_all_reported(timeout_sec)
+    
+            raise PhaseExecutionError(phase_name, errors)
+    
+        # If cancelled externally (no unit error yet), treat as cancellation.
+        if self._cancel_signal.is_set:
+            raise PhaseSchedulerError(
+                f"Phase '{phase_name}' cancelled during execution."
+            )
+    
+        # Timeout: no exception, but not all units finished.
+        if not finished:
+            self._cancel_signal.cancel()
+    
+            for uow in units:
+                if not uow.done():
+                    try:
+                        uow.set_exception(
+                            OperationCancelledError(
+                                f"Phase '{phase_name}' timed out after {self._barrier_timeout_ms}ms."
+                            )
+                        )
+                    except Exception:
+                        pass
+    
+            raise PhaseTimeoutError(phase_name, self._barrier_timeout_ms)
+    
+        # Contract-preserving post-scan: the historical barrier collected
+        # stored exceptions from DONE futures, which covers units handed to
+        # the scheduler with a pre-recorded failure (the worker skips
+        # already-done units, so the latch never sees such errors). All
+        # units are done here, so these are non-blocking reads.
+        stored_errors: List[BaseException] = []
+        for uow in units:
+            exc = uow.exception()
+            if exc is not None:
+                stored_errors.append(exc)
+        if stored_errors:
+            self._cancel_signal.cancel()
+&gt;           raise PhaseExecutionError(phase_name, stored_errors)
+E           melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'system_validation_local' encountered 1 error(s). Resolution pipeline aborted. Errors: OperationCancelledError: Operation cancelled via CancellationEvent signal.
+
+src\melder\utilities\synchronization\phase_scheduler.py:904: PhaseExecutionError</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_revalidation_recovers_after_previous_scheduler_failure[4]" time="0.019"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'system_validation_local' encountered 1 error(s). Resolution pipeline aborted. Errors: OperationCancelledError: Operation cancelled via CancellationEvent signal.">local_runtime = (&lt;melder.aether.spellbook.spellbook.Spellbook object at 0x0000021170260310&gt;, &lt;Conduit name=default id=01M2Y2MXZ0VQVJPQRG49WPFYA9&gt;, 'b273b0f01d04b2a8e7f7640e04f928642260aef31d8fbbe4ae8e220456cb6fbe')
+
+    def test_local_revalidation_recovers_after_previous_scheduler_failure(
+        local_runtime: tuple[Spellbook, Conduit, str],
+    ) -&gt; None:
+        """A real failed run must not cancel the next local validation or prevent subsequent meld."""
+        book, conduit, spell_id = local_runtime
+        scheduler = book._get_or_create_phase_scheduler(PhaseScheduler)
+    
+        def fail_previous_run() -&gt; None:
+            """Raise the original failure that cancels one completed scheduler run."""
+            raise ValueError("previous run failed")
+    
+        def failure_factory() -&gt; list[UnitOfWork]:
+            """Create the failing unit only after the scheduler installs its run scope."""
+            return [scheduler.create_unit_of_work(fail_previous_run)]
+    
+        scheduler.register_phase("previous_failure", failure_factory)
+        with pytest.raises(PhaseExecutionError, match="previous run failed"):
+            scheduler.run_all_phases()
+    
+&gt;       book._run_resolution_phases_for_target_spell(conduit.id, book._spells_by_id[spell_id])
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\spellbook\spellbook.py:6773: in _run_resolution_phases_for_target_spell
+    return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+src\melder\aether\spellbook\spellbook_creation_system.py:1576: in run_resolution_phases_for_target_spell
+    SpellbookCreationSystem._run_target_foundational_resolution_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:2184: in _run_target_foundational_resolution_phases
+    return SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;melder.utilities.synchronization.phase_scheduler.PhaseScheduler object at 0x000002116DF44920&gt;
+phase_name = 'system_validation_local'
+factory = &lt;function SpellbookCreationSystem._register_target_single_phase.&lt;locals&gt;.&lt;lambda&gt; at 0x0000021170224D40&gt;
+
+    def _run_single_phase(
+            self,
+            phase_name: str,
+            factory: Callable[[], Sequence[UnitOfWork]],
+    ) -&gt; Sequence[UnitOfWork]:
+        """
+        Internal
+    
+        Run a single phase:
+    
+            1. Ask the factory for UnitsOfWork.
+            2. Enqueue all units (each paired with this phase's latch).
+            3. Wait on the latch: all-done, first-error, or timeout.
+            4. On first-error: cancel the run, quiesce in-flight stragglers
+               (bounded by the barrier budget), then aggregate exceptions
+               and raise PhaseExecutionError.
+    
+        Args:
+            phase_name:
+                Logical name of the phase.
+            factory:
+                Callable[[] -&gt; Sequence[UnitOfWork]] used to build the phase's
+                UnitsOfWork.
+    
+        Returns:
+            Sequence[UnitOfWork]:
+                The sequence produced by the factory. Callers may inspect
+                `result()` or `exception()` on these as needed.
+    
+        Raises:
+            PhaseTimeoutError: If the barrier timeout is exceeded.
+            PhaseExecutionError: If any UoW raises an exception.
+            PhaseSchedulerError: If the run was cancelled before/with no unit
+                error of its own.
+        """
+        if self._cancel_signal.is_set:
+            # Upstream failure or explicit cancel - short-circuit this phase.
+            raise PhaseSchedulerError(
+                f"Phase '{phase_name}' skipped because cancellation has already been signalled."
+            )
+    
+        # Build the work for this phase.
+        units: Sequence[UnitOfWork] = factory()
+    
+        # No work = trivial barrier.
+        if not units:
+            return units
+    
+        # NOTE: units always execute on worker threads, even with one worker.
+        # An inline workers==1 fast path was tried and reverted: synchronous
+        # execution in the caller thread cannot honor the scheduler's async
+        # control contract. A unit blocked on an external signal deadlocks
+        # the caller (external cancel can never be observed), and preemptive
+        # barrier timeouts (PhaseTimeoutError while a unit is still running)
+        # are impossible without a separate execution thread. The persistent
+        # pool IS the sanctioned single-worker-overhead answer.
+    
+        # Make sure workers are up (first run only).
+        self._start_workers_if_needed()
+    
+        # One latch per phase: the only barrier synchronization object.
+        latch = PhaseLatch(len(units))
+        queue_put = self._queue.put
+        for uow in units:
+            queue_put((uow, latch))
+    
+        timeout_sec = self._barrier_timeout_ms / 1000.0
+    
+        # One event wait:
+        # - wakes early on first unit error (fail-fast)
+        # - otherwise wakes when all units complete
+        # - or returns False at timeout
+        finished = latch.wait(timeout_sec)
+        errors = latch.errors
+    
+        if errors:
+            # Cancel the rest of this run; stragglers of this phase observe
+            # the cancel event at their pre-run check and report cancelled.
+            self._cancel_signal.cancel()
+    
+            # Best-effort: mark unfinished units as cancelled so nothing is left "pending forever".
+            # IMPORTANT: do NOT call uow.cancel() here because workers still dequeue and call the unit;
+            # the unit-side outcome writes are race-guarded.
+            for uow in units:
+                if not uow.done():
+                    try:
+                        uow.set_exception(
+                            OperationCancelledError(
+                                f"Phase '{phase_name}' aborted due to an earlier failure."
+                            )
+                        )
+                    except Exception:
+                        # Ignore races with workers completing the unit.
+                        pass
+    
+            # QUIESCE before unwinding (parallel_restore lane, 2026-07-19):
+            # the fail-fast wake fires while sibling unit BODIES may still
+            # be executing on pool workers, and raising immediately lets a
+            # caller's failure handler (the restore engine's all-or-nothing
+            # teardown) run concurrently with those stragglers - a straggler
+            # can then register runtime state mid-teardown (the cleaned-husk
+            # frame leak on the owner's red run). Every dequeued unit
+            # reports into its latch exactly once (worker-loop contract) and
+            # already-done units no-op to complete(), so the all-reported
+            # barrier terminates. Bounded by the same barrier budget: a hung
+            # straggler times the quiesce out and the raise proceeds (the
+            # scheduler never kills threads; documented residual).
+            latch.wait_all_reported(timeout_sec)
+    
+            raise PhaseExecutionError(phase_name, errors)
+    
+        # If cancelled externally (no unit error yet), treat as cancellation.
+        if self._cancel_signal.is_set:
+            raise PhaseSchedulerError(
+                f"Phase '{phase_name}' cancelled during execution."
+            )
+    
+        # Timeout: no exception, but not all units finished.
+        if not finished:
+            self._cancel_signal.cancel()
+    
+            for uow in units:
+                if not uow.done():
+                    try:
+                        uow.set_exception(
+                            OperationCancelledError(
+                                f"Phase '{phase_name}' timed out after {self._barrier_timeout_ms}ms."
+                            )
+                        )
+                    except Exception:
+                        pass
+    
+            raise PhaseTimeoutError(phase_name, self._barrier_timeout_ms)
+    
+        # Contract-preserving post-scan: the historical barrier collected
+        # stored exceptions from DONE futures, which covers units handed to
+        # the scheduler with a pre-recorded failure (the worker skips
+        # already-done units, so the latch never sees such errors). All
+        # units are done here, so these are non-blocking reads.
+        stored_errors: List[BaseException] = []
+        for uow in units:
+            exc = uow.exception()
+            if exc is not None:
+                stored_errors.append(exc)
+        if stored_errors:
+            self._cancel_signal.cancel()
+&gt;           raise PhaseExecutionError(phase_name, stored_errors)
+E           melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'system_validation_local' encountered 1 error(s). Resolution pipeline aborted. Errors: OperationCancelledError: Operation cancelled via CancellationEvent signal.
+
+src\melder\utilities\synchronization\phase_scheduler.py:904: PhaseExecutionError</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_phase_body_observes_current_run_cancellation[1-run_phase_root_blueprints_local]" time="0.009"><failure message="AssertionError: assert ['continued a...cancellation'] == ['cancelled']&#10;  &#10;  At index 0 diff: 'continued after cancellation' != 'cancelled'&#10;  Use -v to get more diff">local_runtime = (&lt;melder.aether.spellbook.spellbook.Spellbook object at 0x0000021170260610&gt;, &lt;Conduit name=default id=01M2Y2MY2C59B94H722N6N7YT0&gt;, 'b273b0f01d04b2a8e7f7640e04f928642260aef31d8fbbe4ae8e220456cb6fbe')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002116D194110&gt;
+phase_method = 'run_phase_root_blueprints_local'
+
+    @pytest.mark.parametrize(
+        "phase_method",
+        ("run_phase_root_blueprints_local", "run_phase_system_validation_local"),
+    )
+    def test_local_phase_body_observes_current_run_cancellation(
+        local_runtime: tuple[Spellbook, Conduit, str],
+        monkeypatch: pytest.MonkeyPatch,
+        phase_method: str,
+    ) -&gt; None:
+        """Cancellation raised during a local phase must stop its body before further work."""
+        book, conduit, spell_id = local_runtime
+        scheduler = book._get_or_create_phase_scheduler(PhaseScheduler)
+        outcomes: list[str] = []
+    
+        def cancel_during_phase(
+            self: SpellCompilerSystem,
+            spellbook: Spellbook,
+            spell: Spell,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+        ) -&gt; None:
+            """Inject cancellation at phase entry and observe whether cooperative work stops."""
+            assert cancel_event is not None
+            scheduler.cancel()
+            try:
+                cancel_event.throw_if_set()
+            except OperationCancelledError:
+                outcomes.append("cancelled")
+                raise
+            outcomes.append("continued after cancellation")
+    
+        monkeypatch.setattr(SpellCompilerSystem, phase_method, cancel_during_phase)
+        with pytest.raises(PhaseSchedulerError):
+            SpellbookCreationSystem._run_target_foundational_resolution_phases(
+                spellbook=book,
+                conduit_id=conduit.id,
+                target_spell=book._spells_by_id[spell_id],
+                target_spell_id=spell_id,
+                phase_scheduler_cls=PhaseScheduler,
+            )
+&gt;       assert outcomes == ["cancelled"]
+E       AssertionError: assert ['continued a...cancellation'] == ['cancelled']
+E         
+E         At index 0 diff: 'continued after cancellation' != 'cancelled'
+E         Use -v to get more diff
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:125: AssertionError</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_phase_body_observes_current_run_cancellation[1-run_phase_system_validation_local]" time="0.009"><failure message="AssertionError: assert ['continued a...cancellation'] == ['cancelled']&#10;  &#10;  At index 0 diff: 'continued after cancellation' != 'cancelled'&#10;  Use -v to get more diff">local_runtime = (&lt;melder.aether.spellbook.spellbook.Spellbook object at 0x0000021170260910&gt;, &lt;Conduit name=default id=01M2Y2MY2QYYXAKD4MQGDH9645&gt;, 'b273b0f01d04b2a8e7f7640e04f928642260aef31d8fbbe4ae8e220456cb6fbe')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002116D193490&gt;
+phase_method = 'run_phase_system_validation_local'
+
+    @pytest.mark.parametrize(
+        "phase_method",
+        ("run_phase_root_blueprints_local", "run_phase_system_validation_local"),
+    )
+    def test_local_phase_body_observes_current_run_cancellation(
+        local_runtime: tuple[Spellbook, Conduit, str],
+        monkeypatch: pytest.MonkeyPatch,
+        phase_method: str,
+    ) -&gt; None:
+        """Cancellation raised during a local phase must stop its body before further work."""
+        book, conduit, spell_id = local_runtime
+        scheduler = book._get_or_create_phase_scheduler(PhaseScheduler)
+        outcomes: list[str] = []
+    
+        def cancel_during_phase(
+            self: SpellCompilerSystem,
+            spellbook: Spellbook,
+            spell: Spell,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+        ) -&gt; None:
+            """Inject cancellation at phase entry and observe whether cooperative work stops."""
+            assert cancel_event is not None
+            scheduler.cancel()
+            try:
+                cancel_event.throw_if_set()
+            except OperationCancelledError:
+                outcomes.append("cancelled")
+                raise
+            outcomes.append("continued after cancellation")
+    
+        monkeypatch.setattr(SpellCompilerSystem, phase_method, cancel_during_phase)
+        with pytest.raises(PhaseSchedulerError):
+            SpellbookCreationSystem._run_target_foundational_resolution_phases(
+                spellbook=book,
+                conduit_id=conduit.id,
+                target_spell=book._spells_by_id[spell_id],
+                target_spell_id=spell_id,
+                phase_scheduler_cls=PhaseScheduler,
+            )
+&gt;       assert outcomes == ["cancelled"]
+E       AssertionError: assert ['continued a...cancellation'] == ['cancelled']
+E         
+E         At index 0 diff: 'continued after cancellation' != 'cancelled'
+E         Use -v to get more diff
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:125: AssertionError</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_phase_body_observes_current_run_cancellation[4-run_phase_root_blueprints_local]" time="0.010"><failure message="AssertionError: assert ['continued a...cancellation'] == ['cancelled']&#10;  &#10;  At index 0 diff: 'continued after cancellation' != 'cancelled'&#10;  Use -v to get more diff">local_runtime = (&lt;melder.aether.spellbook.spellbook.Spellbook object at 0x0000021170260C10&gt;, &lt;Conduit name=default id=01M2Y2MY35NJNWSBW2JQRGNN8V&gt;, 'b273b0f01d04b2a8e7f7640e04f928642260aef31d8fbbe4ae8e220456cb6fbe')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002116D194610&gt;
+phase_method = 'run_phase_root_blueprints_local'
+
+    @pytest.mark.parametrize(
+        "phase_method",
+        ("run_phase_root_blueprints_local", "run_phase_system_validation_local"),
+    )
+    def test_local_phase_body_observes_current_run_cancellation(
+        local_runtime: tuple[Spellbook, Conduit, str],
+        monkeypatch: pytest.MonkeyPatch,
+        phase_method: str,
+    ) -&gt; None:
+        """Cancellation raised during a local phase must stop its body before further work."""
+        book, conduit, spell_id = local_runtime
+        scheduler = book._get_or_create_phase_scheduler(PhaseScheduler)
+        outcomes: list[str] = []
+    
+        def cancel_during_phase(
+            self: SpellCompilerSystem,
+            spellbook: Spellbook,
+            spell: Spell,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+        ) -&gt; None:
+            """Inject cancellation at phase entry and observe whether cooperative work stops."""
+            assert cancel_event is not None
+            scheduler.cancel()
+            try:
+                cancel_event.throw_if_set()
+            except OperationCancelledError:
+                outcomes.append("cancelled")
+                raise
+            outcomes.append("continued after cancellation")
+    
+        monkeypatch.setattr(SpellCompilerSystem, phase_method, cancel_during_phase)
+        with pytest.raises(PhaseSchedulerError):
+            SpellbookCreationSystem._run_target_foundational_resolution_phases(
+                spellbook=book,
+                conduit_id=conduit.id,
+                target_spell=book._spells_by_id[spell_id],
+                target_spell_id=spell_id,
+                phase_scheduler_cls=PhaseScheduler,
+            )
+&gt;       assert outcomes == ["cancelled"]
+E       AssertionError: assert ['continued a...cancellation'] == ['cancelled']
+E         
+E         At index 0 diff: 'continued after cancellation' != 'cancelled'
+E         Use -v to get more diff
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:125: AssertionError</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_phase_body_observes_current_run_cancellation[4-run_phase_system_validation_local]" time="0.010"><failure message="AssertionError: assert ['continued a...cancellation'] == ['cancelled']&#10;  &#10;  At index 0 diff: 'continued after cancellation' != 'cancelled'&#10;  Use -v to get more diff">local_runtime = (&lt;melder.aether.spellbook.spellbook.Spellbook object at 0x0000021170260F10&gt;, &lt;Conduit name=default id=01M2Y2MY3JEAZWCM6PFXCN60TQ&gt;, 'b273b0f01d04b2a8e7f7640e04f928642260aef31d8fbbe4ae8e220456cb6fbe')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002116D198C10&gt;
+phase_method = 'run_phase_system_validation_local'
+
+    @pytest.mark.parametrize(
+        "phase_method",
+        ("run_phase_root_blueprints_local", "run_phase_system_validation_local"),
+    )
+    def test_local_phase_body_observes_current_run_cancellation(
+        local_runtime: tuple[Spellbook, Conduit, str],
+        monkeypatch: pytest.MonkeyPatch,
+        phase_method: str,
+    ) -&gt; None:
+        """Cancellation raised during a local phase must stop its body before further work."""
+        book, conduit, spell_id = local_runtime
+        scheduler = book._get_or_create_phase_scheduler(PhaseScheduler)
+        outcomes: list[str] = []
+    
+        def cancel_during_phase(
+            self: SpellCompilerSystem,
+            spellbook: Spellbook,
+            spell: Spell,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+        ) -&gt; None:
+            """Inject cancellation at phase entry and observe whether cooperative work stops."""
+            assert cancel_event is not None
+            scheduler.cancel()
+            try:
+                cancel_event.throw_if_set()
+            except OperationCancelledError:
+                outcomes.append("cancelled")
+                raise
+            outcomes.append("continued after cancellation")
+    
+        monkeypatch.setattr(SpellCompilerSystem, phase_method, cancel_during_phase)
+        with pytest.raises(PhaseSchedulerError):
+            SpellbookCreationSystem._run_target_foundational_resolution_phases(
+                spellbook=book,
+                conduit_id=conduit.id,
+                target_spell=book._spells_by_id[spell_id],
+                target_spell_id=spell_id,
+                phase_scheduler_cls=PhaseScheduler,
+            )
+&gt;       assert outcomes == ["cancelled"]
+E       AssertionError: assert ['continued a...cancellation'] == ['cancelled']
+E         
+E         At index 0 diff: 'continued after cancellation' != 'cancelled'
+E         Use -v to get more diff
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:125: AssertionError</failure></testcase></testsuite></testsuites>

@@ -196,6 +196,8 @@ class ConduitMeld(Meld):
 
         Contract:
             - Rejects spells that require a spellspace-local request context.
+            - Refuses non-resolvable registrations before overrides, validation, hooks or execution.
+              Only admitted immutable True versions can populate the success-only warm door.
             - Routes `unique_per_conduit` and `many` through the caller
               conduit's `ConduitCreations`.
             - Routes broader-lived existences through spell-owned shared
@@ -220,6 +222,8 @@ class ConduitMeld(Meld):
                 after all pre-/activation-/post-hooks have executed.
 
         Raises:
+            MeldExecutionError:
+                If the selected registration declares resolvable=False.
             ValueError:
                 If none of `spell_name`, `spell`, or `spellframe` are provided.
             KeyError:
@@ -340,6 +344,9 @@ class ConduitMeld(Meld):
                             None,
                         )
                     input_resolution_cache[cache_key] = target_spell.spell_id
+        # Capability is immutable per version; a rejected target can never mint a warm door.
+        if not target_spell._resolvable:
+            self._raise_non_resolvable_registration(target_spell)
         if target_spell.requires_spellspace_request:
             raise RuntimeError(
                 "{0} must be built from a spellspace.".format(
@@ -473,6 +480,7 @@ class ConduitMeld(Meld):
         Contract:
             - Reuses the same spell identity inputs accepted by `meld(...)`.
             - Never enters any creation path.
+            - Refuses non-resolvable registrations even when an existing object is stored.
             - Returns one already-live object or raises.
             - Supports only lifecycles that can resolve to one deterministic
               existing object.
@@ -495,6 +503,8 @@ class ConduitMeld(Meld):
             Any: Existing live runtime object for the resolved spell.
 
         Raises:
+            MeldExecutionError:
+                If the selected registration declares resolvable=False.
             ValueError:
                 If the spell is not currently live.
             RuntimeError:
@@ -538,6 +548,8 @@ class ConduitMeld(Meld):
                         )
                     input_resolution_cache[cache_key] = target_spell.spell_id
 
+        if not target_spell._resolvable:
+            self._raise_non_resolvable_registration(target_spell)
         if target_spell.is_existing_creation:
             if target_spell.user_created_object is None:
                 raise ValueError(

@@ -27,10 +27,10 @@ def main() -> None:
     assert len(bound) == 2
 
     conduit = book.conjure()
-    hub_a = conduit.meld(spell=MetricsHub)
-    hub_b = conduit.meld(spell=MetricsHub)
-    ticket_a = conduit.meld(spell=JobTicket)
-    ticket_b = conduit.meld(spell=JobTicket)
+    hub_a = conduit.meld(MetricsHub)
+    hub_b = conduit.meld(MetricsHub)
+    ticket_a = conduit.meld(JobTicket)
+    ticket_b = conduit.meld(JobTicket)
     assert hub_a is hub_b and ticket_a is not ticket_b
     print("decorated lifecycles held: unique hub, many tickets")
 

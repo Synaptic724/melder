@@ -18,9 +18,9 @@ def main() -> None:
     book.bind(spell=Basket, existence="many")
     conduit = book.conjure()
 
-    first = conduit.meld(spell=Basket)
+    first = conduit.meld(Basket)
     first.items.append("apples")
-    second = conduit.meld(spell=Basket)
+    second = conduit.meld(Basket)
     assert first.items == ["apples"] and second.items == []
     print("fresh instances, fresh state:", first.items, "vs", second.items)
 

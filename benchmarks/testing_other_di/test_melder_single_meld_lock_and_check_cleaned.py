@@ -407,7 +407,7 @@ def test_melder_single_meld_lock_and_check_cleaned() -> None:
         Cleanable.check_cleaned = _make_check_cleaned_counter(check_counts)
 
         def resolve_request_root() -> Any:
-            return space.meld(spell=spell_ids[_support.RequestRoot])
+            return space.meld(spell_id=spell_ids[_support.RequestRoot])
 
         first_report = _capture_one_meld_report(
             resolver=resolve_request_root,

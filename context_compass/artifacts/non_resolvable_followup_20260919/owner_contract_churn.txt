@@ -1,0 +1,286 @@
+PASSED [ 24%]PASSED [ 24%]PASSED [ 24%]FAILED [ 24%][multithreading-cycle] step=stable_0 action=None owner=ok borrower_a=ok borrower_b=ok
+[multithreading-cycle] step=during_unlink_a action=unlink_a owner=ok borrower_a=err borrower_b=ok
+[multithreading-cycle] step=after_unlink_a action=None owner=ok borrower_a=err borrower_b=ok
+[multithreading-cycle] step=during_relink_a action=relink_a owner=ok borrower_a=err borrower_b=ok
+
+tests\integration\melder\multithreading\test_multithreading_link_bind_contract_features.py:794 (test_multithreading_live_link_unlink_and_contract_churn_cycles)
+PhaseExecutionError("Phase 'system_validation_local' encountered 1 error(s). Resolution pipeline aborted. Errors: OperationCancelledError: Operation cancelled via CancellationEvent signal.") != None
+
+Expected :None
+Actual   :PhaseExecutionError("Phase 'system_validation_local' encountered 1 error(s). Resolution pipeline aborted. Errors: OperationCancelledError: Operation cancelled via CancellationEvent signal.")
+<Click to see difference>
+
+def test_multithreading_live_link_unlink_and_contract_churn_cycles() -> None:
+        """
+        Purpose:
+            Stress live churn with orchestrator-controlled mutation and concurrent meld workers.
+        Contract:
+            - Main thread drives mutation phases and worker release order.
+            - Owner lane remains healthy across all phases.
+            - Borrower lanes are exercised through unlink/relink and uncontract/recontract.
+            - During active mutation windows, borrower lanes may succeed or raise allowed errors.
+            - After each mutation settles, expectations become deterministic.
+        Returns:
+            None.
+        Raises:
+            AssertionError: If outcomes violate expected settled-state behavior.
+        """
+        class _CycleConsumerA:
+            """
+            Purpose:
+                Consumer class for borrower-A cycle lane.
+            Contract:
+                - Resolves IService(primary) via SpellContract each meld.
+            """
+    
+            def __init__(
+                self,
+                service: IService = SpellContract(spellframe=IService, binding_name="primary"),
+            ) -> None:
+                """
+                Purpose:
+                    Store resolved service dependency.
+                Contract:
+                    - Persists resolved service on `self.service`.
+                Args:
+                    service: Resolved IService instance.
+                Returns:
+                    None.
+                """
+                self.service = service
+    
+        class _CycleConsumerB:
+            """
+            Purpose:
+                Consumer class for borrower-B cycle lane.
+            Contract:
+                - Resolves IService(primary) via SpellContract each meld.
+            """
+    
+            def __init__(
+                self,
+                service: IService = SpellContract(spellframe=IService, binding_name="primary"),
+            ) -> None:
+                """
+                Purpose:
+                    Store resolved service dependency.
+                Contract:
+                    - Persists resolved service on `self.service`.
+                Args:
+                    service: Resolved IService instance.
+                Returns:
+                    None.
+                """
+                self.service = service
+    
+        owner_book = Spellbook(configuration=_make_dynamic_configuration(workers=4))
+        borrower_a_book = Spellbook(configuration=_make_dynamic_configuration(workers=4))
+        borrower_b_book = Spellbook(configuration=_make_dynamic_configuration(workers=4))
+    
+        service_id = owner_book.bind(
+            spell=ContractServicePrimary,
+            existence=Existence.many,
+            permissions="create",
+            spellframe=IService,
+            binding_name="primary",
+        )
+        consumer_a_id = borrower_a_book.bind(
+            spell=_CycleConsumerA,
+            existence=Existence.many,
+            permissions="create",
+        )
+        consumer_b_id = borrower_b_book.bind(
+            spell=_CycleConsumerB,
+            existence=Existence.many,
+            permissions="create",
+        )
+    
+        owner = owner_book.conjure(dynamic=True, name="owner-live-cycle")
+        borrower_a = borrower_a_book.conjure(dynamic=True, name="borrower-a-live-cycle")
+        borrower_b = borrower_b_book.conjure(dynamic=True, name="borrower-b-live-cycle")
+    
+        steps = [
+            "stable_0",
+            "during_unlink_a",
+            "after_unlink_a",
+            "during_relink_a",
+            "after_relink_a",
+            "during_uncontract_b",
+            "after_uncontract_b",
+            "during_recontract_b",
+            "after_recontract_b",
+            "stable_1",
+        ]
+    
+        mutation_lock = Lock()
+        mutation_signal = Event()
+        mutation_done = Event()
+        mutation_stop = Event()
+        mutation_errors: list[BaseException] = []
+        mutation_command: dict[str, str | None] = {"action": None}
+    
+        def mutation_worker() -> None:
+            """
+            Purpose:
+                Apply one mutation action at a time when released by the orchestrator.
+            Contract:
+                - Waits for mutation command signal.
+                - Executes exactly one action and marks completion.
+                - Captures exceptions for assertion.
+            Returns:
+                None.
+            """
+            while True:
+                if not mutation_signal.wait(timeout=20.0):
+                    if mutation_stop.is_set():
+                        return
+                    continue
+                mutation_signal.clear()
+                if mutation_stop.is_set():
+                    return
+                action = mutation_command["action"]
+                try:
+                    if action == "unlink_a":
+                        owner.sever_link(borrower_a)
+                    elif action == "relink_a":
+                        owner.link(borrower_a)
+                        with borrower_a.transaction("link", conduits=[borrower_a, owner]):
+                            borrower_a.add_spell_to_contract_with_dependencies(
+                                spell_id=service_id,
+                                conduit=owner,
+                                permissions="create",
+                            )
+                        borrower_a.validate_contracts_and_define()
+                    elif action == "uncontract_b":
+                        with borrower_b.transaction("link", conduits=[borrower_b, owner]):
+                            borrower_b.remove_root_from_contracts(
+                                root_spell_id=service_id,
+                                conduit=owner,
+                            )
+                    elif action == "recontract_b":
+                        owner.link(borrower_b)
+                        with borrower_b.transaction("link", conduits=[borrower_b, owner]):
+                            borrower_b.add_spell_to_contract_with_dependencies(
+                                spell_id=service_id,
+                                conduit=owner,
+                                permissions="create",
+                            )
+                        borrower_b.validate_contracts_and_define()
+                except Exception as exc:
+                    with mutation_lock:
+                        mutation_errors.append(exc)
+                finally:
+                    mutation_done.set()
+    
+        try:
+            assert owner.link(borrower_a) is True
+            assert owner.link(borrower_b) is True
+            with borrower_a.transaction("link", conduits=[borrower_a, owner]):
+                assert borrower_a.add_spell_to_contract_with_dependencies(
+                    spell_id=service_id,
+                    conduit=owner,
+                    permissions="create",
+                )
+            with borrower_b.transaction("link", conduits=[borrower_b, owner]):
+                assert borrower_b.add_spell_to_contract_with_dependencies(
+                    spell_id=service_id,
+                    conduit=owner,
+                    permissions="create",
+                )
+            borrower_a.validate_contracts_and_define()
+            borrower_b.validate_contracts_and_define()
+    
+            owner_worker = _LeaderDrivenWorker(
+                name="owner-cycle-worker",
+                conduit=owner,
+                spell_id=service_id,
+                steps=steps,
+            )
+            borrower_a_worker = _LeaderDrivenWorker(
+                name="borrower-a-cycle-worker",
+                conduit=borrower_a,
+                spell_id=consumer_a_id,
+                steps=steps,
+            )
+            borrower_b_worker = _LeaderDrivenWorker(
+                name="borrower-b-cycle-worker",
+                conduit=borrower_b,
+                spell_id=consumer_b_id,
+                steps=steps,
+            )
+            workers = [owner_worker, borrower_a_worker, borrower_b_worker]
+            for worker in workers:
+                worker.start()
+            mutator = Thread(target=mutation_worker, name="mutation-cycle-worker", daemon=True)
+            mutator.start()
+    
+            schedule = [
+                ("stable_0", None, "success", "success"),
+                ("during_unlink_a", "unlink_a", "either", "success"),
+                ("after_unlink_a", None, "either", "success"),
+                ("during_relink_a", "relink_a", "either", "success"),
+                ("after_relink_a", None, "success", "success"),
+                ("during_uncontract_b", "uncontract_b", "success", "either"),
+                ("after_uncontract_b", None, "success", "either"),
+                ("during_recontract_b", "recontract_b", "success", "either"),
+                ("after_recontract_b", None, "success", "success"),
+                ("stable_1", None, "success", "success"),
+            ]
+    
+            for step_name, action, expected_a, expected_b in schedule:
+                if action is not None:
+                    mutation_command["action"] = action
+                    mutation_done.clear()
+                    mutation_signal.set()
+    
+                _release_and_wait(workers, step_name)
+    
+                owner_result = _assert_step_state(
+                    worker=owner_worker,
+                    step=step_name,
+                    expectation="success",
+                )
+                assert isinstance(owner_result, ContractServicePrimary)
+    
+>               a_value = _assert_step_state(
+                    worker=borrower_a_worker,
+                    step=step_name,
+                    expectation=expected_a,
+                )
+
+integration\melder\multithreading\test_multithreading_link_bind_contract_features.py:1026: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+worker = <test_multithreading_link_bind_contract_features._LeaderDrivenWorker object at 0x000005A2EE13B690>
+step = 'after_relink_a', expectation = 'success'
+
+    def _assert_step_state(
+        *,
+        worker: _LeaderDrivenWorker,
+        step: str,
+        expectation: str,
+    ) -> Any | None:
+        """
+        Purpose:
+            Assert one worker outcome for an orchestrated step.
+        Contract:
+            - `expectation='success'`: requires result and no error.
+            - `expectation='error'`: requires error and validates allowed type.
+            - `expectation='either'`: accepts either result or allowed error.
+        Args:
+            worker: Worker lane.
+            step: Step name.
+            expectation: One of {'success', 'error', 'either'}.
+        Returns:
+            Any | None: Step result when available.
+        Raises:
+            AssertionError: If outcome does not match expectation.
+        """
+        error = worker.error(step)
+        result = worker.result(step)
+        if expectation == "success":
+>           assert error is None, f"Expected success at step '{step}', got error: {error!r}"
+E           AssertionError: Expected success at step 'after_relink_a', got error: PhaseExecutionError("Phase 'system_validation_local' encountered 1 error(s). Resolution pipeline aborted. Errors: OperationCancelledError: Operation cancelled via CancellationEvent signal.")
+E           assert PhaseExecutionError("Phase 'system_validation_local' encountered 1 error(s). Resolution pipeline aborted. Errors: OperationCancelledError: Operation cancelled via CancellationEvent signal.") is None
+
+integration\melder\multithreading\test_multithreading_link_bind_contract_features.py:358: AssertionError

@@ -174,6 +174,7 @@ class _SpellStub:
         Initialize one spell stub for direct subclass contract checks.
         """
         self.spell_id = spell_id
+        self._resolvable = True
         self.spell_name = spell_name
         self.spellframe = "frame"
         self.spell_index = _SpellIndexStub(current=spell_id)

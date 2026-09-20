@@ -1,4 +1,5 @@
 import inspect
+from annotationlib import Format
 from typing import TYPE_CHECKING, Any, List, ClassVar, Optional
 
 
@@ -67,6 +68,10 @@ class BindingProfileStrategy:
     def _build_class_profile(self, cls: type) -> ClassBindingProfile:
         """
         Build the shallow binding-time profile for one class candidate.
+
+        Constructor signatures preserve unresolved annotation names as Python
+        3.14 ForwardRefs. TYPE_CHECKING-only imports must not erase the cached
+        signature; known annotation objects and default values remain intact.
         """
         module = inspect.getmodule(cls)
 
@@ -93,7 +98,7 @@ class BindingProfileStrategy:
 
         init_signature_object: Optional[Any] = None
         try:
-            init_signature_object = inspect.signature(cls)
+            init_signature_object = inspect.signature(cls, annotation_format=Format.FORWARDREF)
             init_signature: Optional[str] = str(init_signature_object)
         except Exception:
             init_signature_object = None
@@ -134,6 +139,9 @@ class BindingProfileStrategy:
     def _build_callable_profile(self, fn: Any) -> CallableBindingProfile:
         """
         Build the shallow binding-time profile for one callable candidate.
+
+        Partial annotation evaluation retains TYPE_CHECKING-only names in the
+        signature without invoking the callable or dropping its parameters.
         """
         effective = InspectorUtility.unwrap_callable(fn)
         module = inspect.getmodule(effective)
@@ -145,7 +153,7 @@ class BindingProfileStrategy:
         extension_module = InspectorUtility.is_extension_module(module)
 
         try:
-            signature = inspect.signature(effective)
+            signature = inspect.signature(effective, annotation_format=Format.FORWARDREF)
             signature_str = str(signature)
             parameter_summaries: List[CallableParameterBindingSummary] = []
             for parameter in signature.parameters.values():

@@ -84,6 +84,7 @@ def test_component_spell_symbolic_graph_records_dependency_shapes() -> None:
     Contract:
         - Parameters are classified into expected DI shapes.
         - Optional and collection flags match the parameter signatures.
+        - Ordinary defaults stay PLAIN while preserving annotation metadata.
     Returns:
         None.
     Raises:
@@ -99,7 +100,7 @@ def test_component_spell_symbolic_graph_records_dependency_shapes() -> None:
             - Declares required, optional, collection, and plain parameters.
         Args:
             service: Required BasicService dependency.
-            optional_service: Optional BasicService dependency.
+            optional_service: Plain None default with a nullable BasicService annotation.
             services: Collection of IService implementations.
             count: Plain parameter with a default.
         """
@@ -117,7 +118,7 @@ def test_component_spell_symbolic_graph_records_dependency_shapes() -> None:
                 - Stores constructor inputs for diagnostics.
             Args:
                 service: Required BasicService dependency.
-                optional_service: Optional BasicService dependency.
+                optional_service: Plain None default with a nullable BasicService annotation.
                 services: Collection of IService implementations.
                 count: Plain parameter with a default.
             Returns:
@@ -157,7 +158,7 @@ def test_component_spell_symbolic_graph_records_dependency_shapes() -> None:
         assert service_dep.target_annotation is BasicService
 
         optional_dep = deps_by_name["optional_service"]
-        assert optional_dep.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+        assert optional_dep.di_shape is ParameterDIShape.PLAIN
         assert optional_dep.is_optional is True
         assert optional_dep.is_collection is False
         assert optional_dep.target_annotation == Optional[BasicService]

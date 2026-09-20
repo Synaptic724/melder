@@ -22,9 +22,9 @@ def main() -> None:
     space_two = conduit.enter_spellspace()
     assert isinstance(space_one, md.SpellSpace)
 
-    one_a = space_one.meld(spell=RoomState)
-    one_b = space_one.meld(spell=RoomState)
-    two_a = space_two.meld(spell=RoomState)
+    one_a = space_one.meld(RoomState)
+    one_b = space_one.meld(RoomState)
+    two_a = space_two.meld(RoomState)
     print("stable within a space:", one_a is one_b)
     print("separate across spaces:", one_a is not two_a)
 

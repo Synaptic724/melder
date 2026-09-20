@@ -1,0 +1,416 @@
+{
+  "summary": {
+    "disabled": {
+      "bind_conjure_meld": {
+        "samples": 600,
+        "phases": {
+          "bind_ns": {
+            "median_ms": 1.07675,
+            "p10_ms": 1.01156,
+            "p90_ms": 1.26397
+          },
+          "conjure_ns": {
+            "median_ms": 2.4779,
+            "p10_ms": 2.0800899999999998,
+            "p90_ms": 2.9157900000000003
+          },
+          "first_meld_ns": {
+            "median_ms": 0.1108,
+            "p10_ms": 0.10290000000000002,
+            "p90_ms": 0.12572
+          },
+          "total_ns": {
+            "median_ms": 3.70735,
+            "p10_ms": 3.24071,
+            "p90_ms": 4.2091
+          }
+        },
+        "per_first_meld": [
+          {
+            "median_ms": 0.0464,
+            "p10_ms": 0.04079000000000001,
+            "p90_ms": 0.05343
+          },
+          {
+            "median_ms": 0.0188,
+            "p10_ms": 0.017999999999999995,
+            "p90_ms": 0.02051
+          },
+          {
+            "median_ms": 0.0153,
+            "p10_ms": 0.014500000000000002,
+            "p90_ms": 0.016500000000000004
+          },
+          {
+            "median_ms": 0.0143,
+            "p10_ms": 0.013599999999999998,
+            "p90_ms": 0.015500000000000003
+          },
+          {
+            "median_ms": 0.0144,
+            "p10_ms": 0.013599999999999998,
+            "p90_ms": 0.0156
+          }
+        ],
+        "warm_five_meld": {
+          "median_ms": 0.00449,
+          "p10_ms": 0.00438,
+          "p90_ms": 0.00476
+        },
+        "calls": {
+          "payload_reads": 0,
+          "payload_upserts": 0,
+          "bundle_writes": 0,
+          "conjure_cache_loads": 0,
+          "cached_context_publications": 0,
+          "target_plan_compilations": 0,
+          "deferred_plan_compilations": 0
+        }
+      },
+      "conjure_bind_meld": {
+        "samples": 600,
+        "phases": {
+          "bind_ns": {
+            "median_ms": 1.7835,
+            "p10_ms": 1.68007,
+            "p90_ms": 2.07855
+          },
+          "conjure_ns": {
+            "median_ms": 0.362,
+            "p10_ms": 0.30024,
+            "p90_ms": 0.43501
+          },
+          "first_meld_ns": {
+            "median_ms": 5.1401,
+            "p10_ms": 4.54601,
+            "p90_ms": 5.8476799999999995
+          },
+          "total_ns": {
+            "median_ms": 7.316549999999999,
+            "p10_ms": 6.654039999999999,
+            "p90_ms": 8.17306
+          }
+        },
+        "per_first_meld": [
+          {
+            "median_ms": 1.91455,
+            "p10_ms": 1.48004,
+            "p90_ms": 2.3252800000000002
+          },
+          {
+            "median_ms": 0.8857,
+            "p10_ms": 0.75776,
+            "p90_ms": 1.06663
+          },
+          {
+            "median_ms": 0.79745,
+            "p10_ms": 0.68041,
+            "p90_ms": 0.96648
+          },
+          {
+            "median_ms": 0.7704,
+            "p10_ms": 0.66505,
+            "p90_ms": 0.91928
+          },
+          {
+            "median_ms": 0.7727999999999999,
+            "p10_ms": 0.6488900000000001,
+            "p90_ms": 0.93524
+          }
+        ],
+        "warm_five_meld": {
+          "median_ms": 0.00462,
+          "p10_ms": 0.00448,
+          "p90_ms": 0.005001
+        },
+        "calls": {
+          "payload_reads": 0,
+          "payload_upserts": 0,
+          "bundle_writes": 0,
+          "conjure_cache_loads": 0,
+          "cached_context_publications": 0,
+          "target_plan_compilations": 5,
+          "deferred_plan_compilations": 0
+        }
+      }
+    },
+    "cold": {
+      "bind_conjure_meld": {
+        "samples": 600,
+        "phases": {
+          "bind_ns": {
+            "median_ms": 1.0736500000000002,
+            "p10_ms": 1.0274800000000002,
+            "p90_ms": 1.25397
+          },
+          "conjure_ns": {
+            "median_ms": 3.4382,
+            "p10_ms": 3.08389,
+            "p90_ms": 3.7708999999999997
+          },
+          "first_meld_ns": {
+            "median_ms": 0.1271,
+            "p10_ms": 0.11989999999999998,
+            "p90_ms": 0.1447
+          },
+          "total_ns": {
+            "median_ms": 4.67485,
+            "p10_ms": 4.29345,
+            "p90_ms": 5.0600000000000005
+          }
+        },
+        "per_first_meld": [
+          {
+            "median_ms": 0.0569,
+            "p10_ms": 0.0526,
+            "p90_ms": 0.06489999999999999
+          },
+          {
+            "median_ms": 0.0206,
+            "p10_ms": 0.0197,
+            "p90_ms": 0.022
+          },
+          {
+            "median_ms": 0.0167,
+            "p10_ms": 0.0158,
+            "p90_ms": 0.01781
+          },
+          {
+            "median_ms": 0.0156,
+            "p10_ms": 0.014599999999999998,
+            "p90_ms": 0.0169
+          },
+          {
+            "median_ms": 0.0154,
+            "p10_ms": 0.01459,
+            "p90_ms": 0.0166
+          }
+        ],
+        "warm_five_meld": {
+          "median_ms": 0.00442,
+          "p10_ms": 0.004319999999999999,
+          "p90_ms": 0.004610000000000001
+        },
+        "calls": {
+          "payload_reads": 0,
+          "payload_upserts": 5,
+          "bundle_writes": 1,
+          "conjure_cache_loads": 0,
+          "cached_context_publications": 0,
+          "target_plan_compilations": 0,
+          "deferred_plan_compilations": 0
+        }
+      },
+      "conjure_bind_meld": {
+        "samples": 600,
+        "phases": {
+          "bind_ns": {
+            "median_ms": 1.7968,
+            "p10_ms": 1.70168,
+            "p90_ms": 2.01651
+          },
+          "conjure_ns": {
+            "median_ms": 0.58705,
+            "p10_ms": 0.52349,
+            "p90_ms": 0.7081299999999999
+          },
+          "first_meld_ns": {
+            "median_ms": 8.53185,
+            "p10_ms": 7.97349,
+            "p90_ms": 9.24054
+          },
+          "total_ns": {
+            "median_ms": 10.956949999999999,
+            "p10_ms": 10.305359999999999,
+            "p90_ms": 11.834900000000001
+          }
+        },
+        "per_first_meld": [
+          {
+            "median_ms": 2.5328,
+            "p10_ms": 2.10275,
+            "p90_ms": 2.9169499999999995
+          },
+          {
+            "median_ms": 1.5922,
+            "p10_ms": 1.44175,
+            "p90_ms": 1.81495
+          },
+          {
+            "median_ms": 1.4925000000000002,
+            "p10_ms": 1.3468499999999999,
+            "p90_ms": 1.68171
+          },
+          {
+            "median_ms": 1.4561,
+            "p10_ms": 1.32937,
+            "p90_ms": 1.6433499999999999
+          },
+          {
+            "median_ms": 1.4458,
+            "p10_ms": 1.3116,
+            "p90_ms": 1.67528
+          }
+        ],
+        "warm_five_meld": {
+          "median_ms": 0.00504,
+          "p10_ms": 0.00489,
+          "p90_ms": 0.0054
+        },
+        "calls": {
+          "payload_reads": 0,
+          "payload_upserts": 5,
+          "bundle_writes": 5,
+          "conjure_cache_loads": 0,
+          "cached_context_publications": 0,
+          "target_plan_compilations": 5,
+          "deferred_plan_compilations": 0
+        }
+      }
+    },
+    "warm": {
+      "bind_conjure_meld": {
+        "samples": 600,
+        "phases": {
+          "bind_ns": {
+            "median_ms": 1.0692,
+            "p10_ms": 1.00938,
+            "p90_ms": 1.2651
+          },
+          "conjure_ns": {
+            "median_ms": 2.54845,
+            "p10_ms": 2.12603,
+            "p90_ms": 2.93157
+          },
+          "first_meld_ns": {
+            "median_ms": 0.0761,
+            "p10_ms": 0.0683,
+            "p90_ms": 0.0867
+          },
+          "total_ns": {
+            "median_ms": 3.75205,
+            "p10_ms": 3.2576500000000004,
+            "p90_ms": 4.18016
+          }
+        },
+        "per_first_meld": [
+          {
+            "median_ms": 0.0377,
+            "p10_ms": 0.031000000000000007,
+            "p90_ms": 0.04502
+          },
+          {
+            "median_ms": 0.0115,
+            "p10_ms": 0.01099,
+            "p90_ms": 0.012399999999999998
+          },
+          {
+            "median_ms": 0.009,
+            "p10_ms": 0.0086,
+            "p90_ms": 0.0097
+          },
+          {
+            "median_ms": 0.0083,
+            "p10_ms": 0.0078,
+            "p90_ms": 0.008999999999999998
+          },
+          {
+            "median_ms": 0.0083,
+            "p10_ms": 0.0077,
+            "p90_ms": 0.0091
+          }
+        ],
+        "warm_five_meld": {
+          "median_ms": 0.0044,
+          "p10_ms": 0.00422,
+          "p90_ms": 0.0046
+        },
+        "calls": {
+          "payload_reads": 5,
+          "payload_upserts": 0,
+          "bundle_writes": 0,
+          "conjure_cache_loads": 1,
+          "cached_context_publications": 5,
+          "target_plan_compilations": 0,
+          "deferred_plan_compilations": 0
+        }
+      },
+      "conjure_bind_meld": {
+        "samples": 600,
+        "phases": {
+          "bind_ns": {
+            "median_ms": 1.78865,
+            "p10_ms": 1.68978,
+            "p90_ms": 2.0523
+          },
+          "conjure_ns": {
+            "median_ms": 0.67575,
+            "p10_ms": 0.5736,
+            "p90_ms": 0.81084
+          },
+          "first_meld_ns": {
+            "median_ms": 5.2364999999999995,
+            "p10_ms": 4.821429999999999,
+            "p90_ms": 5.87401
+          },
+          "total_ns": {
+            "median_ms": 7.76535,
+            "p10_ms": 7.1842,
+            "p90_ms": 8.50202
+          }
+        },
+        "per_first_meld": [
+          {
+            "median_ms": 1.9266999999999999,
+            "p10_ms": 1.5272100000000002,
+            "p90_ms": 2.31885
+          },
+          {
+            "median_ms": 0.91405,
+            "p10_ms": 0.78431,
+            "p90_ms": 1.0968
+          },
+          {
+            "median_ms": 0.8221,
+            "p10_ms": 0.70128,
+            "p90_ms": 1.0001000000000002
+          },
+          {
+            "median_ms": 0.80575,
+            "p10_ms": 0.6908399999999999,
+            "p90_ms": 0.9523800000000001
+          },
+          {
+            "median_ms": 0.79235,
+            "p10_ms": 0.6769999999999999,
+            "p90_ms": 0.97461
+          }
+        ],
+        "warm_five_meld": {
+          "median_ms": 0.00474,
+          "p10_ms": 0.00453,
+          "p90_ms": 0.0050810000000000004
+        },
+        "calls": {
+          "payload_reads": 0,
+          "payload_upserts": 0,
+          "bundle_writes": 0,
+          "conjure_cache_loads": 0,
+          "cached_context_publications": 0,
+          "target_plan_compilations": 5,
+          "deferred_plan_compilations": 0
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "bind_conjure_meld": {
+      "warm_vs_cold_reduction_percent": 19.739670791576202,
+      "warm_vs_disabled_change_percent": 1.2057129755755458
+    },
+    "conjure_bind_meld": {
+      "warm_vs_cold_reduction_percent": 29.128543983499057,
+      "warm_vs_disabled_change_percent": 6.134038583758739
+    }
+  }
+}

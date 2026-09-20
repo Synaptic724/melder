@@ -108,7 +108,7 @@ def main() -> None:
         disposal_method_names=None,
     )
     conduit = book.conjure(name="restore-root")
-    ledger = conduit.meld(spell=Ledger, binding_name="restore-ledger")
+    ledger = conduit.meld(Ledger, binding_name="restore-ledger")
     ledger.entries.append("before the checkpoint")
     print("world up; ledger holds", len(ledger.entries), "entry")
 

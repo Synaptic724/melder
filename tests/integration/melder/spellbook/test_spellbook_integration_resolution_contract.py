@@ -1549,8 +1549,8 @@ def test_spellmap_default_frame_and_binding_resolves_dependency() -> None:
     Purpose:
         Validate SpellMap defaults honor explicit spellframe + binding_name.
     Contract:
-        - Existing-instance bindings are not callable during occurrence planning.
-        - Conjure raises when SpellMap defaults target an existing-instance binding.
+        - Existing-instance providers remain leaves during occurrence planning.
+        - SpellMap injects the exact instance selected by frame and binding name.
     Returns:
         None.
     Raises:
@@ -1639,8 +1639,9 @@ def test_spellmap_default_frame_and_binding_resolves_dependency() -> None:
         spellframe=IConfig,
         binding_name="secondary",
     )
+    primary_config = _PrimaryConfig("primary")
     spellbook.bind(
-        spell=_PrimaryConfig("primary"),
+        spell=primary_config,
         existence=Existence.unique,
         permissions="create",
         spellframe=IConfig,
@@ -1652,8 +1653,13 @@ def test_spellmap_default_frame_and_binding_resolves_dependency() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError, match="not a callable object"):
-        spellbook.conjure(name="root")
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell_id=service_id)
+        assert instance.cfg is primary_config
+        assert instance.cfg.label == "primary"
+    finally:
+        conduit.cleanup()
 
 
 def test_collection_di_by_list_frame_injects_all() -> None:
@@ -1769,8 +1775,8 @@ def test_existing_instance_frame_type_hint_injects_existing() -> None:
     Purpose:
         Validate existing instance spells are injected by frame type-hint.
     Contract:
-        - Existing-instance bindings are not callable during occurrence planning.
-        - Conjure raises when a type-hint targets an existing-instance binding.
+        - Existing-instance providers declare no constructor contracts.
+        - Type-hint DI injects the exact registered instance.
     Returns:
         None.
     Raises:
@@ -1842,8 +1848,13 @@ def test_existing_instance_frame_type_hint_injects_existing() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError, match="not a callable object"):
-        spellbook.conjure(name="root")
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell_id=service_id)
+        assert instance.cfg is config_instance
+        assert instance.cfg.label == "existing"
+    finally:
+        conduit.cleanup()
 
 
 def test_type_hint_di_ambiguous_frame_raises() -> None:

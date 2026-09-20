@@ -61,8 +61,8 @@ def main() -> None:
     conduit_a = book_a.conjure(name="cache-a")
     conduit_b = book_b.conjure(name="cache-b")
 
-    cache_a = conduit_a.meld(spell=TenantCache, binding_name="tenant-a")
-    cache_b = conduit_b.meld(spell=TenantCache, binding_name="tenant-b")
+    cache_a = conduit_a.meld(TenantCache, binding_name="tenant-a")
+    cache_b = conduit_b.meld(TenantCache, binding_name="tenant-b")
 
     # "unique" = one instance per FRAME. Two frames, two singletons.
     assert type(cache_a) is type(cache_b) is TenantCache
@@ -70,8 +70,8 @@ def main() -> None:
     print("one class, two worlds, two singletons:", cache_a is not cache_b)
 
     # Each world reuses ITS OWN singleton, forever.
-    assert conduit_a.meld(spell=TenantCache, binding_name="tenant-a") is cache_a
-    assert conduit_b.meld(spell=TenantCache, binding_name="tenant-b") is cache_b
+    assert conduit_a.meld(TenantCache, binding_name="tenant-a") is cache_a
+    assert conduit_b.meld(TenantCache, binding_name="tenant-b") is cache_b
     print("per-frame reuse holds; nothing leaked across the wall")
 
     # THE LINE, PROVEN. A third world binding the SAME class the SAME way

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="0.613" timestamp="2026-09-19T14:37:32.634176-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_false_definition_has_no_executable_cache_obligation" time="0.006"><failure message="AttributeError: 'NoneType' object has no attribute '_name'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:351: in test_false_definition_has_no_executable_cache_obligation
+    cache_state = SpellbookCreationSystem._build_conjure_cache_state(
+src\melder\aether\spellbook\spellbook_creation_system.py:459: in _build_conjure_cache_state
+    caching_system = spellbook._get_or_create_caching_system(
+src\melder\aether\spellbook\spellbook.py:929: in _get_or_create_caching_system
+    conduit_name = self._conduit._name
+                   ^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute '_name'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_direct_plan_phase_entry_skips_non_resolvable_definitions[8]" time="0.005"><failure message="RuntimeError: SpellOccurrenceGraphAnalyzerStrategy requires Phase 5 root blueprint truth.">tests\component\melder\spellbook\test_spellbook_component_override_required.py:369: in test_direct_plan_phase_entry_skips_non_resolvable_definitions
+    compiler.run_phase_occurrence_plan(compiler_book, spell)
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:364: in run_phase_occurrence_plan
+    self._spell_compiler.run_phase_occurrence_plan(
+src\melder\aether\spellbook\spell_compiler\spell_compiler.py:610: in run_phase_occurrence_plan
+    self._phase_8.run(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_8.py:116: in run
+    self._spell_analyzer.analyze_occurrence(
+src\melder\aether\spellbook\spell_compiler\spell_analyzer\spell_analyzer.py:129: in analyze_occurrence
+    self._run_strategy_chain(
+src\melder\aether\spellbook\spell_compiler\spell_analyzer\spell_analyzer.py:162: in _run_strategy_chain
+    strategy.analyze(spell, artifact, analysis_pass_cache=analysis_pass_cache)
+src\melder\aether\spellbook\spell_compiler\spell_analyzer\strategies\spell_occurrence_graph_analyzer_strategy.py:155: in analyze
+    raise RuntimeError(
+E   RuntimeError: SpellOccurrenceGraphAnalyzerStrategy requires Phase 5 root blueprint truth.</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_direct_plan_phase_entry_skips_non_resolvable_definitions[9]" time="0.005"><failure message="RuntimeError: SpellOccurrenceOrderProcessorStrategy requires graph_shape first.">tests\component\melder\spellbook\test_spellbook_component_override_required.py:371: in test_direct_plan_phase_entry_skips_non_resolvable_definitions
+    compiler.run_phase_injection_plan(spell)
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:388: in run_phase_injection_plan
+    self._spell_compiler.run_phase_injection_plan(
+src\melder\aether\spellbook\spell_compiler\spell_compiler.py:630: in run_phase_injection_plan
+    self._phase_9.run(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_9.py:88: in run
+    self._artifact_processor.process(spell, artifact)
+src\melder\aether\spellbook\spell_compiler\artifact_processor\spell_artifact_processor.py:87: in process
+    strategy.process(spell, artifact, model)
+src\melder\aether\spellbook\spell_compiler\artifact_processor\strategies\spell_occurrence_order_processor_strategy.py:61: in process
+    raise RuntimeError(
+E   RuntimeError: SpellOccurrenceOrderProcessorStrategy requires graph_shape first.</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_direct_plan_phase_entry_skips_non_resolvable_definitions[10]" time="0.014"><failure message="RuntimeError: SpellCodegenPlanner requires artifact._spell_codegen_model first.">tests\component\melder\spellbook\test_spellbook_component_override_required.py:373: in test_direct_plan_phase_entry_skips_non_resolvable_definitions
+    compiler.run_phase_patch_maps(spell)
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:409: in run_phase_patch_maps
+    self._spell_compiler.run_phase_patch_maps(
+src\melder\aether\spellbook\spell_compiler\spell_compiler.py:647: in run_phase_patch_maps
+    self._phase_10.run(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_10.py:113: in run
+    planner.build(artifact)
+src\melder\aether\spellbook\spell_compiler\codegen_planner\spell_codegen_planner.py:79: in build
+    raise RuntimeError(
+E   RuntimeError: SpellCodegenPlanner requires artifact._spell_codegen_model first.</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_direct_plan_phase_entry_skips_non_resolvable_definitions[11]" time="0.039"><failure message="RuntimeError: CodegenCreationSystem requires artifact._spell_codegen_model first.">tests\component\melder\spellbook\test_spellbook_component_override_required.py:375: in test_direct_plan_phase_entry_skips_non_resolvable_definitions
+    compiler.run_phase_execution_plan(compiler_book, spell)
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:433: in run_phase_execution_plan
+    self._spell_compiler.run_phase_execution_plan(
+src\melder\aether\spellbook\spell_compiler\spell_compiler.py:686: in run_phase_execution_plan
+    self._phase_11.run(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_11.py:127: in run
+    creation_system.build(artifact)
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\codegen_creation_system.py:76: in build
+    raise RuntimeError(
+E   RuntimeError: CodegenCreationSystem requires artifact._spell_codegen_model first.</failure></testcase></testsuite></testsuites>
