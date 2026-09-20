@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.491" timestamp="2026-09-19T19:00:27.977942-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="benchmarks.testing_other_di.test_melder_gauntlet" name="test_melder_gauntlet" time="0.309"><failure message="KeyError: &quot;[MELD] No spell found for frame='ad56b6e10d45f2d18698b1ecf06ed5ecb5eb5a73030be74264a464dbfc6f293d', binding='__default__'.&quot;">@pytest.mark.timeout(3600)
+    def test_melder_gauntlet() -&gt; None:
+        """
+        Run the standalone Melder-only variant of the real-world gauntlet.
+        """
+        cfg = _melder_config_from_env()
+        ops = _build_runtime_melder()
+&gt;       result = _support.run_gauntlet_benchmark(ops, cfg)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+benchmarks\testing_other_di\test_melder_gauntlet.py:323: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+benchmarks\testing_other_di\melder_gauntlet_support.py:719: in run_gauntlet_benchmark
+    ops.spawn_singletons()
+benchmarks\testing_other_di\test_melder_gauntlet.py:136: in spawn_singletons
+    left = _get(cls)
+           ^^^^^^^^^
+benchmarks\testing_other_di\test_melder_gauntlet.py:129: in _get
+    resolved = conduit.meld(spell=spell_ids[cls])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:334: in meld
+    target_spell = self._resolve_spell(
+src\melder\aether\conduit\meld\meld.py:1363: in _resolve_spell
+    return self._resolve_spell_by_lookup_key(lookup_key)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;melder.aether.conduit.meld.conduit_meld.ConduitMeld object at 0x0000031FB0520380&gt;
+lookup_key = ('ad56b6e10d45f2d18698b1ecf06ed5ecb5eb5a73030be74264a464dbfc6f293d', '__default__')
+
+    def _resolve_spell_by_lookup_key(
+            self,
+            lookup_key: tuple[str, str],
+    ) -&gt; Spell:
+        """
+        Resolve a spell by normalized logical identity key.
+    
+        The lookup order is:
+    
+        1. local Spellbook maps
+        2. contracted-conduit maps
+    
+        This method is the orchestration point for that two-layer search and is
+        responsible for turning "not found anywhere" into one stable `KeyError`
+        contract.
+    
+        Args:
+            lookup_key:
+                A tuple (frame_key, binding_name) produced by
+                SpellInputUtils.normalize_spell_key or
+                SpellInputUtils.make_spell_key_from_parts.
+    
+        Returns:
+            Spell:
+                The resolved spell configuration object.
+    
+        Raises:
+            KeyError:
+                If no spell can be resolved for the given key in either
+                the local or contracted spell maps.
+            RuntimeError:
+                If a SpellIndex is found for the key, but the
+                associated spell object is missing from the expected map.
+        """
+        frame_key, bind_key = lookup_key
+    
+        # 1) Local lookup
+        local_spell = self._resolve_local_by_lookup_key(lookup_key)
+        if local_spell is not None:
+            return local_spell
+    
+        # 2) Contracted lookup
+        contracted_spell = self._resolve_contracted_by_lookup_key(lookup_key)
+        if contracted_spell is not None:
+            return contracted_spell
+    
+        # 3) Not found anywhere
+&gt;       raise KeyError(
+            f"[MELD] No spell found for frame='{frame_key}', binding='{bind_key}'."
+        )
+E       KeyError: "[MELD] No spell found for frame='ad56b6e10d45f2d18698b1ecf06ed5ecb5eb5a73030be74264a464dbfc6f293d', binding='__default__'."
+
+src\melder\aether\conduit\meld\meld.py:1461: KeyError</failure></testcase></testsuite></testsuites>

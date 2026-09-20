@@ -238,11 +238,11 @@ def _melder_run(mode: str) -> _PerfRow:
 
     try:
         # “cold” sanity resolves (NOT timed)
-        cfg_obj = conduit.meld(spell=config_id)
+        cfg_obj = conduit.meld(spell_id=config_id)
         assert isinstance(cfg_obj, PerfConfig)
-        log1 = conduit.meld(spell=logger_id)
+        log1 = conduit.meld(spell_id=logger_id)
         assert isinstance(log1, PerfLogger)
-        log2 = conduit.meld(spell=logger_id)
+        log2 = conduit.meld(spell_id=logger_id)
         assert isinstance(log2, PerfLogger)
 
         logger_is_cached: Optional[bool]
@@ -252,12 +252,12 @@ def _melder_run(mode: str) -> _PerfRow:
         else:
             logger_is_cached = None
 
-        svc_obj = conduit.meld(spell=service_id)
+        svc_obj = conduit.meld(spell_id=service_id)
         assert isinstance(svc_obj, PerfService)
 
-        cfg_total_ns = _time_loop(lambda: conduit.meld(spell=config_id), warmup=WARMUP, tries=TRIES)
-        log_total_ns = _time_loop(lambda: conduit.meld(spell=logger_id), warmup=WARMUP, tries=TRIES)
-        svc_total_ns = _time_loop(lambda: conduit.meld(spell=service_id), warmup=WARMUP, tries=TRIES)
+        cfg_total_ns = _time_loop(lambda: conduit.meld(spell_id=config_id), warmup=WARMUP, tries=TRIES)
+        log_total_ns = _time_loop(lambda: conduit.meld(spell_id=logger_id), warmup=WARMUP, tries=TRIES)
+        svc_total_ns = _time_loop(lambda: conduit.meld(spell_id=service_id), warmup=WARMUP, tries=TRIES)
 
         return _PerfRow(
             name="melder",

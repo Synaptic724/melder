@@ -1,0 +1,29 @@
+automatic_prebind/default: Optional[Something] = None received the registered Something
+.automatic_prebind/named: Optional[Something] = None received the registered Something
+.automatic_prebind/named_and_framed: Optional[Something] = None received the registered Something
+.dynamic_prebind/default: Optional[Something] = None received the registered Something
+.dynamic_prebind/named: Optional[Something] = None received the registered Something
+.dynamic_prebind/named_and_framed: Optional[Something] = None received the registered Something
+.dynamic_postbind/default: Optional[Something] = None received the registered Something
+.dynamic_postbind/named: Optional[Something] = None received the registered Something
+.dynamic_postbind/named_and_framed: Optional[Something] = None received the registered Something
+.automatic_prebind/absent: PhaseExecutionError during conjure: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=<class 'test_optional_dependency_default_resolution_experiment.Something'>).
+.dynamic_prebind/absent: PhaseExecutionError during conjure: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=<class 'test_optional_dependency_default_resolution_experiment.Something'>).
+.dynamic_postbind/absent: RuntimeError during bind_consumer: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=<class 'test_optional_dependency_default_resolution_experiment.Something'>).
+.automatic_prebind/plain Optional[object] = None: None retained, Something not created
+.dynamic_prebind/plain Optional[object] = None: None retained, Something not created
+.dynamic_postbind/plain Optional[object] = None: None retained, Something not created
+.automatic_prebind/scalar defaults: (42, 0, 1.5, False, 'selected', '', (1, 2), None)
+.dynamic_prebind/scalar defaults: (42, 0, 1.5, False, 'selected', '', (1, 2), None)
+.dynamic_postbind/scalar defaults: (42, 0, 1.5, False, 'selected', '', (1, 2), None)
+.automatic_prebind/instance default: selected-default was replaced by injected-provider
+.dynamic_prebind/instance default: selected-default was replaced by injected-provider
+.dynamic_postbind/instance default: selected-default was replaced by injected-provider
+.automatic_prebind/instance default without provider: PhaseExecutionError during conjure
+.dynamic_prebind/instance default without provider: PhaseExecutionError during conjure
+.dynamic_postbind/instance default without provider: RuntimeError during bind_consumer
+.automatic_prebind/SpellMap default: explicit DI injected Something
+.dynamic_prebind/SpellMap default: explicit DI injected Something
+.dynamic_postbind/SpellMap default: explicit DI injected Something
+.
+27 passed in 0.49s

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.253" timestamp="2026-09-13T14:57:39.690878-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.spectrum.test_area_bootstraps" name="test_activity_root_uses_real_dedicated_logger_and_releases_builder_custody" time="0.065"><failure message="assert (False)&#10; +  where False = &lt;command_ops.command_center.activity.builder.ActivityBuilder object at 0x000003A5BCC3CC60&gt;.cleaned">..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py:244: in test_activity_root_uses_real_dedicated_logger_and_releases_builder_custody
+    assert builder.cleaned and first.cleaned and second.cleaned
+E   assert (False)
+E    +  where False = &lt;command_ops.command_center.activity.builder.ActivityBuilder object at 0x000003A5BCC3CC60&gt;.cleaned</failure></testcase></testsuite></testsuites>

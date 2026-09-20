@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional
+from types import SimpleNamespace
 
 import pytest
 
@@ -175,6 +176,8 @@ class _SpellStub:
             None.
         """
         self.spell_index = _SpellIndexStub(spell_id)
+        self.resolvable = True
+        self._spell_system_states = SimpleNamespace(get_local_topology=lambda _index: None)
         self.spellframe = spellframe
         self.spell_name = spell_name
         self.binding_name = binding_name

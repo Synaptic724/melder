@@ -38,7 +38,7 @@ def main() -> None:
         profile="general",
     )
     instance = book.conjure().meld(
-        spell=FullyDressed, spellframe="demo", binding_name="fully-dressed"
+        FullyDressed, spellframe="demo", binding_name="fully-dressed"
     )
     assert isinstance(instance, FullyDressed)
     print("registration using the full vocabulary melded:", type(instance).__name__)

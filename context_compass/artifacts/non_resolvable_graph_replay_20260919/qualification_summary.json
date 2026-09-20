@@ -1,0 +1,13 @@
+{
+  "passed": 8055,
+  "skipped": 1,
+  "xfailed": 4,
+  "reports_in_order": [
+    "combined.xml",
+    "broad.xml",
+    "remaining.xml",
+    "replay.xml",
+    "replay_final.xml"
+  ],
+  "total_distinct_cases": 8060
+}

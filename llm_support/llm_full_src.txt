@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: c90bbf3526ef09a45170413a837fb79e2071565431287f32294f6fb64f2f97f5
+SOURCE FINGERPRINT: ab6e64ce53720a26af1d0d83457cd62f52ca9a670f3f93a1acba8de43ed5a1dc
 FILE COUNT: 585
 
 ================================================================================
@@ -270,7 +270,7 @@ END FILE: src/melder/__graph_network__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__init__.py
-CONTENT SHA256: b46fa4757756e52f54424b4927e4ca2baa120ffb0e52143d2aa5634c7931b431
+CONTENT SHA256: 5c269055cd7538b6504dfe3e556e2e35552fcfbf7865cb32aadb2983f2268b7e
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -287,7 +287,7 @@ Quickstart:
     book = md.Spellbook()
     book.bind(spell=MyService, existence=md.Existence.unique)
     conduit = book.conjure(dynamic=True, name="root")
-    service = conduit.meld(spell=MyService)
+    service = conduit.meld(MyService)
 
 Workflow map - every name below is importable from this root:
 - BIND: Spellbook, SpellBinder, scan_bind (decorator), Spell,
@@ -597,7 +597,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 6b1c16fa8da27da184bf16d92bab39ffb1cde2b7365d83897e253bf758048316
+CONTENT SHA256: e117477eb86b0e436404c2575572d24ad4dc0916bd5b710cefe8e3deff616eea
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -611,7 +611,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.37"
+__version__ = "0.2.43"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -31197,7 +31197,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_sys
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
-CONTENT SHA256: 05b8c3f9bdd04be5f33ee5759dd76a528db3c8c7da8ccbbfd6a0c81086878794
+CONTENT SHA256: fca2ed41c56005182a8d2df53526ec946d328234fc106d6ff8471b5b5041c38e
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -32315,13 +32315,16 @@ class SpellSystemStates(Cleanable):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> Set[str]:
         """
-        Mark list[Frame] consumers dirty for a specific Spellbook scope.
+        Mark collection and OVERRIDE_REQUIRED consumers dirty within one Spellbook.
 
         This is the targeted fan-out path used when a spell's local topology
         changes collection membership. Instead of dirtying every spell index in
         the frame, the method consults the spellbook-scoped reverse index and
         only marks spell indexes that consume one of the affected collection
         frame keys.
+
+        The historical collection index also tracks reference-only required inputs:
+        provider selection can change even though they have no executable dependency IDs.
 
         Args:
             spellbook_id:
@@ -32468,8 +32471,8 @@ class SpellSystemStates(Cleanable):
 
         This is called by :class:`SpellCrafter` during Phase 3 and is the
         primary entry point for building higher-level blueprints in phases 5-7.
-        It also refreshes the collection-dependency index used for targeted
-        list[Frame] revalidation within the owning Spellbook scope.
+        It also refreshes the frame-key sensitivity index used for targeted
+        list[Frame] and OVERRIDE_REQUIRED revalidation within the owning Spellbook scope.
 
         Contract:
             - Stores the live topology object under `spell_index.selected_spell_id`.
@@ -32563,13 +32566,15 @@ class SpellSystemStates(Cleanable):
             topology: SpellLocalTopology,
     ) -> Set[str]:
         """
-        Extract collection frame keys from a local topology.
+        Extract selector-sensitive frame keys from a local topology.
 
         These frame keys feed the spellbook-scoped collection-dependent index
-        used later for targeted invalidation of list[Frame] consumers.
+        used for targeted invalidation of list[Frame] and OVERRIDE_REQUIRED consumers.
 
         Contract:
-            - Only NORMAL sockets that are marked as collections participate.
+            - NORMAL collection sockets and OVERRIDE_REQUIRED inputs participate.
+            - Required inputs are watched without creating construction dependency edges.
+            - False-root declarations carry no dependency_key and therefore add no watcher.
             - The frame key is taken from `socket.dependency_key[0]`.
             - Returns a detached set suitable for index replacement.
         """
@@ -32577,9 +32582,9 @@ class SpellSystemStates(Cleanable):
         if topology is None:
             return frames
         for socket in topology.iter_sockets():
-            if socket.socket_kind is not SocketKind.NORMAL:
-                continue
-            if not socket.is_collection:
+            if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED and not (
+                    socket.socket_kind is SocketKind.NORMAL and socket.is_collection
+            ):
                 continue
             if socket.dependency_key is None:
                 continue
@@ -42054,7 +42059,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: c450bcbef2c8c08de8dd776d1d8beed7029da0a0f9718b56114ebf7058e719e2
+CONTENT SHA256: 217623d87d8e2401603357730d1db7ac5d29b2f60b8f7d5b2c91f367d05e8ed8
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -45162,6 +45167,7 @@ class Conduit(Cleanable):
             spellframe: Any = None,
             binding_name: Optional[str] = None,
             profile: str = "general",
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> str:
         """
@@ -45210,6 +45216,9 @@ class Conduit(Cleanable):
                 frame.
             profile (str):
                 Spell profile family to attach after bind completion.
+            resolvable (bool):
+                Native per-version resolution capability, forwarded unchanged to Spellbook.
+                Defaults to True; False retains existing binding and lifetime rules.
             **kwargs:
                 Optional lifecycle hooks and related bind-time metadata.
 
@@ -45222,7 +45231,7 @@ class Conduit(Cleanable):
                 If the conduit is cleaned, is not normal, no binding transaction is
                 active, or the spell collides with an existing registry entry.
             TypeError:
-                If invalid hook types are provided.
+                If invalid hook types or a non-bool resolvable value are provided.
 
         """
         self.check_cleaned()
@@ -45246,6 +45255,7 @@ class Conduit(Cleanable):
             spellframe=spellframe,
             binding_name=binding_name,
             profile=profile,
+            resolvable=resolvable,
             permissions=permissions,
             **kwargs,
         )
@@ -45260,6 +45270,7 @@ class Conduit(Cleanable):
             spellframe: Any = None,
             binding_name: Optional[str] = None,
             profile: str = "general",
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> str:
         """
@@ -45298,6 +45309,9 @@ class Conduit(Cleanable):
                 Secondary disambiguation key within the frame.
             profile (str):
                 Spell profile family to attach after bind completion.
+            resolvable (bool):
+                Native capability of this parked version, forwarded unchanged to Spellbook.
+                Defaults to True and is independent of active index selection.
             **kwargs:
                 Optional lifecycle hooks (pre/activation/post).
 
@@ -45309,6 +45323,8 @@ class Conduit(Cleanable):
             RuntimeError:
                 If the conduit is cleaned, is not normal, the dynamic environment
                 is not enabled, or there is no owning Spellbook.
+            TypeError:
+                If resolvable is not a bool or Bind rejects the target.
         """
         self.check_cleaned()
         if self._conduit_state is not ConduitState.normal:
@@ -45329,6 +45345,7 @@ class Conduit(Cleanable):
             spellframe=spellframe,
             binding_name=binding_name,
             profile=profile,
+            resolvable=resolvable,
             **kwargs,
         )
         # The new inactive member joined `spell_index`; if that index is shared
@@ -58056,7 +58073,7 @@ END FILE: src/melder/aether/conduit/creations/creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/conduit_meld.py
-CONTENT SHA256: 16144ea202e7071265b7797b25af2edef09cc17893ba00687a8d6116289d3ebb
+CONTENT SHA256: 3c28f944b0c71751418e3ef09dcceac77d796dcf1eab099c1ff3ea386c3436e4
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar
@@ -58257,6 +58274,8 @@ class ConduitMeld(Meld):
 
         Contract:
             - Rejects spells that require a spellspace-local request context.
+            - Refuses non-resolvable registrations before overrides, validation, hooks or execution.
+              Only admitted immutable True versions can populate the success-only warm door.
             - Routes `unique_per_conduit` and `many` through the caller
               conduit's `ConduitCreations`.
             - Routes broader-lived existences through spell-owned shared
@@ -58281,6 +58300,8 @@ class ConduitMeld(Meld):
                 after all pre-/activation-/post-hooks have executed.
 
         Raises:
+            MeldExecutionError:
+                If the selected registration declares resolvable=False.
             ValueError:
                 If none of `spell_name`, `spell`, or `spellframe` are provided.
             KeyError:
@@ -58401,6 +58422,9 @@ class ConduitMeld(Meld):
                             None,
                         )
                     input_resolution_cache[cache_key] = target_spell.spell_id
+        # Capability is immutable per version; a rejected target can never mint a warm door.
+        if not target_spell._resolvable:
+            self._raise_non_resolvable_registration(target_spell)
         if target_spell.requires_spellspace_request:
             raise RuntimeError(
                 "{0} must be built from a spellspace.".format(
@@ -58534,6 +58558,7 @@ class ConduitMeld(Meld):
         Contract:
             - Reuses the same spell identity inputs accepted by `meld(...)`.
             - Never enters any creation path.
+            - Refuses non-resolvable registrations even when an existing object is stored.
             - Returns one already-live object or raises.
             - Supports only lifecycles that can resolve to one deterministic
               existing object.
@@ -58556,6 +58581,8 @@ class ConduitMeld(Meld):
             Any: Existing live runtime object for the resolved spell.
 
         Raises:
+            MeldExecutionError:
+                If the selected registration declares resolvable=False.
             ValueError:
                 If the spell is not currently live.
             RuntimeError:
@@ -58599,6 +58626,8 @@ class ConduitMeld(Meld):
                         )
                     input_resolution_cache[cache_key] = target_spell.spell_id
 
+        if not target_spell._resolvable:
+            self._raise_non_resolvable_registration(target_spell)
         if target_spell.is_existing_creation:
             if target_spell.user_created_object is None:
                 raise ValueError(
@@ -60685,10 +60714,11 @@ END FILE: src/melder/aether/conduit/meld/creation_context/creation_context_rebui
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/meld.py
-CONTENT SHA256: 33f1f95e5fbc0b5c39a92438178eee1ed87167f99f2ef6ae9d4b2d58e90d889f
+CONTENT SHA256: fb299153e85ac5b3fc3a3f7817c9e81970d2c7bfc96defcd8f5d67507a326616
 SOURCE ENCODING: utf-8
 ================================================================================
 from abc import ABC, abstractmethod
+from annotationlib import Format
 import inspect
 from threading import RLock
 from typing import (
@@ -60701,6 +60731,7 @@ from typing import (
     Tuple,
     Sequence,
     ClassVar,
+    NoReturn,
 )
 
 
@@ -60743,6 +60774,8 @@ class Meld(Cleanable, ABC):
 
     Primary responsibilities:
     - resolve a target spell by spell id or normalized lookup key
+    - provide the shared refusal diagnostic for non-resolvable registrations;
+      concrete execution doors enforce capability while observational lookup remains available
     - normalize per-call override payloads
     - enforce structural validity, contract validity, and per-conduit
       resolution validity before instance access
@@ -61282,6 +61315,34 @@ class Meld(Cleanable, ABC):
             "Concrete Meld subclasses must implement describe_live_creation_status()."
         )
 
+    @staticmethod
+    def _raise_non_resolvable_registration(spell: Spell) -> NoReturn:
+        """
+        Refuse direct resolution of one explicitly non-resolvable registration.
+
+        Contract:
+            - Called only on the failure branch of concrete execution doors.
+            - Preserves the selected version's identity without searching for another provider.
+            - Performs no validation, hook dispatch, construction or creation-store access.
+            - Observational lookup and status probes do not call this helper.
+
+        Args:
+            spell: Selected registration whose immutable resolution capability is False.
+
+        Raises:
+            MeldExecutionError: Always, with target identity and supported resolution guidance.
+        """
+        raise MeldExecutionError(
+            spell_id=spell.spell_id,
+            spell_name=spell.spell_name,
+            message=(
+                "The selected registration is non-resolvable (resolvable=False) and cannot "
+                "be melded or returned by reuse-only resolution. It remains available for "
+                "discovery. Supply the application value through the consuming spell's "
+                "override, or select a resolvable registration."
+            ),
+        )
+
     def _ensure_lineage_resolvable(self, spell: Spell) -> None:
         """
         Ensure the spell is structurally valid enough to continue toward
@@ -61291,6 +61352,8 @@ class Meld(Cleanable, ABC):
         responsibilities:
 
         - rerun structural phases when the lineage is unknown or gated
+        - gate the prior conduit-local resolution verdict after a structural
+          rerun so changed dependency selection cannot retain an old executor
         - force contract-driven revalidation when `SpellContract` defaults are
           present and need to invalidate conduit-local resolution state
         - hand off to per-conduit resolution gating when structural validity is
@@ -61324,6 +61387,9 @@ class Meld(Cleanable, ABC):
                     refreshed_state = spell.system_state
                     if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
                         raise SpellbookValidationError([spell])
+                    self._force_resolution_revalidation(
+                        spell, change_reason=SpellStateChangeReason.structure_changed,
+                    )
 
         self._check_contracts_and_force_revalidation(spell)
 
@@ -61661,6 +61727,8 @@ class Meld(Cleanable, ABC):
             - Returns an empty list when the signature cannot be inspected.
             - Skips self/cls and var-arg parameters.
             - Only parameters with SpellContract defaults are returned.
+            - Preserves unresolved Python 3.14 annotation names as ForwardRefs;
+              checking defaults must not evaluate TYPE_CHECKING-only imports.
 
         Args:
             spell: Spell whose callable signature is inspected.
@@ -61674,7 +61742,7 @@ class Meld(Cleanable, ABC):
             return []
 
         try:
-            signature = inspect.signature(call_target)
+            signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
         except (TypeError, ValueError):
             return []
 
@@ -61695,7 +61763,12 @@ class Meld(Cleanable, ABC):
 
         return contracts
 
-    def _force_resolution_revalidation(self, spell: Spell) -> None:
+    def _force_resolution_revalidation(
+            self,
+            spell: Spell,
+            *,
+            change_reason: SpellStateChangeReason = SpellStateChangeReason.contract_unvalidated,
+    ) -> None:
         """
         Force resolution validity to gated so revalidation runs in this conduit.
 
@@ -61706,6 +61779,8 @@ class Meld(Cleanable, ABC):
 
         Args:
             spell: Spell to mark for resolution revalidation.
+            change_reason: Why the compiled resolution must be rebuilt. Existing
+                contract callers retain contract_unvalidated by default.
         """
         spell_system_states = spell._spell_system_states
         conduit_id = self._resolution_conduit_id
@@ -61727,13 +61802,13 @@ class Meld(Cleanable, ABC):
             resolution_state.set_root_validity(
                 spell_id,
                 SpellValidity.gated,
-                change_reason=SpellStateChangeReason.contract_unvalidated,
+                change_reason=change_reason,
             )
         else:
             resolution_state.set_spell_validity(
                 spell_id,
                 SpellValidity.gated,
-                change_reason=SpellStateChangeReason.contract_unvalidated,
+                change_reason=change_reason,
             )
 
     def _get_resolution_validity(
@@ -62476,7 +62551,7 @@ END FILE: src/melder/aether/conduit/meld/overrides/spell_overrider.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/spellspace_meld.py
-CONTENT SHA256: 5863628136e1f0f9d3788be26882a85037a0934eb79aad90eff8354cbb0a9889
+CONTENT SHA256: ebc59b32ddb4d7f502f0d914d4f00e727a1014de5ef98ab4be604888cb6d2f82
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar
@@ -62708,6 +62783,8 @@ class SpellSpaceMeld(Meld):
         Contract:
             - Routes `unique_per_spell_space` through the spellspace-local
               creations registry owned by this request object.
+            - Refuses non-resolvable registrations before overrides, validation, hooks or execution.
+              Only admitted immutable True versions can populate the success-only warm door.
             - Routes `unique_per_conduit` and `many` through the injected
               owner-conduit creations registry.
             - Routes broader-lived existences through spell-owned shared
@@ -62726,6 +62803,8 @@ class SpellSpaceMeld(Meld):
               results are always identical to normal-lane results.
 
         Raises:
+            MeldExecutionError:
+                If the selected registration declares resolvable=False.
             ValueError:
                 If none of `spell_name`, `spell`, or `spellframe` are provided.
             KeyError:
@@ -62840,6 +62919,9 @@ class SpellSpaceMeld(Meld):
                             None,
                         )
                     input_resolution_cache[cache_key] = target_spell.spell_id
+        # Capability is immutable per version; a rejected target can never mint a warm door.
+        if not target_spell._resolvable:
+            self._raise_non_resolvable_registration(target_spell)
         # 2) Caller overrides replace the stored mutation override payload.
         # Hot path: read the owned slot directly instead of paying the
         # `mutation_override` property descriptor per meld.
@@ -62965,6 +63047,7 @@ class SpellSpaceMeld(Meld):
         Contract:
             - Reuses the same spell identity inputs accepted by `meld(...)`.
             - Never enters any creation path.
+            - Refuses non-resolvable registrations even when an existing object is stored.
             - Returns one already-live object or raises.
             - Supports only lifecycles that can resolve to one deterministic
               existing object.
@@ -62988,6 +63071,8 @@ class SpellSpaceMeld(Meld):
             Any: Existing live runtime object for the resolved spell.
 
         Raises:
+            MeldExecutionError:
+                If the selected registration declares resolvable=False.
             ValueError:
                 If the spell is not currently live.
             RuntimeError:
@@ -63031,6 +63116,8 @@ class SpellSpaceMeld(Meld):
                         )
                     input_resolution_cache[cache_key] = target_spell.spell_id
 
+        if not target_spell._resolvable:
+            self._raise_non_resolvable_registration(target_spell)
         if target_spell.is_existing_creation:
             if target_spell.user_created_object is None:
                 raise ValueError(
@@ -64406,7 +64493,7 @@ END FILE: src/melder/aether/conduit/spell_space/spell_space_thread_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/bind/bind.py
-CONTENT SHA256: bb8f173452ae52ce2145bc1e94fc0b243fbed7d243fa43cb0711fbd34c728be9
+CONTENT SHA256: 26ef1ec9046d3ac261cf5306ebd134190c6fefcebf942a2512dcf1b6a72fa11b
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -64545,6 +64632,10 @@ class Bind(Cleanable):
     - Successful registration always flows through canonical profile
       examination and deterministic fingerprinting rather than ad hoc ids.
     - Decorator-style and direct-call usage share the same binding pipeline.
+    - Resolution capability is native per-Spell policy, defaulting to True;
+      disabling it does not change naming, lifetime, or ownership rules.
+    - Classes and existing objects declared under a Protocol spellframe must
+      satisfy its directly declared public members before Spell creation.
 
     Registration:
         MELDER KERNEL - guarded. Invoked through `Spellbook.bind(...)`; users
@@ -64563,9 +64654,9 @@ class Bind(Cleanable):
         why the crystallizer can replay custody by recorded spell id while
         refusing to rehydrate ULIDs, and why the same object bound in two
         processes carries the same identity.
-        The refusals are as load-bearing as the successes. Modules and Protocols
-        are rejected as concrete spells because neither has a construction
-        contract; method and lambda bindings are forced to `Existence.unique`
+        The refusals are as load-bearing as the successes. Modules are rejected;
+        Protocol targets require explicit `resolvable=False` because they have
+        no construction contract. Method and lambda bindings are forced to `Existence.unique`
         because per-scope construction is meaningless for them. Rejecting at
         bind time is what keeps those errors adjacent to the mistake rather than
         surfacing deep inside a later meld.
@@ -64650,6 +64741,7 @@ class Bind(Cleanable):
             profile: str = "general",
             disposal_method_names: Optional[Sequence[str]] = None,
             enforce_priority_disposal_methods: bool = False,
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> Union[Spell, Any]:
         """
@@ -64675,6 +64767,8 @@ class Bind(Cleanable):
             disposal_method_names (Optional[Sequence[str]]): Ordered candidates specific to this binding.
             enforce_priority_disposal_methods (bool): Place the matching book block first when
                 True, last when False (default). Book order owns shared names in both modes.
+            resolvable (bool): Native resolution capability for this Spell version.
+                False permits descriptive Protocol targets; it does not relax other binding rules.
         Contract:
             - When `spell` is omitted, returns a decorator that will bind the
               later target with the supplied policy and lifecycle settings.
@@ -64682,6 +64776,9 @@ class Bind(Cleanable):
               immediately and returns the created `Spell`.
             - Decorator and direct-call modes are semantically equivalent once
               the target object is known.
+            - A Protocol spellframe checks directly declared public members on
+              a class or supplied existing object. Callable bindings retain
+              their separate factory/handler contract.
             - Matching book names form one ordered block, including names also supplied
               explicitly. Spell-only names keep their order before or after that block.
               Each matching name is retained once.
@@ -64689,8 +64786,13 @@ class Bind(Cleanable):
 
         Returns:
             Union[Spell, Any]:
-                - If used as a decorator, returns the decorated object.
+                - If used without a target, returns a decorator that produces a Spell.
                 - If used as a direct call, returns the newly created `Spell` instance.
+
+        Raises:
+            TypeError: If a class or supplied existing object lacks a required
+                directly declared Protocol member or exposes a non-callable
+                value where that Protocol requires a callable, or resolvable is not a bool.
         """
         self.check_cleaned()
         if spell is None:
@@ -64711,6 +64813,7 @@ class Bind(Cleanable):
                     profile,
                     disposal_method_names=disposal_method_names,
                     enforce_priority_disposal_methods=enforce_priority_disposal_methods,
+                    resolvable=resolvable,
                     **kwargs,
                 )
 
@@ -64728,6 +64831,7 @@ class Bind(Cleanable):
                 profile,
                 disposal_method_names=disposal_method_names,
                 enforce_priority_disposal_methods=enforce_priority_disposal_methods,
+                resolvable=resolvable,
                 **kwargs,
             )
 
@@ -64743,6 +64847,7 @@ class Bind(Cleanable):
             profile: str = "general",
             disposal_method_names: Optional[Sequence[str]] = None,
             enforce_priority_disposal_methods: bool = False,
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> Spell:
         """
@@ -64751,9 +64856,10 @@ class Bind(Cleanable):
         This method performs the full binding pipeline:
         * Validates existence and method/lambda constraints.
         * Enforces Protocol/Spellframe semantics:
-          - Protocols cannot be bound as concrete spells.
-          - Class-based spells bound under a Protocol spellframe must structurally
-            implement that Protocol.
+          - Protocol targets require explicit resolvable=False.
+          - Class-based and existing-object spells bound under a Protocol
+            spellframe must satisfy its directly declared public members.
+            Existing objects are checked on the supplied value, not its class.
           - Method/lambda spells may also be grouped under Protocol or string
             spellframes (factory / handler semantics), but are not structurally
             validated against the Protocol.
@@ -64777,6 +64883,7 @@ class Bind(Cleanable):
             configured_disposal_method_names (Optional[Sequence[str]]): Ordered book candidates.
             disposal_method_names (Optional[Sequence[str]]): Ordered per-spell candidates.
             enforce_priority_disposal_methods (bool): Book block first when True, last otherwise.
+            resolvable (bool): Immutable resolution capability, validated before target reflection.
 
         Disposal contract:
             Only names present in the existing ClassBindingProfile are retained.
@@ -64792,14 +64899,15 @@ class Bind(Cleanable):
 
         Raises:
             TypeError:
-                - If a Protocol is bound directly as a concrete spell.
-                - If a Protocol spellframe is provided for a class-based spell that
-                  does not structurally implement it.
+                - If resolvable is not a bool, or a Protocol target is resolvable.
+                - If a class or existing object under a Protocol spellframe
+                  fails its directly declared public-member check.
             ValueError:
                 - If the binding is otherwise invalid (existence errors, lambda
                   without name, etc.).
         """
         with self._lock:
+            Bind._validate_resolvable(resolvable)
             # 0. Block registration of Melder internal objects/classes.
             assert_allowed(spell, context="bind")
             # 0.1 Reject modules outright.
@@ -64809,15 +64917,16 @@ class Bind(Cleanable):
                 )
 
             # ------------------------------------------------------------------
-            # 1. Reject Protocols as concrete spells
+            # 1. Reject Protocols as resolvable spells
             # ------------------------------------------------------------------
             # Protocols define *interfaces*, not constructible implementations.
-            # Users may use Protocols as `spellframe` values, but cannot bind
-            # a Protocol itself as a Spell.
-            if Bind._is_protocol_type(spell):
+            # A Protocol may be a spellframe or an explicitly non-resolvable
+            # definition; it cannot be a concrete provider.
+            if resolvable and Bind._is_protocol_type(spell):
                 raise TypeError(
                     f"Cannot bind Protocol '{spell.__name__}' as a concrete spell. "
-                    f"Protocols may only be used as spellframes (DI contracts)."
+                    f"Use it as a spellframe (DI contract), or pass resolvable=False "
+                    f"to register a non-resolvable definition."
                 )
 
             # ------------------------------------------------------------------
@@ -64859,6 +64968,7 @@ class Bind(Cleanable):
                 binding_name=binding_name,
                 existence=existence,
                 disposal_method_names=resolved_disposal_method_names,
+                resolvable=resolvable,
             )
             spell_index = SpellIndex(initial_id=fingerprint)
 
@@ -64876,18 +64986,20 @@ class Bind(Cleanable):
             # 4. Protocol spellframe semantics
             # ------------------------------------------------------------------
             # If the caller provided a Protocol as the spellframe:
-            #   * For class-based spells: enforce structural implementation.
+            #   * For classes and existing objects: check the actual target's
+            #     members, including instance-only or shadowed implementations.
             #   * For callable spells: allow binding (factory/handler semantics),
             #     but do not run structural checks (no meaningful attribute set).
             if spellframe is not None and Bind._is_protocol_type(spellframe):
-                if isinstance(binding_profile, ClassBindingProfile):
+                if isinstance(binding_profile, ClassBindingProfile) or is_instance:
                     ok, missing_members = Bind._structurally_implements_protocol(
                         spell, spellframe
                     )
                     if not ok:
                         missing_str = ", ".join(sorted(missing_members))
+                        target_kind = "Existing object" if is_instance else "Class"
                         raise TypeError(
-                            f"Class '{spell_name}' does not structurally implement "
+                            f"{target_kind} '{spell_name}' does not structurally implement "
                             f"Protocol '{spellframe.__name__}'. "
                             f"Missing members: {missing_str}"
                         )
@@ -64922,6 +65034,7 @@ class Bind(Cleanable):
                 existing_object=spell if is_instance else None,
                 spellbook=self._spellbook,
                 disposal_method_names=resolved_disposal_method_names,
+                resolvable=resolvable,
                 # Owner ruling 2026-07-19: leftover bind kwargs flow into
                 # Spell's OWN kwargs channel (Spell.__init__ stores them as
                 # spell.metadata). Native params stay sovereign: a colliding
@@ -64943,6 +65056,7 @@ class Bind(Cleanable):
             binding_name: Optional[str] = None,
             existence: Existence = Existence.unique,
             disposal_method_names: Sequence[str] = (),
+            resolvable: bool = True,
     ) -> str:
         """
         Compute the canonical spell fingerprint without registering the spell.
@@ -64958,6 +65072,7 @@ class Bind(Cleanable):
             binding_name (Optional[str]): A specific key used to distinguish this spell.
             existence (Existence): The lifecycle scope for this spell.
             disposal_method_names (Sequence[str]): Already-resolved disposal names in execution order.
+            resolvable (bool): Per-version capability; omission preserves the legacy fingerprint.
         Contract:
             - Builds the same `SpellGeneralProfile` / `SpellBindingProfile`
               chain used by the real binding path.
@@ -64969,7 +65084,11 @@ class Bind(Cleanable):
 
         Returns:
             str: A unique identifier string (SHA256 hash) for the spell.
+
+        Raises:
+            TypeError: If resolvable is not a bool; checked before target reflection.
         """
+        Bind._validate_resolvable(resolvable)
         profile = SpellGeneralProfile.create_from_target(spell)
         return Bind.sha256_profile(
             profile.binding_profile,
@@ -64978,6 +65097,7 @@ class Bind(Cleanable):
             binding_name=binding_name,
             existence=existence,
             disposal_method_names=tuple(disposal_method_names),
+            resolvable=resolvable,
         )
 
     @staticmethod
@@ -64989,6 +65109,7 @@ class Bind(Cleanable):
             binding_name: Optional[str] = None,
             existence: Optional[Existence] = None,
             disposal_method_names: Sequence[str] = (),
+            resolvable: bool = True,
     ) -> str:
         """
         Computes the SHA256 hash of a spell's binding profile metadata.
@@ -65002,7 +65123,8 @@ class Bind(Cleanable):
         Contract:
             - Fingerprints normalized bind-time metadata only, not transient
               runtime object identity.
-            - Uses the explicit `v4-binding` schema prefix so future
+            - Uses the explicit `v4-binding` schema prefix for omitted/True and
+              `v4-binding-non-resolvable` for False, preserving all remaining inputs so future
               fingerprint-shape changes can version cleanly. v4 replaced the
               class source preview (first-5-lines text: docstring-sensitive,
               constructor-blind, and the only source-file read on the bind
@@ -65012,14 +65134,19 @@ class Bind(Cleanable):
               not.
             - Includes the direct bind-time parameters that shape later
               compiler/runtime behavior: spell_name, spellframe, binding_name,
-              existence, and resolved disposal metadata in execution order.
+              existence, resolvable, and resolved disposal metadata in execution order.
             - Equal bind signatures produce equal hashes; materially different
               signatures should produce different hashes.
         Returns:
             str: Deterministic SHA256 fingerprint for the supplied binding
                 profile.
+
+        Raises:
+            TypeError: If resolvable is not a bool; no truthiness coercion is applied.
         """
-        parts: list[str] = ["v4-binding"]  # fingerprint schema version
+        Bind._validate_resolvable(resolvable)
+        # Keep the legacy schema intact; only False selects a different hash domain.
+        parts: list[str] = ["v4-binding" if resolvable else "v4-binding-non-resolvable"]
 
         if isinstance(profile, ClassBindingProfile):
             parts += [
@@ -65079,6 +65206,26 @@ class Bind(Cleanable):
 
         key = "::".join(parts)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _validate_resolvable(resolvable: bool) -> None:
+        """
+        Reject non-boolean capability inputs at independent admission/fingerprint boundaries.
+
+        Args:
+            resolvable: Per-version resolution capability supplied by the caller.
+
+        Returns:
+            None. Accepts True and False without conversion or state changes.
+
+        Raises:
+            TypeError: If a number, string, None or other non-bool value is supplied.
+        """
+        if type(resolvable) is not bool:
+            raise TypeError(
+                f"resolvable must be a bool (True or False), got {type(resolvable).__name__}. "
+                "Pass resolvable=False to register a non-resolvable definition."
+            )
 
     @staticmethod
     def _validate_binding(
@@ -65277,30 +65424,34 @@ class Bind(Cleanable):
 
     @staticmethod
     def _structurally_implements_protocol(
-            cls: type, protocol_type: type[Any]
+            candidate: object, protocol_type: type[Any]
     ) -> tuple[bool, list[str]]:
         """
-        Best-effort structural check that `cls` implements `protocol_type`.
+        Check the supported public-member contract on a class or supplied object.
 
         This is intentionally conservative and runtime-friendly:
         * It only verifies that all *public* attributes defined directly on the
-          Protocol (non-underscore names) exist on the class.
+          Protocol (non-underscore names) exist on the candidate.
         * If an attribute is callable on the Protocol, it must be present and
-          callable on the class as well.
+          callable on the candidate as well.
+        * For an existing object, inspect the actual value so instance-only
+          members and instance shadowing are respected without construction.
 
         It does NOT try to fully emulate static type-checking (mypy/pyright).
-        The goal is simply to catch obvious mismatches where a class is bound
-        under a Protocol spellframe but clearly does not implement the contract.
+        Inherited Protocol members, annotation-only data and signature/type
+        compatibility are outside this check. Normal attribute access may run
+        user descriptors; errors other than missing attributes propagate.
+        Admission checks the surface at bind time, not continuously at meld.
 
         Args:
-            cls (type): The candidate implementation class.
+            candidate (object): The implementation class or actual supplied value.
             protocol_type (type[Any]): The Protocol subclass being used as the
                 spellframe.
 
         Returns:
             tuple[bool, list[str]]:
-                - bool: True if the class appears to implement the Protocol.
-                - list[str]: The names of any missing members if the check fails.
+                - bool: True if the candidate passes the supported member checks.
+                - list[str]: Missing or non-callable required member names.
         """
         missing: list[str] = []
 
@@ -65310,13 +65461,13 @@ class Bind(Cleanable):
             if name.startswith("_"):
                 continue
 
-            if not hasattr(cls, name):
+            if not hasattr(candidate, name):
                 missing.append(name)
                 continue
 
             # If the Protocol member is callable, require the implementation
             # to also expose a callable with the same name.
-            impl_attr = getattr(cls, name, None)
+            impl_attr = getattr(candidate, name, None)
             if callable(attr) and not callable(impl_attr):
                 missing.append(name)
 
@@ -68183,7 +68334,7 @@ END FILE: src/melder/aether/spellbook/resolution_style_matrix.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell.py
-CONTENT SHA256: 47d14a8a000b2b1786a21b4d8b80e221799f854d73541a8f15935f32bff5d6b0
+CONTENT SHA256: e88efa69276b839907f5da9a8856470666361951ff918700f450ae2e5125c72c
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections.abc import Callable, Sequence
@@ -68274,6 +68425,8 @@ class Spell(Cleanable):
     - Disposal metadata is established once at bind. The ordered list, presence
       flag, and bind-time SHA describe that same policy. Post-creation mutation
       is unsupported; this class adds no copying or mutation guards.
+    - Resolution capability is fixed per bound version and exposed by the
+      read-only resolvable property, independently of activity and compilation state.
 
     Core Responsibilities:
     - Holds an immutable reference to the object (function/class/instance) it represents.
@@ -68446,6 +68599,7 @@ class Spell(Cleanable):
         "_owner_creations",
         "_post_hooks",
         "_pre_hooks",
+        "_resolvable",
         "_spellbook_cleanup",
         "_spell_system_states",
         "_spellbook",
@@ -68490,6 +68644,7 @@ class Spell(Cleanable):
             existing_object: object | None = None,
             disposal_method_names: Optional[list[str]] = None,
             *args: Any,
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> None:
         """
@@ -68514,6 +68669,8 @@ class Spell(Cleanable):
                 execution order. Retained directly; omitted metadata gets a fresh empty list.
                 Bind owns matching and deduplication, which are not repeated here.
             *args: Optional positional metadata tags, collected into `tags`.
+            resolvable (bool): Validated per-version resolution capability. Stored natively,
+                outside metadata, and independent of active/parked or compiler readiness state.
             **kwargs: Optional keyword metadata map, collected into `metadata`.
 
         Contract:
@@ -68567,6 +68724,7 @@ class Spell(Cleanable):
         super().__init__()
         self._lock = RLock()
         self._active = True  # active in its index; flipped by notch/disable
+        self._resolvable: bool = resolvable
         self._id: str = new_ulid()  # Unique internal ID for tracking
 
         # Spell Data
@@ -68781,6 +68939,7 @@ class Spell(Cleanable):
             del self._post_hooks
             del self.tags
             del self.metadata
+            del self._resolvable
             del self._mutation_override
             del self.dependencies
             del self.disposal_method_names
@@ -68796,6 +68955,25 @@ class Spell(Cleanable):
 
 
     #endregion Disposal
+    @property
+    def resolvable(self) -> bool:
+        """
+        Return this bound version's immutable resolution capability.
+
+        Contract:
+            Default True is established at bind. The value is independent of index
+            selection, permissions, existence, and current compilation validity.
+            No live setter is provided; changing capability requires another binding.
+
+        Returns:
+            bool: Whether this version is declared available for runtime resolution.
+
+        Raises:
+            RuntimeError: If this Spell has been cleaned.
+        """
+        self.check_cleaned()
+        return self._resolvable
+
     def _set_hooks(
             self,
             *,
@@ -69854,7 +70032,7 @@ END FILE: src/melder/aether/spellbook/spell.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py
-CONTENT SHA256: 0f35231b1dfd48b2763e7e29f53a93d7a2fe72c03658926948cfacfe9e2ebba7
+CONTENT SHA256: e4add22c1ccbc944b39f6d5fc0872824776278f6ef33bd218b4ea89362b8f1d1
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Dict, List, Optional, Tuple
@@ -69863,6 +70041,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 
 InstanceKey = Tuple[str, Optional[int]]
+RequiredOverrideParam = Tuple[str, int, str, Tuple[str, ...]]
 
 
 class SpellInjectionParamSource:
@@ -69879,6 +70058,8 @@ class SpellInjectionParamSource:
           codegen layers can distinguish a one-member collection from single
           DI. It must never be inferred from dependency count: a collection
           socket with exactly one wired provider still injects a list.
+        - override_required sources retain signature position/kind and descriptive
+          reference IDs without introducing dependency instance keys.
     """
 
     __slots__ = [
@@ -69887,6 +70068,9 @@ class SpellInjectionParamSource:
         "override_key",
         "contract_key",
         "is_collection",
+        "position",
+        "parameter_kind",
+        "referenced_spell_ids",
     ]
 
     def __init__(
@@ -69897,24 +70081,33 @@ class SpellInjectionParamSource:
             override_key: Optional[str] = None,
             contract_key: Optional[str] = None,
             is_collection: bool = False,
+            position: Optional[int] = None,
+            parameter_kind: Optional[str] = None,
+            referenced_spell_ids: Tuple[str, ...] = (),
     ) -> None:
         """
         Build one injection parameter source descriptor.
 
         Args:
-            kind: Source kind ("dependency" or "contract").
+            kind: Source kind ("dependency", "contract", or "override_required").
             dependency_keys: Instance keys this parameter reads, in order.
             override_key: Root-override key this parameter answers to.
             contract_key: Contract payload key when contract-sourced.
             is_collection: True when the underlying constructor socket is a
                 collection DI shape (list[Frame]); the injected value must be
                 a list even when exactly one dependency key is present.
+            position: Original constructor position for required supplied inputs.
+            parameter_kind: Original inspect.Parameter kind name for those inputs.
+            referenced_spell_ids: Non-executable target identities for graph navigation.
         """
         self.kind: str = kind
         self.dependency_keys: Optional[Tuple[InstanceKey, ...]] = dependency_keys
         self.override_key: Optional[str] = override_key
         self.contract_key: Optional[str] = contract_key
         self.is_collection: bool = is_collection
+        self.position = position
+        self.parameter_kind = parameter_kind
+        self.referenced_spell_ids = referenced_spell_ids
 
 
 class SpellInjectionInstanceSpec:
@@ -69932,6 +70125,7 @@ class SpellInjectionInstanceSpec:
         "uses_positional_override",
         "contract_payload",
         "collection_param_names",
+        "required_override_params",
     ]
 
     def __init__(
@@ -69950,6 +70144,8 @@ class SpellInjectionInstanceSpec:
               param_sources (`is_collection` flags), never from dependency
               counts, so a one-member collection socket stays a collection all
               the way into codegen.
+            - Required supplied inputs become immutable value rows independent of
+              optional override-targeting metadata: (name, position, kind, reference IDs).
         """
         self.param_sources: Dict[str, SpellInjectionParamSource] = param_sources
         self.allow_list_aggregation: bool = allow_list_aggregation
@@ -69960,6 +70156,35 @@ class SpellInjectionInstanceSpec:
             for param_name, param_source in param_sources.items()
             if param_source.is_collection
         )
+        self.required_override_params = self._build_required_override_params(param_sources)
+
+    @staticmethod
+    def _build_required_override_params(
+            param_sources: Dict[str, SpellInjectionParamSource],
+    ) -> Tuple[RequiredOverrideParam, ...]:
+        """
+        Freeze required-input policy into plain values for either planner variant.
+
+        Args:
+            param_sources: Fitted injection sources in deterministic parameter order.
+
+        Returns:
+            Immutable (name, signature position, parameter-kind name, reference IDs) rows.
+
+        Raises:
+            ValueError: If a required input lost its Phase-3 signature or target metadata.
+        """
+        rows: List[RequiredOverrideParam] = []
+        for param_name, source in param_sources.items():
+            if source.kind != "override_required":
+                continue
+            if source.position is None or source.parameter_kind is None or not source.referenced_spell_ids:
+                raise ValueError(
+                    f"OVERRIDE_REQUIRED input {param_name!r} lacks signature or reference metadata. "
+                    "Rebuild its Phase-3 topology before planning."
+                )
+            rows.append((param_name, source.position, source.parameter_kind, source.referenced_spell_ids))
+        return tuple(rows)
 
 
 class SpellInjectionAnalysis(Cleanable):
@@ -71524,7 +71749,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py
-CONTENT SHA256: 6b7c9de501b78e87ceeec09bfd029783b79da6816218d3735f0cbc2aaae0e967
+CONTENT SHA256: e8888189a788dc923ffe91c92bf028bde16ff8efd51091d3d7d24d24a9619fb2
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
@@ -71540,6 +71765,7 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_pr
 from melder.utilities.custom_exceptions.meld_execution_error import (
     MeldExecutionError,
 )
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -71664,6 +71890,8 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
               in SpellSystemStates (same surface phase 6 and phase 8 read) and
               stamped per parameter source; it is NEVER inferred from
               dependency count, so one-member collections stay collections.
+            - OVERRIDE_REQUIRED sources are retained even without occurrence edges;
+              signature/reference metadata comes from the same durable topology.
         """
         instance_specs_by_instance_key: Dict[InstanceKey, SpellInjectionInstanceSpec] = {}
         # Per-spell collection-socket sets, resolved lazily once per spell id.
@@ -71760,6 +71988,20 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                         is_collection=param_is_collection,
                     )
 
+                topology = spell_system_states.get_local_topology_by_id(spell_id)
+                if topology is not None:
+                    for socket in topology.sockets:
+                        if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED:
+                            continue
+                        param_sources[socket.param_name] = SpellInjectionParamSource(
+                            kind="override_required",
+                            dependency_keys=(),
+                            override_key=socket.param_name,
+                            position=socket.position,
+                            parameter_kind=socket.parameter_kind,
+                            referenced_spell_ids=socket.referenced_spell_ids,
+                        )
+
                 if normalized_contract_payload is not None:
                     if "__args__" in normalized_contract_payload:
                         uses_positional_override = True
@@ -71781,6 +72023,9 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                                 override_key=existing_param_source.override_key or param_name,
                                 contract_key=param_name,
                                 is_collection=existing_param_source.is_collection,
+                                position=existing_param_source.position,
+                                parameter_kind=existing_param_source.parameter_kind,
+                                referenced_spell_ids=existing_param_source.referenced_spell_ids,
                             )
 
                 instance_specs_by_instance_key[instance_key] = SpellInjectionInstanceSpec(
@@ -71870,7 +72115,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py
-CONTENT SHA256: 543cd01bf20b4b8444ee37d73df52e9ecd7d2087b60e64ca3e5477dbe2152e85
+CONTENT SHA256: 7aa34e8a3d3369142f4730c590568bc38b7fe60d4218c5b0c113f8d3960b675e
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -72095,22 +72340,13 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
     ) -> Iterable[Tuple[str, SpellContract]]:
         """
         Yield SpellContract defaults discovered in the spell's callable surface.
+
+        Existing provider occurrences have no constructor contracts or nested
+        contract override payloads. Preserve their incoming consumer edges and
+        leave ordinary class/factory contract discovery unchanged.
         """
         contracts: List[Tuple[str, SpellContract]] = []
         if spell.is_existing_creation:
-            signature = inspect.signature(spell.spell)
-            for param_name, parameter in signature.parameters.items():
-                if param_name in ("self", "cls"):
-                    continue
-                if parameter.kind in (
-                        inspect.Parameter.VAR_POSITIONAL,
-                        inspect.Parameter.VAR_KEYWORD,
-                ):
-                    continue
-                if parameter.default is inspect.Parameter.empty:
-                    continue
-                if isinstance(parameter.default, SpellContract):
-                    contracts.append((param_name, parameter.default))
             return contracts
 
         if spell._compiler_artifact._requirements is not None:
@@ -98832,7 +99068,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_pla
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py
-CONTENT SHA256: 709517a78140765399b556ea865a5fd9295ff6b9d11f0bfc1538dd4991f1b3ca
+CONTENT SHA256: c16f25a01041d3b1befb0cde04fbd8f5ed51eb05398d4194f642b96883ce3979
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
@@ -98842,6 +99078,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis import (
+        RequiredOverrideParam,
         SpellInjectionInstanceSpec,
     )
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis import (
@@ -98908,6 +99145,7 @@ class ManyOnlyCodegenPlanStep:
         "_shared_instance",
         "_dependency_resolution_order",
         "_collection_param_names",
+        "_required_override_params",
         "_uses_positional_override",
         "_contract_positional_override",
         "_has_contract_payload",
@@ -98931,6 +99169,7 @@ class ManyOnlyCodegenPlanStep:
             contract_payload: Optional[Dict[str, Any]],
             override_match_prefix: Optional[int],
             override_match_prefix_len: int,
+            required_override_params: Tuple[RequiredOverrideParam, ...] = (),
     ) -> None:
         """
         Initialize one many-only execution step (pure store; one validation).
@@ -98965,6 +99204,9 @@ class ManyOnlyCodegenPlanStep:
                 Override-target path prefix for this step, if any.
             override_match_prefix_len:
                 Length of `override_match_prefix`.
+            required_override_params:
+                Immutable required-input rows retained in both variants. These are
+                construction obligations, independent of optional targeting metadata.
 
         Raises:
             ValueError: If `collection_param_names` is None.
@@ -98980,6 +99222,7 @@ class ManyOnlyCodegenPlanStep:
         self._shared_instance = shared_instance
         self._dependency_resolution_order = dependency_resolution_order
         self._collection_param_names = collection_param_names
+        self._required_override_params = required_override_params
         self._uses_positional_override = uses_positional_override
         self._contract_positional_override = contract_positional_override
         self._has_contract_payload = has_contract_payload
@@ -99034,6 +99277,11 @@ class ManyOnlyCodegenPlanStep:
               dependency count.
         """
         return self._collection_param_names
+
+    @property
+    def required_override_params(self) -> Tuple[RequiredOverrideParam, ...]:
+        """Return required supplied-input policy without adding executable dependency keys."""
+        return self._required_override_params
 
     @property
     def uses_positional_override(self) -> bool:
@@ -99877,6 +100125,7 @@ class ManyOnlyCodegenPlanBuilder:
                     ),
                     dependency_resolution_order=dependency_resolution_order,
                     collection_param_names=inject_spec.collection_param_names,
+                    required_override_params=inject_spec.required_override_params,
                     uses_positional_override=inject_spec.uses_positional_override,
                     contract_positional_override=contract_positional_override,
                     has_contract_payload=has_contract_payload,
@@ -100229,7 +100478,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_o
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py
-CONTENT SHA256: 107f92b662e45f923dfd28f0d8bb545bfdfeb657bd157756d67986225e230cf4
+CONTENT SHA256: 626860f7760c388105ca6405076ddb4efa184d198bb63a200e8d0bf432f4f360
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, ClassVar
@@ -100239,6 +100488,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis import (
+        RequiredOverrideParam,
         SpellInjectionInstanceSpec,
     )
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis import (
@@ -100326,6 +100576,7 @@ class SpellGeneralizedCodegenPlanStep:
         "_creations_target_kind",
         "_shared_instance",
         "_inject_spec",
+        "_required_override_params",
         "_dependency_keys",
         "_dependency_keys_by_param",
         "_dependency_resolution_order",
@@ -100378,6 +100629,7 @@ class SpellGeneralizedCodegenPlanStep:
             owner_conduit_required: bool,
             must_register: bool,
             disposal_method_names: List[str],
+            required_override_params: Tuple[RequiredOverrideParam, ...] = (),
     ) -> None:
         """
         Initialize one generalized execution step.
@@ -100390,6 +100642,8 @@ class SpellGeneralizedCodegenPlanStep:
               this shape.
             - Borrows the established Spell disposal list without copying it.
               Plan teardown releases the step, never the borrowed list's contents.
+            - Retains required-input value rows in both variants, independently of
+              optional override metadata and without creating dependency keys.
         """
         if instance_key is None:
             raise ValueError("instance_key must not be None.")
@@ -100445,6 +100699,7 @@ class SpellGeneralizedCodegenPlanStep:
         self._creations_target_kind = creations_target_kind
         self._shared_instance = shared_instance
         self._inject_spec = inject_spec
+        self._required_override_params = required_override_params
         self._dependency_keys = dependency_keys
         self._dependency_keys_by_param = dependency_keys_by_param
         self._dependency_resolution_order = dependency_resolution_order
@@ -100514,6 +100769,11 @@ class SpellGeneralizedCodegenPlanStep:
         Return the fitted injection spec attached to this step.
         """
         return self._inject_spec
+
+    @property
+    def required_override_params(self) -> Tuple[RequiredOverrideParam, ...]:
+        """Return immutable required-input rows retained by both planner variants."""
+        return self._required_override_params
 
     @property
     def dependency_keys(self) -> List[InstanceKey]:
@@ -101476,6 +101736,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                         dependency_keys_by_param.items()
                     ),
                     collection_param_names=injection_spec.collection_param_names,
+                    required_override_params=injection_spec.required_override_params,
                     override_keys=override_keys,
                     override_match_prefix=override_match_prefix,
                     override_match_prefix_len=override_match_prefix_len,
@@ -101812,6 +102073,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                     dependency_keys_by_param=dependency_keys_by_param,
                     dependency_resolution_order=dependency_resolution_order,
                     collection_param_names=injection_spec.collection_param_names,
+                    required_override_params=injection_spec.required_override_params,
                     override_keys=override_keys,
                     override_match_prefix=override_match_prefix,
                     override_match_prefix_len=override_match_prefix_len,
@@ -105551,7 +105813,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/dag/resolution_frame/resolu
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
-CONTENT SHA256: 3c6b6a783afcb3240fef544ebab2fef9b25e01a9e4a83426d8294f772d5660bf
+CONTENT SHA256: 814054022ff9ee950e1a2fb60d1884117065aae6355e8473c6b543bcd0e3f7c3
 SOURCE ENCODING: utf-8
 ================================================================================
 from enum import Enum, auto
@@ -105570,6 +105832,9 @@ class SocketKind(Enum):
         Regular DI parameter (annotation, SpellMap, etc.).
     - SPELL_CONTRACT:
         A SpellContract socket that must be satisfied by a provider spell.
+    - OVERRIDE_REQUIRED:
+        A required input whose selected registration is non-resolvable. Its
+        target is descriptive; a caller supplies the value during construction.
 
     Subsystem Context:
         The edge-kind vocabulary of the `dag` package: a DAG socket carries one of
@@ -105582,11 +105847,12 @@ class SocketKind(Enum):
 
     AGENT_PURPOSE:
         access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs
-        SPELL_CONTRACT (late-bound provider socket). Two live socket families only.
+        SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input).
     """
 
     NORMAL = auto()
     SPELL_CONTRACT = auto()
+    OVERRIDE_REQUIRED = auto()
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
 ================================================================================
@@ -106356,7 +106622,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_1.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_10.py
-CONTENT SHA256: afd91614d012387bae301b12098a3498ab9d5668e9ccede213c738e542ef5d4f
+CONTENT SHA256: b5fc4996843adb8763406bffbe144b0bdbcfb03453337ca29c3927ffb34a4659
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -106445,21 +106711,20 @@ class CompilerPhase10(Cleanable):
 
         Contract:
             - Delegates directly to `SpellCodegenPlanner.build(...)`.
-            - Treats the `spell` parameter as compatibility-only for the
-              current public phase signature.
+            - Uses the Spell capability to skip non-resolvable definitions before
+              constructing the planner or requiring an executable model.
 
         Args:
             spell:
-                Legacy phase argument retained so the public compiler method
-                shape stays stable while this wrapper substitutes the live
-                implementation.
+                Spell whose native capability determines plan eligibility.
             artifact:
                 Compiler artifact receiving `SpellCodegenPlan`.
 
         Returns:
             None.
         """
-        _ = spell
+        if not spell.resolvable:
+            return
         planner = self._codegen_planner
         if planner is None:
             with CompilerPhase10._lazy_import_lock:
@@ -106477,7 +106742,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_10.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_11.py
-CONTENT SHA256: 8c5efaff33b994a0fdd979cc042ed6647bba208705d22179b4ba5678868723a7
+CONTENT SHA256: c5341b25f932cf5e1b63992ee3c614281dcec2b04238bdb6d599f1a4726eedd9
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -106575,14 +106840,13 @@ class CompilerPhase11(Cleanable):
 
         Contract:
             - Delegates directly to `CodegenCreationSystem.build(...)`.
-            - Treats `spell` and `spellbook` as compatibility-only parameters
-              for the current public phase signature.
+            - Uses Spell capability to skip non-resolvable definitions before
+              constructing the codegen system or requiring executable artifacts.
+            - Keeps spellbook as a compatibility-only phase argument.
 
         Args:
             spell:
-                Legacy phase argument retained so the compiler call signature
-                stays stable while this wrapper substitutes the live
-                implementation.
+                Spell whose native capability determines executable eligibility.
             artifact:
                 Compiler artifact receiving `SpellCodegenCreation`.
             spellbook:
@@ -106593,7 +106857,8 @@ class CompilerPhase11(Cleanable):
         Returns:
             None.
         """
-        _ = spell
+        if not spell.resolvable:
+            return
         _ = spellbook
         creation_system = self._codegen_creation_system
         if creation_system is None:
@@ -106804,7 +107069,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
-CONTENT SHA256: cd51c8f022f7f214e1dc8184ce13849930a55ecf6d8e28455e9324d4910e4d0e
+CONTENT SHA256: 219ea91695866b7b9be5ec912a6315ecfd5f96cf212450828304a6b367fc58cd
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -107252,6 +107517,10 @@ class CompilerPhase3:
         Resolve a SINGLE_BY_ANNOTATION dependency to exactly one class/creation
         spell.
 
+        Prefer matching resolvable providers. Only when none exist may a single
+        non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
+        Matching and index grouping happen first; capability does not change them.
+
         Args:
             spell:
                 Consuming spell owning the dependency.
@@ -107288,6 +107557,12 @@ class CompilerPhase3:
                 ):
                     candidates[index] = spell_obj
 
+        resolvable_candidates = {
+            index: candidate for index, candidate in candidates.items() if candidate.resolvable
+        }
+        if resolvable_candidates:
+            candidates = resolvable_candidates
+
         if not candidates:
             raise RuntimeError(
                 f"SpellCrafter Phase 3: no DI candidate found for parameter "
@@ -107322,7 +107597,8 @@ class CompilerPhase3:
             spells (classes, methods, lambdas) bound under the given frame/type.
             
             This corresponds to list[FrameType]-style DI where the user explicitly
-            asked for "all implementations".
+            asked for "all implementations". Non-resolvable definitions are
+            excluded after the existing matching and ordering decisions.
             
             Returns:
                 Dict[SpellIndex, Spell]: mapping of all candidates. It is valid
@@ -107332,24 +107608,23 @@ class CompilerPhase3:
         binding_name: Optional[str] = None
 
         if candidate_index is not None:
-            return self._indexed_annotation_candidates(
+            candidates = self._indexed_annotation_candidates(
                 candidate_index,
                 annotation,
                 require_class_spell=False,
             )
+        else:
+            candidates = {}
+            for index, spell_obj in self._iter_all_spells(spellbook):
+                if self._matches_annotation(
+                        annotation,
+                        binding_name,
+                        spell_obj,
+                        require_class_spell=False,
+                ):
+                    candidates[index] = spell_obj
 
-        candidates: Dict[Any, Spell] = {}
-
-        for index, spell_obj in self._iter_all_spells(spellbook):
-            if self._matches_annotation(
-                    annotation,
-                    binding_name,
-                    spell_obj,
-                    require_class_spell=False,
-            ):
-                candidates[index] = spell_obj
-
-        return candidates
+        return {index: candidate for index, candidate in candidates.items() if candidate.resolvable}
 
     def _socket_kind_for_dep(self, dep: SpellSymbolicDependency) -> SocketKind:
         """
@@ -107482,7 +107757,7 @@ class CompilerPhase3:
             if dep.target_annotation is None:
                 return None
             normalized_key: Tuple[str, str] = SpellInputUtils.normalize_spell_key(
-                spellframe=dep.target_annotation,
+                spellframe=self._normalize_annotation_for_matching(dep.target_annotation),
                 binding_name=None,
             )
             return normalized_key
@@ -107494,6 +107769,9 @@ class CompilerPhase3:
             spell: Spell,
             graph: SpellSymbolicGraph,
             socket_targets: Dict[tuple[str, int], List[str]],
+            *,
+            requirements: SpellRequirements,
+            socket_references: Dict[tuple[str, int], List[str]],
     ) -> SpellLocalTopology:
         """
             Internal helper for Phase 3.
@@ -107505,7 +107783,8 @@ class CompilerPhase3:
                 * the concrete dependency spell ids resolved during Phase 3.
             
             For each: class:`SpellSymbolicDependency`:
-                * Determine "socket_kind" from its: class:`ParameterDIShape`.
+                * Determine declaration kind, then mark selected descriptive targets
+                  OVERRIDE_REQUIRED without altering Phase-1/2 declaration facts.
                 * Copy "is_collection" and "is_optional" flags from the
                   symbolic graph.
                 * Look up any concrete targets via "socket_targets" using
@@ -107513,6 +107792,8 @@ class CompilerPhase3:
                     many targets; contract and plain sockets will
                     typically have none at this phase.
                 * Preserve contract metadata for SpellContract sockets.
+                * Preserve reference IDs separately from executable targets and
+                  copy the real parameter kind from Phase-1 requirements.
                 * Create a: class:`SpellSocketDescriptor` for that parameter.
             
             The resulting: class:`SpellLocalTopology` is a per-spell, constructor-
@@ -107522,6 +107803,7 @@ class CompilerPhase3:
         """
         spell_id = self._get_required_current_spell_id(spell)
         descriptors: List[SpellSocketDescriptor] = []
+        parameter_kinds = {param.name: param.kind.name for param in requirements.parameters}
 
         for dep in graph.dependencies:
             targets = socket_targets.get((dep.param_name, dep.position))
@@ -107531,8 +107813,11 @@ class CompilerPhase3:
                 target_spell_ids = ()
 
             socket_kind = self._socket_kind_for_dep(dep)
+            referenced_spell_ids = tuple(socket_references.get((dep.param_name, dep.position), ()))
+            if referenced_spell_ids:
+                socket_kind = SocketKind.OVERRIDE_REQUIRED
             dependency_key = None
-            if socket_kind is SocketKind.NORMAL:
+            if spell.resolvable and socket_kind in (SocketKind.NORMAL, SocketKind.OVERRIDE_REQUIRED):
                 dependency_key = self._dependency_key_for_dep(dep)
 
             descriptor = SpellSocketDescriptor(
@@ -107545,6 +107830,8 @@ class CompilerPhase3:
                 target_spell_ids=target_spell_ids,
                 dependency_key=dependency_key,
                 contract_key=dep.contract_key,
+                referenced_spell_ids=referenced_spell_ids,
+                parameter_kind=parameter_kinds.get(dep.param_name),
             )
             descriptors.append(descriptor)
 
@@ -107596,6 +107883,9 @@ class CompilerPhase3:
                 * SpellContract sockets take part in the
                   symbolic graph and topology but do not produce DAG edges or
                   concrete targets at this stage.
+                * Selected non-resolvable definitions produce reference-only
+                  OVERRIDE_REQUIRED inputs. Non-resolvable roots retain their own
+                  declarations/topology without resolving constructor requirements.
         """
         if requirements is None:
             raise ValueError("requirements must not be None.")
@@ -107612,9 +107902,9 @@ class CompilerPhase3:
 
         # Pass-scoped candidate index (None -> original scan semantics).
         # Built lazily once per resolution pass; eq-risky pools disable it.
-        candidate_index = self._get_candidate_index(
-            spellbook,
-            resolution_pass_cache,
+        candidate_index = (
+            self._get_candidate_index(spellbook, resolution_pass_cache)
+            if spell.resolvable else None
         )
 
         # Register the root node first.
@@ -107626,8 +107916,9 @@ class CompilerPhase3:
         # Track per-socket resolutions for local topology:
         # keyed by (param_name, position) -> [spell_id, ...]
         socket_targets: Dict[tuple[str, int], List[str]] = {}
+        socket_references: Dict[tuple[str, int], List[str]] = {}
 
-        for dep in graph.dependencies:
+        for dep in graph.dependencies if spell.resolvable else ():
             CompilerPhaseUtility.throw_if_cancelled(cancellation_event)
 
             di_shape = dep.di_shape
@@ -107658,12 +107949,24 @@ class CompilerPhase3:
                 continue
 
             key = (dep.param_name, dep.position)
-            targets_for_socket = socket_targets.setdefault(key, [])
 
             for spell_index, spell_obj in resolved.items():
                 dep_spell_id = spell_index.selected_spell_id
+                if not spell_obj.resolvable:
+                    if (
+                            di_shape is ParameterDIShape.SPELLMAP_DEFAULT
+                            and dep.spellmap_default.spell_override is not None
+                    ):
+                        raise RuntimeError(
+                            f"Parameter {dep.param_name!r} on spell {spell.spell_name!r} selects "
+                            f"non-resolvable definition {spell_obj.spell_name!r} with a spell_override "
+                            "construction payload. Remove that payload and supply the consumer "
+                            "parameter through a meld override."
+                        )
+                    socket_references.setdefault(key, []).append(dep_spell_id)
+                    continue
                 dependency_spell_ids.append(dep_spell_id)
-                targets_for_socket.append(dep_spell_id)
+                socket_targets.setdefault(key, []).append(dep_spell_id)
 
                 dag.add_node(key=dep_spell_id, payload=spell_obj)
                 dag.add_dependency(
@@ -107674,7 +107977,11 @@ class CompilerPhase3:
                 )
 
         # Snapshot local topology for this spell's constructor.
-        topology = self._build_local_topology(spell, graph, socket_targets)
+        topology = self._build_local_topology(
+            spell, graph, socket_targets,
+            requirements=requirements,
+            socket_references=socket_references,
+        )
 
         # Update spell-system state with dependency IDs and local topology.
         if spell.spell_index is not None:
@@ -107746,6 +108053,8 @@ class CompilerPhase3:
             * Does not return a value; callers rely on:
                   - `artifact._resolution_frame` for ordering, and
                   - SpellSystemStates for dependencies and topology.
+            * Refreshes enabled post-conjure Nexus publication after topology exists;
+              no projection refresh or runtime resolution is performed here.
         """
         artifact.check_cleaned()
         CompilerPhaseUtility.throw_if_cancelled(cancel_event)
@@ -107793,6 +108102,8 @@ class CompilerPhase3:
         except AttributeError:
             # Test stubs may not implement the build-details hook.
             pass
+        if spellbook._nexus_publish_enabled:
+            spellbook._publish_spell_record_to_nexus(spell)
         # Eager phase2_5 IR capture removed (write-only; see compiler_phase_2).
 
 
@@ -107987,7 +108298,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
-CONTENT SHA256: a94db51de9ff24db9f9e246dad6f52bdf0fd6f7e94d1d24e3c7f2d1b05591ef8
+CONTENT SHA256: d65235dd852a1f2afd6ae9c1777e001167c5b4354aedfa34ba19d4c9de0d6136
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
@@ -108051,6 +108362,10 @@ class CompilerPhase5:
         - Directly ports the canonical `SpellCrafter` phase-5 behaviour.
         - Does not own spell, artifact, spellbook, or runtime collaborator
           lifecycle.
+        - Dependency visibility does not grant artifact publication authority:
+          publish only for spells included in the pass's own compilation scope.
+        - Executable snapshots exclude non-resolvable definitions; their registration
+          and local topology remain available through their original owners.
     """
 
     __slots__ = ()
@@ -108308,15 +108623,18 @@ class CompilerPhase5:
             system_index: SpellSystemIndex,
             spell_lookup: Dict[str, Spell],
             root_builder: SpellSystemRootBlueprintBuilder,
+            publication_spell_ids: Collection[str],
     ) -> None:
         """
-        Attach Phase 5 artifacts to all spells participating in a snapshot.
+        Attach Phase 5 artifacts only to the pass's publication targets.
 
         Purpose:
-            Ensure scoped spells have consistent Phase 5 artifacts before
-            Phase 6-11 are executed.
+            Prepare canonical artifacts for spells this pass will compile,
+            preserving other visible providers' executable state and contexts.
         Contract:
-            - Updates only spells included in "snapshot.all_spell_ids".
+            - Updates only snapshot IDs also in publication_spell_ids.
+            - Keeps the complete visible snapshot for dependency analysis.
+            - Does not invalidate artifacts on excluded dependency spells.
             - Existing-creation spells get index only and skip blueprints.
             - Builds fallback per-spell blueprint when not present as a root.
         Args:
@@ -108330,10 +108648,16 @@ class CompilerPhase5:
                 Visible spell_id -> spell map.
             root_builder:
                 Builder used for per-spell fallback blueprints.
+            publication_spell_ids:
+                Canonical publication scope: owned IDs for a conduit-wide pass,
+                or the selected target ID for a target-local pass. The caller
+                supplies this separately from dependency visibility.
         Returns:
             None.
         """
         for spell_id in snapshot.all_spell_ids:
+            if spell_id not in publication_spell_ids:
+                continue
             spell_instance = spell_lookup[spell_id]
             target_artifact = spell_instance._compiler_artifact
             self._set_spell_system_index_phase5(
@@ -108468,8 +108792,9 @@ class CompilerPhase5:
 
         Phase 5 produces two related outputs:
             - A root-only blueprint map for system validation (Phase 6).
-            - Per-spell blueprints attached to constructed spells so Phase 8-10
-              and Phase 11 compilation can proceed for any meldable spell.
+            - Per-spell blueprints attached to owned constructed spells so their
+              Phase 8-11 compilation can proceed. Contracted dependencies stay
+              visible without replacing their provider-owned artifacts.
             - The change-control component of the map is rebuilt from owned roots
               only, so contracted roots are not revalidated by this conduit.
 
@@ -108492,7 +108817,9 @@ class CompilerPhase5:
         snapshot = adjacency_builder.build(required_spell_system_states)
 
         # --- 2. Filter to spellbook-visible spells -------------------------
-        visible_spell_ids = spellbook._spell_id_pool.keys()
+        visible_spell_ids = {
+            spell_id for spell_id, candidate in spellbook._spell_id_pool.items() if candidate.resolvable
+        }
         filtered_snapshot = self._filter_snapshot_to_visible_spells(
             snapshot=snapshot,
             visible_spell_ids=visible_spell_ids,
@@ -108516,6 +108843,7 @@ class CompilerPhase5:
             system_index=system_index,
             spell_lookup=spellbook._spell_id_pool,
             root_builder=root_builder,
+            publication_spell_ids=spellbook._spells_by_id.keys(),
         )
 
         artifact._spell_system_index_phase5 = system_index
@@ -108608,7 +108936,9 @@ class CompilerPhase5:
             - Build a full snapshot, then narrow to visible and locally-scoped
               ids.
             - Construct local root blueprints and phase-5 index.
-            - Attach phase-5 artifacts only to scoped spells.
+            - Attach canonical phase-5 artifacts only to the selected target,
+              matching the target-only Phase 8-11 rebuild. Its dependencies
+              remain in the index/blueprint without invalidating their plans.
             - Update the invoking artifact phase-2-5 cache and invalidate
               phase 8-11 when needed.
 
@@ -108640,7 +108970,7 @@ class CompilerPhase5:
         snapshot = adjacency_builder.build(required_spell_system_states)
 
         spell_lookup = spellbook._spell_id_pool
-        visible_spell_ids = spell_lookup.keys()
+        visible_spell_ids = {spell_id for spell_id, candidate in spell_lookup.items() if candidate.resolvable}
         visible_snapshot = self._filter_snapshot_to_visible_spells(
             snapshot=snapshot,
             visible_spell_ids=visible_spell_ids,
@@ -108671,6 +109001,7 @@ class CompilerPhase5:
             system_index=system_index,
             spell_lookup=spell_lookup,
             root_builder=root_builder,
+            publication_spell_ids=(target_spell_id,),
         )
 
         artifact._spell_system_index_phase5 = system_index
@@ -109478,7 +109809,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_7.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_8.py
-CONTENT SHA256: ef12d977c46b470729607e3b62814f224858aaef169e5313e9b13486d20beb15
+CONTENT SHA256: 9c5d30fcb4863bf47bc727cd4b153518120422911a32c9942ec406b776866d2e
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
@@ -109572,6 +109903,7 @@ class CompilerPhase8(Cleanable):
 
         Contract:
             - Delegates directly to `SpellAnalyzer.analyze_occurrence(...)`.
+            - Non-resolvable definitions skip executable analysis, including direct calls.
             - Treats `spellbook` and `spell_system_states` as compatibility
               signature parameters only.
             - Publishes any analyzer output onto the supplied compiler
@@ -109596,6 +109928,8 @@ class CompilerPhase8(Cleanable):
         """
         _ = spellbook
         _ = spell_system_states
+        if not spell.resolvable:
+            return
         self._spell_analyzer.analyze_occurrence(
             spell,
             artifact,
@@ -109606,7 +109940,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_8.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py
-CONTENT SHA256: ab4abc8d630fdec21ba74a1a27f0dbad5b22d7676218dac2311b55a47dfafb74
+CONTENT SHA256: aef07169940f1207ac93dc73b65cc8c8504738957accaf6a0843fd59d7a4e02a
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, ClassVar
@@ -109685,6 +110019,7 @@ class CompilerPhase9(Cleanable):
 
         Contract:
             - Delegates directly to `SpellArtifactProcessor.process(...)`.
+            - Non-resolvable definitions skip model construction, including direct calls.
             - Leaves planner and codegen-creation work untouched.
 
         Args:
@@ -109696,13 +110031,15 @@ class CompilerPhase9(Cleanable):
         Returns:
             None.
         """
+        if not spell.resolvable:
+            return
         self._artifact_processor.process(spell, artifact)
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py
-CONTENT SHA256: 5aed0a264de27f9745927b0bb35c90b4baaa5fc5b9596bd5ef139ba3e16d2b8b
+CONTENT SHA256: e909d2fd418d596c3ab2b2f58ebb80a436f660e313791ac1bcad96fcff8e3f91
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
@@ -110578,6 +110915,8 @@ class SharedCompilerExecutions:
                 - Returns only primitive tuple rows.
                 - Expects InjectionSpec/ParamSource contract fields to be present.
                 - Fails fast when malformed/cleaned artifacts violate contract.
+                - override_required rows append signature position/kind and descriptive IDs;
+                  ordinary source kinds retain their existing six-field row layout.
             Args:
                 instance_injections:
                     Mapping from instance key to InjectionSpec-like objects.
@@ -110629,16 +110968,21 @@ class SharedCompilerExecutions:
                         dependency_keys = tuple(dependency_key_list)
                     override_key = param_source.override_key
                     contract_key = param_source.contract_key
-                    param_rows.append(
-                        (
-                            param_name,
-                            kind,
-                            dependency_keys,
-                            override_key,
-                            contract_key,
-                            bool(param_source.is_collection),
-                        )
+                    param_row: Tuple[Any, ...] = (
+                        param_name,
+                        kind,
+                        dependency_keys,
+                        override_key,
+                        contract_key,
+                        bool(param_source.is_collection),
                     )
+                    if kind == "override_required":
+                        param_row += (
+                            param_source.position,
+                            param_source.parameter_kind,
+                            tuple(param_source.referenced_spell_ids),
+                        )
+                    param_rows.append(param_row)
 
             rows.append(
                 (
@@ -110918,6 +111262,7 @@ class SharedCompilerExecutions:
             Contract:
                 - Includes param source wiring, aggregation flags, and contract payload.
                 - Returns tuple-only deterministic structure.
+                - Required-input position/kind/reference fields survive either metadata mode.
             Args:
                 injection_spec:
                     Phase 9 InjectionSpec-like object.
@@ -110938,16 +111283,21 @@ class SharedCompilerExecutions:
             override_key = None
             if include_override_metadata:
                 override_key = param_source.override_key
-            param_rows.append(
-                (
-                    param_name,
-                    param_source.kind,
-                    dependency_keys,
-                    override_key,
-                    param_source.contract_key,
-                    bool(param_source.is_collection),
-                )
+            param_row: Tuple[Any, ...] = (
+                param_name,
+                param_source.kind,
+                dependency_keys,
+                override_key,
+                param_source.contract_key,
+                bool(param_source.is_collection),
             )
+            if param_source.kind == "override_required":
+                param_row += (
+                    param_source.position,
+                    param_source.parameter_kind,
+                    tuple(param_source.referenced_spell_ids),
+                )
+            param_rows.append(param_row)
 
         contract_payload = injection_spec.contract_payload
         normalized_contract_payload = None
@@ -112444,7 +112794,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyz
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
-CONTENT SHA256: 7ed300d7047e16f9215b3b3570209ce4ef60c90dfe13a3b26effb4e616335937
+CONTENT SHA256: 63feacab0f73ed488301f95e019b8fdbd60b0e377f6f310452afd3e661a5d83a
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -112469,6 +112819,7 @@ from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_
     ParameterDIShape,
 )
 from melder.utilities.helpers.general_helpers import EnumHelpers
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
 )
@@ -112523,8 +112874,8 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
           - cheap graph-side metrics
         - Does not compute execution order, instance/sharedness, or contract
           payload analysis artifacts. Later strategies own those outputs.
-        - Existing-creation spells no-op because they do not participate in
-          occurrence expansion.
+        - Existing-creation roots no-op. Existing providers remain leaf
+          occurrences in consumer graphs, with no constructor-contract scan.
 
     Threading:
         - Runs inside compiler-thread orchestration only.
@@ -112550,7 +112901,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         access: internal. Phase-8 occurrence-graph builder strategy: turns Phase-5 rooted
         blueprint + live topology into a path-aware occurrence graph, publishing
         _occurrence_graph_analysis (+ fast_key + input_signature) onto SpellCompilerArtifact.
-        Existing-creation spells no-op.
+        Existing-creation roots no-op; existing dependencies remain leaf occurrences.
     """
 
 
@@ -112837,6 +113188,8 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         Contract:
             - Returns `(topology_rows, contracted_rows, system_state)` or
               `None` on failure (callers force the rebuild path).
+            - Topology rows include resolved socket policy and descriptive references,
+              so required-input changes cannot reuse a stale occurrence/model signature.
             - Failures are never cached; every spell retries the build.
             - The cached tuple is immutable; concurrent unit workers may race
               to build it, which is benign (identical values, last write
@@ -112862,6 +113215,12 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                         (
                             socket.param_name,
                             tuple(sorted(socket.target_spell_ids)),
+                            socket.socket_kind.value,
+                            socket.position,
+                            socket.parameter_kind,
+                            socket.is_collection,
+                            socket.is_optional,
+                            socket.referenced_spell_ids,
                         )
                         for socket in topology.sockets
                     )
@@ -113436,27 +113795,16 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
     ) -> Iterable[Tuple[str, SpellContract]]:
         """
         Yield SpellContract defaults discovered in the spell's callable surface.
+
+        Existing creations are already supplied values and have no constructor
+        contracts to discover. Returning no contracts leaves the consumer's
+        incoming dependency edge intact; class/factory discovery is unchanged.
         """
         contracts: List[Tuple[str, SpellContract]] = []
-        requirements = spell._compiler_artifact._requirements
-
         if spell.is_existing_creation:
-            signature = inspect.signature(spell.spell)
-            for param_name, parameter in signature.parameters.items():
-                if param_name in ("self", "cls"):
-                    continue
-                if parameter.kind in (
-                        inspect.Parameter.VAR_POSITIONAL,
-                        inspect.Parameter.VAR_KEYWORD,
-                ):
-                    continue
-                if parameter.default is inspect.Parameter.empty:
-                    continue
-                default_value = parameter.default
-                if isinstance(default_value, SpellContract):
-                    contracts.append((param_name, default_value))
             return contracts
 
+        requirements = spell._compiler_artifact._requirements
         if requirements is not None:
             for param in requirements.parameters:
                 if param.di_shape is ParameterDIShape.SPELL_CONTRACT:
@@ -113491,7 +113839,11 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             allow_missing: bool = False,
     ) -> Optional[str]:
         """
-        Resolve a SpellContract to a concrete provider spell id.
+        Resolve a SpellContract to a concrete resolvable provider spell id.
+
+        Contract:
+            Preserve explicit cardinality and dynamic missing-provider behavior.
+            A selected non-resolvable definition is incompatible, not missing.
         """
         consumer_spell_id = consumer_spell.spell_index.selected_spell_id
         if consumer_spell_id is None:
@@ -113513,6 +113865,18 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                 ),
             )
         if len(contracted_candidates) == 1:
+            if not contracted_candidates[0].resolvable:
+                raise MeldExecutionError(
+                    spell_id=consumer_spell_id,
+                    spell_name=consumer_spell.spell_name,
+                    node_id=consumer_spell_id,
+                    param_name=param_name,
+                    message=(
+                        "SpellContract selected non-resolvable provider "
+                        f"{contracted_candidates[0].spell_id!r}. Select a resolvable provider "
+                        "or supply the consumer input through an override-required dependency."
+                    ),
+                )
             return contracted_candidates[0].spell_index.selected_spell_id
 
         if allow_missing:
@@ -118659,10 +119023,11 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examin
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
-CONTENT SHA256: 6d4e87ebf0a11f1dd4b06109c1a74c9e85899e5b50386d19429d472977be9633
+CONTENT SHA256: 164114ee5db49d7abdc4f2c3f95dc83b20c02cc4ccaad03b757dcdba2af414bc
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
+from annotationlib import Format
 from typing import TYPE_CHECKING, Any, List, ClassVar, Optional
 
 
@@ -118731,6 +119096,10 @@ class BindingProfileStrategy:
     def _build_class_profile(self, cls: type) -> ClassBindingProfile:
         """
         Build the shallow binding-time profile for one class candidate.
+
+        Constructor signatures preserve unresolved annotation names as Python
+        3.14 ForwardRefs. TYPE_CHECKING-only imports must not erase the cached
+        signature; known annotation objects and default values remain intact.
         """
         module = inspect.getmodule(cls)
 
@@ -118757,7 +119126,7 @@ class BindingProfileStrategy:
 
         init_signature_object: Optional[Any] = None
         try:
-            init_signature_object = inspect.signature(cls)
+            init_signature_object = inspect.signature(cls, annotation_format=Format.FORWARDREF)
             init_signature: Optional[str] = str(init_signature_object)
         except Exception:
             init_signature_object = None
@@ -118798,6 +119167,9 @@ class BindingProfileStrategy:
     def _build_callable_profile(self, fn: Any) -> CallableBindingProfile:
         """
         Build the shallow binding-time profile for one callable candidate.
+
+        Partial annotation evaluation retains TYPE_CHECKING-only names in the
+        signature without invoking the callable or dropping its parameters.
         """
         effective = InspectorUtility.unwrap_callable(fn)
         module = inspect.getmodule(effective)
@@ -118809,7 +119181,7 @@ class BindingProfileStrategy:
         extension_module = InspectorUtility.is_extension_module(module)
 
         try:
-            signature = inspect.signature(effective)
+            signature = inspect.signature(effective, annotation_format=Format.FORWARDREF)
             signature_str = str(signature)
             parameter_summaries: List[CallableParameterBindingSummary] = []
             for parameter in signature.parameters.values():
@@ -119691,7 +120063,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/s
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py
-CONTENT SHA256: 5c1b376fe470b3a739730586b9c281dc42abcb8d5493596696e1116af3c08549
+CONTENT SHA256: d000aa2e635f574185bc738fb72b63218967676f2f3b4eeb8e57e937b4389742
 SOURCE ENCODING: utf-8
 ================================================================================
 import ast
@@ -119700,6 +120072,7 @@ import inspect
 import threading
 import typing
 import types
+from annotationlib import Format, get_annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, get_args, get_origin, ClassVar
 
 
@@ -119748,6 +120121,8 @@ class SpellRequirementsFinder(Cleanable):
       providers.
     * Copies spell identity and routing metadata into the result, but does not
       interpret resolution policy beyond parameter classification.
+    * Ordinary explicit Python defaults classify as PLAIN and create no inferred
+      DI edge. SpellMap and SpellContract defaults remain explicit DI requests.
 
     Lifecycle
     ---------
@@ -120132,10 +120507,13 @@ class SpellRequirementsFinder(Cleanable):
         Resolution strategy:
             * For class targets, inspect "__init__" annotations because that
               is the callable surface DI will satisfy.
+            * Acquire raw annotations with Python 3.14 FORWARDREF format so
+              unavailable TYPE_CHECKING-only imports remain reference values.
             * Prefer "inspect.get_annotations(..., eval_str=True)" so string
               annotations and forward refs resolve through the target's module
               and local namespace.
-            * Fall back to non-evaluated annotations when full evaluation fails.
+            * Fall back to partially evaluated annotations when full evaluation
+              fails, preserving unresolved names for existing DI normalization.
             * Run a final normalization pass so nested string or generic
               fragments can still be simplified when partial resolution
               succeeded.
@@ -120165,9 +120543,11 @@ class SpellRequirementsFinder(Cleanable):
         else:
             annotation_target = call_target
 
-        raw_annotations: dict[str, Any] | None
+        raw_annotations: Optional[dict[str, Any]]
         try:
-            raw_annotations = dict(annotation_target.__annotations__)
+            # Direct __annotations__ access evaluates deferred annotations and
+            # raises before the normalizer can handle a TYPE_CHECKING-only name.
+            raw_annotations = get_annotations(annotation_target, format=Format.FORWARDREF)
         except AttributeError:
             raw_annotations = None
 
@@ -120224,6 +120604,7 @@ class SpellRequirementsFinder(Cleanable):
                     eval_str=False,
                     globals=globalns,
                     locals=localns,
+                    format=Format.FORWARDREF,
                 )
             except Exception:
                 annotations = {}
@@ -120688,6 +121069,11 @@ class SpellRequirementsFinder(Cleanable):
         original callable shape without trying to satisfy those parameters from
         DI.
 
+        Fresh signatures use Python 3.14 FORWARDREF format, matching the
+        bind-time signature cache. An unavailable annotation name remains a
+        dependency candidate; it never becomes an empty parameter list merely
+        because its import was guarded by TYPE_CHECKING.
+
         Args:
             call_target:
                 The callable or class surface selected for signature inspection.
@@ -120707,7 +121093,7 @@ class SpellRequirementsFinder(Cleanable):
         signature = self._borrow_bind_time_signature(call_target)
         if signature is None:
             try:
-                signature = inspect.signature(call_target)
+                signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
             except (TypeError, ValueError):
                 # Some exotic / builtin callables may not expose a usable signature.
                 # In that case, we treat them as having no DI-visible parameters.
@@ -120802,13 +121188,20 @@ class SpellRequirementsFinder(Cleanable):
                parameter is explicitly asking for a spell contract object.
             2. "SpellMap" defaults win over annotations because an explicit
                map is a stronger statement than an inferred type-based lookup.
-            3. Missing annotations fall back to: data:`ParameterDIShape.PLAIN`.
-            4. Optional wrappers are removed only far enough to inspect the
+            3. Any other explicit Python default makes the parameter PLAIN,
+               preserving the selected value even when a provider is registered.
+               Presence, not truthiness, decides this: None, False and 0 count.
+            4. Missing annotations fall back to: data:`ParameterDIShape.PLAIN`.
+            5. Optional wrappers are removed only far enough to inspect the
                underlying dependency shape.
-            5. "list[T]" becomes: data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when "T"
+            6. "list[T]" becomes: data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when "T"
                looks like a DI candidate.
-            6. A remaining DI-eligible annotation becomes: data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
-            7. Everything else stays: data:`ParameterDIShape.PLAIN`.
+            7. A remaining DI-eligible annotation becomes: data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
+            8. Everything else stays: data:`ParameterDIShape.PLAIN`.
+
+        Ordinary defaults retain their annotation and value in the requirement
+        record; PLAIN only prevents automatic provider selection. Parameters
+        without defaults keep the existing annotation-based inference rules.
 
         The returned "is_optional" flag answers a Melder-specific question:
         can Phase 1 treat failure to supply this dependency as acceptable
@@ -120851,6 +121244,12 @@ class SpellRequirementsFinder(Cleanable):
                 None,
                 default_value,
             )
+
+        # The caller already selected an ordinary Python default. Preserve it
+        # instead of creating an inferred dependency that overrides it or fails
+        # when no provider exists. Explicit DI descriptors were handled above.
+        if has_default:
+            return ParameterDIShape.PLAIN, True, None, None
 
         # If there is no annotation at all, we can't infer DI.
         if not has_annotation or annotation is None:
@@ -126606,7 +127005,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/system/validation/visibilit
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py
-CONTENT SHA256: 12fcfc1e178a88298293ca43022408851e2a40032859c36466296f8048740551
+CONTENT SHA256: 33f88883963ef887633c4e496605191fc1d568da73be15328a53e2725fad425e
 SOURCE ENCODING: utf-8
 ================================================================================
 from dataclasses import dataclass
@@ -126645,6 +127044,7 @@ class SpellSocketDescriptor:
 
             * NORMAL – standard DI edge or plain parameter socket.
             * SPELL_CONTRACT – cross-conduit spell contract socket.
+            * OVERRIDE_REQUIRED – required supplied input with a descriptive target only.
 
         is_collection:
             True if this socket is a collection DI shape (e.g. list[...]).
@@ -126656,11 +127056,20 @@ class SpellSocketDescriptor:
             The direct dependency spells version IDs that this socket *actually*
             resolved to during Phase 3, if any.
 
-            For contract / mutation sockets that are not yet resolved, this
-            will typically be an empty tuple.
+            Unresolved contract sockets and OVERRIDE_REQUIRED inputs have no
+            executable target IDs.
+
+        referenced_spell_ids:
+            Selected non-resolvable version IDs retained for graph navigation.
+            These IDs must never be traversed as construction dependencies.
+
+        parameter_kind:
+            The original inspect.Parameter kind name, when Phase-1 metadata is
+            available. Required-input planning uses this with position to distinguish
+            positional-only and keyword-only supply; it must not infer kind from optionality.
 
         dependency_key:
-            Canonical "(frame_key, binding_key)" for NORMAL DI sockets.
+            Canonical "(frame_key, binding_key)" for normal or required-override DI selection.
             This is populated for single/collection/SpellMap sockets that
             participate in DI resolution. For collection sockets, the frame
             key is used for targeted revalidation, while the binding key
@@ -126696,6 +127105,8 @@ class SpellSocketDescriptor:
     target_spell_ids: Tuple[str, ...]
     dependency_key: Optional[Tuple[str, str]] = None
     contract_key: Optional[Tuple[str, str]] = None
+    referenced_spell_ids: Tuple[str, ...] = ()
+    parameter_kind: Optional[str] = None
 
 
 class SpellLocalTopology(Cleanable):
@@ -127334,7 +127745,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/spell_validation
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
-CONTENT SHA256: 262ecb2889e2328d81d821355769896d4c5b640d92935eed441f86cf7f1f7c30
+CONTENT SHA256: b2ddbc534fd9e885e48958c5771fb4df51c955a60a8fd0bd91cd816f61726935
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -127371,6 +127782,8 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
       in this first cut.
     - Emits validation issues into the supplied context; it does not mutate the
       spell or attempt recovery.
+    - Non-resolvable definitions retain ordinary Python annotations without
+      imposing constructor-DI shape restrictions.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
@@ -127431,6 +127844,8 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
             return
 
         spell = context.spell
+        if not spell.resolvable:
+            return
 
         for param in requirements.parameters:
             if cancel_event is not None and cancel_event.is_set:
@@ -127564,7 +127979,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/annot
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py
-CONTENT SHA256: 7eb4bc88b40efdeff8baac2236d73c8a57950fe4f316cb2118a7f83f4555f62f
+CONTENT SHA256: 7722398cdbd02efe24ea5d9370e4ba6b40d3b3eee3b4e55779a82439319c3cd3
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
@@ -127583,6 +127998,7 @@ if TYPE_CHECKING:
 
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
@@ -127605,6 +128021,8 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
 
     Contract:
         - Builds a binding-key graph from available requirements.
+        - Excludes non-resolvable constructors and resolved OVERRIDE_REQUIRED sockets.
+          Descriptive references are never reconstruction of a construction edge.
         - Reports cycles reachable from the spell under validation.
         - Does not mutate spells, spellbooks, or requirements.
 
@@ -127677,6 +128095,8 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         spell = context.spell
         spellbook = context.spellbook
         if spell is None or spellbook is None:
+            return
+        if not spell.resolvable:
             return
 
         root_key = spell.key
@@ -127754,6 +128174,9 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
               canonical key, so no per-build re-normalization happens here.
             - The result is treated as immutable by all consumers; pass-cache
               reuse depends on that.
+            - Consults durable Phase-3 topology when present to exclude required
+              supplied inputs. Before topology exists, declaration-only analysis
+              remains available; non-resolvable constructors never contribute edges.
         Args:
             spellbook: Owning Spellbook whose local pool should be modeled.
             cancel_event: Optional cancellation signal checked per spell.
@@ -127770,6 +128193,9 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
+            if not spell_instance.resolvable:
+                continue
+
             requirements = spell_instance.requirements
             if requirements is None:
                 continue
@@ -127781,8 +128207,14 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
                 continue
 
             spell_key = spell_instance.key
+            topology = spell_instance._spell_system_states.get_local_topology(spell_instance.spell_index)
             adjacency: Optional[Set[Tuple[str, str]]] = None
             for param in parameters:
+                if topology is not None and any(
+                        socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
+                        for socket in topology.get_sockets_for_param(param.name)
+                ):
+                    continue
                 target_key = self._binding_key_for_requirement(param)
                 if target_key is None:
                     continue
@@ -128321,7 +128753,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/circu
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
-CONTENT SHA256: fb498ec986d601ede370a66c1f9e3f23d00a5efe2d7eb1af6e732d1a048a43fa
+CONTENT SHA256: 4f273a7b92144c92d04ba2ee8ed83ae93b1588298d2f36e1d64c03a96e9fb8a1
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
@@ -128360,6 +128792,8 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         - Emits errors when more than one provider matches a contract key.
         - Emits warnings for missing SpellContract providers in dynamic mode.
         - Emits errors for contract sockets in automatic system state.
+        - A unique non-resolvable provider is incompatible with a live contract.
+        - Non-resolvable consumers retain descriptor checks without provider or mode obligations.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
@@ -128438,7 +128872,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         # every spell in the validation pass. Without a pass cache (deferred
         # single-spell paths) the map is built fresh, identical to before.
         pass_cache = context.validation_pass_cache
-        provider_map: Optional[Dict[Tuple[str, str], List[str]]] = None
+        provider_map: Optional[Dict[Tuple[str, str], List[Tuple[str, bool]]]] = None
         if pass_cache is not None:
             provider_map = pass_cache.get("contract_provider_map")
         if provider_map is None:
@@ -128456,7 +128890,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                         provider_spell_id = index.selected_spell_id
                         if provider_spell_id is None:
                             provider_spell_id = provider_spell.spell_id
-                        provider_map.setdefault(key, []).append(provider_spell_id)
+                        provider_map.setdefault(key, []).append((provider_spell_id, provider_spell.resolvable))
             if pass_cache is not None and spellbook is not None:
                 pass_cache["contract_provider_map"] = provider_map
 
@@ -128472,7 +128906,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
             if param.di_shape is not ParameterDIShape.SPELL_CONTRACT:
                 continue
 
-            if param.di_shape is ParameterDIShape.SPELL_CONTRACT and automatic_mode:
+            if param.di_shape is ParameterDIShape.SPELL_CONTRACT and automatic_mode and spell.resolvable:
                 context.issues.append(
                     SpellValidationIssue(
                         severity="error",
@@ -128510,6 +128944,8 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                     )
                     continue
 
+                if not spell.resolvable:
+                    continue
                 contract_key = contract.canonical_key
                 providers = provider_map.get(contract_key, [])
                 if len(providers) > 1:
@@ -128524,7 +128960,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                             details={
                                 "parameter_name": param.name,
                                 "contract_key": contract_key,
-                                "provider_spell_ids": sorted(providers),
+                                "provider_spell_ids": sorted(provider_id for provider_id, _ in providers),
                             },
                         )
                     )
@@ -128542,6 +128978,23 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                             details={
                                 "parameter_name": param.name,
                                 "contract_key": contract_key,
+                            },
+                        )
+                    )
+                elif not providers[0][1]:
+                    context.issues.append(
+                        SpellValidationIssue(
+                            severity="error",
+                            code="SPELL_CONTRACT_NON_RESOLVABLE_PROVIDER",
+                            message=(
+                                f"Spell {spell.spell_name!r} parameter {param.name!r} selects "
+                                f"non-resolvable provider {providers[0][0]!r}. A SpellContract needs "
+                                "a resolvable provider; select one or use a required supplied input."
+                            ),
+                            details={
+                                "parameter_name": param.name,
+                                "contract_key": contract_key,
+                                "provider_spell_id": providers[0][0],
                             },
                         )
                     )
@@ -129001,7 +129454,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/exist
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py
-CONTENT SHA256: f44e7ca5ee549711b5ceee1812f50ca3a5a14d972d2cf3980271fd9f7b0cc1c6
+CONTENT SHA256: d7a1a05361eedcbbe7736d91d76d0429f21069a1f1e5ad75c492dd46cc7aaf2e
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -129033,6 +129486,8 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
 
     This strategy ensures DI is not requested on variadic parameters and
     checks for contradictory DI classifications.
+    Non-resolvable definitions have no executable constructor-DI obligations,
+    so their parameter declarations remain descriptive and are not restricted here.
 
     Contract:
         Errors: VARIADIC_DI_UNSUPPORTED (DI annotation on *args/**kwargs),
@@ -129098,6 +129553,8 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
             return
 
         spell = context.spell
+        if not spell.resolvable:
+            return
 
         for param in requirements.parameters:
             if cancel_event is not None and cancel_event.is_set:
@@ -129200,7 +129657,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/param
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
-CONTENT SHA256: 56749c337c617279a40e35ea68e0e971aea14af29494229cc1be30c2a4a8fb21
+CONTENT SHA256: e7abea1c35b49d1bd9d62fa005b34bd24629366648ef29d58fb3fe9cc9f480b0
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING
@@ -129208,6 +129665,7 @@ from typing import TYPE_CHECKING
 
 
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
@@ -129228,6 +129686,8 @@ class RequiredHolesStrategy(SpellValidationStrategy):
     - Reports caller-required parameters that Melder DI will never satisfy.
     - Emits warnings rather than hard errors because the caller may still
       provide these values at invocation time.
+    - Also reports resolved OVERRIDE_REQUIRED sockets from durable local topology.
+      Non-resolvable roots have no construction-input obligations.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
@@ -129273,6 +129733,8 @@ class RequiredHolesStrategy(SpellValidationStrategy):
           by the caller.
         - Performs reporting only; it does not attempt to synthesize defaults
           or convert the hole into a DI target.
+        - Reads reference-only required inputs from SpellSystemStates without
+          taking ownership of their topology or changing declaration facts.
         """
         self.check_cleaned()
 
@@ -129284,10 +129746,9 @@ class RequiredHolesStrategy(SpellValidationStrategy):
         if requirements is None:
             return
 
-        if not requirements.has_required_holes():
-            return
-
         spell = context.spell
+        if not spell.resolvable:
+            return
 
         for param in requirements.iter_required_holes():
             context.issues.append(
@@ -129304,6 +129765,31 @@ class RequiredHolesStrategy(SpellValidationStrategy):
                         "parameter_name": param.name,
                         "position": param.position,
                         "annotation": param.annotation,
+                    },
+                )
+            )
+
+        topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+        if topology is None:
+            return
+        for socket in topology.sockets:
+            if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED:
+                continue
+            context.issues.append(
+                SpellValidationIssue(
+                    severity="warning",
+                    code="OVERRIDE_REQUIRED",
+                    message=(
+                        f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} "
+                        "references a non-resolvable definition. Supply its value through "
+                        "a meld override when constructing this consumer."
+                    ),
+                    details={
+                        "spell_id": spell.spell_id,
+                        "parameter_name": socket.param_name,
+                        "position": socket.position,
+                        "parameter_kind": socket.parameter_kind,
+                        "referenced_spell_ids": socket.referenced_spell_ids,
                     },
                 )
             )
@@ -131159,7 +131645,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: 6d53d170189387d61cf76e1a86205fa667f43a9626b2735e94667c574b4b786f
+CONTENT SHA256: 13b61f9679de1bcd8022eb3e748799e96c65c943ca5f5b65cad480eeae12eed3
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -133968,7 +134454,7 @@ class Spellbook(Cleanable):
             - Does not mutate local or contracted registries.
             - Includes only the user-facing selector and ownership fields:
               `spell_id`, `spell_name`, `binding_name`, `spellframe`,
-              `existence`, and `owner_conduit_id`.
+              `existence`, `resolvable`, and `owner_conduit_id`.
             - Sorts results deterministically by spell name, effective binding
               name, and spell id.
 
@@ -133995,6 +134481,7 @@ class Spellbook(Cleanable):
                         "binding_name": spell.binding_name or "__default__",
                         "spellframe": spellframe_display,
                         "existence": spell.existence.name,
+                        "resolvable": spell.resolvable,
                         "owner_conduit_id": owner_conduit_id,
                     }
                 )
@@ -135924,6 +136411,7 @@ class Spellbook(Cleanable):
             binding_name: str | None = None,
             disposal_method_names: Sequence[str] | None = None,
             profile: str = "general",
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> str:
         """
@@ -135973,6 +136461,9 @@ class Spellbook(Cleanable):
                 are skipped and duplicates run once. Empty input still permits book methods.
             profile (str):
                 Spell profile family to attach after bind completion.
+            resolvable (bool):
+                Native capability of this parked version, independent of index selection.
+                Defaults to True; False retains existing naming and lifecycle restrictions.
             **kwargs:
                 Optional lifecycle hooks (pre/activation/post).
 
@@ -135984,6 +136475,8 @@ class Spellbook(Cleanable):
             RuntimeError:
                 If the spell_id collides, the Spellbook is not in a dynamic
                 posture, or `spell_index` is not owned here.
+            TypeError:
+                If resolvable is not a bool or the target violates Bind admission rules.
         """
         # The staging transaction lives directly in this method. Conduit
         # .bind_inactive delegates here without holding a window of its own,
@@ -136010,6 +136503,7 @@ class Spellbook(Cleanable):
                     spellframe=spellframe,
                     binding_name=binding_name,
                     profile=profile,
+                    resolvable=resolvable,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
                     configured_disposal_method_names=(
@@ -136197,6 +136691,7 @@ class Spellbook(Cleanable):
             binding_name: str | None = None,
             disposal_method_names: Sequence[str] | None = None,
             profile: str = "general",
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> str:
         """
@@ -136236,6 +136731,9 @@ class Spellbook(Cleanable):
                 the same frame.
             profile (str):
                 Spell profile family to attach after bind completion.
+            resolvable (bool):
+                Native per-version resolution capability, default True. False registers a
+                non-resolvable definition without changing naming or lifecycle restrictions.
             disposal_method_names (Optional[Sequence[str]]):
                 Ordered per-spell candidates, combined with configured book candidates.
                 The complete matching book block comes last by default, first with
@@ -136259,6 +136757,7 @@ class Spellbook(Cleanable):
                 If ``spell`` is a primitive value (int, float, bool, complex,
                 str, bytes, bytearray); a spell must be a class, function,
                 lambda, or an existing object instance.
+                Also raised when resolvable is not a bool.
         """
         self.check_cleaned()
         if spell is None:
@@ -136306,6 +136805,7 @@ class Spellbook(Cleanable):
                     spellframe=spellframe,
                     binding_name=binding_name,
                     profile=profile,
+                    resolvable=resolvable,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
                     configured_disposal_method_names=(
@@ -137967,7 +138467,7 @@ END FILE: src/melder/aether/spellbook/spellbook.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook_creation_system.py
-CONTENT SHA256: 3511939d16855fc8358d2a30ffacfc80393bcc2ee21393d62f999cec4d6ee35c
+CONTENT SHA256: 308cef937dff50462b7a6691cd8101fb929a91dcfd2bebb0d51f9585563ac94a
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -138401,7 +138901,7 @@ class SpellbookCreationSystem(Cleanable):
             - Builds exact-match, mixed, and miss sets from live spell ids and
               cached spell ids.
             - Live spell ids cover payload-eligible spells only:
-              existing-creation spells bypass phases 8-11 by design and never
+              non-resolvable definitions and existing-creation spells bypass phases 8-11 and never
               carry cache payloads, so they must not block the full-hit
               classification.
             - Creates the Spellbook-owned CachingSystem only when caching is
@@ -138423,7 +138923,7 @@ class SpellbookCreationSystem(Cleanable):
         live_spell_ids = {
             spell_id
             for spell_id, spell in spellbook._spell_id_pool.items()
-            if not spell.is_existing_creation
+            if spell.resolvable and not spell.is_existing_creation
         }
         caching_system: CachingSystem | None = None
         cached_spell_ids: set[str] = set()
@@ -140072,18 +140572,22 @@ class SpellbookCreationSystem(Cleanable):
             target_spell_id: str,
             phase_func: Callable[..., Any],
             args: tuple[Any, ...],
+            pass_cancel_event: bool = False,
     ) -> None:
         """
         Purpose:
             Register one local target-spell phase as a single unit of work.
         Contract:
             - Registers exactly one unit with local-scope metadata.
+            - When requested, reads cancellation inside the phase factory, after the
+              persistent scheduler has installed the current run's signal.
         Args:
             scheduler: Scheduler receiving the phase.
             phase_name: Phase name/label prefix.
             target_spell_id: Target spell id for labelling metadata.
             phase_func: Bound spell phase callable.
             args: Concrete argument tuple for the phase callable.
+            pass_cancel_event: Forward the current run's event as a keyword argument.
         Returns:
             None.
         """
@@ -140093,6 +140597,7 @@ class SpellbookCreationSystem(Cleanable):
                 scheduler.create_unit_of_work(
                     func=phase_func,
                     args=args,
+                    kwargs={"cancel_event": scheduler.cancel_event} if pass_cancel_event else None,
                     label=f"{phase_name}:{target_spell_id}",
                     metadata={
                         "phase": phase_name,
@@ -140117,6 +140622,8 @@ class SpellbookCreationSystem(Cleanable):
             Run target-local foundational phases (root/system/change-control).
         Contract:
             - Registers local foundational phases for one target spell only.
+            - Cancellation-aware phases bind the active run event when their units are
+              created, so an earlier cancelled run cannot poison local revalidation.
         Args:
             spellbook: Owning Spellbook instance.
             conduit_id: Conduit scope id.
@@ -140136,14 +140643,16 @@ class SpellbookCreationSystem(Cleanable):
                     phase_name="root_blueprints_local",
                     target_spell_id=target_spell_id,
                     phase_func=compiler_system.run_phase_root_blueprints_local,
-                    args=(spellbook, target_spell, conduit_id, scheduler.cancel_event,),
+                    args=(spellbook, target_spell, conduit_id,),
+                    pass_cancel_event=True,
                 )
                 SpellbookCreationSystem._register_target_single_phase(
                     scheduler=scheduler,
                     phase_name="system_validation_local",
                     target_spell_id=target_spell_id,
                     phase_func=compiler_system.run_phase_system_validation_local,
-                    args=(spellbook, target_spell, conduit_id, scheduler.cancel_event,),
+                    args=(spellbook, target_spell, conduit_id,),
+                    pass_cancel_event=True,
                 )
                 SpellbookCreationSystem._register_target_single_phase(
                     scheduler=scheduler,
@@ -140589,6 +141098,7 @@ class SpellbookCreationSystem(Cleanable):
             plan group.
 
         Contract:
+            - Non-resolvable definitions never enter executable planning.
             - Existing-creation spells are not eligible because they do not
               build occurrence graph truth or downstream model/plan/creation
               outputs.
@@ -140603,6 +141113,8 @@ class SpellbookCreationSystem(Cleanable):
             bool:
                 True when the spell should run live phases 8-11.
         """
+        if not spell.resolvable:
+            return False
         try:
             is_existing_creation = spell.is_existing_creation
         except AttributeError:
@@ -154818,7 +155330,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_loader_system/graft_runner.py
-CONTENT SHA256: 354ec24b4078c73e3f2793418c6f6fe36bb71820d910da25ddfd084ddc71550c
+CONTENT SHA256: 980e3b1f82c1bc8463e3af1853f816f634894285085eedf0c23d69cb79711f52
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -155203,6 +155715,8 @@ class GraftRunner(Cleanable):
         """
         Bind the selected member ACTIVE - the fresh index's anchor.
 
+        Recorded resolution capability is preserved; legacy absence defaults to True.
+
         Args:
             selected_id:
                 The recorded selection.
@@ -155239,6 +155753,7 @@ class GraftRunner(Cleanable):
                 crystal.get("disposal_method_names", [])
             ) or None,
             profile=str(crystal.get("profile_family", "general")),
+            resolvable=crystal.get("resolvable", True),
         )
         live_spell = self._host_book.find_spell_by_id(new_spell_id)
         live_index = (
@@ -155256,6 +155771,8 @@ class GraftRunner(Cleanable):
     ) -> int:
         """
         Park every non-selected member onto the fresh live index.
+
+        Every member retains its own recorded resolution capability.
 
         Args:
             selected_id:
@@ -155296,6 +155813,7 @@ class GraftRunner(Cleanable):
                 binding_name=crystal.get("binding_name"),
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
+                resolvable=crystal.get("resolvable", True),
             )
             parked += 1
         return parked
@@ -155323,6 +155841,7 @@ class GraftRunner(Cleanable):
               which may differ from its recorded SHA.
             - Adoption is honest: requested-but-ungrafted selection
               lands a shortfall instead of a silent no-op.
+            - Each parked member retains its recorded resolution capability.
 
         Args:
             selected_id:
@@ -155353,6 +155872,7 @@ class GraftRunner(Cleanable):
                 binding_name=crystal.get("binding_name"),
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
+                resolvable=crystal.get("resolvable", True),
             )
             if spell_id == str(selected_id):
                 live_selected_id = new_spell_id
@@ -156419,7 +156939,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/load_plan.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_loader_system/restore_engine.py
-CONTENT SHA256: 5f3ae5812dc3ac03d33340b7adf8c8f7b6bfa59d9f9d710ab3999c9e7ce7647f
+CONTENT SHA256: d92f064b9fedf098907d8c7f66871afc69b5d928c126e1ac72ecd9724ee5f179
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -158341,6 +158861,7 @@ class RestoreEngine(Cleanable):
         Contract:
             Forward ordered disposal names through normal book composition.
             Record a changed SHA before resolving dependent staged members.
+            Preserve recorded capability; only legacy absence defaults to True.
 
         Args:
             spellbook:
@@ -158366,6 +158887,7 @@ class RestoreEngine(Cleanable):
                 crystal.get("disposal_method_names", [])
             ) or None,
             profile=str(crystal.get("profile_family", "general")),
+            resolvable=crystal.get("resolvable", True),
         )
         self._report.record_built("spell_active")
         if new_spell_id != spell_id:
@@ -158390,6 +158912,7 @@ class RestoreEngine(Cleanable):
         Contract:
             Retain the ordered recorded names and map any changed bind identity
             before the selection stage resolves this exact parked member.
+            Preserve the parked version's own resolution capability.
 
         Args:
             spellbook:
@@ -158432,6 +158955,7 @@ class RestoreEngine(Cleanable):
             binding_name=crystal.get("binding_name"),
             disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
             profile=str(crystal.get("profile_family", "general")),
+            resolvable=crystal.get("resolvable", True),
         )
         if new_spell_id != spell_id:
             self._report.map_identity(spell_id, new_spell_id)
@@ -164195,7 +164719,7 @@ END FILE: src/melder/crystallizer/crystals/recorded_unit_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystals/spell_crystal.py
-CONTENT SHA256: edf473e14511f07bef6db17a5177fb125f3aef7dd372cb9dc0ff6a7c72d44632
+CONTENT SHA256: e1f88c53a3f13c62cfa461d81fb04fd0b61134ac36fbf08975408a865e08a74b
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -164329,6 +164853,7 @@ class SpellCrystal(Cleanable):
         "_spellframe_name",
         "_existence_name",
         "_permissions_name",
+        "_resolvable",
         "_disposal_method_names",
         "_profile_family",
         "_rebindability",
@@ -164368,6 +164893,7 @@ class SpellCrystal(Cleanable):
               reference, or the analyzer after construction.
             - Captures resolved disposal names in execution order. This detached
               persistence value does not sort or reapply book policy.
+            - Captures native resolution capability so replay cannot enable a definition.
             - Captures the root module classification and all direct-dependency
               edges needed for later loader validation and world activation
               through the carried analysis result.
@@ -164473,6 +164999,7 @@ class SpellCrystal(Cleanable):
         )
         self._existence_name: str = spell.existence.name
         self._permissions_name: str = spell.permissions.name
+        self._resolvable: bool = spell.resolvable
         # Capture-gap fields (restore_engine_2026_07_07 patch lane): the two
         # bind inputs the record previously dropped. Disposal names preserve
         # the spell's cleanup contract across a restore; the profile family
@@ -164590,6 +165117,7 @@ class SpellCrystal(Cleanable):
             del self._spellframe_name
             del self._existence_name
             del self._permissions_name
+            del self._resolvable
             del self._disposal_method_names
             del self._profile_family
             del self._rebindability
@@ -165308,6 +165836,7 @@ class SpellCrystal(Cleanable):
                 "spellframe_name": self._spellframe_name,
                 "existence_name": self._existence_name,
                 "permissions_name": self._permissions_name,
+                "resolvable": self._resolvable,
                 "disposal_method_names": list(self._disposal_method_names),
                 "profile_family": self._profile_family,
                 "rebindability": self._rebindability,
@@ -169183,7 +169712,7 @@ END FILE: src/melder/crystallizer/persistence/persistence_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/persistence/record_version.py
-CONTENT SHA256: 0a211ad14d8ac2ea4852011d1a814cc3d19fb4ca5393ee1f414da25e00d7e2be
+CONTENT SHA256: 5162e54b84ab34de0c74a8fc1afbfe993774203e033489c0e0db6feb55b5e5ae
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -169261,7 +169790,8 @@ class RecordVersion:
         machinery: read it to understand the runtime, do not drive it directly.
     """
 
-    CURRENT: ClassVar[str] = "1.0.0"
+    # Older readers must refuse records whose False capability they would otherwise ignore.
+    CURRENT: ClassVar[str] = "2.0.0"
     KEY: ClassVar[str] = "record_version"
 
     @staticmethod
@@ -208419,7 +208949,7 @@ END FILE: src/melder/nexus/frame_descriptor/spell_record.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/frame_descriptor_manager.py
-CONTENT SHA256: 48dd3f40e1554f793289600e3a63c7c29913766f56804bc456fd8e8b12ed2ef7
+CONTENT SHA256: c6768fd293a5dce2cc9e17ce75efeba5ca658fe7fd1f41aca7dc49eebb661e2f
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -208936,6 +209466,8 @@ class FrameDescriptorManager(Cleanable):
             - Short-circuits when the frame is not publishable.
             - Preserves the existing AI-profile extraction behavior.
             - Replaces the descriptor-owned spell record for the canonical key.
+            - Publishes immutable capability and value-only selected/base relationships
+              under the existing binding-payload ACL section.
 
         Args:
             spellbook:
@@ -208967,6 +209499,8 @@ class FrameDescriptorManager(Cleanable):
                     "Spell publication requires a non-empty descriptor payload."
                 )
             self._validate_published_spell_payload(payload)
+            payload.binding_payload["resolvable"] = spell.resolvable
+            payload.binding_payload["relationships"] = self._build_published_relationships(spellbook, spell)
 
             spell_record = SpellRecord(
                 origin_spellbook_id=spellbook._id,
@@ -208988,6 +209522,53 @@ class FrameDescriptorManager(Cleanable):
             )
             descriptor.upsert_spell_record(spell_record)
             return True
+
+    @staticmethod
+    def _build_published_relationships(spellbook: Spellbook, spell: Spell) -> Tuple[Dict[str, object], ...]:
+        """
+        Snapshot selected constructor references and actual registered direct bases.
+
+        Contract:
+            Returns detached values only; reference links never become construction edges.
+            The pool snapshot keeps publication independent of later registry mutations.
+            Missing/unpublished targets remain outside navigable graph relationships.
+            Does not infer internal-use or lifecycle ownership from names or annotations.
+
+        Args:
+            spellbook: Publishing book with the visible local/contracted target pool.
+            spell: Live version whose local topology and direct Python bases are described.
+
+        Returns:
+            Tuple of kind/parameter/target source-ID mappings, in publication order.
+        """
+        relationships: list[Dict[str, object]] = []
+        topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+        if topology is not None:
+            for socket in topology.sockets:
+                for kind, targets in (
+                    ("dependency", socket.target_spell_ids),
+                    ("override_required", socket.referenced_spell_ids),
+                ):
+                    for target_id in targets:
+                        target = spellbook._spell_id_pool.get(target_id)
+                        if target is not None:
+                            relationships.append({
+                                "kind": kind,
+                                "parameter": socket.param_name,
+                                "target_source_id": f"{target._spellbook.id}:{target_id}",
+                            })
+        if isinstance(spell.spell, type):
+            # A detached pool snapshot avoids retaining a live registry view in this value payload.
+            candidates = tuple(spellbook._spell_id_pool.values())
+            for base in spell.spell.__bases__:
+                for target in candidates:
+                    if target.spell is base:
+                        relationships.append({
+                            "kind": "base",
+                            "parameter": None,
+                            "target_source_id": f"{target._spellbook.id}:{target.spell_id}",
+                        })
+        return tuple(relationships)
 
     def _remove_spell_record(
             self,
@@ -226881,7 +227462,7 @@ END FILE: src/melder/nexus/rift/frame_link/frame_link_contract.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/frame_viewer/frame_viewer.py
-CONTENT SHA256: 6339ba8c563c5292840fc053c6304349cc59b4a0ab379a7e86fdd7e1df4b884b
+CONTENT SHA256: 716dbc505c538072fbd327ca99f205ecfcd8d40ad6aa399c1e276dbe42cd5884
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -232146,6 +232727,30 @@ class FrameViewer(Cleanable):
         return self.get_view_spell(frame_name=frame_name).describe_spell(
             spell_source_id,
             frame_name=frame_name,
+        )
+
+    def describe_spell_relationships(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Navigate visible registered dependencies, supplied references and direct bases.
+
+        Contract:
+            Delegates to the current ViewSpell with its ordinary ACL and action-hook gates.
+            Does not resolve or construct the inspected definition.
+
+        Args:
+            spell_source_id: Published book/version identity to navigate.
+            frame_name: Hosted frame containing the definition.
+
+        Returns:
+            Detached capability and incoming/outgoing relationship descriptions.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_relationships(
+            spell_source_id, frame_name=frame_name,
         )
 
     def describe_spell_brief(
@@ -241695,7 +242300,7 @@ END FILE: src/melder/nexus/rift/frame_viewer/view_multiframe.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/rift/frame_viewer/view_spell.py
-CONTENT SHA256: 4ccd60f4dfeb5db9c18060b64d3651dc5445c848adc239d3895477a3c94146e5
+CONTENT SHA256: 99264e33e20300d80b6f31d7f3dca92e2051be1e38c89e734e79e8ac5be932fb
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -241943,6 +242548,15 @@ class ViewSpell(Cleanable):
                 tuple(),
             )
         )
+        filtered_payload = self._filter_spell_payload(spell_record.payload, visible_sections)
+        binding = filtered_payload.get("binding_payload")
+        if isinstance(binding, dict) and "relationships" in binding:
+            # Filtering operates on the detached normalized payload, never on the published record.
+            binding["relationships"] = tuple(
+                relationship for relationship in binding["relationships"]
+                if tuple(relationship["target_source_id"].split(":", 1))
+                in compiled_access_surface.visible_spell_keys
+            )
         return {
             "target_id": spell_link.link_id,
             "source_kind": spell_link.source_kind,
@@ -241958,10 +242572,54 @@ class ViewSpell(Cleanable):
             "source_profile_name": spell_record.payload.source_profile_name,
             "source_profile_version": spell_record.payload.source_profile_version,
             "visible_sections": visible_sections,
-            "payload": self._filter_spell_payload(
-                spell_record.payload,
-                visible_sections,
-            ),
+            "payload": filtered_payload,
+        }
+
+    def describe_spell_relationships(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Describe visible incoming and outgoing registered relationships without resolution.
+
+        Contract:
+            Uses current ACL-filtered spell descriptions. Both endpoints must be visible,
+            and the source binding-payload section must be readable. Capability is returned
+            only when that section is visible. No runtime object is acquired or constructed.
+
+        Args:
+            spell_source_id: Published book/version identity to navigate.
+            frame_name: Optional selected-frame assertion.
+
+        Returns:
+            Source identity, visible capability, and detached incoming/outgoing edge lists.
+        """
+        selected = self.describe_spell(spell_source_id, frame_name=frame_name)
+        descriptions = self.describe_spells(frame_name=frame_name)
+        visible_ids = {description["source_id"] for description in descriptions}
+        incoming: list[Dict[str, object]] = []
+        outgoing: list[Dict[str, object]] = []
+        for description in descriptions:
+            payload = self._get_required_payload_map(description["payload"])
+            binding = payload.get("binding_payload")
+            if not isinstance(binding, dict):
+                continue
+            for relationship in binding.get("relationships", ()):
+                if relationship["target_source_id"] not in visible_ids:
+                    continue
+                edge = {"source_id": description["source_id"], **relationship}
+                if edge["source_id"] == spell_source_id:
+                    outgoing.append(edge)
+                if edge["target_source_id"] == spell_source_id:
+                    incoming.append(edge)
+        binding = self._get_required_payload_map(selected["payload"]).get("binding_payload")
+        return {
+            "source_id": spell_source_id,
+            "resolvable": binding.get("resolvable", True) if isinstance(binding, dict) else None,
+            "incoming": incoming,
+            "outgoing": outgoing,
         }
 
     def describe_spell_payload(
@@ -256875,7 +257533,7 @@ END FILE: src/melder/utilities/caching_system/asset_cache.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/caching_system/caching_system.py
-CONTENT SHA256: 72a4fff14cbb619643af53f4d1a8373ae657e086e83e3cbb212d0113c59cb92c
+CONTENT SHA256: fd3dbf222201dbd4a3f0c6ebfb54724f1b372dc5da83caabef4bed1a8fe82734
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -256970,6 +257628,9 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 8: ordinary Python parameter defaults classify as PLAIN. Older
+    # plans may inject providers despite those defaults, even when their bind
+    # SHA still matches, so they must be rebuilt under the new precedence.
     # Version 7: phase-10 family selection is root-visible (the phase-8
     # existence analysis filters the shared pool walk down to the root's
     # occurrence graph) and shared-provider SpellContract payloads resolve by
@@ -257002,6 +257663,7 @@ class CachingSystem(Cleanable):
         5: "many_only_collection_param_names",
         6: "zero_provider_required_collections",
         7: "root_visible_family_selection",
+        8: "ordinary_defaults_are_plain",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"

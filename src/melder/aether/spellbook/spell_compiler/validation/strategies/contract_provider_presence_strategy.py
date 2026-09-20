@@ -34,6 +34,8 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         - Emits errors when more than one provider matches a contract key.
         - Emits warnings for missing SpellContract providers in dynamic mode.
         - Emits errors for contract sockets in automatic system state.
+        - A unique non-resolvable provider is incompatible with a live contract.
+        - Non-resolvable consumers retain descriptor checks without provider or mode obligations.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
@@ -112,7 +114,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
         # every spell in the validation pass. Without a pass cache (deferred
         # single-spell paths) the map is built fresh, identical to before.
         pass_cache = context.validation_pass_cache
-        provider_map: Optional[Dict[Tuple[str, str], List[str]]] = None
+        provider_map: Optional[Dict[Tuple[str, str], List[Tuple[str, bool]]]] = None
         if pass_cache is not None:
             provider_map = pass_cache.get("contract_provider_map")
         if provider_map is None:
@@ -130,7 +132,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                         provider_spell_id = index.selected_spell_id
                         if provider_spell_id is None:
                             provider_spell_id = provider_spell.spell_id
-                        provider_map.setdefault(key, []).append(provider_spell_id)
+                        provider_map.setdefault(key, []).append((provider_spell_id, provider_spell.resolvable))
             if pass_cache is not None and spellbook is not None:
                 pass_cache["contract_provider_map"] = provider_map
 
@@ -146,7 +148,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
             if param.di_shape is not ParameterDIShape.SPELL_CONTRACT:
                 continue
 
-            if param.di_shape is ParameterDIShape.SPELL_CONTRACT and automatic_mode:
+            if param.di_shape is ParameterDIShape.SPELL_CONTRACT and automatic_mode and spell.resolvable:
                 context.issues.append(
                     SpellValidationIssue(
                         severity="error",
@@ -184,6 +186,8 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                     )
                     continue
 
+                if not spell.resolvable:
+                    continue
                 contract_key = contract.canonical_key
                 providers = provider_map.get(contract_key, [])
                 if len(providers) > 1:
@@ -198,7 +202,7 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                             details={
                                 "parameter_name": param.name,
                                 "contract_key": contract_key,
-                                "provider_spell_ids": sorted(providers),
+                                "provider_spell_ids": sorted(provider_id for provider_id, _ in providers),
                             },
                         )
                     )
@@ -216,6 +220,23 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                             details={
                                 "parameter_name": param.name,
                                 "contract_key": contract_key,
+                            },
+                        )
+                    )
+                elif not providers[0][1]:
+                    context.issues.append(
+                        SpellValidationIssue(
+                            severity="error",
+                            code="SPELL_CONTRACT_NON_RESOLVABLE_PROVIDER",
+                            message=(
+                                f"Spell {spell.spell_name!r} parameter {param.name!r} selects "
+                                f"non-resolvable provider {providers[0][0]!r}. A SpellContract needs "
+                                "a resolvable provider; select one or use a required supplied input."
+                            ),
+                            details={
+                                "parameter_name": param.name,
+                                "contract_key": contract_key,
+                                "provider_spell_id": providers[0][0],
                             },
                         )
                     )

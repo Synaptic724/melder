@@ -1,0 +1,223 @@
+{
+  "created_at": "2026-09-19T14:51:36Z",
+  "agent": "updater_0",
+  "authorization": "Owner requests backlog of user-created-object work and turn-in of all delivered work.",
+  "moves": [
+    {
+      "source": "tickets/tasks/2026-09-07_named_conduit_implementation_map_task.md",
+      "destination": "tickets/tasks/completed/2026-09-07_named_conduit_implementation_map_task.md",
+      "kind": "completed_ticket",
+      "summary": "Delivered the twelve-phase named-conduit implementation map; feature implementation remains unperformed and separately selectable.",
+      "original_sha256": "f0089def5405be74eaf6fc3d23d2b59721582795068759e25a38d926a0a60e14"
+    },
+    {
+      "source": "tickets/tasks/2026-09-12_bind_conjure_order_benchmark_task.md",
+      "destination": "tickets/tasks/completed/2026-09-12_bind_conjure_order_benchmark_task.md",
+      "kind": "completed_ticket",
+      "summary": "Delivered repeatable bind/conjure/cache timing evidence and the authorized Python 3.14.7 upgrade; no proposed cache-routing feature was implemented.",
+      "original_sha256": "0b0ea931b02787222d91e1f1b80b6484440405ae0ffda2e91c4196586700bd4c"
+    },
+    {
+      "source": "tickets/tasks/2026-09-13_named_binding_meld_lookup_test_task.md",
+      "destination": "tickets/tasks/completed/2026-09-13_named_binding_meld_lookup_test_task.md",
+      "kind": "completed_ticket",
+      "summary": "Delivered 25 passing named/framed lookup tests and the exact public lookup semantics.",
+      "original_sha256": "b285e1f96246780228a697a8b42fa7df5bec1121f3d00da0f6a4b7f3b915f6d2"
+    },
+    {
+      "source": "tickets/tasks/2026-09-13_optional_dependency_default_resolution_test_task.md",
+      "destination": "tickets/tasks/completed/2026-09-13_optional_dependency_default_resolution_test_task.md",
+      "kind": "completed_ticket",
+      "summary": "Delivered default-first DI classification, overrides/regressions and stale-fixture corrections. The separate thread failure stayed unreproduced; no concurrency fix is claimed.",
+      "original_sha256": "4415391da8f3d3379b7aa659b33d2a25f0a910d89d611b5b65044177a451b7ed"
+    },
+    {
+      "source": "tickets/tasks/2026-09-13_build_commandops_local_wheel_task.md",
+      "destination": "tickets/tasks/completed/2026-09-13_build_commandops_local_wheel_task.md",
+      "kind": "completed_ticket",
+      "summary": "Delivered and verified the September 13 Melder 0.2.40 wheel. That dated wheel predates later repairs; this turn-in does not rebuild it.",
+      "original_sha256": "841009471b528a26563853a06e47debc1f53e80e9512fbc5522529d732676a47"
+    },
+    {
+      "source": "tickets/tasks/2026-09-13_compare_existing_object_ownership_di_task.md",
+      "destination": "tickets/tasks/completed/2026-09-13_compare_existing_object_ownership_di_task.md",
+      "kind": "completed_ticket",
+      "summary": "Delivered cited framework comparison. Exact duplicate-reference/alias cleanup questions remain explicitly unverified and are parked with the user-created-object design.",
+      "original_sha256": "ced60eb62122fb2ff29d6c9f262ccc89c5e0fcf5b98cfe414d4990fed644f96b"
+    },
+    {
+      "source": "tickets/tasks/2026-09-13_repair_existing_instance_planning_task.md",
+      "destination": "tickets/tasks/completed/2026-09-13_repair_existing_instance_planning_task.md",
+      "kind": "completed_ticket",
+      "summary": "Delivered both existing-instance planner fixes and exact-reference injection regressions. The separate Iris builder-cleanup observation and broader lifecycle proposals are deferred to backlog.",
+      "original_sha256": "bb3b19524f58808e135a66f9b9e332d3adc3fdcbea009d7b99b794eb179606cb"
+    },
+    {
+      "source": "tickets/tasks/2026-09-13_repair_provider_artifact_ownership_task.md",
+      "destination": "tickets/tasks/completed/2026-09-13_repair_provider_artifact_ownership_task.md",
+      "kind": "completed_ticket",
+      "summary": "Delivered scoped artifact publication; seven original failures and the same-book regression pass, all nine original CommandOps provider cases pass, and the 491-test Spellbook component follow-up is green.",
+      "original_sha256": "96781a0a8559b1f6282f2294d10f84e70db7c7a38b44d15c25d0e6e6fb65f192"
+    },
+    {
+      "source": "tickets/tasks/2026-09-19_investigate_existing_instance_protocol_validation_task.md",
+      "destination": "tickets/tasks/completed/2026-09-19_investigate_existing_instance_protocol_validation_task.md",
+      "kind": "completed_ticket",
+      "summary": "Delivered source-backed Protocol admission diagnosis and native/diagnostic evidence; the separately tracked production repair is implemented.",
+      "original_sha256": "3a1a7ff92b67bbcad211ead288f2ae682d38b04f5a5132e237d92754fb2f770d"
+    },
+    {
+      "source": "tickets/tasks/2026-09-19_repair_existing_instance_protocol_admission_task.md",
+      "destination": "tickets/tasks/completed/2026-09-19_repair_existing_instance_protocol_admission_task.md",
+      "kind": "completed_ticket",
+      "summary": "Delivered actual-instance Protocol admission in Bind with 334 focused checks and synchronized docs/assets.",
+      "original_sha256": "89d6a64f79b267389cbc849fe4678eb958722643f5ab909175b4bc170f3c0129"
+    },
+    {
+      "source": "tickets/stories/2026-09-13_existing_instance_planning_story.md",
+      "destination": "tickets/stories/completed/2026-09-13_existing_instance_planning_story.md",
+      "kind": "completed_ticket",
+      "summary": "Accepted the delivered existing-instance injection repair; downstream Iris cleanup and broader object-policy questions are explicitly deferred rather than claimed repaired.",
+      "original_sha256": "744b5acd5ea2797d74fc0ef2f4c224fa0de1422fbb6d14467f4b79980b213f46"
+    },
+    {
+      "source": "tickets/stories/2026-09-13_provider_artifact_ownership_story.md",
+      "destination": "tickets/stories/completed/2026-09-13_provider_artifact_ownership_story.md",
+      "kind": "completed_ticket",
+      "summary": "Accepted provider-artifact preservation through borrower/local compilation and teardown, with native and original CommandOps validation.",
+      "original_sha256": "899a16d3ada67c132b3244dc805441298548fd77960f6e0ac70c797f29d674e4"
+    },
+    {
+      "source": "tickets/stories/2026-09-19_existing_instance_protocol_admission_story.md",
+      "destination": "tickets/stories/completed/2026-09-19_existing_instance_protocol_admission_story.md",
+      "kind": "completed_ticket",
+      "summary": "Accepted the bounded Bind Protocol repair under the retained unique-only supplied-object model.",
+      "original_sha256": "f33f575b2c7c7d3761ade01827b61c3e89f674efe2c7305fdf314feaca6a52f2"
+    },
+    {
+      "source": "tickets/epics/2026-09-13_provider_artifact_ownership_and_existing_instance_planning_epic.md",
+      "destination": "tickets/epics/completed/2026-09-13_provider_artifact_ownership_and_existing_instance_planning_epic.md",
+      "kind": "completed_ticket",
+      "summary": "Turned in delivered annotation, instance-planning, Protocol and provider-artifact repairs. Unperformed object-lifecycle redesign and remaining Iris cleanup/alias questions are parked in the dedicated backlog epic.",
+      "original_sha256": "5deb2163b2385b1ddb831d47cf2c8daa54a7fa20fdf9b64cb9c9b14f1850b20d"
+    },
+    {
+      "source": "tickets/epics/completed/2026-09-13_existing_object_lifecycle_ownership_epic.md",
+      "destination": "tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md",
+      "kind": "backlog_epic",
+      "summary": "Owner parks broader user-created-object work; current unique-only semantics remain accepted.",
+      "original_sha256": "92cc806c49e341f45ef5fd24b5a6cc6883d5ccc9f150b475981982bc3be0eb54"
+    },
+    {
+      "source": "system_docs/patches/active/default_precedence_2026_09_13",
+      "destination": "system_docs/patches/completed/default_precedence_2026_09_13",
+      "kind": "patch_archive",
+      "summary": "Durable deltas already promoted; preserve patch contracts and their indexes as history.",
+      "file_hashes": {
+        "architecture_patch.md": "24ed55cbc7691f857569639c03a25f69a20329db4509f7dedee6cd9196be7bc8",
+        "architecture_patch_index.md": "8c07c894636b55bbd18e472052c32f94a2ce61d6e6e08426f517377069c715ba",
+        "code_description_patch_precedence.md": "e0ba59871294ac7eddf11ae491c36da35c574cc0646f0325a353dc2319de0704",
+        "code_description_patch_precedence_index.md": "c507f0710660b0444c1ce8f3753eb07867d968b74a6e4d0f22b6bb9464767dfc",
+        "component_patch_caching.md": "316d6f1d13c8cc7151329820278388e3b3dc95539dd05fe3eb2734f7f4bb35ba",
+        "component_patch_caching_index.md": "41587351abf6dd689926cc7e708fda31ef29fdcf7b9394760598aecdf4e253c9",
+        "component_patch_requirements.md": "d4a81716d4576f157104ee3e192ce6314540827f5cdf92dc8396a28737eb8f4d",
+        "component_patch_requirements_index.md": "008f037f6613f931469677f0091d1529938604ca1b7cb2dba61f4dba3b9b1b98"
+      }
+    },
+    {
+      "source": "system_docs/patches/active/existing_instance_protocol_2026_09_19",
+      "destination": "system_docs/patches/completed/existing_instance_protocol_2026_09_19",
+      "kind": "patch_archive",
+      "summary": "Durable deltas already promoted; preserve patch contracts and their indexes as history.",
+      "file_hashes": {
+        "architecture_patch.md": "19d97ed2c2ca1f7e0f751c54d704edfd11df908f958c3615bab6087d85a3eb4e",
+        "architecture_patch_index.md": "18a33d829f4b3e0c1fd06001ceff03a69fdd161849eb1e96bfaf46c097d5c22d",
+        "code_description_patch_bind.md": "0384140b38e1df0ebdb68e38f126707e77fa323b13307e1b6247945741bd3d76",
+        "code_description_patch_bind_index.md": "8eda2a86b0cda8e89a6c3471e2b425fd936e5a09d42811dc4449e924c40bc901",
+        "component_patch_bind.md": "a9da9c80721d0c43a16c66e12b77eb208e5edc94c9725fe33bec733d7036eb1e",
+        "component_patch_bind_index.md": "dee9de5389a050da3a1e4182060ab38df1e48267890283d5e504eaa205bc0f0c"
+      }
+    },
+    {
+      "source": "system_docs/patches/active/provider_artifact_ownership_2026_09_19",
+      "destination": "system_docs/patches/completed/provider_artifact_ownership_2026_09_19",
+      "kind": "patch_archive",
+      "summary": "Durable deltas already promoted; preserve patch contracts and their indexes as history.",
+      "file_hashes": {
+        "architecture_patch.md": "16d9820401689ba28c23399987bc0ef9904a584c6b1bd98b5afa4bd79ea97400",
+        "architecture_patch_index.md": "c526295146e506c91a462c448010315820deb9e1e4c7eae1eb4746bd68ce9426",
+        "code_description_patch_phase5.md": "46ee3aec1ad2f4bc8bfc35d4bd4713169092b5db669faba66f1900189bddcbdb",
+        "code_description_patch_phase5_index.md": "bd9b1ab01a569e576aa330268dada9b79f39f09d6f2a9805faa91769199a7d11",
+        "component_patch_phase5.md": "95def5a0b8799e4507c40a638fc3babe599ae6308ccdba1fe52fe9c65bd4db45",
+        "component_patch_phase5_index.md": "a0e12c0d4d804fc5cfbfb4fb0ce348794ff08bc1740afd77cba7d7226caac201"
+      }
+    }
+  ],
+  "closure_task": "tickets/tasks/completed/2026-09-19_turn_in_updater_0_work_task.md",
+  "implementation_sha256": {
+    "src/melder/aether/spellbook/bind/bind.py": "4a9e0f86a702122841b5a0dcceedbe73fbe4c2b44d61d157514fb3c013232b06",
+    "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py": "db063a3d05dbba462035d0f741c9c3dee1970c9abe90eb13600f984157bfc541",
+    "tests/component/melder/spellbook/test_spellbook_component_spell_crafter.py": "819c1844001e7dcfd765f293b47510293f1271ea710933d143e61d40cf39653a",
+    "tests/integration/melder/spellbook/test_provider_artifact_ownership.py": "797148bfa791c3356b702e53093a8509b709db12ba458a3c6e4916f6207cf0c1"
+  },
+  "status": "complete",
+  "synced_at": "2026-09-19T14:53:20Z",
+  "redirected_documents": [
+    "artifact_board.md",
+    "attention_board.md",
+    "tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md",
+    "tickets/epics/2026-09-07_stateful_application_recovery_epic.md",
+    "tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md",
+    "tickets/tasks/2026-09-19_turn_in_updater_0_work_task.md",
+    "tickets/tasks/completed/2026-09-13_compare_existing_object_ownership_di_task.md",
+    "tickets/tasks/completed/2026-09-13_optional_dependency_default_resolution_test_task.md",
+    "tickets/tasks/completed/2026-09-13_repair_deferred_annotation_acquisition_task.md",
+    "tickets/tasks/completed/2026-09-13_repair_existing_instance_planning_task.md",
+    "tickets/tasks/completed/2026-09-13_repair_provider_artifact_ownership_task.md",
+    "tickets/tasks/completed/2026-09-17_existing_object_bind_representation_design_task.md",
+    "tickets/tasks/completed/2026-09-17_trace_existing_object_reference_model_task.md",
+    "tickets/tasks/completed/2026-09-19_repair_existing_instance_protocol_admission_task.md",
+    "tickets/stories/completed/2026-09-13_existing_instance_planning_story.md",
+    "tickets/stories/completed/2026-09-13_provider_artifact_ownership_story.md",
+    "tickets/stories/completed/2026-09-17_existing_object_reference_blueprint_discovery_story.md",
+    "tickets/stories/completed/2026-09-19_existing_instance_protocol_admission_story.md",
+    "tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md",
+    "tickets/epics/completed/2026-09-13_provider_artifact_ownership_and_existing_instance_planning_epic.md"
+  ],
+  "removed_active_work_items": [
+    "existing_instance_protocol_admission",
+    "existing_object_di_comparison",
+    "provider_artifact_ownership",
+    "existing_instance_planning",
+    "commandops_local_wheel",
+    "optional_dependency_resolution",
+    "named_binding_meld_lookup",
+    "bind_conjure_order_speedtest",
+    "named_conduit_scope_design",
+    "provider_artifact_and_existing_instance_repair"
+  ],
+  "artifact_rows_closed": 13,
+  "backlog_artifact_rows": 5,
+  "backlog_artifact_history": [
+    "| tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md | artifacts/existing_object_di_comparison_20260913/comparison.md | retain_as_reference | Owner retired redesign; preserve research, not an implementation claim. | 2026-09-19T12:52:16Z |",
+    "| tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md | artifacts/existing_instance_planning_20260913/existing_object_disposal_blast_radius.md | retain_as_reference | Owner retired redesign; preserve research, not an implementation claim. | 2026-09-19T12:52:16Z |",
+    "| tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md | artifacts/existing_instance_planning_20260913/gap_analysis.md | retain_as_reference | Owner retired redesign; preserve research, not an implementation claim. | 2026-09-19T12:52:16Z |",
+    "| tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md | artifacts/existing_instance_planning_20260913/protocol_admission_red.xml | retain_as_reference | Owner retired redesign; preserve research, not an implementation claim. | 2026-09-19T12:52:16Z |",
+    "| tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md | artifacts/existing_instance_planning_20260913/frame_admission_characterization.log | retain_as_reference | Owner retired redesign; preserve research, not an implementation claim. | 2026-09-19T12:52:16Z |"
+  ],
+  "patch_hashes_preserved": true,
+  "implementation_hashes_preserved": true,
+  "administrative_move": {
+    "source": "tickets/tasks/2026-09-19_turn_in_updater_0_work_task.md",
+    "destination": "tickets/tasks/completed/2026-09-19_turn_in_updater_0_work_task.md"
+  },
+  "completed_at": "2026-09-19T14:55:42Z",
+  "total_closed_records_including_administration": 15,
+  "final_invariants": {
+    "no_active_updater_0_routes": true,
+    "active_routes_resolve": true,
+    "closed_anchor_cap_holds": true,
+    "all_moves_resolve": true,
+    "implementation_preserved": true
+  }
+}

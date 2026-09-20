@@ -29,8 +29,8 @@ def main() -> None:
     )
     conduit = book.conjure()
 
-    primary = conduit.meld(spell=PostgresStore, binding_name="primary")
-    local = conduit.meld(spell=SqliteStore, binding_name="local")
+    primary = conduit.meld(PostgresStore, binding_name="primary")
+    local = conduit.meld(SqliteStore, binding_name="local")
     assert primary.kind == "postgres" and local.kind == "sqlite"
     print("named bindings resolved:", primary.kind, "+", local.kind)
 

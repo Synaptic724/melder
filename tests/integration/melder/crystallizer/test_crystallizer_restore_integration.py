@@ -21,6 +21,7 @@ from melder.crystallizer.configuration.crystallizer_configuration import (
 )
 from melder.crystallizer.crystallizer import Crystallizer
 from melder.crystallizer.crystal_loader_system.restore_engine import RestoreEngine
+from melder.crystallizer.persistence.record_version import RecordVersion
 from melder.nexus.nexus import Nexus
 from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
@@ -1576,7 +1577,7 @@ def test_emission_tap_streams_delta_rows(cache_root, tmp_path):
     assert any("Crystal" in kind for kind in crystal_kinds)
     # Record versioning: every emission envelope carries the stamp.
     assert all(
-        envelope.get("record_version") == "1.0.0"
+        envelope.get("record_version") == RecordVersion.CURRENT
         for envelope in envelopes
     )
 
@@ -1658,7 +1659,7 @@ def test_index_graft_round_trips_into_a_live_host_book(cache_root):
     recorded_index_id = live_spell.spell_index.id
     record = crystallizer.capture_index_graft(recorded_index_id)
     assert record["graft_kind"] == "spell_index"
-    assert record["record_version"] == "1.0.0"
+    assert record["record_version"] == RecordVersion.CURRENT
     assert spell_id in record["members"]
 
     # A live host on ANOTHER frame (lazy frames: the book births it).

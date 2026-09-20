@@ -27,7 +27,7 @@ def main() -> None:
     book.bind(spell=HeavyThing, existence="unique")
     conduit = book.conjure()
 
-    thing = conduit.meld(spell=HeavyThing)
+    thing = conduit.meld(HeavyThing)
     watcher = weakref.ref(thing)   # watches WITHOUT holding
 
     # Drop OUR reference. In plain Python this object would now die...

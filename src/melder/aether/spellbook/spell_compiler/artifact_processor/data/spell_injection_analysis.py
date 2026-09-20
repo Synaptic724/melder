@@ -4,6 +4,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 
 InstanceKey = Tuple[str, Optional[int]]
+RequiredOverrideParam = Tuple[str, int, str, Tuple[str, ...]]
 
 
 class SpellInjectionParamSource:
@@ -20,6 +21,8 @@ class SpellInjectionParamSource:
           codegen layers can distinguish a one-member collection from single
           DI. It must never be inferred from dependency count: a collection
           socket with exactly one wired provider still injects a list.
+        - override_required sources retain signature position/kind and descriptive
+          reference IDs without introducing dependency instance keys.
     """
 
     __slots__ = [
@@ -28,6 +31,9 @@ class SpellInjectionParamSource:
         "override_key",
         "contract_key",
         "is_collection",
+        "position",
+        "parameter_kind",
+        "referenced_spell_ids",
     ]
 
     def __init__(
@@ -38,24 +44,33 @@ class SpellInjectionParamSource:
             override_key: Optional[str] = None,
             contract_key: Optional[str] = None,
             is_collection: bool = False,
+            position: Optional[int] = None,
+            parameter_kind: Optional[str] = None,
+            referenced_spell_ids: Tuple[str, ...] = (),
     ) -> None:
         """
         Build one injection parameter source descriptor.
 
         Args:
-            kind: Source kind ("dependency" or "contract").
+            kind: Source kind ("dependency", "contract", or "override_required").
             dependency_keys: Instance keys this parameter reads, in order.
             override_key: Root-override key this parameter answers to.
             contract_key: Contract payload key when contract-sourced.
             is_collection: True when the underlying constructor socket is a
                 collection DI shape (list[Frame]); the injected value must be
                 a list even when exactly one dependency key is present.
+            position: Original constructor position for required supplied inputs.
+            parameter_kind: Original inspect.Parameter kind name for those inputs.
+            referenced_spell_ids: Non-executable target identities for graph navigation.
         """
         self.kind: str = kind
         self.dependency_keys: Optional[Tuple[InstanceKey, ...]] = dependency_keys
         self.override_key: Optional[str] = override_key
         self.contract_key: Optional[str] = contract_key
         self.is_collection: bool = is_collection
+        self.position = position
+        self.parameter_kind = parameter_kind
+        self.referenced_spell_ids = referenced_spell_ids
 
 
 class SpellInjectionInstanceSpec:
@@ -73,6 +88,7 @@ class SpellInjectionInstanceSpec:
         "uses_positional_override",
         "contract_payload",
         "collection_param_names",
+        "required_override_params",
     ]
 
     def __init__(
@@ -91,6 +107,8 @@ class SpellInjectionInstanceSpec:
               param_sources (`is_collection` flags), never from dependency
               counts, so a one-member collection socket stays a collection all
               the way into codegen.
+            - Required supplied inputs become immutable value rows independent of
+              optional override-targeting metadata: (name, position, kind, reference IDs).
         """
         self.param_sources: Dict[str, SpellInjectionParamSource] = param_sources
         self.allow_list_aggregation: bool = allow_list_aggregation
@@ -101,6 +119,35 @@ class SpellInjectionInstanceSpec:
             for param_name, param_source in param_sources.items()
             if param_source.is_collection
         )
+        self.required_override_params = self._build_required_override_params(param_sources)
+
+    @staticmethod
+    def _build_required_override_params(
+            param_sources: Dict[str, SpellInjectionParamSource],
+    ) -> Tuple[RequiredOverrideParam, ...]:
+        """
+        Freeze required-input policy into plain values for either planner variant.
+
+        Args:
+            param_sources: Fitted injection sources in deterministic parameter order.
+
+        Returns:
+            Immutable (name, signature position, parameter-kind name, reference IDs) rows.
+
+        Raises:
+            ValueError: If a required input lost its Phase-3 signature or target metadata.
+        """
+        rows: List[RequiredOverrideParam] = []
+        for param_name, source in param_sources.items():
+            if source.kind != "override_required":
+                continue
+            if source.position is None or source.parameter_kind is None or not source.referenced_spell_ids:
+                raise ValueError(
+                    f"OVERRIDE_REQUIRED input {param_name!r} lacks signature or reference metadata. "
+                    "Rebuild its Phase-3 topology before planning."
+                )
+            rows.append((param_name, source.position, source.parameter_kind, source.referenced_spell_ids))
+        return tuple(rows)
 
 
 class SpellInjectionAnalysis(Cleanable):

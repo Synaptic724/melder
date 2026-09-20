@@ -265,12 +265,12 @@ def test_profile_meld_depth9_hotpaths() -> None:
     conduit = spellbook.conjure(name="profile-meld-depth9", dynamic=False)
     try:
         t0 = time.perf_counter()
-        root1 = conduit.meld(spell=root_id)
+        root1 = conduit.meld(spell_id=root_id)
         cold_s = time.perf_counter() - t0
         assert isinstance(root1, Depth9Root)
 
         t0 = time.perf_counter()
-        root2 = conduit.meld(spell=root_id)
+        root2 = conduit.meld(spell_id=root_id)
         warm_s = time.perf_counter() - t0
         assert root1 is root2
 
@@ -291,7 +291,7 @@ def test_profile_meld_depth9_hotpaths() -> None:
             sb, root = _build_depth9_spellbook("profile-meld-depth9-cold")
             cd = sb.conjure(name="profile-meld-depth9-cold", dynamic=False)
             try:
-                _ = cd.meld(spell=root)
+                _ = cd.meld(spell_id=root)
             finally:
                 cd.cleanup()
 
@@ -299,8 +299,8 @@ def test_profile_meld_depth9_hotpaths() -> None:
             sb, root = _build_depth9_spellbook("profile-meld-depth9-warm")
             cd = sb.conjure(name="profile-meld-depth9-warm", dynamic=False)
             try:
-                _ = cd.meld(spell=root)
-                _ = cd.meld(spell=root)
+                _ = cd.meld(spell_id=root)
+                _ = cd.meld(spell_id=root)
             finally:
                 cd.cleanup()
 
@@ -338,7 +338,7 @@ def test_profile_cycle_conjure_meld_cleanup_depth9() -> None:
         conjure_times.append(time.perf_counter() - t0)
         try:
             t0 = time.perf_counter()
-            _ = conduit.meld(spell=root_id)
+            _ = conduit.meld(spell_id=root_id)
             meld_times.append(time.perf_counter() - t0)
         finally:
             t0 = time.perf_counter()

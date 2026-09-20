@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/__init__.py",
- "source_sha256": "5cd6c48497eb0b83fdcb4a01a1d7a63f819b1a26e6a72945305dae1fad55a8b0",
+ "source_sha256": "1f7f2a54bb542e0f87d5908d910ee47f971d48b83faf1bdab2ed274374dad92c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder": {
@@ -31,7 +31,6 @@
   "AetherConfiguration": "melder.aether.aether_configuration.AetherConfiguration",
   "AetherConfigurationBuilder": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
   "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
-  "ConduitCloud": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
   "Conduit": "melder.aether.conduit.conduit.Conduit",
   "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
   "Policies": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
@@ -60,6 +59,7 @@
   "LaneType": "melder.mutation_research.research_set.research_lane.LaneType",
   "ResearchSet": "melder.mutation_research.research_set.research_set.ResearchSet",
   "NexusConfiguration": "melder.nexus.configuration.nexus_configuration.NexusConfiguration",
+  "NexusConfigurationBuilder": "melder.nexus.configuration.nexus_configuration_builder.NexusConfigurationBuilder",
   "NexusFrameMode": "melder.nexus.configuration.nexus_frame_mode.NexusFrameMode",
   "RiftConfiguration": "melder.nexus.configuration.rift_configuration.RiftConfiguration",
   "RiftSpaceType": "melder.nexus.configuration.rift_space_type.RiftSpaceType",
@@ -73,6 +73,11 @@
   "RiftSpace": "melder.nexus.rift.rift_space.rift_space.RiftSpace",
   "Workstation": "melder.nexus.rift.rift_space.workstation.Workstation",
   "ProtocolCrafter": "melder.utilities.ai_native_support_tools.protocol_crafter.ProtocolCrafter",
+  "ULID_Factory": "melder.utilities.helpers.ulid_factory.ULID_Factory",
+  "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "Pack": "melder.utilities.helpers.package.Pack",
+  "Package": "melder.utilities.helpers.package.Package",
   "DeadReferenceError": "melder.utilities.custom_exceptions.dead_reference_error.DeadReferenceError",
   "HookExecutionError": "melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError",
   "InternalRegistrationError": "melder.utilities.custom_exceptions.internal_registration_error.InternalRegistrationError",

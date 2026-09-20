@@ -1,0 +1,17 @@
+automatic_prebind/default: Optional[Something] = None received the registered Something
+.automatic_prebind/named: Optional[Something] = None received the registered Something
+.automatic_prebind/named_and_framed: Optional[Something] = None received the registered Something
+.dynamic_prebind/default: Optional[Something] = None received the registered Something
+.dynamic_prebind/named: Optional[Something] = None received the registered Something
+.dynamic_prebind/named_and_framed: Optional[Something] = None received the registered Something
+.dynamic_postbind/default: Optional[Something] = None received the registered Something
+.dynamic_postbind/named: Optional[Something] = None received the registered Something
+.dynamic_postbind/named_and_framed: Optional[Something] = None received the registered Something
+.automatic_prebind/absent: PhaseExecutionError during conjure: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=<class 'test_optional_dependency_default_resolution_experiment.Something'>).
+.dynamic_prebind/absent: PhaseExecutionError during conjure: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=<class 'test_optional_dependency_default_resolution_experiment.Something'>).
+.dynamic_postbind/absent: RuntimeError during bind_consumer: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=<class 'test_optional_dependency_default_resolution_experiment.Something'>).
+.automatic_prebind/plain Optional[object] = None: None retained, Something not created
+.dynamic_prebind/plain Optional[object] = None: None retained, Something not created
+.dynamic_postbind/plain Optional[object] = None: None retained, Something not created
+.
+15 passed in 0.41s

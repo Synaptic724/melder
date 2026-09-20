@@ -37,11 +37,11 @@ def main() -> None:
     root = book.conjure()
 
     # The long-lived scope holds its own session...
-    root_session = root.meld(spell=JobSession)
+    root_session = root.meld(JobSession)
 
     # ...and each job gets a THROWAWAY scope with its own.
     job = root.create_lesser_conduit()
-    job_session = job.meld(spell=JobSession)
+    job_session = job.meld(JobSession)
     assert job_session is not root_session  # per-conduit = per-scope
 
     # Job done: end the SCOPE, not the world.
@@ -50,7 +50,7 @@ def main() -> None:
     print("root session untouched:", root_session.closed is False)
 
     # The root never noticed - it keeps resolving.
-    assert root.meld(spell=JobSession) is root_session
+    assert root.meld(JobSession) is root_session
     print("root still resolves after the child scope ended")
 
     # And when the whole world is done, the same verb one level up.

@@ -147,7 +147,7 @@ def test_perf_conjure_scaling_depth3_5_7_9_automatic() -> None:
         conjure_s = time.perf_counter() - t0
         try:
             t0 = time.perf_counter()
-            _ = conduit.meld(spell=spell_ids[root_cls])
+            _ = conduit.meld(spell_id=spell_ids[root_cls])
             meld_s = time.perf_counter() - t0
             print(
                 f"Perf scaling depth={depth} (ms): "
@@ -177,12 +177,12 @@ def test_perf_depth9_unique_conjure_and_meld_cold_warm() -> None:
     conjure_s = time.perf_counter() - t0
     try:
         t0 = time.perf_counter()
-        root1 = conduit.meld(spell=root_id)
+        root1 = conduit.meld(spell_id=root_id)
         cold_s = time.perf_counter() - t0
         assert isinstance(root1, Depth9Root)
 
         t0 = time.perf_counter()
-        root2 = conduit.meld(spell=root_id)
+        root2 = conduit.meld(spell_id=root_id)
         warm_s = time.perf_counter() - t0
         assert root1 is root2
 
@@ -213,14 +213,14 @@ def test_perf_depth9_many_all_nodes_avg() -> None:
     conduit = spellbook.conjure(name="perf-depth9-many")
     try:
         # Warm up interpreter/method caches a bit.
-        _ = conduit.meld(spell=root_id)
+        _ = conduit.meld(spell_id=root_id)
 
         iterations = 250
         t0 = time.perf_counter()
         leaf_a_id = 0
         leaf_b_id = 0
         for _i in range(iterations):
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
             assert isinstance(root, Depth9Root)
             leaf_a_id, leaf_b_id = _depth9_leaf_ids(root)
         total_s = time.perf_counter() - t0
@@ -260,14 +260,14 @@ def test_perf_spellspace_depth3_unique_per_spellspace() -> None:
         # One spellspace: cold + warm within the same scope.
         with conduit.enter_spellspace() as space:
             t0 = time.perf_counter()
-            root1 = space.meld(spell=root_id)
+            root1 = space.meld(spell_id=root_id)
             cold_s = time.perf_counter() - t0
             assert isinstance(root1, Depth3Root)
 
             warm_iters = 10_000
             t0 = time.perf_counter()
             for _ in range(warm_iters):
-                root2 = space.meld(spell=root_id)
+                root2 = space.meld(spell_id=root_id)
             warm_total_s = time.perf_counter() - t0
             assert root1 is root2
 
@@ -278,7 +278,7 @@ def test_perf_spellspace_depth3_unique_per_spellspace() -> None:
         last_id = None
         for i in range(spaces):
             with conduit.enter_spellspace() as space:
-                root = space.meld(spell=root_id)
+                root = space.meld(spell_id=root_id)
                 if i == 0:
                     first_id = id(root)
                 last_id = id(root)
@@ -320,12 +320,12 @@ def test_perf_depth9_many_with_cached_leaves_and_cleanup() -> None:
     try:
         # Cold build + verify leaf reuse across calls.
         t0 = time.perf_counter()
-        root1 = conduit.meld(spell=root_id)
+        root1 = conduit.meld(spell_id=root_id)
         cold_s = time.perf_counter() - t0
         assert isinstance(root1, Depth9Root)
         leaf_a_1, leaf_b_1 = _depth9_leaf_ids(root1)
 
-        root2 = conduit.meld(spell=root_id)
+        root2 = conduit.meld(spell_id=root_id)
         assert isinstance(root2, Depth9Root)
         leaf_a_2, leaf_b_2 = _depth9_leaf_ids(root2)
         assert leaf_a_1 == leaf_a_2
@@ -334,7 +334,7 @@ def test_perf_depth9_many_with_cached_leaves_and_cleanup() -> None:
         iterations = 200
         t0 = time.perf_counter()
         for _ in range(iterations):
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
             assert isinstance(root, Depth9Root)
         total_s = time.perf_counter() - t0
 
@@ -393,17 +393,17 @@ def test_perf_mixed_workload_alternating_depth7_depth9_and_spellspace_cleanup() 
         t0 = time.perf_counter()
         for i in range(iterations):
             if i % 2 == 0:
-                root = conduit.meld(spell=root9_id)
+                root = conduit.meld(spell_id=root9_id)
                 assert isinstance(root, Depth9Root)
             else:
-                root = conduit.meld(spell=root7_id)
+                root = conduit.meld(spell_id=root7_id)
                 assert isinstance(root, Depth7Root)
 
             if (i + 1) % spellspace_every == 0:
                 spellspace_count += 1
                 t_space = time.perf_counter()
                 with conduit.enter_spellspace() as space:
-                    obj = space.meld(spell=root3_space_id)
+                    obj = space.meld(spell_id=root3_space_id)
                     assert isinstance(obj, Depth3Root)
                 spellspace_total_s += time.perf_counter() - t_space
 
@@ -456,7 +456,7 @@ def test_perf_cycle_conjure_meld_cleanup_depth9_unique_per_conduit() -> None:
         conjure_total += conjure_s
         try:
             t0 = time.perf_counter()
-            root = conduit.meld(spell=root_id)
+            root = conduit.meld(spell_id=root_id)
             meld_s = time.perf_counter() - t0
             meld_total += meld_s
             assert isinstance(root, Depth9Root)
@@ -500,7 +500,7 @@ def test_perf_spellspace_depth9_unique_per_spellspace_repeated_cleanup() -> None
         t0 = time.perf_counter()
         for _ in range(spaces):
             with conduit.enter_spellspace() as space:
-                root = space.meld(spell=root_id)
+                root = space.meld(spell_id=root_id)
                 assert isinstance(root, Depth9Root)
         total_s = time.perf_counter() - t0
 

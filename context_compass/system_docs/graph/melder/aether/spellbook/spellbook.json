@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "13dd96deadd1886ed1364c2f10e95e261daa4eb874b923978589723a58cda787",
+ "source_sha256": "699cfefb38814803bbb64a2ffce6ca506b9f15f49fb6d78708148b03e9761865",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -58,10 +58,11 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "1979b7a05d0d8a899c9bb012762a67149322e21974ec3d6b547533fbc593539b",
+   "span_sha256": "50fa9a439c3a6f7657b76ea7f3763689a65f30301aa482abdd9dca5adbe65003",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
+    "forwards native resolvable policy through active and inactive binding and exposes it in spell descriptions",
     "coordinates configuration freeze and frame publication into Aether and Nexus",
     "conjures and retains exactly one root conduit",
     "coordinates spell lineage state and transaction-sensitive binding changes"

@@ -129,6 +129,7 @@ class SpellCrystal(Cleanable):
         "_spellframe_name",
         "_existence_name",
         "_permissions_name",
+        "_resolvable",
         "_disposal_method_names",
         "_profile_family",
         "_rebindability",
@@ -168,6 +169,7 @@ class SpellCrystal(Cleanable):
               reference, or the analyzer after construction.
             - Captures resolved disposal names in execution order. This detached
               persistence value does not sort or reapply book policy.
+            - Captures native resolution capability so replay cannot enable a definition.
             - Captures the root module classification and all direct-dependency
               edges needed for later loader validation and world activation
               through the carried analysis result.
@@ -273,6 +275,7 @@ class SpellCrystal(Cleanable):
         )
         self._existence_name: str = spell.existence.name
         self._permissions_name: str = spell.permissions.name
+        self._resolvable: bool = spell.resolvable
         # Capture-gap fields (restore_engine_2026_07_07 patch lane): the two
         # bind inputs the record previously dropped. Disposal names preserve
         # the spell's cleanup contract across a restore; the profile family
@@ -390,6 +393,7 @@ class SpellCrystal(Cleanable):
             del self._spellframe_name
             del self._existence_name
             del self._permissions_name
+            del self._resolvable
             del self._disposal_method_names
             del self._profile_family
             del self._rebindability
@@ -1108,6 +1112,7 @@ class SpellCrystal(Cleanable):
                 "spellframe_name": self._spellframe_name,
                 "existence_name": self._existence_name,
                 "permissions_name": self._permissions_name,
+                "resolvable": self._resolvable,
                 "disposal_method_names": list(self._disposal_method_names),
                 "profile_family": self._profile_family,
                 "rebindability": self._rebindability,

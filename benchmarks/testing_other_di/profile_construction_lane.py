@@ -137,11 +137,11 @@ def _run_cycles(root: Any, outer_id: str, request_id: str, count: int) -> int:
     for _ in range(count):
         lesser = root.create_lesser_conduit()
         try:
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             space_cm = lesser.enter_spellspace()
             space = space_cm.__enter__()
             try:
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
             finally:
                 space_cm.__exit__(None, None, None)
         finally:

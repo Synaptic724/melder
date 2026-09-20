@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="11" time="0.588" timestamp="2026-09-19T18:09:00.420598-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.unit.melder.crystallizer.test_crystallizer" name="test_crystallizer_rejects_first_init_without_aether" time="0.001" /><testcase classname="tests.unit.melder.crystallizer.test_crystallizer" name="test_crystallizer_is_hosted_by_aether" time="0.002" /><testcase classname="tests.unit.melder.crystallizer.test_crystallizer" name="test_crystallizer_behaves_as_singleton" time="0.002" /><testcase classname="tests.unit.melder.crystallizer.test_crystallizer" name="test_crystallizer_activate_requires_activated_configuration" time="0.002" /><testcase classname="tests.unit.melder.crystallizer.test_crystallizer" name="test_crystallizer_activate_marks_root_active" time="0.002" /><testcase classname="tests.unit.melder.crystallizer.test_crystallizer" name="test_crystallizer_create_spell_crystal_uses_configured_user_source_roots" time="0.011"><failure message="AttributeError: '_DummySpell' object has no attribute 'resolvable'">def test_crystallizer_create_spell_crystal_uses_configured_user_source_roots() -&gt; None:
+        """
+        Verify crystal construction consumes root-owned source-root policy.
+    
+        Returns:
+            None.
+        """
+        user_source_root = Path(__file__).resolve().parents[3] / "mocks" / "crystallizer"
+        crystallizer = _create_hosted_crystallizer()
+        configuration = (
+            crystallizer.create_configuration()
+            .with_user_source_root_paths((user_source_root,))
+            .activate()
+        )
+        crystallizer.activate(configuration)
+    
+        root_module = importlib.import_module(
+            "tests.mocks.crystallizer.spell_crystal_demo_pkg.root"
+        )
+        crystal = None
+        try:
+&gt;           crystal = crystallizer.create_spell_crystal(
+                _DummySpell("spell-config-1", root_module.RootService)
+            )
+
+tests\unit\melder\crystallizer\test_crystallizer.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\crystallizer\crystallizer.py:1611: in create_spell_crystal
+    return SpellCrystal(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;melder.crystallizer.crystals.spell_crystal.SpellCrystal object at 0x00000389AFBE7C00&gt;
+spell = &lt;test_crystallizer._DummySpell object at 0x00000389AE21DE10&gt;
+user_source_root_paths = (WindowsPath('C:/Users/Mark/PycharmProjects/melder_private/tests/mocks/crystallizer'),)
+spellbook_id = None, retain_user_sources = False
+site_package_dependency_descent = False
+
+    def __init__(
+            self,
+            spell: Spell,
+            user_source_root_paths: Optional[Sequence[Union[str, Path]]] = None,
+            spellbook_id: Optional[str] = None,
+            retain_user_sources: bool = False,
+            site_package_dependency_descent: bool = True,
+    ) -&gt; None:
+        """
+        Initialize one spell-targeted module dependency manifest.
+    
+        Purpose:
+            Snapshot the module world that one concrete spell version depends
+            on so a loader can later validate that world before a rebuild or
+            activation step.
+    
+        Contract:
+            - Accepts exactly one live `Spell`.
+            - Uses the spell's concrete `spell_id` as the current manifest id.
+            - Resolves the root bound target and its root module
+              (crystal-side identity work).
+            - DELEGATES classification, source resolution, the dependency
+              walk, and synthetic harvest to a single-use `CrystalAnalyzer`
+              and stores the returned result (V3 carrier law).
+            - Does not retain the live `Spell`, the live root target
+              reference, or the analyzer after construction.
+            - Captures resolved disposal names in execution order. This detached
+              persistence value does not sort or reapply book policy.
+            - Captures native resolution capability so replay cannot enable a definition.
+            - Captures the root module classification and all direct-dependency
+              edges needed for later loader validation and world activation
+              through the carried analysis result.
+    
+        Args:
+            spell:
+                Live spell whose concrete bound target should be used as the
+                root of the module dependency walk. The constructor consumes
+                only the stable spell-facing identity and target/module
+                semantics it needs for the manifest.
+            user_source_root_paths:
+                Optional explicit source roots used to classify user-controlled
+                modules. These roots are the policy input for
+                `user_source` classification. When omitted, the first-slice
+                fallback is the current working directory.
+            spellbook_id:
+                Optional owning-spellbook identity supplied by the bind
+                seam. It is the crystal's parent edge inside a
+                PersistenceProfile; None when the crystal is built
+                outside a bind context.
+            retain_user_sources:
+                Opt-in S2 physical custody: True harvests the source
+                TEXT of every walked user_source module into the carried
+                analysis ("user_module_sources") so fresh pods can
+                rebuild absent user files through the synthetic module
+                lane. False (default) records paths and fingerprints
+                only - byte-identical to the pre-S2 record.
+            site_package_dependency_descent:
+                Analysis walk policy for installed third-party
+                packages (IO-economy lane, 2026-07-19): True (raw
+                default, byte-compatible) walks into their
+                dependencies; False records them as
+                provenance-carrying leaves with no source read. The
+                crystallizer facade passes the configuration truth
+                (schema default False).
+    
+        Returns:
+            None.
+    
+        Raises:
+            TypeError:
+                If `spell` is None.
+            ValueError:
+                If the spell has no concrete SHA256 identity or no resolvable
+                root module name.
+        """
+        super().__init__()
+        if spell is None:
+            raise TypeError("spell cannot be None.")
+    
+        self._lock: threading.RLock = threading.RLock()
+        if spell.spell_id is None:
+            raise ValueError("spell must expose a non-empty spell_id.")
+        self._id: str = spell.spell_id
+        # The analysis maps that used to live here as twelve crystal slots
+        # (module targets, kind buckets, dependency/AST maps, synthetic
+        # sources, walk errors) now ride ONE carried result assigned at the
+        # end of construction - see the delegation block below.
+    
+        self._created_from_synthetic_root: bool = False
+        self._created_from_site_package_root: bool = False
+        self._created_from_user_source_root: bool = False
+    
+        # The analyzer is imported lazily so the crystals vocabulary stays
+        # import-light for emitters that never construct spell custody.
+        from melder.crystallizer.crystal_analysis.crystal_analyzer import (
+            CrystalAnalyzer,
+        )
+    
+        # Classification policy roots resolve through the analyzer's public
+        # statics; the crystal keeps the tuples for describe()/payload parity.
+        self._user_root_paths: Tuple[Path, ...] = (
+            CrystalAnalyzer.resolve_user_root_paths(user_source_root_paths)
+        )
+        self._site_package_root_paths: Tuple[Path, ...] = (
+            CrystalAnalyzer.resolve_site_package_root_paths()
+        )
+    
+        (
+            root_target,
+            root_target_name,
+            root_target_qualname,
+            root_target_kind,
+            root_module_name,
+        ) = self._resolve_root_target_from_spell(spell)
+    
+        self._root_target_name: str = root_target_name
+        self._root_target_qualname: str = root_target_qualname
+        self._root_target_kind: str = root_target_kind
+        self._root_module_name: str = root_module_name
+    
+        # Bind-signature capture: the replayable facts bind consumed for
+        # this spell version, retained so a profile can rebind from the
+        # crystal alone (or truthfully report replay_required).
+        self._spellbook_id: Optional[str] = spellbook_id
+        self._spell_name: Optional[str] = spell.spell_name
+        self._binding_name: Optional[str] = spell.binding_name
+        spellframe = spell.spellframe
+        self._spellframe_name: Optional[str] = (
+            getattr(spellframe, "__name__", str(spellframe))
+            if spellframe is not None
+            else None
+        )
+        self._existence_name: str = spell.existence.name
+        self._permissions_name: str = spell.permissions.name
+&gt;       self._resolvable: bool = spell.resolvable
+                                 ^^^^^^^^^^^^^^^^
+E       AttributeError: '_DummySpell' object has no attribute 'resolvable'
+
+src\melder\crystallizer\crystals\spell_crystal.py:278: AttributeError</failure></testcase><testcase classname="tests.unit.melder.crystallizer.test_crystallizer" name="test_crystallizer_cleanup_resets_singleton_state" time="0.002" /><testcase classname="tests.integration.melder.multithreading.test_multithreading_link_bind_contract_features" name="test_multithreading_bind_transaction_then_contract_uncontract_recontract" time="0.076" /><testcase classname="tests.integration.melder.multithreading.test_multithreading_link_bind_contract_features" name="test_multithreading_sever_link_blocks_contract_mutation_until_relink" time="0.018" /><testcase classname="tests.integration.melder.multithreading.test_multithreading_link_bind_contract_features" name="test_multithreading_uncontract_isolated_to_one_borrower_then_restore" time="0.038" /><testcase classname="tests.integration.melder.multithreading.test_multithreading_link_bind_contract_features" name="test_multithreading_live_link_unlink_and_contract_churn_cycles" time="0.037" /></testsuite></testsuites>

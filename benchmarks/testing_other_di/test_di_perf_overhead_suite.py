@@ -281,17 +281,17 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
         meld = conduit.meld
 
         # --- sanity (NOT timed) ---
-        cfg1 = meld(spell=config_id)
-        cfg2 = meld(spell=config_id)
+        cfg1 = meld(spell_id=config_id)
+        cfg2 = meld(spell_id=config_id)
         assert isinstance(cfg1, s.config_cls)
         assert isinstance(cfg2, s.config_cls)
 
-        log1 = meld(spell=logger_id)
-        log2 = meld(spell=logger_id)
+        log1 = meld(spell_id=logger_id)
+        log2 = meld(spell_id=logger_id)
         assert isinstance(log1, s.logger_cls)
         assert isinstance(log2, s.logger_cls)
 
-        svc1 = meld(spell=service_id)
+        svc1 = meld(spell_id=service_id)
         assert isinstance(svc1, s.service_cls)
 
         if mode == "singleton":
@@ -302,13 +302,13 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
 
         # --- WRAPPER GETTERS (fair, explicit, stable) ---
         def get_cfg() -> object:
-            return meld(spell=config_id)
+            return meld(spell_id=config_id)
 
         def get_log() -> object:
-            return meld(spell=logger_id)
+            return meld(spell_id=logger_id)
 
         def get_svc() -> object:
-            return meld(spell=service_id)
+            return meld(spell_id=service_id)
 
         tries = s.settings.tries
         warmup = s.settings.warmup

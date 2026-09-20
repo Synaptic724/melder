@@ -35,7 +35,7 @@ def test_run_delegates_to_spell_analyzer() -> None:
     phase = CompilerPhase8()
     analyzer = _AnalyzerStub()
     phase._spell_analyzer = analyzer
-    spell = SimpleNamespace()
+    spell = SimpleNamespace(resolvable=True)
     artifact = SimpleNamespace()
     spellbook = SimpleNamespace()
     spell_system_states = SimpleNamespace()

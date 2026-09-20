@@ -1,0 +1,43 @@
+[
+  {
+    "name": "basic_singleton",
+    "status": "passed"
+  },
+  {
+    "name": "overhead_lite_singleton",
+    "status": "passed"
+  },
+  {
+    "name": "overhead_heavy_singleton",
+    "status": "passed"
+  },
+  {
+    "name": "basic_transient",
+    "status": "passed"
+  },
+  {
+    "name": "overhead_lite_transient",
+    "status": "passed"
+  },
+  {
+    "name": "overhead_heavy_transient",
+    "status": "passed"
+  },
+  {
+    "name": "threaded_adapter_all_routes",
+    "status": "passed"
+  },
+  {
+    "name": "shallow_rotation_all_graphs",
+    "status": "passed"
+  },
+  {
+    "name": "codegen_all_routes",
+    "status": "passed"
+  },
+  {
+    "name": "shared_gauntlet_all_variants",
+    "status": "failed",
+    "error": "RuntimeError('Cannot modify configuration after it is frozen.')"
+  }
+]

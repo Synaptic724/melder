@@ -73,7 +73,8 @@ class RecordVersion:
         machinery: read it to understand the runtime, do not drive it directly.
     """
 
-    CURRENT: ClassVar[str] = "1.0.0"
+    # Older readers must refuse records whose False capability they would otherwise ignore.
+    CURRENT: ClassVar[str] = "2.0.0"
     KEY: ClassVar[str] = "record_version"
 
     @staticmethod

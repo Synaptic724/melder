@@ -393,8 +393,8 @@ def test_spellmap_default_with_string_frame_and_binding_resolves_dependency() ->
     Purpose:
         Validate SpellMap defaults resolve string frame + binding_name.
     Contract:
-        - Existing-instance bindings are not callable during occurrence planning.
-        - Conjure raises when SpellMap defaults target an existing-instance binding.
+        - Existing-instance providers remain leaves during occurrence planning.
+        - String frame and binding name select the exact registered instance.
     Returns:
         None.
     Raises:
@@ -474,8 +474,9 @@ def test_spellmap_default_with_string_frame_and_binding_resolves_dependency() ->
         spellframe="config",
         binding_name="secondary",
     )
+    primary_config = _PrimaryConfig("primary")
     spellbook.bind(
-        spell=_PrimaryConfig("primary"),
+        spell=primary_config,
         existence=Existence.unique,
         permissions="create",
         spellframe="config",
@@ -487,8 +488,13 @@ def test_spellmap_default_with_string_frame_and_binding_resolves_dependency() ->
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError, match="not a callable object"):
-        spellbook.conjure(name="root")
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell_id=service_id)
+        assert instance.cfg is primary_config
+        assert instance.cfg.label == "primary"
+    finally:
+        conduit.cleanup()
 
 
 def test_spellmap_default_with_function_spell_resolves() -> None:
@@ -674,8 +680,8 @@ def test_spellmap_default_frame_resolves_existing_instance() -> None:
     Purpose:
         Validate SpellMap defaults resolve existing instance spells.
     Contract:
-        - Existing-instance bindings are not callable during occurrence planning.
-        - Conjure raises when SpellMap defaults target an existing-instance binding.
+        - Existing-instance providers declare no constructor contracts.
+        - Frame-only SpellMap injects the exact registered instance.
     Returns:
         None.
     Raises:
@@ -747,8 +753,13 @@ def test_spellmap_default_frame_resolves_existing_instance() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError, match="not a callable object"):
-        spellbook.conjure(name="root")
+    conduit = spellbook.conjure(name="root")
+    try:
+        instance = conduit.meld(spell_id=service_id)
+        assert instance.cfg is config_instance
+        assert instance.cfg.label == "existing"
+    finally:
+        conduit.cleanup()
 
 
 def test_meld_by_protocol_default_binding_resolves_existing_instance() -> None:
@@ -2552,8 +2563,8 @@ def test_collection_di_by_list_protocol_includes_existing_instances() -> None:
     Purpose:
         Validate collection DI includes existing instance spells.
     Contract:
-        - Existing-instance bindings are not callable during occurrence planning.
-        - Conjure raises when a collection includes existing-instance bindings.
+        - Collections include existing and constructed providers in registration order.
+        - Existing elements preserve identity while many-scoped elements are rebuilt.
     Returns:
         None.
     Raises:
@@ -2648,14 +2659,24 @@ def test_collection_di_by_list_protocol_includes_existing_instances() -> None:
         spellframe=IConfig,
         binding_name="class",
     )
-    spellbook.bind(
+    service_id = spellbook.bind(
         spell=_Service,
         existence=Existence.many,
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError, match="not a callable object"):
-        spellbook.conjure(name="root")
+    conduit = spellbook.conjure(name="root")
+    try:
+        first = conduit.meld(spell_id=service_id)
+        second = conduit.meld(spell_id=service_id)
+        assert len(first.configs) == len(second.configs) == 2
+        assert first.configs[0] is second.configs[0] is existing_config
+        assert isinstance(first.configs[1], _Config)
+        assert isinstance(second.configs[1], _Config)
+        assert first.configs[1] is not second.configs[1]
+        assert [item.label for item in first.configs] == ["existing", "class"]
+    finally:
+        conduit.cleanup()
 
 
 def test_spellmap_explicit_class_with_wrong_frame_raises() -> None:

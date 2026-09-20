@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="0.694" timestamp="2026-09-19T06:57:20.194626-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_same_book_local_consumer_compilation[1]" time="0.055"><failure message="RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:237: in test_provider_survives_same_book_local_consumer_compilation
+    runtime.assert_provider_usable()
+tests\integration\melder\spellbook\test_provider_artifact_ownership.py:109: in assert_provider_usable
+    assert self.provider.meld(spellframe="providers", binding_name="retained") is self.original
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4086: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:374: in meld
+    creation_context = target_spell._get_or_build_creation_context()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell.py:791: in _get_or_build_creation_context
+    return creation_context_factory.get_or_build_for_spell(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\meld\creation_context\creation_context_factory.py:324: in get_or_build_for_spell
+    built_creation_context = CreationContextBuilder.build(
+src\melder\aether\conduit\meld\creation_context\creation_context_builder.py:121: in build
+    raise RuntimeError(
+E   RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -&gt; processor -&gt; planner -&gt; codegen creation first.</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_provider_artifact_ownership" name="test_provider_survives_same_book_local_consumer_compilation[3]" time="0.011"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: ProviderConsumer (id=def03dbf410de989b07c71ea4b1e2749aaf3cf4faad876a64b6641d4c4fbda79, frame='consumers')&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'ProviderConsumer' (id=def03dbf410de989b07c71ea4b1e2749aaf3cf4faad876a64b6641d4c4fbda79, frame='consumers'):&#10;    - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'ProviderConsumer'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.&#10;      details: {'spell_name': 'ProviderConsumer', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M2WVW8HJ0R4RYRMNPVW1K0AV', 'spell_id': '35453675301d021dfa5b8217ac9a89d6249d514bb32d92d1ca8259d5bdf21f69', 'spellframe': 'consumers', 'binding_name': 'local-0'}, {'spell_index_id': '01M2WVW8HMWW06SZWR01GRVG97', 'spell_id': 'def03dbf410de989b07c71ea4b1e2749aaf3cf4faad876a64b6641d4c4fbda79', 'spellframe': 'consumers', 'binding_name': 'local-1'}]}&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\integration\melder\spellbook\test_provider_artifact_ownership.py:231: in test_provider_survives_same_book_local_consumer_compilation
+    consumer_id = runtime.provider.bind(
+src\melder\aether\conduit\conduit.py:3184: in bind
+    return self._spellbook.bind(
+src\melder\aether\spellbook\spellbook.py:5126: in bind
+    with self.transaction(
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\contextlib.py:148: in __exit__
+    next(self.gen)
+src\melder\aether\spellbook\spellbook.py:4527: in transaction
+    self.end_transaction(transaction_type, success=True)
+src\melder\aether\spellbook\spellbook.py:4415: in end_transaction
+    mediator.end_transaction_for_identity(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:744: in end_transaction_for_identity
+    return self.end_transaction_by_request_id(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:889: in end_transaction_by_request_id
+    self._finalize_root_session(session)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:1073: in _finalize_root_session
+    self._orchestrator.commit_request(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\orchestrator\orchestrator.py:504: in commit_request
+    commit_validator(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:584: in _dispatch_commit_validator
+    structural(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:835: in _default_structural_validator
+    spellbook._run_post_conjure_structural_phases(pending)
+src\melder\aether\spellbook\spellbook.py:6700: in _run_post_conjure_structural_phases
+    SpellbookCreationSystem.run_post_conjure_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1440: in run_post_conjure_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+src\melder\aether\spellbook\spellbook_creation_system.py:1993: in _raise_structural_validation_error
+    raise SpellbookValidationError(broken_spells)
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: ProviderConsumer (id=def03dbf410de989b07c71ea4b1e2749aaf3cf4faad876a64b6641d4c4fbda79, frame='consumers')
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'ProviderConsumer' (id=def03dbf410de989b07c71ea4b1e2749aaf3cf4faad876a64b6641d4c4fbda79, frame='consumers'):
+E       - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'ProviderConsumer'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.
+E         details: {'spell_name': 'ProviderConsumer', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M2WVW8HJ0R4RYRMNPVW1K0AV', 'spell_id': '35453675301d021dfa5b8217ac9a89d6249d514bb32d92d1ca8259d5bdf21f69', 'spellframe': 'consumers', 'binding_name': 'local-0'}, {'spell_index_id': '01M2WVW8HMWW06SZWR01GRVG97', 'spell_id': 'def03dbf410de989b07c71ea4b1e2749aaf3cf4faad876a64b6641d4c4fbda79', 'spellframe': 'consumers', 'binding_name': 'local-1'}]}
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="18" skipped="0" tests="18" time="0.579" timestamp="2026-09-19T14:27:18.596255-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_false_target_requires_override_and_retains_reference[Consumer-False]" time="0.006"><failure message="AttributeError: type object 'SocketKind' has no attribute 'OVERRIDE_REQUIRED'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:128: in test_false_target_requires_override_and_retains_reference
+    assert socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'SocketKind' has no attribute 'OVERRIDE_REQUIRED'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_false_target_requires_override_and_retains_reference[Consumer-True]" time="0.005"><failure message="AttributeError: type object 'SocketKind' has no attribute 'OVERRIDE_REQUIRED'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:128: in test_false_target_requires_override_and_retains_reference
+    assert socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'SocketKind' has no attribute 'OVERRIDE_REQUIRED'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_false_target_requires_override_and_retains_reference[OptionalConsumer-False]" time="0.005"><failure message="AttributeError: type object 'SocketKind' has no attribute 'OVERRIDE_REQUIRED'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:128: in test_false_target_requires_override_and_retains_reference
+    assert socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'SocketKind' has no attribute 'OVERRIDE_REQUIRED'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_false_target_requires_override_and_retains_reference[OptionalConsumer-True]" time="0.004"><failure message="AttributeError: type object 'SocketKind' has no attribute 'OVERRIDE_REQUIRED'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:128: in test_false_target_requires_override_and_retains_reference
+    assert socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'SocketKind' has no attribute 'OVERRIDE_REQUIRED'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_real_provider_takes_precedence_over_descriptive_definition[False]" time="0.005"><failure message="RuntimeError: SpellCrafter Phase 3: multiple DI candidates found for parameter 'value' on spell 'Consumer' (annotation=&lt;class 'test_spellbook_component_override_required.Definition'&gt;). Candidates: Definition, Implementation. Use a SpellMap with an explicit spellframe/binding_name or a collection type (e.g. list[FrameType]) to inject multiple implementations.">tests\component\melder\spellbook\test_spellbook_component_override_required.py:151: in test_real_provider_takes_precedence_over_descriptive_definition
+    socket, = _local_topology(compiler_book, consumer_id, indexed=indexed).sockets
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_component_override_required.py:110: in _local_topology
+    compiler.run_phase_local_frame(book, spell, resolution_pass_cache={} if indexed else None)
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:203: in run_phase_local_frame
+    self._spell_compiler.run_phase_local_frame(
+src\melder\aether\spellbook\spell_compiler\spell_compiler.py:255: in run_phase_local_frame
+    self._phase_3.run(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:953: in run
+    dag_with_dependencies = self._build_local_frame_dag(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:828: in _build_local_frame_dag
+    resolved = self._resolve_single_by_annotation(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:493: in _resolve_single_by_annotation
+    raise RuntimeError(
+E   RuntimeError: SpellCrafter Phase 3: multiple DI candidates found for parameter 'value' on spell 'Consumer' (annotation=&lt;class 'test_spellbook_component_override_required.Definition'&gt;). Candidates: Definition, Implementation. Use a SpellMap with an explicit spellframe/binding_name or a collection type (e.g. list[FrameType]) to inject multiple implementations.</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_real_provider_takes_precedence_over_descriptive_definition[True]" time="0.005"><failure message="RuntimeError: SpellCrafter Phase 3: multiple DI candidates found for parameter 'value' on spell 'Consumer' (annotation=&lt;class 'test_spellbook_component_override_required.Definition'&gt;). Candidates: Definition, Implementation. Use a SpellMap with an explicit spellframe/binding_name or a collection type (e.g. list[FrameType]) to inject multiple implementations.">tests\component\melder\spellbook\test_spellbook_component_override_required.py:151: in test_real_provider_takes_precedence_over_descriptive_definition
+    socket, = _local_topology(compiler_book, consumer_id, indexed=indexed).sockets
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_component_override_required.py:110: in _local_topology
+    compiler.run_phase_local_frame(book, spell, resolution_pass_cache={} if indexed else None)
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:203: in run_phase_local_frame
+    self._spell_compiler.run_phase_local_frame(
+src\melder\aether\spellbook\spell_compiler\spell_compiler.py:255: in run_phase_local_frame
+    self._phase_3.run(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:953: in run
+    dag_with_dependencies = self._build_local_frame_dag(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:828: in _build_local_frame_dag
+    resolved = self._resolve_single_by_annotation(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:493: in _resolve_single_by_annotation
+    raise RuntimeError(
+E   RuntimeError: SpellCrafter Phase 3: multiple DI candidates found for parameter 'value' on spell 'Consumer' (annotation=&lt;class 'test_spellbook_component_override_required.Definition'&gt;). Candidates: Definition, Implementation. Use a SpellMap with an explicit spellframe/binding_name or a collection type (e.g. list[FrameType]) to inject multiple implementations.</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_collections_exclude_false_definitions_and_preserve_provider_order[0-False]" time="0.005"><failure message="AssertionError: assert ('bbe80b3e8ae...2b8965117d2',) == ()&#10;  &#10;  Left contains one more item: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2'&#10;  Use -v to get more diff">tests\component\melder\spellbook\test_spellbook_component_override_required.py:172: in test_collections_exclude_false_definitions_and_preserve_provider_order
+    assert socket.target_spell_ids == tuple(provider_ids)
+E   AssertionError: assert ('bbe80b3e8ae...2b8965117d2',) == ()
+E     
+E     Left contains one more item: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_collections_exclude_false_definitions_and_preserve_provider_order[0-True]" time="0.005"><failure message="AssertionError: assert ('bbe80b3e8ae...2b8965117d2',) == ()&#10;  &#10;  Left contains one more item: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2'&#10;  Use -v to get more diff">tests\component\melder\spellbook\test_spellbook_component_override_required.py:172: in test_collections_exclude_false_definitions_and_preserve_provider_order
+    assert socket.target_spell_ids == tuple(provider_ids)
+E   AssertionError: assert ('bbe80b3e8ae...2b8965117d2',) == ()
+E     
+E     Left contains one more item: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_collections_exclude_false_definitions_and_preserve_provider_order[1-False]" time="0.005"><failure message="AssertionError: assert ('bbe80b3e8ae...f7ece99510e2') == ('269ea4aa047...7ece99510e2',)&#10;  &#10;  At index 0 diff: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2' != '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'&#10;  Left contains one more item: '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'&#10;  Use -v to get more diff">tests\component\melder\spellbook\test_spellbook_component_override_required.py:172: in test_collections_exclude_false_definitions_and_preserve_provider_order
+    assert socket.target_spell_ids == tuple(provider_ids)
+E   AssertionError: assert ('bbe80b3e8ae...f7ece99510e2') == ('269ea4aa047...7ece99510e2',)
+E     
+E     At index 0 diff: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2' != '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'
+E     Left contains one more item: '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_collections_exclude_false_definitions_and_preserve_provider_order[1-True]" time="0.005"><failure message="AssertionError: assert ('bbe80b3e8ae...f7ece99510e2') == ('269ea4aa047...7ece99510e2',)&#10;  &#10;  At index 0 diff: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2' != '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'&#10;  Left contains one more item: '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'&#10;  Use -v to get more diff">tests\component\melder\spellbook\test_spellbook_component_override_required.py:172: in test_collections_exclude_false_definitions_and_preserve_provider_order
+    assert socket.target_spell_ids == tuple(provider_ids)
+E   AssertionError: assert ('bbe80b3e8ae...f7ece99510e2') == ('269ea4aa047...7ece99510e2',)
+E     
+E     At index 0 diff: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2' != '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'
+E     Left contains one more item: '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_collections_exclude_false_definitions_and_preserve_provider_order[2-False]" time="0.006"><failure message="AssertionError: assert ('bbe80b3e8ae...2b752a4fb1ca') == ('269ea4aa047...2b752a4fb1ca')&#10;  &#10;  At index 0 diff: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2' != '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'&#10;  Left contains one more item: '44bafd9c43d528d8af335411e6d92a6f625f92e9de502eb2cb912b752a4fb1ca'&#10;  Use -v to get more diff">tests\component\melder\spellbook\test_spellbook_component_override_required.py:172: in test_collections_exclude_false_definitions_and_preserve_provider_order
+    assert socket.target_spell_ids == tuple(provider_ids)
+E   AssertionError: assert ('bbe80b3e8ae...2b752a4fb1ca') == ('269ea4aa047...2b752a4fb1ca')
+E     
+E     At index 0 diff: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2' != '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'
+E     Left contains one more item: '44bafd9c43d528d8af335411e6d92a6f625f92e9de502eb2cb912b752a4fb1ca'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_collections_exclude_false_definitions_and_preserve_provider_order[2-True]" time="0.005"><failure message="AssertionError: assert ('bbe80b3e8ae...2b752a4fb1ca') == ('269ea4aa047...2b752a4fb1ca')&#10;  &#10;  At index 0 diff: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2' != '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'&#10;  Left contains one more item: '44bafd9c43d528d8af335411e6d92a6f625f92e9de502eb2cb912b752a4fb1ca'&#10;  Use -v to get more diff">tests\component\melder\spellbook\test_spellbook_component_override_required.py:172: in test_collections_exclude_false_definitions_and_preserve_provider_order
+    assert socket.target_spell_ids == tuple(provider_ids)
+E   AssertionError: assert ('bbe80b3e8ae...2b752a4fb1ca') == ('269ea4aa047...2b752a4fb1ca')
+E     
+E     At index 0 diff: 'bbe80b3e8aea1b22505fb150c422f10196fdd1bff8b5d0357e66d2b8965117d2' != '269ea4aa047a8598ae99a7a19910699bedf4471aeb6a1ae9ce71f7ece99510e2'
+E     Left contains one more item: '44bafd9c43d528d8af335411e6d92a6f625f92e9de502eb2cb912b752a4fb1ca'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_defaulted_parameter_stays_plain_with_a_false_registration" time="0.005"><failure message="AttributeError: 'SpellSocketDescriptor' object has no attribute 'referenced_spell_ids'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:182: in test_defaulted_parameter_stays_plain_with_a_false_registration
+    assert socket.target_spell_ids == socket.referenced_spell_ids == ()
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'SpellSocketDescriptor' object has no attribute 'referenced_spell_ids'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_false_root_keeps_declaration_without_resolving_its_constructor" time="0.004"><failure message="RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'DefinitionWithDependency' (annotation=&lt;class 'test_spellbook_component_override_required.Unregistered'&gt;).">tests\component\melder\spellbook\test_spellbook_component_override_required.py:191: in test_false_root_keeps_declaration_without_resolving_its_constructor
+    topology = _local_topology(compiler_book, definition_id, indexed=True)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_component_override_required.py:110: in _local_topology
+    compiler.run_phase_local_frame(book, spell, resolution_pass_cache={} if indexed else None)
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:203: in run_phase_local_frame
+    self._spell_compiler.run_phase_local_frame(
+src\melder\aether\spellbook\spell_compiler\spell_compiler.py:255: in run_phase_local_frame
+    self._phase_3.run(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:953: in run
+    dag_with_dependencies = self._build_local_frame_dag(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:828: in _build_local_frame_dag
+    resolved = self._resolve_single_by_annotation(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:483: in _resolve_single_by_annotation
+    raise RuntimeError(
+E   RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'DefinitionWithDependency' (annotation=&lt;class 'test_spellbook_component_override_required.Unregistered'&gt;).</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_explicit_spellmap_keeps_the_false_target_even_with_a_provider" time="0.005"><failure message="AttributeError: type object 'SocketKind' has no attribute 'OVERRIDE_REQUIRED'">tests\component\melder\spellbook\test_spellbook_component_override_required.py:217: in test_explicit_spellmap_keeps_the_false_target_even_with_a_provider
+    assert socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'SocketKind' has no attribute 'OVERRIDE_REQUIRED'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_false_spellmap_refuses_provider_construction_payload[payload0]" time="0.004"><failure message="Failed: DID NOT RAISE RuntimeError">tests\component\melder\spellbook\test_spellbook_component_override_required.py:239: in test_false_spellmap_refuses_provider_construction_payload
+    with pytest.raises(RuntimeError, match="non-resolvable.*spell_override"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE RuntimeError</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_false_spellmap_refuses_provider_construction_payload[payload1]" time="0.004"><failure message="Failed: DID NOT RAISE RuntimeError">tests\component\melder\spellbook\test_spellbook_component_override_required.py:239: in test_false_spellmap_refuses_provider_construction_payload
+    with pytest.raises(RuntimeError, match="non-resolvable.*spell_override"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE RuntimeError</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_override_required" name="test_false_spellmap_refuses_provider_construction_payload[payload2]" time="0.004"><failure message="Failed: DID NOT RAISE RuntimeError">tests\component\melder\spellbook\test_spellbook_component_override_required.py:239: in test_false_spellmap_refuses_provider_construction_payload
+    with pytest.raises(RuntimeError, match="non-resolvable.*spell_override"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE RuntimeError</failure></testcase></testsuite></testsuites>

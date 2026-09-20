@@ -1,0 +1,739 @@
+{
+  "applied": false,
+  "files": [
+    {
+      "path": "benchmarks/testing_other_di/dump_emitted_executor_source.py",
+      "before_sha256": "b34bc3efb93af195d5777abbe3fe3105191043e0a6524d4c2bdf8ae3553f5f27",
+      "after_sha256": "2f52d834a8cf60e4f3077e217e0df4be9506f97178df2e0dc5ea8d9633f3a969",
+      "changes": [
+        {
+          "line": 167,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 169,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/profile_bind_conjure_cycle.py",
+      "before_sha256": "5c748b45bacea459b3e0f1a5d2440d52b84d6d52e93b6839b3dc8addd6b1513d",
+      "after_sha256": "246a3497ba01820319aee51b9e046b7ac7bc1d053c350c333c8bdae6eb40603a",
+      "changes": [
+        {
+          "line": 379,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 389,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/profile_construction_lane.py",
+      "before_sha256": "c65963326e6d6ffa84fc177640cba1df526c3cbb4b6b77b6d941efbc33d455fb",
+      "after_sha256": "41023e3102373fd1750e31c58face8f078178b15f45a3e0759673874058bde77",
+      "changes": [
+        {
+          "line": 140,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 144,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/profile_deep_all_di_transient_only_no_singletons.py",
+      "before_sha256": "7ce99f9c79f2fc048d4d428579fd8d407a75f5e13d6ced7be5ca124b90758a68",
+      "after_sha256": "0813ef5ba1b7e51fdfb75f97d7772bfade3dcfd83986d4c58b49938629917f1e",
+      "changes": [
+        {
+          "line": 232,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 246,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/profile_scope_cycle_contention.py",
+      "before_sha256": "5b41d3a470a823b918aab8ece93a4ab4e8171f41269f3a07d8707943565c5627",
+      "after_sha256": "25d6513184577d0d3f49a47041f1b05dad41fff76d50b7cce594058085a8564f",
+      "changes": [
+        {
+          "line": 210,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 213,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 390,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 394,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 221,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 224,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 402,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 406,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/profile_tail_stall_attribution.py",
+      "before_sha256": "8425930bb0a9b51be41c6cc824c3307b9860b0753585eca2b9e2f18323e250d7",
+      "after_sha256": "b49272f53083d4a774339997dcc8021273794fa40c71b47ecb11134225a02a96",
+      "changes": [
+        {
+          "line": 140,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 141,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 143,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 144,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/run_codegen_benchmark_deltas.py",
+      "before_sha256": "31d9b9d1eb9457a8574daa9cd6859a59cf931e6f237175d488ec06ae61da3886",
+      "after_sha256": "dc8d66cbd574d65f6fa20b08c4aec6f28459e4027d1399ae76781d877ee81933",
+      "changes": [
+        {
+          "line": 233,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 275,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 276,
+          "before": "spell_override",
+          "after": "override"
+        },
+        {
+          "line": 290,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 291,
+          "before": "spell_override",
+          "after": "override"
+        },
+        {
+          "line": 260,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_all_di_systems.py",
+      "before_sha256": "81587263cec6d100c9bc2fdb1978bc1e944aa96ae11c63b52b1058234475c38f",
+      "after_sha256": "8edc48c70b9c64ccc023ecf7c8f614e5112aee3ef2b7b61c05123ac101d978b5",
+      "changes": [
+        {
+          "line": 135,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_conduit_integration_perf_deep_graphs.py",
+      "before_sha256": "876c385045e87a603e613e5f086e2a8266142fcb7d43d3863783084e2ac113f9",
+      "after_sha256": "fce1fc2903a8cdfaa065c20501c8e083109141a250663726b12fa8bab103ce0c",
+      "changes": [
+        {
+          "line": 180,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 185,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 216,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 323,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 328,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 150,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 223,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 263,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 337,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 459,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 270,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 281,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 396,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 399,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 503,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 406,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_deep_all_di_transient_only_no_singletons.py",
+      "before_sha256": "1accff056f91fe073d7f1fd3bc8f4703460ff81b5ca1023abc04e8026a8cf507",
+      "after_sha256": "a55554c9df91d933a48a75fe567975160e5575acbdd650addf49fac3b078db92",
+      "changes": [
+        {
+          "line": 162,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 175,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 692,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 695,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_di_perf_basic.py",
+      "before_sha256": "b8ad26786a6356f2a4ae913cdc23ecfc73993e578b19ed59164fdec62afd3fca",
+      "after_sha256": "9c38cd46d33bcf1e86bfd2d83dfba67634c71c3497510af3aecbb97082da0ac4",
+      "changes": [
+        {
+          "line": 241,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 243,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 245,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 255,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 258,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 259,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 260,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_di_perf_overhead_suite.py",
+      "before_sha256": "01eecf1db5af9a5047c92bf8d19d0886474f919072de93a51695415135d1d1d1",
+      "after_sha256": "82248adbfec3bde981254a1bf95dfe38951459f491a95a80873944401fd77396",
+      "changes": [
+        {
+          "line": 284,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 285,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 289,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 290,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 294,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 305,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 308,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 311,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_family_lane_harness.py",
+      "before_sha256": "5268100597c8b16604cf846014a287c9d4251fe9b1ee98c20423b27b41b9b828",
+      "after_sha256": "0ec07c8bf5f0a2394be6f9d7410bbfe5093c65602c71dc294a5109e190456167",
+      "changes": [
+        {
+          "line": 316,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 347,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 349,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 355,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_melder_hotpath_profiles.py",
+      "before_sha256": "7a4713dd8a44a8de7b61a6edeaf77959bfdcd8f9297300a4d103674ce37a98fc",
+      "after_sha256": "15486cc2984d9422e3d9c81dc586204e6139906f7744f51c8ccd610b948bbcee",
+      "changes": [
+        {
+          "line": 268,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 273,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 341,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 294,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 302,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 303,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_melder_single_meld_lock_and_check_cleaned.py",
+      "before_sha256": "b17a60e53c7da24192dddb27ae73385a8036368f64c9a7a3b956657ae09dafa2",
+      "after_sha256": "5b4ce52b6c2ccb5a335aafd79e1aa255fa07f875f221d3161a4fd874a72bf04b",
+      "changes": [
+        {
+          "line": 410,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_multithreading_di.py",
+      "before_sha256": "5b68df02da4d152b937394e5dcc0e1665b6fb734358da02a4b937e7f307ef6bc",
+      "after_sha256": "d45d747a9845ee29ce25d607247d848a5bf9896697e19c15613ab3eaa47e6cc1",
+      "changes": [
+        {
+          "line": 497,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 502,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 508,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 509,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_overrides_all.py",
+      "before_sha256": "0e66ba62184b13de5f82a709f813bfee2e0db30f3c8b7cec2e02cf9d3476b6be",
+      "after_sha256": "f5fb279e9f92692598a83ec144662fc5442356e00c3f461d1b16b4ed7127fe15",
+      "changes": [
+        {
+          "line": 575,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 577,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 577,
+          "before": "spell_override",
+          "after": "override"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_real_world_gauntlet.py",
+      "before_sha256": "48819eea3da94c3088896d91eed3e6eceaa097af5e07c372cd18d363cf47f449",
+      "after_sha256": "c6ee56bcb123ac4c996b9bc36e271c534fc45745daf09e174c560c8777f71a89",
+      "changes": [
+        {
+          "line": 985,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1014,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1015,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1027,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1028,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1033,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1059,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1083,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1107,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1063,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1064,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1068,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1069,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1087,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1088,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1092,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1093,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1111,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1112,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1116,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1117,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_shallow_all.py",
+      "before_sha256": "b9b0b5b795a3c47ea8ed24a981121110c76bc82ece9b2095832d238bd0518781",
+      "after_sha256": "437e72df3e5b047e8ee37e911f63ddbda0e924b5d37bbf20279fcfb7df0399aa",
+      "changes": [
+        {
+          "line": 1218,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1224,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1245,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1628,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1635,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1231,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1232,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1643,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 1644,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_shallow_all_diagnostics.py",
+      "before_sha256": "498e812e10b656df80cef3d504f40ba8687e7ff00b20c583abd24ad18473c23c",
+      "after_sha256": "49ec25d9142ae1c2f655e6aa451503c8c5ef1570ec75a80f2997933971f33f06",
+      "changes": [
+        {
+          "line": 336,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 435,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_unroll_locals_microbench.py",
+      "before_sha256": "07e503b0f28a9d652748ebe12f54581c5596d8df15274e807f8ebf51a259171d",
+      "after_sha256": "d5a8607ea7b33aef73729bb8bd233ba1b8c782cf37c7d68ede4c6843c562bb82",
+      "changes": [
+        {
+          "line": 110,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 112,
+          "before": "spell",
+          "after": "spell_id"
+        },
+        {
+          "line": 118,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/testing_other_di/test_unroll_path_diagnostic.py",
+      "before_sha256": "9b90d8bfa6fb6a8b71d6ec1e3837d306ee1658ae5e744ab455be505a5086355e",
+      "after_sha256": "0dcd9080d47acc5631f4385727e630b27ca225553db20c4afc82c67953bd506f",
+      "changes": [
+        {
+          "line": 105,
+          "before": "spell",
+          "after": "spell_id"
+        }
+      ]
+    }
+  ]
+}

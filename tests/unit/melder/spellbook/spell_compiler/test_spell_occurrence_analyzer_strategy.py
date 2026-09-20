@@ -184,7 +184,11 @@ def test_occurrence_graph_analyzer_fast_key_serializes_visible_state() -> None:
         _local_topologies={
             "spell-1": SimpleNamespace(
                 sockets=[
-                    SimpleNamespace(param_name="svc", target_spell_ids=("dep",)),
+                    SimpleNamespace(
+                        param_name="svc", target_spell_ids=("dep",), socket_kind=SocketKind.NORMAL,
+                        position=0, parameter_kind="POSITIONAL_OR_KEYWORD", is_collection=False,
+                        is_optional=False, referenced_spell_ids=(),
+                    ),
                 ]
             )
         }
@@ -226,7 +230,7 @@ def test_occurrence_graph_analyzer_fast_key_serializes_visible_state() -> None:
             ("dep", "dep", Existence.unique.name, False),
             ("spell-1", "spell-1", Existence.unique.name, False),
         ),
-        (("spell-1", (("svc", ("dep",)),)),),
+        (("spell-1", (("svc", ("dep",), SocketKind.NORMAL.value, 0, "POSITIONAL_OR_KEYWORD", False, False, ()),)),),
         SystemState.dynamic,
         (("peer", "frame", "binding", "dep"),),
     )

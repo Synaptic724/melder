@@ -380,6 +380,8 @@ class GraftRunner(Cleanable):
         """
         Bind the selected member ACTIVE - the fresh index's anchor.
 
+        Recorded resolution capability is preserved; legacy absence defaults to True.
+
         Args:
             selected_id:
                 The recorded selection.
@@ -416,6 +418,7 @@ class GraftRunner(Cleanable):
                 crystal.get("disposal_method_names", [])
             ) or None,
             profile=str(crystal.get("profile_family", "general")),
+            resolvable=crystal.get("resolvable", True),
         )
         live_spell = self._host_book.find_spell_by_id(new_spell_id)
         live_index = (
@@ -433,6 +436,8 @@ class GraftRunner(Cleanable):
     ) -> int:
         """
         Park every non-selected member onto the fresh live index.
+
+        Every member retains its own recorded resolution capability.
 
         Args:
             selected_id:
@@ -473,6 +478,7 @@ class GraftRunner(Cleanable):
                 binding_name=crystal.get("binding_name"),
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
+                resolvable=crystal.get("resolvable", True),
             )
             parked += 1
         return parked
@@ -500,6 +506,7 @@ class GraftRunner(Cleanable):
               which may differ from its recorded SHA.
             - Adoption is honest: requested-but-ungrafted selection
               lands a shortfall instead of a silent no-op.
+            - Each parked member retains its recorded resolution capability.
 
         Args:
             selected_id:
@@ -530,6 +537,7 @@ class GraftRunner(Cleanable):
                 binding_name=crystal.get("binding_name"),
                 disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
                 profile=str(crystal.get("profile_family", "general")),
+                resolvable=crystal.get("resolvable", True),
             )
             if spell_id == str(selected_id):
                 live_selected_id = new_spell_id

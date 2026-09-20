@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="20" skipped="0" tests="40" time="1.689" timestamp="2026-09-13T09:25:20.206476-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_is_preserved_with_registered_provider[automatic_prebind-default]" time="0.059"><failure message="AssertionError: An ordinary None default must beat inferred class DI.&#10;assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB30D0&gt; is None&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB30D0&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D650CA90&gt;.dependency">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:214: in test_none_default_is_preserved_with_registered_provider
+    assert consumer.dependency is None, "An ordinary None default must beat inferred class DI."
+E   AssertionError: An ordinary None default must beat inferred class DI.
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB30D0&gt; is None
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB30D0&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D650CA90&gt;.dependency</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_is_preserved_with_registered_provider[automatic_prebind-named]" time="0.006"><failure message="AssertionError: An ordinary None default must beat inferred class DI.&#10;assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB1F50&gt; is None&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB1F50&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB2D10&gt;.dependency">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:214: in test_none_default_is_preserved_with_registered_provider
+    assert consumer.dependency is None, "An ordinary None default must beat inferred class DI."
+E   AssertionError: An ordinary None default must beat inferred class DI.
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB1F50&gt; is None
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB1F50&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB2D10&gt;.dependency</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_is_preserved_with_registered_provider[automatic_prebind-named_and_framed]" time="0.006"><failure message="AssertionError: An ordinary None default must beat inferred class DI.&#10;assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB3990&gt; is None&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB3990&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB2BD0&gt;.dependency">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:214: in test_none_default_is_preserved_with_registered_provider
+    assert consumer.dependency is None, "An ordinary None default must beat inferred class DI."
+E   AssertionError: An ordinary None default must beat inferred class DI.
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB3990&gt; is None
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB3990&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB2BD0&gt;.dependency</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_is_preserved_with_registered_provider[dynamic_prebind-default]" time="0.006"><failure message="AssertionError: An ordinary None default must beat inferred class DI.&#10;assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB2590&gt; is None&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB2590&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB26D0&gt;.dependency">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:214: in test_none_default_is_preserved_with_registered_provider
+    assert consumer.dependency is None, "An ordinary None default must beat inferred class DI."
+E   AssertionError: An ordinary None default must beat inferred class DI.
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB2590&gt; is None
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB2590&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB26D0&gt;.dependency</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_is_preserved_with_registered_provider[dynamic_prebind-named]" time="0.005"><failure message="AssertionError: An ordinary None default must beat inferred class DI.&#10;assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB5290&gt; is None&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB5290&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB2810&gt;.dependency">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:214: in test_none_default_is_preserved_with_registered_provider
+    assert consumer.dependency is None, "An ordinary None default must beat inferred class DI."
+E   AssertionError: An ordinary None default must beat inferred class DI.
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB5290&gt; is None
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB5290&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB2810&gt;.dependency</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_is_preserved_with_registered_provider[dynamic_prebind-named_and_framed]" time="0.006"><failure message="AssertionError: An ordinary None default must beat inferred class DI.&#10;assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB5C90&gt; is None&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB5C90&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB5DD0&gt;.dependency">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:214: in test_none_default_is_preserved_with_registered_provider
+    assert consumer.dependency is None, "An ordinary None default must beat inferred class DI."
+E   AssertionError: An ordinary None default must beat inferred class DI.
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB5C90&gt; is None
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB5C90&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB5DD0&gt;.dependency</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_is_preserved_with_registered_provider[dynamic_postbind-default]" time="0.007"><failure message="AssertionError: An ordinary None default must beat inferred class DI.&#10;assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB3FD0&gt; is None&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB3FD0&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB4390&gt;.dependency">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:214: in test_none_default_is_preserved_with_registered_provider
+    assert consumer.dependency is None, "An ordinary None default must beat inferred class DI."
+E   AssertionError: An ordinary None default must beat inferred class DI.
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB3FD0&gt; is None
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D7DB3FD0&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB4390&gt;.dependency</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_is_preserved_with_registered_provider[dynamic_postbind-named]" time="0.006"><failure message="AssertionError: An ordinary None default must beat inferred class DI.&#10;assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9310&gt; is None&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9310&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB6550&gt;.dependency">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:214: in test_none_default_is_preserved_with_registered_provider
+    assert consumer.dependency is None, "An ordinary None default must beat inferred class DI."
+E   AssertionError: An ordinary None default must beat inferred class DI.
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9310&gt; is None
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9310&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D7DB6550&gt;.dependency</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_is_preserved_with_registered_provider[dynamic_postbind-named_and_framed]" time="0.006"><failure message="AssertionError: An ordinary None default must beat inferred class DI.&#10;assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9910&gt; is None&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9910&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D46B9710&gt;.dependency">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:214: in test_none_default_is_preserved_with_registered_provider
+    assert consumer.dependency is None, "An ordinary None default must beat inferred class DI."
+E   AssertionError: An ordinary None default must beat inferred class DI.
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9910&gt; is None
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9910&gt; = &lt;test_spellbook_integration_default_precedence.NeedsOptionalSomething object at 0x00000423D46B9710&gt;.dependency</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_needs_no_registered_provider[automatic_prebind]" time="0.004"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:223: in test_none_default_needs_no_registered_provider
+    conduit = optional_runtime.ensure_conduit()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:182: in ensure_conduit
+    self.conduit = self.book.conjure(dynamic=self.mode != "automatic_prebind")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:222: in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:313: in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1380: in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_needs_no_registered_provider[dynamic_prebind]" time="0.004"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:223: in test_none_default_needs_no_registered_provider
+    conduit = optional_runtime.ensure_conduit()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:182: in ensure_conduit
+    self.conduit = self.book.conjure(dynamic=self.mode != "automatic_prebind")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:222: in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:313: in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1380: in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_none_default_needs_no_registered_provider[dynamic_postbind]" time="0.002"><failure message="RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:222: in test_none_default_needs_no_registered_provider
+    consumer_id = optional_runtime.bind_consumer(NeedsOptionalSomething)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:176: in bind_consumer
+    return self.book.bind(spell=consumer_type, existence="unique")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:5126: in bind
+    with self.transaction(
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\contextlib.py:148: in __exit__
+    next(self.gen)
+src\melder\aether\spellbook\spellbook.py:4527: in transaction
+    self.end_transaction(transaction_type, success=True)
+src\melder\aether\spellbook\spellbook.py:4415: in end_transaction
+    mediator.end_transaction_for_identity(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:744: in end_transaction_for_identity
+    return self.end_transaction_by_request_id(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:889: in end_transaction_by_request_id
+    self._finalize_root_session(session)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:1073: in _finalize_root_session
+    self._orchestrator.commit_request(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\orchestrator\orchestrator.py:504: in commit_request
+    commit_validator(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:584: in _dispatch_commit_validator
+    structural(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:835: in _default_structural_validator
+    spellbook._run_post_conjure_structural_phases(pending)
+src\melder\aether\spellbook\spellbook.py:6700: in _run_post_conjure_structural_phases
+    SpellbookCreationSystem.run_post_conjure_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1432: in run_post_conjure_structural_phases
+    compiler_system.run_structural_phases(
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:813: in run_structural_phases
+    self.run_phase_local_frame(
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:203: in run_phase_local_frame
+    self._spell_compiler.run_phase_local_frame(
+src\melder\aether\spellbook\spell_compiler\spell_compiler.py:255: in run_phase_local_frame
+    self._phase_3.run(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:953: in run
+    dag_with_dependencies = self._build_local_frame_dag(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:828: in _build_local_frame_dag
+    resolved = self._resolve_single_by_annotation(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:483: in _resolve_single_by_annotation
+    raise RuntimeError(
+E   RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'NeedsOptionalSomething' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_plain_optional_object_default_stays_none_with_provider_registered[automatic_prebind]" time="0.006" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_plain_optional_object_default_stays_none_with_provider_registered[dynamic_prebind]" time="0.005" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_plain_optional_object_default_stays_none_with_provider_registered[dynamic_postbind]" time="0.005" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_numeric_falsy_and_other_plain_defaults_are_preserved[automatic_prebind]" time="0.006" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_numeric_falsy_and_other_plain_defaults_are_preserved[dynamic_prebind]" time="0.005" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_numeric_falsy_and_other_plain_defaults_are_preserved[dynamic_postbind]" time="0.005" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_selected_instance_default_is_preserved_with_registered_provider[automatic_prebind]" time="0.005"><failure message="assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B7210&gt; is &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt;&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B7210&gt; = &lt;test_spellbook_integration_default_precedence.SelectedInstanceDefault object at 0x00000423D650C790&gt;.dependency&#10; +  and   &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt; = SelectedInstanceDefault.DEFAULT_DEPENDENCY">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:267: in test_selected_instance_default_is_preserved_with_registered_provider
+    assert consumer.dependency is SelectedInstanceDefault.DEFAULT_DEPENDENCY
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B7210&gt; is &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt;
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B7210&gt; = &lt;test_spellbook_integration_default_precedence.SelectedInstanceDefault object at 0x00000423D650C790&gt;.dependency
+E    +  and   &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt; = SelectedInstanceDefault.DEFAULT_DEPENDENCY</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_selected_instance_default_is_preserved_with_registered_provider[dynamic_prebind]" time="0.006"><failure message="assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9410&gt; is &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt;&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9410&gt; = &lt;test_spellbook_integration_default_precedence.SelectedInstanceDefault object at 0x00000423D7DB80D0&gt;.dependency&#10; +  and   &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt; = SelectedInstanceDefault.DEFAULT_DEPENDENCY">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:267: in test_selected_instance_default_is_preserved_with_registered_provider
+    assert consumer.dependency is SelectedInstanceDefault.DEFAULT_DEPENDENCY
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9410&gt; is &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt;
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D46B9410&gt; = &lt;test_spellbook_integration_default_precedence.SelectedInstanceDefault object at 0x00000423D7DB80D0&gt;.dependency
+E    +  and   &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt; = SelectedInstanceDefault.DEFAULT_DEPENDENCY</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_selected_instance_default_is_preserved_with_registered_provider[dynamic_postbind]" time="0.006"><failure message="assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D4785790&gt; is &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt;&#10; +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D4785790&gt; = &lt;test_spellbook_integration_default_precedence.SelectedInstanceDefault object at 0x00000423D7DB8350&gt;.dependency&#10; +  and   &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt; = SelectedInstanceDefault.DEFAULT_DEPENDENCY">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:267: in test_selected_instance_default_is_preserved_with_registered_provider
+    assert consumer.dependency is SelectedInstanceDefault.DEFAULT_DEPENDENCY
+E   assert &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D4785790&gt; is &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt;
+E    +  where &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D4785790&gt; = &lt;test_spellbook_integration_default_precedence.SelectedInstanceDefault object at 0x00000423D7DB8350&gt;.dependency
+E    +  and   &lt;test_spellbook_integration_default_precedence.Something object at 0x00000423D650A090&gt; = SelectedInstanceDefault.DEFAULT_DEPENDENCY</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_selected_instance_default_needs_no_registered_provider[automatic_prebind]" time="0.003"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'SelectedInstanceDefault' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:277: in test_selected_instance_default_needs_no_registered_provider
+    conduit = optional_runtime.ensure_conduit()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:182: in ensure_conduit
+    self.conduit = self.book.conjure(dynamic=self.mode != "automatic_prebind")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:222: in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:313: in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1380: in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'SelectedInstanceDefault' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_selected_instance_default_needs_no_registered_provider[dynamic_prebind]" time="0.003"><failure message="melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'SelectedInstanceDefault' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:277: in test_selected_instance_default_needs_no_registered_provider
+    conduit = optional_runtime.ensure_conduit()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:182: in ensure_conduit
+    self.conduit = self.book.conjure(dynamic=self.mode != "automatic_prebind")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:6457: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6561: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:222: in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:313: in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1380: in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'SelectedInstanceDefault' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_selected_instance_default_needs_no_registered_provider[dynamic_postbind]" time="0.002"><failure message="RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'SelectedInstanceDefault' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:276: in test_selected_instance_default_needs_no_registered_provider
+    consumer_id = optional_runtime.bind_consumer(SelectedInstanceDefault)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:176: in bind_consumer
+    return self.book.bind(spell=consumer_type, existence="unique")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook.py:5126: in bind
+    with self.transaction(
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\contextlib.py:148: in __exit__
+    next(self.gen)
+src\melder\aether\spellbook\spellbook.py:4527: in transaction
+    self.end_transaction(transaction_type, success=True)
+src\melder\aether\spellbook\spellbook.py:4415: in end_transaction
+    mediator.end_transaction_for_identity(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:744: in end_transaction_for_identity
+    return self.end_transaction_by_request_id(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:889: in end_transaction_by_request_id
+    self._finalize_root_session(session)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:1073: in _finalize_root_session
+    self._orchestrator.commit_request(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\orchestrator\orchestrator.py:504: in commit_request
+    commit_validator(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:584: in _dispatch_commit_validator
+    structural(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:835: in _default_structural_validator
+    spellbook._run_post_conjure_structural_phases(pending)
+src\melder\aether\spellbook\spellbook.py:6700: in _run_post_conjure_structural_phases
+    SpellbookCreationSystem.run_post_conjure_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1432: in run_post_conjure_structural_phases
+    compiler_system.run_structural_phases(
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:813: in run_structural_phases
+    self.run_phase_local_frame(
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:203: in run_phase_local_frame
+    self._spell_compiler.run_phase_local_frame(
+src\melder\aether\spellbook\spell_compiler\spell_compiler.py:255: in run_phase_local_frame
+    self._phase_3.run(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:953: in run
+    dag_with_dependencies = self._build_local_frame_dag(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:828: in _build_local_frame_dag
+    resolved = self._resolve_single_by_annotation(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:483: in _resolve_single_by_annotation
+    raise RuntimeError(
+E   RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'dependency' on spell 'SelectedInstanceDefault' (annotation=&lt;class 'test_spellbook_integration_default_precedence.Something'&gt;).</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_explicit_spellmap_default_requests_injection[automatic_prebind]" time="0.006" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_explicit_spellmap_default_requests_injection[dynamic_prebind]" time="0.005" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_explicit_spellmap_default_requests_injection[dynamic_postbind]" time="0.006" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_annotation_without_default_still_requests_injection[automatic_prebind-RequiresSomething]" time="0.005" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_annotation_without_default_still_requests_injection[automatic_prebind-RequiresNullableSomething]" time="0.005" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_annotation_without_default_still_requests_injection[dynamic_prebind-RequiresSomething]" time="0.005" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_annotation_without_default_still_requests_injection[dynamic_prebind-RequiresNullableSomething]" time="0.004" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_annotation_without_default_still_requests_injection[dynamic_postbind-RequiresSomething]" time="0.006" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_annotation_without_default_still_requests_injection[dynamic_postbind-RequiresNullableSomething]" time="0.005" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_required_dependency_without_provider_still_refuses[automatic_prebind]" time="0.003" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_required_dependency_without_provider_still_refuses[dynamic_prebind]" time="0.003" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_required_dependency_without_provider_still_refuses[dynamic_postbind]" time="0.002" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_default_precedence_is_classified_before_graph_construction[none-default-is-plain-dynamic_prebind]" time="0.002"><failure message="assert &lt;ParameterDIShape.SINGLE_BY_ANNOTATION: 3&gt; is &lt;ParameterDIShape.PLAIN: 2&gt;&#10; +  where &lt;ParameterDIShape.SINGLE_BY_ANNOTATION: 3&gt; = &lt;melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement object at 0x00000423D80C2760&gt;.di_shape">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:349: in test_default_precedence_is_classified_before_graph_construction
+    assert parameter.di_shape is expected_shape
+E   assert &lt;ParameterDIShape.SINGLE_BY_ANNOTATION: 3&gt; is &lt;ParameterDIShape.PLAIN: 2&gt;
+E    +  where &lt;ParameterDIShape.SINGLE_BY_ANNOTATION: 3&gt; = &lt;melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement object at 0x00000423D80C2760&gt;.di_shape</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_default_precedence_is_classified_before_graph_construction[instance-default-is-plain-dynamic_prebind]" time="0.002"><failure message="assert &lt;ParameterDIShape.SINGLE_BY_ANNOTATION: 3&gt; is &lt;ParameterDIShape.PLAIN: 2&gt;&#10; +  where &lt;ParameterDIShape.SINGLE_BY_ANNOTATION: 3&gt; = &lt;melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement object at 0x00000423D80C3E80&gt;.di_shape">tests\integration\melder\spellbook\test_spellbook_integration_default_precedence.py:349: in test_default_precedence_is_classified_before_graph_construction
+    assert parameter.di_shape is expected_shape
+E   assert &lt;ParameterDIShape.SINGLE_BY_ANNOTATION: 3&gt; is &lt;ParameterDIShape.PLAIN: 2&gt;
+E    +  where &lt;ParameterDIShape.SINGLE_BY_ANNOTATION: 3&gt; = &lt;melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement object at 0x00000423D80C3E80&gt;.di_shape</failure></testcase><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_default_precedence_is_classified_before_graph_construction[explicit-spellmap-dynamic_prebind]" time="0.001" /><testcase classname="tests.integration.melder.spellbook.test_spellbook_integration_default_precedence" name="test_default_precedence_is_classified_before_graph_construction[explicit-contract-dynamic_prebind]" time="0.001" /></testsuite></testsuites>

@@ -52,3 +52,11 @@ against its committed blob ID. Hash mismatch, unsupported change or malformed da
 raw diffs pass. Preserve paths with spaces/newlines and quote bounded path names in diagnostics.
 Regression validation includes real Git with a CRLF blob committed before eol=lf enforcement,
 true content/whitespace edits, staged changes, deletion, mode/type changes and malformed records.
+
+## Coverage selection after partial reruns
+Parse flat coverage XML filenames as structured identity. Reject malformed names, foreign runs,
+future attempts and nonregular files. Ignore valid reports for versions outside the current
+matrix; select the highest available attempt for each required cell. Missing cells and an empty
+newest report fail, without fallback to an older report. Validate the complete selection before
+copying into an empty dedicated output directory and record which attempt supplied each cell.
+Only successful runtime executions publish coverage artifacts; JUnit keeps its always-on retention.

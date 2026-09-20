@@ -27,12 +27,12 @@ def main() -> None:
 
     conduit = book.conjure()
 
-    settings = conduit.meld(spell=make_settings)
+    settings = conduit.meld(make_settings)
     print("function spell melded ->", settings)
-    again = conduit.meld(spell=make_settings)
+    again = conduit.meld(make_settings)
     print("unique law: same product back?", settings is again)
 
-    held = conduit.meld(spell=prebuilt)
+    held = conduit.meld(prebuilt)
     assert held is prebuilt and held.label == "built-by-hand"
     print("instance spell melded:", held.label)
 

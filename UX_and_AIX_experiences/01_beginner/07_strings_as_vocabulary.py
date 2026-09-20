@@ -26,8 +26,8 @@ def main() -> None:
     )
     conduit = book.conjure()
 
-    s_a, s_b = conduit.meld(spell=FromStrings), conduit.meld(spell=FromStrings)
-    e_a, e_b = conduit.meld(spell=FromEnums), conduit.meld(spell=FromEnums)
+    s_a, s_b = conduit.meld(FromStrings), conduit.meld(FromStrings)
+    e_a, e_b = conduit.meld(FromEnums), conduit.meld(FromEnums)
     assert s_a is not s_b and e_a is not e_b
     print("string and enum registrations behave identically (many)")
 

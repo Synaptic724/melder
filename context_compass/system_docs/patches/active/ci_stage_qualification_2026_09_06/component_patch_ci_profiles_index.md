@@ -12,11 +12,11 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `component_patch_ci_profiles.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-06T17:40:25Z |
-| line_count | 44 |
+| generated_at | 2026-09-06T18:56:47Z |
+| line_count | 54 |
 | line_ending | lf |
-| content_sha256 | `27e0448549aca042d7be7aee40b804ac17b8e0170b3285a1965625ee4695b9d6` |
-| sections | 7 |
+| content_sha256 | `6a2af4952843cd1585942e0125eaebb2c731b580442d445d36e330e03940e039` |
+| sections | 8 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
 before slicing. On any mismatch: STOP, do not slice, do not eyeball an
@@ -33,4 +33,5 @@ which you did.
 | 21-26 | 2 | Source proof |
 | 27-30 | 2 | Publication |
 | 31-39 | 2 | Python matrix and reporting extension |
-| 40-44 | 2 | Checkout identity correction |
+| 40-45 | 2 | Checkout identity correction |
+| 46-54 | 2 | Coverage transport correction |

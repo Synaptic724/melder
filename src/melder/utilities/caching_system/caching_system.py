@@ -90,6 +90,9 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 8: ordinary Python parameter defaults classify as PLAIN. Older
+    # plans may inject providers despite those defaults, even when their bind
+    # SHA still matches, so they must be rebuilt under the new precedence.
     # Version 7: phase-10 family selection is root-visible (the phase-8
     # existence analysis filters the shared pool walk down to the root's
     # occurrence graph) and shared-provider SpellContract payloads resolve by
@@ -122,6 +125,7 @@ class CachingSystem(Cleanable):
         5: "many_only_collection_param_names",
         6: "zero_provider_required_collections",
         7: "root_visible_family_selection",
+        8: "ordinary_defaults_are_plain",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"

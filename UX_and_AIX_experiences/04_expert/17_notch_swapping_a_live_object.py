@@ -96,7 +96,7 @@ def main() -> None:
     print("index: 1 member, selected =", v1_id[:12], "...")
 
     # v1 RESOLVES. This is the world as it stands.
-    before = conduit.meld(spell=HotSwapPricingV1)
+    before = conduit.meld(HotSwapPricingV1)
     assert before.rate == 100
     print("meld -> rate", before.rate)
 
@@ -119,7 +119,7 @@ def main() -> None:
     # AND THE PARKED CANDIDATE IS INERT. The expensive half of the swap
     # has already happened - v2 is compiled, registered and owned - while
     # the old version is still the one serving traffic.
-    still = conduit.meld(spell=HotSwapPricingV1)
+    still = conduit.meld(HotSwapPricingV1)
     assert still.rate == 100
     print("meld -> rate", still.rate, " (v2 is parked, not resolvable)")
     print("  the costly half of a swap is done while v1 still serves")

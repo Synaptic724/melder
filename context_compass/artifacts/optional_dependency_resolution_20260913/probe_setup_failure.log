@@ -1,0 +1,30 @@
+F
+================================== FAILURES ===================================
+_ test_registered_class_is_injected_despite_optional_none_default[automatic_prebind-default] _
+
+optional_runtime = <test_optional_dependency_default_resolution_experiment.OptionalResolutionRuntime object at 0x00000311862BAF90>
+registration = 'default'
+
+    @pytest.mark.parametrize("registration", ("default", "named", "named_and_framed"))
+    def test_registered_class_is_injected_despite_optional_none_default(
+            optional_runtime: OptionalResolutionRuntime,
+            registration: str,
+    ) -> None:
+        """Prove one matching provider is injected instead of leaving the default None.
+    
+        The provider has no live instance before the consumer meld. The injected
+        object must be the exact instance subsequently retrieved by its registered
+        SHA, including named and differently framed registrations.
+        """
+        provider_id = optional_runtime.bind_provider(registration)
+        consumer_id = optional_runtime.bind_consumer(NeedsOptionalSomething)
+        conduit = optional_runtime.ensure_conduit()
+>       assert not conduit.has_live_creation(spell_id=provider_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Conduit.has_live_creation() got an unexpected keyword argument 'spell_id'
+
+tests\experimentation\test_optional_dependency_default_resolution_experiment.py:137: TypeError
+=========================== short test summary info ===========================
+FAILED tests/experimentation/test_optional_dependency_default_resolution_experiment.py::test_registered_class_is_injected_despite_optional_none_default[automatic_prebind-default]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 0.52s

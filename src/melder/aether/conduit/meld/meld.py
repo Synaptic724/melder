@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from annotationlib import Format
 import inspect
 from threading import RLock
 from typing import (
@@ -11,6 +12,7 @@ from typing import (
     Tuple,
     Sequence,
     ClassVar,
+    NoReturn,
 )
 
 
@@ -53,6 +55,8 @@ class Meld(Cleanable, ABC):
 
     Primary responsibilities:
     - resolve a target spell by spell id or normalized lookup key
+    - provide the shared refusal diagnostic for non-resolvable registrations;
+      concrete execution doors enforce capability while observational lookup remains available
     - normalize per-call override payloads
     - enforce structural validity, contract validity, and per-conduit
       resolution validity before instance access
@@ -592,6 +596,34 @@ class Meld(Cleanable, ABC):
             "Concrete Meld subclasses must implement describe_live_creation_status()."
         )
 
+    @staticmethod
+    def _raise_non_resolvable_registration(spell: Spell) -> NoReturn:
+        """
+        Refuse direct resolution of one explicitly non-resolvable registration.
+
+        Contract:
+            - Called only on the failure branch of concrete execution doors.
+            - Preserves the selected version's identity without searching for another provider.
+            - Performs no validation, hook dispatch, construction or creation-store access.
+            - Observational lookup and status probes do not call this helper.
+
+        Args:
+            spell: Selected registration whose immutable resolution capability is False.
+
+        Raises:
+            MeldExecutionError: Always, with target identity and supported resolution guidance.
+        """
+        raise MeldExecutionError(
+            spell_id=spell.spell_id,
+            spell_name=spell.spell_name,
+            message=(
+                "The selected registration is non-resolvable (resolvable=False) and cannot "
+                "be melded or returned by reuse-only resolution. It remains available for "
+                "discovery. Supply the application value through the consuming spell's "
+                "override, or select a resolvable registration."
+            ),
+        )
+
     def _ensure_lineage_resolvable(self, spell: Spell) -> None:
         """
         Ensure the spell is structurally valid enough to continue toward
@@ -601,6 +633,8 @@ class Meld(Cleanable, ABC):
         responsibilities:
 
         - rerun structural phases when the lineage is unknown or gated
+        - gate the prior conduit-local resolution verdict after a structural
+          rerun so changed dependency selection cannot retain an old executor
         - force contract-driven revalidation when `SpellContract` defaults are
           present and need to invalidate conduit-local resolution state
         - hand off to per-conduit resolution gating when structural validity is
@@ -634,6 +668,9 @@ class Meld(Cleanable, ABC):
                     refreshed_state = spell.system_state
                     if refreshed_state is None or refreshed_state.validity is not SpellValidity.valid:
                         raise SpellbookValidationError([spell])
+                    self._force_resolution_revalidation(
+                        spell, change_reason=SpellStateChangeReason.structure_changed,
+                    )
 
         self._check_contracts_and_force_revalidation(spell)
 
@@ -971,6 +1008,8 @@ class Meld(Cleanable, ABC):
             - Returns an empty list when the signature cannot be inspected.
             - Skips self/cls and var-arg parameters.
             - Only parameters with SpellContract defaults are returned.
+            - Preserves unresolved Python 3.14 annotation names as ForwardRefs;
+              checking defaults must not evaluate TYPE_CHECKING-only imports.
 
         Args:
             spell: Spell whose callable signature is inspected.
@@ -984,7 +1023,7 @@ class Meld(Cleanable, ABC):
             return []
 
         try:
-            signature = inspect.signature(call_target)
+            signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
         except (TypeError, ValueError):
             return []
 
@@ -1005,7 +1044,12 @@ class Meld(Cleanable, ABC):
 
         return contracts
 
-    def _force_resolution_revalidation(self, spell: Spell) -> None:
+    def _force_resolution_revalidation(
+            self,
+            spell: Spell,
+            *,
+            change_reason: SpellStateChangeReason = SpellStateChangeReason.contract_unvalidated,
+    ) -> None:
         """
         Force resolution validity to gated so revalidation runs in this conduit.
 
@@ -1016,6 +1060,8 @@ class Meld(Cleanable, ABC):
 
         Args:
             spell: Spell to mark for resolution revalidation.
+            change_reason: Why the compiled resolution must be rebuilt. Existing
+                contract callers retain contract_unvalidated by default.
         """
         spell_system_states = spell._spell_system_states
         conduit_id = self._resolution_conduit_id
@@ -1037,13 +1083,13 @@ class Meld(Cleanable, ABC):
             resolution_state.set_root_validity(
                 spell_id,
                 SpellValidity.gated,
-                change_reason=SpellStateChangeReason.contract_unvalidated,
+                change_reason=change_reason,
             )
         else:
             resolution_state.set_spell_validity(
                 spell_id,
                 SpellValidity.gated,
-                change_reason=SpellStateChangeReason.contract_unvalidated,
+                change_reason=change_reason,
             )
 
     def _get_resolution_validity(

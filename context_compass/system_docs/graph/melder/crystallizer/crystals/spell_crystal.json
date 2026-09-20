@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/spell_crystal.py",
- "source_sha256": "076f87f9d015c2f5a362b3581f34005752d6b3ad5f239e429d6cfc5c6170c86d",
+ "source_sha256": "24d389a39c7f50d6f08e7b1dd77bc12ba9916d319e9be4b008a18fbce88c3e21",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.spell_crystal": {
@@ -13,7 +13,8 @@
    "include": true,
    "role": "Custody carrier for one concrete spell version and the module world it depends on.",
    "responsibilities": [
-    "carry the bind signature and delegate module analysis to crystal_analysis"
+    "carry the bind signature and delegate module analysis to crystal_analysis",
+    "captures native per-version resolution capability as a detached replay value"
    ],
    "phases": [
     "runtime"
@@ -69,13 +70,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "1bd984746f212d8a43d10cfb0d777460dda8bb8cce42d82d202f4ccb7b07137a",
+   "span_sha256": "10f728167dc8490593bc4903213eb867936ac9d47781616c096a4864eab143a9",
    "role": "Spell custody twin + module-dependency manifest; carries the full bind signature and, for synthetic roots, the rebuildable module SOURCES (M3); opt-in user-source TEXT rides beside them (S2).",
    "responsibilities": [
     "captures identity and the full bind signature for one live spell target",
     "captures detached disposal names in resolved execution order without sorting or reapplying book policy",
     "delegates the module-world walk to a single-use CrystalAnalyzer (V3 carrier law)",
-    "carries the returned CrystalAnalysisResult and exposes it via delegating properties"
+    "carries the returned CrystalAnalysisResult and exposes it via delegating properties",
+    "captures native per-version resolution capability as a detached replay value"
    ],
    "owns_state": [
     "_analysis (one carried CrystalAnalysisResult)",

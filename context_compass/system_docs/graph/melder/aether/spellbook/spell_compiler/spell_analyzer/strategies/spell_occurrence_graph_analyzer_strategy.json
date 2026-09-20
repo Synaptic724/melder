@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
- "source_sha256": "5b6de6157a1f8bbd963da56491c0ed7570217c0032c62b7ce456948ff40b6cdb",
+ "source_sha256": "ac415f8c2ca742eb93ee001720c9de2830b98ea1c9bfefa34db153189ec3c47f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy": {
@@ -19,7 +19,7 @@
    "label": "SpellOccurrenceGraphAnalyzerStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
-   "lineno": 48,
+   "lineno": 49,
    "bases": [
     "SpellAnalyzerStrategy"
    ],
@@ -33,17 +33,19 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "04c5a2ee255abcb71834ee9de2c0ac97fbcbf1dd8f7151dddcacf993481fe6a4",
+   "span_sha256": "cdd39747ff070a150dee156d6f1ece4155bf44572a898887729602975a34283f",
    "role": "Occurrence-graph analyzer strategy for phase-8 analysis.",
    "responsibilities": [
     "expands rooted blueprint truth plus topology and contract context into an occurrence graph",
     "publishes occurrence graph analysis, fast key, and input signature onto SpellCompilerArtifact",
-    "owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion"
+    "owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion",
+    "retains existing providers as consumer dependency leaves without inspecting constructor contracts",
+    "signs complete required-input topology and refuses non-resolvable providers during late contract expansion"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "04c5a2ee255abcb71834ee9de2c0ac97fbcbf1dd8f7151dddcacf993481fe6a4"
+   "semantics_authored_against": "51fceb8d651119297e54d178cd2d053ac771b97ec822b3fdba71871cb285364c"
   }
  },
  "edges_out": [
@@ -108,6 +110,7 @@
   "SpellAnalyzerStrategy": "melder.aether.spellbook.spell_compiler.spell_analyzer.spell_analyzer_strategy.SpellAnalyzerStrategy",
   "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
   "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers",
+  "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
   "SharedCompilerExecutions": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
   "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
   "Spell": "melder.aether.spellbook.spell.Spell",

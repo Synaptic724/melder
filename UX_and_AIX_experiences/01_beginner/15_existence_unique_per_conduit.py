@@ -18,9 +18,9 @@ def main() -> None:
     child_a = root.create_lesser_conduit()
     child_b = root.create_lesser_conduit()
 
-    a1, a2 = child_a.meld(spell=ScopeLocalSession), child_a.meld(spell=ScopeLocalSession)
-    b1 = child_b.meld(spell=ScopeLocalSession)
-    r1 = root.meld(spell=ScopeLocalSession)
+    a1, a2 = child_a.meld(ScopeLocalSession), child_a.meld(ScopeLocalSession)
+    b1 = child_b.meld(ScopeLocalSession)
+    r1 = root.meld(ScopeLocalSession)
     assert a1 is a2
     assert len({id(a1), id(b1), id(r1)}) == 3
     print("unique_per_conduit: stable within a scope, three scopes = three instances")
