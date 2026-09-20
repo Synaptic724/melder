@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 8651
-CONTENT_SHA256 = '2eb5b7a03fc991fa76fd7c207a60103429cb2e0fc2672f8c21e04be1579a503f'
+LINE_COUNT = 8655
+CONTENT_SHA256 = 'fb28da249dac8f75a89386ac8f9d657c37b26209c0a1460f039becb13bd28912'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -2979,8 +2979,12 @@ Dirty terminology guardrail for this pipeline:
   - `src/melder/aether/conduit/meld/meld.py:760`
     (`_gated_validation_required` - NOT :502-532)
 
-PhaseScheduler coordinates these phases using worker threads and a shared
-cancellation event; broken spells trigger SpellbookValidationError.
+PhaseScheduler coordinates these phases using persistent worker threads and a fresh cancellation
+event per run; broken spells trigger SpellbookValidationError. Local Phase-5/6 registration defers
+capturing that event until the unit factory runs. Capturing it during registration would retain the
+previous run's signal, causing false cancellation after failure and missing current cancellation.
+EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._register_target_single_phase`
+and `src/melder/utilities/synchronization/phase_scheduler.py:PhaseScheduler.run_all_phases`.
 
 Phase 4 strategy coverage (non-exhaustive):
 - Circular/self-dependency detection and dangling dependency checks.
@@ -3896,9 +3900,9 @@ Concurrency/Threading:
   - src/melder/utilities/synchronization/phase_scheduler.py:399-440
 
 Invariants/Guarantees:
-- One-shot. `cleanup` is idempotent and double-checked under `_lock`, and once
-  `_cleaned` is set the scheduler cannot be restarted - the sentinels have been
-  consumed and the workers have exited, so there is nothing left to feed.
+- Runs reuse the same worker pool with a new cancellation scope each time. `cleanup` is idempotent
+  and double-checked under `_lock`; once `_cleaned` is set the scheduler cannot be restarted because
+  the sentinels have been consumed and the workers have exited.
 
 Failure Modes:
 - PhaseTimeoutError or PhaseExecutionError on failures.

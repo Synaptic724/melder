@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: fbb1849ddecf1be9e334e975c3d30fb16d803093a5699091e5f5fb2ba1dfcd4a
+SOURCE FINGERPRINT: ab6e64ce53720a26af1d0d83457cd62f52ca9a670f3f93a1acba8de43ed5a1dc
 FILE COUNT: 585
 
 ================================================================================
@@ -138467,7 +138467,7 @@ END FILE: src/melder/aether/spellbook/spellbook.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook_creation_system.py
-CONTENT SHA256: 70771538c4d8cbeaede6d6638897de35f24221cb7042ec1115b0eb8c46c5d777
+CONTENT SHA256: 308cef937dff50462b7a6691cd8101fb929a91dcfd2bebb0d51f9585563ac94a
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -140572,18 +140572,22 @@ class SpellbookCreationSystem(Cleanable):
             target_spell_id: str,
             phase_func: Callable[..., Any],
             args: tuple[Any, ...],
+            pass_cancel_event: bool = False,
     ) -> None:
         """
         Purpose:
             Register one local target-spell phase as a single unit of work.
         Contract:
             - Registers exactly one unit with local-scope metadata.
+            - When requested, reads cancellation inside the phase factory, after the
+              persistent scheduler has installed the current run's signal.
         Args:
             scheduler: Scheduler receiving the phase.
             phase_name: Phase name/label prefix.
             target_spell_id: Target spell id for labelling metadata.
             phase_func: Bound spell phase callable.
             args: Concrete argument tuple for the phase callable.
+            pass_cancel_event: Forward the current run's event as a keyword argument.
         Returns:
             None.
         """
@@ -140593,6 +140597,7 @@ class SpellbookCreationSystem(Cleanable):
                 scheduler.create_unit_of_work(
                     func=phase_func,
                     args=args,
+                    kwargs={"cancel_event": scheduler.cancel_event} if pass_cancel_event else None,
                     label=f"{phase_name}:{target_spell_id}",
                     metadata={
                         "phase": phase_name,
@@ -140617,6 +140622,8 @@ class SpellbookCreationSystem(Cleanable):
             Run target-local foundational phases (root/system/change-control).
         Contract:
             - Registers local foundational phases for one target spell only.
+            - Cancellation-aware phases bind the active run event when their units are
+              created, so an earlier cancelled run cannot poison local revalidation.
         Args:
             spellbook: Owning Spellbook instance.
             conduit_id: Conduit scope id.
@@ -140636,14 +140643,16 @@ class SpellbookCreationSystem(Cleanable):
                     phase_name="root_blueprints_local",
                     target_spell_id=target_spell_id,
                     phase_func=compiler_system.run_phase_root_blueprints_local,
-                    args=(spellbook, target_spell, conduit_id, scheduler.cancel_event,),
+                    args=(spellbook, target_spell, conduit_id,),
+                    pass_cancel_event=True,
                 )
                 SpellbookCreationSystem._register_target_single_phase(
                     scheduler=scheduler,
                     phase_name="system_validation_local",
                     target_spell_id=target_spell_id,
                     phase_func=compiler_system.run_phase_system_validation_local,
-                    args=(spellbook, target_spell, conduit_id, scheduler.cancel_event,),
+                    args=(spellbook, target_spell, conduit_id,),
+                    pass_cancel_event=True,
                 )
                 SpellbookCreationSystem._register_target_single_phase(
                     scheduler=scheduler,

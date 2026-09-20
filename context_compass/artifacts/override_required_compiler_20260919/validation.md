@@ -1,7 +1,7 @@
 # S3 compiler validation
 
 Owner: updater_0. Recorded: 2026-09-19T21:38:00Z.
-Ticket: `tickets/tasks/2026-09-19_implement_override_required_compiler_task.md`.
+Ticket: `tickets/tasks/completed/2026-09-19_implement_override_required_compiler_task.md`.
 
 ## Delivered boundary
 

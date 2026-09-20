@@ -1,7 +1,7 @@
 # Runtime admission qualification
 
 Recorded: 2026-09-19T22:08:58Z. Owner: updater_0.
-Ticket: `tickets/tasks/2026-09-19_enforce_non_resolvable_runtime_admission_task.md`.
+Ticket: `tickets/tasks/completed/2026-09-19_enforce_non_resolvable_runtime_admission_task.md`.
 
 ## Delivered behavior
 

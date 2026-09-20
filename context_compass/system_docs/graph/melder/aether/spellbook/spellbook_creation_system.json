@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook_creation_system.py",
- "source_sha256": "3db8229b52a63285633377daf623256e779991ecad2881e7b86ef661bafd1b1f",
+ "source_sha256": "bc9640cf903f8db701e0385435aa7f41391573d1445d6c3627e58ff73ca1965e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook_creation_system": {
@@ -58,14 +58,15 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "9e7303af932a764b019f4fa1aa096b85e12a8cd14d39232648dd6c3ccff34e29",
+   "span_sha256": "4aab33a97c4b3cba7e887c61054034ff5268ffa0594c3e356037f4e8fd8fd5a6",
    "role": "Conjure-only orchestration helper for Spellbook.",
    "responsibilities": [
     "prepares spellbook configuration and structural phase execution before conjure",
     "runs conduit-scoped resolution phases and policy gating for conjure",
     "builds and activates the root conduit for one conjure run",
     "wires conduit ownership into local spells and fires conjure hooks",
-    "excludes non-resolvable definitions from executable cache payload and plan-phase eligibility"
+    "excludes non-resolvable definitions from executable cache payload and plan-phase eligibility",
+    "binds local phase cancellation arguments when units are created within the current scheduler run"
    ],
    "owns_state": [
     "_spellbook",

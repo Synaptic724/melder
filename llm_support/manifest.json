@@ -2170,13 +2170,13 @@
     },
     "src": {
       "bundle": {
-        "bytes": 10811418,
-        "lines": 276373,
+        "bytes": 10812021,
+        "lines": 276382,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "cc53761d098c6dfc77f8cd15ef6410597dbb7d623b01798355b3eeb57aa36dc7"
+        "sha256": "1d08f8337c6d76115e45ec67729fbb17301f6fb35846bfd1a7762b488cbd0720"
       },
-      "content_bytes": 10454786,
-      "content_lines": 271687,
+      "content_bytes": 10455389,
+      "content_lines": 271696,
       "file_count": 585,
       "files": {
         "src/melder/__architecture__.py": {
@@ -4196,9 +4196,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spellbook_creation_system.py": {
-          "content_bytes": 131331,
-          "content_lines": 3266,
-          "content_sha256": "70771538c4d8cbeaede6d6638897de35f24221cb7042ec1115b0eb8c46c5d777",
+          "content_bytes": 131934,
+          "content_lines": 3275,
+          "content_sha256": "308cef937dff50462b7a6691cd8101fb929a91dcfd2bebb0d51f9585563ac94a",
           "source_encoding": "utf-8"
         },
         "src/melder/crystallizer/asset_management/adapters/sqlite_mesh_adapter.py": {
@@ -5694,20 +5694,20 @@
         "bytes": 115524,
         "lines": 607,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "0b56301219eb34c41aca59fa942e69937ee10906461b6856f4f5ee0551b7c4c9"
+        "sha256": "22bc14758580ea34ff19518a0a1d4f251b83d813f89a857d9e63ae9c1d556c2c"
       },
-      "source_fingerprint": "fbb1849ddecf1be9e334e975c3d30fb16d803093a5699091e5f5fb2ba1dfcd4a"
+      "source_fingerprint": "ab6e64ce53720a26af1d0d83457cd62f52ca9a670f3f93a1acba8de43ed5a1dc"
     },
     "tests": {
       "bundle": {
-        "bytes": 11018490,
-        "lines": 314560,
+        "bytes": 11024875,
+        "lines": 314716,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "1202eb7266d9dd87fd29578403dd1871e257d38f980cc14981c008bbd04c633e"
+        "sha256": "efb60dd5bebcc0bbc508ed74c50c49eada96328ee9c5385b9edbf92bf211b32c"
       },
-      "content_bytes": 10520609,
-      "content_lines": 307922,
-      "file_count": 829,
+      "content_bytes": 10526372,
+      "content_lines": 308070,
+      "file_count": 830,
       "files": {
         "tests/_codegen_system_support.py": {
           "content_bytes": 7894,
@@ -6355,6 +6355,12 @@
           "content_bytes": 26017,
           "content_lines": 749,
           "content_sha256": "2f213755a7fe3d1dd136faa38bd1c4cc3a8b1ed2f9a7eac986b166b1d6ad9936",
+          "source_encoding": "utf-8"
+        },
+        "tests/component/melder/spellbook/test_spellbook_component_local_phase_cancellation.py": {
+          "content_bytes": 5413,
+          "content_lines": 138,
+          "content_sha256": "a81541d8344b5fd37b70bcc85cda2fcd47764d07fed0fbd434cf01ab1a3f423c",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_override_required.py": {
@@ -9310,9 +9316,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/test_crystallizer.py": {
-          "content_bytes": 5484,
-          "content_lines": 187,
-          "content_sha256": "01707b04c7a4c758779df41700fdf4c6ff631d73b02258b62abcb653704ff50a",
+          "content_bytes": 5834,
+          "content_lines": 197,
+          "content_sha256": "090159585fe93b0f6c99ddfd3717fdb0bd37cf4cb0dff057e6d7a2b523d4506a",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/crystallizer/test_crystallizer_configuration.py": {
@@ -10685,12 +10691,12 @@
         }
       },
       "index": {
-        "bytes": 159962,
-        "lines": 851,
+        "bytes": 160166,
+        "lines": 852,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "7d076d4cfd922235b47bfe25f0d4393d1c3f533c34a38f76cdf7f9e20ad9d998"
+        "sha256": "6db997b4bc764be8011a4ef27e08300c204f1c967283850f28bc062d3b821eda"
       },
-      "source_fingerprint": "55b7d198bf63c193157239e5422e817bf5e2eabca8c5fd1a4b1df0ae9547bc3b"
+      "source_fingerprint": "8b4349695f5d31fef08019ce4fe54b6f3f3dd5e798f4620d9003b56700e699ce"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

@@ -485,9 +485,9 @@ Read-unit note (component contracts):
     S1 has one ready discovery task; later implementation stories are planned, not created or started.
     This task remains the evidence/history predecessor and has not been moved to completed.
   EVIDENCE:
-  - tickets/epics/2026-09-19_discoverable_non_resolvable_registrations_epic.md:1-35
-  - tickets/stories/2026-09-19_discoverable_registration_contract_discovery_story.md:1-29
-  - tickets/tasks/2026-09-19_trace_discoverable_registration_compiler_boundary_task.md:1-27
+  - tickets/epics/completed/2026-09-19_discoverable_non_resolvable_registrations_epic.md:1-35
+  - tickets/stories/completed/2026-09-19_discoverable_registration_contract_discovery_story.md:1-29
+  - tickets/tasks/completed/2026-09-19_trace_discoverable_registration_compiler_boundary_task.md:1-27
   IMPACT: Active continuation moves to the dedicated discovery task through the epic/story hierarchy.
     No runtime behavior or new regression tests changed as part of epic creation.
   NEXT: Continue through the successor task's registration ownership and target-selection trace.
@@ -496,9 +496,9 @@ Read-unit note (component contracts):
 
 ## Context / Handoff Summary
 PROGRAM ROUTE: continue through the discoverable-non-resolvable registrations epic and its S1 task:
-`tickets/epics/2026-09-19_discoverable_non_resolvable_registrations_epic.md`
-`tickets/stories/2026-09-19_discoverable_registration_contract_discovery_story.md`
-`tickets/tasks/2026-09-19_trace_discoverable_registration_compiler_boundary_task.md`
+`tickets/epics/completed/2026-09-19_discoverable_non_resolvable_registrations_epic.md`
+`tickets/stories/completed/2026-09-19_discoverable_registration_contract_discovery_story.md`
+`tickets/tasks/completed/2026-09-19_trace_discoverable_registration_compiler_boundary_task.md`
 This predecessor retains the original source evidence and discussion. No feature code has been written.
 
 Current proposal: reuse registration with a discoverable/unresolvable flag and required caller-supplied

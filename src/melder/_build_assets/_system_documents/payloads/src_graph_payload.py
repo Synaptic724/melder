@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27765
-CONTENT_SHA256 = 'c1a867c23529ff2074135fb7bc75bb8c8f5f9e12214f152ceb6bbcae99e50e3b'
+LINE_COUNT = 27766
+CONTENT_SHA256 = '4ae7bce90ba05f583b973863537f6c6738cbc84b9aa31867083edcf728b59886'
 
 TEXT = """# src_graph
 
@@ -15931,7 +15931,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook_creation_system.py
 
-- source_sha256: `3db8229b52a63285633377daf623256e779991ecad2881e7b86ef661bafd1b1f`
+- source_sha256: `bc9640cf903f8db701e0385435aa7f41391573d1445d6c3627e58ff73ca1965e`
 - nodes: 2
 
 ### Nodes
@@ -15954,6 +15954,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - builds and activates the root conduit for one conjure run
   - wires conduit ownership into local spells and fires conjure hooks
   - excludes non-resolvable definitions from executable cache payload and plan-phase eligibility
+  - binds local phase cancellation arguments when units are created within the current scheduler run
 - owns_state: `_spellbook`, `_policy`, `_automatic`, `_conduit_cls`, `_phase_scheduler_cls`
 - phases: `runtime`, `cleanup`
 - public methods: `check_system_state`, `cleanup`, `cleanup_phase_artifacts_after_resolution`, `conjure`, `define_conduit_into_spells`, `fire_conjure_hooks`, `get_conjure_hook_map`, `phase_change_control_factory`, `phase_execution_plan_factory`, `phase_injection_plan_factory`, `phase_local_frame_factory`, `phase_occurrence_plan_factory` (+15 more)

@@ -1,7 +1,7 @@
 # Non-resolvable registration feature qualification
 
 Owner: updater_0. Recorded: 2026-09-19T23:21:53Z.
-Owning task: `tickets/tasks/2026-09-19_publish_and_replay_non_resolvable_definitions_task.md`.
+Owning task: `tickets/tasks/completed/2026-09-19_publish_and_replay_non_resolvable_definitions_task.md`.
 
 ## Delivered contract
 
