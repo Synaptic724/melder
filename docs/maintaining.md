@@ -60,6 +60,12 @@ Keep TIER, GOAL, and SURFACE metadata accurate. Link the lesson from an appropri
 guide through `docs/curriculum.toml`. Guides and lessons receive reciprocal links;
 recognized public names in lesson surface metadata also link to the API reference.
 
+Teach human-facing resolution with quoted registered names: `conduit.meld("Service")`.
+Keep class/function/object references in registration and returned-object type annotations.
+Use `spell_id=` explicitly for machine identities, and retain frame/binding selectors when needed.
+When updating a prebuilt or generated-object example, verify its registered name rather than
+quoting the local variable that holds it.
+
 Run the applicable existing example harness on **Python 3.14t with the GIL disabled**.
 Example execution is separate from Sphinx rendering. Check the asserted result and
 handled refusal paths; a passing script is not proof of every historical prose claim.

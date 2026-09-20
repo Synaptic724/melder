@@ -14,7 +14,7 @@ class Mailer:
 
 
 def welcome_new_user(conduit: md.Conduit, username: str) -> str:
-    mailer = conduit.meld(Mailer)
+    mailer = conduit.meld("Mailer")
     return mailer.send(username)
 
 
@@ -37,7 +37,7 @@ def main() -> None:
     # the whole reason to pass the conduit instead of re-conjuring: a
     # second conjure would have built a second world with its own Mailer,
     # and these two would not be the same object.
-    assert conduit.meld(Mailer) is conduit.meld(Mailer)
+    assert conduit.meld("Mailer") is conduit.meld("Mailer")
     print("one world handle, passed where needed - and the SAME Mailer")
     print("  answered both calls, which is what re-conjuring would break")
 

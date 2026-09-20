@@ -320,6 +320,10 @@ assert conduit.meld("Greeter") is greeter   # `unique` → same instance
 Your classes stay plain Python. Everything lives on `md.*` — if you ever need a
 deep import path, that's a bug in our public surface, not a pattern to copy.
 
+Pass the Python class or callable to `bind`; resolve it by its quoted registered
+name with `meld("Greeter")`. The tutorials use this name-based lookup throughout.
+Keep opaque machine identities explicit with `meld(spell_id=...)`.
+
 ## 🟢 The Rhythm
 <sub>**Beginner.** Three verbs, one order.</sub>
 

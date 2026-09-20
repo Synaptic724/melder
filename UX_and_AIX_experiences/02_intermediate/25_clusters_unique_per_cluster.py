@@ -47,8 +47,8 @@ def main() -> None:
 
     cloud.add_conduit_to_cluster(member, "workers")
 
-    bus_a = owner.meld(ClusterBus)
-    bus_b = member.meld(ClusterBus)
+    bus_a = owner.meld("ClusterBus")
+    bus_b = member.meld("ClusterBus")
     assert bus_a is bus_b, "cluster members must share the elected leader's bus"
     print("one bus per cluster, shared by members:", bus_a is bus_b)
 

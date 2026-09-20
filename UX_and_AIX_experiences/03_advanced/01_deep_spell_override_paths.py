@@ -44,7 +44,7 @@ def main() -> None:
     test_credentials = Credentials()
     test_credentials.source = "test-fixture"
     pipeline = conduit.meld(
-        MailPipeline,
+        "MailPipeline",
         override={"transport>credentials": test_credentials},
     )
     assert pipeline.transport.credentials is test_credentials
@@ -56,7 +56,7 @@ def main() -> None:
     # above did not build a private throwaway graph. It CONSTRUCTED the
     # singleton Transport - around your fixture - and registered it as the
     # canonical one. The override therefore did not end when the call did.
-    plain = conduit.meld(Transport)
+    plain = conduit.meld("Transport")
     assert plain is pipeline.transport
     assert plain.credentials.source == "test-fixture"
     print("the override BUILT the singleton; later melds reuse it:",

@@ -1,0 +1,8 @@
+{
+  "document": "release_docs/0.2.43.md",
+  "local_links_verified": 19,
+  "publication_timestamp": "2026-09-06T18:42:22Z",
+  "target_version": "0.2.43",
+  "target_commit": "05ebf662b64b60b8c105903de43c4a956607cda8",
+  "runtime_tests_run_for_document": false
+}

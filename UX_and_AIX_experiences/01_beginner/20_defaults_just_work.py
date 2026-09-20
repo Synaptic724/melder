@@ -19,7 +19,7 @@ def main() -> None:
     book.bind(spell=HttpClient, existence="unique")
     conduit = book.conjure()
 
-    client = conduit.meld(HttpClient)
+    client = conduit.meld("HttpClient")
     assert (client.timeout, client.retries) == (30, 3)
     print("defaults arrived untouched:", client.timeout, client.retries)
 

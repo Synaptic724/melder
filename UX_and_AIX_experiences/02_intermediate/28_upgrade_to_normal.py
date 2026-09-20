@@ -30,13 +30,13 @@ def main() -> None:
 
     # An unnamed child scope, working away...
     worker = root.create_lesser_conduit()
-    bench_before = worker.meld(Workbench)
+    bench_before = worker.meld("Workbench")
 
     # ...promoted in place. Name granted, world registration performed.
     worker.upgrade_to_normal(name="worker")
 
     # It KEPT its stuff: the per-conduit bench survives the promotion.
-    bench_after = worker.meld(Workbench)
+    bench_after = worker.meld("Workbench")
     assert bench_after is bench_before
     print("promotion kept the child's creations:", type(bench_after).__name__)
 

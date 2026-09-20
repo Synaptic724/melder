@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: ab6e64ce53720a26af1d0d83457cd62f52ca9a670f3f93a1acba8de43ed5a1dc
+SOURCE FINGERPRINT: 34e9a724588c455db610ff2ec18eaa8d32bf3f2b5713cf77287b8a32c24cf3f5
 FILE COUNT: 585
 
 ================================================================================
@@ -270,7 +270,7 @@ END FILE: src/melder/__graph_network__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__init__.py
-CONTENT SHA256: 5c269055cd7538b6504dfe3e556e2e35552fcfbf7865cb32aadb2983f2268b7e
+CONTENT SHA256: 1ae707a6b08a50c36dc7acd93a3180df3d2959817ed59365e1ebef31da16a8ad
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -287,7 +287,7 @@ Quickstart:
     book = md.Spellbook()
     book.bind(spell=MyService, existence=md.Existence.unique)
     conduit = book.conjure(dynamic=True, name="root")
-    service = conduit.meld(MyService)
+    service = conduit.meld("MyService")
 
 Workflow map - every name below is importable from this root:
 - BIND: Spellbook, SpellBinder, scan_bind (decorator), Spell,
@@ -597,7 +597,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: e117477eb86b0e436404c2575572d24ad4dc0916bd5b710cefe8e3deff616eea
+CONTENT SHA256: 7fc7c25b825ac51a1d9e505735668238cb479475deac8b3000f9ee8591a85fe3
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -611,7 +611,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.43"
+__version__ = "0.2.44"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================

@@ -10,8 +10,8 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_src.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | ab6e64ce53720a26af1d0d83457cd62f52ca9a670f3f93a1acba8de43ed5a1dc |
-| bundle_sha256 | 1d08f8337c6d76115e45ec67729fbb17301f6fb35846bfd1a7762b488cbd0720 |
+| source_fingerprint | 34e9a724588c455db610ff2ec18eaa8d32bf3f2b5713cf77287b8a32c24cf3f5 |
+| bundle_sha256 | 2433eccfdb85fca8619c42ef638fd70e248b86cb6ebda1d89c9c329411337b11 |
 | bundle_line_count | 276382 |
 | bundle_line_ending | lf |
 | files | 585 |
@@ -26,10 +26,10 @@ Line numbers are 1-based and inclusive.
 | 131-149 | 136-146 | 422 | utf-8 | e07f6a610c5fe48c01438a48785076115c1ee43f5c6a5074edf1b2b54d91a206 | src/melder/__description__.py |
 | 150-206 | 155-203 | 2185 | utf-8 | 32b52400c58dd14dcf6ff5c9c04f68b0e5d9e6cbac4b2eb087d3b2ae7d074794 | src/melder/__graph_details__.py |
 | 207-270 | 212-267 | 2582 | utf-8 | 787d47f3b6baf59adbb10d416642dfc4653b819981d319df69562542c70b6bbe | src/melder/__graph_network__.py |
-| 271-547 | 276-544 | 10165 | utf-8 | 5c269055cd7538b6504dfe3e556e2e35552fcfbf7865cb32aadb2983f2268b7e | src/melder/__init__.py |
+| 271-547 | 276-544 | 10167 | utf-8 | 1ae707a6b08a50c36dc7acd93a3180df3d2959817ed59365e1ebef31da16a8ad | src/melder/__init__.py |
 | 548-584 | 553-581 | 1254 | utf-8 | 9a0c67a1b8391ab86af1c4242de72b21d3c78abd513f9a5c36bae809bf39a314 | src/melder/__license__.py |
 | 585-597 | 590-594 | 241 | utf-8 | 805e6faacff6b558d223cb1773145cecce81a000d6f401baade5583d35e3fae5 | src/melder/__melder_cache__/__melder_cache__.py |
-| 598-617 | 603-614 | 314 | utf-8 | e117477eb86b0e436404c2575572d24ad4dc0916bd5b710cefe8e3deff616eea | src/melder/__version__.py |
+| 598-617 | 603-614 | 314 | utf-8 | 7fc7c25b825ac51a1d9e505735668238cb479475deac8b3000f9ee8591a85fe3 | src/melder/__version__.py |
 | 618-1329 | 623-1326 | 26236 | utf-8 | 1e610b6944779ebc963db6ea6b0f39a1cd8d6a717d6b54f63eb4e9191f89b6a1 | src/melder/_build_assets/_agent_documentation/_builder.py |
 | 1330-1466 | 1335-1463 | 4854 | utf-8 | adf2c02898b3154bd06e4f9b52ae69bec8c7eba59d7c890aeccc7238c260c618 | src/melder/_build_assets/_agent_documentation/agent_documentation.py |
 | 1467-1861 | 1472-1858 | 13734 | utf-8 | df23ba91d82b2f3c0ec8ffb7fc16ac1c4f4f22ea34f62824e5d06cf5622f0148 | src/melder/_build_assets/_bind_guard/_builder.py |

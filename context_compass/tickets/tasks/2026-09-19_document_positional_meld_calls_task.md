@@ -8,7 +8,7 @@
 - Agent Name: workflows_1
 - Priority: p2
 - Created: 2026-09-19T21:44:14Z
-- Updated: 2026-09-19T21:56:08Z
+- Updated: 2026-09-20T08:12:53Z
 
 ## Objective
 Replace the documented `meld(spell=target)` example spelling with `meld(target)` through a
@@ -18,6 +18,7 @@ deterministic codemod, including the saved lesson sources used by Read the Docs 
 - ENTRY_GATE: Owner explicitly requested this documentation/README sweep using a code generator.
 - EXECUTION_BOUNDARY: README and authored docs, the four published UX/AIX lesson collections and
   helpers, the package introductory docstring, derived documentation/assets and task evidence.
+  Owner-authorized follow-up: delete the resolved Crystallizer cache and rerun expert 09/27.
 - DEPENDENCIES: Existing docs catalog/curriculum, public Conduit/SpellSpace meld contracts and builders.
 - EXIT_GATE: No old spelling remains in publication inputs; codemod is idempotent and changes only
   the approved argument spelling; relevant example/docs checks pass or unrelated failures are evidenced.
@@ -33,8 +34,7 @@ deterministic codemod, including the saved lesson sources used by Read the Docs 
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: Positional spelling sweep, strict docs build, source-fidelity/link audit and
-  generated assets are complete. Three runtime-example failures are recorded during concurrent code work.
+- transition_reason: The authorized Crystallizer cache reset completed and both remaining examples pass.
 
 ## Steps / Checklist
 - [x] Inspect README, docs assembly, lesson input roots and applicable example instructions.
@@ -42,6 +42,8 @@ deterministic codemod, including the saved lesson sources used by Read the Docs 
 - [x] Apply the codemod and confirm idempotence and no remaining publication-input matches.
 - [x] Run documentation/example checks, rebuild generated publication outputs and refresh needed assets.
 - [x] Record final diff, validation evidence and handoff.
+- [x] Rerun the three failed expert examples after the owner's runtime changes.
+- [x] Clear the explicitly authorized Crystallizer cache and rerun expert 09/27.
 
 ## Deliverables
 - Consistent positional target spelling in the published tutorials and package quickstart.
@@ -56,6 +58,10 @@ deterministic codemod, including the saved lesson sources used by Read the Docs 
 - Source assets and src/other corpora regenerated and verified; scoped whitespace checks pass.
 - Existing lesson harness: 130 passed, three failed (one permission error, two cache assertions).
   Owner confirms concurrent runtime work; failures are retained separately and not repaired here.
+- 2026-09-20 targeted rerun on Melder 0.2.43 / Python 3.14.7t: one passed, two failed in 4.21s.
+  Expert 05 passes with filesystem access; expert 09:150 and expert 27:141 retain their cache assertions.
+- After the owner-authorized cache reset: expert 09 and 27 both pass (two passed in 3.66s).
+  Removed 100 cache files (92,979 bytes) from the verified Crystallizer cache root; no source/test changes.
 
 ## Risks / Rollback Notes
 - Read the Docs copies real example sources byte-for-byte, including helper files in downloads.
@@ -170,11 +176,77 @@ deterministic codemod, including the saved lesson sources used by Read the Docs 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-20T08:06:39Z
+  TYPE: DECISION
+  CLAIM: Owner requests rechecking the three previously failed expert examples. Current checkout
+    reports Melder 0.2.43 and the interpreter remains Python 3.14.7 free-threaded with GIL off.
+    Select exactly expert 05, 09 and 27. Use task-owned temporary/cache paths and the permitted
+    execution context to avoid repeating the known sandbox file-permission limitation.
+  EVIDENCE:
+  - artifacts/positional_meld_docs_20260919/validation.md:27-38
+  - UX_and_AIX_experiences/pytest_examples/test_expert_examples.py:31-38
+  - src/melder/__version__.py:1-11
+  IMPACT: Validation-only follow-up; no code or test changes are needed to obtain the result.
+  NEXT: Run the three selected examples and record their current outcomes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-20T08:08:30Z
+  TYPE: MEASURE
+  CLAIM: Exactly the three previously failed expert rows were rerun on current Melder 0.2.43 with
+    Python 3.14.7t, GIL off, task-owned temporary/pytest-cache directories and permitted filesystem
+    access. Expert 05 passes. Expert 09 and 27 still fail because the just-flushed checkpoint is
+    absent from list_cached_checkpoint_ids(); both earlier flush return-value assertions pass.
+    Result: one passed, two failed in 4.21s. No source/test changes were made during this follow-up.
+  EVIDENCE:
+  - artifacts/positional_meld_docs_20260919/examples-rerun-20260920.xml:1-1
+  - UX_and_AIX_experiences/04_expert/09_getting_data_into_your_database.py:144-150
+  - UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runtime.py:134-141
+  IMPACT: The temporary-directory failure is absent in the permitted execution context. The two
+    checkpoint-cache failures remain reproducible; their underlying cause is still unverified.
+  NEXT: Owner reviews the two remaining checkpoint-cache failures for a separate investigation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-20T08:10:17Z
+  TYPE: DECISION
+  CLAIM: Owner explicitly directs cache deletion and rerunning the two remaining failures. The
+    real cache resolver points at src/melder/__melder_cache__/__crystallizer_cache__ under this
+    checkout. Flush writes profile-scoped JSON files there, enforces retention, then returns IDs;
+    cached-ID enumeration reads that same cache. Clear only this cache root after absolute-path
+    and reparse-point checks, then execute expert 09/27 unchanged.
+  EVIDENCE:
+  - src/melder/crystallizer/asset_management/crystallizer_cache.py:111-125
+  - src/melder/crystallizer/asset_management/asset_management_system.py:184-259
+  - src/melder/crystallizer/asset_management/asset_management_system.py:285-300
+  IMPACT: The owner's instruction authorizes deleting this cache; no runtime patch is planned.
+  NEXT: Delete the verified cache directory and run both selected examples with filesystem access.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-20T08:12:53Z
+  TYPE: MEASURE
+  CLAIM: Deleted the explicitly authorized Crystallizer cache after checking its absolute location
+    inside the checkout and rejecting reparse points. It contained 100 files totaling 92,979 bytes.
+    Expert 09 and 27 then passed unchanged with filesystem access on Python 3.14.7t: two passed
+    in 3.66s. No runtime or test edits were required; fresh cache contents were recreated by the tests.
+  EVIDENCE:
+  - artifacts/positional_meld_docs_20260919/cache-reset-20260920.json:1-7
+  - artifacts/positional_meld_docs_20260919/examples-clean-cache-20260920.log:1-2
+  - artifacts/positional_meld_docs_20260919/examples-clean-cache-20260920.xml:1-1
+  IMPACT: Both remaining failures are resolved after clearing the cache. Combined with the earlier
+    passing expert 05 rerun, every previously failed example now has a passing follow-up result.
+  NEXT: Owner reviews the completed documentation update and cache-reset validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Completed the owner-authorized positional meld spelling sweep with a deterministic codemod: 150
 replacements in 65 published lesson/helper scripts and the package quickstart. README already matched.
 Canonical inputs, strict 294-page local HTML build, 39 docs tests, 35,501 links, rendered code and
 downloads all pass. Source assets and src/other corpora are refreshed against the current checkout.
-The lesson harness has 130 passes and three file/cache failures; one is confirmed permissions and
-two remain unattributed while the owner's other runtime change is active. No runtime fix was made.
-The task is in review; changes are uncommitted and no hosted documentation deployment occurred.
+The original lesson harness had 130 passes and three file/cache failures. The owner-requested
+2026-09-20 rerun passed expert 05 with filesystem access. Clearing the explicitly authorized
+Crystallizer cache then resolved expert 09/27: both passed unchanged in 3.66s. All previously failed
+examples now have passing follow-up results; the full 133-example suite was not repeated.
+Documentation and requested cache reset/retesting are complete. No runtime patch or hosted deployment occurred.

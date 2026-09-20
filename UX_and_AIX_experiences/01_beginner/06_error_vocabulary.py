@@ -21,7 +21,7 @@ def main() -> None:
     conduit = book.conjure()
 
     try:
-        conduit.meld(NeverRegistered)
+        conduit.meld("NeverRegistered")
     except KeyError as err:
         # the documented "not found anywhere" contract is one stable KeyError
         print("unregistered spell -> KeyError:", err)

@@ -117,7 +117,7 @@ def main() -> None:
 
     # The owner resolves its own spell. This works before any linking -
     # ownership and sharing are different questions.
-    assert owner.meld(Service,
+    assert owner.meld("Service",
                       binding_name="rewire-service").label == "service"
     print("owner melds its own spell -> service")
 
@@ -137,7 +137,7 @@ def main() -> None:
     print("  sharing is a PULL - the named conduit must OWN the spell")
 
     # STEP 5: meld completes the late binding across the new edge.
-    borrowed = borrower.meld(Service, binding_name="rewire-service")
+    borrowed = borrower.meld("Service", binding_name="rewire-service")
     assert borrowed.label == "service"
     print("borrower melds it ->", borrowed.label)
     print()

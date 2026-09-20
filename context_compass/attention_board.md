@@ -82,9 +82,12 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| teach_meld_string_names | review | handoff | codex | workflows_1 | none | Owner reviews and commits the quoted-name examples. | All 133 lessons and docs/publication checks pass. | Owner accepts the teaching correction. | tickets/tasks/2026-09-20_teach_meld_string_names_task.md | 2026-09-20T09:22:39Z | REQUIRED |
+| bind_lifecycle_hooks_planning | review | handoff | codex | updater_0 | none | Owner reviews the three bind-time lifecycle stages. | Draft epic preserves reference checks, Spell edits and post-bind callbacks. | Owner selects further discovery or implementation. | tickets/epics/2026-09-20_bind_lifecycle_hooks_and_reference_strategies_epic.md | 2026-09-20T08:04:19Z | REQUIRED |
+| release_0_2_37_to_0_2_43 | review | handoff | codex | updater_0 | none | Owner reviews the 0.2.43 release document. | Verified release date, completed-work map and migration notes. | Owner accepts draft or requests revisions. | tickets/tasks/2026-09-20_prepare_0_2_37_to_0_2_42_release_document_task.md | 2026-09-20T07:54:22Z | REQUIRED |
 | benchmark_spell_id_lookup | review | handoff | codex | updater_0 | none | Owner reviews keyword migration and separate setup finding. | 134 ID selectors corrected; original gauntlet and scoped checks pass. | Owner accepts repair or directs distinct setup follow-up. | tickets/tasks/2026-09-19_repair_benchmark_spell_id_lookup_task.md | 2026-09-20T01:15:40Z | REQUIRED |
 | purge_scope_planning | review | handoff | codex | updater_0 | none | Owner reviews purge scope rules before further work. | Epic drafted; source and repository assets verified. | Owner directs discovery or implementation separately. | tickets/tasks/2026-09-19_draft_purge_epic_and_refresh_assets_task.md | 2026-09-20T00:56:30Z | REQUIRED |
-| document_positional_meld_calls | review | handoff | codex | workflows_1 | none | Owner reviews and promotes documentation corrections. | 150 replacements; docs build and publication audit pass. | Owner accepts documentation update. | tickets/tasks/2026-09-19_document_positional_meld_calls_task.md | 2026-09-19T21:56:08Z | REQUIRED |
+| document_positional_meld_calls | review | handoff | codex | workflows_1 | none | Owner reviews the completed documentation update. | Docs verified; all three prior failures now pass in follow-up runs. | Owner accepts documentation and cache-reset results. | tickets/tasks/2026-09-19_document_positional_meld_calls_task.md | 2026-09-20T08:12:53Z | REQUIRED |
 | sync_owner_uv_environment | review | handoff | codex | workflows_1 | none | Owner resumes development and restarts editor Ruff. | Melder 0.2.40 and locked tools on existing no-GIL Python. | Owner accepts verified environment sync. | tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md | 2026-09-13T20:48:32Z | REQUIRED |
 | reproducible_uv_environment | review | handoff | codex | workflows_1 | none | Owner reviews and commits locked setup and CI. | Reproducible dependencies with the no-GIL matrix preserved. | Owner accepts changes and checks the hosted matrix. | tickets/tasks/2026-09-08_reproducible_uv_environment_task.md | 2026-09-08T11:26:20Z | REQUIRED |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
@@ -114,6 +117,12 @@ Message alert rules
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
+- teach_meld_string_names: SWITCH_TRIGGER is owner acceptance or new documentation failure evidence.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-20_teach_meld_string_names_task.md.
+- bind_lifecycle_hooks_planning: SWITCH_TRIGGER is owner direction after reviewing the draft; no implementation yet.
+  RESUME_HIERARCHY: tickets/epics/2026-09-20_bind_lifecycle_hooks_and_reference_strategies_epic.md.
+- release_0_2_37_to_0_2_43: SWITCH_TRIGGER is owner acceptance or requested edits to the release draft.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-20_prepare_0_2_37_to_0_2_42_release_document_task.md.
 - benchmark_spell_id_lookup: SWITCH_TRIGGER is owner review or direction on the separate shared-gauntlet setup failure.
   RESUME_HIERARCHY: tickets/tasks/2026-09-19_repair_benchmark_spell_id_lookup_task.md.
 - purge_scope_planning: SWITCH_TRIGGER is owner direction after reviewing the draft; implementation is not authorized.
