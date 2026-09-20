@@ -111,7 +111,7 @@ def main() -> None:
     # UNIQUE - *param. MailPipeline has exactly ONE credentials socket
     # under it, so the wildcard resolves without naming the path.
     mail = conduit.meld(
-        spell=MailPipeline,
+        MailPipeline,
         override={"*credentials": fixture},
     )
     assert mail.transport.credentials is fixture
@@ -123,7 +123,7 @@ def main() -> None:
     # the whole reason the form is safe to reach for.
     try:
         conduit.meld(
-            spell=BackupPipeline,
+            BackupPipeline,
             override={"*credentials": fixture},
         )
         raise AssertionError("expected a refusal - *param matched twice")
@@ -133,7 +133,7 @@ def main() -> None:
     # BROADCAST - **param. Same graph, and now hitting every match is
     # exactly what was asked for.
     backup = conduit.meld(
-        spell=BackupPipeline,
+        BackupPipeline,
         override={"**credentials": fixture},
     )
     assert backup.transport.credentials is fixture
@@ -146,7 +146,7 @@ def main() -> None:
     # also enforced. A no-op override is a caller mistake, not a default.
     try:
         conduit.meld(
-            spell=MailPipeline,
+            MailPipeline,
             override={"**nosuchparam": fixture},
         )
         raise AssertionError("expected a refusal - **param matched nothing")
@@ -158,7 +158,7 @@ def main() -> None:
     specific = Credentials()
     specific.source = "archive-only"
     mixed = conduit.meld(
-        spell=BackupPipeline,
+        BackupPipeline,
         override={
             "**credentials": fixture,
             "archive>credentials": specific,
@@ -172,7 +172,7 @@ def main() -> None:
 
     # `many` kept the blast radius inside the call: a plain meld gets a
     # clean graph with no fixture in it.
-    clean = conduit.meld(spell=BackupPipeline)
+    clean = conduit.meld(BackupPipeline)
     assert clean.transport.credentials is not fixture
     assert clean.archive.credentials.source == "vault"
     print("plain meld is untouched:", clean.archive.credentials.source)

@@ -137,7 +137,7 @@ class NeedsEngineProtocol:
 
 
 class NeedsOptionalEngine:
-    """SINGLE_BY_ANNOTATION, optional."""
+    """An ordinary None default suppresses inferred annotation DI."""
 
     def __init__(self, engine: Optional[IEngine] = None) -> None:
         self.engine = engine
@@ -387,15 +387,17 @@ def test_phase1_self_and_varargs_classify_ignore() -> None:
 
 
 def test_phase1_optional_single_is_marked_optional() -> None:
-    """Optional[IEngine] stays SINGLE but is flagged optional."""
+    """Optional[IEngine] with a None default is PLAIN and retains its default metadata."""
     spellbook = _make_spellbook()
     try:
         spell_id = spellbook.bind(spell=NeedsOptionalEngine, existence=Existence.unique, permissions="create")
         spell = _get_spell(spellbook, spell_id)
         ch.run_phase_requirements(spell)
         param = _param(spell, "engine")
-        assert param.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+        assert param.di_shape is ParameterDIShape.PLAIN
         assert param.is_optional is True
+        assert param.has_default is True
+        assert param.default_value is None
     finally:
         spellbook.cleanup()
 

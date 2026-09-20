@@ -37,14 +37,14 @@
 # tests/integration), not by marker.
 pytest==9.1.1
 pytest-cov==7.1.0
-coverage==7.15.2
+coverage==7.16.1
 
 # --- lint ---
-ruff==0.16
+ruff==0.16.7
 
 # --- build ---
-setuptools==83.0.0
-wheel==0.47.0
+setuptools==84.0.0
+wheel==0.48.0
 
 # --- optional: parallel test runs (`pytest -n auto`) ---
 # pytest-xdist==3.8.0

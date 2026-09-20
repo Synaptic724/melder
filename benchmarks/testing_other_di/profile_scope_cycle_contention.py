@@ -207,10 +207,10 @@ def _worker(
             # is the pure repeat-door lane (cached instance read). Timing
             # them separately attributes per-cycle cost to the right lane.
             seg_t0 = time.perf_counter_ns()
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             outer1_ns = time.perf_counter_ns() - seg_t0
             seg_t0 = time.perf_counter_ns()
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
             outer2_ns = time.perf_counter_ns() - seg_t0
             space_cm = lesser.enter_spellspace()
             seg_t0 = time.perf_counter_ns()
@@ -218,10 +218,10 @@ def _worker(
             enter_ns = time.perf_counter_ns() - seg_t0
             try:
                 seg_t0 = time.perf_counter_ns()
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
                 request1_ns = time.perf_counter_ns() - seg_t0
                 seg_t0 = time.perf_counter_ns()
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
                 request2_ns = time.perf_counter_ns() - seg_t0
             finally:
                 seg_t0 = time.perf_counter_ns()
@@ -387,11 +387,11 @@ def _micro_worker(
     lesser = root.create_lesser_conduit()
     try:
         for _ in range(1000):
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
         barrier.wait(timeout=10)
         loop_t0 = time.perf_counter_ns()
         for _ in range(MICRO_ITERS):
-            lesser.meld(spell=outer_id)
+            lesser.meld(spell_id=outer_id)
         results["outer_door_ns"] = (
             (time.perf_counter_ns() - loop_t0) / MICRO_ITERS
         )
@@ -399,11 +399,11 @@ def _micro_worker(
         space = space_cm.__enter__()
         try:
             for _ in range(1000):
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
             barrier.wait(timeout=10)
             loop_t0 = time.perf_counter_ns()
             for _ in range(MICRO_ITERS):
-                space.meld(spell=request_id)
+                space.meld(spell_id=request_id)
             results["request_door_ns"] = (
                 (time.perf_counter_ns() - loop_t0) / MICRO_ITERS
             )

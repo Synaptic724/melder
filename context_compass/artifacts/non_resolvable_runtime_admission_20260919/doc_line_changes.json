@@ -1,0 +1,28 @@
+{
+  "src_architecture.md": {
+    "Compiler consumers now separate required supplied inputs from executable dependencies. Full runtime": 1,
+    "end_line: 1573": 1,
+    "input/direct/fast/cache enforcement, Nexus graph and persistence integration remain unfinished.": 1,
+    "loc: 1573": 1,
+    "required inputs through both plan variants; runtime enforcement, graph projection and durable replay": 1,
+    "Runtime input/direct/fast/cache enforcement, Nexus projection and crystal transport remain pending.": 1,
+    "still require the later non-resolvable feature layers.": 1,
+    "verified_at: 2026-09-19T21:23:18Z": 1
+  },
+  "src_components.md": {
+    "- Claims are released on EVERY terminal path, including `LEAVE_BROKEN`.": 1,
+    "- Compiler classification and root eligibility are implemented; S4 runtime input/direct-resolution": 1,
+    "- S4 still must enforce supplied-value presence and direct/fast/cached resolution restrictions.": 1,
+    "component delta must not be read as complete non-resolvable execution support.": 1,
+    "end_line: 1573": 1,
+    "end_line: 819": 1,
+    "end_line: 820": 1,
+    "enforcement, Nexus graph projection and crystal replay are still pending.": 1,
+    "loc: 1573": 1,
+    "loc: 819": 1,
+    "loc: 820": 1,
+    "Runtime input/direct/fast/cache enforcement and Nexus/persistence integration are pending; this": 1,
+    "verified_at: 2026-08-02T13:00:45Z": 2,
+    "verified_at: 2026-09-19T21:23:18Z": 1
+  }
+}

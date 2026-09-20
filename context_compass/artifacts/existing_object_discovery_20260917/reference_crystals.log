@@ -1,0 +1,7 @@
+CRYSTAL {"bind_definition": false, "case": "synthetic", "instance_state_recorded": false, "kind": "synthetic_module", "rebindability": "replay_required", "source_retained": true}
+.CRYSTAL {"bind_definition": true, "case": "synthetic", "instance_state_recorded": false, "kind": "synthetic_module", "rebindability": "hydratable", "source_retained": true}
+.CRYSTAL {"case": "live_only_named_origin", "kind": "unknown", "rebindability": "replay_required", "source_retained": false}
+.CRYSTAL {"case": "no_module_name", "bind": "accepted", "crystal": "refused"}
+.CRYSTAL {"case": "fingerprint", "distinct_references_can_hash_alike": true}
+.
+5 passed in 0.34s

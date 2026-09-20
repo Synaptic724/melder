@@ -1560,30 +1560,39 @@ def test_component_spell_crafter_executes_real_creation_context_override_lane_fo
         spellbook.cleanup()
 
 
-def test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_dependency_closure() -> None:
+@pytest.mark.parametrize("precompile_service", [False, True], ids=["uncompiled", "compiled"])
+def test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_dependency_closure(
+        precompile_service: bool,
+) -> None:
     """
     Purpose:
-        Validate local Phase 5 only attaches artifacts for the target spell and its dependencies.
+        Validate local Phase 5 sees dependencies while publishing only to the target spell.
     Contract:
         - The local root-blueprint map excludes unrelated visible spells.
         - The local system index excludes unrelated visible spells.
-        - Scoped dependency spells receive local Phase 5 artifacts.
+        - The target index retains its dependency nodes.
+        - Dependency artifacts remain unchanged, whether absent or already compiled.
+    Args:
+        precompile_service: Build real provider artifacts first when True.
     Returns:
         None.
     Raises:
-        AssertionError: If local Phase 5 leaks unrelated spells into the scoped artifacts.
+        AssertionError: If local Phase 5 loses dependency visibility or mutates provider artifacts.
     """
     spellbook = _make_spellbook()
 
     class Service:
-        pass
+        """Supply the dependency whose canonical artifacts must be preserved."""
 
     class Consumer:
+        """Define the only target compiled by the local Phase-5 pass."""
+
         def __init__(self, service: Service) -> None:
+            """Retain the required service dependency."""
             self.service = service
 
     class Outside:
-        pass
+        """Provide an unrelated visible spell that must stay outside the local graph."""
 
     service_id = spellbook.bind(
         spell=Service,
@@ -1616,11 +1625,26 @@ def test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_depen
         assert service_spell is not None
         assert outside_spell is not None
 
-        _run_phase_root_blueprints_local(consumer_spell, "cid")
-
         consumer_artifact = consumer_spell._compiler_artifact
         service_artifact = service_spell._compiler_artifact
         outside_artifact = outside_spell._compiler_artifact
+
+        if precompile_service:
+            _run_phase_root_blueprints_local(service_spell, "cid")
+            _run_phase_occurrence_plan(service_spell, "cid")
+            _run_phase_injection_plan(service_spell, "cid")
+            _run_phase_patch_maps(service_spell, "cid")
+            _run_phase_execution_plan(service_spell, "cid")
+            assert service_artifact._root_blueprint_phase5 is not None
+            assert service_artifact._spell_system_index_phase5 is not None
+            assert service_artifact._spell_codegen_creation is not None
+
+        # Capture identity to detect replacement or destructive invalidation by the consumer pass.
+        service_blueprint = service_artifact._root_blueprint_phase5
+        service_index = service_artifact._spell_system_index_phase5
+        service_codegen = service_artifact._spell_codegen_creation
+
+        _run_phase_root_blueprints_local(consumer_spell, "cid")
 
         assert consumer_artifact._entire_dag_blueprint_phase5 is not None
         assert set(consumer_artifact._entire_dag_blueprint_phase5.keys()) == {consumer_id}
@@ -1630,7 +1654,9 @@ def test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_depen
         assert consumer_artifact._spell_system_index_phase5.get_node(outside_id) is None
 
         assert consumer_artifact._root_blueprint_phase5 is not None
-        assert service_artifact._root_blueprint_phase5 is not None
+        assert service_artifact._root_blueprint_phase5 is service_blueprint
+        assert service_artifact._spell_system_index_phase5 is service_index
+        assert service_artifact._spell_codegen_creation is service_codegen
         assert outside_artifact._root_blueprint_phase5 is None
     finally:
         spellbook.cleanup()

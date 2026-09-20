@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py",
- "source_sha256": "a94db51de9ff24db9f9e246dad6f52bdf0fd6f7e94d1d24e3c7f2d1b05591ef8",
+ "source_sha256": "887f82480fc8a556ff6a589b755ad900e3d0b729d75aeac6b3620e81460e00cd",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5": {
@@ -31,18 +31,20 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "56c0bb9b3afc0916133986f2395c36019f91904f20d64a58046328e2f3987294",
+   "span_sha256": "302bd1decaadfff9a3433d249d38f3967c3d56af9aefd056e858e056adaf8d73",
    "role": "Compiler-owned phase-5 rooted-blueprint build surface.",
    "responsibilities": [
     "builds SpellSystemAdjacencySnapshot and SpellSystemIndex from visible spell state",
     "builds root and per-spell RootResolutionBlueprint artifacts for visible roots and local scopes",
-    "rebuilds change-control component-of mappings and conduit revalidators from owned root blueprints"
+    "publishes canonical artifacts only to owned spells in conduit-wide passes or the selected local target, preserving dependency executors",
+    "rebuilds change-control component-of mappings and conduit revalidators from owned root blueprints",
+    "limits executable snapshots and blueprints to resolvable registrations while local descriptive topology stays owned by state"
    ],
    "phases": [
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "56c0bb9b3afc0916133986f2395c36019f91904f20d64a58046328e2f3987294"
+   "semantics_authored_against": "5f87406545ba469181d694b74a849c48707bcfb38c6f128ba1abd17ae74a1a8f"
   }
  },
  "edges_out": [],

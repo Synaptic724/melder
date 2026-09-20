@@ -23,9 +23,9 @@ def main() -> None:
     child = root.create_lesser_conduit()
     grandchild = child.create_lesser_conduit()
 
-    registries = {id(c.meld(spell=GlobalRegistry))
+    registries = {id(c.meld(GlobalRegistry))
                   for c in (root, child, grandchild)}
-    caches = {id(c.meld(spell=ScopeCache))
+    caches = {id(c.meld(ScopeCache))
               for c in (root, child, grandchild)}
     assert len(registries) == 1 and len(caches) == 3
     print("same tree: 1 shared registry, 3 scope-local caches")

@@ -4,6 +4,7 @@ import inspect
 import threading
 import typing
 import types
+from annotationlib import Format, get_annotations
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, get_args, get_origin, ClassVar
 
 
@@ -52,6 +53,8 @@ class SpellRequirementsFinder(Cleanable):
       providers.
     * Copies spell identity and routing metadata into the result, but does not
       interpret resolution policy beyond parameter classification.
+    * Ordinary explicit Python defaults classify as PLAIN and create no inferred
+      DI edge. SpellMap and SpellContract defaults remain explicit DI requests.
 
     Lifecycle
     ---------
@@ -436,10 +439,13 @@ class SpellRequirementsFinder(Cleanable):
         Resolution strategy:
             * For class targets, inspect "__init__" annotations because that
               is the callable surface DI will satisfy.
+            * Acquire raw annotations with Python 3.14 FORWARDREF format so
+              unavailable TYPE_CHECKING-only imports remain reference values.
             * Prefer "inspect.get_annotations(..., eval_str=True)" so string
               annotations and forward refs resolve through the target's module
               and local namespace.
-            * Fall back to non-evaluated annotations when full evaluation fails.
+            * Fall back to partially evaluated annotations when full evaluation
+              fails, preserving unresolved names for existing DI normalization.
             * Run a final normalization pass so nested string or generic
               fragments can still be simplified when partial resolution
               succeeded.
@@ -469,9 +475,11 @@ class SpellRequirementsFinder(Cleanable):
         else:
             annotation_target = call_target
 
-        raw_annotations: dict[str, Any] | None
+        raw_annotations: Optional[dict[str, Any]]
         try:
-            raw_annotations = dict(annotation_target.__annotations__)
+            # Direct __annotations__ access evaluates deferred annotations and
+            # raises before the normalizer can handle a TYPE_CHECKING-only name.
+            raw_annotations = get_annotations(annotation_target, format=Format.FORWARDREF)
         except AttributeError:
             raw_annotations = None
 
@@ -528,6 +536,7 @@ class SpellRequirementsFinder(Cleanable):
                     eval_str=False,
                     globals=globalns,
                     locals=localns,
+                    format=Format.FORWARDREF,
                 )
             except Exception:
                 annotations = {}
@@ -992,6 +1001,11 @@ class SpellRequirementsFinder(Cleanable):
         original callable shape without trying to satisfy those parameters from
         DI.
 
+        Fresh signatures use Python 3.14 FORWARDREF format, matching the
+        bind-time signature cache. An unavailable annotation name remains a
+        dependency candidate; it never becomes an empty parameter list merely
+        because its import was guarded by TYPE_CHECKING.
+
         Args:
             call_target:
                 The callable or class surface selected for signature inspection.
@@ -1011,7 +1025,7 @@ class SpellRequirementsFinder(Cleanable):
         signature = self._borrow_bind_time_signature(call_target)
         if signature is None:
             try:
-                signature = inspect.signature(call_target)
+                signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
             except (TypeError, ValueError):
                 # Some exotic / builtin callables may not expose a usable signature.
                 # In that case, we treat them as having no DI-visible parameters.
@@ -1106,13 +1120,20 @@ class SpellRequirementsFinder(Cleanable):
                parameter is explicitly asking for a spell contract object.
             2. "SpellMap" defaults win over annotations because an explicit
                map is a stronger statement than an inferred type-based lookup.
-            3. Missing annotations fall back to: data:`ParameterDIShape.PLAIN`.
-            4. Optional wrappers are removed only far enough to inspect the
+            3. Any other explicit Python default makes the parameter PLAIN,
+               preserving the selected value even when a provider is registered.
+               Presence, not truthiness, decides this: None, False and 0 count.
+            4. Missing annotations fall back to: data:`ParameterDIShape.PLAIN`.
+            5. Optional wrappers are removed only far enough to inspect the
                underlying dependency shape.
-            5. "list[T]" becomes: data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when "T"
+            6. "list[T]" becomes: data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when "T"
                looks like a DI candidate.
-            6. A remaining DI-eligible annotation becomes: data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
-            7. Everything else stays: data:`ParameterDIShape.PLAIN`.
+            7. A remaining DI-eligible annotation becomes: data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
+            8. Everything else stays: data:`ParameterDIShape.PLAIN`.
+
+        Ordinary defaults retain their annotation and value in the requirement
+        record; PLAIN only prevents automatic provider selection. Parameters
+        without defaults keep the existing annotation-based inference rules.
 
         The returned "is_optional" flag answers a Melder-specific question:
         can Phase 1 treat failure to supply this dependency as acceptable
@@ -1155,6 +1176,12 @@ class SpellRequirementsFinder(Cleanable):
                 None,
                 default_value,
             )
+
+        # The caller already selected an ordinary Python default. Preserve it
+        # instead of creating an inferred dependency that overrides it or fails
+        # when no provider exists. Explicit DI descriptors were handled above.
+        if has_default:
+            return ParameterDIShape.PLAIN, True, None, None
 
         # If there is no annotation at all, we can't infer DI.
         if not has_annotation or annotation is None:

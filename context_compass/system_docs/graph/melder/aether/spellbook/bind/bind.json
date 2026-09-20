@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/bind.py",
- "source_sha256": "1afa14dba2152cfe4087d39483f9db4524d0c72bd17b3fd9b401579dcd4d8687",
+ "source_sha256": "00d551e6bdc223dc1c96b2de19b0ec129be6fcac2d8f9fd1b3493f0ad95d599f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.bind": {
@@ -31,17 +31,20 @@
     "spell_id_inspector"
    ],
    "shape": {
-    "method_count": 10,
+    "method_count": 11,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "61f2d7464c143b6e6840e0181c817214db485c4b2745ed62eaa93f35a2059586",
+   "span_sha256": "5a693726333c59a8844c470f0b948d7acd62b427836aa50e3ea1eb53aea66827",
    "role": "Spell registration gateway for one Spellbook.",
    "responsibilities": [
     "examines binding targets into canonical binding profiles",
     "fingerprints binding metadata into structural spell ids",
+    "validates native resolvable bool before reflection; False uses its own hash domain while True preserves legacy ids",
+    "admits Protocol definitions only with resolvable=False without relaxing other binding rules",
     "resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement",
     "validates binding policy and spellframe semantics",
+    "checks direct public Protocol members on classes and actual supplied objects before Spell creation",
     "creates canonical Spell records for Spellbook registration"
    ],
    "owns_state": [
@@ -53,7 +56,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "61f2d7464c143b6e6840e0181c817214db485c4b2745ed62eaa93f35a2059586"
+   "semantics_authored_against": "5a693726333c59a8844c470f0b948d7acd62b427836aa50e3ea1eb53aea66827"
   }
  },
  "edges_out": [
@@ -91,13 +94,13 @@
   },
   {
    "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to_label": "ValueError",
+   "to_label": "TypeError",
    "relation": "creates",
    "confidence": "candidate"
   },
   {
    "from": "melder.aether.spellbook.bind.bind.Bind",
-   "to_label": "TypeError",
+   "to_label": "ValueError",
    "relation": "creates",
    "confidence": "candidate"
   }

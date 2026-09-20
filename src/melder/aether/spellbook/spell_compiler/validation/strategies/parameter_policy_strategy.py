@@ -27,6 +27,8 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
 
     This strategy ensures DI is not requested on variadic parameters and
     checks for contradictory DI classifications.
+    Non-resolvable definitions have no executable constructor-DI obligations,
+    so their parameter declarations remain descriptive and are not restricted here.
 
     Contract:
         Errors: VARIADIC_DI_UNSUPPORTED (DI annotation on *args/**kwargs),
@@ -92,6 +94,8 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
             return
 
         spell = context.spell
+        if not spell.resolvable:
+            return
 
         for param in requirements.parameters:
             if cancel_event is not None and cancel_event.is_set:

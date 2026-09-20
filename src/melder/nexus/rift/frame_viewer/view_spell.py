@@ -243,6 +243,15 @@ class ViewSpell(Cleanable):
                 tuple(),
             )
         )
+        filtered_payload = self._filter_spell_payload(spell_record.payload, visible_sections)
+        binding = filtered_payload.get("binding_payload")
+        if isinstance(binding, dict) and "relationships" in binding:
+            # Filtering operates on the detached normalized payload, never on the published record.
+            binding["relationships"] = tuple(
+                relationship for relationship in binding["relationships"]
+                if tuple(relationship["target_source_id"].split(":", 1))
+                in compiled_access_surface.visible_spell_keys
+            )
         return {
             "target_id": spell_link.link_id,
             "source_kind": spell_link.source_kind,
@@ -258,10 +267,54 @@ class ViewSpell(Cleanable):
             "source_profile_name": spell_record.payload.source_profile_name,
             "source_profile_version": spell_record.payload.source_profile_version,
             "visible_sections": visible_sections,
-            "payload": self._filter_spell_payload(
-                spell_record.payload,
-                visible_sections,
-            ),
+            "payload": filtered_payload,
+        }
+
+    def describe_spell_relationships(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Describe visible incoming and outgoing registered relationships without resolution.
+
+        Contract:
+            Uses current ACL-filtered spell descriptions. Both endpoints must be visible,
+            and the source binding-payload section must be readable. Capability is returned
+            only when that section is visible. No runtime object is acquired or constructed.
+
+        Args:
+            spell_source_id: Published book/version identity to navigate.
+            frame_name: Optional selected-frame assertion.
+
+        Returns:
+            Source identity, visible capability, and detached incoming/outgoing edge lists.
+        """
+        selected = self.describe_spell(spell_source_id, frame_name=frame_name)
+        descriptions = self.describe_spells(frame_name=frame_name)
+        visible_ids = {description["source_id"] for description in descriptions}
+        incoming: list[Dict[str, object]] = []
+        outgoing: list[Dict[str, object]] = []
+        for description in descriptions:
+            payload = self._get_required_payload_map(description["payload"])
+            binding = payload.get("binding_payload")
+            if not isinstance(binding, dict):
+                continue
+            for relationship in binding.get("relationships", ()):
+                if relationship["target_source_id"] not in visible_ids:
+                    continue
+                edge = {"source_id": description["source_id"], **relationship}
+                if edge["source_id"] == spell_source_id:
+                    outgoing.append(edge)
+                if edge["target_source_id"] == spell_source_id:
+                    incoming.append(edge)
+        binding = self._get_required_payload_map(selected["payload"]).get("binding_payload")
+        return {
+            "source_id": spell_source_id,
+            "resolvable": binding.get("resolvable", True) if isinstance(binding, dict) else None,
+            "incoming": incoming,
+            "outgoing": outgoing,
         }
 
     def describe_spell_payload(

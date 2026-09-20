@@ -32,6 +32,8 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
       in this first cut.
     - Emits validation issues into the supplied context; it does not mutate the
       spell or attempt recovery.
+    - Non-resolvable definitions retain ordinary Python annotations without
+      imposing constructor-DI shape restrictions.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
@@ -92,6 +94,8 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
             return
 
         spell = context.spell
+        if not spell.resolvable:
+            return
 
         for param in requirements.parameters:
             if cancel_event is not None and cancel_event.is_set:

@@ -1,0 +1,74 @@
+[
+  {
+    "borrowers": 1,
+    "consumer_injections_same_instance": 0,
+    "mode": "no_validation",
+    "provider_data_retained": true,
+    "provider_meld": "same_instance",
+    "provider_plan_present": true,
+    "provider_resolution_complete": false
+  },
+  {
+    "borrowers": 1,
+    "consumer_injections_same_instance": 1,
+    "mode": "resolution_only",
+    "provider_data_retained": true,
+    "provider_meld": "missing_codegen",
+    "provider_plan_present": false,
+    "provider_resolution_complete": false
+  },
+  {
+    "borrowers": 1,
+    "consumer_injections_same_instance": 1,
+    "mode": "structural_refresh",
+    "provider_data_retained": true,
+    "provider_meld": "missing_codegen",
+    "provider_plan_present": false,
+    "provider_resolution_complete": false
+  },
+  {
+    "borrowers": 1,
+    "consumer_injections_same_instance": 1,
+    "mode": "meld_only",
+    "provider_data_retained": true,
+    "provider_meld": "missing_codegen",
+    "provider_plan_present": false,
+    "provider_resolution_complete": false
+  },
+  {
+    "borrowers": 2,
+    "consumer_injections_same_instance": 0,
+    "mode": "no_validation",
+    "provider_data_retained": true,
+    "provider_meld": "same_instance",
+    "provider_plan_present": true,
+    "provider_resolution_complete": false
+  },
+  {
+    "borrowers": 2,
+    "consumer_injections_same_instance": 2,
+    "mode": "resolution_only",
+    "provider_data_retained": true,
+    "provider_meld": "missing_codegen",
+    "provider_plan_present": false,
+    "provider_resolution_complete": false
+  },
+  {
+    "borrowers": 2,
+    "consumer_injections_same_instance": 2,
+    "mode": "structural_refresh",
+    "provider_data_retained": true,
+    "provider_meld": "missing_codegen",
+    "provider_plan_present": false,
+    "provider_resolution_complete": false
+  },
+  {
+    "borrowers": 2,
+    "consumer_injections_same_instance": 2,
+    "mode": "meld_only",
+    "provider_data_retained": true,
+    "provider_meld": "missing_codegen",
+    "provider_plan_present": false,
+    "provider_resolution_complete": false
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "passed": 394,
+  "skipped": 1,
+  "failed": 0,
+  "skipped_cases": [
+    "tests.unit.melder.build_assets.test_build_asset_runner::test_running_the_runner_never_imports_melder"
+  ]
+}

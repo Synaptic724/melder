@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/spellspace_meld.py",
- "source_sha256": "5863628136e1f0f9d3788be26882a85037a0934eb79aad90eff8354cbb0a9889",
+ "source_sha256": "03441843572e6c4a8feb1979e1a666ead411f41ddbe74fd068504b62e0780795",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.spellspace_meld": {
@@ -13,7 +13,8 @@
    "include": true,
    "role": "Spellspace-facing meld front door.",
    "responsibilities": [
-    "route unique_per_spell_space work onto spellspace-local storage"
+    "route unique_per_spell_space work onto spellspace-local storage",
+    "refuses immutable non-resolvable registrations before normal resolution and reuse-only access"
    ],
    "phases": [
     "runtime"
@@ -41,17 +42,16 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "22cf46ec000d68b51d06f0d3f11c275a08a85c475d652e903f497e070aa430e8",
+   "span_sha256": "b174aabee88352c3ec95a1e92e69da29e2bf3ea73b7252fcc922157cbeee7407",
    "role": "Spellspace-facing meld front door.",
    "responsibilities": [
     "routes unique_per_spell_space storage through spellspace-local Creations",
     "routes conduit-owned lifetimes through owner-conduit ConduitCreations",
-    "provides live-creation status over spellspace-local and owner-conduit storage"
+    "provides live-creation status over spellspace-local and owner-conduit storage",
+    "refuses immutable non-resolvable registrations before normal resolution and reuse-only access"
    ],
    "owns_state": [
     "_spellspace",
-    "_spellspace_creations",
-    "_owner_conduit_creations",
     "_spellspace_id",
     "_owner_conduit_id"
    ],

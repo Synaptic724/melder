@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="6" failures="0" skipped="0" tests="6" time="1.540" timestamp="2026-09-19T18:14:22.525182-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_revalidation_recovers_after_previous_scheduler_failure[1]" time="0.003"><error message="failed on setup with &quot;RuntimeError: Aether has already been cleaned.&quot;">request = &lt;SubRequest 'local_runtime' for &lt;Function test_local_revalidation_recovers_after_previous_scheduler_failure[1]&gt;&gt;
+
+    @pytest.fixture(params=(1, 4))
+    def local_runtime(request: pytest.FixtureRequest) -&gt; Iterator[tuple[Spellbook, Conduit, str]]:
+        """Own one real book and its persistent pool, cleaning the runtime after each case.
+    
+        Args:
+            request: Supplies the worker count for single-worker and parallel-pool cases.
+    
+        Yields:
+            The live book, conduit and service identity used by the local compiler pipeline.
+        """
+        Aether._reset_singleton_for_tests()
+        configuration = SpellbookConfiguration()
+        apply_dynamic_defaults_for_spellbook_configuration(configuration)
+        configuration.set_property("phase_scheduler_workers_per_spellbook", request.param)
+&gt;       book = Spellbook(configuration=configuration)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\spellbook\spellbook.py:285: in __init__
+    self._aetheric_frame = Spellbook._aether._ensure_frame(self._aetheric_frame_name)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\aether.py:1106: in _ensure_frame
+    self.check_cleaned()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;melder.aether.aether.Aether object at 0x000002EE7A21A090&gt;
+
+    def check_cleaned(self) -&gt; None:
+        """
+        Raise when the object has already been cleaned.
+    
+        Contract:
+        - Subclasses use this as the standard use-after-clean guard.
+        - No-op while the object is still live.
+    
+        Raises:
+            RuntimeError: If the object has already been cleaned.
+    
+        Returns:
+            None.
+        """
+        if self._cleaned:
+&gt;           raise RuntimeError(f"{self.__class__.__name__} has already been cleaned. ")
+E           RuntimeError: Aether has already been cleaned.
+
+src\melder\utilities\general_base\cleanable.py:144: RuntimeError</error></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_revalidation_recovers_after_previous_scheduler_failure[4]" time="0.019"><error message="failed on setup with &quot;RuntimeError: Aether has already been cleaned.&quot;">request = &lt;SubRequest 'local_runtime' for &lt;Function test_local_revalidation_recovers_after_previous_scheduler_failure[4]&gt;&gt;
+
+    @pytest.fixture(params=(1, 4))
+    def local_runtime(request: pytest.FixtureRequest) -&gt; Iterator[tuple[Spellbook, Conduit, str]]:
+        """Own one real book and its persistent pool, cleaning the runtime after each case.
+    
+        Args:
+            request: Supplies the worker count for single-worker and parallel-pool cases.
+    
+        Yields:
+            The live book, conduit and service identity used by the local compiler pipeline.
+        """
+        Aether._reset_singleton_for_tests()
+        configuration = SpellbookConfiguration()
+        apply_dynamic_defaults_for_spellbook_configuration(configuration)
+        configuration.set_property("phase_scheduler_workers_per_spellbook", request.param)
+&gt;       book = Spellbook(configuration=configuration)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\spellbook\spellbook.py:285: in __init__
+    self._aetheric_frame = Spellbook._aether._ensure_frame(self._aetheric_frame_name)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\aether.py:1106: in _ensure_frame
+    self.check_cleaned()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;melder.aether.aether.Aether object at 0x000002EE7A21A090&gt;
+
+    def check_cleaned(self) -&gt; None:
+        """
+        Raise when the object has already been cleaned.
+    
+        Contract:
+        - Subclasses use this as the standard use-after-clean guard.
+        - No-op while the object is still live.
+    
+        Raises:
+            RuntimeError: If the object has already been cleaned.
+    
+        Returns:
+            None.
+        """
+        if self._cleaned:
+&gt;           raise RuntimeError(f"{self.__class__.__name__} has already been cleaned. ")
+E           RuntimeError: Aether has already been cleaned.
+
+src\melder\utilities\general_base\cleanable.py:144: RuntimeError</error></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_phase_body_observes_current_run_cancellation[1-run_phase_root_blueprints_local]" time="0.007"><error message="failed on setup with &quot;RuntimeError: Aether has already been cleaned.&quot;">request = &lt;SubRequest 'local_runtime' for &lt;Function test_local_phase_body_observes_current_run_cancellation[1-run_phase_root_blueprints_local]&gt;&gt;
+
+    @pytest.fixture(params=(1, 4))
+    def local_runtime(request: pytest.FixtureRequest) -&gt; Iterator[tuple[Spellbook, Conduit, str]]:
+        """Own one real book and its persistent pool, cleaning the runtime after each case.
+    
+        Args:
+            request: Supplies the worker count for single-worker and parallel-pool cases.
+    
+        Yields:
+            The live book, conduit and service identity used by the local compiler pipeline.
+        """
+        Aether._reset_singleton_for_tests()
+        configuration = SpellbookConfiguration()
+        apply_dynamic_defaults_for_spellbook_configuration(configuration)
+        configuration.set_property("phase_scheduler_workers_per_spellbook", request.param)
+&gt;       book = Spellbook(configuration=configuration)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\spellbook\spellbook.py:285: in __init__
+    self._aetheric_frame = Spellbook._aether._ensure_frame(self._aetheric_frame_name)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\aether.py:1106: in _ensure_frame
+    self.check_cleaned()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;melder.aether.aether.Aether object at 0x000002EE7A21A090&gt;
+
+    def check_cleaned(self) -&gt; None:
+        """
+        Raise when the object has already been cleaned.
+    
+        Contract:
+        - Subclasses use this as the standard use-after-clean guard.
+        - No-op while the object is still live.
+    
+        Raises:
+            RuntimeError: If the object has already been cleaned.
+    
+        Returns:
+            None.
+        """
+        if self._cleaned:
+&gt;           raise RuntimeError(f"{self.__class__.__name__} has already been cleaned. ")
+E           RuntimeError: Aether has already been cleaned.
+
+src\melder\utilities\general_base\cleanable.py:144: RuntimeError</error></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_phase_body_observes_current_run_cancellation[1-run_phase_system_validation_local]" time="0.006"><error message="failed on setup with &quot;RuntimeError: Aether has already been cleaned.&quot;">request = &lt;SubRequest 'local_runtime' for &lt;Function test_local_phase_body_observes_current_run_cancellation[1-run_phase_system_validation_local]&gt;&gt;
+
+    @pytest.fixture(params=(1, 4))
+    def local_runtime(request: pytest.FixtureRequest) -&gt; Iterator[tuple[Spellbook, Conduit, str]]:
+        """Own one real book and its persistent pool, cleaning the runtime after each case.
+    
+        Args:
+            request: Supplies the worker count for single-worker and parallel-pool cases.
+    
+        Yields:
+            The live book, conduit and service identity used by the local compiler pipeline.
+        """
+        Aether._reset_singleton_for_tests()
+        configuration = SpellbookConfiguration()
+        apply_dynamic_defaults_for_spellbook_configuration(configuration)
+        configuration.set_property("phase_scheduler_workers_per_spellbook", request.param)
+&gt;       book = Spellbook(configuration=configuration)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\spellbook\spellbook.py:285: in __init__
+    self._aetheric_frame = Spellbook._aether._ensure_frame(self._aetheric_frame_name)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\aether.py:1106: in _ensure_frame
+    self.check_cleaned()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;melder.aether.aether.Aether object at 0x000002EE7A21A090&gt;
+
+    def check_cleaned(self) -&gt; None:
+        """
+        Raise when the object has already been cleaned.
+    
+        Contract:
+        - Subclasses use this as the standard use-after-clean guard.
+        - No-op while the object is still live.
+    
+        Raises:
+            RuntimeError: If the object has already been cleaned.
+    
+        Returns:
+            None.
+        """
+        if self._cleaned:
+&gt;           raise RuntimeError(f"{self.__class__.__name__} has already been cleaned. ")
+E           RuntimeError: Aether has already been cleaned.
+
+src\melder\utilities\general_base\cleanable.py:144: RuntimeError</error></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_phase_body_observes_current_run_cancellation[4-run_phase_root_blueprints_local]" time="0.007"><error message="failed on setup with &quot;RuntimeError: Aether has already been cleaned.&quot;">request = &lt;SubRequest 'local_runtime' for &lt;Function test_local_phase_body_observes_current_run_cancellation[4-run_phase_root_blueprints_local]&gt;&gt;
+
+    @pytest.fixture(params=(1, 4))
+    def local_runtime(request: pytest.FixtureRequest) -&gt; Iterator[tuple[Spellbook, Conduit, str]]:
+        """Own one real book and its persistent pool, cleaning the runtime after each case.
+    
+        Args:
+            request: Supplies the worker count for single-worker and parallel-pool cases.
+    
+        Yields:
+            The live book, conduit and service identity used by the local compiler pipeline.
+        """
+        Aether._reset_singleton_for_tests()
+        configuration = SpellbookConfiguration()
+        apply_dynamic_defaults_for_spellbook_configuration(configuration)
+        configuration.set_property("phase_scheduler_workers_per_spellbook", request.param)
+&gt;       book = Spellbook(configuration=configuration)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\spellbook\spellbook.py:285: in __init__
+    self._aetheric_frame = Spellbook._aether._ensure_frame(self._aetheric_frame_name)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\aether.py:1106: in _ensure_frame
+    self.check_cleaned()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;melder.aether.aether.Aether object at 0x000002EE7A21A090&gt;
+
+    def check_cleaned(self) -&gt; None:
+        """
+        Raise when the object has already been cleaned.
+    
+        Contract:
+        - Subclasses use this as the standard use-after-clean guard.
+        - No-op while the object is still live.
+    
+        Raises:
+            RuntimeError: If the object has already been cleaned.
+    
+        Returns:
+            None.
+        """
+        if self._cleaned:
+&gt;           raise RuntimeError(f"{self.__class__.__name__} has already been cleaned. ")
+E           RuntimeError: Aether has already been cleaned.
+
+src\melder\utilities\general_base\cleanable.py:144: RuntimeError</error></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_component_local_phase_cancellation" name="test_local_phase_body_observes_current_run_cancellation[4-run_phase_system_validation_local]" time="0.006"><error message="failed on setup with &quot;RuntimeError: Aether has already been cleaned.&quot;">request = &lt;SubRequest 'local_runtime' for &lt;Function test_local_phase_body_observes_current_run_cancellation[4-run_phase_system_validation_local]&gt;&gt;
+
+    @pytest.fixture(params=(1, 4))
+    def local_runtime(request: pytest.FixtureRequest) -&gt; Iterator[tuple[Spellbook, Conduit, str]]:
+        """Own one real book and its persistent pool, cleaning the runtime after each case.
+    
+        Args:
+            request: Supplies the worker count for single-worker and parallel-pool cases.
+    
+        Yields:
+            The live book, conduit and service identity used by the local compiler pipeline.
+        """
+        Aether._reset_singleton_for_tests()
+        configuration = SpellbookConfiguration()
+        apply_dynamic_defaults_for_spellbook_configuration(configuration)
+        configuration.set_property("phase_scheduler_workers_per_spellbook", request.param)
+&gt;       book = Spellbook(configuration=configuration)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\component\melder\spellbook\test_spellbook_component_local_phase_cancellation.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\melder\aether\spellbook\spellbook.py:285: in __init__
+    self._aetheric_frame = Spellbook._aether._ensure_frame(self._aetheric_frame_name)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\aether.py:1106: in _ensure_frame
+    self.check_cleaned()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;melder.aether.aether.Aether object at 0x000002EE7A21A090&gt;
+
+    def check_cleaned(self) -&gt; None:
+        """
+        Raise when the object has already been cleaned.
+    
+        Contract:
+        - Subclasses use this as the standard use-after-clean guard.
+        - No-op while the object is still live.
+    
+        Raises:
+            RuntimeError: If the object has already been cleaned.
+    
+        Returns:
+            None.
+        """
+        if self._cleaned:
+&gt;           raise RuntimeError(f"{self.__class__.__name__} has already been cleaned. ")
+E           RuntimeError: Aether has already been cleaned.
+
+src\melder\utilities\general_base\cleanable.py:144: RuntimeError</error></testcase></testsuite></testsuites>

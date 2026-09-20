@@ -93,14 +93,13 @@ class CompilerPhase11(Cleanable):
 
         Contract:
             - Delegates directly to `CodegenCreationSystem.build(...)`.
-            - Treats `spell` and `spellbook` as compatibility-only parameters
-              for the current public phase signature.
+            - Uses Spell capability to skip non-resolvable definitions before
+              constructing the codegen system or requiring executable artifacts.
+            - Keeps spellbook as a compatibility-only phase argument.
 
         Args:
             spell:
-                Legacy phase argument retained so the compiler call signature
-                stays stable while this wrapper substitutes the live
-                implementation.
+                Spell whose native capability determines executable eligibility.
             artifact:
                 Compiler artifact receiving `SpellCodegenCreation`.
             spellbook:
@@ -111,7 +110,8 @@ class CompilerPhase11(Cleanable):
         Returns:
             None.
         """
-        _ = spell
+        if not spell.resolvable:
+            return
         _ = spellbook
         creation_system = self._codegen_creation_system
         if creation_system is None:

@@ -220,22 +220,13 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
     ) -> Iterable[Tuple[str, SpellContract]]:
         """
         Yield SpellContract defaults discovered in the spell's callable surface.
+
+        Existing provider occurrences have no constructor contracts or nested
+        contract override payloads. Preserve their incoming consumer edges and
+        leave ordinary class/factory contract discovery unchanged.
         """
         contracts: List[Tuple[str, SpellContract]] = []
         if spell.is_existing_creation:
-            signature = inspect.signature(spell.spell)
-            for param_name, parameter in signature.parameters.items():
-                if param_name in ("self", "cls"):
-                    continue
-                if parameter.kind in (
-                        inspect.Parameter.VAR_POSITIONAL,
-                        inspect.Parameter.VAR_KEYWORD,
-                ):
-                    continue
-                if parameter.default is inspect.Parameter.empty:
-                    continue
-                if isinstance(parameter.default, SpellContract):
-                    contracts.append((param_name, parameter.default))
             return contracts
 
         if spell._compiler_artifact._requirements is not None:

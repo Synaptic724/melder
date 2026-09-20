@@ -512,6 +512,8 @@ class FrameDescriptorManager(Cleanable):
             - Short-circuits when the frame is not publishable.
             - Preserves the existing AI-profile extraction behavior.
             - Replaces the descriptor-owned spell record for the canonical key.
+            - Publishes immutable capability and value-only selected/base relationships
+              under the existing binding-payload ACL section.
 
         Args:
             spellbook:
@@ -543,6 +545,8 @@ class FrameDescriptorManager(Cleanable):
                     "Spell publication requires a non-empty descriptor payload."
                 )
             self._validate_published_spell_payload(payload)
+            payload.binding_payload["resolvable"] = spell.resolvable
+            payload.binding_payload["relationships"] = self._build_published_relationships(spellbook, spell)
 
             spell_record = SpellRecord(
                 origin_spellbook_id=spellbook._id,
@@ -564,6 +568,53 @@ class FrameDescriptorManager(Cleanable):
             )
             descriptor.upsert_spell_record(spell_record)
             return True
+
+    @staticmethod
+    def _build_published_relationships(spellbook: Spellbook, spell: Spell) -> Tuple[Dict[str, object], ...]:
+        """
+        Snapshot selected constructor references and actual registered direct bases.
+
+        Contract:
+            Returns detached values only; reference links never become construction edges.
+            The pool snapshot keeps publication independent of later registry mutations.
+            Missing/unpublished targets remain outside navigable graph relationships.
+            Does not infer internal-use or lifecycle ownership from names or annotations.
+
+        Args:
+            spellbook: Publishing book with the visible local/contracted target pool.
+            spell: Live version whose local topology and direct Python bases are described.
+
+        Returns:
+            Tuple of kind/parameter/target source-ID mappings, in publication order.
+        """
+        relationships: list[Dict[str, object]] = []
+        topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+        if topology is not None:
+            for socket in topology.sockets:
+                for kind, targets in (
+                    ("dependency", socket.target_spell_ids),
+                    ("override_required", socket.referenced_spell_ids),
+                ):
+                    for target_id in targets:
+                        target = spellbook._spell_id_pool.get(target_id)
+                        if target is not None:
+                            relationships.append({
+                                "kind": kind,
+                                "parameter": socket.param_name,
+                                "target_source_id": f"{target._spellbook.id}:{target_id}",
+                            })
+        if isinstance(spell.spell, type):
+            # A detached pool snapshot avoids retaining a live registry view in this value payload.
+            candidates = tuple(spellbook._spell_id_pool.values())
+            for base in spell.spell.__bases__:
+                for target in candidates:
+                    if target.spell is base:
+                        relationships.append({
+                            "kind": "base",
+                            "parameter": None,
+                            "target_source_id": f"{target._spellbook.id}:{target.spell_id}",
+                        })
+        return tuple(relationships)
 
     def _remove_spell_record(
             self,

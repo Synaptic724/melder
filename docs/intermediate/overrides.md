@@ -24,3 +24,9 @@ use these reads without using a meld merely to discover whether something is ali
 
 Continue to [deep overrides](../advanced/overrides.md) when the target is inside
 a dependency graph rather than a parameter of the object you are resolving.
+
+For a registered `resolvable=False` definition, supply its consumer's value through the same override
+API. The supplied object remains your reference; this does not transfer lifecycle ownership. Missing
+ordinary required arguments use Python's normal constructor error, including in cached execution.
+Existing whole-child overrides still eagerly construct registered children before replacement;
+they do not prune the child's constructor inputs. Plan for that existing behavior when replacing a branch.

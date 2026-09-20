@@ -112,6 +112,7 @@ def test_bind_forwards_to_spellbook_for_normal_conduit(
         spellframe="frame",
         binding_name="main",
         profile="general",
+        resolvable=True,
         permissions="read",
         extra=extra,
     )

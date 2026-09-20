@@ -227,6 +227,8 @@ class SpellSpaceMeld(Meld):
         Contract:
             - Routes `unique_per_spell_space` through the spellspace-local
               creations registry owned by this request object.
+            - Refuses non-resolvable registrations before overrides, validation, hooks or execution.
+              Only admitted immutable True versions can populate the success-only warm door.
             - Routes `unique_per_conduit` and `many` through the injected
               owner-conduit creations registry.
             - Routes broader-lived existences through spell-owned shared
@@ -245,6 +247,8 @@ class SpellSpaceMeld(Meld):
               results are always identical to normal-lane results.
 
         Raises:
+            MeldExecutionError:
+                If the selected registration declares resolvable=False.
             ValueError:
                 If none of `spell_name`, `spell`, or `spellframe` are provided.
             KeyError:
@@ -359,6 +363,9 @@ class SpellSpaceMeld(Meld):
                             None,
                         )
                     input_resolution_cache[cache_key] = target_spell.spell_id
+        # Capability is immutable per version; a rejected target can never mint a warm door.
+        if not target_spell._resolvable:
+            self._raise_non_resolvable_registration(target_spell)
         # 2) Caller overrides replace the stored mutation override payload.
         # Hot path: read the owned slot directly instead of paying the
         # `mutation_override` property descriptor per meld.
@@ -484,6 +491,7 @@ class SpellSpaceMeld(Meld):
         Contract:
             - Reuses the same spell identity inputs accepted by `meld(...)`.
             - Never enters any creation path.
+            - Refuses non-resolvable registrations even when an existing object is stored.
             - Returns one already-live object or raises.
             - Supports only lifecycles that can resolve to one deterministic
               existing object.
@@ -507,6 +515,8 @@ class SpellSpaceMeld(Meld):
             Any: Existing live runtime object for the resolved spell.
 
         Raises:
+            MeldExecutionError:
+                If the selected registration declares resolvable=False.
             ValueError:
                 If the spell is not currently live.
             RuntimeError:
@@ -550,6 +560,8 @@ class SpellSpaceMeld(Meld):
                         )
                     input_resolution_cache[cache_key] = target_spell.spell_id
 
+        if not target_spell._resolvable:
+            self._raise_non_resolvable_registration(target_spell)
         if target_spell.is_existing_creation:
             if target_spell.user_created_object is None:
                 raise ValueError(

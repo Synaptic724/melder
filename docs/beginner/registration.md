@@ -11,6 +11,19 @@ lifetimes. Use the function and prebuilt-instance examples when a value comes
 from application setup you already control. Read their assertions before
 assuming that all registration forms have interchangeable lifetime behavior.
 
+## Bind an existing object under a Protocol
+
+An existing object uses `existence="unique"`. When you supply a Protocol as
+`spellframe`, Melder checks the actual object during bind: public members defined
+directly on that Protocol must exist, and callable members must be callable.
+An incompatible object raises `TypeError` before registration. Compatible objects
+can be injected into consumers, preserving the original reference.
+
+This is a limited member check, not full static type checking. It does not check
+inherited Protocol declarations, annotation-only data fields or method signatures.
+Members supplied by the instance itself can satisfy the check. Factory bindings
+retain their separate callable contract.
+
 ## Register a group of services
 
 The collection examples show both a normal loop over registrations and a

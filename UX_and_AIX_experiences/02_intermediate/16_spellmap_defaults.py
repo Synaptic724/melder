@@ -24,7 +24,7 @@ def main() -> None:
     book.bind(spell=Consumer, existence="unique")
     conduit = book.conjure()
 
-    consumer = conduit.meld(spell=Consumer)
+    consumer = conduit.meld(Consumer)
     assert isinstance(consumer.store, PrimaryStore)
     print("SpellMap default resolved:", consumer.store.label)
 

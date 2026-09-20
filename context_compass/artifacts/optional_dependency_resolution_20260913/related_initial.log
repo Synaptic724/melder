@@ -1,0 +1,20 @@
+................................F....................................... [ 48%]
+......F................................................................. [ 96%]
+......                                                                   [100%]
+================================== FAILURES ===================================
+___________ test_parameter_classification_shapes_and_optional_logic ___________
+tests\unit\melder\spellbook\spell_crafter\spell_examiner\spell_requirements_finder\test_spell_requirements_finder.py:621: in test_parameter_classification_shapes_and_optional_logic
+    assert shape("opt_union") is ParameterDIShape.SINGLE_BY_ANNOTATION
+E   AssertionError: assert <ParameterDIShape.PLAIN: 2> is <ParameterDIShape.SINGLE_BY_ANNOTATION: 3>
+E    +  where <ParameterDIShape.PLAIN: 2> = <function test_parameter_classification_shapes_and_optional_logic.<locals>.shape at 0x000004652DE53B40>('opt_union')
+E    +  and   <ParameterDIShape.SINGLE_BY_ANNOTATION: 3> = ParameterDIShape.SINGLE_BY_ANNOTATION
+_______________ test_phase1_optional_single_is_marked_optional ________________
+tests\integration\melder\spellbook\test_spellbook_integration_di_shape_compiler_matrix.py:397: in test_phase1_optional_single_is_marked_optional
+    assert param.di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION
+E   assert <ParameterDIShape.PLAIN: 2> is <ParameterDIShape.SINGLE_BY_ANNOTATION: 3>
+E    +  where <ParameterDIShape.PLAIN: 2> = <melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement object at 0x000004652E193020>.di_shape
+E    +  and   <ParameterDIShape.SINGLE_BY_ANNOTATION: 3> = ParameterDIShape.SINGLE_BY_ANNOTATION
+=========================== short test summary info ===========================
+FAILED tests/unit/melder/spellbook/spell_crafter/spell_examiner/spell_requirements_finder/test_spell_requirements_finder.py::test_parameter_classification_shapes_and_optional_logic
+FAILED tests/integration/melder/spellbook/test_spellbook_integration_di_shape_compiler_matrix.py::test_phase1_optional_single_is_marked_optional
+2 failed, 148 passed in 1.16s

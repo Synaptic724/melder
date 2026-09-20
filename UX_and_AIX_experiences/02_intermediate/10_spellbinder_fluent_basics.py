@@ -26,10 +26,10 @@ def main() -> None:
     print("fluent binds returned spell ids:", sink_id[:8], audit_id[:8])
 
     conduit = book.conjure()
-    sink_a = conduit.meld(spell=TelemetrySink, binding_name="sink")
-    sink_b = conduit.meld(spell=TelemetrySink, binding_name="sink")
-    audit_a = conduit.meld(spell=AuditTrail)
-    audit_b = conduit.meld(spell=AuditTrail)
+    sink_a = conduit.meld(TelemetrySink, binding_name="sink")
+    sink_b = conduit.meld(TelemetrySink, binding_name="sink")
+    audit_a = conduit.meld(AuditTrail)
+    audit_b = conduit.meld(AuditTrail)
     assert sink_a is sink_b and audit_a is not audit_b
     print("fluent lifecycles held: unique sink, many audit trails")
 

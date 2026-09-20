@@ -7,7 +7,7 @@ GOAL: CHANGING THE WIRING WHILE THE WORLD RUNS. A dynamic world can gain
 
         owner.link(borrower)
         borrower.add_spell_to_contract(spell_id=..., conduit=owner, ...)
-        borrower.meld(spell=...)
+        borrower.meld(...)
 
       EACH VERB IS COMPLETE IN ITSELF. There is no window to open, no
       session to hold, nothing to commit afterwards. A structural verb
@@ -117,7 +117,7 @@ def main() -> None:
 
     # The owner resolves its own spell. This works before any linking -
     # ownership and sharing are different questions.
-    assert owner.meld(spell=Service,
+    assert owner.meld(Service,
                       binding_name="rewire-service").label == "service"
     print("owner melds its own spell -> service")
 
@@ -137,7 +137,7 @@ def main() -> None:
     print("  sharing is a PULL - the named conduit must OWN the spell")
 
     # STEP 5: meld completes the late binding across the new edge.
-    borrowed = borrower.meld(spell=Service, binding_name="rewire-service")
+    borrowed = borrower.meld(Service, binding_name="rewire-service")
     assert borrowed.label == "service"
     print("borrower melds it ->", borrowed.label)
     print()

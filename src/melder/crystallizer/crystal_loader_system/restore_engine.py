@@ -1917,6 +1917,7 @@ class RestoreEngine(Cleanable):
         Contract:
             Forward ordered disposal names through normal book composition.
             Record a changed SHA before resolving dependent staged members.
+            Preserve recorded capability; only legacy absence defaults to True.
 
         Args:
             spellbook:
@@ -1942,6 +1943,7 @@ class RestoreEngine(Cleanable):
                 crystal.get("disposal_method_names", [])
             ) or None,
             profile=str(crystal.get("profile_family", "general")),
+            resolvable=crystal.get("resolvable", True),
         )
         self._report.record_built("spell_active")
         if new_spell_id != spell_id:
@@ -1966,6 +1968,7 @@ class RestoreEngine(Cleanable):
         Contract:
             Retain the ordered recorded names and map any changed bind identity
             before the selection stage resolves this exact parked member.
+            Preserve the parked version's own resolution capability.
 
         Args:
             spellbook:
@@ -2008,6 +2011,7 @@ class RestoreEngine(Cleanable):
             binding_name=crystal.get("binding_name"),
             disposal_method_names=list(crystal.get("disposal_method_names", [])) or None,
             profile=str(crystal.get("profile_family", "general")),
+            resolvable=crystal.get("resolvable", True),
         )
         if new_spell_id != spell_id:
             self._report.map_identity(spell_id, new_spell_id)

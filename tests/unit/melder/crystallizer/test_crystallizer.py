@@ -16,7 +16,16 @@ class _DummySpell:
     Minimal spell double for crystallizer root tests.
     """
 
-    def __init__(self, spell_id: str, spell) -> None:
+    def __init__(self, spell_id: str, spell: type) -> None:
+        """Capture the native identity, capability and binding fields consumed by SpellCrystal.
+
+        Args:
+            spell_id: Test-local identity for the recorded spell.
+            spell: Class whose module supplies the source-root classification evidence.
+
+        Returns:
+            None.
+        """
         self.spell_id = spell_id
         self.spell = spell
         # Bind-signature fields consumed by SpellCrystal.__init__ (test doubles).
@@ -25,6 +34,7 @@ class _DummySpell:
         self.spellframe = None
         self.existence = SimpleNamespace(name="present")
         self.permissions = SimpleNamespace(name="default")
+        self.resolvable = True
         # Capture-gap fields (restore_engine_2026_07_07): SpellCrystal also
         # reads the disposal contract and the attached profile object
         # (SimpleNamespace type-name classifies as the "general" fallback).

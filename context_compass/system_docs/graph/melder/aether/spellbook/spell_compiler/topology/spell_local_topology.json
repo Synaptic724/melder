@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
- "source_sha256": "2e800b254b03b410c2e657a49cdfeddf222632efc609b41d0c4eac2c6aedd08f",
+ "source_sha256": "67cb802e16de67043418ab1b27cf02597e48bb0fd0189272e897f912a9a70d86",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.topology.spell_local_topology": {
@@ -28,12 +28,13 @@
     "has_bases": false,
     "trivial": true
    },
-   "span_sha256": "1ee6da65ee18134f03e2791639e4eafce3328abcde2f8ac6396719afeb8e920f",
+   "span_sha256": "21ad8f37df2f3baa92c2b0a7994a3a78fe089c84fd3e0369484eb6fdc64ae069",
    "include": true,
    "role": "The immutable per-spell LOCAL description of one constructor socket, which later phases stitch into the system-level blueprint.",
    "responsibilities": [
     "describe one constructor socket, including the is_collection truth later layers must carry forward verbatim",
-    "stay local - it makes no claim about the system graph"
+    "stay local - it makes no claim about the system graph",
+    "retains descriptive referenced_spell_ids and parameter_kind separately from executable target_spell_ids"
    ],
    "phases": [
     "compile"
@@ -45,7 +46,7 @@
    "label": "SpellLocalTopology",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py",
-   "lineno": 90,
+   "lineno": 102,
    "bases": [
     "Cleanable"
    ],

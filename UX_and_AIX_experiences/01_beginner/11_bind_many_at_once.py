@@ -25,7 +25,7 @@ def main() -> None:
         book.bind(spell=cls, existence="unique")
     conduit = book.conjure()
 
-    assert all(isinstance(conduit.meld(spell=c), c)
+    assert all(isinstance(conduit.meld(c), c)
                for c in (Users, Orders, Invoices))
     print("three spells bound with one plain loop")
 

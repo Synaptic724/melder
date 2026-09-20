@@ -74,6 +74,7 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
+- NEW MESSAGE for codex_1 (from workflows_1, 2026-09-06T18:41:11Z)
 - NEW MESSAGE for codex_1 (from workflows_1, 2026-09-06T17:41:58Z)
 <!-- END USER-DEFINED: alerts -->
 
@@ -81,39 +82,55 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| named_conduit_scope_design | review | handoff | codex | codex_1 | none | Owner selects naming/discovery semantics. | Epic, four draft stories and source-backed impact map. | Contract decisions are approved before implementation. | tickets/tasks/2026-09-06_named_conduit_cross_system_discovery_task.md | 2026-09-06T17:44:52Z | REQUIRED |
+| benchmark_spell_id_lookup | review | handoff | codex | updater_0 | none | Owner reviews keyword migration and separate setup finding. | 134 ID selectors corrected; original gauntlet and scoped checks pass. | Owner accepts repair or directs distinct setup follow-up. | tickets/tasks/2026-09-19_repair_benchmark_spell_id_lookup_task.md | 2026-09-20T01:15:40Z | REQUIRED |
+| purge_scope_planning | review | handoff | codex | updater_0 | none | Owner reviews purge scope rules before further work. | Epic drafted; source and repository assets verified. | Owner directs discovery or implementation separately. | tickets/tasks/2026-09-19_draft_purge_epic_and_refresh_assets_task.md | 2026-09-20T00:56:30Z | REQUIRED |
+| document_positional_meld_calls | review | handoff | codex | workflows_1 | none | Owner reviews and promotes documentation corrections. | 150 replacements; docs build and publication audit pass. | Owner accepts documentation update. | tickets/tasks/2026-09-19_document_positional_meld_calls_task.md | 2026-09-19T21:56:08Z | REQUIRED |
+| sync_owner_uv_environment | review | handoff | codex | workflows_1 | none | Owner resumes development and restarts editor Ruff. | Melder 0.2.40 and locked tools on existing no-GIL Python. | Owner accepts verified environment sync. | tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md | 2026-09-13T20:48:32Z | REQUIRED |
+| reproducible_uv_environment | review | handoff | codex | workflows_1 | none | Owner reviews and commits locked setup and CI. | Reproducible dependencies with the no-GIL matrix preserved. | Owner accepts changes and checks the hosted matrix. | tickets/tasks/2026-09-08_reproducible_uv_environment_task.md | 2026-09-08T11:26:20Z | REQUIRED |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
-| ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner promotes checkout-identity fix into dev for PR 147. | Exact-source recording after successful full CI. | Owner accepts corrected hosted qualification. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T17:41:58Z | REQUIRED |
+| ci_validation_stage_design | review | handoff | codex | workflows_1 | none | Owner promotes partial-rerun coverage correction. | Complete same-run coverage without repeated tests. | Owner accepts corrected reporting in a fresh run. | tickets/tasks/2026-09-06_ci_validation_stage_design_task.md | 2026-09-06T18:58:09Z | REQUIRED |
+| stateful_application_recovery | ready | handoff | user | unassigned | none | Discuss one stateful recovery scenario. | Native replay coverage and partial/assisted recovery opportunities preserved. | Owner selects recovery contracts before implementation. | tickets/epics/2026-09-07_stateful_application_recovery_epic.md | 2026-09-07T19:17:55Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| turn_in_codex_1_tickets | done | codex_1 | tickets/tasks/completed/2026-09-06_turn_in_codex_1_tickets_task.md | All 17 assigned tickets turned in; rejected repair explicitly deferred; evidence retained. | 2026-09-06T10:04:39Z |
-| 2026-09-04_readthedocs_documentation_epic | done | codex_2 | tickets/epics/completed/2026-09-04_readthedocs_documentation_epic.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_advanced_curriculum_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_advanced_curriculum_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_beginner_curriculum_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_beginner_curriculum_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_build_and_hosting_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_build_and_hosting_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_example_catalog_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_example_catalog_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_expert_curriculum_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_expert_curriculum_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_intermediate_curriculum_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_intermediate_curriculum_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_navigation_and_site_shell_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_navigation_and_site_shell_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_quality_and_launch_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_quality_and_launch_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_rtd_reference_and_architecture_story | done | codex_2 | tickets/stories/completed/2026-09-04_rtd_reference_and_architecture_story.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
-| 2026-09-04_readthedocs_sphinx_reference_discovery_task | done | codex_2 | tickets/tasks/completed/2026-09-04_readthedocs_sphinx_reference_discovery_task.md | Owner accepted; evidence retained in the completed program. | 2026-09-06T09:52:54Z |
+| 2026-09-19_fix_feature_turn_in_failures_task | done | updater_0 | tickets/tasks/completed/2026-09-19_fix_feature_turn_in_failures_task.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
+| 2026-09-19_discoverable_non_resolvable_registrations_epic | done | updater_0 | tickets/epics/completed/2026-09-19_discoverable_non_resolvable_registrations_epic.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
+| 2026-09-19_discoverable_registration_contract_discovery_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_registration_contract_discovery_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
+| 2026-09-19_discoverable_registration_modifier_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_registration_modifier_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
+| 2026-09-19_caller_supplied_socket_compiler_story | done | updater_0 | tickets/stories/completed/2026-09-19_caller_supplied_socket_compiler_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
+| 2026-09-19_discoverable_resolution_runtime_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_resolution_runtime_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
+| 2026-09-19_discoverable_nexus_graph_and_history_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_nexus_graph_and_history_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
+| 2026-09-19_discoverable_registration_persistence_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_registration_persistence_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
+| 2026-09-19_discoverable_registration_qualification_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_registration_qualification_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
+| 2026-09-19_publish_and_replay_non_resolvable_definitions_task | done | updater_0 | tickets/tasks/completed/2026-09-19_publish_and_replay_non_resolvable_definitions_task.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
+| 2026-09-19_enforce_non_resolvable_runtime_admission_task | done | updater_0 | tickets/tasks/completed/2026-09-19_enforce_non_resolvable_runtime_admission_task.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
+| 2026-09-19_enforce_required_override_execution_task | done | updater_0 | tickets/tasks/completed/2026-09-19_enforce_required_override_execution_task.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- named_conduit_scope_design: SWITCH_TRIGGER is the completed impact map and owner contract decisions.
-  RESUME_HIERARCHY: tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md -> tickets/tasks/2026-09-06_named_conduit_cross_system_discovery_task.md.
+- benchmark_spell_id_lookup: SWITCH_TRIGGER is owner review or direction on the separate shared-gauntlet setup failure.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-19_repair_benchmark_spell_id_lookup_task.md.
+- purge_scope_planning: SWITCH_TRIGGER is owner direction after reviewing the draft; implementation is not authorized.
+  RESUME_HIERARCHY: tickets/epics/2026-09-19_scope_aware_creation_purge_epic.md ->
+  tickets/tasks/2026-09-19_draft_purge_epic_and_refresh_assets_task.md.
+- document_positional_meld_calls: SWITCH_TRIGGER is owner acceptance or new documentation failure evidence.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-19_document_positional_meld_calls_task.md.
+- sync_owner_uv_environment: SWITCH_TRIGGER is owner acceptance or new environment failure evidence.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-13_sync_owner_uv_environment_task.md.
+- reproducible_uv_environment: SWITCH_TRIGGER is owner acceptance or new hosted matrix failure evidence.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-08_reproducible_uv_environment_task.md.
 - readme_status_badges: SWITCH_TRIGGER is owner acceptance or first hosted coverage failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_readme_status_badges_task.md.
 - embed_melder_banner: SWITCH_TRIGGER is owner acceptance or a requested presentation adjustment.
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_embed_melder_banner_task.md.
 - ci_validation_stage_design: SWITCH_TRIGGER is owner acceptance or new hosted failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_ci_validation_stage_design_task.md.
+- stateful_application_recovery: SWITCH_TRIGGER is owner selection of a concrete stateful recovery scenario.
+  RESUME_HIERARCHY: tickets/epics/2026-09-07_stateful_application_recovery_epic.md -> linked source investigation and related scope/identity work.
 <!-- END USER-DEFINED: notes -->

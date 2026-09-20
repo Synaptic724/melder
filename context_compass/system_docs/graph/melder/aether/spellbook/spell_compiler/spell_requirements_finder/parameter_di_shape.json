@@ -33,7 +33,7 @@
    "span_sha256": "978d0126c49a6ae234b7ef287b9264240ec5751631f7abc5ec5d7ef15b46e359",
    "role": "Enum classifying how one parameter is satisfied during resolution.",
    "responsibilities": [
-    "labels ignore, plain, single, collection, spellmap, spell-contract, and mutation-contract parameter shapes"
+    "labels the current IGNORE, PLAIN, SINGLE_BY_ANNOTATION, COLLECTION_BY_ANNOTATION, SPELLMAP_DEFAULT, SPELL_CONTRACT categories"
    ],
    "owns_state": [
     "IGNORE",
@@ -41,8 +41,7 @@
     "SINGLE_BY_ANNOTATION",
     "COLLECTION_BY_ANNOTATION",
     "SPELLMAP_DEFAULT",
-    "SPELL_CONTRACT",
-    "MUTATION_CONTRACT"
+    "SPELL_CONTRACT"
    ],
    "phases": [
     "validation",

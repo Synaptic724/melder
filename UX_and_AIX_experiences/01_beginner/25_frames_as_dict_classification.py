@@ -46,9 +46,9 @@ def main() -> None:
     conduit = book.conjure()
 
     # melding = looking up a category member by its full address
-    users = conduit.meld(spell=UsersRepo, spellframe="repositories",
+    users = conduit.meld(UsersRepo, spellframe="repositories",
                          binding_name="users")
-    email = conduit.meld(spell=EmailNotifier, spellframe="notifiers",
+    email = conduit.meld(EmailNotifier, spellframe="notifiers",
                          binding_name="email")
     assert isinstance(users, UsersRepo) and isinstance(email, EmailNotifier)
     print("categories addressed as [category][name]: repositories, notifiers")

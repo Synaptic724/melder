@@ -32,7 +32,7 @@ def main() -> None:
     book.bind(spell=Beta, existence="unique")
     conduit = book.conjure()  # phases run under the tuned scheduler
 
-    beta = conduit.meld(spell=Beta)
+    beta = conduit.meld(Beta)
     assert isinstance(beta.alpha, Alpha)
     print("compiled on one worker with a generous barrier; DI intact")
     print("if conjure ever raises PhaseTimeoutError, this timeout knob is why")

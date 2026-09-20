@@ -1,0 +1,687 @@
+{
+  "mode": "apply",
+  "scanned_files": 204,
+  "changed_files": 66,
+  "replacements": 150,
+  "ast_equivalence": "passed",
+  "changes": [
+    {
+      "path": "src/melder/__init__.py",
+      "replacements": 1,
+      "before_sha256": "ac0263738ab1e5c03e41f84b6bbcd6a35f2728ff76fe5b3ec9ba9880926b9d0f",
+      "after_sha256": "1f7f2a54bb542e0f87d5908d910ee47f971d48b83faf1bdab2ed274374dad92c",
+      "lines": [
+        15
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/01_hello_meld.py",
+      "replacements": 2,
+      "before_sha256": "bcc79688764af1f38c2cd26d6374fbbff969e2b5087db2c0f95d4feca569501b",
+      "after_sha256": "8af729c852ab427452c3fbf6fbb060539315d3bc1bdbcf7b62fc44684d667904",
+      "lines": [
+        23,
+        29
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/02_lifecycles_unique_vs_many.py",
+      "replacements": 4,
+      "before_sha256": "9b659509356b077318e2998b6e0882af1847fe6b5f60b4bdbd06a8a0dcb91514",
+      "after_sha256": "9250358501e8e890c6544b3cd1d5ef782113a7bcc86349acdc5186b58ebb9bf1",
+      "lines": [
+        25,
+        26,
+        30,
+        31
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/03_bind_functions_and_instances.py",
+      "replacements": 3,
+      "before_sha256": "81951462fb77c51420dd77c0ade842b4414696856eee495e5cff15772b29db38",
+      "after_sha256": "8b18c3bc765bdeb995c719a84ee2b6c0ac792745cbb09e2b3f522d36af3efed3",
+      "lines": [
+        30,
+        32,
+        35
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/04_named_bindings.py",
+      "replacements": 2,
+      "before_sha256": "fd45995c4778ddf0d7273affdb6513d0fed8b3a7acde490c5ca5a9e436bf7a40",
+      "after_sha256": "c93f76b42849d7ebca0710d568740473542e51bb7bc075b3b887a6dcf79cc037",
+      "lines": [
+        32,
+        33
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/05_lesser_conduit_scopes.py",
+      "replacements": 5,
+      "before_sha256": "dca0c3c8d16d5921b4056b48c89bf336db21519dce8b25e3903959a83c18a725",
+      "after_sha256": "8f66f32f9482b29b5d1adc348e9f5d9fbc48056411b6f988e1c4653f1b4abc4f",
+      "lines": [
+        27,
+        27,
+        30,
+        31,
+        33
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/06_error_vocabulary.py",
+      "replacements": 1,
+      "before_sha256": "8bf27ac6624774d950412248a7aef9440c604de53da76e1f87d97d12b8337cd9",
+      "after_sha256": "2a0ea57515b608ce9a36518212f438384900ebbf791fac12d301f1f22fd52671",
+      "lines": [
+        24
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/07_strings_as_vocabulary.py",
+      "replacements": 4,
+      "before_sha256": "6a6870fdef2f5bffda8aa59c65753ee96fb0071cb877a1bdb37f3069f411a0ce",
+      "after_sha256": "f166765b1deeeb6962987e6b3fa150eb1a4e08bcf7ec0c9129ce36bb475a29d1",
+      "lines": [
+        29,
+        29,
+        30,
+        30
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/08_disposal_contract.py",
+      "replacements": 1,
+      "before_sha256": "287db1357b4a68ab2732af89406b9b223a8498d9fb41f060ec23ef1c9443f4d5",
+      "after_sha256": "f60e278f5c91aef73780da08c5202b17bda0bfc3ab0ce338ac4bb0baaf96a7a7",
+      "lines": [
+        27
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/09_spellframe_grouping.py",
+      "replacements": 3,
+      "before_sha256": "f533a2e0c2c6c653085285dd919d666bff1d9731a536898033205e45f11ad7a3",
+      "after_sha256": "7223215dcac159e277b9dd2415c81cf705fc8bbb76ace1d686aa33ec72d5b804",
+      "lines": [
+        33,
+        35,
+        37
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/10_explicit_cleanup.py",
+      "replacements": 1,
+      "before_sha256": "38f958dc8e345b02a839a425f670a27378b1804acdec35210992de7615ba21c1",
+      "after_sha256": "36100624d6205a5fdad6a2e50dd2f8ddb80e96cbb16c13cf503a7a025f1e388c",
+      "lines": [
+        19
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/11_bind_many_at_once.py",
+      "replacements": 1,
+      "before_sha256": "1266adf55fff27e5c364b089b72d5a51dcb376cbcf72d78997962b96ed949c65",
+      "after_sha256": "4a5b6149f408cab3be3834d08f1b7f0efe758bd8e11b2d9e8ab6d00be7ab7520",
+      "lines": [
+        28
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/13_existence_unique.py",
+      "replacements": 3,
+      "before_sha256": "764e554a527419460e33bbfd7408e72053a9ddaf4eb9372389290ae16e823d95",
+      "after_sha256": "e3773def5f63fed291ee6e4fce3faac2e3692a8fab18f3d71ba11a694d40a14d",
+      "lines": [
+        21,
+        21,
+        22
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/14_existence_many.py",
+      "replacements": 1,
+      "before_sha256": "9a5cae19c502075a64505100fbbcb071aa5a5b69d84eb22abc874cbb8191f66a",
+      "after_sha256": "24867b071e1525d91b084dade4a3a2b91a1e84fef0b65d9c2e24782799c65280",
+      "lines": [
+        23
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/15_existence_unique_per_conduit.py",
+      "replacements": 4,
+      "before_sha256": "5f1b87b6b2ece414b81d5fa6d5a5360a0097223efc42cf598220452672346ffe",
+      "after_sha256": "466d92dd380d547a21d21fa58de512745b9028bf70e0cdd2d549e9fff4465ba5",
+      "lines": [
+        21,
+        21,
+        22,
+        23
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/16_typed_melding.py",
+      "replacements": 1,
+      "before_sha256": "d14667ede51fa39380b5c45c5d47606ffb3cbd0b0413b67d2ef057d052fb3e67",
+      "after_sha256": "c097e58e011148f5ac9b3a7cbcc88fe6fab1a4a77271d2423e2848228c239422",
+      "lines": [
+        21
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/20_defaults_just_work.py",
+      "replacements": 1,
+      "before_sha256": "2758ea6d0453b1f57b9b8321e95dd5c7b0682652c0f0902ef57e79492e263715",
+      "after_sha256": "bfb6eb40d64488f80d1f6df05b3fcc993886d3284e753cadf6517a49db240f3e",
+      "lines": [
+        22
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/21_the_basic_rhythm.py",
+      "replacements": 3,
+      "before_sha256": "dbf859e696134506de847f19591cbe03b4a8c5eb1cf03bf0fd8c89d0db9542f4",
+      "after_sha256": "f6757d00db0260298c71b8d093e55f7b3f4986914bd62e218d2028fe8205e48d",
+      "lines": [
+        35,
+        37,
+        37
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/25_frames_as_dict_classification.py",
+      "replacements": 2,
+      "before_sha256": "f10f563b8d9633c00b90f134aae06195cf4ffc7b31ff8e48059ec1edca843cb9",
+      "after_sha256": "34e5e86856b60d0ca1bf347e0990ce0ae7b554cd94145cbc27c60b75a2f85817",
+      "lines": [
+        49,
+        51
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/26_meld_address_forms.py",
+      "replacements": 3,
+      "before_sha256": "688c58d29e6e7fd9382ab9680f2e1af83f193c878cfc4dc68811879e12e6bba9",
+      "after_sha256": "abf12019343a5b77bd5cd9e7718d6444316ca60f9954e232560d877e7923e0c0",
+      "lines": [
+        34,
+        35,
+        46
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/27_pass_the_conduit_around.py",
+      "replacements": 3,
+      "before_sha256": "c276fd609c40bf75a1d4ed0b5882cb5ca956c89ae42c45e75ef9d57d2aa60eae",
+      "after_sha256": "3960d4212ceae9d0343c35a4d4586acbcc170234b461924193f129f1089eab0c",
+      "lines": [
+        17,
+        40,
+        40
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/28_real_objects_no_wrappers.py",
+      "replacements": 2,
+      "before_sha256": "c57fe006e311a6917e46be2bb4ca287d22d393355094ed90aea98f627eac551a",
+      "after_sha256": "250ef58c3a4d54691d6a992a648fdccf0d827e0780b46383cc30e1fe2d3b4684",
+      "lines": [
+        21,
+        24
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/29_many_state_isolation.py",
+      "replacements": 2,
+      "before_sha256": "1ba46deedd185b5d83902faa0dd2e8ae654f98cd8162a1222d7c5d584b6cbfc6",
+      "after_sha256": "f1e265e54e4036273bd245b20d2dc68915e0a131269031c2ba163575dbbc63dc",
+      "lines": [
+        21,
+        23
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/34_scope_contrast_one_tree.py",
+      "replacements": 2,
+      "before_sha256": "4e132fcc5ac9da194688cc25666455ff5d2afeefccfad72ba97d17519f960b4c",
+      "after_sha256": "2b435a858c8e397ee748ed9811aebe9f451fa039189c4d76a23306ab0b14c436",
+      "lines": [
+        26,
+        28
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/36_one_book_one_conduit.py",
+      "replacements": 2,
+      "before_sha256": "3fd951d5a0f794f55af131da86834503c6b8a2d6de5c9731783cac5a4b8a9f44",
+      "after_sha256": "623ea341e57a19efe4cfae6494f5984db3156d4d055923c695a9ccfb02d2a48c",
+      "lines": [
+        28,
+        28
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/37_bind_vocabulary_cheatsheet.py",
+      "replacements": 1,
+      "before_sha256": "07386ae878e5765af21453093004b56ce9dc4e420a4fa32788f4b63d0fe15ad1",
+      "after_sha256": "7a333376a926bb78bd0b6deb13b5203e36be0c5de3ed6b4256fcfdea889e3d3d",
+      "lines": [
+        40
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/40_beginner_capstone.py",
+      "replacements": 1,
+      "before_sha256": "6c8ef64ce639c771558280bc0c4088e6a505d393c5f920662f980e13f06673b3",
+      "after_sha256": "325817d90545295e0dc058f52c57ea5c478a3c33426892303bd098a82a700838",
+      "lines": [
+        23
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/41_you_own_the_memory_now.py",
+      "replacements": 1,
+      "before_sha256": "cd86b469db64bc602b934df09427a1b27824451b00ca936dfa257a715f963be7",
+      "after_sha256": "3ab3eaf89e80b0233589314642a014de0b98fd726fb144d566b7145787531054",
+      "lines": [
+        30
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/capstone_application.py",
+      "replacements": 5,
+      "before_sha256": "0abbe2d06f45e353c9632d2ca60db92488a9ba68abb579c2fcdeacd2a27e48df",
+      "after_sha256": "9f87f369e9d92d84011c4778b5a11644b239cee43f2018c62915a2eb5f468f42",
+      "lines": [
+        17,
+        18,
+        19,
+        20,
+        25
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/01_scan_bind_decorator.py",
+      "replacements": 4,
+      "before_sha256": "84988c41368c5c77b040d7dcb0a8bd3cabd069b09db65e78c3980141d011cd4a",
+      "after_sha256": "cef09d41bbc1b93a1fbb603a4ebf603adbf60ce3436136693704355b2ab36326",
+      "lines": [
+        30,
+        31,
+        32,
+        33
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/02_spellbinder_full_chain.py",
+      "replacements": 3,
+      "before_sha256": "a238818ec25a4ce1f2eab4bd0f5d1575c53dbe1339c0481c6ab1ab3895fdbcfa",
+      "after_sha256": "e97e19ed0984fc18f612d79df33e89077f24a5bca80faf24c5a65be0908456ba",
+      "lines": [
+        42,
+        52,
+        53
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/03_registration_hooks.py",
+      "replacements": 1,
+      "before_sha256": "4e3f2ef472e70f6a831a88b1615e0bd8f4e3be471a81553149c3573cbf3021dd",
+      "after_sha256": "5048689282b5e561dc54a8bd30c1476d5322e8f4f8f2cef8b80d6f9f088aea4b",
+      "lines": [
+        36
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/04_spellspace_scoped_resolution.py",
+      "replacements": 3,
+      "before_sha256": "2303fab4f2dce6cfbd0f92f451f0e447c42499acf518845f028e448f33231dab",
+      "after_sha256": "aebe667ed7a3cd3cc4f430756d6cb33437af753e8d2558900288f9857245ac52",
+      "lines": [
+        25,
+        26,
+        27
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/05_existence_unique_per_conduit_lineage.py",
+      "replacements": 3,
+      "before_sha256": "f8e249a5f4f2700cece69167a3ee210ed9d1a09c94540bc0c0a68f7658b889ce",
+      "after_sha256": "5d785cfc3dce8f41cc7c2e97bdbf25189c8b8d850c2fe1c67951e061fc4a435a",
+      "lines": [
+        28,
+        29,
+        30
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/07_lesser_conduits_child_scopes.py",
+      "replacements": 2,
+      "before_sha256": "47fda37cc184ed496a64c6c56e3336d9d1dade09e86e0552086febf6825f1718",
+      "after_sha256": "3be0733bd967a02af1fd937fe4210e3a1db09fe11d9819bfcd70bb3ef6bb6bfa",
+      "lines": [
+        30,
+        31
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/10_spellbinder_fluent_basics.py",
+      "replacements": 4,
+      "before_sha256": "6ee7b34cec290fcc55f43038e62c7d9a369f36ff811232a8ec9bfeeb5a305768",
+      "after_sha256": "645ba6cfb94c1ee907ebe235fd8aa43632d757118c2685c6b18c265f597013a0",
+      "lines": [
+        29,
+        30,
+        31,
+        32
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/11_permissions_linking_vocabulary.py",
+      "replacements": 1,
+      "before_sha256": "916a4b51120bf3985ae20a852132bd147204886fa1e2340fa6c698e331975cd4",
+      "after_sha256": "b17d314e719542a9e0b51e8c51fc31e716c28e0d5a85288ecd66b48fc5ebe8d8",
+      "lines": [
+        24
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/15_constructor_di_by_annotation.py",
+      "replacements": 1,
+      "before_sha256": "319b761a7c9a3cff106b17c3920be8ac5e3b17ad803554a3b5f4a776c39c4507",
+      "after_sha256": "0848e41b4327eaee77d9b0fc541b722635de7550dc30a149bec509fa49cd644d",
+      "lines": [
+        30
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/16_spellmap_defaults.py",
+      "replacements": 1,
+      "before_sha256": "e1f70d1178e17daf8a85ad84dfb0767581110bc05262fe8ed487ce6d0633eaeb",
+      "after_sha256": "aa6c0361d96cd3a69d30907009f89ebee6427127cce3f1fe5cfc1097d81bfa3b",
+      "lines": [
+        27
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/17_collection_di.py",
+      "replacements": 1,
+      "before_sha256": "57c1427f530f40aa6dda74b073b66f0eba1ccbc46339003000eae6b6336d165c",
+      "after_sha256": "3f63666451e89c34c0a597977dd05d318705d5100d273779d6628e95acd20633",
+      "lines": [
+        43
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/18_live_creation_probe.py",
+      "replacements": 1,
+      "before_sha256": "4b2fb3489df8802562cacfbc079d472ea6b351820ccce209a5561d872bdc19ce",
+      "after_sha256": "857280011c14fea2e260cefe99292d00d64c175e14db159b92db2764f5adc9f3",
+      "lines": [
+        21
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/19_spellbook_configuration_basics.py",
+      "replacements": 1,
+      "before_sha256": "6c9da85754d6d3730b994beb197ddefc13cfe9ef8f8318d908386f19ce542a5a",
+      "after_sha256": "d355d60cb45b0605dc36afa1a4b081b38ffccb642eedeac5c6ee04f81806667f",
+      "lines": [
+        23
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/20_phase_scheduler_knobs.py",
+      "replacements": 1,
+      "before_sha256": "eaff91bd9dda0307f877d98a22709f02607639eabe7e6126ee4a39071cba0e53",
+      "after_sha256": "9d9ba2d6144e5e7f1abf6d03610496545b3f4ba36ad8260a18c4d340d918f4bf",
+      "lines": [
+        35
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/21_dynamic_linking_basics.py",
+      "replacements": 1,
+      "before_sha256": "7ee32d97c3e028c0dd50019e0ec2b23cef2d1de2ce2152e42582ce6be51bef18",
+      "after_sha256": "62182ca868ddf552386c5f95eba1c03f60df597d6b2a151e9ce313c10fc73a39",
+      "lines": [
+        44
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/22_permissions_create_vs_read.py",
+      "replacements": 2,
+      "before_sha256": "ea4a8eaf1a3eab11c9043593e7e50c3956949ecbcb29a21e85e9b0016ced91c4",
+      "after_sha256": "6c2fccd34022e5db021dac4b76e68d648b2d3e513b562642de69e8e04d019a1e",
+      "lines": [
+        41,
+        43
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/23_transfer_of_ownership.py",
+      "replacements": 2,
+      "before_sha256": "721516aa05e6b3a424c9466e163186589a2419a5074a6473e2d6b2d24e3d0f5c",
+      "after_sha256": "6717df75607903a08505dcb2d07fd3a9098eb64c392e804981d35f122b888413",
+      "lines": [
+        38,
+        46
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/25_clusters_unique_per_cluster.py",
+      "replacements": 2,
+      "before_sha256": "3d7090b4158ed90868fccfb4c5fb54aadb09fe52393106f437847025349bd746",
+      "after_sha256": "586f66863dcfb0f40ce936179703aaf3580a09f03d774dfa32e8f86f7081a3fb",
+      "lines": [
+        50,
+        51
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/27_sever_link.py",
+      "replacements": 3,
+      "before_sha256": "617a9c151d3241ca0b0b88c1b4f0b3824596df96947e260e71a2d8eda05cefae",
+      "after_sha256": "aca3a932450b22da607de3782d8e0f880b0b443c96e880cf82f36b95158b6975",
+      "lines": [
+        36,
+        42,
+        53
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/28_upgrade_to_normal.py",
+      "replacements": 2,
+      "before_sha256": "f0191fa2f496d20bbd2cf5e9c7dab0c9d9082530ba13199920a29d6775c520b7",
+      "after_sha256": "154d055db07826e8f12e32b70cd3403fd378508da3db4eb4e0e7a25eecb669e1",
+      "lines": [
+        33,
+        39
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/29_scoped_cleanup_lesser_conduits.py",
+      "replacements": 3,
+      "before_sha256": "bef2c0c70c5401101fe1197caf906df7b17835550d82682d59ec18b01d307ccd",
+      "after_sha256": "c55638df187f57d7a16c13388f7f5b3316b6d051e79b4b0aaab7f8ae7bb21699",
+      "lines": [
+        40,
+        44,
+        53
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py",
+      "replacements": 1,
+      "before_sha256": "7b4a2b02c0dc78fc0a60dea798aa76d8993f85d222d41c5e92cb5edb58712571",
+      "after_sha256": "2f4a10458fbd818ce06f1148bf7b9ff4704974113cdda302db8ba3f48487f317",
+      "lines": [
+        76
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/32_config_meld_hooks.py",
+      "replacements": 2,
+      "before_sha256": "605866680d3f4b295f948ab8771eb2abda9be7e14da9d1cbeff3b743bc6f4e0d",
+      "after_sha256": "21925917bdef3d76cb837bbfc660529d636568dab4fa6806dcc1c8ba900fbd68",
+      "lines": [
+        32,
+        33
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/35_one_config_every_book.py",
+      "replacements": 2,
+      "before_sha256": "aecf633007d87430cfea2271f93ac0aa9a1ebd7028d0d228de9ac0d594c2e70a",
+      "after_sha256": "ce8829200536d17d1b7c706c12aba3f66856edd6258e773387ebbc24392a699d",
+      "lines": [
+        104,
+        105
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/03_advanced/01_deep_spell_override_paths.py",
+      "replacements": 2,
+      "before_sha256": "b5d422552deeed5c220b022c8716e31b993d2528a5ff1165cb23399ef02a2a16",
+      "after_sha256": "d40380f11f43a2c5948956f44dd1bea7f4d3f531e18386d2793de1b18b9cf7a8",
+      "lines": [
+        46,
+        59
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/03_advanced/02_frames_as_worlds.py",
+      "replacements": 4,
+      "before_sha256": "4ad710682082ba94e3aa1a87659448b0e4f8a42c12f6d61b5963c00eedf7e3a3",
+      "after_sha256": "cacb871d7035c038127d1e91a62d8020d9a59ee2ef934aee3ea1d659cab442e3",
+      "lines": [
+        64,
+        65,
+        73,
+        74
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/03_advanced/19_wildcard_and_broadcast_overrides.py",
+      "replacements": 6,
+      "before_sha256": "f3bd61855bcc7712dd7534d78b3bc1eee0812ed2f0e2489fd006657029ae14af",
+      "after_sha256": "466a13991f7b8583c8508db34d464e83da1a563e7be531b7dcf7500f5774af04",
+      "lines": [
+        113,
+        125,
+        135,
+        148,
+        160,
+        175
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/10_deep_overrides_paths_through_a_graph.py",
+      "replacements": 7,
+      "before_sha256": "66704fb8b766eee3ac28e640d401de4fd99578794acfcfd81e4b1b430128087a",
+      "after_sha256": "e028560c231b7fc5f45437d84393a8ae85cd9b45a2b332be8af4ddc8ba84f09a",
+      "lines": [
+        85,
+        94,
+        107,
+        118,
+        128,
+        140,
+        157
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/13_one_workshop_many_worlds.py",
+      "replacements": 2,
+      "before_sha256": "e5cd7beaf9aab8465e6e51576b63307b94e2f7e4de62626c6b02deafd7d1f216",
+      "after_sha256": "448c5a086342f46098947108e538bf9135772073c28a9c1a333685986d31c4fd",
+      "lines": [
+        186,
+        189
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py",
+      "replacements": 3,
+      "before_sha256": "fb300ccb239e678db6a50e5d67a79b70054211981eab094777cef141210ad4ef",
+      "after_sha256": "8b5bc21bf45178eba526498bd6aac01e1128d499a566249c7ecdcc4894ece195",
+      "lines": [
+        10,
+        120,
+        140
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py",
+      "replacements": 2,
+      "before_sha256": "873dc7afde34e09cef5fdd61b72891b3bd467923b8cc47b42391daeecdbcd3be",
+      "after_sha256": "8eba2df8c72320630fcb6c731df077feb68de47569441c8e57048cd04927f968",
+      "lines": [
+        99,
+        122
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/20_the_workstation_an_agents_workbench.py",
+      "replacements": 1,
+      "before_sha256": "fbba35ff8ee4319eeb255baa601e19710c64b98d962f73c59ff3d3772b6b46b5",
+      "after_sha256": "237c5d8f7936ac828f5b5368543da0d71608b1e46deec73094ac50601ba186f6",
+      "lines": [
+        114
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/22_asking_what_code_would_do_before_running_it.py",
+      "replacements": 2,
+      "before_sha256": "d1dd4005de4cc9143506a639e2dfa66d32c23024cdf49be7fa9a7cd9b4b1b095",
+      "after_sha256": "b278eff526b943f0ac5a7e10f28f59cc134d579ec89a06567a0f356a0f1162ca",
+      "lines": [
+        154,
+        220
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py",
+      "replacements": 1,
+      "before_sha256": "7fed4ab0873920b555c751d0431af8a4306f0fc99d5981db96543d88bafabd90",
+      "after_sha256": "a1500c326b426d3b22effe5bfcab05094c1b1dfdbed8b889af653084b37afa09",
+      "lines": [
+        111
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py",
+      "replacements": 2,
+      "before_sha256": "83d3f1f83573bfbbd84e87fd29bb55b60f5aae84fa686665ef04a2eed5a32704",
+      "after_sha256": "49129dfc715c8eb0100a170c719f19b63d192c18ce9a59b90d7e8dbc0e924462",
+      "lines": [
+        181,
+        189
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runtime.py",
+      "replacements": 1,
+      "before_sha256": "06800d8dd798bbeb64bacb471bbab5008a17c746c8b0540d2103219957ba7016",
+      "after_sha256": "0931b9465229da72d61b21a8300c77a72c0d958adf71c3e07dcb2be4d29edf37",
+      "lines": [
+        114
+      ]
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/36_an_agent_builds_a_working_system.py",
+      "replacements": 5,
+      "before_sha256": "45eaec293969c620477090b67313cf72ff475ec8ec4a5c36df0c83045acb1383",
+      "after_sha256": "c5de308df54624435c5a862403d85d19b66a048be9cb2cae30889fdf1ad01c78",
+      "lines": [
+        171,
+        173,
+        174,
+        205,
+        225
+      ]
+    }
+  ]
+}

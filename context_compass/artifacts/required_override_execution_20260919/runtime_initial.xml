@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="31" time="0.927" timestamp="2026-09-19T16:25:01.400641-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[object-False-solo]" time="0.049" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[object-False-many_only]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[object-False-generalized]" time="0.010" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[object-True-solo]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[object-True-many_only]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[object-True-generalized]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[falsey-False-solo]" time="0.006" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[falsey-False-many_only]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[falsey-False-generalized]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[falsey-True-solo]" time="0.006" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[falsey-True-many_only]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[falsey-True-generalized]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[none-False-solo]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[none-False-many_only]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[none-False-generalized]" time="0.019" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[none-True-solo]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[none-True-many_only]" time="0.010" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_supplied_values_survive_each_family_and_manifest_hydration[none-True-generalized]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_missing_required_values_keep_existing_constructor_failure[False-solo]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_missing_required_values_keep_existing_constructor_failure[False-many_only]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_missing_required_values_keep_existing_constructor_failure[False-generalized]" time="0.010" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_missing_required_values_keep_existing_constructor_failure[True-solo]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_missing_required_values_keep_existing_constructor_failure[True-many_only]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_missing_required_values_keep_existing_constructor_failure[True-generalized]" time="0.010" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_whole_branch_override_skips_the_replaced_constructor_input[False-many_only]" time="0.010"><failure message="melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError: [MELD] Execution failed for spell 'SuppliedConsumer' (cbfce09f1b1584eeb344573a5f6a2fc717f8171787d993e1a65b27d0c9c3db70): Error invoking spell 'SuppliedConsumer'. (inner: TypeError(&quot;SuppliedConsumer.__init__() missing 1 required positional argument: 'external'&quot;))">&lt;melder_overrides_codegen_creation_executor&gt;:35: in _overrides_codegen_creation_executor
+    ???
+E   TypeError: SuppliedConsumer.__init__() missing 1 required positional argument: 'external'
+
+The above exception was the direct cause of the following exception:
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_overrides.py:134: in test_whole_branch_override_skips_the_replaced_constructor_input
+    result = conduit.meld(spell_id=root_id, override={"child": child})
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:419: in meld
+    instance = creation_context._overrides_executor(
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\many_only\hydration\many_only_hydrator.py:199: in _cold_overrides_door
+    return hydrated.overrides_executor(caller_creations, overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;creation_context_overrides_only_template:many:1&gt;:14: in _creation_context_execute_overrides_only
+    ???
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\many_only\steps\many_only_finalize_creation_context_step.py:463: in execute_with_overrides
+    return executor(
+&lt;melder_overrides_codegen_creation_executor&gt;:37: in _overrides_codegen_creation_executor
+    ???
+E   melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError: [MELD] Execution failed for spell 'SuppliedConsumer' (cbfce09f1b1584eeb344573a5f6a2fc717f8171787d993e1a65b27d0c9c3db70): Error invoking spell 'SuppliedConsumer'. (inner: TypeError("SuppliedConsumer.__init__() missing 1 required positional argument: 'external'"))</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_whole_branch_override_skips_the_replaced_constructor_input[False-generalized]" time="0.009"><failure message="melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError: [MELD] Execution failed for spell 'SuppliedConsumer' (cbfce09f1b1584eeb344573a5f6a2fc717f8171787d993e1a65b27d0c9c3db70): Error invoking spell 'SuppliedConsumer'. (inner: TypeError(&quot;SuppliedConsumer.__init__() missing 1 required positional argument: 'external'&quot;))">&lt;melder_generalized_overrides_shape_factory&gt;:99: in _overrides_codegen_creation_executor
+    ???
+E   TypeError: SuppliedConsumer.__init__() missing 1 required positional argument: 'external'
+
+The above exception was the direct cause of the following exception:
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_overrides.py:134: in test_whole_branch_override_skips_the_replaced_constructor_input
+    result = conduit.meld(spell_id=root_id, override={"child": child})
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:419: in meld
+    instance = creation_context._overrides_executor(
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\generalized\hydration\generalized_hydrator.py:259: in _cold_overrides_door
+    return hydrated.overrides_executor(caller_creations, overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\generalized\hydration\generalized_hydrator.py:535: in _cold_overrides_lane_door
+    return real_door(caller_creations, overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;creation_context_overrides_only_template:many:1&gt;:14: in _creation_context_execute_overrides_only
+    ???
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\generalized\compilers\generalized_manifest_overrides_runtime.py:439: in execute_with_overrides
+    return executor(
+&lt;melder_generalized_overrides_shape_factory&gt;:101: in _overrides_codegen_creation_executor
+    ???
+E   melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError: [MELD] Execution failed for spell 'SuppliedConsumer' (cbfce09f1b1584eeb344573a5f6a2fc717f8171787d993e1a65b27d0c9c3db70): Error invoking spell 'SuppliedConsumer'. (inner: TypeError("SuppliedConsumer.__init__() missing 1 required positional argument: 'external'"))</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_whole_branch_override_skips_the_replaced_constructor_input[True-many_only]" time="0.009"><failure message="melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError: [MELD] Execution failed for spell 'SuppliedConsumer' (cbfce09f1b1584eeb344573a5f6a2fc717f8171787d993e1a65b27d0c9c3db70): Error invoking spell 'SuppliedConsumer'. (inner: TypeError(&quot;SuppliedConsumer.__init__() missing 1 required positional argument: 'external'&quot;))">&lt;melder_overrides_codegen_creation_executor&gt;:35: in _overrides_codegen_creation_executor
+    ???
+E   TypeError: SuppliedConsumer.__init__() missing 1 required positional argument: 'external'
+
+The above exception was the direct cause of the following exception:
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_overrides.py:134: in test_whole_branch_override_skips_the_replaced_constructor_input
+    result = conduit.meld(spell_id=root_id, override={"child": child})
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:419: in meld
+    instance = creation_context._overrides_executor(
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\many_only\hydration\many_only_hydrator.py:199: in _cold_overrides_door
+    return hydrated.overrides_executor(caller_creations, overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;creation_context_overrides_only_template:many:1&gt;:14: in _creation_context_execute_overrides_only
+    ???
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\many_only\steps\many_only_finalize_creation_context_step.py:463: in execute_with_overrides
+    return executor(
+&lt;melder_overrides_codegen_creation_executor&gt;:37: in _overrides_codegen_creation_executor
+    ???
+E   melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError: [MELD] Execution failed for spell 'SuppliedConsumer' (cbfce09f1b1584eeb344573a5f6a2fc717f8171787d993e1a65b27d0c9c3db70): Error invoking spell 'SuppliedConsumer'. (inner: TypeError("SuppliedConsumer.__init__() missing 1 required positional argument: 'external'"))</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_whole_branch_override_skips_the_replaced_constructor_input[True-generalized]" time="0.009"><failure message="melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError: [MELD] Execution failed for spell 'SuppliedConsumer' (cbfce09f1b1584eeb344573a5f6a2fc717f8171787d993e1a65b27d0c9c3db70): Error invoking spell 'SuppliedConsumer'. (inner: TypeError(&quot;SuppliedConsumer.__init__() missing 1 required positional argument: 'external'&quot;))">&lt;melder_generalized_overrides_shape_factory&gt;:99: in _overrides_codegen_creation_executor
+    ???
+E   TypeError: SuppliedConsumer.__init__() missing 1 required positional argument: 'external'
+
+The above exception was the direct cause of the following exception:
+tests\component\melder\aether\conduit\test_conduit_component_non_resolvable_overrides.py:134: in test_whole_branch_override_skips_the_replaced_constructor_input
+    result = conduit.meld(spell_id=root_id, override={"child": child})
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\conduit\conduit.py:4110: in meld
+    return meld_component.meld(
+src\melder\aether\conduit\meld\conduit_meld.py:419: in meld
+    instance = creation_context._overrides_executor(
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\generalized\hydration\generalized_hydrator.py:259: in _cold_overrides_door
+    return hydrated.overrides_executor(caller_creations, overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\generalized\hydration\generalized_hydrator.py:535: in _cold_overrides_lane_door
+    return real_door(caller_creations, overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;creation_context_overrides_only_template:many:1&gt;:14: in _creation_context_execute_overrides_only
+    ???
+src\melder\aether\spellbook\spell_compiler\codegen_creation_system\strategies\generalized\compilers\generalized_manifest_overrides_runtime.py:439: in execute_with_overrides
+    return executor(
+&lt;melder_generalized_overrides_shape_factory&gt;:101: in _overrides_codegen_creation_executor
+    ???
+E   melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError: [MELD] Execution failed for spell 'SuppliedConsumer' (cbfce09f1b1584eeb344573a5f6a2fc717f8171787d993e1a65b27d0c9c3db70): Error invoking spell 'SuppliedConsumer'. (inner: TypeError("SuppliedConsumer.__init__() missing 1 required positional argument: 'external'"))</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_unique_consumer_reuse_needs_no_repeated_supplied_value" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_positional_value_reaches_the_required_constructor" time="0.006" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_component_non_resolvable_overrides" name="test_explicit_definition_descriptor_uses_supplied_value" time="0.006" /></testsuite></testsuites>

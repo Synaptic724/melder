@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "2d336a3976655dedd1bc6afdd54d11cb01e104574a9a4be9cde1d02bde461557",
+ "source_sha256": "02a9dbbec7e17d0a450cd28ed260a50957d4bfe3f8360e4fb92778666d912e33",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -87,6 +87,7 @@
     "name",
     "notch_spell",
     "permanent_cleanup",
+    "policy",
     "prewarm_lesser_conduits",
     "prewarm_spellspaces",
     "register_conduit_hooks",
@@ -107,14 +108,15 @@
     "validate_resolution"
    ],
    "shape": {
-    "method_count": 118,
+    "method_count": 119,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "91dfbdf348c6adde46b53c623e459b3769f4c79898455d08aabdbee692c0477a",
+   "span_sha256": "5a727deab084875797759b49e1b2bf69dd5e5b8d84259041b5b44120762995db",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
+    "forwards per-version resolvable policy through both binding facades without changing conduit state",
     "owns concrete conduit-facing runtime helpers and pooled spellspace state",
     "creates lesser conduits",
     "supports dynamic linking and ownership transfer in dynamic mode"

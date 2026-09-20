@@ -74,6 +74,7 @@ class CompilerPhase9(Cleanable):
 
         Contract:
             - Delegates directly to `SpellArtifactProcessor.process(...)`.
+            - Non-resolvable definitions skip model construction, including direct calls.
             - Leaves planner and codegen-creation work untouched.
 
         Args:
@@ -85,4 +86,6 @@ class CompilerPhase9(Cleanable):
         Returns:
             None.
         """
+        if not spell.resolvable:
+            return
         self._artifact_processor.process(spell, artifact)

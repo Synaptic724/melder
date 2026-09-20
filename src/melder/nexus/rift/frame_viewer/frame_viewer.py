@@ -5262,6 +5262,30 @@ class FrameViewer(Cleanable):
             frame_name=frame_name,
         )
 
+    def describe_spell_relationships(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Navigate visible registered dependencies, supplied references and direct bases.
+
+        Contract:
+            Delegates to the current ViewSpell with its ordinary ACL and action-hook gates.
+            Does not resolve or construct the inspected definition.
+
+        Args:
+            spell_source_id: Published book/version identity to navigate.
+            frame_name: Hosted frame containing the definition.
+
+        Returns:
+            Detached capability and incoming/outgoing relationship descriptions.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_relationships(
+            spell_source_id, frame_name=frame_name,
+        )
+
     def describe_spell_brief(
             self,
             spell_source_id: str,

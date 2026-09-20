@@ -1,0 +1,1433 @@
+[
+  {
+    "path": "benchmarks/testing_other_di/dump_emitted_executor_source.py",
+    "lines": 209,
+    "groups": [
+      {
+        "function": "main",
+        "start": 70,
+        "end": 205,
+        "calls": [
+          {
+            "line": 167,
+            "call": "lesser.meld",
+            "argument": "outer_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 169,
+            "call": "space.meld",
+            "argument": "request_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/profile_bind_conjure_cycle.py",
+    "lines": 688,
+    "groups": [
+      {
+        "function": "run_cycle",
+        "start": 294,
+        "end": 418,
+        "calls": [
+          {
+            "line": 379,
+            "call": "conduit.meld",
+            "argument": "spell_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 389,
+            "call": "space.meld",
+            "argument": "spell_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/profile_construction_lane.py",
+    "lines": 202,
+    "groups": [
+      {
+        "function": "_run_cycles",
+        "start": 128,
+        "end": 149,
+        "calls": [
+          {
+            "line": 140,
+            "call": "lesser.meld",
+            "argument": "outer_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 144,
+            "call": "space.meld",
+            "argument": "request_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/profile_deep_all_di_transient_only_no_singletons.py",
+    "lines": 939,
+    "groups": [
+      {
+        "function": "_melder_get_root",
+        "start": 222,
+        "end": 232,
+        "calls": [
+          {
+            "line": 232,
+            "call": "state['conduit'].meld",
+            "argument": "state['root_id']",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "_melder_get_by_id",
+        "start": 235,
+        "end": 246,
+        "calls": [
+          {
+            "line": 246,
+            "call": "state['conduit'].meld",
+            "argument": "spell_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/profile_scope_cycle_contention.py",
+    "lines": 483,
+    "groups": [
+      {
+        "function": "_worker",
+        "start": 163,
+        "end": 262,
+        "calls": [
+          {
+            "line": 210,
+            "call": "lesser.meld",
+            "argument": "outer_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 213,
+            "call": "lesser.meld",
+            "argument": "outer_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 221,
+            "call": "space.meld",
+            "argument": "request_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 224,
+            "call": "space.meld",
+            "argument": "request_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "_micro_worker",
+        "start": 368,
+        "end": 413,
+        "calls": [
+          {
+            "line": 390,
+            "call": "lesser.meld",
+            "argument": "outer_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 394,
+            "call": "lesser.meld",
+            "argument": "outer_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 402,
+            "call": "space.meld",
+            "argument": "request_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 406,
+            "call": "space.meld",
+            "argument": "request_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/profile_tail_stall_attribution.py",
+    "lines": 272,
+    "groups": [
+      {
+        "function": "_worker",
+        "start": 114,
+        "end": 154,
+        "calls": [
+          {
+            "line": 140,
+            "call": "lesser.meld",
+            "argument": "outer_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 141,
+            "call": "lesser.meld",
+            "argument": "outer_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 143,
+            "call": "space.meld",
+            "argument": "request_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 144,
+            "call": "space.meld",
+            "argument": "request_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/run_codegen_benchmark_deltas.py",
+    "lines": 1525,
+    "groups": [
+      {
+        "function": "resolve_root_once",
+        "start": 225,
+        "end": 235,
+        "calls": [
+          {
+            "line": 233,
+            "call": "self._conduit.meld",
+            "argument": "self._root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "resolve_spellspace_once",
+        "start": 251,
+        "end": 264,
+        "calls": [
+          {
+            "line": 260,
+            "call": "spellspace.meld",
+            "argument": "self._spellspace_root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "resolve_override_root_args_once",
+        "start": 266,
+        "end": 279,
+        "calls": [
+          {
+            "line": 274,
+            "call": "self._conduit.meld",
+            "argument": "self._override_args_root_id",
+            "keywords": [
+              "spell",
+              "spell_override"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "resolve_override_targeted_once",
+        "start": 281,
+        "end": 294,
+        "calls": [
+          {
+            "line": 289,
+            "call": "self._conduit.meld",
+            "argument": "self._override_root_id",
+            "keywords": [
+              "spell",
+              "spell_override"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_all_di_systems.py",
+    "lines": 631,
+    "groups": [
+      {
+        "function": "_melder_get",
+        "start": 134,
+        "end": 135,
+        "calls": [
+          {
+            "line": 135,
+            "call": "state.conduit.meld",
+            "argument": "state.root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_conduit_integration_perf_deep_graphs.py",
+    "lines": 512,
+    "groups": [
+      {
+        "function": "test_perf_conjure_scaling_depth3_5_7_9_automatic",
+        "start": 118,
+        "end": 158,
+        "calls": [
+          {
+            "line": 150,
+            "call": "conduit.meld",
+            "argument": "spell_ids[root_cls]",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "test_perf_depth9_unique_conjure_and_meld_cold_warm",
+        "start": 161,
+        "end": 196,
+        "calls": [
+          {
+            "line": 180,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 185,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "test_perf_depth9_many_all_nodes_avg",
+        "start": 199,
+        "end": 237,
+        "calls": [
+          {
+            "line": 216,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 223,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "test_perf_spellspace_depth3_unique_per_spellspace",
+        "start": 240,
+        "end": 298,
+        "calls": [
+          {
+            "line": 263,
+            "call": "space.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 270,
+            "call": "space.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 281,
+            "call": "space.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "test_perf_depth9_many_with_cached_leaves_and_cleanup",
+        "start": 301,
+        "end": 352,
+        "calls": [
+          {
+            "line": 323,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 328,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 337,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "test_perf_mixed_workload_alternating_depth7_depth9_and_spellspace_cleanup",
+        "start": 355,
+        "end": 424,
+        "calls": [
+          {
+            "line": 396,
+            "call": "conduit.meld",
+            "argument": "root9_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 399,
+            "call": "conduit.meld",
+            "argument": "root7_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 406,
+            "call": "space.meld",
+            "argument": "root3_space_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "test_perf_cycle_conjure_meld_cleanup_depth9_unique_per_conduit",
+        "start": 427,
+        "end": 476,
+        "calls": [
+          {
+            "line": 459,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "test_perf_spellspace_depth9_unique_per_spellspace_repeated_cleanup",
+        "start": 479,
+        "end": 512,
+        "calls": [
+          {
+            "line": 503,
+            "call": "space.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_deep_all_di_transient_only_no_singletons.py",
+    "lines": 832,
+    "groups": [
+      {
+        "function": "_melder_get",
+        "start": 161,
+        "end": 162,
+        "calls": [
+          {
+            "line": 162,
+            "call": "state.conduit.meld",
+            "argument": "state.root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "_melder_get_alias",
+        "start": 165,
+        "end": 175,
+        "calls": [
+          {
+            "line": 175,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "test_perf_mixed_workload_depth7_depth9_transient",
+        "start": 662,
+        "end": 777,
+        "calls": [
+          {
+            "line": 692,
+            "call": "conduit.meld",
+            "argument": "root9_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 695,
+            "call": "conduit.meld",
+            "argument": "root7_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_di_perf_basic.py",
+    "lines": 588,
+    "groups": [
+      {
+        "function": "_melder_run",
+        "start": 205,
+        "end": 275,
+        "calls": [
+          {
+            "line": 241,
+            "call": "conduit.meld",
+            "argument": "config_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 243,
+            "call": "conduit.meld",
+            "argument": "logger_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 245,
+            "call": "conduit.meld",
+            "argument": "logger_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 255,
+            "call": "conduit.meld",
+            "argument": "service_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 258,
+            "call": "conduit.meld",
+            "argument": "config_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 259,
+            "call": "conduit.meld",
+            "argument": "logger_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 260,
+            "call": "conduit.meld",
+            "argument": "service_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_di_perf_overhead_suite.py",
+    "lines": 815,
+    "groups": [
+      {
+        "function": "_melder_run",
+        "start": 262,
+        "end": 337,
+        "calls": [
+          {
+            "line": 284,
+            "call": "meld",
+            "argument": "config_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 285,
+            "call": "meld",
+            "argument": "config_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 289,
+            "call": "meld",
+            "argument": "logger_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 290,
+            "call": "meld",
+            "argument": "logger_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 294,
+            "call": "meld",
+            "argument": "service_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "get_cfg",
+        "start": 304,
+        "end": 305,
+        "calls": [
+          {
+            "line": 305,
+            "call": "meld",
+            "argument": "config_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "get_log",
+        "start": 307,
+        "end": 308,
+        "calls": [
+          {
+            "line": 308,
+            "call": "meld",
+            "argument": "logger_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "get_svc",
+        "start": 310,
+        "end": 311,
+        "calls": [
+          {
+            "line": 311,
+            "call": "meld",
+            "argument": "service_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_family_lane_harness.py",
+    "lines": 416,
+    "groups": [
+      {
+        "function": "_capture_sources",
+        "start": 287,
+        "end": 329,
+        "calls": [
+          {
+            "line": 316,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "_warm_per_meld_us",
+        "start": 332,
+        "end": 362,
+        "calls": [
+          {
+            "line": 347,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 349,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 355,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_melder_hotpath_profiles.py",
+    "lines": 351,
+    "groups": [
+      {
+        "function": "test_profile_meld_depth9_hotpaths",
+        "start": 254,
+        "end": 315,
+        "calls": [
+          {
+            "line": 268,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 273,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "_meld_cold_profile",
+        "start": 290,
+        "end": 296,
+        "calls": [
+          {
+            "line": 294,
+            "call": "cd.meld",
+            "argument": "root",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "_meld_warm_profile",
+        "start": 298,
+        "end": 305,
+        "calls": [
+          {
+            "line": 302,
+            "call": "cd.meld",
+            "argument": "root",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 303,
+            "call": "cd.meld",
+            "argument": "root",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "test_profile_cycle_conjure_meld_cleanup_depth9",
+        "start": 318,
+        "end": 350,
+        "calls": [
+          {
+            "line": 341,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_melder_single_meld_lock_and_check_cleaned.py",
+    "lines": 441,
+    "groups": [
+      {
+        "function": "resolve_request_root",
+        "start": 409,
+        "end": 410,
+        "calls": [
+          {
+            "line": 410,
+            "call": "space.meld",
+            "argument": "spell_ids[_support.RequestRoot]",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_multithreading_di.py",
+    "lines": 653,
+    "groups": [
+      {
+        "function": "resolve_depth9",
+        "start": 496,
+        "end": 499,
+        "calls": [
+          {
+            "line": 497,
+            "call": "conduit.meld",
+            "argument": "root9_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "resolve_depth7",
+        "start": 501,
+        "end": 504,
+        "calls": [
+          {
+            "line": 502,
+            "call": "conduit.meld",
+            "argument": "root7_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "spellspace_cycle",
+        "start": 506,
+        "end": 513,
+        "calls": [
+          {
+            "line": 508,
+            "call": "space.meld",
+            "argument": "root3_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 509,
+            "call": "space.meld",
+            "argument": "root3_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_overrides_all.py",
+    "lines": 765,
+    "groups": [
+      {
+        "function": "get_root",
+        "start": 573,
+        "end": 580,
+        "calls": [
+          {
+            "line": 575,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 577,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell",
+              "spell_override"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_real_world_gauntlet.py",
+    "lines": 1958,
+    "groups": [
+      {
+        "function": "_get",
+        "start": 984,
+        "end": 988,
+        "calls": [
+          {
+            "line": 985,
+            "call": "conduit.meld",
+            "argument": "spell_ids[cls]",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "_run_in_lesser_and_spellspace",
+        "start": 1002,
+        "end": 1054,
+        "calls": [
+          {
+            "line": 1014,
+            "call": "lesser.meld",
+            "argument": "spell_ids[outer_cls]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1015,
+            "call": "lesser.meld",
+            "argument": "spell_ids[outer_cls]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1027,
+            "call": "space.meld",
+            "argument": "spell_ids[request_marker_cls]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1028,
+            "call": "space.meld",
+            "argument": "spell_ids[request_marker_cls]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1033,
+            "call": "space.meld",
+            "argument": "spell_ids[outer_cls]",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "variant_call",
+        "start": 1057,
+        "end": 1071,
+        "calls": [
+          {
+            "line": 1059,
+            "call": "space.meld",
+            "argument": "spell_ids[RequestRoot]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1063,
+            "call": "space.meld",
+            "argument": "spell_ids[RequestGroup]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1064,
+            "call": "space.meld",
+            "argument": "spell_ids[RequestRoot]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1068,
+            "call": "space.meld",
+            "argument": "spell_ids[RequestRoot]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1069,
+            "call": "space.meld",
+            "argument": "spell_ids[RequestRoot]",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "variant_call",
+        "start": 1081,
+        "end": 1095,
+        "calls": [
+          {
+            "line": 1083,
+            "call": "space.meld",
+            "argument": "spell_ids[WorkerAJobRoot]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1087,
+            "call": "space.meld",
+            "argument": "spell_ids[WorkerAGroup]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1088,
+            "call": "space.meld",
+            "argument": "spell_ids[WorkerAJobRoot]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1092,
+            "call": "space.meld",
+            "argument": "spell_ids[WorkerAJobRoot]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1093,
+            "call": "space.meld",
+            "argument": "spell_ids[WorkerAJobRoot]",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "variant_call",
+        "start": 1105,
+        "end": 1119,
+        "calls": [
+          {
+            "line": 1107,
+            "call": "space.meld",
+            "argument": "spell_ids[WorkerBJobRoot]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1111,
+            "call": "space.meld",
+            "argument": "spell_ids[WorkerBGroup]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1112,
+            "call": "space.meld",
+            "argument": "spell_ids[WorkerBJobRoot]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1116,
+            "call": "space.meld",
+            "argument": "spell_ids[WorkerBJobRoot]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1117,
+            "call": "space.meld",
+            "argument": "spell_ids[WorkerBJobRoot]",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_shallow_all.py",
+    "lines": 2056,
+    "groups": [
+      {
+        "function": "get_root_a",
+        "start": 1217,
+        "end": 1221,
+        "calls": [
+          {
+            "line": 1218,
+            "call": "conduit.meld",
+            "argument": "root_a_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "get_root_b",
+        "start": 1223,
+        "end": 1227,
+        "calls": [
+          {
+            "line": 1224,
+            "call": "conduit.meld",
+            "argument": "root_b_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "spellspace_cycle",
+        "start": 1229,
+        "end": 1236,
+        "calls": [
+          {
+            "line": 1231,
+            "call": "space.meld",
+            "argument": "root_space_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1232,
+            "call": "space.meld",
+            "argument": "root_space_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "spellspace_resolve",
+        "start": 1243,
+        "end": 1248,
+        "calls": [
+          {
+            "line": 1245,
+            "call": "space.meld",
+            "argument": "root_space_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "get_root_a",
+        "start": 1626,
+        "end": 1631,
+        "calls": [
+          {
+            "line": 1628,
+            "call": "conduit.meld",
+            "argument": "root_a_ids[ix]",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "get_root_b",
+        "start": 1633,
+        "end": 1638,
+        "calls": [
+          {
+            "line": 1635,
+            "call": "conduit.meld",
+            "argument": "root_b_ids[ix]",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "spellspace_cycle",
+        "start": 1640,
+        "end": 1648,
+        "calls": [
+          {
+            "line": 1643,
+            "call": "space.meld",
+            "argument": "space_root_ids[ix]",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 1644,
+            "call": "space.meld",
+            "argument": "space_root_ids[ix]",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_shallow_all_diagnostics.py",
+    "lines": 472,
+    "groups": [
+      {
+        "function": "_time_meld",
+        "start": 319,
+        "end": 338,
+        "calls": [
+          {
+            "line": 336,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      },
+      {
+        "function": "test_shallow_all_melder_route_diagnostics",
+        "start": 396,
+        "end": 472,
+        "calls": [
+          {
+            "line": 435,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_unroll_locals_microbench.py",
+    "lines": 180,
+    "groups": [
+      {
+        "function": "_warm_per_meld_us",
+        "start": 83,
+        "end": 127,
+        "calls": [
+          {
+            "line": 110,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 112,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          },
+          {
+            "line": 118,
+            "call": "conduit.meld",
+            "argument": "root_id",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": "benchmarks/testing_other_di/test_unroll_path_diagnostic.py",
+    "lines": 167,
+    "groups": [
+      {
+        "function": "_capture_compiles",
+        "start": 57,
+        "end": 111,
+        "calls": [
+          {
+            "line": 105,
+            "call": "conduit.meld",
+            "argument": "spell_ids[root_cls]",
+            "keywords": [
+              "spell"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

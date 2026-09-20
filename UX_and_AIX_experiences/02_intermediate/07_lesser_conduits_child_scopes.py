@@ -27,8 +27,8 @@ def main() -> None:
 
     # "unique" is a world singleton, so the child resolves the SAME
     # instance the root does.
-    from_root = root.meld(spell=ScopedService)
-    from_child = child.meld(spell=ScopedService)
+    from_root = root.meld(ScopedService)
+    from_child = child.meld(ScopedService)
     assert from_root is from_child
     print("child scope melds the root's world:", type(from_child).__name__)
 

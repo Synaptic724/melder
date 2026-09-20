@@ -132,7 +132,7 @@ def _build_melder_depth9(*, existence: Existence, frame: str, conjure_name: str)
 
 
 def _melder_get(state: _MelderState) -> Any:
-    return state.conduit.meld(spell=state.root_id)
+    return state.conduit.meld(spell_id=state.root_id)
 
 
 def _melder_cleanup(state: _MelderState) -> None:

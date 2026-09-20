@@ -229,7 +229,7 @@ def _melder_get_root(state: Dict[str, Any]) -> Any:
     Returns:
         Any: Resolved root instance.
     """
-    return state["conduit"].meld(spell=state["root_id"])
+    return state["conduit"].meld(spell_id=state["root_id"])
 
 
 def _melder_get_by_id(state: Dict[str, Any], spell_id: str) -> Any:
@@ -243,7 +243,7 @@ def _melder_get_by_id(state: Dict[str, Any], spell_id: str) -> Any:
     Returns:
         Any: Resolved instance.
     """
-    return state["conduit"].meld(spell=spell_id)
+    return state["conduit"].meld(spell_id=spell_id)
 
 
 def _melder_cleanup(state: Dict[str, Any]) -> None:

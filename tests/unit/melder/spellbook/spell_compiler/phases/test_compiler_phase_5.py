@@ -250,6 +250,7 @@ def _make_spell_stub(
         _spellbook=spellbook,
         _compiler_artifact=artifact,
         is_existing_creation=is_existing_creation,
+        resolvable=True,
     )
     spell._cleanup_creation_context = lambda: None
     spellbook._spell_id_pool[spell_id] = spell
@@ -541,7 +542,7 @@ def test_run_frame_wide_attaches_fallback_blueprint_when_root_missing(
 def test_run_frame_wide_filters_component_of_rebuild_to_owned_roots(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Phase 5 should rebuild component_of only for owned roots."""
+    """Restrict publication and component_of rebuilding to owned roots, retaining provider state."""
     phase = CompilerPhase5()
     manager = _ChangeControlManagerStub()
     aether = _AetherStub(manager)
@@ -560,12 +561,16 @@ def test_run_frame_wide_filters_component_of_rebuild_to_owned_roots(
         spellbook=spellbook,
         spell_system_states=states,
     )
-    _make_spell_stub(
+    contracted_spell = _make_spell_stub(
         "contracted",
         spellbook=spellbook,
         spell_system_states=states,
         is_existing_creation=True,
     )
+    retained_index = compiler_phase_5_module.SpellSystemIndex()
+    retained_codegen = object()
+    contracted_spell._compiler_artifact._spell_system_index_phase5 = retained_index
+    contracted_spell._compiler_artifact._spell_codegen_creation = retained_codegen
     _patch_ir_exports(monkeypatch)
     snapshot = SpellSystemAdjacencySnapshot(
         dependencies={
@@ -608,6 +613,8 @@ def test_run_frame_wide_filters_component_of_rebuild_to_owned_roots(
             "root_blueprints": {"owned": blueprints["owned"]},
         }
     ]
+    assert contracted_spell._compiler_artifact._spell_system_index_phase5 is retained_index
+    assert contracted_spell._compiler_artifact._spell_codegen_creation is retained_codegen
 
 
 def test_run_frame_wide_registers_revalidator_and_revalidates_dirty_roots(

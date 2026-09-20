@@ -479,15 +479,15 @@ def test_component_spell_contract_broadcast_override_targets_dual_dependencies()
             Provide a consumer with multiple SpellContract "service" sockets.
         Contract:
             - Declares a SpellContract service socket.
-            - Declares a child dependency that also declares a service contract.
+            - Requires an injected child that also declares a service contract.
         """
         def __init__(
             self,
+            child: ContractConsumerPrimary,
             service: IService = SpellContract(
                 spellframe=IService,
                 binding_name="primary",
             ),
-            child: ContractConsumerPrimary = None,
         ) -> None:
             """
             Purpose:
@@ -496,7 +496,7 @@ def test_component_spell_contract_broadcast_override_targets_dual_dependencies()
                 Stores the service and child for assertions.
             Args:
                 service: Resolved service instance.
-                child: Child dependency with its own contract socket.
+                child: Required child dependency with its own contract socket.
             Returns:
                 None.
             """

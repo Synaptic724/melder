@@ -2804,7 +2804,7 @@ class Spellbook(Cleanable):
             - Does not mutate local or contracted registries.
             - Includes only the user-facing selector and ownership fields:
               `spell_id`, `spell_name`, `binding_name`, `spellframe`,
-              `existence`, and `owner_conduit_id`.
+              `existence`, `resolvable`, and `owner_conduit_id`.
             - Sorts results deterministically by spell name, effective binding
               name, and spell id.
 
@@ -2831,6 +2831,7 @@ class Spellbook(Cleanable):
                         "binding_name": spell.binding_name or "__default__",
                         "spellframe": spellframe_display,
                         "existence": spell.existence.name,
+                        "resolvable": spell.resolvable,
                         "owner_conduit_id": owner_conduit_id,
                     }
                 )
@@ -4760,6 +4761,7 @@ class Spellbook(Cleanable):
             binding_name: str | None = None,
             disposal_method_names: Sequence[str] | None = None,
             profile: str = "general",
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> str:
         """
@@ -4809,6 +4811,9 @@ class Spellbook(Cleanable):
                 are skipped and duplicates run once. Empty input still permits book methods.
             profile (str):
                 Spell profile family to attach after bind completion.
+            resolvable (bool):
+                Native capability of this parked version, independent of index selection.
+                Defaults to True; False retains existing naming and lifecycle restrictions.
             **kwargs:
                 Optional lifecycle hooks (pre/activation/post).
 
@@ -4820,6 +4825,8 @@ class Spellbook(Cleanable):
             RuntimeError:
                 If the spell_id collides, the Spellbook is not in a dynamic
                 posture, or `spell_index` is not owned here.
+            TypeError:
+                If resolvable is not a bool or the target violates Bind admission rules.
         """
         # The staging transaction lives directly in this method. Conduit
         # .bind_inactive delegates here without holding a window of its own,
@@ -4846,6 +4853,7 @@ class Spellbook(Cleanable):
                     spellframe=spellframe,
                     binding_name=binding_name,
                     profile=profile,
+                    resolvable=resolvable,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
                     configured_disposal_method_names=(
@@ -5033,6 +5041,7 @@ class Spellbook(Cleanable):
             binding_name: str | None = None,
             disposal_method_names: Sequence[str] | None = None,
             profile: str = "general",
+            resolvable: bool = True,
             **kwargs: Any,
     ) -> str:
         """
@@ -5072,6 +5081,9 @@ class Spellbook(Cleanable):
                 the same frame.
             profile (str):
                 Spell profile family to attach after bind completion.
+            resolvable (bool):
+                Native per-version resolution capability, default True. False registers a
+                non-resolvable definition without changing naming or lifecycle restrictions.
             disposal_method_names (Optional[Sequence[str]]):
                 Ordered per-spell candidates, combined with configured book candidates.
                 The complete matching book block comes last by default, first with
@@ -5095,6 +5107,7 @@ class Spellbook(Cleanable):
                 If ``spell`` is a primitive value (int, float, bool, complex,
                 str, bytes, bytearray); a spell must be a class, function,
                 lambda, or an existing object instance.
+                Also raised when resolvable is not a bool.
         """
         self.check_cleaned()
         if spell is None:
@@ -5142,6 +5155,7 @@ class Spellbook(Cleanable):
                     spellframe=spellframe,
                     binding_name=binding_name,
                     profile=profile,
+                    resolvable=resolvable,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
                     configured_disposal_method_names=(

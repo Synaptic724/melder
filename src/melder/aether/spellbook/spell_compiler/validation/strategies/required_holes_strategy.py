@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
@@ -23,6 +24,8 @@ class RequiredHolesStrategy(SpellValidationStrategy):
     - Reports caller-required parameters that Melder DI will never satisfy.
     - Emits warnings rather than hard errors because the caller may still
       provide these values at invocation time.
+    - Also reports resolved OVERRIDE_REQUIRED sockets from durable local topology.
+      Non-resolvable roots have no construction-input obligations.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
@@ -68,6 +71,8 @@ class RequiredHolesStrategy(SpellValidationStrategy):
           by the caller.
         - Performs reporting only; it does not attempt to synthesize defaults
           or convert the hole into a DI target.
+        - Reads reference-only required inputs from SpellSystemStates without
+          taking ownership of their topology or changing declaration facts.
         """
         self.check_cleaned()
 
@@ -79,10 +84,9 @@ class RequiredHolesStrategy(SpellValidationStrategy):
         if requirements is None:
             return
 
-        if not requirements.has_required_holes():
-            return
-
         spell = context.spell
+        if not spell.resolvable:
+            return
 
         for param in requirements.iter_required_holes():
             context.issues.append(
@@ -99,6 +103,31 @@ class RequiredHolesStrategy(SpellValidationStrategy):
                         "parameter_name": param.name,
                         "position": param.position,
                         "annotation": param.annotation,
+                    },
+                )
+            )
+
+        topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+        if topology is None:
+            return
+        for socket in topology.sockets:
+            if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED:
+                continue
+            context.issues.append(
+                SpellValidationIssue(
+                    severity="warning",
+                    code="OVERRIDE_REQUIRED",
+                    message=(
+                        f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} "
+                        "references a non-resolvable definition. Supply its value through "
+                        "a meld override when constructing this consumer."
+                    ),
+                    details={
+                        "spell_id": spell.spell_id,
+                        "parameter_name": socket.param_name,
+                        "position": socket.position,
+                        "parameter_kind": socket.parameter_kind,
+                        "referenced_spell_ids": socket.referenced_spell_ids,
                     },
                 )
             )

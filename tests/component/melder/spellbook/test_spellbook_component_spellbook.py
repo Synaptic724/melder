@@ -1073,6 +1073,7 @@ def test_component_spellbook_describe_spells_runtime_dump_includes_owner_and_sha
                 "binding_name",
                 "spellframe",
                 "existence",
+                "resolvable",
                 "owner_conduit_id",
             }
             for description in descriptions
@@ -1088,6 +1089,7 @@ def test_component_spellbook_describe_spells_runtime_dump_includes_owner_and_sha
         assert by_name["BasicConfig"]["binding_name"] == "secondary"
         assert by_name["BasicConfig"]["spellframe"] == "IService"
         assert all(description["existence"] == "unique" for description in descriptions)
+        assert all(description["resolvable"] is True for description in descriptions)
     finally:
         conduit.permanent_cleanup()
         spellbook.cleanup()

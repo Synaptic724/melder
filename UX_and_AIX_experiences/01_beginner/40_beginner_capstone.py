@@ -20,7 +20,7 @@ def main() -> None:
     """Start the graph, use it, and guarantee shutdown around the application call."""
     book, conduit = build_application()
     try:
-        pool: DbPool = conduit.meld(spell="DbPool")
+        pool: DbPool = conduit.meld("DbPool")
         messages = run_application(conduit)
         assert messages == [
             "orders-service: order 101 = coffee",

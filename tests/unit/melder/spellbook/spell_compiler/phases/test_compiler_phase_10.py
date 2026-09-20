@@ -34,7 +34,7 @@ def test_run_delegates_to_spell_codegen_planner() -> None:
     phase = CompilerPhase10()
     planner = _PlannerStub()
     phase._codegen_planner = planner
-    spell = SimpleNamespace()
+    spell = SimpleNamespace(resolvable=True)
     artifact = SimpleNamespace()
 
     phase.run(spell, artifact)

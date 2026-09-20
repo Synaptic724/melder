@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py",
- "source_sha256": "fb498ec986d601ede370a66c1f9e3f23d00a5efe2d7eb1af6e732d1a048a43fa",
+ "source_sha256": "cf7cc759abe13b9b8938926f3c1c6d511bf474efc5d14feb194e82d1144ba76e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy": {
@@ -39,13 +39,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d9c4d3d37c130b13b058d3c946b34ea240c83d3f500f6a0e1105282a96405a2f",
+   "span_sha256": "0d7363403a972d7b670a658eeb1dae628a0a5ff20618c7811c701197cad7af2a",
    "include": true,
    "role": "Explains at Phase 4 why a contracted spell cannot resolve, rather than letting it fail later without a reason.",
    "responsibilities": [
     "error on malformed contract descriptors and on more than one provider matching a contract key",
     "warn on missing SpellContract providers in dynamic mode but error on contract sockets in automatic system state",
-    "read the Spellbook's contracted-spell maps and the frame system_state"
+    "read the Spellbook's contracted-spell maps and the frame system_state",
+    "caches provider IDs and capability together, rejects a selected False provider and skips False-root provider obligations"
    ],
    "phases": [
     "compile"
