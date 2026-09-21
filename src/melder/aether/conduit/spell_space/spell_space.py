@@ -503,34 +503,57 @@ class SpellSpace(Cleanable):
             binding_name: Optional[str] = None,
             purge_all: bool = True,
     ) -> int:
-        """Remove only this SpellSpace's retained creations for a selected Spell.
+        """
+        Purge a registered target's retained creations from this SpellSpace.
 
-        Args:
-            spell: Logical name, class or function reference used for discovery.
-            spell_id: Explicit machine identity, mutually exclusive with spell.
-            spellframe: Optional frame/type for ordinary meld lookup.
-            binding_name: Optional binding name.
-            purge_all: True removes every matching local creation. False and
-                instance-reference targeting are not implemented yet.
+        Purpose:
+            Expose request-local retirement through the owned SpellSpaceMeld
+            door while keeping this explicit scope usable.
 
         Contract:
-            Only many and unique_per_spell_space entries are eligible. This
-            operation never delegates to a conduit, root or cluster store.
-            The scope, thread stack, pool membership and compiled contexts stay
-            intact; direct use does not require an active managed context.
-            Removal/disposal uses the existing Creations writer lock.
+            - SpellSpaceMeld authorizes only many and unique_per_spell_space.
+            - The target store is always this space's own Creations. No conduit,
+              Spell owner, lineage-root or cluster-leader store can be selected.
+            - Identity normalization follows meld's name/type/frame/id rules.
+            - Purge does not exit the scope, pop its stack or return it to a pool.
+
+        Args:
+            spell:
+                Logical name, class/function reference or application instance.
+                An instance is inspected for its class before ordinary lookup.
+                The original reference is retained for single-object removal.
+            spell_id:
+                Explicit machine identity, mutually exclusive with spell.
+            spellframe:
+                Optional frame/type used by ordinary binding discovery.
+            binding_name:
+                Optional binding name within that frame.
+            purge_all:
+                True removes every retained local entry for the target. False
+                requires an instance as spell and removes only that object.
 
         Returns:
-            Number of removed local creations, or zero for no matching entry.
+            int:
+                Removed local creation count; zero when none are retained.
 
         Raises:
-            ValueError: If selectors conflict or no target is supplied.
-            KeyError: If normal meld lookup cannot discover the Spell.
-            RuntimeError: If cleaned or the Spell belongs to a broader lifetime.
-            TypeError: If purge_all is not a bool.
-            NotImplementedError: If instance-reference targeting or purge_all=False
-                is requested.
-            ExceptionGroup: Disposal failures after removal.
+            ValueError:
+                If selectors conflict, no target is supplied, or single-object
+                removal is requested without an instance.
+            KeyError:
+                If normal meld discovery cannot find the binding.
+            RuntimeError:
+                If permanently cleaned or the target has a broader lifetime.
+            TypeError:
+                If purge_all is not a bool.
+            ExceptionGroup:
+                Disposal failures after selected local entries have been removed.
+
+        Threading / Lifecycle:
+            Creations uses this space's store lock and releases it before
+            disposal. Direct manual use needs no active managed stack entry.
+            Managed thread confinement and pool ownership rules remain unchanged;
+            a returned/recycled space must not be used through an old reference.
         """
         self.check_cleaned()
         if spell is not None and spell_id is not None:

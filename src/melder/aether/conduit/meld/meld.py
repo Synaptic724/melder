@@ -511,12 +511,12 @@ class Meld(Cleanable, ABC):
             - Discovery never creates an instance or compiles a dependency graph.
 
         Args:
-            spell: Canonical id string or class/function reference, as on meld.
+            spell: Canonical id string, class/function reference or application instance.
             spell_name: Logical name forwarded by the public facade.
             spellframe: Optional frame/type used for binding lookup.
             binding_name: Optional binding name within that frame.
-            purge_all: True retires the target's retained entries. False remains
-                explicitly unimplemented until instance targeting is added.
+            purge_all: True retires the target's retained entries. False retires
+                only the supplied instance from the authorized store.
 
         Returns:
             int: Number of retired creations, or zero when the selected store
@@ -550,15 +550,19 @@ class Meld(Cleanable, ABC):
             - Uses `_resolve_spell` unchanged for local/contracted lookup.
             - Returns the already-registered internal definition, never an
               application instance and never a newly constructed definition.
-            - Refuses the deferred instance-reference and purge_all=False forms.
+            - Inspects an application instance to obtain its class reference,
+              then submits that reference to the existing spell lookup.
+            - Explicit selectors remain available; no stored-object search or
+              automatic binding/frame recovery is performed during discovery.
+            - False requires an instance so retirement never guesses one.
             - Does not select a store, authorize a scope, compile, or dispose.
 
         Args:
-            spell: Canonical id string or class/function reference.
+            spell: Canonical id string, class/function reference or application instance.
             spell_name: Optional logical name from the public facade.
             spellframe: Optional frame/type used by ordinary meld discovery.
             binding_name: Optional named binding within that frame.
-            purge_all: Supported whole-target mode; must be the bool True.
+            purge_all: True selects the whole binding; False requires an instance.
 
         Returns:
             Spell: Existing definition visible to this Meld door.
@@ -566,8 +570,7 @@ class Meld(Cleanable, ABC):
         Raises:
             RuntimeError: If this Meld has been cleaned.
             TypeError: If purge_all is not a bool.
-            NotImplementedError: If False or an instance reference is supplied.
-            ValueError: If no usable selector is supplied.
+            ValueError: If no usable selector is supplied, or False has no instance.
             KeyError: If ordinary meld discovery cannot find the binding.
 
         Threading / Lifecycle:
@@ -577,21 +580,22 @@ class Meld(Cleanable, ABC):
         self.check_cleaned()
         if not isinstance(purge_all, bool):
             raise TypeError("purge_all must be a bool.")
-        if not purge_all:
-            raise NotImplementedError(
-                "purge_all=False is not implemented. Use purge_all=True with "
-                "a registered name, type, frame or spell_id."
-            )
         if spell is not None and not (
             isinstance(spell, str) or inspect.isclass(spell) or inspect.isroutine(spell)
         ):
-            raise NotImplementedError(
-                "Instance-reference purge is not implemented. Select the binding "
-                "by registered name, type, frame or spell_id."
+            # Discovery uses the class; the concrete door retains the original
+            # reference separately for Creations when single removal is requested.
+            spell = type(spell)
+        elif not purge_all:
+            raise ValueError(
+                "purge_all=False requires an object instance. Pass that instance "
+                "as spell, or use purge_all=True with a binding selector."
             )
         return self._resolve_spell(
-            spell=spell, spell_name=spell_name,
-            spellframe=spellframe, binding_name=binding_name,
+            spell=spell,
+            spell_name=spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
         )
 
     def has_live_creation(

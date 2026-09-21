@@ -4127,39 +4127,63 @@ class Conduit(Cleanable):
             binding_name: Optional[str] = None,
             purge_all: bool = True,
     ) -> int:
-        """Remove retained creations selected with the same addresses as meld.
+        """
+        Purge a registered target's retained creations through this conduit.
 
-        Args:
-            spell: Logical name, class or function reference used for discovery.
-            spell_id: Explicit machine identity, mutually exclusive with spell.
-            spellframe: Optional frame/type used for normal binding lookup.
-            binding_name: Optional named binding within the selected frame.
-            purge_all: True removes the binding's retained entries. False and
-                instance-reference targeting are not implemented yet.
+        Purpose:
+            Expose targeted disposal without ending the conduit or removing the
+            binding. Identity normalization mirrors this facade's meld method.
 
         Contract:
-            Meld discovers the Spell and checks scope authority. Many and
-            per-conduit creations are local; unique, lineage and cluster
-            creations require their owning/root/leader conduit. SpellSpace
-            creations must be purged through their SpellSpace. Registrations,
-            compiled contexts and this conduit remain usable. Existing external
-            references are not revoked, including supplied objects held by Spell.
+            - Delegates discovery and authority to the owned ConduitMeld door.
+            - Many and per-conduit creations are local. Unique requires the
+              binding owner, lineage the lineage root, and cluster its leader.
+            - Never redirects into an active SpellSpace; use that space's purge.
+            - Preserves the binding, compiled context, conduit and pools.
+
+        Args:
+            spell:
+                Logical name, class/function reference or application instance.
+                An instance is inspected for its class before ordinary lookup.
+                The original reference is retained for single-object removal.
+            spell_id:
+                Explicit machine identity. Mutually exclusive with spell and
+                forwarded directly into the internal id lookup lane.
+            spellframe:
+                Optional frame/type used by ordinary binding discovery.
+            binding_name:
+                Optional named binding within the selected frame.
+            purge_all:
+                True removes all retained target entries. False requires an
+                instance as spell and removes only that object from the store.
 
         Returns:
-            Number removed; zero when the authorized store has no matching entry.
+            int:
+                Removed creation count; zero when no matching entry is retained
+                in the authorized store. Untracked many results cannot be purged.
 
         Raises:
-            ValueError: If selectors conflict or no target is supplied.
-            KeyError: If the normal meld lookup cannot discover the Spell.
-            RuntimeError: If cleaned or not authorized for the selected scope.
-            TypeError: If purge_all is not a bool.
-            NotImplementedError: If instance-reference targeting or purge_all=False
-                is requested.
-            ExceptionGroup: Disposal failures after entries have been removed.
+            ValueError:
+                If selectors conflict, no target is supplied, or single-object
+                removal is requested without an instance.
+            KeyError:
+                If normal meld discovery cannot find the binding.
+            RuntimeError:
+                If cleaned, the cluster is inert, or this conduit lacks authority.
+            TypeError:
+                If purge_all is not a bool.
+            ExceptionGroup:
+                Disposal failures after selected entries have been removed.
 
-        Threading:
-            Creations uses the existing creation writer locks. Purge is targeted
-            retirement, not a drain of in-flight calls or an ownership transfer.
+        Threading / Concurrency:
+            Creations coordinates removal with the existing creation writer
+            locks and runs disposal after releasing them. This call does not
+            drain in-flight resolution or perform an ownership transaction.
+
+        Lifecycle / Cleanup:
+            Existing application references remain valid Python references;
+            they are not rewritten or revoked. Supplied objects also remain on
+            their registration. Scope ownership must remain live for this call.
         """
         self.check_cleaned()
         if spell is not None and spell_id is not None:

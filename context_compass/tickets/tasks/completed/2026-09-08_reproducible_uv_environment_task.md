@@ -1,14 +1,23 @@
 # Task: Add a reproducible uv development environment
 
+## Owner-Approved Completion
+- Completed: 2026-09-20T22:13:38Z
+- Summary: Recorded implementation and validation are complete; owner directed marking finished work done.
+- Acceptance: Owner instruction on 2026-09-20.
+- Validation: Prior recorded results retained; no new runtime or hosted test run is claimed.
+- Artifact disposition: complete; see tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md.
+  Retained evidence remains available; approved disposable files were removed and patches archived.
+- Earlier review/rollout NEXT statements and the previous handoff below are historical context.
+
 ## Metadata
 - Task ID: TASK-2026-09-08-reproducible-uv-environment
 - Story: none
-- Status: review
+- Status: done
 - Owner: codex
-- Agent Name: workflows_1
+- Agent Name: workflows_0
 - Priority: p2
 - Created: 2026-09-08T10:55:34Z
-- Updated: 2026-09-08T11:26:20Z
+- Updated: 2026-09-20T22:34:55Z
 
 ## Objective
 Provide a generated uv.lock and clear commands for contributors and CI to reproduce repository
@@ -30,10 +39,9 @@ dependencies while preserving the dynamic OS/free-threaded Python matrix and zer
   replacing the separate locked documentation environment or modifying the owner's virtualenvs.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Locked contributor and CI flows are implemented; focused local validation passes.
-  Owner review, signed commit and the first hosted matrix execution remain with the project owner.
+- from_state: review
+- to_state: done
+- transition_reason: Owner-authorized completion of delivered work; artifact cleanup tracked separately.
 
 ## Steps / Checklist
 - [x] Inspect current groups, install workflows, uv availability and package boundaries.
@@ -71,16 +79,15 @@ dependencies while preserving the dynamic OS/free-threaded Python matrix and zer
 ## Artifact Links
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - artifacts/uv_environment_20260908/
-  - system_docs/patches/active/uv_environment_2026_09_08/architecture_patch.md
-  - system_docs/patches/active/uv_environment_2026_09_08/architecture_patch_index.md
-  - system_docs/patches/active/uv_environment_2026_09_08/component_patch_uv_setup.md
-  - system_docs/patches/active/uv_environment_2026_09_08/component_patch_uv_setup_index.md
-  - system_docs/patches/active/uv_environment_2026_09_08/code_description_patch_ci_lock.md
-  - system_docs/patches/active/uv_environment_2026_09_08/code_description_patch_ci_lock_index.md
-- DISPOSITION: Validation workspace delete_on_close; patch documents/indexes promote_to_documentation.
-- CLEANUP_TRIGGER: After owner acceptance, remove task-owned environments/logs and retire the patch
-  lane through the normal closure flow. Durable setup is in CONTRIBUTING.md and .github/BRANCH_WORKFLOW.md.
+  - artifacts/workflows_closeout_20260920/approved_cleanup_receipt.json
+  - system_docs/patches/completed/uv_environment_2026_09_08/architecture_patch.md
+  - system_docs/patches/completed/uv_environment_2026_09_08/architecture_patch_index.md
+  - system_docs/patches/completed/uv_environment_2026_09_08/component_patch_uv_setup.md
+  - system_docs/patches/completed/uv_environment_2026_09_08/component_patch_uv_setup_index.md
+  - system_docs/patches/completed/uv_environment_2026_09_08/code_description_patch_ci_lock.md
+  - system_docs/patches/completed/uv_environment_2026_09_08/code_description_patch_ci_lock_index.md
+- DISPOSITION: Patches promoted and archived; disposable workspace deleted; cleanup receipt retained.
+- CLEANUP_TRIGGER: Completed with explicit owner authorization at 2026-09-20T22:34:55Z.
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -148,7 +155,7 @@ dependencies while preserving the dynamic OS/free-threaded Python matrix and zer
     Commands run inside the synced environment. The separate docs lock and publication gates remain.
   EVIDENCE:
   - Owner: "Yes, use it in CI"; "make sure it allows for matrix shit to occur".
-  - system_docs/patches/active/uv_environment_2026_09_08/code_description_patch_ci_lock.md:1-19
+  - system_docs/patches/completed/uv_environment_2026_09_08/code_description_patch_ci_lock.md:1-19
   - https://raw.githubusercontent.com/astral-sh/setup-uv/main/README.md
   IMPACT: The base environment already passed 411 workflow tests and wheel/sdist inspection.
     Map the CI patch to test-runtime.yml/build-distributions.yml and their contract tests; select uv
@@ -237,7 +244,33 @@ dependencies while preserving the dynamic OS/free-threaded Python matrix and zer
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-20T21:43:14Z
+  TYPE: DECISION
+  CLAIM: Owner transfers all workflows_1 responsibility to workflows_0. The successor read this
+    ticket in full and assumes CI lock maintenance, rollout follow-up and review coordination.
+    The prior local checks remain dated evidence; hosted matrix execution was still pending here.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md:13-16
+  - context_compass/tickets/tasks/completed/2026-09-08_reproducible_uv_environment_task.md:49-58
+  IMPACT: Assignment changes while review status and the existing rollout boundary remain intact.
+  NEXT: Support owner review and inspect the next hosted PR matrix when that run is available.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-20T22:13:38Z
+  TYPE: DECISION
+  CLAIM: Owner authorizes marking this delivered work completed. Prior validation supports the
+    implementation result; destructive artifact cleanup remains a separately tracked approval blocker.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-08_reproducible_uv_environment_task.md:57-67
+  - context_compass/tickets/tasks/completed/2026-09-08_reproducible_uv_environment_task.md:1-11
+  IMPACT: Implementation ticket is done. No artifact deletion or new test execution is implied.
+  NEXT: none for implementation; cleanup remains in the linked closeout task.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
+Responsibility transferred to workflows_0 on 2026-09-20 by explicit owner instruction.
 Owner explicitly approved uv.lock use in CI and required preserving the Python/OS no-GIL matrix.
 Implemented uv.lock, minimum uv configuration, CONTRIBUTING.md, README/workflow guidance and locked
 runtime/build installs. setup-python still chooses each matrix interpreter; uv receives its exact

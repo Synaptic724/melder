@@ -8,7 +8,8 @@ Expose additive purge forwarding without changing existing meld or whole-conduit
 
 ## Interface deltas
 purge(spell=None, *, spell_id=None, spellframe=None, binding_name=None, purge_all=True) -> int.
-Default removes all matching entries. False and instance-reference targets are explicitly not implemented.
+Default removes all target entries. An instance is a class-inspection shortcut into existing discovery.
+False requires an instance and retires only that object; other selectors still target the whole binding.
 Strings are logical names; spell_id is explicit machine identity. Reject simultaneous spell/spell_id.
 
 ## State and lifecycle

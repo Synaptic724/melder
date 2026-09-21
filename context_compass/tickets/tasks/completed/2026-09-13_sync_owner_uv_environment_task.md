@@ -1,14 +1,23 @@
 # Task: Sync the owner's existing environment from uv.lock
 
+## Owner-Approved Completion
+- Completed: 2026-09-20T22:13:38Z
+- Summary: Recorded implementation and validation are complete; owner directed marking finished work done.
+- Acceptance: Owner instruction on 2026-09-20.
+- Validation: Prior recorded results retained; no new runtime or hosted test run is claimed.
+- Artifact disposition: complete; see tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md.
+  Retained evidence remains available; approved disposable files were removed and patches archived.
+- Earlier review/rollout NEXT statements and the previous handoff below are historical context.
+
 ## Metadata
 - Task ID: TASK-2026-09-13-sync-owner-uv-environment
 - Story: none
-- Status: review
+- Status: done
 - Owner: codex
-- Agent Name: workflows_1
+- Agent Name: workflows_0
 - Priority: p2
 - Created: 2026-09-13T20:41:52Z
-- Updated: 2026-09-13T20:48:32Z
+- Updated: 2026-09-20T22:34:55Z
 
 ## Objective
 Apply the repository lock to the owner's existing .venv_new and install the current Melder checkout,
@@ -28,10 +37,9 @@ retaining its free-threaded interpreter and extra installed tools.
 - Out of scope: source/workflow/lock changes, Python upgrade, other environments, commits or publication.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Locked sync, package preservation, dependency compatibility and no-GIL import
-  checks passed. The owner's editor Ruff server needs restarting after its executable was unlocked.
+- from_state: review
+- to_state: done
+- transition_reason: Owner-authorized completion of delivered work; artifact cleanup tracked separately.
 
 ## Steps / Checklist
 - [x] Identify the active repository environment, interpreter and installed package groups.
@@ -170,7 +178,33 @@ retaining its free-threaded interpreter and extra installed tools.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-20T21:43:14Z
+  TYPE: DECISION
+  CLAIM: Owner transfers all workflows_1 responsibility to workflows_0. The successor read this
+    ticket in full and assumes environment-support and review follow-up responsibility.
+    The September 13 sync result is historical; no install or process operation was repeated here.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md:13-16
+  - context_compass/tickets/tasks/completed/2026-09-13_sync_owner_uv_environment_task.md:51-59
+  IMPACT: Assignment changes; recorded completion and the editor Ruff restart handoff remain in review.
+  NEXT: Support owner review or any newly reported environment failure using the recorded sync evidence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-20T22:13:38Z
+  TYPE: DECISION
+  CLAIM: Owner authorizes marking this delivered work completed. Prior validation supports the
+    implementation result; destructive artifact cleanup remains a separately tracked approval blocker.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-13_sync_owner_uv_environment_task.md:59-68
+  - context_compass/tickets/tasks/completed/2026-09-13_sync_owner_uv_environment_task.md:1-11
+  IMPACT: Implementation ticket is done. No artifact deletion or new test execution is implied.
+  NEXT: none for implementation; cleanup remains in the linked closeout task.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
+Responsibility transferred to workflows_0 on 2026-09-20 by explicit owner instruction.
 .venv_new is synchronized from the existing lock using --locked --all-groups --inexact. Editable
 Melder 0.2.40 imports from this checkout on unchanged Python 3.14.7 free-threaded; GIL remains off.
 Twelve tools were upgraded and all forty prior package names retained. Lock consistency, dependency

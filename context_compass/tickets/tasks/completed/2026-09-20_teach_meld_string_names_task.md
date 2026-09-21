@@ -1,14 +1,23 @@
 # Task: Teach quoted spell-name resolution consistently
 
+## Owner-Approved Completion
+- Completed: 2026-09-20T22:13:38Z
+- Summary: Recorded implementation and validation are complete; owner directed marking finished work done.
+- Acceptance: Owner instruction on 2026-09-20.
+- Validation: Prior recorded results retained; no new runtime or hosted test run is claimed.
+- Artifact disposition: complete; see tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md.
+  Retained evidence remains available; approved disposable files were removed and patches archived.
+- Earlier review/rollout NEXT statements and the previous handoff below are historical context.
+
 ## Metadata
 - Task ID: TASK-2026-09-20-teach-meld-string-names
 - Story: none
-- Status: review
+- Status: done
 - Owner: codex
-- Agent Name: workflows_1
+- Agent Name: workflows_0
 - Priority: p2
 - Created: 2026-09-20T09:05:25Z
-- Updated: 2026-09-20T09:22:39Z
+- Updated: 2026-09-20T22:34:55Z
 
 ## Objective
 Correct the tutorial convention to resolve by quoted spell name, including the owner's Watched
@@ -30,10 +39,9 @@ hook example, instead of teaching class/object references as the meld target.
   reference coverage, benchmark machine-ID paths, publication or commits.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Quoted-name teaching correction is implemented; all 133 lessons, 39 docs tests,
-  strict build, links, downloads and derived-asset checks pass.
+- from_state: review
+- to_state: done
+- transition_reason: Owner-authorized completion of delivered work; artifact cleanup tracked separately.
 
 ## Steps / Checklist
 - [x] Inventory current reference calls and read the named hook example plus README address guidance.
@@ -174,7 +182,33 @@ hook example, instead of teaching class/object references as the meld target.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-20T21:42:07Z
+  TYPE: DECISION
+  CLAIM: Owner transfers all workflows_1 responsibility to workflows_0. The successor read this
+    ticket in full and assumes review follow-up, maintenance and delivery coordination for this lane.
+    Existing implementation and validation records retain their original authorship and dates.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md:13-16
+  - context_compass/tickets/tasks/completed/2026-09-20_teach_meld_string_names_task.md:50-59
+  IMPACT: Agent assignment changes; the lane remains in review and awaits owner acceptance/commit.
+  NEXT: Support owner review of the quoted-name teaching correction and resolve any new findings.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-20T22:13:38Z
+  TYPE: DECISION
+  CLAIM: Owner authorizes marking this delivered work completed. Prior validation supports the
+    implementation result; destructive artifact cleanup remains a separately tracked approval blocker.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-20_teach_meld_string_names_task.md:58-67
+  - context_compass/tickets/tasks/completed/2026-09-20_teach_meld_string_names_task.md:1-11
+  IMPACT: Implementation ticket is done. No artifact deletion or new test execution is implied.
+  NEXT: none for implementation; cleanup remains in the linked closeout task.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
+Responsibility transferred to workflows_0 on 2026-09-20 by explicit owner instruction.
 Completed the owner's correction: tutorial meld calls use quoted registered names, including Watched.
 Converted 138 remaining calls by codemod, manually clarified batch/address examples, fixed the Worker
 guide and MyService quickstart, and documented the convention in README/registration/maintaining.

@@ -49,6 +49,7 @@
     "routes conduit-local unique_per_conduit and many storage through ConduitCreations",
     "rejects spellspace-request spells on the conduit entry path",
     "provides reuse-only and live-creation status probes over conduit-scoped storage",
+    "authorizes conduit-local, spell-owner, lineage-root and cluster-leader purge before delegating single or all retirement to Creations",
     "refuses immutable non-resolvable registrations before normal resolution and reuse-only access"
    ],
    "owns_state": [],

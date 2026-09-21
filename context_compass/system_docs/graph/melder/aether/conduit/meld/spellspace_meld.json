@@ -48,6 +48,7 @@
     "routes unique_per_spell_space storage through spellspace-local Creations",
     "routes conduit-owned lifetimes through owner-conduit ConduitCreations",
     "provides live-creation status over spellspace-local and owner-conduit storage",
+    "restricts purge to this space's many and unique_per_spell_space entries before delegating single or all retirement to Creations",
     "refuses immutable non-resolvable registrations before normal resolution and reuse-only access"
    ],
    "owns_state": [

@@ -74,15 +74,14 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for codex_1 (from workflows_1, 2026-09-06T18:41:11Z)
-- NEW MESSAGE for codex_1 (from workflows_1, 2026-09-06T17:41:58Z)
+- NEW MESSAGE for muse (from updater_0, 2026-09-21T00:22:00Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| scoped_creation_purge | in_progress | implementation | codex | updater_0 | none | Add regressions and implement native scoped purge. | Meld owns scope authority; Creations owns locked retirement. | Feature tests and generated assets pass. | tickets/tasks/2026-09-20_implement_scoped_creation_purge_task.md | 2026-09-20T22:06:15Z | REQUIRED |
+| scoped_creation_purge | in_progress | implementation | codex | updater_0 | none | Complete approved documentation/assets and close purge tickets. | Accepted source plus current generated artifacts. | Purge epic and three related tasks moved to completed. | tickets/tasks/2026-09-20_implement_scoped_creation_purge_task.md | 2026-09-21T00:22:00Z | REQUIRED |
 | purge_scope_discovery | review | handoff | codex | updater_0 | none | Owner reviews the bounded Meld-to-Creations purge plan. | Authority matrix and 38 passing characterization checks. | Owner directs implementation. | tickets/tasks/2026-09-20_discover_purge_scope_ownership_task.md | 2026-09-20T21:43:07Z | REQUIRED |
 | bind_lifecycle_hooks_planning | review | handoff | codex | updater_0 | none | Owner reviews the three bind-time lifecycle stages. | Draft epic preserves reference checks, Spell edits and post-bind callbacks. | Owner selects further discovery or implementation. | tickets/epics/2026-09-20_bind_lifecycle_hooks_and_reference_strategies_epic.md | 2026-09-20T08:04:19Z | REQUIRED |
 | release_0_2_37_to_0_2_43 | review | handoff | codex | updater_0 | none | Owner reviews the 0.2.43 release document. | Verified release date, completed-work map and migration notes. | Owner accepts draft or requests revisions. | tickets/tasks/2026-09-20_prepare_0_2_37_to_0_2_42_release_document_task.md | 2026-09-20T07:54:22Z | REQUIRED |
@@ -91,12 +90,15 @@ Message alert rules
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
 | stateful_application_recovery | ready | handoff | user | unassigned | none | Discuss one stateful recovery scenario. | Native replay coverage and partial/assisted recovery opportunities preserved. | Owner selects recovery contracts before implementation. | tickets/epics/2026-09-07_stateful_application_recovery_epic.md | 2026-09-07T19:17:55Z | REQUIRED |
+| mediator_wiring_probe | in_progress | discovery | opencode | muse | none | Ask owner what remains before this lane is done. | Doc patches plus verified indexes stand; closeout only on explicit checkout. | Owner states remaining work or requests checkout. | tickets/tasks/2026-09-20_investigate_mediator_wiring_task.md | 2026-09-21T00:11:00Z | REQUIRED |
+| components_sliced_audit | in_progress | discovery | opencode | muse | none | Verify indexes then slice front matter plus first C3 component. | Per-component notes plus closing contradiction list with evidence. | C3 pass complete with dispositions or owner redirects scope. | tickets/tasks/2026-09-21_systematic_components_audit_task.md | 2026-09-21T00:16:57Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| shared_board_cleanup | done | workflows_0 | tickets/tasks/completed/2026-09-21_cleanup_shared_context_compass_boards_task.md | Departed entries and obsolete notices retired; history archived; live work preserved. | 2026-09-21T00:22:34Z |
 | workflows_responsibility_transfer | done | workflows_0 | tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md | Succession and approved cleanup complete; twelve archive hashes verified. | 2026-09-20T22:34:55Z |
 | 2026-09-06_ci_validation_stage_design_task | done | workflows_0 | tickets/tasks/completed/2026-09-06_ci_validation_stage_design_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
 | 2026-09-08_reproducible_uv_environment_task | done | workflows_0 | tickets/tasks/completed/2026-09-08_reproducible_uv_environment_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
@@ -108,13 +110,13 @@ Message alert rules
 | 2026-09-19_discoverable_registration_contract_discovery_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_registration_contract_discovery_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
 | 2026-09-19_discoverable_registration_modifier_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_registration_modifier_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
 | 2026-09-19_caller_supplied_socket_compiler_story | done | updater_0 | tickets/stories/completed/2026-09-19_caller_supplied_socket_compiler_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
-| 2026-09-19_discoverable_resolution_runtime_story | done | updater_0 | tickets/stories/completed/2026-09-19_discoverable_resolution_runtime_story.md | Owner turn-in; feature and reported repairs accepted; evidence retained. | 2026-09-20T00:25:59Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- scoped_creation_purge: SWITCH_TRIGGER is completed validation and documentation/build evidence.
+- scoped_creation_purge: SWITCH_TRIGGER is explicit owner code approval before final
+  canonical documentation updates and asset/graph/index regeneration.
   RESUME_HIERARCHY: tickets/epics/2026-09-19_scope_aware_creation_purge_epic.md ->
   tickets/tasks/2026-09-20_implement_scoped_creation_purge_task.md.
 - purge_scope_discovery: SWITCH_TRIGGER is owner direction to implement the reviewed plan.
@@ -135,4 +137,8 @@ Message alert rules
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_embed_melder_banner_task.md.
 - stateful_application_recovery: SWITCH_TRIGGER is owner selection of a concrete stateful recovery scenario.
   RESUME_HIERARCHY: tickets/epics/2026-09-07_stateful_application_recovery_epic.md -> linked source investigation and related scope/identity work.
+- mediator_wiring_probe: SWITCH_TRIGGER is owner statement of remaining work or explicit checkout request.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-20_investigate_mediator_wiring_task.md.
+- components_sliced_audit: SWITCH_TRIGGER is completed C3 pass with contradiction dispositions or owner scope redirect.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-21_systematic_components_audit_task.md.
 <!-- END USER-DEFINED: notes -->

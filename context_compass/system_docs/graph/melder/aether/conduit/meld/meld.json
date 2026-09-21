@@ -54,7 +54,7 @@
    "role": "Resolution runtime orchestrator.",
    "responsibilities": [
     "resolves target spells",
-    "discovers and authorizes the purge target store, then delegates locked retirement to Creations; instance targeting remains deferred",
+    "discovers purge bindings through inspected instance classes or explicit selectors; concrete doors own scope authority",
     "enforces validity and dirty-root gates",
     "chooses reuse versus construction",
     "dispatches execution into CreationContext",

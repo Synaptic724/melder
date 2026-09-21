@@ -48,6 +48,20 @@ number removed, or `0` when that authorized store has no matching creation.
 Only `many` objects with configured disposal are retained; untracked results are
 not affected by purge.
 
+An existing object provides a second input path: purge inspects its class and
+passes that reference through the existing binding lookup. Choose the shortcut
+or the explicit selectors for your binding. Both use the same scoped purge:
+
+```python
+job = conduit.meld("Job")
+removed = conduit.purge(job, purge_all=False)  # Remove this object only.
+removed = conduit.purge(job)                  # Remove remaining entries for its binding.
+```
+
+Single-object removal requires the instance and returns `0` if that object is
+not retained in the authorized store. Other instances remain available for later
+purge or normal scope cleanup. The same options work on `SpellSpace`.
+
 | Lifetime | Who may purge it |
 | --- | --- |
 | `many` | The conduit or spell space holding those local creations |
@@ -67,6 +81,3 @@ fresh factory-backed instance using the existing compiled context. References
 already held by application objects are not rewritten. An externally supplied
 object remains referenced by its registration, so purging its store entry does
 not unbind it or turn it into a factory.
-
-**Instance-reference purging is not implemented yet.** Passing a created instance
-or requesting `purge_all=False` raises `NotImplementedError` before removal.

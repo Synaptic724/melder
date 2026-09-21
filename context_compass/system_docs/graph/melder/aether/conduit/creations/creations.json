@@ -59,7 +59,7 @@
     "retains established Spell disposal lists through registration and in-memory transfer",
     "invokes methods in list order; the first method failure stops its object while other objects continue",
     "supports reusable clear/reset and terminal cleanup without clearing borrowed method lists",
-    "purges a selected spell entry with creation writer locks and existing disposal helpers, without scope discovery or authorization"
+    "purges a whole selected target or one supplied creation with paired registry removal, existing writer locks and shared disposal helpers; no scope discovery or authorization"
    ],
    "owns_state": [
     "_creations",

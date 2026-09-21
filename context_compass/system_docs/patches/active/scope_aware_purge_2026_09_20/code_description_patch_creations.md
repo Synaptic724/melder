@@ -8,7 +8,9 @@ Selective disposal changes a concurrent lifecycle boundary and must preserve pai
 2. If Spell.existence is unique, acquire Spell._lock.
 3. Acquire the selected store's lock and recheck live state.
 4. Test key membership, not value truthiness. An absent key returns zero.
-5. Pop both live and disposal entries; count one singleton or the many bucket's length using Existence.
+5. True pops both entries and counts by Existence. False removes the supplied instance only: compare
+   the singleton reference or search the selected many bucket, then retire its disposal metadata.
+   Empty many buckets are removed. Absent instances return zero; equality methods are never invoked.
 6. Release store lock and, for unique, Spell lock. Retain the detached live object until this point.
 7. Dispose only the detached metadata through existing disposal helpers.
 8. Release detached references; return count or raise the aggregated disposal failures.

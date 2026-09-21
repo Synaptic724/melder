@@ -1,14 +1,23 @@
 # Task: Use positional meld targets throughout published examples
 
+## Owner-Approved Completion
+- Completed: 2026-09-20T22:13:38Z
+- Summary: Recorded implementation and validation are complete; owner directed marking finished work done.
+- Acceptance: Owner instruction on 2026-09-20.
+- Validation: Prior recorded results retained; no new runtime or hosted test run is claimed.
+- Artifact disposition: complete; see tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md.
+  Retained evidence remains available; approved disposable files were removed and patches archived.
+- Earlier review/rollout NEXT statements and the previous handoff below are historical context.
+
 ## Metadata
 - Task ID: TASK-2026-09-19-document-positional-meld-calls
 - Story: none
-- Status: review
+- Status: done
 - Owner: codex
-- Agent Name: workflows_1
+- Agent Name: workflows_0
 - Priority: p2
 - Created: 2026-09-19T21:44:14Z
-- Updated: 2026-09-20T08:12:53Z
+- Updated: 2026-09-20T22:34:55Z
 
 ## Objective
 Replace the documented `meld(spell=target)` example spelling with `meld(target)` through a
@@ -32,9 +41,9 @@ deterministic codemod, including the saved lesson sources used by Read the Docs 
 - Keep `spell_id=`, `spellframe=`, `binding_name=` and bind's `spell=` arguments unchanged.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: The authorized Crystallizer cache reset completed and both remaining examples pass.
+- from_state: review
+- to_state: done
+- transition_reason: Owner-authorized completion of delivered work; artifact cleanup tracked separately.
 
 ## Steps / Checklist
 - [x] Inspect README, docs assembly, lesson input roots and applicable example instructions.
@@ -240,7 +249,33 @@ deterministic codemod, including the saved lesson sources used by Read the Docs 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-20T21:42:07Z
+  TYPE: DECISION
+  CLAIM: Owner transfers all workflows_1 responsibility to workflows_0. The successor read this
+    ticket in full and assumes review follow-up, maintenance and delivery coordination for this lane.
+    Prior validation and the authorized cache-reset results remain historical evidence.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md:13-16
+  - context_compass/tickets/tasks/completed/2026-09-19_document_positional_meld_calls_task.md:53-65
+  IMPACT: Agent assignment changes; the lane remains in review with the documented failures resolved.
+  NEXT: Support owner review of the positional-call documentation and recorded cache-reset results.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-20T22:13:38Z
+  TYPE: DECISION
+  CLAIM: Owner authorizes marking this delivered work completed. Prior validation supports the
+    implementation result; destructive artifact cleanup remains a separately tracked approval blocker.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-19_document_positional_meld_calls_task.md:62-74
+  - context_compass/tickets/tasks/completed/2026-09-19_document_positional_meld_calls_task.md:1-11
+  IMPACT: Implementation ticket is done. No artifact deletion or new test execution is implied.
+  NEXT: none for implementation; cleanup remains in the linked closeout task.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
+Responsibility transferred to workflows_0 on 2026-09-20 by explicit owner instruction.
 Completed the owner-authorized positional meld spelling sweep with a deterministic codemod: 150
 replacements in 65 published lesson/helper scripts and the package quickstart. README already matched.
 Canonical inputs, strict 294-page local HTML build, 39 docs tests, 35,501 links, rendered code and

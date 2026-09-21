@@ -1,14 +1,23 @@
 # Task: Implement full qualification at selected branch stages
 
+## Owner-Approved Completion
+- Completed: 2026-09-20T22:13:38Z
+- Summary: Recorded implementation and validation are complete; owner directed marking finished work done.
+- Acceptance: Owner instruction on 2026-09-20.
+- Validation: Prior recorded results retained; no new runtime or hosted test run is claimed.
+- Artifact disposition: complete; see tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md.
+  Retained evidence remains available; approved disposable files were removed and patches archived.
+- Earlier review/rollout NEXT statements and the previous handoff below are historical context.
+
 ## Metadata
 - Task ID: TASK-2026-09-06-ci-validation-stage-design
 - Story: none (owner-approved CI stage implementation)
-- Status: review
+- Status: done
 - Owner: codex
-- Agent Name: workflows_1
+- Agent Name: workflows_0
 - Priority: p2
 - Created: 2026-09-06T01:04:31Z
-- Updated: 2026-09-06T18:58:09Z
+- Updated: 2026-09-20T22:34:55Z
 
 ## Objective
 Implement the agreed test policy without repeating the full runtime matrix for unchanged promotions while
@@ -31,12 +40,9 @@ preserving useful dev feedback, preprod qualification and the owner's careful fi
 - Owner clarified that feature pushes are not the concern; discussion concerns full suites at each stage.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Implementation, focused workflow tests, actionlint, scoped correctness lint,
-  live discovery and generated-asset checks are complete. The identity correction passed hosted
-  qualification. The subsequent partial-rerun coverage defect is now corrected and locally tested;
-  owner promotion of that reporting correction remains pending.
+- from_state: review
+- to_state: done
+- transition_reason: Owner-authorized completion of delivered work; artifact cleanup tracked separately.
 
 ## Previous Behavior (before this change)
 - CI handles PRs to dev, preprod, release_candidate and prod, plus pushes to dev/preprod/prod.
@@ -95,24 +101,15 @@ PR checks, RC push qualification and final publication remain the authoritative 
 ## Artifact Links
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - artifacts/ci_stage_qualification_20260906/validation.md
-  - artifacts/ci_stage_qualification_20260906/workflow-tests.xml
-  - artifacts/ci_stage_qualification_20260906/python-matrix-tests.xml
-  - artifacts/ci_stage_qualification_20260906/live-python-matrix.json
-  - artifacts/ci_stage_qualification_20260906/checkout-identity-tests.xml
-  - artifacts/ci_stage_qualification_20260906/coverage-rerun-tests.xml
-  - artifacts/ci_stage_qualification_20260906/pr147-byte-identity.json
-  - artifacts/ci_stage_qualification_20260906/pr147-fixed-identity.json
-  - artifacts/ci_stage_qualification_20260906/probe_checkout_identity.py
-  - artifacts/ci_stage_qualification_20260906/pr147-checkout/
-  - system_docs/patches/active/ci_stage_qualification_2026_09_06/architecture_patch.md
-  - system_docs/patches/active/ci_stage_qualification_2026_09_06/architecture_patch_index.md
-  - system_docs/patches/active/ci_stage_qualification_2026_09_06/component_patch_ci_profiles.md
-  - system_docs/patches/active/ci_stage_qualification_2026_09_06/component_patch_ci_profiles_index.md
-  - system_docs/patches/active/ci_stage_qualification_2026_09_06/code_description_patch_source_proof.md
-  - system_docs/patches/active/ci_stage_qualification_2026_09_06/code_description_patch_source_proof_index.md
-- DISPOSITION: promote_to_documentation
-- CLEANUP_TRIGGER: Promote durable behavior to .github/BRANCH_WORKFLOW.md at accepted closure.
+  - artifacts/workflows_closeout_20260920/approved_cleanup_receipt.json
+  - system_docs/patches/completed/ci_stage_qualification_2026_09_06/architecture_patch.md
+  - system_docs/patches/completed/ci_stage_qualification_2026_09_06/architecture_patch_index.md
+  - system_docs/patches/completed/ci_stage_qualification_2026_09_06/component_patch_ci_profiles.md
+  - system_docs/patches/completed/ci_stage_qualification_2026_09_06/component_patch_ci_profiles_index.md
+  - system_docs/patches/completed/ci_stage_qualification_2026_09_06/code_description_patch_source_proof.md
+  - system_docs/patches/completed/ci_stage_qualification_2026_09_06/code_description_patch_source_proof_index.md
+- DISPOSITION: Patches promoted and archived; disposable workspace deleted; cleanup receipt retained.
+- CLEANUP_TRIGGER: Completed with explicit owner authorization at 2026-09-20T22:34:55Z.
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -267,9 +264,9 @@ PR checks, RC push qualification and final publication remain the authoritative 
     section ranges checked against the source headings.
   EVIDENCE:
   - artifacts/ci_stage_qualification_20260906/validation.md:11-14
-  - system_docs/patches/active/ci_stage_qualification_2026_09_06/architecture_patch_index.md:10-37
-  - system_docs/patches/active/ci_stage_qualification_2026_09_06/component_patch_ci_profiles_index.md:10-35
-  - system_docs/patches/active/ci_stage_qualification_2026_09_06/code_description_patch_source_proof_index.md:10-35
+  - system_docs/patches/completed/ci_stage_qualification_2026_09_06/architecture_patch_index.md:10-37
+  - system_docs/patches/completed/ci_stage_qualification_2026_09_06/component_patch_ci_profiles_index.md:10-35
+  - system_docs/patches/completed/ci_stage_qualification_2026_09_06/code_description_patch_source_proof_index.md:10-35
   IMPACT: Derived outputs now include the final workflow tests and operator guidance.
   NEXT: Verify all corpus/source-asset and patch-index checks, then prepare owner review.
   REREAD: REQUIRED
@@ -682,7 +679,34 @@ PR checks, RC push qualification and final publication remain the authoritative 
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-20T21:43:44Z
+  TYPE: DECISION
+  CLAIM: Owner transfers all workflows_1 responsibility to workflows_0. The successor read this
+    ticket in full and assumes CI, qualification, matrix, coverage and rollout follow-up ownership.
+    The latest recorded pending item is promotion of the locally tested partial-rerun reporting fix.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md:13-16
+  - context_compass/tickets/tasks/completed/2026-09-06_ci_validation_stage_design_task.md:79-93
+  IMPACT: Assignment changes while review status and owner-controlled publication boundaries remain.
+    The two earlier notices to codex_1 retain their original sender and recipient.
+  NEXT: Support owner review and verify a fresh hosted run after the reporting correction is promoted.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-20T22:13:38Z
+  TYPE: DECISION
+  CLAIM: Owner authorizes marking this delivered work completed. Prior validation supports the
+    implementation result; destructive artifact cleanup remains a separately tracked approval blocker.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-06_ci_validation_stage_design_task.md:85-94
+  - context_compass/tickets/tasks/completed/2026-09-06_ci_validation_stage_design_task.md:1-11
+  IMPACT: Implementation ticket is done. No artifact deletion or new test execution is implied.
+  NEXT: none for implementation; cleanup remains in the linked closeout task.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
+Responsibility transferred to workflows_0 on 2026-09-20 by explicit owner instruction.
 Stage policy, stable no-GIL matrix and byte-exact checkout guard are implemented. Hosted run
 34051331302 passed required CI and source recording; owner reports merging that promotion.
 Coverage failed after Ubuntu-only rerun because Windows/macOS reports remained at attempt 1 and

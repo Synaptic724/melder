@@ -52,7 +52,7 @@
     "marks one active spellspace scope on a conduit",
     "enforces active-scope usage for spellspace-bound meld calls",
     "clears spellspace-scoped instances on reset or cleanup",
-    "exposes purge for local many and spellspace creations only, with removal delegated through its Meld door"
+    "exposes instance or explicit purge selectors and single/all mode for local many and spellspace creations through its concrete Meld door"
    ],
    "owns_state": [
     "_id",

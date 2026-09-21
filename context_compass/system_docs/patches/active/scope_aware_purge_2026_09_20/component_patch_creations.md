@@ -8,13 +8,16 @@ Before: whole-store clear and transfer extraction. After: additionally retire on
 singleton or many bucket through native purge; SpellSpace exposes that operation for its own store.
 
 ## Interface deltas
-Creations.purge(spell: Spell) -> int, receiving Meld's normal internal discovery result.
+Creations.purge(spell: Spell, *, purge_all=True, creation=None) -> int receives the discovered target.
+True retires the binding's retained entries. False retires only the supplied instance and returns
+zero if it is absent. For many, search only this target's bucket; preserve other entries and their
+disposal metadata. Match the supplied object by identity during removal, never equality callbacks.
 Scope authority is already checked by Meld, never by this store.
 SpellSpace.purge mirrors meld selectors without overrides. Wrong lifetime/scope raises RuntimeError.
 Empty entry returns zero. Disposal failure raises ExceptionGroup after all selected objects are tried.
 
 ## State and lifecycle
-Pop the selected key from both maps. Retain detached object references until locks are released,
+Detach the selected key or single entry from both maps, dropping empty buckets. Retain references until locks release,
 then dispose newest-first using established method lists. Preserve unrelated keys, ids, contexts,
 thread stacks and pool state. Never infer many from the application's return type.
 

@@ -117,7 +117,7 @@
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
-    "forwards full-target purge selectors to Meld while keeping conduit and registration lifetimes intact",
+    "forwards instance or explicit purge selectors and single/all mode to ConduitMeld while keeping conduit and registration lifetimes intact",
     "forwards per-version resolvable policy through both binding facades without changing conduit state",
     "owns concrete conduit-facing runtime helpers and pooled spellspace state",
     "creates lesser conduits",

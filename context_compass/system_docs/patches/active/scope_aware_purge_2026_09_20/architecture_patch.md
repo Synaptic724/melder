@@ -13,10 +13,11 @@ owners. Do not unbind, recompile, cascade dependencies, redesign supplied object
 
 ## Interfaces and boundaries
 Conduit/SpellSpace.purge(spell=None, *, spell_id=None, spellframe=None, binding_name=None,
-purge_all=True) -> int. True selects all retained entries. Instance-reference targeting and False
-are explicitly deferred and raise NotImplementedError. No public internal-Spell targeting or runtime
-Spell import is added. Meld uses its existing discovery and scope policy; Creations.purge(spell)
-receives that discovery result internally and owns locks/removal/disposal only.
+purge_all=True) -> int. True selects all retained target entries; False selects the supplied instance.
+Instance input is inspected to obtain its class, then enters existing lookup. Explicit selectors are
+the alternative path; no reverse index or automatic qualifier recovery is added. False requires an
+instance. No public internal-Spell targeting or runtime Spell import is added. Concrete Meld doors
+keep scope policy; Creations.purge(spell, purge_all=..., creation=...) owns locks/removal/disposal only.
 
 ## Cross-component invariants
 Caller identity cannot be replaced by compilation-root identity. SpellSpace never delegates to

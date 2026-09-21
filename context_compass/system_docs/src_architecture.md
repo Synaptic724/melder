@@ -268,9 +268,10 @@ Dependencies include:
 - SpellExaminer profile layer: registry-backed `general` and `detailed`
   examination profiles used for richer inspection over raw candidates and live
   spells.
-- Aetheric Mediator Plane: standalone, NOT-YET-WIRED top-level transaction
-  plane under `aether/aetheric_mediator/`. Serializes above-frame structural
-  work by scope. Imports `melder.utilities` only, never `melder.aether`.
+- Aetheric Mediator Plane: Aether-held top-level transaction plane under
+  `aether/aetheric_mediator/`; frame creation submits through it today.
+  Serializes above-frame structural work by scope. Imports
+  `melder.utilities` only, never `melder.aether`.
 - Mediator: the aetheric plane's root - admission, per-identity sessions,
   strategy dispatch, outcome policy, and reporting in one object.
 - ClaimTable: atomic all-or-nothing, mode-aware scope-claim table. A LEAF -
@@ -800,16 +801,20 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
-- Scoped creation purge (2026-09-20): Conduit and SpellSpace expose normal Meld selectors.
-  Meld discovers the existing definition and enforces scope authority; Creations alone owns
+- Scoped creation purge (2026-09-21): Conduit and SpellSpace expose instance shortcuts and normal
+  Meld selectors. Shared discovery inspects an instance's class before existing lookup; concrete
+  ConduitMeld/SpellSpaceMeld doors enforce scope authority. Creations alone owns
   retirement locks, paired live/disposal-map removal and existing disposal helpers. Space purge
   stays local. Conduit many/per-conduit removal stays local; unique, lineage and cluster require
   the spell owner, lineage root and elected leader respectively. Unique retirement takes the
   Spell lock before the store lock; other modes use their actual store lock. Disposal occurs
   after detachment and lock release. Definitions, contexts and scope objects remain usable.
-  purge_all=True removes all retained target entries; instance references and False are explicitly
-  not implemented. Purge changes no existing meld hot path or compiler-cache policy.
-  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld.purge`,
+  purge_all=True removes all retained target entries; False requires the supplied instance and
+  removes only its entry. An absent entry returns zero. No reverse discovery index or qualifier
+  recovery is added. Purge changes no existing meld hot path or compiler-cache policy.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._resolve_purge_spell`,
+  `src/melder/aether/conduit/meld/conduit_meld.py:ConduitMeld.purge`,
+  `src/melder/aether/conduit/meld/spellspace_meld.py:SpellSpaceMeld.purge`,
   `src/melder/aether/conduit/creations/creations.py:Creations.purge`.
 - Native registration capability (S2 foundation, 2026-09-19): bind/bind_inactive default to
   resolvable=True and retain the bool on each Spell version, independently of active/parked state.
@@ -1507,14 +1512,15 @@ Aether and frames:
   verified_at: 2026-08-01T19:12:00Z
   note: per-frame state and control plane.
 
-Aetheric mediator plane (BUILT, NOT WIRED - nothing constructs these):
+Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
 
 - path: `src/melder/aether/aetheric_mediator/mediator.py`
   start_line: 1
   end_line: 881
   loc: 881
   verified_at: 2026-08-02T13:00:45Z
-  note: plane root; the object Aether is intended to hold.
+  note: plane root; constructed, owned, and cleaned by Aether and live for
+    frame creation.
 - path: `src/melder/aether/aetheric_mediator/claim_table.py`
   start_line: 1
   end_line: 714
@@ -2067,13 +2073,14 @@ Non-path notes carried forward from the previous revision:
 ## Diagrams
 ### Scoped Purge
 ```text
-Conduit / SpellSpace -> Meld: discover + authorize -> Creations: lock + detach -> dispose
+Conduit / SpellSpace -> shared discovery -> concrete Meld: authorize -> Creations: lock + retire -> dispose
 ```
 
 ```mermaid
 flowchart LR
-  C[Conduit or SpellSpace] --> M[Meld: existing selectors and scope authority]
-  M --> S[Creations: retire selected entries under writer locks]
+  C[Conduit or SpellSpace] --> L[Meld: inspect class or use explicit selectors]
+  L --> M[ConduitMeld or SpellSpaceMeld: scope authority]
+  M --> S[Creations: retire all or one under writer locks]
   S --> D[Existing disposal helpers after lock release]
 ```
 
@@ -2316,9 +2323,10 @@ without rewriting the original record or existing live IDs.
 
 ## Context / Handoff Summary
 
-2026-09-20 purge adds selective creation retirement through the existing scope owners. Meld keeps
-lookup/authority; Creations keeps lock/removal/disposal. Full-target purge is implemented with
-purge_all=True. Instance-reference targeting and False remain explicitly deferred.
+2026-09-21 purge supports instance shortcuts and explicit selectors through existing lookup.
+Concrete Meld doors retain scope authority; Creations retains lock/removal/disposal. Default
+purge_all=True retires the target's entries; False requires an instance and removes only its entry.
+Scope objects, definitions and compiled contexts remain reusable. Discovery performs no construction.
 
 2026-09-19 registration/compiler foundation: native policy, compatible True identities, False-only
 Protocol admission and OVERRIDE_REQUIRED compiler metadata are implemented. Executable roots exclude

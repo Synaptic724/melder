@@ -9,7 +9,9 @@ Add concrete ConduitMeld and SpellSpaceMeld purge paths using shared discovery; 
 ## Interface deltas
 Meld.purge accepts the same internal selectors as meld plus purge_all=True, with no overrides.
 It uses _resolve_spell unchanged; no runtime Spell import or internal-Spell public dispatch.
-Instance-reference targets and purge_all=False raise NotImplementedError pending the later slice.
+Instance-reference targets are inspected to obtain the class for existing lookup. Explicit selectors
+remain the other supported path. False requires an instance; retain that original reference only for
+Creations removal. No stored-object matching or reverse lookup occurs during spell discovery.
 It returns the selected store's removal count. Missing selectors/targets retain existing lookup errors.
 
 ## State and lifecycle
@@ -24,7 +26,7 @@ Refuse wrong scope before mutation/disposal. An inert cluster retains its existi
 error. Do not bypass lookup visibility, compile a target or create an instance to delete it.
 
 ## Dependencies and ordering
-Shared discovery -> concrete door selects/checks its store -> Creations.purge(spell).
+Shared discovery -> concrete door selects/checks its store -> Creations.purge(spell, purge_all, creation).
 Authorization lives on the concrete doors; removal synchronization belongs to Creations.
 
 Owner review gate (2026-09-20): no further asset/index/graph generation until code approval.

@@ -1,0 +1,10 @@
+{
+  "completed_at": "2026-09-21T00:22:34Z",
+  "completed_ticket": "tickets/tasks/completed/2026-09-21_cleanup_shared_context_compass_boards_task.md",
+  "archive_sha256": "4111236E636666516765905F3F4ABE2A19FCB89A5F995819DF0242842D817DEF",
+  "archive_metadata_change": "Owning-ticket pointer updated to completed location; retired history unchanged.",
+  "attention_closed_anchors": 12,
+  "recent_artifact_ticket_groups": 12,
+  "cleanup_active_routes_remaining": 0,
+  "cleanup_active_artifact_links_remaining": 0
+}

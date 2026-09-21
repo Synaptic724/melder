@@ -2126,11 +2126,11 @@ Key Files (C1):
 Purpose:
 - Execution scope for resolving spells and managing object lifecycles.
 
-Scoped purge (2026-09-20): Conduit.purge forwards the same name/type/frame/id selectors as meld
-to the existing Meld door. Meld enforces local/root/leader authority before invoking the selected
-store. Purge keeps the conduit, its pools, registrations and compiled contexts alive. The default
-purge_all=True removes all retained creations for that target; False and instance-reference targets
-raise NotImplementedError pending the later instance-targeting work.
+Scoped purge (2026-09-21): Conduit.purge accepts the normal name/type/function/frame/id selectors
+and an instance shortcut. Shared Meld discovery inspects the instance's class before normal lookup;
+ConduitMeld enforces local/root/leader authority before invoking the selected store. Purge keeps
+the conduit, pools, registrations and compiled contexts alive. Default purge_all=True removes all
+retained target entries; False requires an instance and removes only that object from the store.
 EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.purge`.
 
 Registration capability forwarding (2026-09-19): bind and bind_inactive explicitly forward
@@ -2411,13 +2411,16 @@ Text is preserved as authored; only its location changed.
 Purpose:
 - Instance lifecycle registry for Conduits and scoped spellspaces.
 
-Native purge (2026-09-20): Creations.purge receives Meld's resolved internal definition; it does
-not discover or authorize scopes. _detach_purge_entries removes one selected key from both maps
-under the store lock. Unique also holds Spell._lock first, matching construction. Key membership
-and Existence distinguish absence, falsey singleton values and many buckets. Detached live references
-survive lock release, then _dispose_disposable_registry and _attempt_cleanup apply the existing
-newest-first/method-order/ExceptionGroup contract. The store remains reusable and callback-created
-replacement entries survive. Transfer extraction is not used.
+Native purge (2026-09-21): Creations.purge receives the discovered definition, purge_all and the
+original creation for single removal; it does not discover or authorize scopes. _detach_purge_entries
+removes a full target or the supplied singleton under the store lock. For single many removal,
+_detach_single_many_creation searches only that target's bucket and removes its paired disposal
+record, preserving other entries and deleting empty buckets. Unique also holds Spell._lock first.
+Key membership and Existence distinguish absence, falsey singletons and many buckets. An unretained
+reference returns zero. Detached references survive lock release, then _attempt_cleanup or the
+shared _dispose_many_creations applies established method order and newest-first batch disposal.
+Failures aggregate after detachment; they do not roll removal back. Later replacement entries,
+borrowed method lists and the reusable store survive. Transfer extraction is not used.
 SpellSpace.purge always targets its own store for many/unique_per_spell_space; it refuses broader
 lifetimes even when its owning conduit is a root or elected leader. Managed stack/pool state is
 unchanged, and direct manual SpellSpace use needs no active-stack entry.
@@ -2555,13 +2558,17 @@ Purpose:
   object, which is why both the hook system and the dirty-root refusal live
   behind it rather than in the binding pipeline.
 
-Purge discovery (2026-09-20): Meld.purge reuses _resolve_spell without compiling or constructing.
-_get_purge_creations owns scope checks: space -> local space, many/per-conduit -> caller conduit,
-unique -> Spell owner, lineage -> lineage root, cluster -> elected leader. Shared-store removal
-requires _conduit_id to match the selected store's owner; _resolution_conduit_id grants no authority.
-It delegates to Creations.purge for locks/removal/disposal. No runtime Spell import or public internal
-Spell dispatch is added. Instance-reference targets and purge_all=False raise NotImplementedError.
-EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld.purge` and `Meld._get_purge_creations`.
+Purge discovery (2026-09-21): Meld._resolve_purge_spell inspects an instance's class or accepts an
+explicit selector, then reuses _resolve_spell without compiling or constructing. It declares no
+scope policy. ConduitMeld._get_purge_creations selects local many/per-conduit, Spell-owner unique,
+lineage-root or elected-leader storage. Shared-store removal requires _conduit_id to match its
+owner; _resolution_conduit_id grants no authority. SpellSpaceMeld.purge accepts only local many
+and unique_per_spell_space. Each concrete door delegates to Creations.purge with purge_all and
+the original reference for False. Single removal requires an instance; absent references return
+zero. No runtime Spell import, public metadata-object targeting or reverse discovery index is added.
+EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._resolve_purge_spell`,
+`src/melder/aether/conduit/meld/conduit_meld.py:ConduitMeld._get_purge_creations` and
+`src/melder/aether/conduit/meld/spellspace_meld.py:SpellSpaceMeld.purge`.
 
 Non-resolvable registration admission:
 - ConduitMeld and SpellSpaceMeld check the selected native _resolvable field in both meld and
@@ -3392,21 +3399,26 @@ Extension Points:
   registration under an existing name REPLACES it, so a caller can override a
   shipped tool deliberately rather than fork the resolver.
 
-### Component: Aetheric Mediator Plane (BUILT, NOT WIRED)
+### Component: Aetheric Mediator Plane (WIRED - FRAME_CREATE LIVE)
 Purpose:
 - Provide the top-level, above-frame transaction plane that serializes
   structural work across Crystallizer, MutationResearch, and Nexus by SCOPE
   rather than globally.
 
 STATUS - READ BEFORE ANYTHING ELSE:
-- NOTHING CONSTRUCTS THIS. `Aether` does not build it, no subsystem submits to
-  it, and no runtime path passes through it. It is a complete, tested,
-  standalone package on disk and is documented here for that reason - not
-  because it participates in any live flow.
-- EVIDENCE: a repo-wide search for `aetheric_mediator` outside the package
-  returns zero source hits (tests only).
-- Every statement below describes the package's OWN contracts, not current
-  runtime behaviour.
+- WIRED FOR FRAME CREATION. `Aether` constructs the plane eagerly at boot,
+  owns and cleans it, and exposes it through the `aetheric_mediator`
+  property. Frame creation holds a `FRAME_CREATE` claim through it.
+- The remaining seven `TransactionType` members are vocabulary plus
+  strategies with no live submitters yet in crystallizer, nexus, or
+  mutation_research.
+- EVIDENCE:
+  - src/melder/aether/aether.py:17-19
+  - src/melder/aether/aether.py:209-222
+  - src/melder/aether/aether.py:762-795
+  - src/melder/aether/aether.py:1219-1264
+- Statements below describe live plane contracts; adoption beyond frame
+  creation is pending per the Known Gaps.
 
 Responsibilities:
 - Admit at most one conflicting structural transaction per scope, atomically
@@ -3512,7 +3524,9 @@ Extension Points:
   registry is the mechanism, the catalog is content).
 
 Known Gaps (recorded, not hidden):
-- UNWIRED.
+- PARTIALLY WIRED (1 of 8 live): `FRAME_CREATE` submits on every frame
+  creation; loads, graft, subsystem edges, and repair are vocabulary ready
+  with no live submitters yet.
 - `TransactionType` membership is PROVISIONAL pending the three subsystem
   surveys.
 - NO SCOPE HASHES is PROVISIONAL and coupled to
@@ -3544,17 +3558,17 @@ Carried across when `src_architecture.md` was recomposed to its Required Section
 Contract, which names component-level deep dives an anti-pattern in that document.
 Text is preserved as authored; only its location changed.
 
-*From `## Aetheric Mediator Plane Responsibilities (BUILT, NOT WIRED)`:*
+*From `## Aetheric Mediator Plane Responsibilities` (updated 2026-09-21;
+  prior revision titled BUILT, NOT WIRED):*
 
 
-READ THIS FIRST: `src/melder/aether/aetheric_mediator/` is a COMPLETE,
-TESTED, STANDALONE package that NOTHING CURRENTLY CONSTRUCTS. `Aether` does
-not build it, no subsystem submits to it, and no runtime path passes through
-it. It is documented here because it exists on disk and is the intended
-top-level transaction plane; it is NOT part of any live flow today. Do not
-read any statement below as describing current runtime behaviour.
-EVIDENCE: a repo-wide search for `aetheric_mediator` outside the package
-itself returns zero source hits (tests only).
+READ THIS FIRST: `src/melder/aether/aetheric_mediator/` is CONSTRUCTED,
+OWNED, and CLEANED by `Aether`, and frame creation submits `FRAME_CREATE`
+through it. The remaining vocabulary (loads, graft, subsystem edges,
+repair) has no live submitters yet.
+EVIDENCE:
+- src/melder/aether/aether.py:209-222
+- src/melder/aether/aether.py:1219-1264
 
 Purpose:
 - Serialize TOP-LEVEL structural work across Crystallizer, MutationResearch,
@@ -3654,7 +3668,8 @@ Lifecycle contract across the package:
   and nothing inside the package cleans one.
 
 Known gaps, recorded rather than hidden:
-- UNWIRED, as stated at the top of this section.
+- PARTIALLY WIRED, as stated at the top of this section: frame creation is
+  live; the remaining vocabulary awaits subsystem adoption.
 - `TransactionType` membership is PROVISIONAL, pending the three subsystem
   surveys.
 - `ClaimTable.acquire` (the blocking variant) has ZERO production call sites
@@ -5391,10 +5406,12 @@ Key Files (C1):
 
 ### Flow: Purge a Target's Retained Creations
 1. Conduit.purge or SpellSpace.purge normalizes logical names versus explicit spell_id as meld does.
-2. Meld.purge uses _resolve_spell; _get_purge_creations selects and authorizes the existing store.
-3. Creations.purge takes Spell._lock for unique, then _detach_purge_entries takes the store lock.
-4. Both maps detach the selected key. After locks are released, existing disposal helpers run.
-5. Return the removed count or raise aggregated disposal errors. Other keys and warmed contexts remain.
+2. Meld._resolve_purge_spell inspects an instance's class or forwards explicit selectors to _resolve_spell.
+3. ConduitMeld._get_purge_creations or SpellSpaceMeld.purge authorizes the existing target store.
+4. Creations.purge takes Spell._lock for unique, then _detach_purge_entries takes the store lock.
+5. Both maps detach the whole target or supplied instance. Single many removal preserves peer entries.
+6. After lock release, _attempt_cleanup or _dispose_many_creations runs the recorded disposal methods.
+7. Return the count or raise aggregated errors. Other keys, definitions and warmed contexts remain.
 These flows describe concrete method sequences for core behaviors.
 
 ### Flow: Import -> Runtime Guardrails
@@ -7340,10 +7357,10 @@ Module count: 574 (excluding `__init__.py`), measured 2026-08-01.
   Public API The `Spellbook` is the primary local authority for spell binding, spell lookup, co...
 - `src/melder/aether/spellbook/spellbook_creation_system.py` - Internal conjure orchestration system for Spellbook
 
-**aether/aetheric_mediator/ - standalone top-level transaction plane** - 14 modules
-(walked 2026-08-01; created 2026-07-31, after the walk above. NOT WIRED -
-nothing in `src/melder` constructs any of these; a repo-wide search for
-`aetheric_mediator` outside the package returns zero source hits.)
+**aether/aetheric_mediator/ - Aether-held top-level transaction plane** - 14 modules
+(walked 2026-08-01; created 2026-07-31. WIRED since: `Aether` constructs,
+owns, and cleans the plane and frame creation submits `FRAME_CREATE`
+through it; see `src/melder/aether/aether.py:222` and `:1243-1264`.)
 
 - `src/melder/aether/aetheric_mediator/admission_orchestrator.py`
   The serialized admission decision point for the mediator plane
@@ -8550,9 +8567,10 @@ Companion documents:
 
 ## Context / Handoff Summary
 
-2026-09-20 purge adds Conduit/SpellSpace -> Meld discovery/authority -> Creations retirement.
-Scope and writer-lock rules mirror existing creation routing. Instance-reference targets and
-purge_all=False remain explicitly unimplemented; full-target purge preserves registration and scopes.
+2026-09-21 purge uses shared class-inspection/explicit-selector discovery, concrete Meld scope
+authority and Creations retirement. Both all-target and single-instance disposal are supported;
+single removal requires the original instance. Existing writer locks and disposal ordering are
+preserved. The operation keeps registrations, compiled contexts and scope objects reusable.
 
 2026-09-19: native registration and S3 compiler consumers are implemented. Required inputs preserve
 descriptive references through topology/model/plans; executable roots exclude False definitions.
