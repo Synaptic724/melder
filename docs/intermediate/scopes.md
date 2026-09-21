@@ -33,6 +33,12 @@ lesson remains in its saved Intermediate collection and is linked from that guid
 
 ## Purge creations while keeping the scope
 
+Run [Purge unneeded objects](../examples/intermediate/39-purge-unneeded-objects.md)
+for a complete example. It releases one finished job buffer, keeps its siblings
+alive, purges the remaining buffers by name, and creates a fresh buffer afterward.
+It also checks that spell-space purge stays local and final cleanup does not
+dispose already-purged objects twice.
+
 Use `purge` to dispose and remove the retained creations for one registered target
 without ending its scope or removing its registration:
 

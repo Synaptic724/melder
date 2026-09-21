@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/spell_space/spell_space.py",
- "source_sha256": "8d0831812ef82b432d031a4869cb05e5e22d2d59b8213b7b4da01ede1259cf2d",
+ "source_sha256": "697b140495fcb083284493eb85fed12a48926e0ef734e19fa3456758a58771c9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.spell_space.spell_space": {
@@ -46,7 +46,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "83a083bc3f8a836c3eadf3f9cc354349101d3bf30b3f14f1b2487ccfd705a5ac",
+   "span_sha256": "420560dd988a0ce9de41c572bc98ceee0a15ff1546009769d0bd42b038495be8",
    "role": "Explicit spellspace scope handle with request-local creations and a spellspace-facing meld door.",
    "responsibilities": [
     "marks one active spellspace scope on a conduit",

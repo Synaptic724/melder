@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/creations/creations.py",
- "source_sha256": "d00a4b38433a5e1c4102983f9e66f525c8b2f64e5445b8da6fba878e1e1af0c4",
+ "source_sha256": "c5700e79f62883e208919b7fad5adfe4ec71969e6ca7ff80fd127988eb202bf7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.creations.creations": {
@@ -48,11 +48,11 @@
     "restore_spell_creations"
    ],
    "shape": {
-    "method_count": 15,
+    "method_count": 17,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "90376688bc7591b2bb3cd397c2a2465b6ae744b240b8273d7c91fe3ed71e57db",
+   "span_sha256": "6c4ece56e4b007c8a3515639aa413c00f0bd52e473fdc8c86313e8b2338ef8a7",
    "role": "Generic scoped live-object registry with separate disposal metadata.",
    "responsibilities": [
     "stores raw objects in one scoped live registry and cleanup entries in a separate registry",

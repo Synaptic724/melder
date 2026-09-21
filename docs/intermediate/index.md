@@ -13,7 +13,7 @@ explicit public operations.
 - Configuration, hooks, spell spaces, and lineage lifetimes.
 - Dynamic posture, links, permissions, and ownership.
 - Late binding with `SpellContract` and connected-subsystem composition.
-- Scoped cleanup, transfer, and severing relationships.
+- Early object disposal with `purge`, scoped cleanup, transfer, and severing relationships.
 
 ## Choose a route
 

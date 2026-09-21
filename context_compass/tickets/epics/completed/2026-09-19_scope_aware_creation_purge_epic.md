@@ -1,26 +1,31 @@
 # Epic: Purge creations through their authorized calling scope
 
+## Completion
+- Completed: 2026-09-21T00:37:37Z
+- Summary: Accepted scoped purge with instance and explicit selectors, single/all disposal,
+  270 focused tests, refreshed documentation and verified assets.
+
 ## Metadata
 - Epic ID: EPIC-2026-09-19-scope-aware-creation-purge
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-20T00:53:18Z
-- Updated: 2026-09-21T00:13:20Z
-- Target Window: source review; canonical documentation and regeneration follow code approval
+- Updated: 2026-09-21T00:37:37Z
+- Target Window: accepted and completed
 - Related Program/Initiative: Meld, Conduit, SpellSpace and Creations lifecycle
 
 ## Current Authorization
 IMPLEMENTATION AUTHORIZED (2026-09-20). The owner accepted the discovery plan and directed the
 bounded implementation. Meld retains all scope discovery and caller authority checks; Creations
 owns creation locking, removal and disposal only. Mirror the existing writer locks for each Existence.
-Active task: tickets/tasks/2026-09-20_implement_scoped_creation_purge_task.md.
+Implementation record: tickets/tasks/completed/2026-09-20_implement_scoped_creation_purge_task.md.
 
-Current delivery: both instance and explicit-selector paths, plus single/all disposal, are implemented
+Accepted delivery: both instance and explicit-selector paths, plus single/all disposal, are implemented
 and pass 270 focused tests. ConduitMeld and SpellSpaceMeld own scope policy; base Meld shares
-class-inspection/selector discovery only. Creations handles removal and existing disposal. No further
-assets, graph or indexes may be regenerated until the owner explicitly approves the source code.
+class-inspection/selector discovery only. Creations handles removal and existing disposal. The owner
+accepted turn-in, followed by canonical documentation/asset refresh and passing freshness checks.
 
 ## Problem / Opportunity
 The owner wants `purge` as the lifecycle counterpart to `meld`: remove a target's retained creations
@@ -73,9 +78,9 @@ lesser conduits, spellspaces and shared instances use broader resolution targets
   questions to settle in discovery; the word purge alone does not settle them.
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: Owner selected scope/ownership discovery and planning before implementation.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner accepted purge epic turn-in; final delivery and evidence are complete.
 
 ## Owner-Requested Scope Rules
 
@@ -159,23 +164,23 @@ Documents are navigation and intent; read the actual implementations before chan
 - [x] M2: Settle root terminology, lineage mode, many selection and error/return semantics.
 - [x] M3: Create the approved bounded implementation task, patch contracts and failing regressions.
 - [x] M4: Implement both input paths, scope routing, Creations retirement and single/multiple disposal.
-- [ ] M5: Complete documentation/assets after source approval; focused runtime validation already passes.
+- [x] M5: Complete documentation/assets after source approval and verify freshness.
 
 ## Original Proposed Story Split (Implemented Through the Bounded Task)
-- [ ] Discover and settle caller authority and per-Existence routing.
-- [ ] Implement Conduit/SpellSpace forwarding and shared Meld purge targeting.
-- [ ] Implement scoped retirement through Creations and required reuse coordination.
-- [ ] Qualify scope isolation, disposal/concurrency behavior and public documentation.
+- [x] Discover and settle caller authority and per-Existence routing.
+- [x] Implement Conduit/SpellSpace forwarding and shared Meld purge targeting.
+- [x] Implement scoped retirement through Creations and required reuse coordination.
+- [x] Qualify scope isolation, disposal/concurrency behavior and public documentation.
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [x] Create this epic before rebuilding existing Melder assets.
 - [x] Retain source-backed decisions and exact reading pointers through implementation.
 - Current planning/build-only task:
-  `tickets/tasks/2026-09-19_draft_purge_epic_and_refresh_assets_task.md`.
+  `tickets/tasks/completed/2026-09-19_draft_purge_epic_and_refresh_assets_task.md`.
 - Completed discovery, awaiting owner closure:
-  `tickets/tasks/2026-09-20_discover_purge_scope_ownership_task.md`.
+  `tickets/tasks/completed/2026-09-20_discover_purge_scope_ownership_task.md`.
 - Implementation in source review:
-  `tickets/tasks/2026-09-20_implement_scoped_creation_purge_task.md`.
+  `tickets/tasks/completed/2026-09-20_implement_scoped_creation_purge_task.md`.
 
 ## Acceptance Criteria (Feature Complete)
 - Both public facades expose the approved purge operation through shared Meld orchestration.
@@ -205,9 +210,9 @@ No purge tests or implementation run in this planning pass. Future behavioral ma
 
 ## Applicable Anti-Patterns
 - [x] No feature implementation during this planning/build request.
-- [ ] No root privilege inferred merely from reaching a root-owned store.
-- [ ] No global purge, unbind or dependency cascade hidden in a local operation.
-- [ ] No disposal-policy redesign or new cache system without a demonstrated need.
+- [x] No root privilege inferred merely from reaching a root-owned store.
+- [x] No global purge, unbind or dependency cascade hidden in a local operation.
+- [x] No disposal-policy redesign or new cache system without a demonstrated need.
 
 ## Open Questions
 - Resolved: unique uses the live Spell owner; cluster uses the elected leader's store; lineage uses
@@ -263,7 +268,7 @@ No purge tests or implementation run in this planning pass. Future behavioral ma
     Creations.purge(spell) removes/disposes that store's entries. SpellSpace stays strictly local;
     lineage, cluster and unique require the specific root, leader and Spell owner respectively.
   EVIDENCE:
-  - tickets/tasks/2026-09-20_discover_purge_scope_ownership_task.md
+  - tickets/tasks/completed/2026-09-20_discover_purge_scope_ownership_task.md
   - artifacts/purge_scope_discovery_20260920/plan.md
   - artifacts/purge_scope_discovery_20260920/characterization_final.log:1-2
   IMPACT: Expected core changes are four existing files. The 38 passing discovery checks establish
@@ -278,7 +283,7 @@ No purge tests or implementation run in this planning pass. Future behavioral ma
     instances through both facades. Creations shares its existing per-object cleanup mechanics,
     preserves ordering and aggregates failures; 226 focused source regressions pass.
   EVIDENCE:
-  - tickets/tasks/2026-09-20_implement_scoped_creation_purge_task.md
+  - tickets/tasks/completed/2026-09-20_implement_scoped_creation_purge_task.md
   - artifacts/purge_implementation_20260920/multiple_disposal.log:1-5
   - src/melder/aether/conduit/creations/creations.py:228-320
   IMPACT: Source review is the current boundary. Actual-instance discovery remains deferred;
@@ -294,7 +299,7 @@ No purge tests or implementation run in this planning pass. Future behavioral ma
     Actual identity and scope membership are separate from that lookup. Named/frame qualifications
     remain necessary, and an arbitrary factory result does not identify its provider automatically.
   EVIDENCE:
-  - tickets/tasks/2026-09-20_implement_scoped_creation_purge_task.md
+  - tickets/tasks/completed/2026-09-20_implement_scoped_creation_purge_task.md
   - artifacts/purge_implementation_20260920/instance_reference_discovery_final.log:1-26
   IMPACT: Future exact-instance purge can combine existing discovery with the original reference
     and identity checks inside the authorized store. No production instance support was implemented.
@@ -309,7 +314,7 @@ No purge tests or implementation run in this planning pass. Future behavioral ma
     scope authority; Creations owns paired single/all detachment, existing writer locks and disposal.
     All 270 focused tests and scoped lint pass; the public guide and docstrings are updated.
   EVIDENCE:
-  - tickets/tasks/2026-09-20_implement_scoped_creation_purge_task.md
+  - tickets/tasks/completed/2026-09-20_implement_scoped_creation_purge_task.md
   - artifacts/purge_implementation_20260920/instance_purge_final.log:1-5
   - src/melder/aether/conduit/meld/meld.py:533-602
   - src/melder/aether/conduit/creations/creations.py:429-635
@@ -325,11 +330,22 @@ No purge tests or implementation run in this planning pass. Future behavioral ma
 - Historical build follow-through: the planning/build task records freshness checks for 0.2.43.
   Those checks predate the current source refactors and do not establish current asset freshness.
 - [x] Both selector paths and single/multiple-disposal source delivery: 270 focused tests pass.
-- [ ] Owner approves source before final documentation and asset regeneration.
-- [ ] Owner accepts the completed feature and recorded lifecycle limits.
+- [x] Owner approves source before final documentation and asset regeneration.
+- [x] Owner accepts the completed feature and recorded lifecycle limits.
 
 ## Noting Behavior
 Keep program decisions and scope rules here; future child tasks own source findings and test evidence.
+
+- DATETIME: 2026-09-21T00:37:37Z
+  TYPE: DECISION
+  CLAIM: Owner accepted purge epic turn-in. This ticket is complete; its retained evidence and
+    any promoted patch contracts remain available through completed records.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-20_implement_scoped_creation_purge_task.md
+  IMPACT: Close only the four accepted purge records. Other work remains routed separately.
+  NEXT: none; this ticket is complete.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Both selector paths and single/multiple disposal are implemented; 270 focused source tests pass.
@@ -341,6 +357,7 @@ SpellSpace stays strictly local; lineage/cluster/unique require their specific r
 Instance discovery is implemented as class inspection followed by existing lookup. Explicit selectors
 remain a deliberate alternative; no reverse discovery index or automatic binding metadata recovery.
 purge_all=False requires the supplied instance and removes only its entry from the authorized store.
-The owner requires source approval before any further asset, graph or index regeneration. Earlier
-generated files and some component flow prose predate the final refactors; do not call them current
-or refresh them before approval. This epic remains open for those explicitly separated steps.
+Owner accepted turn-in. Canonical descriptions, affected source descriptors, indexes, graph and
+source/repository assets are refreshed and checked. Validation evidence is retained and promoted
+patch contracts archived. The next-version release draft is a separate deliverable; no release,
+version bump, commit or push was performed by this closeout.

@@ -1,21 +1,26 @@
 # Task: Implement scoped purge through Meld and Creations
 
+## Completion
+- Completed: 2026-09-21T00:37:37Z
+- Summary: Delivered both purge entry paths and retirement modes; 270 focused tests and
+  144 asset tests pass; source/repository assets verified.
+
 ## Metadata
 - Task ID: TASK-2026-09-20-implement-scoped-creation-purge
 - Epic: EPIC-2026-09-19-scope-aware-creation-purge
 - Story: none; bounded implementation after completed discovery
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Agent Name: updater_0
 - Created: 2026-09-20T22:06:15Z
-- Updated: 2026-09-21T00:13:20Z
+- Updated: 2026-09-21T00:37:37Z
 
 ## Objective
 Implement the approved purge operation with Meld owning selection/scope authority and Creations
 owning only removal, locking and disposal. Preserve existing meld execution and scope lifetimes.
 
-Current tranche: implement the accepted instance shortcut and single-instance disposal using the
-existing lookup and Creations machinery. Asset, graph and index regeneration remains owner-gated.
+Source implementation and final documentation/assets are complete. The owner accepted epic turn-in,
+satisfying the code-approval gate before the final generated refresh.
 
 ## Ticket Contract
 - ENTRY_GATE: Owner explicitly authorized implementation and reconfirmed the component boundary.
@@ -48,9 +53,8 @@ existing lookup and Creations machinery. Asset, graph and index regeneration rem
 
 ## State Transition Event
 - from_state: in_progress
-- to_state: review
-- transition_reason: Both input paths and single/all retirement are implemented. All 270 focused
-  checks and scoped lint pass; generated products remain held for explicit owner code approval.
+- to_state: done
+- transition_reason: Owner accepted purge epic turn-in; final delivery and evidence are complete.
 
 ## Steps / Checklist
 - [x] Confirm the writer-lock mapping and record patch contracts.
@@ -58,7 +62,7 @@ existing lookup and Creations machinery. Asset, graph and index regeneration rem
 - [x] Implement native Creations purge, concrete Meld doors and both public facades.
 - [x] Share existing many disposal mechanics and cover multiple failures across both facades.
 - [x] Run focused feature and existing-scope regressions; repair failures within this boundary.
-- [ ] Finish documentation/descriptors and regenerate assets only after explicit code approval.
+- [x] Finish documentation/descriptors and regenerate assets after explicit owner code approval.
 - [x] Record this bounded source delivery and leave the ticket ready for owner review.
 - [x] Experiment with instance selectors, named/frame bindings and object identity across scopes.
 - [x] Implement inspected-class discovery and single-instance retirement; validate both facades.
@@ -71,11 +75,11 @@ existing lookup and Creations machinery. Asset, graph and index regeneration rem
 ## Artifact Links
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/scope_aware_purge_2026_09_20/architecture_patch.md
-  - system_docs/patches/active/scope_aware_purge_2026_09_20/component_patch_creations.md
-  - system_docs/patches/active/scope_aware_purge_2026_09_20/component_patch_meld.md
-  - system_docs/patches/active/scope_aware_purge_2026_09_20/component_patch_conduit.md
-  - system_docs/patches/active/scope_aware_purge_2026_09_20/code_description_patch_creations.md
+  - system_docs/patches/completed/scope_aware_purge_2026_09_20/architecture_patch.md
+  - system_docs/patches/completed/scope_aware_purge_2026_09_20/component_patch_creations.md
+  - system_docs/patches/completed/scope_aware_purge_2026_09_20/component_patch_meld.md
+  - system_docs/patches/completed/scope_aware_purge_2026_09_20/component_patch_conduit.md
+  - system_docs/patches/completed/scope_aware_purge_2026_09_20/code_description_patch_creations.md
   - artifacts/purge_implementation_20260920/
 - DISPOSITION: promote_to_documentation for patch contracts; retain_as_reference for validation.
 - CLEANUP_TRIGGER: accepted feature closure after canonical promotion.
@@ -86,6 +90,12 @@ existing lookup and Creations machinery. Asset, graph and index regeneration rem
 - IF_UNKNOWN: refer to discovery plan and current source before changing the contract.
 
 ## Validation
+- Accepted closeout: all three source assets and all three repository corpora pass freshness checks.
+  Both canonical document indexes and the generated graph/index pair verify. Six changed-source
+  descriptors and measured C1 extents match; zero unaccounted pre-edit documentation lines.
+- Additional asset tests: 144 passed in 3.60 seconds on the host. Earlier sandbox runs failed at
+  temporary-directory setup (including a task-local retry); their logs are retained separately.
+  The first mixed smoke run also passed all 77 purge cases. No source repair was needed for the ACL issue.
 - Final implementation selection: 270 passed in 1.62 seconds, including 77 purge cases, 22
   reference-discovery cases and the existing Creations/Meld/lineage/cluster regressions.
   Evidence: artifacts/purge_implementation_20260920/instance_purge_final.log and instance_purge_final.xml.
@@ -102,8 +112,8 @@ existing lookup and Creations machinery. Asset, graph and index regeneration rem
   Logs: artifacts/purge_implementation_20260920/multiple_disposal.log and multiple_disposal.xml.
 - Test-module Ruff check passed with UP045 excluded to retain the required Optional/Union style.
   Critical runtime Ruff rules E9,F63,F7,F82 passed for the six runtime files.
-- No asset, graph or index regeneration after the owner's code-approval gate. Earlier generated
-  outputs are stale relative to the concrete-door refactor and shared disposal helper.
+- Generation remained held until the owner's turn-in acceptance. Final closeout logs supersede
+  the historical build/check results recorded before the last source changes.
 - Full suite and coverage: Not run. Discovery baseline: 38 passed, two extraction cases deselected.
 - No performance claim; existing meld code paths must remain unchanged.
 
@@ -141,8 +151,8 @@ existing lookup and Creations machinery. Asset, graph and index regeneration rem
     existing lookup and lifetime/store authority helper -> root/lesser/space/cluster refusals; facade
     contracts -> thin public normalization -> selector and scope-lifecycle tests. Keep meld unchanged.
   EVIDENCE:
-  - system_docs/patches/active/scope_aware_purge_2026_09_20/architecture_patch.md
-  - system_docs/patches/active/scope_aware_purge_2026_09_20/code_description_patch_creations.md
+  - system_docs/patches/completed/scope_aware_purge_2026_09_20/architecture_patch.md
+  - system_docs/patches/completed/scope_aware_purge_2026_09_20/code_description_patch_creations.md
   IMPACT: Patch entry/consumption gates are satisfied under the existing owner authorization.
   NEXT: Execute feature regressions red, then implement the native operation and forwarding.
   REREAD: REQUIRED
@@ -549,6 +559,68 @@ existing lookup and Creations machinery. Asset, graph and index regeneration rem
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-21T00:28:00Z
+  TYPE: FACT
+  CLAIM: Approved closeout promoted the final purge contracts into architecture/components and
+    six source descriptors, refreshed measured C1 extents, and regenerated indexes and graph.
+    Replaced historical lines are retained with the pre-edit multiset. The graph extractor skipped
+    no files and added no nodes; it still reports broader pre-existing unverified/stale semantics,
+    which are not a claim of this bounded purge review. Source and repository asset builds succeeded.
+  EVIDENCE:
+  - artifacts/purge_implementation_20260920/closure_document_validation.json
+  - artifacts/purge_implementation_20260920/closure_replaced_document_lines.md
+  - artifacts/purge_implementation_20260920/closure_graph_extract.log:1-5
+  - artifacts/purge_implementation_20260920/closure_build_source.log:1-3
+  - artifacts/purge_implementation_20260920/closure_build_repository.log:1-4
+  IMPACT: Generated source assets use the existing 0.2.44 version; no version change or runtime
+    patch was made during closeout. Final freshness checks precede ticket closure.
+  NEXT: Verify generated freshness/content preservation, then archive the accepted purge lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-21T00:30:44Z
+  TYPE: MEASURE
+  CLAIM: Source asset freshness now passes after incorporating a concurrent component-doc update.
+    The additional asset/purge smoke run passed 181 tests but 40 fixture setups failed because
+    pytest could not access the shared Windows Temp/pytest-of-Mark directory. These errors occur
+    before test bodies; all purge cases in that run passed.
+  EVIDENCE:
+  - artifacts/purge_implementation_20260920/closure_check_source_final.log:1-3
+  - artifacts/purge_implementation_20260920/closure_asset_smoke.log:63-83
+  IMPACT: No runtime repair is indicated. Use a fresh validated task-local base temp directory
+    for the asset test selection, then finish the repository freshness check and closure.
+  NEXT: Rerun asset tests with task-local temporary storage.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-21T00:35:00Z
+  TYPE: MEASURE
+  CLAIM: Final source and repository freshness checks pass. Canonical indexes and graph assembly
+    verify; all six affected source descriptor hashes/line extents match, with zero unaccounted
+    documentation lines. The extra asset test selection passes 144 tests in 3.60 seconds outside
+    the sandbox, confirming earlier fixture errors were Windows temporary-directory permissions.
+  EVIDENCE:
+  - artifacts/purge_implementation_20260920/closure_check_source_final.log:1-3
+  - artifacts/purge_implementation_20260920/closure_check_repository_final.log:1-3
+  - artifacts/purge_implementation_20260920/closure_asset_tests_host.log:1-3
+  - artifacts/purge_implementation_20260920/closure_document_validation.json
+  IMPACT: The accepted purge lane can close. Preserve validation/discovery artifacts; archive
+    promoted patch contracts with unchanged hashes. Release drafting remains a separate active task.
+  NEXT: Move the epic and three related tasks to completed and synchronize their board entries.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-21T00:37:37Z
+  TYPE: DECISION
+  CLAIM: Owner accepted purge epic turn-in. This ticket is complete; its retained evidence and
+    any promoted patch contracts remain available through completed records.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-20_implement_scoped_creation_purge_task.md
+  IMPACT: Close only the four accepted purge records. Other work remains routed separately.
+  NEXT: none; this ticket is complete.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Both input paths and single/all retirement are implemented. purge(instance) inspects the class and
 uses existing _resolve_spell; explicit name/class/function/frame/id selectors remain available.
@@ -561,7 +633,8 @@ requires an instance and retires its one stored entry, or returns zero if absent
 many bucket is searched during single removal, with paired sparse disposal metadata and empty-key
 cleanup under existing locks. Disposal runs after lock release through the existing helpers.
 
-All 270 focused tests and scoped lint pass. The public guide and touched docstrings describe the
-current API. NEXT: owner reviews the code. Do not run asset, graph or index generators until the
-owner explicitly approves. Earlier generated outputs and canonical component flow prose predate
-these refactors; finish those together after approval. The ticket remains open for that final step.
+All 270 focused tests and scoped lint pass. Public/canonical documentation, affected descriptors,
+indexes, graph and both asset families are refreshed. Source/repository checks pass; the additional
+host-run asset selection passes 144 tests. Owner accepted closure. Patch contracts are archived and
+validation/discovery evidence retained. No runtime change, version bump, commit, push or publication
+was added during turn-in. Further release work lives in the next-version draft task.

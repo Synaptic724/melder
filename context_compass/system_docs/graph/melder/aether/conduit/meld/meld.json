@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/meld.py",
- "source_sha256": "60e5e5ca181e7d803ac51c6b26eb360a91089732733f3409eb5fe07b4583fa49",
+ "source_sha256": "49e1ae5f437965fc073e0fbe1eb84178d929108bb132768e5910dfc00cd04074",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.meld": {
@@ -29,7 +29,7 @@
    "label": "Meld",
    "kind": "abstract",
    "file": "src/melder/aether/conduit/meld/meld.py",
-   "lineno": 45,
+   "lineno": 44,
    "bases": [
     "Cleanable"
    ],
@@ -50,7 +50,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "87e10ce7bd4873f6b3f805a1e1905bbebf1c7e9a75e2003f8187c94269df7b19",
+   "span_sha256": "c63c7c0d3fb4bac9ed939b3001a13b66dd5ce46ad22edb86948728f5cedfb3f2",
    "role": "Resolution runtime orchestrator.",
    "responsibilities": [
     "resolves target spells",
@@ -128,6 +128,12 @@
   },
   {
    "from": "melder.aether.conduit.meld.meld.Meld",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.meld.meld.Meld",
    "to_label": "SpellCompilerSystem",
    "relation": "creates",
    "confidence": "candidate"
@@ -166,7 +172,6 @@
   "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
   "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "Creations": "melder.aether.conduit.creations.creations.Creations",
   "SpellCompilerSystem": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",

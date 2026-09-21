@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/conduit_meld.py",
- "source_sha256": "76e08703072c8975a7d19f1fef41e0e7f41724d1f90f7b239a9bdb15bf598733",
+ "source_sha256": "30a2617e717a762742e621aa2b6ada970309ae180e55c8898fbb872a5329bd2e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.conduit_meld": {
@@ -36,14 +36,15 @@
     "cleanup",
     "describe_live_creation_status",
     "meld",
-    "meld_existing_spell"
+    "meld_existing_spell",
+    "purge"
    ],
    "shape": {
-    "method_count": 6,
+    "method_count": 8,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6c7c163733b228d3b43dea53ad2d0724c4d03a18a8c1467b33affeeac70709f8",
+   "span_sha256": "6f3fb0677c3c29d60eb5b0c34323b9563ef0ff2dd87c4f75d3281083b9d24591",
    "role": "Conduit-facing meld front door.",
    "responsibilities": [
     "routes conduit-local unique_per_conduit and many storage through ConduitCreations",
@@ -91,6 +92,7 @@
   "Any": "typing.Any",
   "Callable": "typing.Callable",
   "ClassVar": "typing.ClassVar",
+  "Union": "typing.Union",
   "Meld": "melder.aether.conduit.meld.meld.Meld",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
   "ConduitCreations": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",

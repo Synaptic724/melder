@@ -172,6 +172,13 @@ KNOWN GAPS INSIDE THE FENCE (remaining)
       policies, three refusals). What remains here is the LIVE LINK
       behaviour under each mode, which is a different lesson.
 
+EARLY DISPOSAL WHILE A SCOPE STAYS LIVE (2026-09-21)
+  39 purge_unneeded_objects (Conduit.purge and SpellSpace.purge:
+     one supplied object with purge_all=False, all retained entries by
+     default, removal counts, remelding, local scope isolation and
+     exactly-once disposal across later cleanup). Lesson 38 remains
+     withdrawn; this lesson adds methods on existing public root types.
+
 HARNESS
   pytest_examples/test_intermediate_examples.py (every lesson runs)
   pytest_examples/test_intermediate_probes.py (contract probes)

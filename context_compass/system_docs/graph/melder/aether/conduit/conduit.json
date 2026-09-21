@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "cff643f175fa419c46a4bbefc387b8cdd071370eb1b178f1aa3aad1d149da90b",
+ "source_sha256": "bcf1f4bb80781cea31492fdc05a28bfe62136d1119c6e51c1f79fdc6fba87f43",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -113,7 +113,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "acb3c5cdc474087fa214f67f0bc632dfef24726622240761fff66c0b92a49c3d",
+   "span_sha256": "e2edc6a9c29a2d880731d3d94e03b5c4e22e2065ef47a617721d861835aebe07",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",

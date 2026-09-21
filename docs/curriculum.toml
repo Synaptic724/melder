@@ -131,7 +131,7 @@ id = "intermediate/scopes"
 title = "Spell spaces, lineage, and child scopes"
 level = "intermediate"
 source = "intermediate/scopes.md"
-lessons = ["intermediate:29", "intermediate:04", "intermediate:05", "intermediate:07", "intermediate:28"]
+lessons = ["intermediate:29", "intermediate:04", "intermediate:05", "intermediate:07", "intermediate:28", "intermediate:39"]
 show_steps = true
 
 [[chapter]]

@@ -1,14 +1,18 @@
 # Task: Record the purge epic and refresh existing Melder build assets
 
+## Completion
+- Completed: 2026-09-21T00:37:37Z
+- Summary: Accepted planning-first epic and original build refresh; subsequent implementation is completed under the same epic.
+
 ## Metadata
 - Task ID: TASK-2026-09-19-draft-purge-epic-and-refresh-assets
 - Epic: EPIC-2026-09-19-scope-aware-creation-purge
 - Story: none; planning/build-only operation
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: updater_0
 - Created: 2026-09-20T00:53:18Z
-- Updated: 2026-09-20T00:56:30Z
+- Updated: 2026-09-21T00:37:37Z
 
 ## Objective
 Create the requested purge epic first, then regenerate and verify the existing Melder build assets.
@@ -26,9 +30,9 @@ Create the requested purge epic first, then regenerate and verify the existing M
 - Out of scope: implementing or deeply investigating purge, resolving its open design choices.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Epic created first; source/repository builders and all freshness checks passed.
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted purge epic turn-in; final delivery and evidence are complete.
 
 ## Steps / Checklist
 - [x] Read the epic template and scoped creation/component vocabulary.
@@ -37,7 +41,7 @@ Create the requested purge epic first, then regenerate and verify the existing M
 - [x] Verify freshness, record results and leave implementation unstarted.
 
 ## Deliverables
-- tickets/epics/2026-09-19_scope_aware_creation_purge_epic.md
+- tickets/epics/completed/2026-09-19_scope_aware_creation_purge_epic.md
 - Build logs and matching generated assets for the unchanged current package version.
 
 ## Files / Paths Impacted
@@ -80,7 +84,7 @@ Record build outcomes and constraints here; feature decisions belong in the draf
     additional unresolved lineage/root/multiplicity details without implementing any of them.
     Regenerate existing source assets and src/tests/other bundles at version 0.2.43.
   EVIDENCE:
-  - tickets/epics/2026-09-19_scope_aware_creation_purge_epic.md:14-23
+  - tickets/epics/completed/2026-09-19_scope_aware_creation_purge_epic.md:14-23
   - src/melder/__version__.py:12-12
   IMPACT: This task satisfies the requested sequence while leaving purge as a draft idea.
   NEXT: Run source asset regeneration, then the repository builder and both freshness checks.
@@ -101,6 +105,17 @@ Record build outcomes and constraints here; feature decisions belong in the draf
   NEXT: Owner reviews the epic and directs any subsequent discovery or implementation.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-21T00:37:37Z
+  TYPE: DECISION
+  CLAIM: Owner accepted purge epic turn-in. This ticket is complete; its retained evidence and
+    any promoted patch contracts remain available through completed records.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-20_implement_scoped_creation_purge_task.md
+  IMPACT: Close only the four accepted purge records. Other work remains routed separately.
+  NEXT: none; this ticket is complete.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Purge epic drafted; no implementation. Both builders ran and all freshness checks passed using uv

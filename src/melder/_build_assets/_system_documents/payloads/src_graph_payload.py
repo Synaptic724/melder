@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27867
-CONTENT_SHA256 = '9f55c312aeaf67724435426740ee052ddff0731d93169e8316d7a53ea4219fb8'
+LINE_COUNT = 27870
+CONTENT_SHA256 = '7f58abde8a7ceabda806c58c4e105c884131c87a1dfe8ef8455407c505427969'
 
 TEXT = """# src_graph
 
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `6f10f0507ec6ef3c952267a4b5ad2a57ad4f120cf90f6a68c38d39dd3474e80c`
+- source_sha256: `c0c1635f74957e8800fd1ca20171c954050d6993df5ff7733de7610267e5c19d`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `7562eadce587a46a7df2846b0a3480c406b75f5c9bd5473e3c33ba2b9ca246db`
+- source_sha256: `ef2ec6db744d962cf239071a8e6de1353b39ee732983e481fbd5c57e0d1052e9`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `7d3b758bf3ecc2aa9835c91f33e92f3995eb78cf9d01cb0c6de3bba995a52841`
+- source_sha256: `f31d8c30dc6d0feb0d4a2b0ed482de406a6d0143f82d7c7ed7a2bf50d47fe0a7`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `e23175c9d515720c2332ee37d7cefa9da7a10d418e824741cdb95a1bf3aab5bc`
+- source_sha256: `76d5df13d826c8cb708b74b77ed17cd026dbac2bacf78501f300d016be5073ca`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `9c92de4eef1cf069dce70a460a3d7a51af4d1d85b1534a46bb82fb8d319fd909`
+- source_sha256: `ac5ef17df3590e1860d9aa8669c300279d0fddc772d7f2b1131194c90ff6ddd2`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `6fc43393662a5d6f463331e8a8e19c87ef7dbe66f74e186f0fe2ccf1b5525acd`
+- source_sha256: `b5115d540eae004c2ee1545d3ed8847a37db3909677c4d8347c0640a9ae81676`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `455322de0949eb313fd78ebc320bdea5d6bf8fe0b1c0cec3b36ccdc9750c0a8e`
+- source_sha256: `d4e43924003389bdcefd1576219435130be89313bf45276dd9da66740f159115`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `bb914d36cd145fb2e5388fca946995e303b13162523d503f51646247d9dbec7c`
+- source_sha256: `a80b9ebbd0b0bf141e0f277775ec8438db934826b2e9949c9184872cc9668fb4`
 - nodes: 1
 
 ### Nodes
@@ -4415,7 +4415,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `cff643f175fa419c46a4bbefc387b8cdd071370eb1b178f1aa3aad1d149da90b`
+- source_sha256: `bcf1f4bb80781cea31492fdc05a28bfe62136d1119c6e51c1f79fdc6fba87f43`
 - nodes: 2
 
 ### Nodes
@@ -4439,7 +4439,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Runtime execution scope for spell resolution.
 - responsibilities:
   - hosts meld execution
-  - forwards full-target purge selectors to Meld while keeping conduit and registration lifetimes intact
+  - forwards instance or explicit purge selectors and single/all mode to ConduitMeld while keeping conduit and registration lifetimes intact
   - forwards per-version resolvable policy through both binding facades without changing conduit state
   - owns concrete conduit-facing runtime helpers and pooled spellspace state
   - creates lesser conduits
@@ -5108,7 +5108,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `d00a4b38433a5e1c4102983f9e66f525c8b2f64e5445b8da6fba878e1e1af0c4`
+- source_sha256: `c5700e79f62883e208919b7fad5adfe4ec71969e6ca7ff80fd127988eb202bf7`
 - nodes: 2
 
 ### Nodes
@@ -5135,7 +5135,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - retains established Spell disposal lists through registration and in-memory transfer
   - invokes methods in list order; the first method failure stops its object while other objects continue
   - supports reusable clear/reset and terminal cleanup without clearing borrowed method lists
-  - purges a selected spell entry with creation writer locks and existing disposal helpers, without scope discovery or authorization
+  - purges a whole selected target or one supplied creation with paired registry removal, existing writer locks and shared disposal helpers; no scope discovery or authorization
 - owns_state: `_creations`, `_disposable_creations`, `_owner_conduit_id`, `_id`, `_lock`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `extract_spell_creations`, `get_creation`, `id`, `owner_conduit_id`, `purge`, `reset_for_pool`, `reset_for_pool_unlocked`, `restore_spell_creations`
@@ -5161,7 +5161,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/conduit_meld.py
 
-- source_sha256: `76e08703072c8975a7d19f1fef41e0e7f41724d1f90f7b239a9bdb15bf598733`
+- source_sha256: `30a2617e717a762742e621aa2b6ada970309ae180e55c8898fbb872a5329bd2e`
 - nodes: 2
 
 ### Nodes
@@ -5187,9 +5187,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - routes conduit-local unique_per_conduit and many storage through ConduitCreations
   - rejects spellspace-request spells on the conduit entry path
   - provides reuse-only and live-creation status probes over conduit-scoped storage
+  - authorizes conduit-local, spell-owner, lineage-root and cluster-leader purge before delegating single or all retirement to Creations
   - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`
+- public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`, `purge`
 
 ### Edges out
 
@@ -5476,7 +5477,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `60e5e5ca181e7d803ac51c6b26eb360a91089732733f3409eb5fe07b4583fa49`
+- source_sha256: `49e1ae5f437965fc073e0fbe1eb84178d929108bb132768e5910dfc00cd04074`
 - nodes: 2
 
 ### Nodes
@@ -5496,13 +5497,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Meld` (abstract)
 
 - id: `melder.aether.conduit.meld.meld.Meld`
-- defined at: `src/melder/aether/conduit/meld/meld.py:45`
+- defined at: `src/melder/aether/conduit/meld/meld.py:44`
 - extends: `Cleanable`
 - markers: `ABC`
 - role: Resolution runtime orchestrator.
 - responsibilities:
   - resolves target spells
-  - discovers and authorizes the purge target store, then delegates locked retirement to Creations; instance targeting remains deferred
+  - discovers purge bindings through inspected instance classes or explicit selectors; concrete doors own scope authority
   - enforces validity and dirty-root gates
   - chooses reuse versus construction
   - dispatches execution into CreationContext
@@ -5530,7 +5531,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.meld.meld.Meld` -> `melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem`: Meld instantiates SpellCompilerSystem when lazy validation or resolution-phase reruns are required at meld time.
 - `melder.aether.conduit.meld.meld.Meld` -> `melder.aether.spellbook.spellbook.Spellbook`: Meld borrows Spellbook lookup maps and spell metadata for resolution.
 
-### Edge candidates (9, unconfirmed)
+### Edge candidates (10, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -5541,6 +5542,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.meld.meld.Meld` creates `TypeError`
 - `melder.aether.conduit.meld.meld.Meld` creates `KeyError`
 - `melder.aether.conduit.meld.meld.Meld` creates `RuntimeError`
+- `melder.aether.conduit.meld.meld.Meld` creates `ValueError`
 - `melder.aether.conduit.meld.meld.Meld` creates `SpellCompilerSystem`
 - `melder.aether.conduit.meld.meld.Meld` creates `HookExecutionError`
 
@@ -5611,7 +5613,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/spellspace_meld.py
 
-- source_sha256: `03441843572e6c4a8feb1979e1a666ead411f41ddbe74fd068504b62e0780795`
+- source_sha256: `9990fffb0678f64313939781ec005c957a5b7264281b706ddb6cf17b502f1e2a`
 - nodes: 2
 
 ### Nodes
@@ -5636,10 +5638,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - routes unique_per_spell_space storage through spellspace-local Creations
   - routes conduit-owned lifetimes through owner-conduit ConduitCreations
   - provides live-creation status over spellspace-local and owner-conduit storage
+  - restricts purge to this space's many and unique_per_spell_space entries before delegating single or all retirement to Creations
   - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
 - owns_state: `_spellspace`, `_spellspace_id`, `_owner_conduit_id`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`
+- public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`, `purge`
 
 ### Edges out
 
@@ -5669,7 +5672,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/spell_space/spell_space.py
 
-- source_sha256: `8d0831812ef82b432d031a4869cb05e5e22d2d59b8213b7b4da01ede1259cf2d`
+- source_sha256: `697b140495fcb083284493eb85fed12a48926e0ef734e19fa3456758a58771c9`
 - nodes: 2
 
 ### Nodes
@@ -5694,7 +5697,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - marks one active spellspace scope on a conduit
   - enforces active-scope usage for spellspace-bound meld calls
   - clears spellspace-scoped instances on reset or cleanup
-  - exposes purge for local many and spellspace creations only, with removal delegated through its Meld door
+  - exposes instance or explicit purge selectors and single/all mode for local many and spellspace creations through its concrete Meld door
 - owns_state: `_id`, `_owner_conduit_id`, `_meld`, `_creations`, `_owner_conduit_creations`, `_spellspace_pool`, `_spellspace_stack_state`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `id`, `meld`, `owner_conduit_id`, `permanent_cleanup`, `purge`, `recycle_from_managed_context`

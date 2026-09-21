@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-20
+- Updated: 2026-09-21
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -3423,6 +3423,9 @@ STATUS - READ BEFORE ANYTHING ELSE:
 Responsibilities:
 - Admit at most one conflicting structural transaction per scope, atomically
   and all-or-nothing across a whole claim set.
+- Admit frame creation live: hold `world` INTENT plus `frame:<name>`
+  EXCLUSIVE for one birth so whole-world operations exclude it, same-frame
+  races serialize, and disjoint frames proceed in parallel.
 - Express the crystallizer `LoadGate` as a degenerate claim: `world` EXCLUSIVE
   is the global gate; `world` INTENT plus `frame:<name>` EXCLUSIVE lets
   disjoint frame work run in parallel beneath a parent a whole-world load can
@@ -6089,9 +6092,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6360
-  loc: 6360
-  verified_at: 2026-09-20T22:38:07Z
+  end_line: 6384
+  loc: 6384
+  verified_at: 2026-09-21T00:25:48Z
 - path: `src/melder/utilities/synchronization/creation_gate.py`
   start_line: 1
   end_line: 603
@@ -6119,9 +6122,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 698
-  loc: 698
-  verified_at: 2026-09-20T22:38:07Z
+  end_line: 884
+  loc: 884
+  verified_at: 2026-09-21T00:25:48Z
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
   end_line: 133
@@ -6129,24 +6132,24 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
-  end_line: 554
-  loc: 554
-  verified_at: 2026-09-20T22:38:07Z
+  end_line: 577
+  loc: 577
+  verified_at: 2026-09-21T00:25:48Z
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 1699
-  loc: 1699
-  verified_at: 2026-09-20T22:38:07Z
+  end_line: 1716
+  loc: 1716
+  verified_at: 2026-09-21T00:25:48Z
 - path: `src/melder/aether/conduit/meld/conduit_meld.py`
   start_line: 1
-  end_line: 832
-  loc: 832
-  verified_at: 2026-09-19T22:06:30Z
+  end_line: 948
+  loc: 948
+  verified_at: 2026-09-21T00:25:48Z
 - path: `src/melder/aether/conduit/meld/spellspace_meld.py`
   start_line: 1
-  end_line: 831
-  loc: 831
-  verified_at: 2026-09-19T22:06:30Z
+  end_line: 898
+  loc: 898
+  verified_at: 2026-09-21T00:25:48Z
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
   end_line: 309

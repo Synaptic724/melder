@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-20
+- Updated: 2026-09-21
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -1896,9 +1896,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6360
-  loc: 6360
-  verified_at: 2026-09-20T22:38:07Z
+  end_line: 6384
+  loc: 6384
+  verified_at: 2026-09-21T00:25:48Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
@@ -1935,9 +1935,9 @@ Resolution and creations:
 
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 1699
-  loc: 1699
-  verified_at: 2026-09-20T22:38:07Z
+  end_line: 1716
+  loc: 1716
+  verified_at: 2026-09-21T00:25:48Z
   note: meld orchestration.
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
@@ -1959,9 +1959,9 @@ Resolution and creations:
   note: SpellContract descriptor.
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 698
-  loc: 698
-  verified_at: 2026-09-20T22:38:07Z
+  end_line: 884
+  loc: 884
+  verified_at: 2026-09-21T00:25:48Z
   note: instance registry.
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
@@ -1971,9 +1971,9 @@ Resolution and creations:
   note: conduit/root specialization seam over the generic creations store.
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
-  end_line: 554
-  loc: 554
-  verified_at: 2026-09-20T22:38:07Z
+  end_line: 577
+  loc: 577
+  verified_at: 2026-09-21T00:25:48Z
   note: spellspace scoping.
 
 Control plane:

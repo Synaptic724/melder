@@ -161,6 +161,19 @@ without a separate approval.
     refers to a different carrier stage.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+- DATETIME: 2026-09-21T00:35:00Z
+  TYPE: FACT
+  CLAIM: Design skills applied to the mediator rewrite: code-first claims,
+    preservation baseline captured before the detail edit, index regenerated
+    same pass with zero lost line-groups.
+  EVIDENCE:
+  - context_compass/system_docs/src_components.md:3426-3429
+  IMPACT: Added only the FRAME_CREATE responsibility bullet; entry contract
+    fields intact and portability hits are pre-existing, not introduced.
+  NEXT: Continue C3 audit at component 3; component-2 fix still awaits owner
+    disposition and is not applied.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
 
 ## Context / Handoff Summary
 Audit lane opened after owner rejected bulk-read and approved systematic

@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 85374aba8e914462510940cb668eba936bb3951f7099f351f2d0ab232f8de289
-FILE COUNT: 359
+SOURCE FINGERPRINT: 66ff140468c3f41a072dd6f1561642d6fb577f722b48a352466b35606a1321e1
+FILE COUNT: 360
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -9894,8 +9894,132 @@ if __name__ == "__main__":
 END FILE: UX_and_AIX_experiences/02_intermediate/37_the_frame_conduit_cloud.py
 ================================================================================
 ================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/39_purge_unneeded_objects.py
+CONTENT SHA256: f58966c91b80400c760b84b142d964883a50cc1c2942531211fdc562b4e23a8a
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (39)
+GOAL: Release objects you no longer need while their scope keeps working.
+      This job buffer declares close as its disposal method, so Melder retains
+      each many creation until explicit disposal. Pass an instance with
+      purge_all=False to retire only that object. The default purge_all=True
+      retires all retained objects for the selected binding in that scope.
+
+      Purge returns the removed count, keeps the registration available, and
+      lets later melds create fresh objects. A SpellSpace can purge its own
+      objects without touching the conduit. Application-held Python references
+      still point to the old objects: stop using their resources after disposal.
+SURFACE EXERCISED: md.Spellbook.bind, md.Existence.many, md.Conduit.meld,
+                  md.Conduit.purge, md.Conduit.enter_spellspace,
+                  md.SpellSpace.meld, md.SpellSpace.purge, md.Conduit.cleanup
+"""
+import melder as md
+
+
+class WorkBuffer:
+    """Own a small job payload with observable, explicit disposal.
+
+    The payload belongs to this object and is released by close. The public
+    closed flag and close_calls counter remain as lesson diagnostics, so the
+    example can check disposal without reaching into Melder's private state.
+    """
+
+    def __init__(self) -> None:
+        """Allocate an open buffer; no file, network or background work is started."""
+        self._payload: bytearray = bytearray(128)
+        self.closed: bool = False
+        self.close_calls: int = 0
+
+    def close(self) -> None:
+        """Release the payload once and count each actual disposal invocation.
+
+        Repeated calls leave the resource closed. Diagnostic fields remain
+        readable; the owned payload field is removed after its contents clear.
+        """
+        self.close_calls += 1
+        if self.closed:
+            return
+        self._payload.clear()
+        del self._payload
+        self.closed = True
+
+
+def main() -> None:
+    """Verify early disposal, retained siblings, remelding and scope isolation.
+
+    The book and conduit are cleaned in finally blocks. Each assertion checks
+    an observable removal count, object identity or disposal callback result.
+    """
+    book = md.Spellbook()
+    try:
+        # many creates a fresh object each time. Declared disposal makes these
+        # buffers retained resources that Melder can retire through purge.
+        book.bind(
+            spell=WorkBuffer,
+            existence=md.Existence.many,
+            disposal_method_names=["close"],
+        )
+        conduit = book.conjure()
+        try:
+            first: WorkBuffer = conduit.meld("WorkBuffer")
+            second: WorkBuffer = conduit.meld("WorkBuffer")
+            third: WorkBuffer = conduit.meld("WorkBuffer")
+
+            # The first job finished. Keep the other two objects alive.
+            removed = conduit.purge(first, purge_all=False)
+            assert removed == 1
+            assert first.closed and first.close_calls == 1
+            assert not second.closed and not third.closed
+            assert conduit.purge(first, purge_all=False) == 0
+            print("one finished buffer removed; its siblings remain:", removed)
+
+            # A name selects the binding. Default True removes all of its
+            # remaining retained objects in this conduit, not just one.
+            removed = conduit.purge("WorkBuffer")
+            assert removed == 2
+            assert second.closed and third.closed
+            assert conduit.purge("WorkBuffer") == 0
+            print("remaining buffers removed by name:", removed)
+
+            # The binding and the conduit still work after the bucket is empty.
+            replacement: WorkBuffer = conduit.meld("WorkBuffer")
+            assert replacement is not first and not replacement.closed
+            print("the same registration creates a fresh buffer:", not replacement.closed)
+
+            with conduit.enter_spellspace() as space:
+                local: WorkBuffer = space.meld("WorkBuffer")
+                # An instance does not grant access to a different scope.
+                assert space.purge(replacement, purge_all=False) == 0
+                assert conduit.purge(local, purge_all=False) == 0
+                assert space.purge(local, purge_all=False) == 1
+                assert local.closed and not replacement.closed
+                local_replacement: WorkBuffer = space.meld("WorkBuffer")
+                assert local_replacement is not local and not local_replacement.closed
+
+            # Managed space exit closes its remaining buffer, not the root's.
+            assert local_replacement.closed and not replacement.closed
+            print("spell-space purge and exit leave the conduit buffer open:", not replacement.closed)
+        finally:
+            conduit.cleanup()
+
+        # Purged objects are no longer retained for later scope cleanup.
+        resources = (first, second, third, replacement, local, local_replacement)
+        assert all(resource.closed for resource in resources)
+        assert all(resource.close_calls == 1 for resource in resources)
+        print("every buffer was disposed exactly once:", len(resources))
+    finally:
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/39_purge_unneeded_objects.py
+================================================================================
+================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/_concept_map.txt
-CONTENT SHA256: e0d5373f08218bd693d1c59143cb4c0820240162c2ebc52ee1282d9fbc838bb7
+CONTENT SHA256: fdb78a26089e70ec97d858ee67f6a96175bf2d5d55c5347a036a6fdc5d74aa0b
 SOURCE ENCODING: utf-8
 ================================================================================
 CONCEPT MAP - 02_intermediate (README tier: YELLOW Intermediate)
@@ -10071,6 +10195,13 @@ KNOWN GAPS INSIDE THE FENCE (remaining)
     - NOTE: the policy SURFACE is now taught at advanced 18 (ward
       policies, three refusals). What remains here is the LIVE LINK
       behaviour under each mode, which is a different lesson.
+
+EARLY DISPOSAL WHILE A SCOPE STAYS LIVE (2026-09-21)
+  39 purge_unneeded_objects (Conduit.purge and SpellSpace.purge:
+     one supplied object with purge_all=False, all retained entries by
+     default, removal counts, remelding, local scope isolation and
+     exactly-once disposal across later cleanup). Lesson 38 remains
+     withdrawn; this lesson adds methods on existing public root types.
 
 HARNESS
   pytest_examples/test_intermediate_examples.py (every lesson runs)
@@ -61086,7 +61217,7 @@ END FILE: docs/beginner/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/catalog.toml
-CONTENT SHA256: d0a6f59df68efc7dbf4eb9d1d027d2ecf251f9f8eb6807077ec238476383fb9f
+CONTENT SHA256: 19d692c15ac448727033e21b6fa9c2c7c8552e98c3cf64f1c4fe58d54aefd2c4
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -61181,6 +61312,7 @@ sources = [
   "35_one_config_every_book.py",
   "36_late_binding_with_spellcontract.py",
   "37_the_frame_conduit_cloud.py",
+  "39_purge_unneeded_objects.py",
 ]
 
 [[level]]
@@ -61387,7 +61519,7 @@ END FILE: docs/conf.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/curriculum.toml
-CONTENT SHA256: 57d89e8450f7ce0d2e722368351f5ccda242d1fbdfc6b0e025287439e1c682c7
+CONTENT SHA256: 6b0a0d4e956f0e2f0a5bd3f3efd4f9d28c15656bcc2cf890635d1b17f53688fb
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -61523,7 +61655,7 @@ id = "intermediate/scopes"
 title = "Spell spaces, lineage, and child scopes"
 level = "intermediate"
 source = "intermediate/scopes.md"
-lessons = ["intermediate:29", "intermediate:04", "intermediate:05", "intermediate:07", "intermediate:28"]
+lessons = ["intermediate:29", "intermediate:04", "intermediate:05", "intermediate:07", "intermediate:28", "intermediate:39"]
 show_steps = true
 
 [[chapter]]
@@ -62623,7 +62755,7 @@ END FILE: docs/intermediate/hooks.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/index.md
-CONTENT SHA256: 41e7d1b48b8b2e818767ce46259d3a6264d3136102705b1e49c1e249c83fd66a
+CONTENT SHA256: 03e1eb7a44819dddc3ca5912eb77046351fbc6f9618613f89e187d9d0fdf3171
 SOURCE ENCODING: utf-8
 ================================================================================
 # 🟡 Intermediate
@@ -62641,7 +62773,7 @@ explicit public operations.
 - Configuration, hooks, spell spaces, and lineage lifetimes.
 - Dynamic posture, links, permissions, and ownership.
 - Late binding with `SpellContract` and connected-subsystem composition.
-- Scoped cleanup, transfer, and severing relationships.
+- Early object disposal with `purge`, scoped cleanup, transfer, and severing relationships.
 
 ## Choose a route
 
@@ -62852,7 +62984,7 @@ END FILE: docs/intermediate/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/scopes.md
-CONTENT SHA256: a4a9db5fd822de85def1041fa5caa1cd8d80fc5da483ad17e1e19b236f3b3c10
+CONTENT SHA256: 561b002c9201906f8255db93cec66a4f0bbc5e0bf02b1aefeac3416bcdd780d0
 SOURCE ENCODING: utf-8
 ================================================================================
 # Spell spaces, lineage, and scopes that end
@@ -62890,6 +63022,12 @@ lesson remains in its saved Intermediate collection and is linked from that guid
 
 ## Purge creations while keeping the scope
 
+Run [Purge unneeded objects](../examples/intermediate/39-purge-unneeded-objects.md)
+for a complete example. It releases one finished job buffer, keeps its siblings
+alive, purges the remaining buffers by name, and creates a fresh buffer afterward.
+It also checks that spell-space purge stays local and final cleanup does not
+dispose already-purged objects twice.
+
 Use `purge` to dispose and remove the retained creations for one registered target
 without ending its scope or removing its registration:
 
@@ -62904,6 +63042,20 @@ number removed, or `0` when that authorized store has no matching creation.
 `purge_all=True` is the default: a `many` target removes its whole retained bucket.
 Only `many` objects with configured disposal are retained; untracked results are
 not affected by purge.
+
+An existing object provides a second input path: purge inspects its class and
+passes that reference through the existing binding lookup. Choose the shortcut
+or the explicit selectors for your binding. Both use the same scoped purge:
+
+```python
+job = conduit.meld("Job")
+removed = conduit.purge(job, purge_all=False)  # Remove this object only.
+removed = conduit.purge(job)                  # Remove remaining entries for its binding.
+```
+
+Single-object removal requires the instance and returns `0` if that object is
+not retained in the authorized store. Other instances remain available for later
+purge or normal scope cleanup. The same options work on `SpellSpace`.
 
 | Lifetime | Who may purge it |
 | --- | --- |
@@ -62924,9 +63076,6 @@ fresh factory-backed instance using the existing compiled context. References
 already held by application objects are not rewritten. An externally supplied
 object remains referenced by its registration, so purging its store entry does
 not unbind it or turn it into a factory.
-
-**Instance-reference purging is not implemented yet.** Passing a created instance
-or requesting `purge_all=False` raises `NotImplementedError` before removal.
 ================================================================================
 END FILE: docs/intermediate/scopes.md
 ================================================================================

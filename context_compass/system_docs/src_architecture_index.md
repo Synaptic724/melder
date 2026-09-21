@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-21T00:07:49Z |
-| line_count | 2446 |
+| generated_at | 2026-09-21T00:25:48Z |
+| line_count | 2452 |
 | line_ending | lf |
-| content_sha256 | `53941afe67a0816998e93d58d1e36777cd8e236358590ad32eed15dbd0e2fa1a` |
+| content_sha256 | `f25a630fba50c818122d0b04e82c057a7b8092e0db4e325dfde4fd50d292bc6b` |
 | sections | 49 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -56,23 +56,23 @@ which you did.
 | 742-764 | 3 | Data Flows and Sequences > Sequence: Cleanup |
 | 765-791 | 2 | Runtime Type Names (Concrete, No Interface Layer) |
 | 792-802 | 2 | Extension Points |
-| 803-969 | 2 | Operational Invariants |
-| 970-1007 | 2 | Failure Modes and Error Paths |
-| 1008-1193 | 2 | Promoted Patch Decisions (re-absorbed 2026-08-02) |
-| 1028-1077 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence & Restore Architecture (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07) |
-| 1078-1120 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence Subsystem Topology (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10) |
-| 1121-1170 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > V3 Horizon Architecture (promoted 2026-07-12 from six patch dirs; owner-run full-tree green) |
-| 1171-1193 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Three-Lane Tail (promoted 2026-07-11; owner-directed finish of the public_cloud_seams, source_drift_preflight, and spell_index_graft lanes) |
-| 1194-2068 | 2 | C1 Code Map (Core Only) |
-| 2069-2206 | 2 | Diagrams |
-| 2070-2081 | 3 | Diagrams > Scoped Purge |
-| 2082-2100 | 3 | Diagrams > Registration Capability Foundation |
-| 2101-2117 | 3 | Diagrams > ASCII Context Diagram (C4) |
-| 2118-2134 | 3 | Diagrams > Mermaid Context Diagram (C4) |
-| 2135-2146 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
-| 2147-2164 | 3 | Diagrams > Mermaid Meld Flow |
-| 2165-2183 | 3 | Diagrams > Mermaid Conduit Upgrade |
-| 2184-2206 | 3 | Diagrams > Ordered Disposal Data Flow |
-| 2207-2318 | 2 | Information Sources |
-| 2319-2446 | 2 | Context / Handoff Summary |
-| 2411-2446 | 3 | Context / Handoff Summary > Carried forward from the previous revision (2026-07-25) |
+| 803-973 | 2 | Operational Invariants |
+| 974-1011 | 2 | Failure Modes and Error Paths |
+| 1012-1197 | 2 | Promoted Patch Decisions (re-absorbed 2026-08-02) |
+| 1032-1081 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence & Restore Architecture (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07) |
+| 1082-1124 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Persistence Subsystem Topology (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10) |
+| 1125-1174 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > V3 Horizon Architecture (promoted 2026-07-12 from six patch dirs; owner-run full-tree green) |
+| 1175-1197 | 3 | Promoted Patch Decisions (re-absorbed 2026-08-02) > Three-Lane Tail (promoted 2026-07-11; owner-directed finish of the public_cloud_seams, source_drift_preflight, and spell_index_graft lanes) |
+| 1198-2072 | 2 | C1 Code Map (Core Only) |
+| 2073-2211 | 2 | Diagrams |
+| 2074-2086 | 3 | Diagrams > Scoped Purge |
+| 2087-2105 | 3 | Diagrams > Registration Capability Foundation |
+| 2106-2122 | 3 | Diagrams > ASCII Context Diagram (C4) |
+| 2123-2139 | 3 | Diagrams > Mermaid Context Diagram (C4) |
+| 2140-2151 | 3 | Diagrams > ASCII Conjure Pipeline Diagram |
+| 2152-2169 | 3 | Diagrams > Mermaid Meld Flow |
+| 2170-2188 | 3 | Diagrams > Mermaid Conduit Upgrade |
+| 2189-2211 | 3 | Diagrams > Ordered Disposal Data Flow |
+| 2212-2323 | 2 | Information Sources |
+| 2324-2452 | 2 | Context / Handoff Summary |
+| 2417-2452 | 3 | Context / Handoff Summary > Carried forward from the previous revision (2026-07-25) |

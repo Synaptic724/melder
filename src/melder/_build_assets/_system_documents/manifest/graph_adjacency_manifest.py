@@ -280,7 +280,7 @@ NODES = {
     'melder.aether.conduit.meld.creation_context.creation_context_rebuild': ('src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py', 'creation_context_rebuild', 'module', 1, True),
     'melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild': ('src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py', 'CreationContextRebuild', 'class', 14, True),
     'melder.aether.conduit.meld.meld': ('src/melder/aether/conduit/meld/meld.py', 'meld', 'module', 1, False),
-    'melder.aether.conduit.meld.meld.Meld': ('src/melder/aether/conduit/meld/meld.py', 'Meld', 'abstract', 45, False),
+    'melder.aether.conduit.meld.meld.Meld': ('src/melder/aether/conduit/meld/meld.py', 'Meld', 'abstract', 44, False),
     'melder.aether.conduit.meld.overrides.spell_overrider': ('src/melder/aether/conduit/meld/overrides/spell_overrider.py', 'spell_overrider', 'module', 1, False),
     'melder.aether.conduit.meld.overrides.spell_overrider.SpellOverrider': ('src/melder/aether/conduit/meld/overrides/spell_overrider.py', 'SpellOverrider', 'class', 56, False),
     'melder.aether.conduit.meld.overrides.spell_overrider._Specificity': ('src/melder/aether/conduit/meld/overrides/spell_overrider.py', '_Specificity', 'enum', 17, False),

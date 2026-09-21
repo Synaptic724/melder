@@ -1,15 +1,19 @@
 # Task: Trace purge ownership, creation stores and implementation boundaries
 
+## Completion
+- Completed: 2026-09-21T00:37:37Z
+- Summary: Accepted ownership/store/locking discovery and implementation handoff; 38 characterization checks passed.
+
 ## Metadata
 - Task ID: TASK-2026-09-20-discover-purge-scope-ownership
 - Epic: EPIC-2026-09-19-scope-aware-creation-purge
 - Story: none; discovery before implementation decomposition
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-20T21:22:09Z
-- Updated: 2026-09-20T21:43:07Z
+- Updated: 2026-09-21T00:37:37Z
 
 ## Objective
 Map every creation style to its actual store, reuse paths and authorized purge caller. Produce a
@@ -41,9 +45,9 @@ source-backed implementation plan for Conduit and SpellSpace purge without imple
   meaning, root-attached SpellSpace authority and many selection granularity are not yet fully settled.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Source-backed authority/storage plan and 38 passing characterization checks are recorded.
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted purge epic turn-in; final delivery and evidence are complete.
 
 ## Steps / Checklist
 - [x] Read scoped components/graph and establish store topology for all Existence modes.
@@ -102,7 +106,7 @@ continuing. Keep discovery facts separate from proposed purge behavior.
     which live identities and stores implement these concepts.
   EVIDENCE:
   - Owner request on 2026-09-20: investigate SpellSpaces, conduits and creation styles, then plan purge.
-  - tickets/epics/2026-09-19_scope_aware_creation_purge_epic.md:61-109
+  - tickets/epics/completed/2026-09-19_scope_aware_creation_purge_epic.md:61-109
   IMPACT: Discovery is authorized; runtime implementation remains a later step.
   NEXT: Read the relevant component slices and creation-store source owners.
   REREAD: REQUIRED
@@ -291,6 +295,17 @@ continuing. Keep discovery facts separate from proposed purge behavior.
   NEXT: Owner reviews the plan before selecting implementation.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-21T00:37:37Z
+  TYPE: DECISION
+  CLAIM: Owner accepted purge epic turn-in. This ticket is complete; its retained evidence and
+    any promoted patch contracts remain available through completed records.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-20_implement_scoped_creation_purge_task.md
+  IMPACT: Close only the four accepted purge records. Other work remains routed separately.
+  NEXT: none; this ticket is complete.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Discovery complete; plan.md is the re-entry document. Owner requires native Creations purge using
