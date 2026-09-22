@@ -527,10 +527,11 @@ class DummyConfig:
 
     def freeze(
             self,
-            origin_spellbook_id=None,
-            origin_frame_name=None,
-            origin_dynamic=None,
-    ):
+            origin_spellbook_id: Optional[str] = None,
+            origin_frame_name: Optional[str] = None,
+            origin_dynamic: Optional[bool] = None,
+            origin_bind_hook_names: tuple[str, ...] = (),
+    ) -> None:
         """
         Purpose:
             Freeze the configuration stub.
@@ -538,8 +539,13 @@ class DummyConfig:
             Sets the frozen flag to True. Mirrors the real
             SpellbookConfiguration.freeze signature: the spellbook passes
             emission-origin identity (spellbook id, frame name, conjure
-            dynamic hint) at its conjure-time freeze; the stub accepts and
+            dynamic hint and bind-stage markers) at its conjure-time freeze; the stub accepts and
             ignores them.
+        Args:
+            origin_spellbook_id: Optional book identity for recording.
+            origin_frame_name: Optional owning frame name.
+            origin_dynamic: Recorded-world posture hint.
+            origin_bind_hook_names: Book-owned callback stage markers, not callables.
         Returns:
             None.
         """
@@ -2400,7 +2406,11 @@ def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     new_spell.spell_index = idx
     new_spell._key = ("jit-frame", "jit-binding")
     new_spell.key = new_spell._key
-    sb._bind = types.SimpleNamespace(bind=lambda **kwargs: new_spell)
+    sb._bind = types.SimpleNamespace(
+        bind=lambda **kwargs: new_spell,
+        capture_hooks=lambda: ((), (), ()),
+        cleanup=lambda: None,
+    )
 
     result = sb.bind(spell=object(), existence=Existence.unique, permissions="create")
 
@@ -2461,7 +2471,11 @@ def test_bind_after_conjure_stamps_resolution_required_false(monkeypatch):
     new_spell._key = ("aot-frame", "aot-binding")
     new_spell.key = new_spell._key
     new_spell.resolution_required = True
-    sb._bind = types.SimpleNamespace(bind=lambda **kwargs: new_spell)
+    sb._bind = types.SimpleNamespace(
+        bind=lambda **kwargs: new_spell,
+        capture_hooks=lambda: ((), (), ()),
+        cleanup=lambda: None,
+    )
 
     result = sb.bind(spell=object(), existence=Existence.unique, permissions="create")
 

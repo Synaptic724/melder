@@ -1,5 +1,6 @@
 import threading
 import time
+from collections.abc import Sequence
 from contextlib import contextmanager
 from types import ModuleType, TracebackType
 from typing import (
@@ -3093,6 +3094,89 @@ class Conduit(Cleanable):
             raise
         else:
             self.end_transaction(transaction_type=transaction_type, success=True)
+
+    def add_bind_hooks(
+            self,
+            *,
+            pre: Optional[Sequence[Callable[[Any], object]]] = None,
+            activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+            post: Optional[Sequence[Callable[[Spell], object]]] = None,
+    ) -> None:
+        """
+        Register bind lifecycle callbacks on this normal conduit's owning Spellbook.
+
+        Purpose:
+            Expose the same registration customization through the Conduit that
+            already facades bind and bind_inactive, using one Book-owned registry.
+
+        Contract:
+            - Requires a live normal conduit. Lessers borrow a Book and cannot
+              change its bind-hook policy through this facade.
+            - Delegates unchanged to Spellbook.add_bind_hooks. Sequences append
+              in order; all supplied callbacks are validated before mutation.
+            - Pre receives the incoming reference and rejects by raising.
+              Activation receives the actual newly constructed Spell; post
+              receives the completed active or parked registration before outer
+              transaction commit. Callback return values are ignored.
+            - Updates affect subsequent binds through either the Book or Conduit;
+              an in-flight bind retains its captured callback set.
+            - Hook setup follows Book's live-update contract independently of
+              configuration freeze. It does not enable binding when the frame's
+              existing bind admission rules prohibit it.
+            - Existing Conduit/Meld runtime hooks and per-Spell creation hooks
+              remain separate. Recording and cleanup stay with the owning Book.
+
+        Args:
+            pre: Ordered synchronous reference-checking callbacks.
+            activation: Ordered callbacks receiving the new Spell definition.
+            post: Ordered callbacks receiving the completed binding.
+
+        Threading:
+            Adds no Conduit lock or transaction window around delegation. The
+            Book/Bind owner coordinates registry updates and recording.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the conduit is cleaned or is not normal.
+            TypeError: If the owning Book rejects a non-callable callback.
+        """
+        self.check_cleaned()
+        if self._conduit_state is not ConduitState.normal:
+            self._logger.error("add_bind_hooks called when conduit is not normal", "add_bind_hooks")
+            raise RuntimeError("Only normal conduits can configure Spellbook bind hooks.")
+        self._spellbook.add_bind_hooks(pre=pre, activation=activation, post=post)
+
+    def clear_bind_hooks(self) -> None:
+        """
+        Clear all bind lifecycle callbacks from this normal conduit's owning Book.
+
+        Contract:
+            - Requires a live normal conduit; lessers cannot clear the borrowed
+              Book's registration policy.
+            - Delegates to Spellbook.clear_bind_hooks. Future Book/Conduit binds
+              see the empty registry; in-flight binds keep their captured set.
+            - Leaves existing Spell creation hooks and Conduit/Meld runtime hooks
+              unchanged. Does not dispose user callbacks or existing creations.
+            - The Book refreshes recording markers where applicable. Setup and
+              clearing do not change actual bind admission or frame posture.
+
+        Threading:
+            Delegates without an additional Conduit lock or transaction. Callback
+            storage, synchronization and recording remain owned by Book/Bind.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the conduit is cleaned or is not normal.
+        """
+        self.check_cleaned()
+        if self._conduit_state is not ConduitState.normal:
+            self._logger.error("clear_bind_hooks called when conduit is not normal", "clear_bind_hooks")
+            raise RuntimeError("Only normal conduits can configure Spellbook bind hooks.")
+        self._spellbook.clear_bind_hooks()
 
     def bind(
             self,

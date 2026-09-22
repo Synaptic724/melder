@@ -7,7 +7,9 @@ from types import MappingProxyType, ModuleType, TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
+    Optional,
 )
 
 from melder.aether.aether import Aether
@@ -403,7 +405,10 @@ class Spellbook(Cleanable):
             - Cleans local rich configuration only when it is not the
               frame-owned shared configuration object.
             - Cleans validation subsystems.
+            - Retires the owned Bind and releases its registration callbacks
+              before recording/configuration references are removed.
         """
+        self._bind.cleanup()
         if self._conduit is not None:
             self._unregister_conduit_from_risk_manager(self._conduit._id)
         # 0) Stop the persistent phase-worker pool before registries die so
@@ -4750,6 +4755,107 @@ class Spellbook(Cleanable):
             )
             raise
 
+    def add_bind_hooks(
+            self,
+            *,
+            pre: Optional[Sequence[Callable[[Any], object]]] = None,
+            activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+            post: Optional[Sequence[Callable[[Spell], object]]] = None,
+    ) -> None:
+        """
+        Register ordered callbacks for this Spellbook's binding lifecycle.
+
+        Purpose:
+            Check incoming references, customize newly constructed Spell definitions
+            and observe completed registrations through the canonical bind paths.
+
+        Contract:
+            - Appends each supplied sequence; validates all items before changing
+              any stage. None and empty sequences add nothing. Repeated callables
+              are repeated registrations, executed in registration order.
+            - Pre receives the original reference and rejects by raising. Activation
+              receives the actual new Spell before profile completion/publication.
+              Post receives that Spell after active registration or inactive parking.
+            - Callbacks are synchronous; return values are ignored. These callbacks
+              are separate from bind's pre_hooks/activation_hooks/post_hooks kwargs,
+              which configure later application-object creation during Meld.
+            - Setup is allowed on a live book before or after conjure, independently
+              of configuration freeze. Each bind retains one callback set; updates
+              during a callback affect subsequent binds, including nested binds.
+            - Post is not an outer-transaction commit notification. A later failure
+              can abort that envelope; callback effects have no automatic rollback.
+            - Hooks belong only to this Book, including when configuration is shared.
+              Preset books start empty. Cleanup releases callbacks without disposing
+              them. Crystallizer records stage presence, never callback code.
+
+        Args:
+            pre: Reference-checking callback sequence; reject by raising.
+            activation: Callback sequence receiving the actual new Spell definition.
+            post: Callback sequence receiving a completed active or parked binding.
+
+        Threading:
+            Registry replacement and marker refresh serialize on the owned Bind.
+            Callback execution holds no Bind construction lock. Existing transaction
+            rules still govern nested and concurrent bind operations.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: If a supplied item is not callable.
+            RuntimeError: If this Book has been cleaned.
+
+        Examples:
+            book.add_bind_hooks(pre=[check_reference], activation=[configure_spell])
+        """
+        self.check_cleaned()
+        self._bind.add_hooks(pre=pre, activation=activation, post=post)
+
+    def clear_bind_hooks(self) -> None:
+        """
+        Remove all registration hooks from this Spellbook's future binds.
+
+        Contract:
+            Existing in-flight binds retain their captured callbacks. Leaves Meld
+            creation hooks and already registered Spells unchanged. Refreshes the
+            recorded Book twin when applicable; clearing an empty registry is a
+            no-op. Releases references without disposing user callback objects.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If this Book has been cleaned.
+        """
+        self.check_cleaned()
+        self._bind.clear_hooks()
+
+    def _emit_bind_hook_presence(self) -> None:
+        """
+        Refresh the complete recorded Book twin after bind-hook registration changes.
+
+        Contract:
+            Called under Bind's registry lock; acquires no Book map lock. Before
+            origin-bearing configuration freeze, conjure will perform the first
+            emission. Later changes reuse the same producer and replace the whole
+            twin so configuration and existing Meld/Conduit markers survive.
+            Inactive recorders and automatic frames allocate no twin payload.
+
+        Returns:
+            None.
+        """
+        if (
+                self._configuration_locked
+                and self._crystallizer.activated
+                and self._is_dynamic_posture()
+        ):
+            self._configuration._emit_spellbook_twin_when_recording(
+                self._id,
+                self._aetheric_frame_name,
+                True,
+                origin_bind_hook_names=self._bind.get_hook_names(),
+            )
+
     def bind_inactive(
             self,
             *,
@@ -4789,6 +4895,10 @@ class Spellbook(Cleanable):
               signature; the spell stays inactive until notched.
             - Resolves disposal metadata once using the same ordered group
               composition as active bind; staging does not change the index's selection.
+            - Runs this Book's captured bind callbacks: pre on the input,
+              activation on the new Spell, and post after parking on the final
+              target index. Post precedes outer transaction commit. Later notch
+              does not rerun bind activation. Callback failures stop later stages.
 
         Args:
             spell (Any):
@@ -4827,6 +4937,9 @@ class Spellbook(Cleanable):
                 posture, or `spell_index` is not owned here.
             TypeError:
                 If resolvable is not a bool or the target violates Bind admission rules.
+            HookExecutionError:
+                A Book bind callback failed. Activation failure cleans its
+                unpublished allocation; post failure does not undo registration.
         """
         # The staging transaction lives directly in this method. Conduit
         # .bind_inactive delegates here without holding a window of its own,
@@ -4844,9 +4957,12 @@ class Spellbook(Cleanable):
                     binding_keys=None,
                 ),
         ):
+            new_spell: Optional[Spell] = None
+            registration_started = False
             try:
                 permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
                 existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
+                bind_hooks = self._bind.capture_hooks()
                 new_spell = self._bind.bind(
                     permissions=permissions_enum,
                     spell=spell,
@@ -4854,6 +4970,7 @@ class Spellbook(Cleanable):
                     binding_name=binding_name,
                     profile=profile,
                     resolvable=resolvable,
+                    _lifecycle_hooks=bind_hooks,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
                     configured_disposal_method_names=(
@@ -4872,7 +4989,10 @@ class Spellbook(Cleanable):
                     },
                 )
 
-                if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame_name):
+                if (
+                        new_spell.spell_id in self._spell_ids
+                        or Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame_name)
+                ):
                     self._logger.error(
                         f"Spell with ID {new_spell.spell_id} already exists in the registry.",
                         "bind",
@@ -4882,7 +5002,7 @@ class Spellbook(Cleanable):
                         "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
                         "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
                         "disposal metadata). The existing spell with this id is already registered in the \n"
-                        "Aether for this frame. If you intended to register a distinct spell, ensure its \n"
+                        "Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its \n"
                         "bind-time fingerprint differs so it produces a unique spell_id."
                     )
 
@@ -4902,6 +5022,7 @@ class Spellbook(Cleanable):
                 inactive_index = new_spell.spell_index
                 inactive_index.add_member(new_spell.spell_id)
                 self._inactive_spells[new_spell.spell_id] = new_spell
+                registration_started = True
                 new_spell._active = False
                 # Dynamic posture is a Spellbook/frame property, not a per-conduit
                 # one, and no conduit exists here (pre-conjure). Stamp it from the
@@ -4957,8 +5078,11 @@ class Spellbook(Cleanable):
                 self._record_research_world_entry(
                     new_spell.spell_id, staged=True,
                 )
+                Bind.execute_post_hooks(new_spell, bind_hooks)
                 return new_spell.spell_id
             except Exception as e:
+                if new_spell is not None and not registration_started:
+                    Bind._cleanup_unpublished_spell(new_spell, new_spell.spell_index)
                 self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
                 raise
 
@@ -5065,6 +5189,11 @@ class Spellbook(Cleanable):
             - Disposal names are resolved once for this binding. Both input
               groups contribute, and the resolved order is included in spell_id.
               A bind never establishes disposal candidates for a later binding.
+            - Captures this Book's registration callbacks once: pre receives the
+              reference, activation receives the actual new Spell before profile
+              completion, and post receives the completed registration. Post runs
+              before leaving the bind envelope, not after an outer batch commits.
+              Changing callbacks during this operation affects subsequent binds.
 
         Args:
             spell (Any):
@@ -5091,7 +5220,8 @@ class Spellbook(Cleanable):
                 in both modes; spell-only names keep their supplied order. Missing names
                 are skipped and duplicates run once. Empty input still permits book methods.
             **kwargs:
-                Optional lifecycle hooks:
+                Optional application-object lifecycle hooks, executed during Meld
+                and separate from add_bind_hooks registration callbacks:
                 - pre_hooks
                 - activation_hooks
                 - post_hooks
@@ -5108,6 +5238,10 @@ class Spellbook(Cleanable):
                 str, bytes, bytearray); a spell must be a class, function,
                 lambda, or an existing object instance.
                 Also raised when resolvable is not a bool.
+            HookExecutionError:
+                A registration callback failed; the original error is chained.
+                Activation failure retires its unpublished Spell/index. Post
+                failure does not undo the already completed registration.
         """
         self.check_cleaned()
         if spell is None:
@@ -5146,9 +5280,12 @@ class Spellbook(Cleanable):
                     binding_keys=None,
                 ),
         ):
+            new_spell: Optional[Spell] = None
+            registration_started = False
             try:
                 permissions_enum = EnumHelpers.convert_enum_and_check(permissions, Permissions)
                 existence_enum = EnumHelpers.convert_enum_and_check(existence, Existence)
+                bind_hooks = self._bind.capture_hooks()
                 new_spell = self._bind.bind(
                     permissions=permissions_enum,
                     spell=spell,
@@ -5156,6 +5293,7 @@ class Spellbook(Cleanable):
                     binding_name=binding_name,
                     profile=profile,
                     resolvable=resolvable,
+                    _lifecycle_hooks=bind_hooks,
                     existence=existence_enum,
                     aetheric_frame=self._aetheric_frame_name,
                     configured_disposal_method_names=(
@@ -5174,7 +5312,10 @@ class Spellbook(Cleanable):
                     },
                 )
 
-                if Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame_name):
+                if (
+                        new_spell.spell_id in self._spell_ids
+                        or Spellbook._aether._check_for_spell(new_spell.spell_id, self._aetheric_frame_name)
+                ):
                     self._logger.error(
                         f"Spell with ID {new_spell.spell_id} already exists in the registry.",
                         "bind",
@@ -5184,7 +5325,7 @@ class Spellbook(Cleanable):
                         "Spell ID collision detected. spell_id is computed from the spell's bind-time \n"
                         "fingerprint (e.g., structural profile, lookup signature, existence, and resolved \n"
                         "disposal metadata). The existing spell with this id is already registered in the \n"
-                        "Aether for this frame. If you intended to register a distinct spell, ensure its \n"
+                        "Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its \n"
                         "bind-time fingerprint differs so it produces a unique spell_id."
                     )
 
@@ -5194,6 +5335,7 @@ class Spellbook(Cleanable):
                 # Framewide one-active-signature-per-frame gate (replaces the old
                 # local-only lookup-key check): claim before committing local maps.
                 self._aetheric_frame.claim_lookup(new_spell._key, new_spell.spell_id)
+                registration_started = True
                 self._lookup_spells[new_spell._key] = spell_index
                 self._spells[spell_index] = new_spell
                 self._register_owned_spell_id(new_spell.spell_id, new_spell)
@@ -5298,8 +5440,11 @@ class Spellbook(Cleanable):
                         self._aetheric_frame_name,
                     )
                     self._publish_spell_record_to_nexus(new_spell)
+                Bind.execute_post_hooks(new_spell, bind_hooks)
                 return new_spell.spell_id
             except Exception as e:
+                if new_spell is not None and not registration_started:
+                    Bind._cleanup_unpublished_spell(new_spell, new_spell.spell_index)
                 self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
                 raise
 
@@ -5756,6 +5901,7 @@ class Spellbook(Cleanable):
                 origin_spellbook_id=self._id,
                 origin_frame_name=self._aetheric_frame_name,
                 origin_dynamic=self._conjure_dynamic_hint,
+                origin_bind_hook_names=self._bind.get_hook_names(),
             )
             self._configuration_locked = True
             return
@@ -5774,6 +5920,7 @@ class Spellbook(Cleanable):
                 origin_spellbook_id=self._id,
                 origin_frame_name=self._aetheric_frame_name,
                 origin_dynamic=self._conjure_dynamic_hint,
+                origin_bind_hook_names=self._bind.get_hook_names(),
             )
             self._configuration_locked = True
 

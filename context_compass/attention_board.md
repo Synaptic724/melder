@@ -81,8 +81,13 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| graduation_configuration_implementation | in_progress | implementation | codex | updater_0 | none | Implement normal configuration and empty-Book graduation. | No parent, inherited spells or transferred Book; independent hooks. | Source and focused tests ready for review; assets held. | tickets/tasks/2026-09-22_implement_graduation_configuration_and_hook_ownership_task.md | 2026-09-22T11:09:31Z | REQUIRED |
+| graduation_configuration | review | handoff | codex | updater_0 | none | Discuss normal configuration selection and initial Bind callback setup. | Frame-wide rules and missing configuration-to-Bind bridge recorded. | Owner settles the setup contract before runtime edits. | tickets/epics/2026-09-22_graduated_conduit_spellbook_ownership_and_configuration_epic.md | 2026-09-22T10:45:27Z | REQUIRED |
+| graduation_ownership_regressions | review | handoff | codex | updater_0 | none | Discuss optional configuration and graduation ownership before runtime edits. | 32 intended failures, 3 controls pass; focused epic drafted. | Owner settles the repair contract. | tickets/tasks/2026-09-22_add_graduation_ownership_red_regressions_task.md | 2026-09-22T10:37:51Z | REQUIRED |
 | next_version_release | review | handoff | codex | updater_0 | none | Owner reviews or extends the next-version release draft. | Purge inputs, modes, scope and disposal documented. | Owner selects further release work. | tickets/tasks/2026-09-21_draft_next_version_release_task.md | 2026-09-21T00:33:00Z | REQUIRED |
-| bind_lifecycle_hooks | review | handoff | codex | updater_0 | none | Owner reviews the full impact map and selects implementation. | Recording, replay, cleanup and all affected owners mapped. | Owner selects the implementation tranche. | tickets/tasks/2026-09-21_investigate_bind_lifecycle_hooks_task.md | 2026-09-21T10:46:10Z | REQUIRED |
+| bind_lifecycle_hooks | review | handoff | codex | updater_0 | none | Owner reviews source before approving asset generation. | Book/Conduit APIs complete; 729 tests pass; assets unchanged. | Owner approves code or requests revisions. | tickets/tasks/2026-09-21_implement_bind_lifecycle_hooks_task.md | 2026-09-21T12:10:10Z | REQUIRED |
+| pooled_hook_discovery | review | handoff | codex | updater_0 | none | Discuss pool baseline and separate graduation Book adoption. | Source-confirmed Meld/Space retention and parent Bind aliasing. | Owner selects the next implementation step. | tickets/tasks/2026-09-22_investigate_pooled_conduit_hook_reset_task.md | 2026-09-22T10:13:25Z | REQUIRED |
+| local_hook_tracking | ready | handoff | codex | updater_0 | none | Resume API/flag work after the requested lifecycle investigation. | Read-cost evidence retained; source not yet edited. | Owner resumes implementation discussion. | tickets/tasks/2026-09-22_add_local_hook_setters_and_tracking_task.md | 2026-09-22T10:09:11Z | HELPFUL |
 | release_0_2_37_to_0_2_43 | review | handoff | codex | updater_0 | none | Owner reviews the 0.2.43 release document. | Verified release date, completed-work map and migration notes. | Owner accepts draft or requests revisions. | tickets/tasks/2026-09-20_prepare_0_2_37_to_0_2_42_release_document_task.md | 2026-09-20T07:54:22Z | REQUIRED |
 | benchmark_spell_id_lookup | review | handoff | codex | updater_0 | none | Owner reviews keyword migration and separate setup finding. | 134 ID selectors corrected; original gauntlet and scoped checks pass. | Owner accepts repair or directs distinct setup follow-up. | tickets/tasks/2026-09-19_repair_benchmark_spell_id_lookup_task.md | 2026-09-20T01:15:40Z | REQUIRED |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
@@ -113,11 +118,22 @@ Message alert rules
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
+- graduation_configuration_implementation: SWITCH_TRIGGER is tested code ready for owner review.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-22_implement_graduation_configuration_and_hook_ownership_task.md.
+- graduation_configuration: SWITCH_TRIGGER is source-backed configuration rules ready for discussion.
+  RESUME_HIERARCHY: tickets/epics/2026-09-22_graduated_conduit_spellbook_ownership_and_configuration_epic.md.
+- graduation_ownership_regressions: SWITCH_TRIGGER is verified red tests ready for discussion.
+  RESUME_HIERARCHY: tickets/epics/2026-09-22_graduated_conduit_spellbook_ownership_and_configuration_epic.md ->
+  tickets/tasks/2026-09-22_add_graduation_ownership_red_regressions_task.md.
 - next_version_release: SWITCH_TRIGGER is draft completion and owner review.
   RESUME_HIERARCHY: tickets/tasks/2026-09-21_draft_next_version_release_task.md.
-- bind_lifecycle_hooks: SWITCH_TRIGGER is owner selection of implementation after the expanded impact review.
+- bind_lifecycle_hooks: SWITCH_TRIGGER is tested code ready for owner approval; build assets remain held.
   RESUME_HIERARCHY: tickets/epics/2026-09-20_bind_lifecycle_hooks_and_reference_strategies_epic.md ->
-  tickets/tasks/2026-09-21_investigate_bind_lifecycle_hooks_task.md.
+  tickets/tasks/2026-09-21_implement_bind_lifecycle_hooks_task.md.
+- pooled_hook_discovery: SWITCH_TRIGGER is recorded pool and graduation lifecycle evidence.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-22_investigate_pooled_conduit_hook_reset_task.md.
+- local_hook_tracking: SWITCH_TRIGGER is completion of the owner's requested lifecycle investigation.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-22_add_local_hook_setters_and_tracking_task.md.
 - release_0_2_37_to_0_2_43: SWITCH_TRIGGER is owner acceptance or requested edits to the release draft.
   RESUME_HIERARCHY: tickets/tasks/2026-09-20_prepare_0_2_37_to_0_2_42_release_document_task.md.
 - benchmark_spell_id_lookup: SWITCH_TRIGGER is owner review or direction on the separate shared-gauntlet setup failure.

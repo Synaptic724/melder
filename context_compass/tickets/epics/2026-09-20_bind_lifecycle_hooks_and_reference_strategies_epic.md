@@ -7,17 +7,40 @@
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-20T08:04:19Z
-- Updated: 2026-09-21T10:46:10Z
-- Target Window: cross-component discovery complete; implementation not started
+- Updated: 2026-09-21T12:10:10Z
+- Target Window: source implemented and qualified; owner code review before asset generation
 - Related Program/Initiative: Spellbook registration, Bind admission and Spell lifecycle
 
 ## Current Authorization
-Discovery authorized on 2026-09-21. The owner selected Spellbook-level pre/activation/post bind hooks,
-with activation receiving the Spell context, and requested a verdict on lesser-conduit binding.
-Active task: tickets/tasks/2026-09-21_investigate_bind_lifecycle_hooks_task.md. No runtime hook
-implementation or generated asset changes are authorized in this discovery tranche.
-The owner's follow-up explicitly expands discovery to Crystallizer and every affected consumer.
-The impact map below records required changes, existing machinery to retain and conditional work.
+Implementation authorized on 2026-09-21 after the expanded cross-component discovery.
+Active task: tickets/tasks/2026-09-21_implement_bind_lifecycle_hooks_task.md.
+The owner explicitly requires code review before build assets are generated. Implement source and
+focused tests now; hold all generated assets. The impact map below is the approved implementation
+boundary, with marker-only restore compatibility retained and automatic callback reattachment optional.
+
+## Implementation Ready for Code Review
+Owner review follow-up implemented: matching Conduit.add_bind_hooks and Conduit.clear_bind_hooks
+facades delegate to the same owning Book registry with normal/liveness guards. Every new public
+Spellbook API in this feature is now reachable through its owning Conduit.
+
+Implemented in the active task: Spellbook.add_bind_hooks(pre, activation, post), clear_bind_hooks,
+immutable per-bind callback capture, pre/new-Spell/post dispatch, deterministic teardown and recording
+markers. Owner explicitly approved clearing/re-registration. Updates apply to subsequent binds,
+including nested calls; current binds keep their captured stages. Pre rejects by raising and callback
+returns are ignored. Post observes registration completion before outer commit.
+
+Both active and inactive paths participate. Rejected activated allocations retire locally; native
+duplicate IDs are checked before map publication. Ordinary Meld hooks remain separate. Recorder
+freeze/re-freeze and late updates preserve complete book twins; generic restore and live graft
+behavior are qualified without serializing callback code.
+
+729 selected tests pass, including 58 new cases. All 15 build-asset Python files are unchanged.
+No generators ran. Review map: artifacts/bind_hooks_implementation_20260921/code_review.md.
+Canonical documentation promotion, asset refresh and ticket closure await owner code approval.
+Conduit/Meld clearing has its own next investigation task; it is not part of these source changes.
+
+The detailed discovery evidence below records pre-implementation source ranges; use the current
+implementation task and symbol-based review map when navigating the modified source.
 
 ## Problem / Opportunity
 Applications need to extend registration itself: check an incoming reference using user-added
@@ -165,7 +188,7 @@ compatibility checks rather than a second hook registry.
 | Restore/preflight | Existing generic hook shortfalls remain; fresh-book callback reattachment is a separate optional loader addition before replayed binds. |
 | Graft | Receiving live book hooks participate through normal bind/bind_inactive. Source callbacks are not copied by an index graft. |
 | Fluent/decorator/scan/Conduit | Reuse canonical Book/Bind dispatch; avoid duplicate callbacks or new per-call forwarding arguments. Lesser bind doors remain disabled. |
-| Preset books/upgrade | Fresh Book means fresh Bind and empty callback storage by default; shared configuration must not imply shared callbacks. |
+| Preset books/upgrade | The preset factory creates a fresh Bind; current upgrade discards the returned Book. Adoption/ownership is tracked in the runtime-hook lifecycle epic. |
 | Transactions/concurrency | Preserve bind admission, nested sessions and structural staging. Specify callback failure, reentrancy and registration-update ordering. |
 | Compiler/Creations/cache | Preserve normal completion, staged validation, existing-object registration and automatic cache behavior. Add no new per-Meld feature checks. |
 | Nexus/MR | Preserve active/staged publication order and current native payloads; no independent callback storage or arbitrary metadata persistence promise. |
@@ -267,10 +290,10 @@ Evidence/read targets:
   hook registration/cleanup under the chosen contract; preserve lock order. If current-call callback
   snapshots are needed because registration can mutate during invocation, document that correctness
   reason. Do not add asynchronous dispatch or a process-global synchronization framework.
-- **New books stay isolated.** create_new_preset_spellbook copies frame name and configuration only.
-  A lesser borrows definitions and cannot bind. Upgrade creates a new Book/Bind; callback inheritance
-  is not implied by shared configuration or by preserved creations. Recommend empty hooks on that
-  new book unless explicitly configured.
+- **Preset factory isolation is not upgrade adoption.** create_new_preset_spellbook copies frame
+  name and configuration into a fresh Book/Bind. Later source review found that upgrade_to_normal
+  discards its return and retains the old Book references. Do not claim upgrade clears bind hooks.
+  Full adoption and parent isolation are tracked in the separate runtime-hook lifecycle epic.
 - **Downstream publication remains native.** Activation precedes profile completion, structural
   staging, crystal capture, MR world entry and Nexus publication. Staged members remain parked and
   do not gain active Nexus publication simply because an activation hook ran. Current Nexus profile
@@ -380,15 +403,17 @@ relevant implementations before editing; documentation and search hits are navig
 - [x] Capture the three requested bind stages and distinguish existing creation hooks.
 - [x] Trace registration/configuration/identity boundaries and settle direct registration/activation context.
 - [x] Map recording, persistence, restore/graft, cleanup, copying, transactions and publication impact.
-- [ ] Create approved stories/tasks and patch contracts with focused failing regressions.
-- [ ] Implement pre-bind strategies, Spell activation customization and post-bind callbacks.
+- [x] Create the approved implementation task and patch contracts with focused failing regressions.
+- [x] Implement pre-bind strategies, Spell activation customization and post-bind callbacks.
 - [ ] Qualify failure, identity, wrapper, replay and existing-hook compatibility; update docs/assets.
 
-## Stories (Proposed; Not Yet Created)
-- [ ] Define strategy registration, lifecycle payloads, ordering and errors.
-- [ ] Add pre-bind reference-checking strategies at the agreed admission point.
-- [ ] Invoke bind activation with the newly constructed Spell before normal registration completes.
-- [ ] Add post-bind hooks and qualify the complete lifecycle across entry points and replay.
+## Implementation Slices
+Consolidated in TASK-2026-09-21-implement-bind-lifecycle-hooks:
+- [x] Define strategy registration, lifecycle payloads, ordering and errors.
+- [x] Add pre-bind reference-checking strategies at the agreed admission point.
+- [x] Invoke bind activation with the newly constructed Spell before normal registration completes.
+- [x] Add post-bind hooks and qualify the complete lifecycle across entry points and replay.
+- [ ] Owner reviews source, then authorizes documentation/asset promotion.
 
 ## Acceptance Criteria
 - A user can add multiple reference-checking strategies and observe the documented execution order.
@@ -403,8 +428,8 @@ relevant implementations before editing; documentation and search hits are navig
 - Ordinary unconfigured binding and Meld behavior retain compatibility.
 
 ## Validation / Test Approach
-Discovery: 13 current-runtime characterization/integration checks passed; scoped lint passed.
-The future bind-hook implementation itself is not written or tested yet.
+Implementation: 729 selected tests passed, including 58 new lifecycle/recording/facade cases. See the active
+implementation task for command/evidence, scoped lint results and the unchanged build-asset check.
 
 Use the Required regression matrix above. Assert final state and user-visible behavior rather than
 only callback counts or private fields. No field-by-field mutation enforcement is being introduced.
@@ -418,13 +443,16 @@ only callback counts or private fields. No field-by-field mutation enforcement i
 
 ## Open Questions
 - Resolved: hooks are registered directly on Spellbook and associated with its Bind component.
-- What are their exact signatures, result types and failure contracts?
+- Resolved: add_bind_hooks accepts ordered pre/activation/post callback sequences; clear_bind_hooks
+  removes all stages for future binds. Pre receives the reference; activation/post receive Spell.
+  Returns are ignored; callback exceptions wrap phase/name/cause in HookExecutionError.
 - Resolved: activation receives the actual newly constructed Spell; no separate field-edit framework.
-- When does post-bind run relative to commit, structural work and passive publication?
+- Resolved: post runs after per-binding registration/publication within the existing envelope,
+  before outer commit. Already-published state and external effects have no new rollback guarantee.
 - Resolved by source: bind_inactive shares construction, wrappers route to bind, graft uses a live
   receiving book, and full restore constructs fresh books without callback reattachment.
-- Choose registration append/replacement/removal and late-update behavior. If updates are allowed,
-  include current marker re-emission and current-call iteration semantics.
+- Resolved: append and clear work on live books before/after conjure. A captured immutable callback
+  set preserves current-operation ordering; late updates refresh the complete recorded book twin.
 - Recommended: keep full restore's existing code-participation shortfalls. Automatic callback
   reattachment requires the explicit pre-replay extension described above and owner selection.
 
@@ -517,16 +545,15 @@ only callback counts or private fields. No field-by-field mutation enforcement i
 Record shared lifecycle decisions here; future child tasks own source traces and verification evidence.
 
 ## Context / Handoff Summary
-Expanded discovery is complete. Start at Cross-Component Impact Map and its Crystallizer/lifecycle
-subsections above; they supersede the initial core-only plan. Direct Book setup and actual-new-Spell
-activation are owner-settled. Do not reopen a field-edit/rehash framework or move registration to config.
+Graduation correction: the preset factory returns a fresh Book, but upgrade_to_normal currently does
+not adopt it. Bind hooks are not thereby reset. See EPIC-2026-09-21-runtime-hook-lifecycle-and-adjustment;
+this separate lifecycle investigation is documentation-only by owner instruction.
 
-Required edits: Book/Bind callbacks and cleanup, active/inactive post notification, and value-only
-bind-stage markers in the existing book emitter. Generic crystals, record storage, preflight and
-restore already transport/report arbitrary names. Full restore has no callback reattachment seam;
-recommend retaining honest shortfalls. Live receiving-book graft uses its own hooks. Preserve native
-compiler, cache, Nexus and MR flows. The regression matrix and re-entry references are above.
-
-13 earlier current-runtime checks and lint passed. This expanded review added source findings, not
-runtime features or new test execution. Lesser binding remains disabled; ordinary Book.bind already
-works before explicit configuration. No production hook feature or asset generation has been started.
+Source implementation is complete and ready for owner code review. Read the implementation task and
+artifacts/bind_hooks_implementation_20260921/code_review.md. 729 tests pass; 58 are new regressions.
+Direct Book setup, matching Conduit facades, actual-Spell activation and owner-approved clearing
+are implemented. Persistence
+remains value markers plus honest restore shortfalls; graft uses its receiving Book callbacks.
+No generated assets changed. Keep generators held until explicit code approval, then promote the
+authored patch contracts and regenerate the normal delivery assets. The existing Conduit/Meld hook
+systems are a separate investigation in TASK-2026-09-21-investigate-runtime-hook-clearing.

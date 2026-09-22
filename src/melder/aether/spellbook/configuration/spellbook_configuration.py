@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Callable, ClassVar, Dict, Iterator, List, Optional, Tuple, Type
+from typing import Any, Callable, ClassVar, Dict, Iterator, List, Optional, Sequence, Tuple, Type
 
 
 from melder.utilities.helpers.ulid_factory import new_ulid
@@ -267,6 +267,7 @@ class SpellbookConfiguration(Cleanable):
             origin_spellbook_id: Optional[str] = None,
             origin_frame_name: Optional[str] = None,
             origin_dynamic: Optional[bool] = None,
+            origin_bind_hook_names: Sequence[str] = (),
     ) -> None:
         """
         Freezes the configuration property system.
@@ -294,6 +295,10 @@ class SpellbookConfiguration(Cleanable):
             origin_dynamic:
                 Conjure-time dynamic posture; the twin emits only when
                 True (the recorded lane).
+            origin_bind_hook_names:
+                Value-only stage markers supplied by the owning Book. Bind
+                callbacks remain owned by Book/Bind, never by this configuration.
+                Standalone callers omit this argument.
 
         Raises:
             RuntimeError: If the configuration is cleaned.
@@ -312,7 +317,7 @@ class SpellbookConfiguration(Cleanable):
             # still fire or recorded worlds never carry their spellbooks
             # (restore_engine_2026_07_07 round-trip finding).
             self._emit_spellbook_twin_when_recording(
-                origin_spellbook_id, origin_frame_name, origin_dynamic
+                origin_spellbook_id, origin_frame_name, origin_dynamic, origin_bind_hook_names
             )
             return
         if not self.validate():
@@ -320,7 +325,7 @@ class SpellbookConfiguration(Cleanable):
         with self._lock:
             self._frozen = True
         self._emit_spellbook_twin_when_recording(
-            origin_spellbook_id, origin_frame_name, origin_dynamic
+            origin_spellbook_id, origin_frame_name, origin_dynamic, origin_bind_hook_names
         )
 
     def _emit_spellbook_twin_when_recording(
@@ -328,6 +333,7 @@ class SpellbookConfiguration(Cleanable):
             origin_spellbook_id: Optional[str],
             origin_frame_name: Optional[str],
             origin_dynamic: Optional[bool],
+            origin_bind_hook_names: Sequence[str] = (),
     ) -> None:
         """
         Emit the spellbook twin when a freeze carries origin identity.
@@ -349,6 +355,9 @@ class SpellbookConfiguration(Cleanable):
               collections stringify per element, everything else
               stringifies whole (lossy values surface as restore
               shortfalls, never as record corruption).
+            - Bind-stage markers are supplied by the Book owner and combined
+              with this configuration's existing hook names. Every emission
+              replaces the complete book twin, including when hooks are cleared.
 
         Args:
             origin_spellbook_id:
@@ -357,6 +366,9 @@ class SpellbookConfiguration(Cleanable):
                 Owning frame name (the twin's parent edge).
             origin_dynamic:
                 Conjure-time dynamic posture; emission requires True.
+            origin_bind_hook_names:
+                Nonempty bind stages for this Book; callbacks are not serialized
+                or retained on the configuration. Empty means no bind markers.
 
         Returns:
             None.
@@ -392,6 +404,7 @@ class SpellbookConfiguration(Cleanable):
                         hook_names.append("conduit:{0}".format(hook_name))
                     for hook_name in self._meld_hooks.get(origin_spellbook_id, {}).keys():
                         hook_names.append("meld:{0}".format(hook_name))
+                    hook_names.extend(origin_bind_hook_names)
                     crystallizer.emit(
                         SpellbookCrystal(
                             spellbook_id=origin_spellbook_id,

@@ -22,7 +22,9 @@ Additional findings to carry into implementation:
   not public registered-book removal.
 - A post callback at registration completion is not an outer-transaction commit notification.
   Explicit creation-hook kwargs attach after activation and replace only their supplied Spell lists.
-- New preset/upgrade books receive fresh Bind storage; shared configuration does not share callbacks.
+- The preset factory returns fresh Bind storage; shared configuration does not share callbacks.
+  Correction from later source review: upgrade_to_normal discards the factory result, so its attached
+  Book is not replaced and its bind hooks are not reset. See the runtime-hook lifecycle epic.
   Preserve native compiler/cache, Nexus and MR publication paths and their existing payload limits.
 
 The expanded review is source-based. The 13 executed checks below remain characterization of the

@@ -1,7 +1,7 @@
 import inspect
 import threading
 import hashlib
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Tuple, Union, ClassVar
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Tuple, Union, ClassVar, TypeVar
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spellbook import Spellbook
@@ -19,6 +19,15 @@ from melder.aether.conduit.conduit_ward.permissions.permissions import Permissio
 from melder.aether.spellbook.spell import Spell
 from melder._build_assets._bind_guard.bind_guard import INTERNAL_MANIFEST
 from melder.utilities.custom_exceptions.internal_registration_error import InternalRegistrationError
+from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
+
+
+BindHookSubject = TypeVar("BindHookSubject")
+BindLifecycleHooks = tuple[
+    tuple[Callable[[Any], object], ...],
+    tuple[Callable[[Spell], object], ...],
+    tuple[Callable[[Spell], object], ...],
+]
 
 
 def _internal_identity_of(candidate: Any) -> Tuple[str, str]:
@@ -138,6 +147,11 @@ class Bind(Cleanable):
       disabling it does not change naming, lifetime, or ownership rules.
     - Classes and existing objects declared under a Protocol spellframe must
       satisfy its directly declared public members before Spell creation.
+    - Owns the book's registration-hook sequences, distinct from application
+      creation hooks. One immutable callback set is retained for each bind.
+    - User callbacks execute synchronously outside the construction lock.
+      Pre checks receive the input; activation receives the unpublished Spell.
+      Spellbook signals post only after its registration work completes.
 
     Registration:
         MELDER KERNEL - guarded. Invoked through `Spellbook.bind(...)`; users
@@ -178,9 +192,12 @@ class Bind(Cleanable):
         "_lock",
         "_spellbook",
         "_spell_examiner",
+        "_lifecycle_hooks",
     ]
+    _EMPTY_HOOKS: ClassVar[BindLifecycleHooks] = ((), (), ())
+    _HOOK_NAMES: ClassVar[tuple[str, ...]] = ("bind:pre", "bind:activation", "bind:post")
 
-    def __init__(self, spellbook: Spellbook):
+    def __init__(self, spellbook: Spellbook) -> None:
         """
         Initialize the spell registration gateway for one spellbook.
 
@@ -192,6 +209,8 @@ class Bind(Cleanable):
             - Serializes registration work behind an internal lock.
             - Treats the supplied spellbook as the destination authority for
               all created spell bindings.
+            - Owns callback tuple storage, but only borrows the callback objects;
+              cleanup releases references without disposing user callbacks.
 
         Returns:
             None.
@@ -201,6 +220,7 @@ class Bind(Cleanable):
         self._spellbook: Spellbook = spellbook
         self._lock = threading.RLock()
         self._spell_examiner: SpellExaminer = SpellExaminer()
+        self._lifecycle_hooks: BindLifecycleHooks = self._EMPTY_HOOKS
 
     def cleanup(self) -> None:
         """
@@ -213,6 +233,9 @@ class Bind(Cleanable):
         Contract:
         - Idempotent and lock-guarded.
         - Cleans the owned `SpellExaminer` before dropping references.
+        - Releases stored callbacks without invoking their cleanup methods.
+          An in-flight bind retains its own immutable callback set until it ends;
+          callers must quiesce runtime work before destroying the owning book.
         - Leaves future callers to fail through `check_cleaned()`.
 
         Returns:
@@ -228,7 +251,193 @@ class Bind(Cleanable):
                 self._spell_examiner.cleanup()
             del self._spellbook
             del self._spell_examiner
+            del self._lifecycle_hooks
         del self._lock
+
+    def add_hooks(
+            self,
+            *,
+            pre: Optional[Sequence[Callable[[Any], object]]] = None,
+            activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+            post: Optional[Sequence[Callable[[Spell], object]]] = None,
+    ) -> None:
+        """
+        Append validated registration callbacks for this book's future binds.
+
+        Contract:
+            Validates all supplied stages before changing any. Preserves order
+            and repeated registrations; None or an empty sequence adds nothing.
+            Replaces the immutable registry under the Bind lock, then asks the
+            owning Book to refresh its recording markers before releasing it.
+            The Book emission seam takes no Book registry lock.
+
+        Args:
+            pre: Synchronous reference checks; reject by raising.
+            activation: Callbacks receiving the newly constructed Spell.
+            post: Callbacks receiving the completed active or parked binding.
+
+        Returns:
+            None. Callback return values do not replace the binding target.
+
+        Raises:
+            TypeError: If a supplied item is not callable.
+            RuntimeError: If this Bind has been cleaned.
+        """
+        self.check_cleaned()
+        additions: BindLifecycleHooks = (
+            () if pre is None else tuple(pre),
+            () if activation is None else tuple(activation),
+            () if post is None else tuple(post),
+        )
+        for stage_name, callbacks in zip(self._HOOK_NAMES, additions):
+            for callback in callbacks:
+                if not callable(callback):
+                    raise TypeError(f"{stage_name} hooks must contain only callable objects.")
+        if not any(additions):
+            return
+        with self._lock:
+            self.check_cleaned()
+            self._lifecycle_hooks = (
+                self._lifecycle_hooks[0] + additions[0],
+                self._lifecycle_hooks[1] + additions[1],
+                self._lifecycle_hooks[2] + additions[2],
+            )
+            self._spellbook._emit_bind_hook_presence()
+
+    def clear_hooks(self) -> None:
+        """
+        Release all registered bind callbacks and refresh recorded presence.
+
+        Contract:
+            Serializes replacement and emission with registration. Already-running
+            binds keep their captured tuple; later binds use the empty registry.
+            Does not clean user callback objects. Clearing an empty registry is
+            a no-op, including for the recording journal.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If this Bind has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            if not any(self._lifecycle_hooks):
+                return
+            self._lifecycle_hooks = self._EMPTY_HOOKS
+            self._spellbook._emit_bind_hook_presence()
+
+    def capture_hooks(self) -> BindLifecycleHooks:
+        """
+        Retain one immutable callback set for a complete binding operation.
+
+        Contract:
+            Returns the current tuple reference without copying its contents.
+            Atomic tuple replacement keeps all three stages from one registration
+            state, even if callbacks or other threads add/clear hooks mid-bind.
+            This retention is required for operation consistency, not a defensive
+            copy of an owned mutable registry.
+
+        Returns:
+            BindLifecycleHooks: Ordered pre, activation and post tuples.
+
+        Raises:
+            RuntimeError: If this Bind has been cleaned.
+        """
+        self.check_cleaned()
+        return self._lifecycle_hooks
+
+    def get_hook_names(self) -> tuple[str, ...]:
+        """
+        Describe nonempty registration stages using value-only record markers.
+
+        Returns:
+            tuple[str, ...]: Stage names in pre/activation/post order. Callback
+            functions and their identities never enter the persistence payload.
+
+        Raises:
+            RuntimeError: If this Bind has been cleaned.
+        """
+        return tuple(
+            name for name, callbacks in zip(self._HOOK_NAMES, self.capture_hooks()) if callbacks
+        )
+
+    @staticmethod
+    def execute_post_hooks(spell: Spell, hooks: BindLifecycleHooks) -> None:
+        """
+        Notify the captured post stage after Book registration has completed.
+
+        Args:
+            spell: The actual active or parked Spell after normal publication.
+            hooks: The callback set retained at this bind's entry.
+
+        Contract:
+            Runs outside Bind's construction lock. This is a registration
+            notification, not an outer-transaction commit notification; failures
+            do not undo published state or arbitrary external callback effects.
+
+        Returns:
+            None.
+
+        Raises:
+            HookExecutionError: A callback failed; later callbacks are skipped.
+        """
+        if hooks[2]:
+            Bind._execute_bind_hooks(hooks[2], spell, "post_bind")
+
+    @staticmethod
+    def _execute_bind_hooks(
+            hooks: Sequence[Callable[[BindHookSubject], object]],
+            subject: BindHookSubject,
+            phase: str,
+    ) -> None:
+        """
+        Invoke one ordered synchronous stage with its unchanged subject.
+
+        Args:
+            hooks: Captured callbacks for this stage.
+            subject: Original reference or actual Spell, according to the stage.
+            phase: Stable phase name used by HookExecutionError.
+
+        Returns:
+            None. Return values are ignored; a check rejects by raising.
+
+        Raises:
+            HookExecutionError: Wraps and chains the first ordinary callback
+                exception, preserving its name and phase. Later callbacks stop.
+        """
+        for hook in hooks:
+            try:
+                hook(subject)
+            except Exception as error:
+                # Callbacks are external callables; __name__ is not contractual.
+                hook_name = getattr(hook, "__name__", repr(hook))
+                raise HookExecutionError(phase, hook_name, error) from error
+
+    @staticmethod
+    def _cleanup_unpublished_spell(spell: Spell, spell_index: SpellIndex) -> None:
+        """
+        Retire a newly constructed Spell after failure before publication.
+
+        Args:
+            spell: Unpublished allocation owned by the failing bind operation.
+            spell_index: Its newly allocated index, never an existing target index.
+
+        Contract:
+            Selects the existing local Spell teardown path; public Book removal
+            requires a registered Spell and must not run here. Cleans the owned
+            index even if Spell cleanup fails. Supplied application objects are
+            references only and are never disposed by this teardown.
+
+        Returns:
+            None.
+        """
+        spell._spellbook_cleanup = True
+        try:
+            spell.cleanup()
+        finally:
+            spell_index.cleanup()
 
     def bind(
             self,
@@ -244,6 +453,7 @@ class Bind(Cleanable):
             disposal_method_names: Optional[Sequence[str]] = None,
             enforce_priority_disposal_methods: bool = False,
             resolvable: bool = True,
+            _lifecycle_hooks: Optional[BindLifecycleHooks] = None,
             **kwargs: Any,
     ) -> Union[Spell, Any]:
         """
@@ -271,6 +481,9 @@ class Bind(Cleanable):
                 True, last when False (default). Book order owns shared names in both modes.
             resolvable (bool): Native resolution capability for this Spell version.
                 False permits descriptive Protocol targets; it does not relax other binding rules.
+            _lifecycle_hooks: Internal Book-captured callback set, retained through
+                its later post stage. None captures the current registry when the
+                actual target is supplied, including deferred decorator calls.
         Contract:
             - When `spell` is omitted, returns a decorator that will bind the
               later target with the supplied policy and lifecycle settings.
@@ -316,6 +529,7 @@ class Bind(Cleanable):
                     disposal_method_names=disposal_method_names,
                     enforce_priority_disposal_methods=enforce_priority_disposal_methods,
                     resolvable=resolvable,
+                    _lifecycle_hooks=_lifecycle_hooks,
                     **kwargs,
                 )
 
@@ -334,6 +548,7 @@ class Bind(Cleanable):
                 disposal_method_names=disposal_method_names,
                 enforce_priority_disposal_methods=enforce_priority_disposal_methods,
                 resolvable=resolvable,
+                _lifecycle_hooks=_lifecycle_hooks,
                 **kwargs,
             )
 
@@ -350,6 +565,7 @@ class Bind(Cleanable):
             disposal_method_names: Optional[Sequence[str]] = None,
             enforce_priority_disposal_methods: bool = False,
             resolvable: bool = True,
+            _lifecycle_hooks: Optional[BindLifecycleHooks] = None,
             **kwargs: Any,
     ) -> Spell:
         """
@@ -386,6 +602,14 @@ class Bind(Cleanable):
             disposal_method_names (Optional[Sequence[str]]): Ordered per-spell candidates.
             enforce_priority_disposal_methods (bool): Book block first when True, last otherwise.
             resolvable (bool): Immutable resolution capability, validated before target reflection.
+            _lifecycle_hooks: Optional callback set captured by Book for this operation.
+
+        Hook contract:
+            Pre receives the original reference before reflection. Activation
+            receives the actual Spell immediately after construction and before
+            profile completion. Both run outside the construction lock. Activation
+            or profile failure retires the unpublished Spell and its fresh index.
+            Native fingerprint rules are unchanged and callback returns are ignored.
 
         Disposal contract:
             Only names present in the existing ClassBindingProfile are retained.
@@ -407,8 +631,13 @@ class Bind(Cleanable):
             ValueError:
                 - If the binding is otherwise invalid (existence errors, lambda
                   without name, etc.).
+            HookExecutionError: A pre-bind or bind-activation callback failed.
         """
+        hooks = self.capture_hooks() if _lifecycle_hooks is None else _lifecycle_hooks
+        if hooks[0]:
+            self._execute_bind_hooks(hooks[0], spell, "pre_bind")
         with self._lock:
+            self.check_cleaned()
             Bind._validate_resolvable(resolvable)
             # 0. Block registration of Melder internal objects/classes.
             assert_allowed(spell, context="bind")
@@ -544,9 +773,18 @@ class Bind(Cleanable):
                 **kwargs,
             )
 
+        # User callbacks may register hooks or bind recursively; do not hold the
+        # construction lock while calling them. The captured tuples stay stable.
+        completed = False
+        try:
+            if hooks[1]:
+                self._execute_bind_hooks(hooks[1], new_spell, "bind_activation")
             provisional_general_profile.complete_with_spell(new_spell)
-
+            completed = True
             return new_spell
+        finally:
+            if not completed:
+                self._cleanup_unpublished_spell(new_spell, spell_index)
 
     #region Spell Inspector Helpers
     @staticmethod
