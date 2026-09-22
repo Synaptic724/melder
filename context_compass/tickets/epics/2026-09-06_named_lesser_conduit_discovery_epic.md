@@ -7,8 +7,22 @@
 - Agent Name: codex_1, updater_0
 - Priority: p2
 - Created: 2026-09-06T17:17:54Z
-- Updated: 2026-09-07T17:22:45Z
-- Target Window: Owner-approved design first; implementation not yet authorized.
+- Updated: 2026-09-22T21:16:32Z
+- Target Window: Selected on 2026-09-22; deep implementation trace and concurrency choices ready for review.
+
+## Current Resumption
+Owner selected this epic after purge, graduation, bind hooks and pooled-hook repair were completed.
+Current source evidence and first-slice plan:
+- tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md
+
+The ignored-Spellbook-return prerequisite is resolved by the completed graduation epic.
+Named promotion still needs shared-name collision admission and directory rollback integration.
+Pool return already restores temporary hooks before idle publication; name retirement belongs in
+that lifecycle. Preserve unnamed scope performance and the required structural persistence story.
+
+Owner accepted frame-wide unique active names shared with normal roots and discovery in both modes.
+Recording retains the existing dynamic-mode policy. The owner then requested deeper implementation
+investigation before coding. Packaged generation remains held.
 
 ## Problem / Opportunity
 Applications may need to locate a particular request, session, job, or other live scope without
@@ -110,15 +124,15 @@ contract. Do not ship an index that outlives the scope or silently turns ephemer
 Detailed source ranges, earlier probe results and the deeper 2026-09-07 trace are in the discovery task.
 
 ## Confirmed Contract Direction
+- Frame-wide unique active names are shared by normal roots and named lessers (accepted 2026-09-22).
+- Naming/discovery works in automatic and dynamic mode; recording retains its current dynamic policy.
 - Names are supplied only in the lesser-creation call, including use of a prewarmed shell.
 - Only named conduits enter cloud discovery. Named release unregisters and clears before pool reuse;
   unnamed scope cycles skip cloud registry work.
 - Crystallizer must save and restore named lesser structure. Created-instance state is outside this feature.
 
 ## Remaining Design Proposals (Not Yet Owner-Approved)
-- Optional named lesser discovery in both automatic and dynamic mode.
-- Frame-wide unique active cloud names, reusable after the old scope unregisters. This preserves
-  unambiguous bare-name lookup; parent-qualified names remain an alternative if the owner wants repeats.
+The namespace and runtime-mode defaults above are settled. Remaining implementation details:
 - Root ownership, existing Existence modes, dynamic mutation gates and static-room restrictions remain.
 - Reuse the existing conduit-twin family with explicit lesser parent semantics and compatible old-root input.
 - Preserve required ancestry for named descendants; supporting unnamed nodes can remain outside cloud discovery.
@@ -126,8 +140,8 @@ Detailed source ranges, earlier probe results and the deeper 2026-09-07 trace ar
 - Cloud lookup returns the live borrowed Conduit, not a new object, lease or ownership transfer.
 
 ## Decisions Before Implementation
-1. Confirm both-mode naming/discovery rather than dynamic-only.
-2. Confirm frame-wide active-name uniqueness versus parent-qualified names.
+1. Settled on 2026-09-22: naming/discovery works in automatic and dynamic mode.
+2. Settled on 2026-09-22: frame-wide active-name uniqueness, shared by roots and named lessers.
 3. Decide cloud listing/root-filter behavior and publication ordering; lesser naming is creation-only.
 4. Settle required unnamed ancestry, formation closure, record versioning and restore collision rules.
 5. Decide whether pooled Nexus records are removed or retained as unnamed pooled shells, and whether
@@ -147,13 +161,15 @@ Detailed source ranges, earlier probe results and the deeper 2026-09-07 trace ar
 - Prior naming evidence: tickets/tasks/2026-09-06_named_conduit_semantics_task.md (review).
 - Initial impact discovery: tickets/tasks/2026-09-06_named_conduit_cross_system_discovery_task.md (review).
 - Implementation map: tickets/tasks/completed/2026-09-07_named_conduit_implementation_map_task.md (review; planning only).
+- Current refresh: tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md (review; planning only).
 
 ## Milestones
 - [x] Capture the existing naming/registration/lifetime findings.
 - [x] Initial cross-system trace distinguishes discovery changes from root/persistence/permission boundaries.
 - [x] Record owner requirements for creation-only naming, conditional cloud cleanup and structural persistence.
 - [x] Trace conduit record/capture/fold, both replay drivers and targeted Nexus publication/name consumers.
-- [ ] Obtain remaining decisions on modes, namespace, ancestry/versioning and Nexus lifecycle integration.
+- [x] Confirm frame-wide unique names and both-mode discovery with existing recording policy.
+- [ ] Settle named publication/load concurrency, ancestry/versioning and Nexus lifecycle integration.
 - [ ] Create precise implementation tasks and required patch contracts after decisions.
 - [ ] Implement, verify, document and obtain acceptance.
 
@@ -304,10 +320,43 @@ No commits, pushes, asset regeneration or runtime implementation are authorized 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-22T21:00:42Z
+  TYPE: PLAN
+  CLAIM: Owner selected this epic again. Current source refresh removes the completed graduation
+    ownership repair from pending prerequisites and retains its named-promotion integration.
+    First runtime slice is directory/acquisition/reset; structural replay and Nexus remain required.
+  EVIDENCE:
+  - tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md
+  IMPACT: Resume from current source ranges and the first-slice plan. Frame-wide names and both-mode
+    discovery are recommended choices still awaiting owner direction; generation remains held.
+  NEXT: Settle those naming choices before the first runtime patch/task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-22T21:16:31Z
+  TYPE: FACT
+  CLAIM: Deep implementation research now covers root/discovery consumers, lifecycle/disposal,
+    current hook semantics, record capture/folding, formation selection, both replay drivers,
+    Nexus named lookup and compiled ACL membership. The task carries the regression matrix.
+  EVIDENCE:
+  - tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md
+  IMPACT: Reuse common per-Book replay and current Nexus payloads. Do not add synchronous Rift
+    refresh inside a gated command or assume ordinary lesser cycles participate in LoadGate drain.
+    Named publication ordering and live-load coordination remain explicit patch-contract choices.
+  NEXT: Resolve those two concurrency contracts before runtime implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Noting Behavior
 Keep program choices and cross-story implications here; detailed source evidence stays in the discovery task.
 
 ## Context / Handoff Summary
+2026-09-22: use the current refresh task before the historical source ranges below. Graduation
+ownership is delivered. Directory, lifecycle, structural replay and Nexus integration remain.
+Owner accepted frame-wide names and both-mode discovery. Deeper investigation and regression matrix
+are recorded in the refresh task. Next: finalize named publication/reuse ordering and live-load
+coordination in the first patch contract before runtime implementation.
+
 Initial discovery is recorded, with exact source locations in the cross-system task and four draft stories.
 The existing lesser constructor forces names to None; prior two-mode probing used the post-init setter.
 Owner confirmed creation-only naming, named-only cloud discovery, conditional unregister/name clearing

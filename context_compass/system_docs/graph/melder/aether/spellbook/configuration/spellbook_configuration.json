@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/configuration/spellbook_configuration.py",
- "source_sha256": "ce6385f477114d3fbf351e3db2a88672cbf54d58acb17e8a3e468a4b117cb208",
+ "source_sha256": "8067f7151d356fa6d1bf20acd495162ae836a897fb2090fe27c1fb945348908b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.configuration.spellbook_configuration": {
@@ -19,20 +19,23 @@
    "label": "SpellbookConfiguration",
    "kind": "class",
    "file": "src/melder/aether/spellbook/configuration/spellbook_configuration.py",
-   "lineno": 13,
+   "lineno": 17,
    "bases": [
     "Cleanable"
    ],
    "markers": [],
    "public_methods": [
+    "add_bind_hooks",
     "add_disposal_methods",
     "add_hook",
     "add_hooks",
     "build",
     "cleanup",
+    "clear_bind_hooks",
     "clear_properties",
     "finalize",
     "freeze",
+    "get_bind_hooks",
     "get_conduit_hooks",
     "get_hooks",
     "get_meld_hooks",
@@ -43,6 +46,7 @@
     "set_property",
     "validate",
     "validate_enums",
+    "with_bind_hooks",
     "with_defaults",
     "with_disposal",
     "with_disposal_method_names",
@@ -53,16 +57,19 @@
     "with_phase_scheduler_workers"
    ],
    "shape": {
-    "method_count": 30,
+    "method_count": 34,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6c962f51c53d73c898b15d9f56e9a59935ac1531969bf95829b9f04b85e8012d",
+   "span_sha256": "a969eded1b9fcaf39cfc2b8329ae1df51a06585d48fb756a755071074a21aaeb",
    "role": "Mutable build-time configuration surface for one spellbook/runtime context.",
    "responsibilities": [
     "stores typed runtime posture properties and idempotent keys",
     "stores ordered book disposal candidates and False-default front/back priority for creation-time binding",
-    "owns hook registration for meld, conduit, link, and contract events"
+    "owns default and per-Book hook registration for Meld, Conduit, link and contract events",
+    "supplies immutable initial Bind callbacks for independently adjustable Book registries",
+    "freezes hook seeds and records effective callback presence without serializing callables",
+    "accepts origin Bind stage markers at freeze and re-freeze and preserves them in complete Book-twin emission"
    ],
    "owns_state": [
     "_aether_frame",
@@ -70,7 +77,8 @@
     "available_properties",
     "_idempotent_keys",
     "_conduit_hooks",
-    "_meld_hooks"
+    "_meld_hooks",
+    "_bind_hooks"
    ],
    "phases": [
     "init",
@@ -134,6 +142,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "Callable": "typing.Callable",
   "ClassVar": "typing.ClassVar",
@@ -141,29 +150,20 @@
   "Iterator": "typing.Iterator",
   "List": "typing.List",
   "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
   "Tuple": "typing.Tuple",
   "Type": "typing.Type",
   "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
-  "SpellbookCrystal": "melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal"
+  "SpellbookCrystal": "melder.crystallizer.crystals.spellbook_crystal.SpellbookCrystal",
+  "BindLifecycleHooks": "melder.aether.spellbook.bind.bind.BindLifecycleHooks",
+  "Spell": "melder.aether.spellbook.spell.Spell"
  },
  "collapse_candidate": {
   "module": "melder.aether.spellbook.configuration.spellbook_configuration",
   "class": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
   "label": "SpellbookConfiguration"
  },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-   "to": "melder.aether.spellbook.configuration.system_state.SystemState",
-   "relation": "uses",
-   "why": "Configuration stores SystemState as the high-level runtime posture flag.",
-   "cardinality": "many_to_one",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "borrowed"
-  }
- ]
+ "edges_authored": []
 }

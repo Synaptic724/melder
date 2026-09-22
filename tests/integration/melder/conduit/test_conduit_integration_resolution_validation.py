@@ -399,10 +399,10 @@ def test_conduit_validate_resolution_raises_when_lesser_cleaned() -> None:
 def test_conduit_upgrade_to_normal_preserves_id_and_resolution_state() -> None:
     """
     Purpose:
-        Validate upgraded conduits retain id and seed resolution state.
+        Validate upgraded conduits retain identity with independent resolution state.
     Contract:
         - Upgrading a lesser conduit preserves its id.
-        - Upgraded conduit has a distinct resolution state seeded from root.
+        - Empty Book has no inherited root verdicts; a subsequent binding compiles locally.
     Returns:
         None.
     Raises:
@@ -428,10 +428,20 @@ def test_conduit_upgrade_to_normal_preserves_id_and_resolution_state() -> None:
         upgraded_state = lesser.get_resolution_state()
 
         assert lesser.id == original_id
-        assert upgraded_state is not None
+        assert upgraded_state is None
+        assert lesser.validate_resolution(refresh_structural=False) is None
+
+        class GraduatedLeaf:
+            """Independent definition whose first meld creates only new-root verdicts."""
+
+        new_id = lesser.bind(spell=GraduatedLeaf, existence=Existence.many)
+        assert isinstance(lesser.meld(spell_id=new_id), GraduatedLeaf)
+        upgraded_state = lesser.get_resolution_state()
         assert upgraded_state is not root_state
-        assert upgraded_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
+        assert upgraded_state.get_root_validity(new_id) is SpellValidity.valid
+        assert upgraded_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.unknown
         assert root_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
         assert lesser.validate_resolution(refresh_structural=False) is upgraded_state
     finally:
+        lesser.permanent_cleanup()
         root.permanent_cleanup()

@@ -199,6 +199,9 @@ class SpellSpace(Cleanable):
             dynamic_environment=conduit_meld._dynamic_environment,
             meld_hooks=conduit_meld._meld_hooks,
         )
+        # A temporary owner map must be reset on return even when this Space
+        # never registers a callback itself.
+        self._meld._inherit_meld_hooks(conduit_meld)
         self._registry_tracked: bool = False
         self._spellspace_registry: set[SpellSpace] = spellspace_registry
         self._spellspace_pool: SpellSpacePool = spellspace_pool
@@ -316,7 +319,8 @@ class SpellSpace(Cleanable):
               teardown was requested or the spellspace is registry-tracked.
             - Clears spellspace-local creations before returning this
               spellspace to the pool.
-            - Keeps collaborator references intact for later reuse.
+            - Keeps collaborator references intact for later reuse, restoring
+              temporary hooks after disposal and before idle publication.
 
         Threading / Concurrency:
             - This lane runs without the spellspace `RLock` because managed
@@ -347,12 +351,15 @@ class SpellSpace(Cleanable):
         if self._permanent_cleanup_requested or self._registry_tracked:
             self.cleanup()
             return
-        # Hot path: fully lock-free by the thread-confinement contract above.
+        # Common unchanged path is lock-free by the confinement contract above;
+        # a temporary hook map uses the existing Meld lock only while resetting.
         # The unlocked variant is valid here precisely because this lane is
         # the confinement-guaranteed managed exit; the explicit
         # spellspace-local clear still happens before pool return so scope
         # teardown stays deterministic and owner-driven.
         self._creations.reset_for_pool_unlocked()
+        if self._meld._meld_hooks_modified:
+            self._meld._reset_pooled_meld_hooks()
         self._spellspace_pool.release(self)
         
     def _cleanup_for_pool_reuse(self) -> None:
@@ -366,12 +373,15 @@ class SpellSpace(Cleanable):
             - Still tolerates direct/manual registry insertion paths by
               discarding the spellspace when it is currently present.
             - Keeps collaborator references intact for later reuse.
+            - Restores temporary Meld hooks after disposal, before idle publication.
         """
         self._creations.reset_for_pool()
         if self._registry_tracked or self in self._spellspace_registry:
             self._spellspace_registry.discard(self)
             self._registry_tracked = False
         self._permanent_cleanup_requested = False
+        if self._meld._meld_hooks_modified:
+            self._meld._reset_pooled_meld_hooks()
 
     def _cleanup_for_destroy(self) -> None:
         """
@@ -383,8 +393,10 @@ class SpellSpace(Cleanable):
             - Still tolerates direct/manual registry insertion paths by
               discarding the spellspace when it is currently present.
             - Deletes the pool reference as part of final teardown.
+            - Cleans the owned Meld before dropping it, releasing both hook references.
         """
         self._creations.cleanup()
+        self._meld.cleanup()
         if self._registry_tracked or self in self._spellspace_registry:
             self._spellspace_registry.discard(self)
         self._cleaned = True

@@ -91,6 +91,7 @@ sources = [
   "36_late_binding_with_spellcontract.py",
   "37_the_frame_conduit_cloud.py",
   "39_purge_unneeded_objects.py",
+  "40_bind_lifecycle_hooks.py",
 ]
 
 [[level]]
@@ -158,6 +159,7 @@ sources = [
   "34_several_worlds_of_record_in_one_process.py",
   "35_the_gate_that_waits_for_readers.py",
   "36_an_agent_builds_a_working_system.py",
+  "37_review_agent_bindings.py",
 ]
 
 [[lesson]]

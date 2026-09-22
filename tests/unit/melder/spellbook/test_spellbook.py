@@ -2,7 +2,10 @@ import contextlib
 import types
 import threading
 from types import MappingProxyType
-from typing import Any, MutableMapping, Optional, cast
+from typing import TYPE_CHECKING, Any, MutableMapping, Optional, cast
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.bind import BindLifecycleHooks
 
 import pytest
 
@@ -478,6 +481,17 @@ class DummyConfig:
             dict: Conduit hook mapping configured on the stub.
         """
         return self._hooks
+
+    def get_bind_hooks(self) -> BindLifecycleHooks:
+        """Return the empty immutable Bind seed used by ordinary configuration defaults.
+
+        Contract:
+            This double configures lifecycle events only. Registration callbacks
+            start empty, matching the concrete configuration's constructor.
+        Returns:
+            BindLifecycleHooks: Empty pre, activation and post sequences.
+        """
+        return ((), (), ())
 
     def get_property(self, name):
         """
@@ -1523,6 +1537,8 @@ def test_try_update_staged_contract_keys_rebuilds_peer_scope(monkeypatch):
 
 def test_begin_transaction_enforces_dynamic_mode_and_admission_failures(monkeypatch):
     class _TxnConfig:
+        """Minimal posture double with empty Bind defaults for Book initialization."""
+
         def __init__(self, system_state):
             self._system_state = system_state
 
@@ -1533,6 +1549,10 @@ def test_begin_transaction_enforces_dynamic_mode_and_admission_failures(monkeypa
             if name != "system_state":
                 raise KeyError(name)
             return self._system_state
+
+        def get_bind_hooks(self) -> BindLifecycleHooks:
+            """Return empty configuration seeds; transaction tests install no callbacks."""
+            return ((), (), ())
 
     sb = Spellbook(configuration=_TxnConfig(SystemState.automatic))
     sb._logger = DummySafeLogger()

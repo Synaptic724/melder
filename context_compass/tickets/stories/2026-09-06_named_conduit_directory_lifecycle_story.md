@@ -7,9 +7,14 @@
 - Owner: codex
 - Agent Name: codex_1, updater_0
 - Created: 2026-09-06T17:17:54Z
-- Updated: 2026-09-07T11:46:34Z
+- Updated: 2026-09-22T21:18:35Z
 
 ## User Narrative
+2026-09-22 accepted direction: active names are unique across the frame, shared with normal roots;
+discovery works in automatic and dynamic mode. Recording keeps its existing dynamic-mode policy.
+Current source/lock/failure trace and implementation regression matrix:
+- tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md
+
 As an application developer, I want to find an active named lesser conduit without maintaining
 another registry or promoting the scope into a root.
 
@@ -18,16 +23,16 @@ Discovery is useful across independent application surfaces. Preserve the existi
 instance-lifetime model while making scope boundaries consistently nameable and discoverable.
 
 ## Ticket Contract
-- ENTRY_GATE: Remaining epic decisions on modes, namespace, publication and consumers are approved.
+- ENTRY_GATE: Accepted modes/namespace are recorded; publication, load concurrency and consumer contracts are ready.
 - EXECUTION_BOUNDARY: Conduit/frame/cloud discovery, scope acquisition/cleanup/upgrade and focused tests.
 - DEPENDENCIES: Cross-system discovery task; Nexus/Crystallizer decisions before rollout.
 - EXIT_GATE: Naming and removal work without altering root accounting or unnamed/meld behavior.
-- FAILURE_ESCALATION: No runtime implementation while mode/namespace/lifecycle decisions are unresolved.
+- FAILURE_ESCALATION: No runtime implementation while lifecycle/publication correctness remains unresolved.
 
 ## Requirements
 - Optional name at lesser creation; preserve its current lesser capabilities and parent ownership.
-- Choose automatic/dynamic support explicitly; no automatic graph mutation is implied by directory writes.
-- Decide frame-wide versus parent-qualified names and collisions with roots/other active lessers.
+- Naming/discovery works in automatic and dynamic mode without changing graph-mutation gates.
+- Names are frame-wide unique across roots and other active named lessers.
 - A lesser receives its optional name only through the creation call; later naming/renaming is excluded.
 - Prewarming prepares unnamed shells. Initialize the chosen shell's name for the caller's scope at checkout.
 - Only named conduits enter cloud discovery. Unnamed lessers skip cloud registration/unregistration.
@@ -57,7 +62,9 @@ Include prewarmed-shell checkout and rejection of later lesser naming/renaming.
 No new leases, wrappers, defensive snapshots, or checks added to every meld solely for naming.
 
 ## Open Questions
-- Namespace, name validation and publication ordering; creation-only lesser naming is settled.
+- Name publication/retirement ordering across callbacks, cleanup and reuse; naming time and namespace are settled.
+- Named lifecycle participation or required quiescence during live restore; ordinary lesser cycles
+  do not currently enter the transaction sessions drained by LoadGate.
 - Whether cloud enumeration broadens by default or exposes explicit root/all-scope views.
 
 ## Findings and Evidence
@@ -121,4 +128,5 @@ Draft design scope only. The existing setter label is not a supported discovery/
 Named-only discovery and conditional unregister/name reset before pool reuse are owner-confirmed.
 Creation-only naming is owner-confirmed; prewarmed shells receive a name only for the requested use.
 Owner additionally requires named-lesser structural persistence. Coordinate record emission/removal with
-creation/release and the shared-book hierarchy. Remaining mode, namespace and integration details precede implementation.
+creation/release and the shared-book hierarchy. Mode and namespace are settled on 2026-09-22;
+publication ordering and load concurrency remain explicit implementation-contract work.

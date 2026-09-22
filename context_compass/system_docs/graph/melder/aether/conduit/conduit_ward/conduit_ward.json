@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
- "source_sha256": "1c4641a5fe86188eff43da8ea23d40298ef4b837214ed7c0ab36dbaa78c7cc59",
+ "source_sha256": "f7f653e79a3ec2065c7addbe92f64cbbfb2a9cc95d69ee3181ec163d08f3fdec",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.conduit_ward": {
@@ -43,11 +43,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "80fc014c04afff9d4b90dc572f62a3f1b773d8b36ba8318b17d54d2f34180d84",
+   "span_sha256": "bacc05442c57b60a8315013d3474a9f51a294d70b2c4976f9d52a43eaf3dd06e",
    "role": "Contract and lineage graph manager for a conduit.",
    "responsibilities": [
     "manages peer contracts",
     "manages lesser-conduit lineage",
+    "detaches both parent relationship directions when a childless lesser becomes an independent normal root",
     "applies policy to link creation and severing",
     "updates contracted spell visibility"
    ],

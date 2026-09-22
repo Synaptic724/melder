@@ -105,6 +105,15 @@ def _build_conduit(
     if conduit_state is ConduitState.lesser:
         root = MagicMock()
         root._id = root_conduit_id
+        # Real roots copy configured containers once; lessers borrow that baseline.
+        root._conduit_hooks = {
+            name: list(callbacks)
+            for name, callbacks in configuration.get_conduit_hooks(spellbook._id).items()
+        }
+        root._meld_hooks = {
+            name: list(callbacks)
+            for name, callbacks in configuration.get_meld_hooks(spellbook._id).items()
+        }
         root._conduit_pool = ConduitPool(
             root_conduit=root,
             baseline_idle=10,
@@ -556,7 +565,7 @@ def test_initialize_conduit_hooks_attaches_for_lesser_permanent_cleanup(
     )
     try:
         assert conduit._conduit_hooks is not None
-        assert conduit._conduit_hooks is configuration.get_conduit_hooks(spellbook_stub._id)
+        assert conduit._conduit_hooks is conduit._conduit_pool.root_conduit._conduit_hooks
         conduit.permanent_cleanup()
         assert events == [conduit]
     finally:
@@ -564,15 +573,15 @@ def test_initialize_conduit_hooks_attaches_for_lesser_permanent_cleanup(
             conduit.permanent_cleanup()
 
 
-def test_initialize_conduit_hooks_shares_configuration_hook_refs_until_local_edit(
+def test_initialize_conduit_hooks_isolates_configuration_containers(
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify Conduit shares configuration hook refs until a local edit occurs.
+    Verify runtime hook containers remain isolated from configuration seeds.
 
     Contract:
-        - Conduit uses shared configuration refs for conduit and meld hooks.
-        - Later configuration mutations remain visible until a local copy-on-write edit happens.
+        - A lesser borrows its root's independent runtime containers.
+        - Even unsupported direct seed edits cannot mutate those runtime lists.
     """
     configuration = SpellbookConfiguration()
     set_frame_system_state_for_spellbook_configuration(configuration, "automatic")
@@ -620,8 +629,8 @@ def test_initialize_conduit_hooks_shares_configuration_hook_refs_until_local_edi
 
         assert conduit._conduit_hooks is not None
         assert conduit._meld_hooks is not None
-        assert conduit._conduit_hooks["on_conduit_cleanup_start"] == [conduit_hook, conduit_hook_2]
-        assert conduit._meld_hooks["on_meld_pre_resolve"] == [meld_hook, meld_hook_2]
+        assert conduit._conduit_hooks["on_conduit_cleanup_start"] == [conduit_hook]
+        assert conduit._meld_hooks["on_meld_pre_resolve"] == [meld_hook]
     finally:
         conduit.cleanup()
 
@@ -928,7 +937,7 @@ def test_register_conduit_hooks_local_preserves_shared_map(
             {"on_conduit_cleanup_start": local_hook}
         )
 
-        assert conduit._conduit_hooks is shared_hooks
+        assert conduit._conduit_hooks is not shared_hooks
         assert conduit._conduit_hooks["on_conduit_cleanup_start"][0] is shared_hooks["on_conduit_cleanup_start"][0]
         assert conduit._local_conduit_hooks is not None
         assert conduit._local_conduit_hooks["on_conduit_cleanup_start"][-1] is local_hook

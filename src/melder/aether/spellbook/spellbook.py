@@ -32,6 +32,7 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity imp
 )
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.bind.scan import Scan
 from melder.aether.spellbook.bind.spell_index import SpellIndex
@@ -232,6 +233,10 @@ class Spellbook(Cleanable):
             - Initializes local and contracted spell registries and lookup maps.
             - Initializes spell_id maps for O(1) resolution by current version id.
             - Attaches to an Aether frame and configures logging.
+            - Seeds its own Bind registry once from the selected configuration.
+              Later Book hook changes never alter configuration or sibling Books.
+            - Publishes its DevOps identity only after initialization succeeds;
+              a rejected configuration cannot leave a half-constructed Book registered.
 
         Args:
             aetheric_frame (str):
@@ -306,14 +311,6 @@ class Spellbook(Cleanable):
                 "conjure",
             ),
         )
-        self._transaction_identity.attach_registry(
-            Spellbook._aether._get_existing_frame(
-                self._aetheric_frame_name,
-            ).devops_information_registry,
-            object_ref=self,
-        )
-        self._refresh_devops_identity_state()
-
         # SpellbookConfiguration state
         self._configuration_locked: bool = False
         self._binds_before_configuration_count: int = 0
@@ -353,7 +350,15 @@ class Spellbook(Cleanable):
         self._spellbook_validation_required: bool = True
 
         # Binding system
-        self._bind: Bind = Bind(self)
+        self._bind: Bind = Bind(self, initial_hooks=self._configuration.get_bind_hooks())
+
+        # Publish only the completed Book; configuration refusal leaves no live
+        # registry reference to an object whose remaining fields never initialized.
+        self._transaction_identity.attach_registry(
+            self._aetheric_frame.devops_information_registry,
+            object_ref=self,
+        )
+        self._refresh_devops_identity_state()
 
     #region Disposal
 
@@ -6621,6 +6626,231 @@ class Spellbook(Cleanable):
                 name=name,
                 conduit_logger=conduit_logger,
             )
+        finally:
+            mediator.end_transaction_for_identity(
+                identity=self._transaction_identity,
+                transaction_type=ChangeTransactionType.CONJURE,
+            )
+
+    def _conjure_existing_conduit(
+            self,
+            conduit: Conduit,
+            *,
+            policy: Optional[str] = "default",
+            dynamic: bool = False,
+            name: Optional[str] = None,
+            restore_gate_enabled: Optional[bool] = None,
+    ) -> Conduit:
+        """
+        Conjure this Book against a supplied, prepared normal Conduit.
+
+        Purpose:
+            Complete normal Spellbook setup without constructing a second
+            Conduit. This is the private counterpart of conjure for an upgrade
+            caller that has already prepared the existing runtime as a normal
+            root. It deliberately has its own orchestration path.
+
+        Contract:
+            - The caller supplies a live, detached, unregistered normal conduit
+              on this Book's frame, with normal ward/pool/store ownership ready.
+              This method does not promote its status or transfer an old Book.
+            - The Book may conjure once. Configuration selection occurred in
+              its constructor; default/local/frame-wide rules remain unchanged.
+            - Runs configuration, structural and resolution phases through the
+              same helpers as ordinary conjure. Resolution uses the supplied ID
+              from the start; no replacement Conduit or conduit ID is allocated.
+            - Replaces Book lookup references and configured Conduit/Meld hooks.
+              Old input/fast-door caches cannot grant access to prior definitions.
+              Retains the conduit and spellspace creation stores themselves.
+            - Rebinds registered manual Spaces, idle pooled Spaces and managed
+              Spaces on the calling thread. The private caller must first return
+              foreign-thread managed Spaces and stop concurrent scope acquisition;
+              their thread-local stacks cannot be enumerated from this thread.
+            - Preserves normal pre(), activation(conduit), post(conduit) ordering,
+              owner stamping, record publication and RiskManager registration.
+            - Input/configuration/phase/policy/name failures precede attachment.
+              Once attached, publication failures have normal conjure semantics:
+              the caller owns cleanup; arbitrary callback effects are not undone.
+
+        Args:
+            conduit: Existing runtime already prepared in normal status.
+            policy: Normal conduit policy name, defaulting to "default".
+            dynamic: Requested mode; the settled frame remains authoritative.
+            name: Root name, or the prepared name/default when omitted.
+            restore_gate_enabled: Admission state captured before the upgrade
+                caller parked the target. None captures the state at this method's
+                entry. Restoration occurs before activation callbacks may meld.
+
+        Returns:
+            Conduit: The exact supplied instance, attached to this Book.
+
+        Raises:
+            RuntimeError: If cleaned, already conjured, not normal, terminally
+                closed, or recorded configuration discipline is violated.
+                Gate drain may time out.
+            ValueError: If the frame, configuration, policy or root name is invalid,
+                or the supplied target is already registered as a root.
+            SpellbookValidationError: If normal compilation rejects this Book.
+
+        Threading / Lifecycle:
+            Admits CONJURE before taking the Book lock. Parks the existing creation
+            gate only during attachment and restores its prior admission state
+            before activation hooks. Caller owns structural promotion/quiescence.
+            Configuration callbacks and former Book objects are never disposed here.
+        """
+        self.check_cleaned()
+        conduit.check_cleaned()
+        if conduit._conduit_state is not ConduitState.normal:
+            raise RuntimeError(
+                "Existing-conduit conjure requires normal status. Prepare the "
+                "lesser as a normal conduit before passing it to Spellbook."
+            )
+        if conduit._aetheric_frame is not self._aetheric_frame:
+            raise ValueError("The existing conduit and receiving Spellbook must use the same frame.")
+        if conduit._creation_gate.is_closed():
+            raise RuntimeError("A terminally closed conduit cannot receive a new Spellbook.")
+
+        mediator = self._get_required_transaction_mediator()
+        mediator.start_transaction(
+            identity=self._transaction_identity,
+            transaction_type=ChangeTransactionType.CONJURE,
+            metadata={
+                "spellbook_id": self._id,
+                "origin_surface": "spellbook._conjure_existing_conduit",
+                "existing_conduit_id": conduit._id,
+            },
+        )
+        try:
+            effective_dynamic = self._settle_or_inherit_conjure_mode(dynamic)
+            self._conjure_dynamic_hint = effective_dynamic
+            with self._lock:
+                self.check_cleaned()
+                if self._conjured:
+                    raise RuntimeError("This Spellbook has already conjured a Conduit. Only one is allowed.")
+                resolved_name = (
+                    name or conduit._name or SpellbookCreationSystem._DEFAULT_ROOT_CONDUIT_NAME
+                )
+                # Refuse existing roots before phases can write resolution state
+                # under their IDs. Registration rechecks under this lock later.
+                with self._aetheric_frame._lock:
+                    if conduit._id in self._aetheric_frame._conduits:
+                        raise ValueError("The supplied conduit is already registered as a root.")
+                    if resolved_name in self._aetheric_frame._conduit_ids_by_name:
+                        raise ValueError(f"Conduit with name {resolved_name} already exists.")
+                if (
+                        effective_dynamic
+                        and self._binds_before_configuration_count > 0
+                        and self._crystallizer.activated
+                ):
+                    raise RuntimeError(
+                        "Existing-conduit conjure with an active Crystallizer requires "
+                        "configuration to be finalized BEFORE the first bind."
+                    )
+                self._spell_id_integrity_checker()
+                # A frame-shared configuration is already locked, but this NEW
+                # Book still needs its own origin-bearing configuration record.
+                if self.is_configuration_locked():
+                    self._validate_and_freeze_configuration()
+                SpellbookCreationSystem._prepare_spellbook_for_conjure(
+                    spellbook=self,
+                    phase_scheduler_cls=PhaseScheduler,
+                )
+                cache_state = SpellbookCreationSystem._build_conjure_cache_state(
+                    spellbook=self,
+                    dynamic=effective_dynamic,
+                    conduit_name=resolved_name,
+                )
+                # The ordinary preparation helper mints an ID. This route must
+                # instead scope every phase to the supplied runtime's existing ID.
+                SpellbookCreationSystem.run_resolution_phases_for_conduit(
+                    spellbook=self,
+                    conduit_id=conduit._id,
+                    phase_scheduler_cls=PhaseScheduler,
+                    force_skip_plan_phases=cache_state["cache_path"] == "full_hit",
+                )
+                if cache_state["cache_path"] != "full_hit":
+                    SpellbookCreationSystem._enforce_conduit_resolution_valid(
+                        spellbook=self,
+                        conduit_id=conduit._id,
+                    )
+                policy_enum = SpellbookCreationSystem._resolve_conjure_policy(
+                    spellbook=self, policy=policy, dynamic=effective_dynamic,
+                )
+                hook_map = SpellbookCreationSystem.get_conjure_hook_map(self)
+                SpellbookCreationSystem.fire_conjure_hooks(
+                    self, hook_map, "on_conduit_pre_created",
+                )
+
+                gate = conduit._creation_gate
+                gate_was_enabled = (
+                    gate.enabled if restore_gate_enabled is None else restore_gate_enabled
+                )
+                try:
+                    gate.close_and_drain()
+                    with conduit._lock:
+                        with self._aetheric_frame._lock:
+                            conduit.check_cleaned()
+                            if conduit._conduit_state is not ConduitState.normal:
+                                raise RuntimeError("The supplied conduit is no longer in normal status.")
+                            if conduit._id in self._aetheric_frame._conduits:
+                                raise ValueError("The supplied conduit is already registered as a root.")
+                            if resolved_name in self._aetheric_frame._conduit_ids_by_name:
+                                raise ValueError(f"Conduit with name {resolved_name} already exists.")
+
+                            # Snapshot scope membership only for this one ownership
+                            # transition; do not change ordinary pool or meld paths.
+                            spaces = set(conduit._spellspace_registry)
+                            spaces.update(conduit._spellspace_pool._idle)
+                            spaces.update(conduit._spellspace_stack.get())
+                            meld_runtimes = [conduit._meld]
+                            meld_runtimes.extend(space._meld for space in spaces)
+                            conduit._spellbook = self
+                            conduit._configuration = self._configuration
+                            conduit._name = resolved_name
+                            conduit.__dynamic_environment__ = effective_dynamic
+                            conduit._initialize_hook_baselines()
+                            conduit._conduit_ward._policy = policy_enum
+                            for runtime in meld_runtimes:
+                                runtime._spellbook = self
+                                runtime._owned_spells = self._spells
+                                runtime._contracted_spells = self._contracted_spells
+                                runtime._spells_by_id = self._spells_by_id
+                                runtime._contracted_spells_by_id = self._contracted_spells_by_id
+                                runtime._spell_id_pool = self._spell_id_pool
+                                runtime._lookup_owned_spells = self._lookup_spells
+                                runtime._lookup_contracted_spells = self._lookup_contracted_spells
+                                runtime._resolution_conduit_id = conduit._id
+                                runtime._dynamic_environment = effective_dynamic
+                                runtime._root_creations = conduit._creations
+                                runtime._cluster_creations = conduit._cluster_creations
+                                runtime._input_resolution_cache.clear()
+                                runtime._fast_meld_doors.clear()
+                                runtime._bind_meld_hook_baseline(conduit._meld_hooks)
+                            conduit._ensure_transaction_identity_registered()
+                            conduit._refresh_devops_identity_state()
+                            conduit._add_root_conduit()
+                        # Match constructor registration without retaining the
+                        # frame lock across Aether dispatch or recorder callbacks.
+                        conduit._add_spells_to_aether()
+                        conduit._emit_conduit_twin()
+                finally:
+                    # A promotion caller already parked before changing status.
+                    # On pre-attachment failure it must finish rollback before
+                    # waking waiters; standalone callers restore admission here.
+                    if (
+                            gate_was_enabled
+                            and not gate.is_closed()
+                            and (restore_gate_enabled is None or conduit._spellbook is self)
+                    ):
+                        gate.open()
+
+                SpellbookCreationSystem._activate_conjured_conduit(
+                    spellbook=self,
+                    conduit=conduit,
+                    hook_map=hook_map,
+                    cache_state=cache_state,
+                )
+                return conduit
         finally:
             mediator.end_transaction_for_identity(
                 identity=self._transaction_identity,

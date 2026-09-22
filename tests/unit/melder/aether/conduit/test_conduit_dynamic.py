@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -289,156 +289,8 @@ def test_upgrade_to_normal_raises_when_not_lesser(
         conduit_dynamic_normal.upgrade_to_normal("test")
 
 
-def test_upgrade_to_normal_transitions_and_registers(
-    conduit_dynamic_lesser: Conduit,
-    aetheric_frame_stub: MagicMock,
-) -> None:
-    """
-    Verify upgrade_to_normal transitions state and registers the conduit.
-
-    Contract:
-        - Conduit becomes normal and receives the provided name.
-        - Existing Creations manager is preserved and re-wired into Meld.
-        - Ward conversion and spellbook reset are invoked.
-        - Root registration and cloud registration occur for named conduits.
-
-    Args:
-        conduit_dynamic_lesser (Conduit): Dynamic lesser conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub used for registration checks.
-
-    Raises:
-        AssertionError: If the upgrade workflow is incomplete.
-    """
-    old_creations = conduit_dynamic_lesser._creations
-    old_root_pool = conduit_dynamic_lesser._conduit_pool
-    conduit_dynamic_lesser._conduit_ward = MagicMock()
-    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
-    conduit_dynamic_lesser._nexus_publish_enabled = True
-    conduit_dynamic_lesser._nexus = MagicMock()
-
-    conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
-
-    assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
-    assert conduit_dynamic_lesser._name == "alpha"
-    assert conduit_dynamic_lesser._creations is old_creations
-    assert conduit_dynamic_lesser._meld._conduit_creations is old_creations
-    assert conduit_dynamic_lesser._meld._resolution_conduit_id == conduit_dynamic_lesser._id
-    assert conduit_dynamic_lesser._conduit_pool is not old_root_pool
-    assert conduit_dynamic_lesser._conduit_pool.root_conduit is conduit_dynamic_lesser
-    assert conduit_dynamic_lesser._conduit_pool.root_conduit_id == conduit_dynamic_lesser._id
-    conduit_dynamic_lesser._conduit_ward._convert_to_normal_conduit.assert_called_once_with()
-    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook.assert_called_once_with()
-    aetheric_frame_stub.register_root_conduit.assert_called_once_with(
-        conduit_dynamic_lesser
-    )
-    conduit_dynamic_lesser._nexus._publish_conduit_record.assert_called_once_with(
-        conduit_dynamic_lesser
-    )
-
-
-def test_upgrade_to_normal_refreshes_transaction_identity_without_changing_owner_id(
-    conduit_dynamic_lesser: Conduit,
-) -> None:
-    """
-    Verify upgrade_to_normal preserves conduit identity and refreshes metadata.
-
-    Contract:
-        - The conduit id stays stable across lesser -> normal upgrade.
-        - TransactionIdentity keeps the same owner id.
-        - Available transactions expand once the conduit becomes normal.
-        - Root conduit metadata is refreshed to the upgraded conduit id.
-    """
-    conduit_dynamic_lesser._conduit_ward = MagicMock()
-    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
-    conduit_dynamic_lesser._nexus_publish_enabled = False
-
-    original_id = conduit_dynamic_lesser._id
-    assert conduit_dynamic_lesser._transaction_identity is None
-
-    conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
-
-    identity = conduit_dynamic_lesser._transaction_identity
-
-    assert conduit_dynamic_lesser._id == original_id
-    assert conduit_dynamic_lesser._root_conduit_id == original_id
-    assert identity is not None
-    assert identity.owner_id == original_id
-    assert identity.supports_transaction("bind") is True
-    assert identity.supports_transaction("scan") is True
-    assert identity.supports_transaction("link") is True
-    assert identity.supports_transaction("transfer_ownership") is True
-    assert identity.supports_transaction("mutation") is True
-    assert identity.supports_transaction("cluster_link") is True
-    assert identity.metadata["conduit_state"] == ConduitState.normal.value
-    assert identity.metadata["root_conduit_id"] == original_id
-
-
-def test_upgrade_to_normal_defaults_name_when_omitted(
-    conduit_dynamic_lesser: Conduit,
-    aetheric_frame_stub: MagicMock,
-) -> None:
-    """
-    Verify upgrade_to_normal assigns the default root name when omitted.
-
-    Contract:
-        - Conduit becomes normal with the default name.
-        - Root registration still occurs for the upgraded conduit.
-    """
-    conduit_dynamic_lesser._conduit_ward = MagicMock()
-    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
-    conduit_dynamic_lesser._nexus_publish_enabled = True
-    conduit_dynamic_lesser._nexus = MagicMock()
-
-    conduit_dynamic_lesser.upgrade_to_normal(name="default")
-
-    assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
-    assert conduit_dynamic_lesser._name == "default"
-    aetheric_frame_stub.register_root_conduit.assert_called_once_with(
-        conduit_dynamic_lesser
-    )
-
-
-def test_upgrade_to_normal_registers_hooks(
-    conduit_dynamic_lesser: Conduit,
-    conduit_cloud_stub: MagicMock,
-) -> None:
-    """
-    Verify upgrade_to_normal registers per-conduit local hooks when provided.
-
-    Contract:
-        - The supplied hook is attached to the conduit local hook map.
-
-    Args:
-        conduit_dynamic_lesser (Conduit): Dynamic lesser conduit instance.
-        conduit_cloud_stub (MagicMock): ConduitCloud stub for registration calls.
-
-    Raises:
-        AssertionError: If hooks are not registered.
-    """
-    old_creations = conduit_dynamic_lesser._creations
-    conduit_dynamic_lesser._conduit_ward = MagicMock()
-    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
-
-    def hook(conduit: Conduit) -> None:
-        """
-        No-op hook used for registration checks.
-
-        Args:
-            conduit (Conduit): The conduit invoking the hook.
-
-        Returns:
-            None: Hook does not return a value.
-        """
-        _ = conduit
-
-    conduit_dynamic_lesser.upgrade_to_normal(
-        name="alpha",
-        hooks={"on_conduit_post_link": hook},
-    )
-
-    assert conduit_dynamic_lesser._creations is old_creations
-    assert conduit_dynamic_lesser._local_conduit_hooks is not None
-    assert conduit_dynamic_lesser._local_conduit_hooks["on_conduit_post_link"][0] is hook
+# Successful upgrade and rollback require real Book/ward wiring and are covered
+# in tests/component/melder/aether/conduit/test_conduit_graduation_lifecycle.py.
 
 
 def test_create_lesser_conduit_publishes_descriptor_record_when_enabled(
@@ -577,99 +429,12 @@ def test_set_creation_gate_controller_for_lineage_creates_gate_when_missing(
     assert conduit_dynamic_normal._creation_gate is created_gate
 
 
-def test_upgrade_to_normal_logs_seed_failure_and_continues(
-    conduit_dynamic_lesser: Conduit,
-    aether_stub: MagicMock,
-) -> None:
-    """
-    Verify resolution-state seed failures are logged without aborting upgrade_to_normal.
-
-    Contract:
-        - Exceptions while seeding target resolution state are logged and suppressed.
-        - The overall upgrade still completes.
-    """
-    conduit_dynamic_lesser._logger = MagicMock()
-    conduit_dynamic_lesser._conduit_ward = MagicMock()
-    root_conduit = MagicMock()
-    root_conduit._id = "root-1"
-    conduit_dynamic_lesser._conduit_ward.root_conduit = root_conduit
-    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
-    conduit_dynamic_lesser._nexus_publish_enabled = True
-    conduit_dynamic_lesser._nexus = MagicMock()
-    spell_system_states = MagicMock()
-    source_state = MagicMock()
-    spell_system_states.get_conduit_resolution_state.return_value = source_state
-    spell_system_states.get_or_create_conduit_resolution_state.side_effect = RuntimeError("seed boom")
-    conduit_dynamic_lesser._spellbook._spell_system_states = spell_system_states
-
-    conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
-
-    conduit_dynamic_lesser._logger.error.assert_called()
-    assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
-    assert conduit_dynamic_lesser._name == "alpha"
 
 
-def test_upgrade_to_normal_tolerates_root_conduit_lookup_failure(
-    conduit_dynamic_lesser: Conduit,
-    aether_stub: MagicMock,
-) -> None:
-    """upgrade_to_normal should continue when root_conduit lookup raises during seed setup."""
-    conduit_dynamic_lesser._logger = MagicMock()
-    conduit_dynamic_lesser._conduit_ward = MagicMock()
-    type(conduit_dynamic_lesser._conduit_ward).root_conduit = PropertyMock(
-        side_effect=RuntimeError("root lookup boom")
-    )
-    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
-    conduit_dynamic_lesser._spellbook._spell_system_states = MagicMock()
-    conduit_dynamic_lesser._nexus_publish_enabled = True
-    conduit_dynamic_lesser._nexus = MagicMock()
-
-    conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
-
-    conduit_dynamic_lesser._logger.error.assert_not_called()
-    assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
-    assert conduit_dynamic_lesser._name == "alpha"
 
 
-def test_upgrade_to_normal_clears_dirty_with_last_validated_at(
-    conduit_dynamic_lesser: Conduit,
-    aether_stub: MagicMock,
-) -> None:
-    """upgrade_to_normal should clear dirty state with the source last_validated_at timestamp when the source is clean."""
-    conduit_dynamic_lesser._logger = MagicMock()
-    conduit_dynamic_lesser._conduit_ward = MagicMock()
-    root_conduit = MagicMock()
-    root_conduit._id = "root-1"
-    conduit_dynamic_lesser._conduit_ward.root_conduit = root_conduit
-    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
-    conduit_dynamic_lesser._nexus_publish_enabled = True
-    conduit_dynamic_lesser._nexus = MagicMock()
-    spell_system_states = MagicMock()
-    source_state = MagicMock()
-    target_state = MagicMock()
-    source_state.is_dirty.return_value = False
-    source_state.last_validated_at.return_value = 123.0
-    spell_system_states.get_conduit_resolution_state.return_value = source_state
-    spell_system_states.get_or_create_conduit_resolution_state.return_value = target_state
-    conduit_dynamic_lesser._spellbook._spell_system_states = spell_system_states
-
-    conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
-
-    target_state.clear_dirty.assert_called_once_with(123.0)
 
 
-def test_upgrade_to_normal_logs_and_reraises_outer_failure(
-    conduit_dynamic_lesser: Conduit,
-) -> None:
-    """upgrade_to_normal should log and re-raise failures from the main upgrade workflow."""
-    conduit_dynamic_lesser._logger = MagicMock()
-    conduit_dynamic_lesser._conduit_ward = MagicMock()
-    conduit_dynamic_lesser._conduit_ward._convert_to_normal_conduit.side_effect = RuntimeError("convert boom")
-
-    with pytest.raises(RuntimeError, match="convert boom"):
-        conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
-
-    conduit_dynamic_lesser._logger.error.assert_called_once()
 
 
 def test_create_lesser_conduit_raises_when_root_conduit_missing(

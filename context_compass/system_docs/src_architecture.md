@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-21
+- Updated: 2026-09-22
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -562,6 +562,8 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
      explicit logger override or stdlib fallback second).
    - Initializes spell registries and SpellValidationSystem.
    - Pulls SpellSystemStates from the frame.
+   - Captures configuration Bind seeds into its own immutable callback registry. Runtime add/clear
+     replaces that Book's registry only. Publishes its DevOps identity after initialization succeeds.
 4) `Spellbook.conjure(...)`:
    - Opens a `ChangeTransactionType.CONJURE` transaction on the spellbook
      identity, then resolves the EFFECTIVE conjure mode via
@@ -622,12 +624,17 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 ### Sequence: Bind Spell
 1. `Spellbook.bind(...)`:
    - Enum conversion for permissions and existence.
+   - Retains one immutable Bind callback set inside the existing admitted transaction.
+   - Bind pre callbacks inspect the original reference before reflection; rejection is by exception.
    - `Bind._bind_logic` produces SpellIndex and Spell.
    - Protocol admission checks class and actual existing-object targets before a Spell is published.
    - Disposal candidates resolve once into a Spell-owned ordered list before fingerprinting.
      Book names own overlaps; priority places their block first or last (default).
+   - Bind activation receives the actual new Spell before profile completion and publication.
    - Spellbook registers spell maps and SpellSystemStates lineage.
    - If Conduit exists, stamps ownership and registers existing objects.
+   - Captured post callbacks receive the registered Spell after normal publication, before outer commit.
+     Inactive binding follows the same stages and supplies the final parked Spell to post.
 
 ### Sequence: Conjure Conduit
 1. `Spellbook.conjure(...)`:
@@ -670,13 +677,18 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 5. Fires activated and post-create hooks.
 
 ### Sequence: Upgrade Lesser to Normal
-1. `Conduit.upgrade_to_normal(name, hooks)` checks dynamic mode and lesser state.
-2. Preserves the existing `Creations` manager from the lesser conduit.
-3. Rewires Meld/ward state for normal-conduit ownership using the preserved manager.
-4. Rebinds lineage gates to the frame-level CreationGateController.
-5. Seeds per-conduit resolution state from root conduit (if available).
-6. Registers the conduit into Aether and ConduitCloud.
-7. Registers per-conduit hooks (optional).
+1. `Conduit.upgrade_to_normal(name, configuration=None, hooks=None)` validates an attached,
+   childless dynamic lesser, the requested root name and hook payload, then drains its creation gate.
+2. Constructs an empty new Spellbook through ordinary local/default/frame-wide configuration selection.
+3. Prepares the same Conduit as an independent normal root with its own pool/cluster facade, retaining
+   its ID and creation stores. Ward conversion removes both directions of the old parent relationship.
+4. Calls the separate `Spellbook._conjure_existing_conduit` route with that prepared target. The Book
+   runs normal configuration/compilation under the preserved ID, replaces Meld/Space lookup aliases
+   and hooks, and clears old input/fast-door caches. Definitions and old verdicts do not transfer.
+5. Registers the root, restores its original gate admission and runs normal activation/publication.
+   Explicit `hooks` are local additions after activation. Pre-attachment failure restores the lesser.
+6. The caller quiesces lineage changes, concurrent scope acquisition and foreign-thread managed
+   Spaces. Current-thread managed, registered manual and idle pooled Spaces are rebound in place.
 
 ### Sequence: Link and Sever Conduits
 1. `Conduit.link(target_conduit)`:
@@ -801,6 +813,56 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Pooled hook ownership (2026-09-22): normal roots own stable Conduit/Meld baseline dictionaries
+  copied from configuration, including empty dictionaries. Explicit shared updates publish only
+  through normal roots and preserve dictionary identity; inheritors see new contents without a tree
+  walk. Local lifecycle event lists shadow shared events; local Meld maps are isolated copies.
+  Other normal roots and frozen configuration remain independent. Callback objects are borrowed.
+- Pool return completes creation disposal before clearing local lifecycle hooks, restoring temporary
+  Meld references and publishing the scope as idle. Both manual and managed SpellSpaces, including
+  prewarmed shells, follow this ordering. A Space marks a borrowed owner-local map as temporary even
+  without registering callbacks itself. Acquisition selects the immediate owner's current local map
+  when its modified flag is set; baseline-only acquisition needs no map copy or reset lock.
+- Hook setters/register methods validate full batches and use existing writer locks. Ordinary Meld
+  execution adds no new flag check, lock, version poll or hierarchy scan. Return paths check a bool
+  and lock only for restoration; diagnostic hooks_modified reads use the existing locks. Active Spaces
+  retain their selected source when an owner switches local/shared maps until their next acquisition.
+  Shared updates keep existing per-event visibility, not a whole-operation snapshot guarantee.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._initialize_hook_baselines`,
+  `Conduit._prepare_for_pool`, `Conduit.prewarm_spellspaces`,
+  `src/melder/aether/conduit/meld/meld.py:Meld._reset_pooled_meld_hooks` and
+  `src/melder/aether/conduit/spell_space/spell_space_pool.py:SpellSpacePool.prepare_object`.
+- Bind lifecycle hooks (2026-09-22): Book and normal-Conduit add_bind_hooks append ordered
+  pre/activation/post callback sequences; clear_bind_hooks removes all stages for future binds.
+  Bind owns immutable callback tuples seeded once from the selected configuration. Runtime updates
+  remain Book-local after configuration freeze; an in-flight bind retains its captured stages.
+  Callbacks run outside Bind's construction lock, within existing transaction admission. Return
+  values are ignored. Post is registration completion, not an outer-transaction commit callback.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind.capture_hooks` and
+  `src/melder/aether/spellbook/spellbook.py:Spellbook.add_bind_hooks`.
+- Pre receives the supplied reference; activation/post receive the actual Spell. Native identity
+  remains established before activation and no automatic rehashing or published-state mutation
+  framework is introduced. Existing application-object creation hooks still execute during Meld.
+  Book teardown explicitly cleans Bind and releases callback references without disposing callbacks.
+  Recording carries bind:pre/bind:activation/bind:post presence in complete Book twins; full restore
+  reports missing callback code and live graft uses receiving-Book hooks. No callback serialization.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._emit_bind_hook_presence` and
+  `src/melder/aether/spellbook/configuration/spellbook_configuration.py:SpellbookConfiguration.freeze`.
+- Graduation configuration and hook ownership (2026-09-22): every graduated root owns a new empty
+  Book. Omitted local configuration means fresh defaults. With frame-wide sharing enabled, the Book
+  adopts the canonical frozen frame configuration and rejects a different supplied object. Sharing
+  policy does not share Book registries, definitions or cleanup. Individual Books never retire the
+  canonical shared configuration; the frame owns it. The setting is frame-local, not process-wide.
+- Old Book-specific configured hooks, runtime Bind changes and lesser/Space Conduit/Meld overlays
+  are discarded during successful graduation. Selected configuration defaults may deliberately seed
+  callbacks again. Bind captures immutable seed tuples once and owns later add/clear independently.
+  Conduit/Meld events use configured defaults with exact Book event-list precedence; local runtime
+  mutation APIs preserve configuration-owned lists. Callback objects are borrowed, never cloned or
+  serialized. Configuration setters freeze; runtime hook APIs remain the mutation surface.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.upgrade_to_normal`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._conjure_existing_conduit`,
+  `src/melder/aether/spellbook/configuration/spellbook_configuration.py:SpellbookConfiguration`.
 - Scoped creation purge (2026-09-21): Conduit and SpellSpace expose instance shortcuts and normal
   Meld selectors. Shared discovery inspects an instance's class before existing lookup; concrete
   ConduitMeld/SpellSpaceMeld doors enforce scope authority. Creations alone owns
@@ -972,6 +1034,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- Bind callbacks raise HookExecutionError carrying pre_bind, bind_activation or post_bind plus
+  callback identity and the original cause. Pre refusal creates no Spell. Activation failure and
+  native collisions retire only the unpublished allocation/index. Post failures retain already
+  published state and do not promise rollback of application effects. Lessers cannot edit the
+  borrowed Book's hooks through Conduit facades. EVIDENCE:
+  `src/melder/aether/spellbook/bind/bind.py:Bind._cleanup_unpublished_spell`,
+  `src/melder/aether/conduit/conduit.py:Conduit.add_bind_hooks`.
 - Direct meld and reuse-only resolution of a non-resolvable registration raise MeldExecutionError
   with its selected name/id and caller-supply guidance. Observational lookup remains available.
   EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._raise_non_resolvable_registration`.
@@ -1281,9 +1350,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 6814
-  loc: 6814
-  verified_at: 2026-09-19T19:57:57Z
+  end_line: 7191
+  loc: 7191
+  verified_at: 2026-09-22T19:45:23Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
@@ -1293,9 +1362,9 @@ Spellbook and binding:
   note: fluent binding adapter.
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 979
-  loc: 979
-  verified_at: 2026-09-19T19:57:57Z
+  end_line: 1226
+  loc: 1226
+  verified_at: 2026-09-22T18:41:58Z
   note: binding pipeline.
 - path: `src/melder/aether/spellbook/bind/scan.py`
   start_line: 1
@@ -1369,9 +1438,9 @@ Configuration and hooks:
   note: fluent builder for mutation-research root configuration.
 - path: `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
   start_line: 1
-  end_line: 1243
-  loc: 1243
-  verified_at: 2026-09-05T12:55:45Z
+  end_line: 1427
+  loc: 1427
+  verified_at: 2026-09-22T18:41:58Z
   note: properties, hooks, freeze.
 - path: `src/melder/aether/spellbook/configuration/system_state.py`
   start_line: 1
@@ -1896,9 +1965,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6384
-  loc: 6384
-  verified_at: 2026-09-21T00:25:48Z
+  end_line: 6635
+  loc: 6635
+  verified_at: 2026-09-22T19:45:23Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
@@ -1908,9 +1977,9 @@ Conduit runtime:
   note: conduit state enum.
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
-  end_line: 3746
-  loc: 3746
-  verified_at: 2026-08-01T19:12:00Z
+  end_line: 3752
+  loc: 3752
+  verified_at: 2026-09-22T14:36:10Z
   note: contracts and lineage.
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
   start_line: 1
@@ -1935,9 +2004,9 @@ Resolution and creations:
 
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 1716
-  loc: 1716
-  verified_at: 2026-09-21T00:25:48Z
+  end_line: 1890
+  loc: 1890
+  verified_at: 2026-09-22T19:45:23Z
   note: meld orchestration.
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
@@ -1971,9 +2040,9 @@ Resolution and creations:
   note: conduit/root specialization seam over the generic creations store.
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
-  end_line: 577
-  loc: 577
-  verified_at: 2026-09-21T00:25:48Z
+  end_line: 589
+  loc: 589
+  verified_at: 2026-09-22T19:45:23Z
   note: spellspace scoping.
 
 Control plane:
@@ -2071,6 +2140,39 @@ Non-path notes carried forward from the previous revision:
 - Registration refusal itself lives in `src/melder/aether/spellbook/bind/bind.py`
 
 ## Diagrams
+### Pooled Hook Lifecycle
+```text
+root-owned baseline -> scope lease -> dispose creations -> restore temporary hooks -> idle pool
+                                                                  next acquisition -> owner selection
+```
+
+```mermaid
+flowchart LR
+  R[Root-owned shared baseline] --> L[Active scope with optional local hooks]
+  L --> D[Dispose current creations]
+  D --> H[Restore hooks only when modified]
+  H --> P[Publish ready scope to pool]
+  P --> A[Acquire next lease]
+  A --> O[Space adopts owner-local hooks when present]
+  O --> L
+```
+
+### Bind Lifecycle
+```text
+Book admission -> capture stages -> pre(reference) -> native Spell construction
+ -> activation(Spell) -> profile/publication -> post(Spell) -> transaction completion
+```
+
+```mermaid
+flowchart LR
+  B[Book: admit and capture] --> P[Bind: pre reference checks]
+  P --> C[Bind: construct Spell]
+  C --> A[Bind: activation receives Spell]
+  A --> R[Book: profile, register, publish]
+  R --> H[Bind: captured post callbacks]
+  H --> T[Existing transaction completion]
+```
+
 ### Scoped Purge
 ```text
 Conduit / SpellSpace -> shared discovery -> concrete Meld: authorize -> Creations: lock + retire -> dispose
@@ -2171,19 +2273,20 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   participant LC as Lesser Conduit
-  participant CR as Creations
-  participant M as Meld
+  participant G as CreationGate
   participant W as ConduitWard
-  participant SB as Spellbook
-  participant AE as Aether
-  participant CC as ConduitCloud
-  LC->>LC: upgrade_to_normal()
-  LC->>CR: preserve + rebind current Creations
-  LC->>M: rewire meld creations/resolution root id
-  LC->>W: _convert_to_normal_conduit
-  LC->>SB: create_new_preset_spellbook()
-  LC->>AE: register conduit
-  LC->>CC: register conduit (if named/dynamic)
+  participant SB as New empty Spellbook
+  participant F as AethericFrame
+  LC->>G: close_and_drain()
+  LC->>SB: construct with optional configuration
+  LC->>W: detach former parent and prepare normal root
+  LC->>SB: _conjure_existing_conduit(LC)
+  SB->>SB: normal phases using existing conduit ID
+  SB->>LC: attach Book, hooks and Meld/Space lookup owners
+  SB->>F: register same root and publish records
+  SB->>G: restore original admission
+  SB->>SB: normal activation/publication tail
+  SB-->>LC: same conduit, retained creation stores
 ```
 
 ### Ordered Disposal Data Flow
@@ -2322,6 +2425,25 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-22 pooled hook contracts are promoted. Temporary hook references are retired before idle
+publication, including manual/managed Spaces and prewarming. Root-shared maps retain identity for
+live updates; local changes remain isolated. Only pool boundaries inspect restoration flags, and
+existing locks are taken for changed state. Graduation installs independent root baselines on all
+retained runtime doors. Broader callback standardization remains a separate, deferred design.
+
+2026-09-22 Bind stages are Book-owned and independently adjustable through Book/normal-Conduit
+facades. Immutable per-bind capture preserves stage consistency through runtime updates. Activation
+and post receive the actual Spell at distinct publication boundaries; callback errors preserve phase
+and cause. Whole Book twins carry presence markers only; replay reports missing executable callbacks.
+The src_components binding and configuration entries detail stage ordering, cleanup and recording.
+
+2026-09-22 graduation uses a separate private Spellbook conjure route for the existing prepared
+Conduit. Normal configuration selection, initial Bind seeds and default Conduit/Meld events apply;
+the Book is always independent and empty. Retained creations keep disposal responsibility, but old
+definitions/verdicts and runtime hook overlays do not cross. Shared frame configuration intentionally
+reseeds configured defaults and remains frame-owned. Public rollback restores lesser topology and
+gate admission before attachment; later publication errors retain caller-owned normal cleanup.
 
 2026-09-21 purge supports instance shortcuts and explicit selectors through existing lookup.
 Concrete Meld doors retain scope authority; Creations retains lock/removal/disposal. Default

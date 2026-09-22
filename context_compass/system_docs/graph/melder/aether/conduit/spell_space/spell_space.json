@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/spell_space/spell_space.py",
- "source_sha256": "697b140495fcb083284493eb85fed12a48926e0ef734e19fa3456758a58771c9",
+ "source_sha256": "7f17571fdbc5380115b4052f857c4491d99d15a23c925dd92782d2707ca8dc83",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.spell_space.spell_space": {
@@ -46,13 +46,15 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "420560dd988a0ce9de41c572bc98ceee0a15ff1546009769d0bd42b038495be8",
+   "span_sha256": "43fe3ddd53a2c2162e607d6de7fee3cc368f95863d3f2a4da1189ba05c6dd099",
    "role": "Explicit spellspace scope handle with request-local creations and a spellspace-facing meld door.",
    "responsibilities": [
     "marks one active spellspace scope on a conduit",
     "enforces active-scope usage for spellspace-bound meld calls",
     "clears spellspace-scoped instances on reset or cleanup",
-    "exposes instance or explicit purge selectors and single/all mode for local many and spellspace creations through its concrete Meld door"
+    "exposes instance or explicit purge selectors and single/all mode for local many and spellspace creations through its concrete Meld door",
+    "restores temporary Meld maps after creation disposal and before manual or managed pool return",
+    "explicitly cleans its owned Meld runtime on permanent teardown to release callback references"
    ],
    "owns_state": [
     "_id",

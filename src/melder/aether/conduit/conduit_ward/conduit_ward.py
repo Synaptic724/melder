@@ -530,7 +530,12 @@ class ConduitWard(Cleanable):
         Converts this Conduit from a `lesser` state to a `normal` state.
 
         This method is called internally during the conduit upgrade process.
-        It detaches the parent link and updates the policy state.
+        It detaches both directions of the parent link and updates policy state.
+
+        Contract:
+            The caller holds the former parent's ward lock before entering this
+            ward's lock. Only a childless lesser can become an independent root.
+            No parent Spellbook, definitions or peer contracts transfer.
 
         Raises:
             RuntimeError: If the Conduit is not a lesser conduit.
@@ -555,6 +560,7 @@ class ConduitWard(Cleanable):
                 )
                 raise RuntimeError("Dynamic environment is not enabled. Cannot upgrade to normal conduit.")
             if self._parent_conduit is not None and self._conduit_type == ConduitState.lesser and len(self._lesser_conduits) == 0:
+                self._parent_conduit._conduit_ward._lesser_conduits.pop(self._id, None)
                 self._parent_conduit = None
                 self._root_conduit = self._conduit
                 self._conduit_type = ConduitState.normal

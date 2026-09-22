@@ -81,15 +81,9 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| graduation_configuration_implementation | in_progress | implementation | codex | updater_0 | none | Implement normal configuration and empty-Book graduation. | No parent, inherited spells or transferred Book; independent hooks. | Source and focused tests ready for review; assets held. | tickets/tasks/2026-09-22_implement_graduation_configuration_and_hook_ownership_task.md | 2026-09-22T11:09:31Z | REQUIRED |
-| graduation_configuration | review | handoff | codex | updater_0 | none | Discuss normal configuration selection and initial Bind callback setup. | Frame-wide rules and missing configuration-to-Bind bridge recorded. | Owner settles the setup contract before runtime edits. | tickets/epics/2026-09-22_graduated_conduit_spellbook_ownership_and_configuration_epic.md | 2026-09-22T10:45:27Z | REQUIRED |
-| graduation_ownership_regressions | review | handoff | codex | updater_0 | none | Discuss optional configuration and graduation ownership before runtime edits. | 32 intended failures, 3 controls pass; focused epic drafted. | Owner settles the repair contract. | tickets/tasks/2026-09-22_add_graduation_ownership_red_regressions_task.md | 2026-09-22T10:37:51Z | REQUIRED |
-| next_version_release | review | handoff | codex | updater_0 | none | Owner reviews or extends the next-version release draft. | Purge inputs, modes, scope and disposal documented. | Owner selects further release work. | tickets/tasks/2026-09-21_draft_next_version_release_task.md | 2026-09-21T00:33:00Z | REQUIRED |
-| bind_lifecycle_hooks | review | handoff | codex | updater_0 | none | Owner reviews source before approving asset generation. | Book/Conduit APIs complete; 729 tests pass; assets unchanged. | Owner approves code or requests revisions. | tickets/tasks/2026-09-21_implement_bind_lifecycle_hooks_task.md | 2026-09-21T12:10:10Z | REQUIRED |
-| pooled_hook_discovery | review | handoff | codex | updater_0 | none | Discuss pool baseline and separate graduation Book adoption. | Source-confirmed Meld/Space retention and parent Bind aliasing. | Owner selects the next implementation step. | tickets/tasks/2026-09-22_investigate_pooled_conduit_hook_reset_task.md | 2026-09-22T10:13:25Z | REQUIRED |
-| local_hook_tracking | ready | handoff | codex | updater_0 | none | Resume API/flag work after the requested lifecycle investigation. | Read-cost evidence retained; source not yet edited. | Owner resumes implementation discussion. | tickets/tasks/2026-09-22_add_local_hook_setters_and_tracking_task.md | 2026-09-22T10:09:11Z | HELPFUL |
-| release_0_2_37_to_0_2_43 | review | handoff | codex | updater_0 | none | Owner reviews the 0.2.43 release document. | Verified release date, completed-work map and migration notes. | Owner accepts draft or requests revisions. | tickets/tasks/2026-09-20_prepare_0_2_37_to_0_2_42_release_document_task.md | 2026-09-20T07:54:22Z | REQUIRED |
-| benchmark_spell_id_lookup | review | handoff | codex | updater_0 | none | Owner reviews keyword migration and separate setup finding. | 134 ID selectors corrected; original gauntlet and scoped checks pass. | Owner accepts repair or directs distinct setup follow-up. | tickets/tasks/2026-09-19_repair_benchmark_spell_id_lookup_task.md | 2026-09-20T01:15:40Z | REQUIRED |
+| upgrade_normal_review | in_progress | discovery | codex | updater_1 | none | Trace graduation imports, ownership and rollback. | Source-backed complexity review and simplification recommendations. | Review delivered to owner. | tickets/tasks/2026-09-22_review_upgrade_to_normal_complexity_task.md | 2026-09-22T22:54:06Z | REQUIRED |
+| named_lesser_plan_refresh | review | handoff | codex | updater_0 | none | Review publication ordering and live-load coordination. | Deep implementation trace and regression matrix. | First runtime patch has explicit concurrency contracts. | tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md | 2026-09-22T21:16:32Z | REQUIRED |
+| graduation_packaged_assets | blocked | handoff | codex | updater_0 | Owner build-asset hold. | Wait for packaged generation authorization. | Preserve completed source while packaging stays queued. | Owner releases build hold. | tickets/tasks/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md | 2026-09-22T14:41:23Z | REQUIRED |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
 | stateful_application_recovery | ready | handoff | user | unassigned | none | Discuss one stateful recovery scenario. | Native replay coverage and partial/assisted recovery opportunities preserved. | Owner selects recovery contracts before implementation. | tickets/epics/2026-09-07_stateful_application_recovery_epic.md | 2026-09-07T19:17:55Z | REQUIRED |
@@ -101,43 +95,29 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| intermediate_purge_example | done | workflows_0 | tickets/tasks/completed/2026-09-21_add_intermediate_purge_example_task.md | Lesson 39 added; 38 examples, 39 docs tests, strict HTML and fidelity checks pass. | 2026-09-21T00:59:10Z |
-| scoped_creation_purge_epic | done | updater_0 | tickets/epics/completed/2026-09-19_scope_aware_creation_purge_epic.md | Owner accepted turn-in; documentation/assets verified and evidence retained. | 2026-09-21T00:37:37Z |
-| scoped_creation_purge | done | updater_0 | tickets/tasks/completed/2026-09-20_implement_scoped_creation_purge_task.md | Owner accepted turn-in; documentation/assets verified and evidence retained. | 2026-09-21T00:37:37Z |
-| purge_scope_discovery | done | updater_0 | tickets/tasks/completed/2026-09-20_discover_purge_scope_ownership_task.md | Owner accepted turn-in; documentation/assets verified and evidence retained. | 2026-09-21T00:37:37Z |
-| purge_scope_planning | done | updater_0 | tickets/tasks/completed/2026-09-19_draft_purge_epic_and_refresh_assets_task.md | Owner accepted turn-in; documentation/assets verified and evidence retained. | 2026-09-21T00:37:37Z |
-| shared_board_cleanup | done | workflows_0 | tickets/tasks/completed/2026-09-21_cleanup_shared_context_compass_boards_task.md | Departed entries and obsolete notices retired; history archived; live work preserved. | 2026-09-21T00:22:34Z |
-| workflows_responsibility_transfer | done | workflows_0 | tickets/tasks/completed/2026-09-20_transfer_workflows_1_responsibility_task.md | Succession and approved cleanup complete; twelve archive hashes verified. | 2026-09-20T22:34:55Z |
-| 2026-09-06_ci_validation_stage_design_task | done | workflows_0 | tickets/tasks/completed/2026-09-06_ci_validation_stage_design_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
-| 2026-09-08_reproducible_uv_environment_task | done | workflows_0 | tickets/tasks/completed/2026-09-08_reproducible_uv_environment_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
-| 2026-09-13_sync_owner_uv_environment_task | done | workflows_0 | tickets/tasks/completed/2026-09-13_sync_owner_uv_environment_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
-| 2026-09-19_document_positional_meld_calls_task | done | workflows_0 | tickets/tasks/completed/2026-09-19_document_positional_meld_calls_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
-| 2026-09-20_teach_meld_string_names_task | done | workflows_0 | tickets/tasks/completed/2026-09-20_teach_meld_string_names_task.md | Owner-authorized completion; artifact disposition verified. | 2026-09-20T22:13:38Z |
+| epic_version_notches | done | updater_0 | tickets/tasks/completed/2026-09-22_correct_epic_version_baseline_task.md | Corrected to 0.2.47: baseline 0.2.43 plus four epics; assets held. | 2026-09-22T20:11:00Z |
+| pool_hook_epic | done | updater_0 | tickets/epics/completed/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T19:50:34Z |
+| pooled_hook_discovery | done | updater_0 | tickets/tasks/completed/2026-09-22_investigate_pooled_conduit_hook_reset_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T19:50:34Z |
+| local_hook_tracking | done | updater_0 | tickets/tasks/completed/2026-09-22_add_local_hook_setters_and_tracking_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T19:50:34Z |
+| release_0_2_37_to_0_2_43 | done | updater_0 | tickets/tasks/completed/2026-09-20_prepare_0_2_37_to_0_2_42_release_document_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T19:50:34Z |
+| benchmark_spell_id_lookup | done | updater_0 | tickets/tasks/completed/2026-09-19_repair_benchmark_spell_id_lookup_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T19:50:34Z |
+| bind_hooks_epic | done | updater_0 | tickets/epics/completed/2026-09-20_bind_lifecycle_hooks_and_reference_strategies_epic.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T18:47:41Z |
+| bind_hooks_discovery | done | updater_0 | tickets/tasks/completed/2026-09-21_investigate_bind_lifecycle_hooks_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T18:47:41Z |
+| bind_hooks_implementation | done | updater_0 | tickets/tasks/completed/2026-09-21_implement_bind_lifecycle_hooks_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T18:47:41Z |
+| bind_hook_examples | done | updater_0 | tickets/tasks/completed/2026-09-22_add_bind_hook_intermediate_and_expert_examples_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T18:47:41Z |
+| next_version_release | done | updater_0 | tickets/tasks/completed/2026-09-21_draft_next_version_release_task.md | Draft extended with graduation; source version 0.2.45; assets held. | 2026-09-22T15:13:55Z |
+| graduated_conduit_epic | done | updater_0 | tickets/epics/completed/2026-09-22_graduated_conduit_spellbook_ownership_and_configuration_epic.md | Independent Book and hooks; shared policy verified; packaging held separately. | 2026-09-22T14:41:23Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- graduation_configuration_implementation: SWITCH_TRIGGER is tested code ready for owner review.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-22_implement_graduation_configuration_and_hook_ownership_task.md.
-- graduation_configuration: SWITCH_TRIGGER is source-backed configuration rules ready for discussion.
-  RESUME_HIERARCHY: tickets/epics/2026-09-22_graduated_conduit_spellbook_ownership_and_configuration_epic.md.
-- graduation_ownership_regressions: SWITCH_TRIGGER is verified red tests ready for discussion.
-  RESUME_HIERARCHY: tickets/epics/2026-09-22_graduated_conduit_spellbook_ownership_and_configuration_epic.md ->
-  tickets/tasks/2026-09-22_add_graduation_ownership_red_regressions_task.md.
-- next_version_release: SWITCH_TRIGGER is draft completion and owner review.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-21_draft_next_version_release_task.md.
-- bind_lifecycle_hooks: SWITCH_TRIGGER is tested code ready for owner approval; build assets remain held.
-  RESUME_HIERARCHY: tickets/epics/2026-09-20_bind_lifecycle_hooks_and_reference_strategies_epic.md ->
-  tickets/tasks/2026-09-21_implement_bind_lifecycle_hooks_task.md.
-- pooled_hook_discovery: SWITCH_TRIGGER is recorded pool and graduation lifecycle evidence.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-22_investigate_pooled_conduit_hook_reset_task.md.
-- local_hook_tracking: SWITCH_TRIGGER is completion of the owner's requested lifecycle investigation.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-22_add_local_hook_setters_and_tracking_task.md.
-- release_0_2_37_to_0_2_43: SWITCH_TRIGGER is owner acceptance or requested edits to the release draft.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-20_prepare_0_2_37_to_0_2_42_release_document_task.md.
-- benchmark_spell_id_lookup: SWITCH_TRIGGER is owner review or direction on the separate shared-gauntlet setup failure.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-19_repair_benchmark_spell_id_lookup_task.md.
+- upgrade_normal_review: SWITCH_TRIGGER is delivered review or owner-directed implementation scope.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-22_review_upgrade_to_normal_complexity_task.md.
+- named_lesser_plan_refresh: SWITCH_TRIGGER is an agreed named-lifecycle concurrency contract for the first runtime patch.
+  RESUME_HIERARCHY: tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md -> tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md.
+- graduation_packaged_assets: SWITCH_TRIGGER is owner approval of packaged build generation.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md.
 - readme_status_badges: SWITCH_TRIGGER is owner acceptance or first hosted coverage failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_readme_status_badges_task.md.
 - embed_melder_banner: SWITCH_TRIGGER is owner acceptance or a requested presentation adjustment.

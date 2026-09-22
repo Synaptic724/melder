@@ -1,5 +1,9 @@
 import threading
-from typing import Any, Callable, ClassVar, Dict, Iterator, List, Optional, Sequence, Tuple, Type
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Iterator, List, Optional, Sequence, Tuple, Type
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.bind.bind import BindLifecycleHooks
+    from melder.aether.spellbook.spell import Spell
 
 
 from melder.utilities.helpers.ulid_factory import new_ulid
@@ -23,6 +27,7 @@ class SpellbookConfiguration(Cleanable):
     * local Spellbook/runtime behaviour
     * disposal and phase-scheduler tuning
     * hook registration for Meld / Conduit / Link / Contract events
+    * initial Bind callbacks, copied into each Book's independent registry
 
     Contract:
     - Properties are mutable only until the configuration is frozen.
@@ -74,7 +79,9 @@ class SpellbookConfiguration(Cleanable):
         "_idempotent_keys",
         "_conduit_hooks",
         "_meld_hooks",
+        "_bind_hooks",
     ]
+    _EMPTY_BIND_HOOKS: ClassVar[BindLifecycleHooks] = ((), (), ())
     _ALLOWED_HOOKS: ClassVar[Tuple[str, ...]] = (
         # Meld pipeline hooks
         "on_meld_pre_resolve",
@@ -120,7 +127,8 @@ class SpellbookConfiguration(Cleanable):
             - Starts unfrozen with disposal-priority enforcement set to False,
               available before defaults or validation; other properties start unset.
             - Seeds the allowed property/type map and idempotent-key set.
-            - Starts with an empty per-spellbook hook registry.
+            - Starts with empty default/per-Book runtime hooks and Bind seeds.
+              Callback objects are borrowed; this configuration never disposes them.
 
         Returns:
             None.
@@ -160,8 +168,9 @@ class SpellbookConfiguration(Cleanable):
         #   - Conduit lifecycle (pre/post created, activated, cleanup start/complete)
         #   - Linking (on_conduit_post_link / on_conduit_post_unlink)
         #   - Contract events (on_contract_created / on_contract_removed)
-        self._conduit_hooks: Dict[str, Dict[str, list[Callable[..., Any]]]] = {}
-        self._meld_hooks: Dict[str, Dict[str, list[Callable[..., Any]]]] = {}
+        self._conduit_hooks: Dict[Optional[str], Dict[str, list[Callable[..., Any]]]] = {}
+        self._meld_hooks: Dict[Optional[str], Dict[str, list[Callable[..., Any]]]] = {}
+        self._bind_hooks: BindLifecycleHooks = self._EMPTY_BIND_HOOKS
 
     def cleanup(self) -> None:
         """
@@ -172,6 +181,8 @@ class SpellbookConfiguration(Cleanable):
         Contract:
             - Idempotent and lock-guarded.
             - Clears property/type maps and hook registries.
+            - Releases Bind seeds without changing Books already initialized from
+              them or disposing the borrowed callback objects.
             - Prevents any future mutation or validation calls through
               `check_cleaned()`.
 
@@ -203,6 +214,7 @@ class SpellbookConfiguration(Cleanable):
                 self._meld_hooks.clear()
             del self._conduit_hooks
             del self._meld_hooks
+            del self._bind_hooks
 
     def set_property(self, key: str, value: Any) -> None:
         """
@@ -297,7 +309,8 @@ class SpellbookConfiguration(Cleanable):
                 True (the recorded lane).
             origin_bind_hook_names:
                 Value-only stage markers supplied by the owning Book. Bind
-                callbacks remain owned by Book/Bind, never by this configuration.
+                runtime registries remain owned by Book/Bind; configured seeds
+                are initialization inputs, not the Book's current hook state.
                 Standalone callers omit this argument.
 
         Raises:
@@ -368,7 +381,8 @@ class SpellbookConfiguration(Cleanable):
                 Conjure-time dynamic posture; emission requires True.
             origin_bind_hook_names:
                 Nonempty bind stages for this Book; callbacks are not serialized
-                or retained on the configuration. Empty means no bind markers.
+                into the record. Empty means no current Book bind markers,
+                even when configuration seeds were subsequently cleared on the Book.
 
         Returns:
             None.
@@ -400,9 +414,9 @@ class SpellbookConfiguration(Cleanable):
                         else:
                             configuration_payload[property_name] = str(property_value)
                     hook_names: List[str] = []
-                    for hook_name in self._conduit_hooks.get(origin_spellbook_id, {}).keys():
+                    for hook_name in self.get_conduit_hooks(origin_spellbook_id):
                         hook_names.append("conduit:{0}".format(hook_name))
-                    for hook_name in self._meld_hooks.get(origin_spellbook_id, {}).keys():
+                    for hook_name in self.get_meld_hooks(origin_spellbook_id):
                         hook_names.append("meld:{0}".format(hook_name))
                     hook_names.extend(origin_bind_hook_names)
                     crystallizer.emit(
@@ -685,11 +699,139 @@ class SpellbookConfiguration(Cleanable):
         self.freeze()
         return {"rejected": rejected, "backfilled": backfilled}
 
+    def add_bind_hooks(
+            self,
+            *,
+            pre: Optional[Sequence[Callable[[Any], object]]] = None,
+            activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+            post: Optional[Sequence[Callable[[Spell], object]]] = None,
+    ) -> None:
+        """
+        Append initial registration callbacks for Books constructed from this config.
+
+        Contract:
+            Validates every callback before publishing any stage. Preserves order
+            and duplicates. Each Book captures the immutable tuples once during
+            construction; later configuration edits affect future Books only.
+            Existing Books use their own add_bind_hooks/clear_bind_hooks methods.
+            Callback objects are borrowed and never executed or disposed here.
+
+        Args:
+            pre: Ordered checks receiving the binding input reference.
+            activation: Ordered callbacks receiving the unpublished Spell.
+            post: Ordered callbacks receiving the registered Spell.
+
+        Returns:
+            None. None or an empty sequence adds no callbacks.
+
+        Raises:
+            TypeError: A stage is not iterable or contains a non-callable.
+            RuntimeError: The configuration is frozen or cleaned.
+
+        Threading:
+            Tuple replacement and lifecycle checks use the configuration lock.
+            No callback runs under that lock.
+        """
+        self.check_cleaned()
+        additions: BindLifecycleHooks = (
+            () if pre is None else tuple(pre),
+            () if activation is None else tuple(activation),
+            () if post is None else tuple(post),
+        )
+        for stage_name, callbacks in zip(("pre", "activation", "post"), additions):
+            for callback in callbacks:
+                if not callable(callback):
+                    raise TypeError(f"Bind {stage_name} hooks must contain only callable objects.")
+        with self._lock:
+            self.check_cleaned()
+            if self._frozen:
+                raise RuntimeError("Cannot modify Bind hook defaults after configuration is frozen.")
+            self._bind_hooks = (
+                self._bind_hooks[0] + additions[0],
+                self._bind_hooks[1] + additions[1],
+                self._bind_hooks[2] + additions[2],
+            )
+
+    def clear_bind_hooks(self) -> None:
+        """
+        Clear initial Bind callbacks without changing any existing Book.
+
+        Contract:
+            Releases callback references without invoking them. An already-created
+            Book retains its own immutable set. Empty defaults remain empty.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: The configuration is frozen or cleaned.
+
+        Threading:
+            Replacement and lifecycle checks use the configuration lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            if self._frozen:
+                raise RuntimeError("Cannot clear Bind hook defaults after configuration is frozen.")
+            self._bind_hooks = self._EMPTY_BIND_HOOKS
+
+    def get_bind_hooks(self) -> BindLifecycleHooks:
+        """
+        Return the immutable pre/activation/post seed set for Book initialization.
+
+        Contract:
+            Returns the current tuple without copying callback objects. Subsequent
+            configuration or Book mutations replace tuples independently.
+
+        Returns:
+            BindLifecycleHooks: Three ordered tuples, empty by default.
+
+        Raises:
+            RuntimeError: The configuration is cleaned.
+
+        Threading:
+            Reads under the configuration lock; no callbacks are invoked.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            return self._bind_hooks
+
+    def with_bind_hooks(
+            self,
+            *,
+            pre: Optional[Sequence[Callable[[Any], object]]] = None,
+            activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+            post: Optional[Sequence[Callable[[Spell], object]]] = None,
+    ) -> SpellbookConfiguration:
+        """
+        Append initial Bind callbacks and return this configuration for chaining.
+
+        Args:
+            pre: Ordered callbacks receiving the original binding reference.
+            activation: Ordered callbacks receiving the unpublished Spell.
+            post: Ordered callbacks receiving the registered Spell.
+
+        Contract:
+            Delegates validation and atomic publication to add_bind_hooks; it
+            neither executes callbacks nor updates already-created Books.
+
+        Returns:
+            SpellbookConfiguration: This same instance.
+
+        Raises:
+            TypeError: A supplied stage contains invalid callbacks.
+            RuntimeError: The configuration is frozen or cleaned.
+        """
+        self.add_bind_hooks(pre=pre, activation=activation, post=post)
+        return self
+
     # ------------------------------------------------------------------
     # System hook API (Meld / Conduit / Link / Contract) – normal style
     # ------------------------------------------------------------------
 
-    def add_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> None:
+    def add_hook(self, spellbook_id: Optional[str], hook_name: str, hook: Callable[..., Any]) -> None:
         """
         Register a single system hook under this configuration for a specific Spellbook.
 
@@ -715,10 +857,12 @@ class SpellbookConfiguration(Cleanable):
                 - "on_contract_removed"
 
         Args:
-            spellbook_id (str):
+            spellbook_id (Optional[str]):
                 The ID of the Spellbook these hooks belong to. This allows
                 dynamic environments to register hooks per-Spellbook and later
                 pull the appropriate hook sets when instantiating Conduits.
+                None supplies a default for future Books. An explicit Book's
+                list replaces the default list for the same event.
             hook_name (str):
                 The canonical hook name to register. Must be one of: attr:`_ALLOWED_HOOKS`.
             hook (Callable[..., Any]):
@@ -749,6 +893,9 @@ class SpellbookConfiguration(Cleanable):
         )
 
         with self._lock:
+            self.check_cleaned()
+            if self._frozen:
+                raise RuntimeError("Cannot modify hooks after configuration is frozen.")
             per_spellbook = target_registry.get(spellbook_id)
             if per_spellbook is None:
                 per_spellbook = {}
@@ -761,9 +908,14 @@ class SpellbookConfiguration(Cleanable):
 
             hooks_list.append(hook)
 
-    def add_hooks(self, spellbook_id: str, **hooks: Any) -> None:
+    def add_hooks(self, spellbook_id: Optional[str] = None, **hooks: Any) -> None:
         """
-        Register multiple system hooks for a specific Spellbook in one call.
+        Register system hooks for one Spellbook or for future Books by default.
+
+        Contract:
+            Validates the complete batch before adding any callback. Omitted
+            spellbook_id supplies defaults; explicit Book events replace the
+            corresponding default event lists during setup. No live propagation.
 
         Each keyword argument maps a hook name to either:
             * A single callable, or
@@ -781,8 +933,8 @@ class SpellbookConfiguration(Cleanable):
             )
 
         Args:
-            spellbook_id (str):
-                The ID of the Spellbook these hooks belong to.
+            spellbook_id (Optional[str]):
+                Book ID, or None for default hooks when the future ID is unknown.
             **hooks:
                 Mapping of hook name -> callable or iterable[callable].
 
@@ -798,6 +950,7 @@ class SpellbookConfiguration(Cleanable):
         if self._frozen:
             raise RuntimeError("Cannot modify hooks after configuration is frozen.")
 
+        normalized_hooks: Dict[str, list[Callable[..., Any]]] = {}
         for name, value in hooks.items():
             if name not in self._ALLOWED_HOOKS:
                 raise ValueError(f"Unknown hook name: {name!r}")
@@ -806,7 +959,7 @@ class SpellbookConfiguration(Cleanable):
                 continue
 
             if callable(value):
-                self.add_hook(spellbook_id, name, value)
+                normalized_hooks[name] = [value]
             else:
                 try:
                     iterator = iter(value)
@@ -814,18 +967,29 @@ class SpellbookConfiguration(Cleanable):
                     raise TypeError(
                         f"Value for hook '{name}' must be a callable or an iterable of callables."
                     )
-                for fn in iterator:
+                normalized_hooks[name] = list(iterator)
+                for fn in normalized_hooks[name]:
                     if not callable(fn):
                         raise TypeError(
                             f"All entries for hook '{name}' must be callable."
                         )
-                    self.add_hook(spellbook_id, name, fn)
+        with self._lock:
+            self.check_cleaned()
+            if self._frozen:
+                raise RuntimeError("Cannot modify hooks after configuration is frozen.")
+            for name, callbacks in normalized_hooks.items():
+                for callback in callbacks:
+                    self.add_hook(spellbook_id, name, callback)
 
     def get_conduit_hooks(self, spellbook_id: str) -> Dict[str, list[Callable[..., Any]]]:
         """
         Retrieve the live conduit hook map for a specific Spellbook.
 
-        This returns the internal conduit hook map for `spellbook_id`.
+        Defaults registered under None apply when this Book has no event-specific
+        list. Book-specific lists replace defaults for that event. Returns the
+        sole live map when no merge is needed; otherwise returns a merged dict
+        borrowing the configured lists. Callers must use local runtime hook APIs
+        to change a live conduit without mutating configuration-owned lists.
 
         Shape:
 
@@ -845,18 +1009,23 @@ class SpellbookConfiguration(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            if self._conduit_hooks is None:
-                return {}
+            self.check_cleaned()
+            defaults = self._conduit_hooks.get(None)
             per_spellbook = self._conduit_hooks.get(spellbook_id)
-            if per_spellbook is None:
-                return {}
-            return per_spellbook
+            if not defaults:
+                return per_spellbook if per_spellbook is not None else {}
+            if not per_spellbook:
+                return defaults
+            return {**defaults, **per_spellbook}
 
     def get_meld_hooks(self, spellbook_id: str) -> Dict[str, list[Callable[..., Any]]]:
         """
         Retrieve the live meld hook map for a specific Spellbook.
 
-        This returns the internal meld hook map for `spellbook_id`.
+        Defaults registered under None apply when this Book has no event-specific
+        list. Book-specific lists replace defaults for that event. Returns the
+        sole live map when no merge is needed; otherwise returns a merged dict
+        borrowing configured lists. Runtime changes must use Meld's local hooks.
 
         Args:
             spellbook_id (str):
@@ -872,28 +1041,27 @@ class SpellbookConfiguration(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            if self._meld_hooks is None:
-                return {}
+            self.check_cleaned()
+            defaults = self._meld_hooks.get(None)
             per_spellbook = self._meld_hooks.get(spellbook_id)
-            if per_spellbook is None:
-                return {}
-            return per_spellbook
+            if not defaults:
+                return per_spellbook if per_spellbook is not None else {}
+            if not per_spellbook:
+                return defaults
+            return {**defaults, **per_spellbook}
 
     def get_hooks(self, spellbook_id: str) -> Dict[str, list[Callable[..., Any]]]:
         """
         Retrieve a merged detached hook map for compatibility callers.
 
         Contract:
-            - KEYED BY SPELLBOOK ID. Hooks in this configuration are per-spellbook,
-              not global, so this returns only the hooks registered for the id you
-              pass.
+            - Combines default hooks and this Book's event-specific lists. A
+              Book-specific list replaces the default for the same event.
             - Returns a DETACHED MERGED VIEW of the conduit and meld hook maps -
               a new dict of new lists. Mutating the result does NOT change
               registered hooks; use `with_hook` / `with_hooks` for that.
-            - An id with no registered hooks yields an empty map rather than
-              raising.
-            - NOTE: the Args block below documents `hook_name`, which this method
-              does not take. The single parameter is `spellbook_id`.
+            - An id with no registered hooks receives defaults, or an empty map
+              when no defaults were configured.
 
         Threading:
             State transitions are applied under the configuration lock.
@@ -909,18 +1077,17 @@ class SpellbookConfiguration(Cleanable):
                 Detached merged view of conduit and meld hooks.
 
         Args:
-            hook_name:
-                Registered hook name to look up, for example a Meld or Conduit
-                lifecycle event.
+            spellbook_id:
+                Book whose effective Conduit and Meld events are requested.
         """
         self.check_cleaned()
         merged: Dict[str, list[Callable[..., Any]]] = {}
         with self._lock:
-            conduit_hooks = self._conduit_hooks.get(spellbook_id)
+            conduit_hooks = self.get_conduit_hooks(spellbook_id)
             if conduit_hooks:
                 for hook_name, hook_list in conduit_hooks.items():
                     merged[hook_name] = list(hook_list)
-            meld_hooks = self._meld_hooks.get(spellbook_id)
+            meld_hooks = self.get_meld_hooks(spellbook_id)
             if meld_hooks:
                 for hook_name, hook_list in meld_hooks.items():
                     merged[hook_name] = list(hook_list)
@@ -978,7 +1145,7 @@ class SpellbookConfiguration(Cleanable):
         self.set_property("phase_scheduler_barrier_timeout_milliseconds", timeout_milliseconds)
         return self
 
-    def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> "SpellbookConfiguration":
+    def with_hook(self, spellbook_id: Optional[str], hook_name: str, hook: Callable[..., Any]) -> "SpellbookConfiguration":
         """
         Fluent
 
@@ -998,6 +1165,7 @@ class SpellbookConfiguration(Cleanable):
             - REGISTERS ONE HOOK FOR ONE SPELLBOOK ID - the first parameter is the
               spellbook id, not the hook name. Hooks are per-spellbook, so the same
               configuration can carry different hooks for different books.
+              An explicit None Book ID supplies defaults for future Books.
             - Fluent wrapper over `add_hook`; it delegates and returns `self`,
               adding no validation of its own. Hook names are validated against the
               allowed-hook set by the underlying call.
@@ -1018,6 +1186,8 @@ class SpellbookConfiguration(Cleanable):
             SpellbookConfiguration: This configuration, for fluent chaining.
 
         Args:
+            spellbook_id:
+                Book ID, or None to register a default event callback.
             hook_name:
                 The lifecycle event to attach to.
             hook:
@@ -1027,7 +1197,7 @@ class SpellbookConfiguration(Cleanable):
         self.add_hook(spellbook_id, hook_name, hook)
         return self
 
-    def with_hooks(self, spellbook_id: str, **hooks: Any) -> "SpellbookConfiguration":
+    def with_hooks(self, spellbook_id: Optional[str] = None, **hooks: Any) -> "SpellbookConfiguration":
         """
         Fluent
 
@@ -1051,6 +1221,7 @@ class SpellbookConfiguration(Cleanable):
         Contract:
             - REGISTERS MANY HOOKS FOR ONE SPELLBOOK ID in a single call; the first
               parameter is the spellbook id and each keyword is a hook name.
+              Omitting the ID registers defaults for future Books.
             - Each keyword value may be a SINGLE CALLABLE or an ITERABLE OF
               CALLABLES; both shapes are accepted and flattened into the same
               registration.
@@ -1071,8 +1242,8 @@ class SpellbookConfiguration(Cleanable):
             SpellbookConfiguration: This configuration, for fluent chaining.
 
         Args:
-            hook_name:
-                The lifecycle event to attach to.
+            spellbook_id:
+                Book ID, or None for default event callbacks.
             hooks:
                 One or more callables to invoke, in registration order.
         """

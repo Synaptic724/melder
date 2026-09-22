@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="12" time="1.077" timestamp="2026-09-22T08:26:28.962804-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_upgrade_discards_old_book_hooks_and_lesser_and_space_overlays[manual-local]" time="0.069" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_upgrade_discards_old_book_hooks_and_lesser_and_space_overlays[manual-framewide]" time="0.010" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_upgrade_discards_old_book_hooks_and_lesser_and_space_overlays[managed-local]" time="0.010" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_upgrade_discards_old_book_hooks_and_lesser_and_space_overlays[managed-framewide]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_upgrade_discards_old_book_hooks_and_lesser_and_space_overlays[pooled-local]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_upgrade_discards_old_book_hooks_and_lesser_and_space_overlays[pooled-framewide]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_framewide_defaults_are_reapplied_without_copying_runtime_hook_changes[adopt-frame-policy]" time="0.010"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: GraduatedService (id=71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'GraduatedService' (id=71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3, frame=None):&#10;    - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'GraduatedService'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.&#10;      details: {'spell_name': 'GraduatedService', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M34R5MWXJQER4HM8Z2D81WQV', 'spell_id': '1b2069b3a2260c609aeb4552113f5366056934ee2951d26b86fa950e944a6e07', 'spellframe': None, 'binding_name': None}, {'spell_index_id': '01M34R5MWZ2WYXEH58TWR2B03D', 'spell_id': '71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3', 'spellframe': None, 'binding_name': 'second'}]}&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_graduation_hook_isolation.py:254: in test_framewide_defaults_are_reapplied_without_copying_runtime_hook_changes
+    world.child.bind(spell=GraduatedService, binding_name="second", existence=Existence.many)
+src\melder\aether\conduit\conduit.py:3313: in bind
+    return self._spellbook.bind(
+src\melder\aether\spellbook\spellbook.py:5278: in bind
+    with self.transaction(
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\contextlib.py:148: in __exit__
+    next(self.gen)
+src\melder\aether\spellbook\spellbook.py:4538: in transaction
+    self.end_transaction(transaction_type, success=True)
+src\melder\aether\spellbook\spellbook.py:4426: in end_transaction
+    mediator.end_transaction_for_identity(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:744: in end_transaction_for_identity
+    return self.end_transaction_by_request_id(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:889: in end_transaction_by_request_id
+    self._finalize_root_session(session)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:1073: in _finalize_root_session
+    self._orchestrator.commit_request(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\orchestrator\orchestrator.py:504: in commit_request
+    commit_validator(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:584: in _dispatch_commit_validator
+    structural(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:835: in _default_structural_validator
+    spellbook._run_post_conjure_structural_phases(pending)
+src\melder\aether\spellbook\spellbook.py:7093: in _run_post_conjure_structural_phases
+    SpellbookCreationSystem.run_post_conjure_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1440: in run_post_conjure_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+src\melder\aether\spellbook\spellbook_creation_system.py:1993: in _raise_structural_validation_error
+    raise SpellbookValidationError(broken_spells)
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: GraduatedService (id=71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'GraduatedService' (id=71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3, frame=None):
+E       - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'GraduatedService'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.
+E         details: {'spell_name': 'GraduatedService', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M34R5MWXJQER4HM8Z2D81WQV', 'spell_id': '1b2069b3a2260c609aeb4552113f5366056934ee2951d26b86fa950e944a6e07', 'spellframe': None, 'binding_name': None}, {'spell_index_id': '01M34R5MWZ2WYXEH58TWR2B03D', 'spell_id': '71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3', 'spellframe': None, 'binding_name': 'second'}]}
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_framewide_defaults_are_reapplied_without_copying_runtime_hook_changes[supply-canonical-policy]" time="0.013"><failure message="melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: GraduatedService (id=71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3, frame=None)&#10;Diagnostics:&#10;Phase 4 issues:&#10;- Spell 'GraduatedService' (id=71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3, frame=None):&#10;    - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'GraduatedService'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.&#10;      details: {'spell_name': 'GraduatedService', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M34R5N7MF7FCHFX87J2BEWMF', 'spell_id': '1b2069b3a2260c609aeb4552113f5366056934ee2951d26b86fa950e944a6e07', 'spellframe': None, 'binding_name': None}, {'spell_index_id': '01M34R5N7PT6F8TC5SPZ20R7J2', 'spell_id': '71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3', 'spellframe': None, 'binding_name': 'second'}]}&#10;Phase 6 diagnostics:&#10;  (none recorded)">tests\component\melder\aether\conduit\test_conduit_graduation_hook_isolation.py:254: in test_framewide_defaults_are_reapplied_without_copying_runtime_hook_changes
+    world.child.bind(spell=GraduatedService, binding_name="second", existence=Existence.many)
+src\melder\aether\conduit\conduit.py:3313: in bind
+    return self._spellbook.bind(
+src\melder\aether\spellbook\spellbook.py:5278: in bind
+    with self.transaction(
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\contextlib.py:148: in __exit__
+    next(self.gen)
+src\melder\aether\spellbook\spellbook.py:4538: in transaction
+    self.end_transaction(transaction_type, success=True)
+src\melder\aether\spellbook\spellbook.py:4426: in end_transaction
+    mediator.end_transaction_for_identity(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:744: in end_transaction_for_identity
+    return self.end_transaction_by_request_id(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:889: in end_transaction_by_request_id
+    self._finalize_root_session(session)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:1073: in _finalize_root_session
+    self._orchestrator.commit_request(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\orchestrator\orchestrator.py:504: in commit_request
+    commit_validator(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:584: in _dispatch_commit_validator
+    structural(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:835: in _default_structural_validator
+    spellbook._run_post_conjure_structural_phases(pending)
+src\melder\aether\spellbook\spellbook.py:7093: in _run_post_conjure_structural_phases
+    SpellbookCreationSystem.run_post_conjure_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1440: in run_post_conjure_structural_phases
+    SpellbookCreationSystem._raise_structural_validation_error(
+src\melder\aether\spellbook\spellbook_creation_system.py:1993: in _raise_structural_validation_error
+    raise SpellbookValidationError(broken_spells)
+E   melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: GraduatedService (id=71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3, frame=None)
+E   Diagnostics:
+E   Phase 4 issues:
+E   - Spell 'GraduatedService' (id=71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3, frame=None):
+E       - [error] DUPLICATE_SPELL_NAME (source=DuplicateSpellNameStrategy): Multiple visible spells share the name 'GraduatedService'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable.
+E         details: {'spell_name': 'GraduatedService', 'collision_count': 2, 'collisions': [{'spell_index_id': '01M34R5N7MF7FCHFX87J2BEWMF', 'spell_id': '1b2069b3a2260c609aeb4552113f5366056934ee2951d26b86fa950e944a6e07', 'spellframe': None, 'binding_name': None}, {'spell_index_id': '01M34R5N7PT6F8TC5SPZ20R7J2', 'spell_id': '71112a4724bcc28a55a8dcd10158eac0fd33134a06417d240d02bcc57c6a94a3', 'spellframe': None, 'binding_name': 'second'}]}
+E   Phase 6 diagnostics:
+E     (none recorded)</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_local_config_default_hooks_are_discarded_when_upgrade_uses_fresh_defaults" time="0.015" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_failed_upgrade_preserves_old_hook_behavior_until_successful_retry[local]" time="0.018" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_failed_upgrade_preserves_old_hook_behavior_until_successful_retry[framewide]" time="0.014" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_hook_isolation" name="test_framewide_policy_does_not_become_process_wide" time="0.014" /></testsuite></testsuites>

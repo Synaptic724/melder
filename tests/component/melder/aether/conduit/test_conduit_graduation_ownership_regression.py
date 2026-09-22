@@ -1,12 +1,13 @@
-"""Red regressions for Book ownership after lesser-to-normal graduation.
+"""Regressions for Book ownership after lesser-to-normal graduation.
 
 These assert the requested independent-Book contract through real registration,
-resolution and cleanup. They intentionally fail until graduation adopts its new
-Book. Frame-owned shared configuration remains legitimate; Bind callbacks remain
-Book-owned in either configuration mode. No optional upgrade keyword is assumed.
+resolution and cleanup. Frame-owned shared configuration remains legitimate;
+Bind callbacks remain Book-owned in either configuration mode. Graduation starts
+with an empty Book; retained creations do not carry old definition visibility.
 """
 
 from collections.abc import Iterator
+from typing import Optional
 
 import pytest
 
@@ -43,9 +44,17 @@ class TrackedService:
 class ParentService(TrackedService):
     """Distinct parent-owned binding with inherited observable disposal behavior."""
 
+    def cleanup(self) -> None:
+        """Declare disposal on the concrete class so its binding profile records it."""
+        super().cleanup()
+
 
 class GraduatedService(TrackedService):
     """Distinct post-graduation binding with inherited observable disposal behavior."""
+
+    def cleanup(self) -> None:
+        """Declare disposal on the concrete class so its binding profile records it."""
+        super().cleanup()
 
 
 class LaterParentService(TrackedService):
@@ -63,15 +72,25 @@ class GraduationWorld:
         fail; it does not rewrite runtime ownership to make a test pass.
     """
 
-    def __init__(self, *, shared_configuration: bool) -> None:
+    def __init__(
+        self,
+        *,
+        shared_configuration: bool,
+        configuration: Optional[SpellbookConfiguration] = None,
+    ) -> None:
         """Construct isolated scopes with one worker and runtime caching disabled.
 
         Args:
             shared_configuration: Whether rich configuration is frame-owned.
+            configuration: Optional prepared initial configuration, including
+                hook seeds. Uses the graduation-regression frame.
         Returns:
             None. The fixture owns cleanup of the constructed runtime.
         """
-        self.configuration = SpellbookConfiguration(aether_frame="graduation-regression")
+        self.configuration = (
+            configuration if configuration is not None
+            else SpellbookConfiguration(aether_frame="graduation-regression")
+        )
         self.configuration.load_default_dictionary()
         self.configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
         frame_configuration = configure_frame_posture_for_spellbook_configuration(
@@ -179,8 +198,7 @@ def test_graduated_binding_is_not_registered_in_the_parent_book(
     """A new child binding must resolve locally without becoming parent-owned.
 
     Contract:
-        This tests only new ownership; it does not decide whether the upgraded
-        conduit continues borrowing previously visible parent definitions.
+        The new Book owns the new binding and inherits no previous definitions.
     """
     graduation_world.graduate()
     child_id = graduation_world.child.bind(
@@ -329,6 +347,8 @@ def test_graduated_cleanup_disposes_its_own_unique_without_disposing_parent(
         disposal_method_names=["cleanup"],
     )
     child_creation = graduation_world.child.meld(spell_id=child_id)
+    registered = graduation_world.child._spellbook.find_spell_by_id(child_id)
+    assert registered.disposal_method_names == ["cleanup"]
     graduation_world.child.permanent_cleanup()
 
     assert child_creation.cleanup_calls == 1

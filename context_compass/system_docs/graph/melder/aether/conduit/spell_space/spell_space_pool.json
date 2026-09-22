@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/spell_space/spell_space_pool.py",
- "source_sha256": "aae77f56878e26499b0e05c032b73edf69f8fcac8e7d7623549cc09aa4134ca0",
+ "source_sha256": "dd20c3a73596fe429871cfbcaece75dcb10dd769993f82c76528e29df9ecb7a6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.spell_space.spell_space_pool": {
@@ -44,12 +44,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d88f555703fbe6f926d85879a56d4babcd573a0bc3064ebdc4cb122f82a76b73",
+   "span_sha256": "618578322cbcd44385df8dbf014b2fd146c9c473eb53469c1411c6bece361e76",
    "role": "Conduit-local elastic pool for reusable spellspace scopes.",
    "responsibilities": [
     "creates pooled SpellSpace instances for one owner conduit",
     "reactivates or acquires spellspaces for managed and manual paths",
-    "returns or destroys spellspaces according to fixed-capacity idle policy"
+    "returns or destroys spellspaces according to fixed-capacity idle policy",
+    "adopts the immediate owner's current local hook map at acquisition only when its divergence bool is set"
    ],
    "owns_state": [
     "_owner_conduit_creations",

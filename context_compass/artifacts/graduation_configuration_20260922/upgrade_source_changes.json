@@ -1,0 +1,12 @@
+{
+  "compared": 592,
+  "changed": [
+    "src\\melder\\aether\\conduit\\conduit_ward\\conduit_ward.py",
+    "src\\melder\\aether\\conduit\\conduit.py",
+    "src\\melder\\aether\\spellbook\\bind\\bind.py",
+    "src\\melder\\aether\\spellbook\\configuration\\spellbook_configuration.py",
+    "src\\melder\\aether\\spellbook\\spellbook.py"
+  ],
+  "missing": [],
+  "build_assets_changed": []
+}

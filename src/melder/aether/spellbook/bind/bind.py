@@ -197,13 +197,20 @@ class Bind(Cleanable):
     _EMPTY_HOOKS: ClassVar[BindLifecycleHooks] = ((), (), ())
     _HOOK_NAMES: ClassVar[tuple[str, ...]] = ("bind:pre", "bind:activation", "bind:post")
 
-    def __init__(self, spellbook: Spellbook) -> None:
+    def __init__(
+            self,
+            spellbook: Spellbook,
+            *,
+            initial_hooks: Optional[BindLifecycleHooks] = None,
+    ) -> None:
         """
         Initialize the spell registration gateway for one spellbook.
 
         Args:
             spellbook: Owning spellbook that will receive newly registered
                 `Spell` instances.
+            initial_hooks: Validated immutable configuration seed, or None for
+                empty stages. Captured once; later changes stay Book-local.
         Contract:
             - Owns one `SpellExaminer` helper for profile creation.
             - Serializes registration work behind an internal lock.
@@ -220,7 +227,9 @@ class Bind(Cleanable):
         self._spellbook: Spellbook = spellbook
         self._lock = threading.RLock()
         self._spell_examiner: SpellExaminer = SpellExaminer()
-        self._lifecycle_hooks: BindLifecycleHooks = self._EMPTY_HOOKS
+        self._lifecycle_hooks: BindLifecycleHooks = (
+            self._EMPTY_HOOKS if initial_hooks is None else initial_hooks
+        )
 
     def cleanup(self) -> None:
         """

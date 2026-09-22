@@ -11,7 +11,7 @@
 
 ## Objective
 Parked with the broad epic at the owner's request. Active discovery now belongs to
-`tickets/tasks/2026-09-22_investigate_pooled_conduit_hook_reset_task.md`.
+`tickets/tasks/completed/2026-09-22_investigate_pooled_conduit_hook_reset_task.md`.
 
 After the bind-hook implementation, investigate how existing Conduit/Meld hook systems can safely
 support clearing and re-registration. Produce a source-backed proposal before changing their APIs.
@@ -192,7 +192,7 @@ an additional runtime graduation probe was not run after the owner stopped code/
     behavior, permanent-only lesser cleanup events and missing runtime-local/Spell hook markers.
   EVIDENCE:
   - Owner's model-preservation, graduation and documentation-only instructions.
-  - tickets/epics/backlog/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md
+  - tickets/epics/completed/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md
   - artifacts/runtime_hook_discovery_20260921/characterization_final.log:1-2
   - artifacts/runtime_hook_discovery_20260921/characterization_final.xml
   - artifacts/runtime_hook_discovery_20260921/lint.log:1-1
@@ -209,7 +209,7 @@ an additional runtime graduation probe was not run after the owner stopped code/
     Existing certification and role continue; no runtime/test edits or asset generation authorized.
   EVIDENCE:
   - Owner's latest request to keep investigating and trace all hooks.
-  - tickets/epics/backlog/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md:13-20
+  - tickets/epics/completed/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md:13-20
   IMPACT: This resumes discovery without treating implementation-review approval as granted.
   NEXT: Trace conjure hook registration and all three dispatch stages through creation completion.
   REREAD: REQUIRED
@@ -437,7 +437,7 @@ an additional runtime graduation probe was not run after the owner stopped code/
     Exact APIs remain to be proposed; existing scope ownership stays intact and implementation is held.
   EVIDENCE:
   - Owner's runtime-modification requirement and immediate clarification about standardized style.
-  - tickets/epics/backlog/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md
+  - tickets/epics/completed/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md
   IMPACT: Adding isolated clear/set methods per subsystem is insufficient. Broader hook families now
     belong in design coverage, while their complete lifecycle audit remains outstanding.
   NEXT: Propose the common hook-management contract and map current APIs onto it.
@@ -452,7 +452,7 @@ an additional runtime graduation probe was not run after the owner stopped code/
     callable-taking methods are lifecycle subscriptions. Record one common-contract proposal.
   EVIDENCE:
   - Owner's instruction to investigate and understand the systems after the standardization discussion.
-  - tickets/epics/backlog/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md
+  - tickets/epics/completed/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md
   IMPACT: Broader discovery is active. Runtime/test changes and generated assets remain held.
   NEXT: Read RiftSpace hook registries, action wrappers and event/memory systems end to end.
   REREAD: REQUIRED
@@ -636,7 +636,7 @@ an additional runtime graduation probe was not run after the owner stopped code/
     note end-lines corrected. No runtime tests or generation occurred.
   EVIDENCE:
   - artifacts/runtime_hook_discovery_20260921/system_hook_standardization.md
-  - tickets/epics/backlog/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md
+  - tickets/epics/completed/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md
   IMPACT: Owner can assess one consistent contract using current source evidence. Optional hooks
     must remain distinguishable from required recovery, validation, ACL and persistence wiring.
   NEXT: Review the common API, target placement and in-flight rule before starting an implementation story.
@@ -666,7 +666,7 @@ an additional runtime graduation probe was not run after the owner stopped code/
     but continue only pooled Conduit/Meld modified-state and safe-baseline investigation in the new task.
   EVIDENCE:
   - Owner's explicit narrowing and backlog request.
-  - tickets/tasks/2026-09-22_investigate_pooled_conduit_hook_reset_task.md
+  - tickets/tasks/completed/2026-09-22_investigate_pooled_conduit_hook_reset_task.md
   IMPACT: Shared hook API, other callback families and graduation work are no longer active scope.
   NEXT: Use the narrow task for current work; this record remains reference only.
   REREAD: HELPFUL

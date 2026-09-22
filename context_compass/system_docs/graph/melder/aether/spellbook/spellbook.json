@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "699cfefb38814803bbb64a2ffce6ca506b9f15f49fb6d78708148b03e9761865",
+ "source_sha256": "5e57be91dd84082e84533aad4aa31ab4580bd6e525be707556bf0b41144af1c1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -19,18 +19,20 @@
    "label": "Spellbook",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spellbook.py",
-   "lineno": 66,
+   "lineno": 69,
    "bases": [
     "Cleanable"
    ],
    "markers": [],
    "public_methods": [
+    "add_bind_hooks",
     "begin_transaction",
     "bind",
     "bind_inactive",
     "cleanup",
     "cleanup_and_remove_spell",
     "cleanup_spell",
+    "clear_bind_hooks",
     "conduit",
     "configure_aether_frame",
     "conjure",
@@ -54,18 +56,23 @@
     "transaction"
    ],
    "shape": {
-    "method_count": 134,
+    "method_count": 138,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "50fa9a439c3a6f7657b76ea7f3763689a65f30301aa482abdd9dca5adbe65003",
+   "span_sha256": "ccbb2c6c39b9d45412d2da3f43453e53c83caa989fa614bd4213485d4366c44e",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
     "forwards native resolvable policy through active and inactive binding and exposes it in spell descriptions",
     "coordinates configuration freeze and frame publication into Aether and Nexus",
     "conjures and retains exactly one root conduit",
-    "coordinates spell lineage state and transaction-sensitive binding changes"
+    "conjures against a prepared existing normal conduit through a separate private route preserving its ID and creation stores",
+    "seeds independent Bind callbacks from ordinary local or frame-owned configuration selection",
+    "coordinates spell lineage state and transaction-sensitive binding changes",
+    "exposes Book-local bind hook add and clear operations through its owned Bind",
+    "dispatches captured post hooks after active or parked publication and before outer transaction completion",
+    "refreshes complete recorded Book twins with value-only bind-stage markers and explicitly cleans Bind during teardown"
    ],
    "owns_state": [
     "_bind",
@@ -199,7 +206,9 @@
   "TracebackType": "types.TracebackType",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
+  "Callable": "typing.Callable",
   "ClassVar": "typing.ClassVar",
+  "Optional": "typing.Optional",
   "Aether": "melder.aether.aether.Aether",
   "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
   "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
@@ -208,6 +217,7 @@
   "SpellValidity": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
   "Permissions": "melder.aether.conduit.conduit_ward.permissions.permissions.Permissions",
   "Policies": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
+  "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
   "Bind": "melder.aether.spellbook.bind.bind.Bind",
   "Scan": "melder.aether.spellbook.bind.scan.Scan",
   "SpellIndex": "melder.aether.spellbook.bind.spell_index.SpellIndex",
@@ -281,7 +291,7 @@
    "from": "melder.aether.spellbook.spellbook.Spellbook",
    "to": "melder.aether.conduit.conduit.Conduit",
    "relation": "creates",
-   "why": "Spellbook conjures the single root Conduit for its frame once configuration and structural phases are ready.",
+   "why": "Ordinary conjure constructs this Book's single root in the frame. The separate private route adopts an existing prepared normal conduit without allocating a second one.",
    "cardinality": "one_to_one",
    "phase": [
     "runtime"
@@ -291,8 +301,8 @@
   {
    "from": "melder.aether.spellbook.spellbook.Spellbook",
    "to": "melder.aether.conduit.conduit.Conduit",
-   "relation": "owns_lifecycle_of",
-   "why": "Spellbook retains exactly one root Conduit reference and tears that runtime surface down with the Spellbook.",
+   "relation": "holds",
+   "why": "Spellbook retains its sole conjured or adopted normal Conduit. Normal Conduit teardown owns Book cleanup; this back-reference does not create a second conduit cleanup owner.",
    "cardinality": "one_to_one",
    "phase": [
     "runtime",
@@ -304,7 +314,7 @@
    "from": "melder.aether.spellbook.spellbook.Spellbook",
    "to": "melder.aether.spellbook.bind.bind.Bind",
    "relation": "owns_lifecycle_of",
-   "why": "Spellbook constructs and owns one Bind gateway for registration into its local registries.",
+   "why": "Spellbook constructs and owns one Bind gateway, seeding immutable callbacks once from selected configuration. Runtime hook add/clear remains local to this Book.",
    "cardinality": "one_to_one",
    "phase": [
     "init",
@@ -339,7 +349,7 @@
    "from": "melder.aether.spellbook.spellbook.Spellbook",
    "to": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
    "relation": "owns_lifecycle_of",
-   "why": "Spellbook owns the mutable Configuration surface used to stage runtime posture before conjure.",
+   "why": "In local mode Spellbook owns its rich configuration. In frame-wide mode it adopts the canonical frozen frame-owned configuration and skips cleanup of that borrowed object; sharing configuration never shares Book registries.",
    "cardinality": "one_to_one",
    "phase": [
     "init",
@@ -352,7 +362,7 @@
    "from": "melder.aether.spellbook.spellbook.Spellbook",
    "to": "melder.aether.spellbook.configuration.system_state.SystemState",
    "relation": "uses",
-   "why": "Spellbook reads SystemState from Configuration when enforcing runtime posture decisions.",
+   "why": "Spellbook reads SystemState from its borrowed AethericFrameConfiguration when enforcing runtime posture decisions; rich SpellbookConfiguration remains a separate policy object.",
    "cardinality": "many_to_one",
    "phase": [
     "init",

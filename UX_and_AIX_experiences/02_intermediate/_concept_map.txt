@@ -179,6 +179,11 @@ EARLY DISPOSAL WHILE A SCOPE STAYS LIVE (2026-09-21)
      exactly-once disposal across later cleanup). Lesson 38 remains
      withdrawn; this lesson adds methods on existing public root types.
 
+BIND LIFECYCLE POLICY (2026-09-22)
+  40 bind_lifecycle_hooks (pre-bind reference checks, actual-Spell activation,
+     post registration, configuration seeds and Book/normal-Conduit add/clear/re-add).
+     Bind callbacks run at registration; lesson 03's creation callbacks run at meld.
+
 HARNESS
   pytest_examples/test_intermediate_examples.py (every lesson runs)
   pytest_examples/test_intermediate_probes.py (contract probes)

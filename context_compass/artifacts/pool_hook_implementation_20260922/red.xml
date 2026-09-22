@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="17" skipped="0" tests="17" time="0.627" timestamp="2026-09-22T10:24:37.849988-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_lesser_pool_return_discards_local_meld_hooks[local-config]" time="0.053"><failure message="AssertionError: assert ['local'] == []&#10;  &#10;  Left contains one more item: 'local'&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:39: in test_lesser_pool_return_discards_local_meld_hooks
+    assert events == []
+E   AssertionError: assert ['local'] == []
+E     
+E     Left contains one more item: 'local'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_lesser_pool_return_discards_local_meld_hooks[framewide-config]" time="0.008"><failure message="AssertionError: assert ['local'] == []&#10;  &#10;  Left contains one more item: 'local'&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:39: in test_lesser_pool_return_discards_local_meld_hooks
+    assert events == []
+E   AssertionError: assert ['local'] == []
+E     
+E     Left contains one more item: 'local'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_space_inheriting_temporary_owner_hooks_resets_on_lesser_return[local-config-manual]" time="0.007"><failure message="AssertionError: assert ['owner-local'] == []&#10;  &#10;  Left contains one more item: 'owner-local'&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:69: in test_space_inheriting_temporary_owner_hooks_resets_on_lesser_return
+    assert events == []
+E   AssertionError: assert ['owner-local'] == []
+E     
+E     Left contains one more item: 'owner-local'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_space_inheriting_temporary_owner_hooks_resets_on_lesser_return[local-config-managed]" time="0.007"><failure message="AssertionError: assert ['owner-local'] == []&#10;  &#10;  Left contains one more item: 'owner-local'&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:69: in test_space_inheriting_temporary_owner_hooks_resets_on_lesser_return
+    assert events == []
+E   AssertionError: assert ['owner-local'] == []
+E     
+E     Left contains one more item: 'owner-local'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_space_inheriting_temporary_owner_hooks_resets_on_lesser_return[framewide-config-manual]" time="0.007"><failure message="AssertionError: assert ['owner-local'] == []&#10;  &#10;  Left contains one more item: 'owner-local'&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:69: in test_space_inheriting_temporary_owner_hooks_resets_on_lesser_return
+    assert events == []
+E   AssertionError: assert ['owner-local'] == []
+E     
+E     Left contains one more item: 'owner-local'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_space_inheriting_temporary_owner_hooks_resets_on_lesser_return[framewide-config-managed]" time="0.007"><failure message="AssertionError: assert ['owner-local'] == []&#10;  &#10;  Left contains one more item: 'owner-local'&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:69: in test_space_inheriting_temporary_owner_hooks_resets_on_lesser_return
+    assert events == []
+E   AssertionError: assert ['owner-local'] == []
+E     
+E     Left contains one more item: 'owner-local'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_shared_root_updates_reach_inheritors_and_leave_localized_maps_alone[False]" time="0.006"><failure message="AttributeError: 'Conduit' object has no attribute 'set_conduit_hooks'. Did you mean: 'get_conduit_cloud'?">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:102: in test_shared_root_updates_reach_inheritors_and_leave_localized_maps_alone
+    world.root.set_conduit_hooks({"on_meld_pre_resolve": updated}, create_local_hooks=False)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Conduit' object has no attribute 'set_conduit_hooks'. Did you mean: 'get_conduit_cloud'?</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_shared_root_updates_reach_inheritors_and_leave_localized_maps_alone[True]" time="0.006"><failure message="AttributeError: 'Conduit' object has no attribute 'set_conduit_hooks'. Did you mean: 'get_conduit_cloud'?">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:102: in test_shared_root_updates_reach_inheritors_and_leave_localized_maps_alone
+    world.root.set_conduit_hooks({"on_meld_pre_resolve": updated}, create_local_hooks=False)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Conduit' object has no attribute 'set_conduit_hooks'. Did you mean: 'get_conduit_cloud'?</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_mixed_invalid_hook_batch_changes_neither_family[local-config]" time="0.007"><failure message="assert [&lt;Conduit nam...WQ89DE4TPM8Q&gt;] == []&#10;  &#10;  Left contains one more item: &lt;Conduit name=None id=01M34YXZQ6H04FWQ89DE4TPM8Q&gt;&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:137: in test_mixed_invalid_hook_batch_changes_neither_family
+    assert calls == []
+E   assert [&lt;Conduit nam...WQ89DE4TPM8Q&gt;] == []
+E     
+E     Left contains one more item: &lt;Conduit name=None id=01M34YXZQ6H04FWQ89DE4TPM8Q&gt;
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_mixed_invalid_hook_batch_changes_neither_family[framewide-config]" time="0.007"><failure message="assert [&lt;Conduit nam...T5GM6B73VA90&gt;] == []&#10;  &#10;  Left contains one more item: &lt;Conduit name=None id=01M34YXZQHE98DT5GM6B73VA90&gt;&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:137: in test_mixed_invalid_hook_batch_changes_neither_family
+    assert calls == []
+E   assert [&lt;Conduit nam...T5GM6B73VA90&gt;] == []
+E     
+E     Left contains one more item: &lt;Conduit name=None id=01M34YXZQHE98DT5GM6B73VA90&gt;
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_idle_spaces_adopt_current_owner_local_hooks_when_acquired[local-config-False]" time="0.007"><failure message="AssertionError: assert [] == ['later']&#10;  &#10;  Right contains one more item: 'later'&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:158: in test_idle_spaces_adopt_current_owner_local_hooks_when_acquired
+    assert events == ["later"]
+E   AssertionError: assert [] == ['later']
+E     
+E     Right contains one more item: 'later'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_idle_spaces_adopt_current_owner_local_hooks_when_acquired[local-config-True]" time="0.007"><failure message="AssertionError: assert [] == ['later']&#10;  &#10;  Right contains one more item: 'later'&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:158: in test_idle_spaces_adopt_current_owner_local_hooks_when_acquired
+    assert events == ["later"]
+E   AssertionError: assert [] == ['later']
+E     
+E     Right contains one more item: 'later'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_idle_spaces_adopt_current_owner_local_hooks_when_acquired[framewide-config-False]" time="0.007"><failure message="AssertionError: assert [] == ['later']&#10;  &#10;  Right contains one more item: 'later'&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:158: in test_idle_spaces_adopt_current_owner_local_hooks_when_acquired
+    assert events == ["later"]
+E   AssertionError: assert [] == ['later']
+E     
+E     Right contains one more item: 'later'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_idle_spaces_adopt_current_owner_local_hooks_when_acquired[framewide-config-True]" time="0.009"><failure message="AssertionError: assert [] == ['later']&#10;  &#10;  Right contains one more item: 'later'&#10;  Use -v to get more diff">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:158: in test_idle_spaces_adopt_current_owner_local_hooks_when_acquired
+    assert events == ["later"]
+E   AssertionError: assert [] == ['later']
+E     
+E     Right contains one more item: 'later'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_pool_reset_releases_callback_objects[local-config]" time="0.009"><failure message="AssertionError: assert &lt;test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback object at 0x00000445321FD990&gt; is None&#10; +  where &lt;test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback object at 0x00000445321FD990&gt; = &lt;weakref at 0x00000445364912C0; to 'test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback' at 0x00000445321FD990&gt;()">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:184: in test_pool_reset_releases_callback_objects
+    assert retained() is None
+E   AssertionError: assert &lt;test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback object at 0x00000445321FD990&gt; is None
+E    +  where &lt;test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback object at 0x00000445321FD990&gt; = &lt;weakref at 0x00000445364912C0; to 'test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback' at 0x00000445321FD990&gt;()</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_pool_reset_releases_callback_objects[framewide-config]" time="0.009"><failure message="AssertionError: assert &lt;test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback object at 0x00000445321FB590&gt; is None&#10; +  where &lt;test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback object at 0x00000445321FB590&gt; = &lt;weakref at 0x000004453649B460; to 'test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback' at 0x00000445321FB590&gt;()">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:184: in test_pool_reset_releases_callback_objects
+    assert retained() is None
+E   AssertionError: assert &lt;test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback object at 0x00000445321FB590&gt; is None
+E    +  where &lt;test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback object at 0x00000445321FB590&gt; = &lt;weakref at 0x000004453649B460; to 'test_pooled_hook_baselines.test_pool_reset_releases_callback_objects.&lt;locals&gt;.Callback' at 0x00000445321FB590&gt;()</failure></testcase><testcase classname="tests.component.melder.aether.conduit.test_pooled_hook_baselines" name="test_graduated_root_shared_updates_leave_frame_configuration_and_old_root_unchanged" time="0.008"><failure message="AttributeError: 'ConduitMeld' object has no attribute 'register_meld_hooks'. Did you mean: 'set_meld_hooks'?">tests\component\melder\aether\conduit\test_pooled_hook_baselines.py:207: in test_graduated_root_shared_updates_leave_frame_configuration_and_old_root_unchanged
+    world.child._meld.register_meld_hooks(
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ConduitMeld' object has no attribute 'register_meld_hooks'. Did you mean: 'set_meld_hooks'?</failure></testcase></testsuite></testsuites>

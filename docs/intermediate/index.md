@@ -10,7 +10,7 @@ explicit public operations.
 
 - Fluent registration with `SpellBinder` and module registration with `scan_bind`.
 - Constructor, explicit, and collection dependency injection.
-- Configuration, hooks, spell spaces, and lineage lifetimes.
+- Configuration, bind lifecycle hooks, runtime hooks, spell spaces, and lineage lifetimes.
 - Dynamic posture, links, permissions, and ownership.
 - Late binding with `SpellContract` and connected-subsystem composition.
 - Early object disposal with `purge`, scoped cleanup, transfer, and severing relationships.

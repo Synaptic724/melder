@@ -1259,6 +1259,13 @@ THE TIER'S OWN SHAPE, NOW THAT IT IS DONE
   melder buys concurrency and agency with precision of refusal, never
   with permissiveness.
 
+AGENT REGISTRATION POLICY (2026-09-22)
+  37 review_agent_bindings: ordered checks over an agent-supplied existing object,
+     metadata validation and annotation on the actual Spell during activation,
+     post-registration metadata/audit, and publication surviving a post-hook failure.
+     Uses active bind, public md.* surfaces and unique supplied-object reuse.
+     Metadata updates do not rewrite source, rehash identity or refresh prior records.
+
 REMAINING / NOT YET AUTHORED
   - boot melds (owner epic 2026-07-20, unassigned): conjure-time warm-up
     recipe riding the bind signature into checkpoints.
