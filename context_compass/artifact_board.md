@@ -92,6 +92,7 @@ Disposition values
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/completed/2026-09-23_fix_named_conduit_discovery_test_doubles_task.md | artifacts/named_discovery_test_repair_20260923/ | retain_as_reference | Before/after evidence for both CI failures; 201 passing tests. | 2026-09-23T22:37:00Z |
 | tickets/tasks/completed/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md | artifacts/packaged_asset_refresh_20260923/ | retain_as_reference | Authorized rebuild, 253 passing tests and unchanged runtime source evidence. | 2026-09-23T12:55:59Z |
 | tickets/tasks/completed/2026-09-23_audit_named_lesser_private_cleanup_guards_task.md | artifacts/named_lesser_private_guards_20260923/ | retain_as_reference | Accepted guard correction; 33-method audit and 206-test receipt retained. | 2026-09-23T12:47:44Z |
 | tickets/tasks/completed/2026-09-23_finish_named_lesser_epic_task.md | artifacts/named_lesser_finish_20260923/ | retain_as_reference | Accepted feature; canonical deltas promoted and original evidence retained. | 2026-09-23T11:55:35Z |

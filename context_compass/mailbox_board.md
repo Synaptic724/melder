@@ -83,7 +83,7 @@ Message format (append-only; delete after consumption)
 <!-- BEGIN USER-DEFINED: checked_in -->
 | workflows_0 | codex | 2026-09-20T21:29:25Z | 2026-09-21T00:56:48Z | active |
 | codex_1 | codex | 2026-09-05T21:01:42Z | 2026-09-06T17:17:54Z | stale |
-| updater_0 | codex | 2026-09-19T15:05:33Z | 2026-09-23T13:01:03Z | departed |
+| updater_0 | codex | 2026-09-19T15:05:33Z | 2026-09-23T22:37:00Z | departed |
 | knowledge_expert_0 | codex | 2026-09-13T18:03:36Z | 2026-09-13T18:18:14Z | stale |
 | muse | opencode | 2026-09-20T23:16:22Z | 2026-09-21T00:16:57Z | active |
 | updater_1 | codex | 2026-09-22T22:42:07Z | 2026-09-22T23:02:47Z | active |

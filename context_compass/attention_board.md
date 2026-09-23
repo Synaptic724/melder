@@ -93,6 +93,8 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| named_discovery_test_repair | done | updater_0 | tickets/tasks/completed/2026-09-23_fix_named_conduit_discovery_test_doubles_task.md | Both CI fixture errors fixed; 201 tests pass. | 2026-09-23T22:37:00Z |
+| public_next_release | done | updater_0 | tickets/tasks/completed/2026-09-23_position_next_release_for_public_task.md | Public naming/discovery release copy verified. | 2026-09-23T22:30:29Z |
 | graduation_packaged_assets | done | updater_0 | tickets/tasks/completed/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md | Both builders rerun after final updates; checks pass. | 2026-09-23T13:01:03Z |
 | named_private_guards | done | updater_0 | tickets/tasks/completed/2026-09-23_audit_named_lesser_private_cleanup_guards_task.md | Private guards cleared; 206 tests passed. | 2026-09-23T12:47:44Z |
 | 2026-09-06_named_lesser_conduit_discovery_epic | done | updater_0 | tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
@@ -103,8 +105,6 @@ Message alert rules
 | 2026-09-06_named_conduit_semantics_task | done | updater_0 | tickets/tasks/completed/2026-09-06_named_conduit_semantics_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
 | 2026-09-06_named_conduit_cross_system_discovery_task | done | updater_0 | tickets/tasks/completed/2026-09-06_named_conduit_cross_system_discovery_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
 | 2026-09-22_refresh_named_lesser_conduit_plan_task | done | updater_0 | tickets/tasks/completed/2026-09-22_refresh_named_lesser_conduit_plan_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
-| 2026-09-22_implement_named_lesser_directory_lifecycle_task | done | updater_0 | tickets/tasks/completed/2026-09-22_implement_named_lesser_directory_lifecycle_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
-| 2026-09-23_implement_named_lesser_crystallizer_task | done | updater_0 | tickets/tasks/completed/2026-09-23_implement_named_lesser_crystallizer_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes

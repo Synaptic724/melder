@@ -10,9 +10,9 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | 12dc1f47d8f7c212aa9c74bdbe1cf00e3f6ed9b2dbc034d1b1492ffcee48cacf |
-| bundle_sha256 | e7b00ed5ce1a5b28cd6e8d0de002736340ca5f774c2c3ea4e63724096778a2da |
-| bundle_line_count | 68129 |
+| source_fingerprint | 57c2034b7b93b4429a1fa9b04df70bc4138442ba7bb38bfa8b65c54eba27eaec |
+| bundle_sha256 | a5127161dafb2a5286ca45effe064a0808d5f088aff2b86c42f480111c668c67 |
+| bundle_line_count | 68040 |
 | bundle_line_ending | lf |
 | files | 366 |
 
@@ -383,6 +383,6 @@ Line numbers are 1-based and inclusive.
 | 66880-67213 | 66885-67210 | 13542 | utf-8 | 93ffa350dbbc556831cf68ecac2768697561a71601be1d2bed4814f4d0da2cb2 | experimentation/test_spellframe_type_injection.py |
 | 67214-67466 | 67219-67463 | 7773 | utf-8 | de7c77db321d42a8956257e849606b08210436adb2f387e4aa24a55b5a262232 | pyproject.toml |
 | 67467-67679 | 67472-67676 | 13066 | utf-8 | 1865e61282295b272c2e2d43d7cd255ff50688f5d38852e97ad9eacdde0409ae | release_docs/0.2.43.md |
-| 67680-68033 | 67685-68030 | 19310 | utf-8 | ea6ccb11e34a1a9e1aa7488509c20829e9f1ca03a8dc4afe8e7c7fef1c4f95fa | release_docs/next_version_release.md |
-| 68034-68102 | 68039-68099 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
-| 68103-68129 | 68108-68126 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
+| 67680-67944 | 67685-67941 | 12999 | utf-8 | 20cd5e45272a67eb1a4c47451950ac3206dd06d2599d31472e302e36fc12e87a | release_docs/next_version_release.md |
+| 67945-68013 | 67950-68010 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
+| 68014-68040 | 68019-68037 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |

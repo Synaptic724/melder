@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="0.519" timestamp="2026-09-23T16:34:14.061071-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.unit.melder.aether.test_nexus" name="test_codegen_command_system_can_delegate_selected_runtime_helpers" time="0.005"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'name'">tests\unit\melder\aether\test_nexus.py:2187: in test_codegen_command_system_can_delegate_selected_runtime_helpers
+    assert space.command_system.get_conduit_by_name(
+src\melder\nexus\rift\command_system\codegen_command_system.py:306: in get_conduit_by_name
+    return self._get_conduit_by_name_locked(
+src\melder\nexus\rift\command_system\command_system.py:286: in _get_conduit_by_name_locked
+    if conduit.name != conduit_name:
+       ^^^^^^^^^^^^
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'name'</failure></testcase><testcase classname="tests.unit.melder.aether.test_rift_runtime_contracts" name="test_capability_rift_spaces_expose_conduit_discovery_through_command_system" time="0.005"><failure message="AttributeError: 'object' object has no attribute 'name'">tests\unit\melder\aether\test_rift_runtime_contracts.py:349: in test_capability_rift_spaces_expose_conduit_discovery_through_command_system
+    assert command.get_conduit_by_name("alpha", frame_name="ops") is conduit_object
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\nexus\rift\command_system\capability_command_system.py:232: in get_conduit_by_name
+    return self._get_conduit_by_name_locked(
+src\melder\nexus\rift\command_system\command_system.py:286: in _get_conduit_by_name_locked
+    if conduit.name != conduit_name:
+       ^^^^^^^^^^^^
+E   AttributeError: 'object' object has no attribute 'name'</failure></testcase></testsuite></testsuites>

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 12dc1f47d8f7c212aa9c74bdbe1cf00e3f6ed9b2dbc034d1b1492ffcee48cacf
+SOURCE FINGERPRINT: 57c2034b7b93b4429a1fa9b04df70bc4138442ba7bb38bfa8b65c54eba27eaec
 FILE COUNT: 366
 
 ================================================================================
@@ -67679,146 +67679,136 @@ END FILE: release_docs/0.2.43.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: ea6ccb11e34a1a9e1aa7488509c20829e9f1ca03a8dc4afe8e7c7fef1c4f95fa
+CONTENT SHA256: 20cd5e45272a67eb1a4c47451950ac3206dd06d2599d31472e302e36fc12e87a
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.50 — next release
+# Melder 0.2.50
 
-**Draft release notes. Publication date to be assigned; more changes may follow.**
+**Unreleased**
 
-## Added: named lesser conduits
+This release adds named lesser conduits with discovery through ConduitCloud, configurable bind
+lifecycle hooks, and scoped creation purge. It also fixes hook isolation when scopes are reused
+and gives conduits upgraded from lesser scopes an independent Spellbook.
 
-Lesser conduits can now receive a name when created, in automatic or dynamic mode:
+## Named lesser conduits and ConduitCloud discovery
+
+Give a lesser conduit a name when creating it so other parts of an application can find the same
+active scope through its frame's **ConduitCloud**. This works in both automatic and dynamic mode,
+including when the scope comes from a prewarmed pool.
+
+Given an existing root conduit:
 
 ```python
-job = root.create_lesser_conduit(name="job-42")
 cloud = root.get_conduit_cloud()
+job = root.create_lesser_conduit(name="job-42")
+
 try:
-    assert cloud.get_conduit_by_name("job-42") is job
-    # Resolve this job's objects through job.meld(...).
+    discovered = cloud.get_conduit_by_name("job-42")
+    assert discovered is job
+    assert cloud.get_conduit_by_id(job.id) is job
 finally:
     job.cleanup()
 
 assert not cloud.has_conduit_name("job-42")
 ```
 
-Names are exact, nonempty strings and unique among active named roots and lessers in a frame.
-They are assigned only through creation, including acquisition of a prewarmed pooled scope.
-Cleanup unregisters and clears the name before returning the scope to its pool. Unnamed scope
-return keeps its single name check and performs no Cloud, Crystallizer or Nexus publication work.
+ConduitCloud now exposes named normal and lesser conduits through the same discovery APIs:
 
-Naming preserves the scope's lesser status, shared Spellbook and existing instance lifetimes.
-Discovery returns the live borrowed object; it does not extend the scope's lifetime. Dynamic
-promotion can retain the name or select another available name while preserving the conduit ID
-and using the upgraded root's independent Book.
+| API | Result |
+| --- | --- |
+| `get_conduit_by_name(name)` | The active conduit registered under that name |
+| `get_conduit_by_id(conduit_id)` | The named conduit registered under that ID |
+| `list_conduit_names()` / `list_conduit_ids()` | Snapshots of registered names or IDs |
+| `has_conduit_name(name)` / `has_conduit_id(conduit_id)` | Whether that scope is registered |
+| `find_conduit_id_by_name(name)` | Its ID, or `None` when the name is absent |
 
-When dynamic structural recording is enabled, Crystallizer captures named lesser names and parent
-relationships, including the unnamed ancestry needed for faithful reconstruction. Release and
-reuse update later checkpoints without changing sealed history. Both replay drivers reconstruct
-fresh structural identities through ordinary creation; previously created application objects
-and their mutable data are not restored. Record schema **3.0.0** prevents older root-only readers
-from misinterpreting these records; valid older root-only input remains readable. Live restore
-requires the caller to quiesce ordinary scope acquisition and cleanup.
+Names are exact, nonempty strings and must be unique among active named conduits in the same
+`AethericFrame`. Duplicate names are rejected. Supply a lesser conduit name at creation; an active
+lesser cannot be renamed afterward.
 
-Nexus publishes named acquisition, retirement and reuse. A returned named scope retains an unnamed
-pooled record so existing projections remain valid; named reuse replaces its current name and
-parent information. Capability and codegen named getters resolve the exact authorized identity,
-and capability's `create_lesser_conduit(..., name=...)` forwards the creation name. Existing ACLs
-and lesser-operation restrictions remain in force. New IDs and permanently removed records use
-the existing explicit Rift projection refresh; commands do not refresh while admitted to a Rift.
+**Cleanup removes the name and ID from discovery before the conduit returns to its pool.** The name
+can then be reused. A later acquisition receives its own name or remains unnamed; it never inherits
+the previous use's name. Unnamed lesser conduits stay outside ConduitCloud's named directory.
 
-### Public setup and documentation
+Naming preserves the scope's lesser status, shared Spellbook and existing `Existence` rules.
+Discovery returns a reference to the live scope without extending its lifetime. The scope's owner
+remains responsible for cleanup; do not continue using a discovered reference after that cleanup.
 
-Normal conjure now records both the owning Spellbook and settled frame posture when
-`configure_aether_frame()` already locked the configuration. Previously that public setup could
-omit its Book or frame twin, causing restore to refuse or lose the frame's Nexus visibility policy.
-The repair reuses the existing origin-aware freeze/bind machinery; ordinary meld and pool paths
-gain no work.
+In dynamic mode, `upgrade_to_normal(name=...)` can keep the lesser conduit's name or select another
+available name. Discovery follows the promoted conduit, which keeps its ID and receives its own
+empty Spellbook.
 
-- **Intermediate 41 — Named lesser conduits:** runnable naming, collision, lookup, scoped-state,
-  cleanup and anonymous-reuse examples, including prewarmed scopes.
-- **Expert 38 — Named scopes in Nexus and restore:** capability creation and authorized lookup,
-  explicit projection refresh, named reuse and a successful structural replay with fresh IDs and
-  newly created application state, including required unnamed ancestry.
-- Scope, agent-room and restore guides now explain the contracts and link the lessons. Source
-  downloads and collection ZIPs include both. Canonical architecture/components and the source
-  graph now describe all three feature stages.
-- Expert 24 now establishes dynamic recording before binding and retires the original root before
-  replay, proving successful restoration instead of colliding with its existing runtime.
+### Nexus discovery and structural restore
 
-### Validation and packaging
+Named lesser conduits are also available through authorized Nexus capability and codegen lookup.
+Capability rooms can pass `name=` to `create_lesser_conduit`. Existing ACLs and lesser-conduit
+restrictions still apply. Use the existing Rift projection refresh when scope membership changes.
 
-The Nexus-stage affected selection passed **471 tests**. After the public-setup correction, the final
-Book/conjure/naming/Nexus/restore selection passed **392 tests**. These selections overlap and should
-not be added together. All **78 intermediate/expert examples** qualify across the main run and the
-focused correction; **39 documentation tests**, a strict **300-page HTML build**, local links and
-lesson-source/download checks pass. No full-repository coverage claim is made.
+When dynamic structural recording is enabled, Crystallizer preserves named lesser conduits and
+the parent relationships needed to rebuild their hierarchy, including required unnamed ancestors.
+Cleanup and name reuse affect subsequent checkpoints while sealed checkpoints retain their history.
+Restore creates fresh conduit identities; previously created application objects and their mutable
+state are not restored.
 
-The final cleanup audit removed redundant cleaned-state checks from the changed private helpers;
-public entry points retain their lifecycle guards. Its affected selection passed **206 tests**.
+The record schema advances to **3.0.0** for named-scope topology. Older readers reject the new schema;
+valid older root-only recordings remain readable. During live restore, pause ordinary scope creation,
+cleanup and lineage changes until restoration finishes.
 
-Packaged Melder and repository LLM assets were regenerated for **0.2.50** after code approval.
-The guard, agent documentation, packaged system documents and LLM bundles pass their currentness
-checks. **253 asset/document/builder tests** pass across the main run and one isolated test process.
-The rebuild changed generated assets only; runtime source is unchanged.
+## Bind lifecycle hooks
 
-## Added: intermediate and expert bind-hook tutorials
+Spellbook now supports callbacks at three points in registration:
 
-The Read the Docs curriculum now includes two runnable lessons for the new bind lifecycle:
-
-- **Intermediate 40 — Bind lifecycle hooks:** follows the original reference through pre-bind,
-  actual-Spell activation and post-registration callbacks. Demonstrates configuration seeds,
-  Book registration, and clearing/re-adding hooks through the normal Conduit. Shows that these
-  callbacks run during binding, separately from application-object creation during meld.
-- **Expert 37 — Review agent bindings:** applies ordered checks to agent-supplied existing objects,
-  validates submission metadata, and updates the actual Spell's metadata and tags. Demonstrates
-  rejection at each relevant stage and verifies that a post-bind notification failure can leave
-  the binding registered and resolvable.
-
-The lessons include assertions and printed outcomes, with linked intermediate/expert guides,
-curriculum navigation, individual source downloads and collection ZIPs. The guidance distinguishes
-live metadata edits from source/version changes and automatic persistence updates.
-
-The existing graduation lesson also now teaches the new empty Spellbook correctly: former
-definitions are no longer visible, new definitions can be bound, and retained creations remain
-the upgraded conduit's disposal responsibility.
-
-Both new lessons passed. Across the main run and focused reruns, **76 intermediate/expert examples**
-were verified, along with **39 documentation tests**. The strict local HTML build, local-link checks
-and byte-for-byte download checks passed. These are repository documentation changes prepared for
-the normal publication flow.
-
-## Fixed: pooled hook isolation and runtime hook updates
-
-Reused lesser conduits and SpellSpaces no longer retain temporary Meld callbacks from their
-previous use. They are prepared **before returning to the pool**, preserving the existing lifecycle:
-
-1. Dispose the current scope's creations.
-2. Clear lesser-conduit local lifecycle hooks and restore temporary Meld hooks to the shared baseline.
-3. Reset the hook-modification flag.
-4. Return the ready scope to the pool.
-
-This covers lesser conduits and both manual and managed SpellSpace cleanup. Prewarmed SpellSpaces
-also restore their hook baseline before entering the idle pool. Permanent SpellSpace cleanup now
-cleans its owned Meld runtime and releases callback references; borrowed callbacks are not disposed.
-
-When acquired, a SpellSpace selects its owner's current local Meld hooks when applicable, including
-changes made while it was idle. This selects hooks for the new use; disposal and removal of the
-previous use's temporary hooks have already completed before pool return.
-
-### Add, replace and clear runtime hooks
-
-`Conduit.register_conduit_hooks(...)` now accepts `create_local_hooks=True` and `overwrite=False`.
-The default appends locally. The new `Conduit.set_conduit_hooks(...)` defaults to local replacement:
+| Stage | Callback receives | Use it to |
+| --- | --- | --- |
+| `pre` | The supplied class, function or existing object | Check a reference before reflection; raise to reject it |
+| `activation` | The newly created `Spell` | Inspect or annotate the definition before publication |
+| `post` | The registered `Spell` | Observe the completed registration |
 
 ```python
-# Append a callback on this conduit only.
+book.add_bind_hooks(
+    pre=[check_reference],
+    activation=[configure_spell],
+    post=[observe_registration],
+)
+```
+
+Callbacks are synchronous and run in registration order. Return values are ignored; raise an
+exception to reject an operation. Callback failures raise `HookExecutionError` with the original
+cause and the failing stage. A post-hook failure can leave the binding registered because post
+runs after registration, before an enclosing transaction necessarily completes.
+
+Use `clear_bind_hooks()` to remove all three stages from future binds, then `add_bind_hooks()` to
+register replacements. Both methods are available on Spellbook and normal Conduit instances.
+Each Spellbook owns its callback registry; an in-progress bind keeps the callback set it started with.
+
+Configure initial callbacks with `SpellbookConfiguration.with_bind_hooks(...)` before constructing
+the Spellbook. Runtime add/clear operations remain available after configuration freezes. These
+callbacks concern binding definitions; existing application-object creation hooks still run during
+meld. Crystallizer records hook presence, while restoring callback code remains application setup.
+
+## Hook isolation during scope reuse
+
+Reused lesser conduits and SpellSpaces no longer retain temporary Meld callbacks from a previous
+use. Cleanup disposes the scope's creations and resets temporary hooks **before returning it to
+the pool**. This also covers manual, managed and prewarmed SpellSpaces.
+
+On acquisition, a SpellSpace selects its owner's current Meld hooks. Active SpellSpaces retain
+their selected hook source until their next acquisition when the owner switches between local
+and shared hook maps.
+
+### Update local or shared runtime hooks
+
+`Conduit.register_conduit_hooks(...)` accepts `create_local_hooks=True` and `overwrite=False`.
+It appends locally by default. `Conduit.set_conduit_hooks(...)` provides local replacement by default:
+
+```python
+# Add a local callback.
 conduit.register_conduit_hooks({"on_meld_pre_resolve": before_meld})
 
 # Replace this conduit's Meld hook family.
 conduit.set_conduit_hooks({"on_meld_pre_resolve": replacement})
 
-# Publish a shared replacement from the normal root.
+# Update the shared Meld hooks from the normal root.
 root.set_conduit_hooks({"on_meld_pre_resolve": replacement}, create_local_hooks=False)
 
 # Clear the shared Meld hook family.
@@ -67827,207 +67817,128 @@ root.set_conduit_hooks({"on_meld_pre_resolve": []}, create_local_hooks=False)
 
 - Setting replaces the supplied hook families: Conduit lifecycle, Meld, or both. Omitted families
   remain unchanged; an empty mapping selects both families.
-- Local lifecycle hooks retain their event-shadowing behavior. Clearing the local lifecycle family
-  reveals inherited events. Clearing local Meld hooks mutes that scope until hooks are changed
-  again or the scope returns to its pool.
-- Shared updates are normal-root-only and reach scopes still using the root's shared baseline,
-  including an initially empty baseline. Explicit local copies remain isolated.
-- Normal roots own independent runtime hook containers. Runtime changes do not mutate frozen
-  configuration or another normal root, even when frame-wide configuration is shared.
-- `Meld.register_meld_hooks(...)` provides matching local/shared and append/replace controls for its
-  hook family. `hooks_modified` on Conduit and Meld reports temporary local hook state.
-- Invalid callback batches are rejected before either hook family changes. Use the mutation methods;
-  direct changes to internal lists or dictionaries are not tracked.
-- Graduation installs the new root's baselines, so later pool reuse cannot restore the former
-  root's callbacks. Active SpellSpaces retain their selected source until their next acquisition
-  when an owner switches between local and shared hook maps.
+- Clearing local lifecycle hooks reveals inherited callbacks. Clearing local Meld hooks mutes that
+  scope until its hooks change again or it returns to the pool.
+- Shared updates are normal-root-only and reach scopes using the shared baseline. Explicit local
+  copies remain isolated. Runtime updates do not modify frozen configuration or other normal roots.
+- `Meld.register_meld_hooks(...)` provides matching registration controls for Meld hooks.
+  `hooks_modified` on Conduit and Meld reports temporary local hook state.
+- Invalid callback batches are rejected before either family changes. Use the public methods;
+  direct mutation of internal lists or dictionaries is not tracked.
 
-The common pool path uses simple flag checks; only modified state takes the existing reset lock.
-Ordinary meld execution gains no additional checks or locks. Clearing hooks restores the existing
-warm fast path without recompilation or cache reset.
+## Independent Spellbooks after lesser-to-normal upgrade
 
-### Pool-hook validation
-
-The affected selection passed **2,102 tests**, with two existing owner-deferred skips. **73 new
-parameterized cases** cover pool reuse, prewarming, local/shared controls, graduation, callback
-release, disposal order, concurrent updates and warm-path recovery. Scoped lint passed. These
-results do not claim full-repository coverage.
-
-## Fixed: lesser-to-normal graduation owns its new Spellbook
-
-`Conduit.upgrade_to_normal(...)` now completes normal Spellbook setup against the existing conduit.
-When it returns successfully, the conduit is already conjured and ready to bind and meld through
-its own new, empty Spellbook. Its object identity, conduit ID and retained creations are preserved.
+After `Conduit.upgrade_to_normal(...)` succeeds, the same conduit is fully conjured with its own
+empty Spellbook, ready for independent binding and resolution. Its object identity, ID and retained
+creations are preserved. The upgrade happens in place; the method returns `None`.
 
 ```python
-lesser = root.create_lesser_conduit()
-lesser.upgrade_to_normal("independent")
+lesser = root.create_lesser_conduit(name="job-42")
+lesser.upgrade_to_normal("job-42")
 
-service_id = lesser.bind(spell=Service, existence=Existence.unique_per_conduit)
-service = lesser.meld(spell_id=service_id)
+lesser.bind(spell=Service, existence="unique_per_conduit", permissions="create")
+service = lesser.meld(Service)
 ```
 
-The upgraded conduit has no parent and inherits no spell definitions, contracts or resolution
-verdicts. Earlier creations remain retained for disposal, but their old spell IDs are no longer
-resolvable through the new Book. Register the definitions needed by the new root explicitly.
+Previously, an upgraded conduit could continue using its former root's Spellbook, allowing binding,
+hook changes or cleanup to affect that root. Each normal conduit now owns its registrations and
+cleanup independently.
 
-Previously, graduation discarded the new Book and continued using the former root's Book. Binding,
-Bind-hook changes and cleanup could consequently affect the former root. Graduation now attaches
-the correct Book, removes both parent relationship links, and gives the new root independent pool
-and cluster resources. Each root cleans up its own Book and bindings.
+**The upgraded conduit inherits no spell definitions or contracts.** Bind the definitions it needs
+explicitly. Earlier creations remain its disposal responsibility, but their old spell IDs are no
+longer resolvable through the new Spellbook.
 
-### Configuration and hook initialization
-
-Pass an optional same-frame `SpellbookConfiguration` to configure the new Book:
+Pass an optional same-frame `SpellbookConfiguration` to customize the new Spellbook:
 
 ```python
 configuration = SpellbookConfiguration("application").with_defaults()
-configuration.with_bind_hooks(
-    pre=[check_reference],
-    activation=[inspect_bound_spell],
-    post=[record_binding],
-)
+configuration.with_bind_hooks(pre=[check_reference])
 configuration.with_hooks(on_meld_pre_resolve=before_meld)
 
 # The lesser must already belong to the "application" frame.
-lesser.upgrade_to_normal("configured", configuration=configuration)
+lesser.upgrade_to_normal("independent", configuration=configuration)
 ```
 
-| Configuration mode | New Book setup |
+| Configuration mode | New Spellbook setup |
 | --- | --- |
 | Local, configuration omitted | Fresh defaults and empty hooks |
-| Local, fresh matching configuration supplied | Uses the supplied configuration and its initial hooks |
-| Frame-wide sharing enabled | Uses the frame's existing frozen configuration; a different supplied object is rejected |
+| Local, fresh matching configuration supplied | Supplied configuration and its initial hooks |
+| Frame-wide sharing enabled | The frame's frozen shared configuration; a different supplied object is rejected |
 
-Frame-wide sharing shares configuration, not the Book or its registrations. It applies within that
-AethericFrame, not across all frames. Individual Books leave the canonical shared configuration
-alive; its frame owns cleanup.
+Frame-wide sharing shares configuration, not Spellbooks or registrations. Configured defaults may
+seed the new Spellbook's hooks, while runtime hook changes remain independent. Former Spellbook
+hooks and temporary lesser/SpellSpace hook overrides do not carry over.
 
-Successful graduation discards the former Book's runtime Bind-hook changes, old Book-specific
-Conduit/Meld hooks, and lesser/SpellSpace runtime hook overrides. The selected configuration's
-deliberate defaults may apply again. Callback objects can therefore be reused by shared policy;
-their state is not cloned.
+Configuration `add_hooks` and `with_hooks` now allow an omitted Spellbook ID to provide default
+Conduit/Meld events. Explicit Spellbook event lists take precedence. Upgrade's `hooks=` argument
+adds local callbacks after activation; configure activation callbacks through the configuration.
 
-- Configuration now supports `add_bind_hooks`, `clear_bind_hooks`, `get_bind_hooks` and fluent
-  `with_bind_hooks`. These stage initial pre/activation/post callbacks before freeze.
-- Each Book captures its own Bind hook set during construction. Later runtime add/clear operations
-  affect that Book only; changes to configuration seeds apply to subsequently constructed Books.
-- Configuration `add_hooks` and `with_hooks` accept an omitted Book ID for default Conduit/Meld
-  events. Existing explicit Book IDs remain supported; their event lists take precedence.
-- The upgrade's existing `hooks=` mapping supplies local runtime additions after conjure activation.
-  Configure creation/activation callbacks through the selected configuration itself.
-- Recording preserves effective hook-presence markers, without serializing callback code.
+Upgrade requires an attached, childless lesser in a dynamic frame. Pause concurrent scope
+acquisition and lineage changes, and return managed SpellSpaces held on other threads before
+upgrading. Failures before the new Spellbook attaches restore the lesser. After attachment, the
+caller remains responsible for cleaning up the normal conduit if later publication fails.
 
-### Lifecycle and failure behavior
+## Scoped creation purge
 
-Graduation remains limited to an attached, childless lesser in a dynamic frame. It drains the
-existing creation gate before changing ownership and restores its original admission state.
-Retained manual, idle pooled and current-thread managed SpellSpaces receive the new Book lookup
-references and hooks; stale lookup caches cannot resolve the former Book's definitions.
+`Conduit.purge(...)` and `SpellSpace.purge(...)` dispose of retained creations while keeping the
+scope, registrations and compiled creation contexts available for later melds.
 
-The caller must stop concurrent lineage changes and scope acquisition, and return managed
-SpellSpaces held on other threads before upgrading. Failures before Book attachment restore the
-lesser and clean newly allocated state. Failures after attachment retain ordinary conjure's
-caller-owned cleanup responsibility. Existing hook exception behavior is unchanged.
-
-### Graduation validation
-
-The affected source selection passed **4,118 tests**, with two existing owner-deferred skips.
-The final **157-test** graduation/configuration selection includes **12 additional regression
-cases** for hook isolation, retained SpellSpaces, shared defaults, separate frames and failure/retry.
-Scoped lint passed. These results do not claim full-repository coverage.
-
-## Added: scoped creation purge
-
-`Conduit.purge(...)` and `SpellSpace.purge(...)` retire retained creations without ending their
-scope or removing the registered spell. This gives applications an explicit way to dispose of
-objects while keeping their bindings and compiled creation machinery available for later melds.
-
-### Choose an object reference or explicit selectors
-
-Pass an existing object as a shortcut. Purge inspects its class and uses the existing spell lookup:
+Use the same selectors as `meld`, or pass an existing object as a shortcut:
 
 ```python
-worker = conduit.meld(Worker)
-removed = conduit.purge(worker)
-```
-
-The normal meld-style selectors are also available. These are alternative call forms:
-
-```python
-conduit.purge(Worker)                           # Class reference
-conduit.purge("Worker")                         # Registered name
-conduit.purge(Worker, binding_name="primary")    # Named binding
+conduit.purge("Worker")
+conduit.purge(Worker, binding_name="primary")
 conduit.purge(spellframe=IWorker, binding_name="primary")
-conduit.purge(spell_id=worker_spell_id)           # Explicit machine identity
+conduit.purge(spell_id=worker_spell_id)
 ```
 
-Both input paths use the same scope checks and creation-disposal machinery. Discovery itself
-does not call a constructor or invoke meld execution.
-
-### Remove all retained creations or one object
-
-`purge_all=True` is the default. It removes all retained creations for the selected spell within
-the authorized scope. For `many`, that means the spell's entire local retained bucket.
-
-Use `purge_all=False` with an actual object instance to remove only that object:
+`purge_all=True` is the default and removes every retained creation for that binding in the
+authorized scope. To remove only one object, pass its instance with `purge_all=False`:
 
 ```python
 # Worker is bound as Existence.many with configured disposal.
 first = conduit.meld(Worker)
 second = conduit.meld(Worker)
 
-removed = conduit.purge(first, purge_all=False)  # 1; second remains retained
-removed = conduit.purge(Worker)                 # 1; removes second
+removed = conduit.purge(first, purge_all=False)  # 1; second remains retained.
+removed = conduit.purge(Worker)                 # 1; removes the remaining object.
 ```
 
-The same options are available on a spell space:
+The instance shortcut discovers the binding from the object's class. Use explicit selectors for
+bindings that require a spellframe or binding name. Purge returns the number removed, or `0` when
+the authorized store has no matching creation. Single-object mode requires an actual instance.
 
-```python
-with conduit.enter_spellspace() as space:
-    session = space.meld(RequestSession)
-    removed = space.purge(session, purge_all=False)
-```
-
-Purge returns the number of removed creations. It returns `0` when the selected store has no
-matching entry, including when a requested single object is no longer retained. Single-object
-mode requires an instance; it does not choose an arbitrary object from a name or class selector.
-
-### Scope authority follows the creation lifetime
-
-| Existence | Authorized caller and target |
+| Existence | Authorized caller |
 | --- | --- |
-| `many` | The calling conduit or spell space removes its own local creations |
-| `unique_per_spell_space` | That spell space removes its own creation |
-| `unique_per_conduit` | That conduit removes its own creation |
-| `unique_per_conduit_lineage` | Only the lineage root conduit removes the shared creation |
-| `unique_per_conduit_cluster` | Only the elected cluster leader removes the shared creation |
-| `unique` | Only the spell's owning conduit removes the creation |
+| `many` | The conduit or SpellSpace holding those local creations |
+| `unique_per_spell_space` | That SpellSpace |
+| `unique_per_conduit` | That conduit |
+| `unique_per_conduit_lineage` | The lineage root conduit |
+| `unique_per_conduit_cluster` | The elected cluster leader |
+| `unique` | The spell's owning conduit |
 
-A spell space can purge only its own `many` and `unique_per_spell_space` creations. A conduit
-does not redirect purge into an ambient spell space. Unauthorized scope requests fail before removal.
+A SpellSpace purges only its own creations. A Conduit does not redirect purge into an ambient
+SpellSpace. Unauthorized scope requests fail before removal.
 
-### Disposal and subsequent melds
+Purge follows the configured disposal methods. Retained `many` objects are disposed newest first;
+single-object purge disposes only the selected object. If disposal fails, other selected objects
+are still attempted and errors are reported in an `ExceptionGroup`. Removed objects are not disposed
+again by subsequent scope cleanup.
 
-- Purge uses the configured disposal methods and their existing order. Retained `many` entries
-  are disposed newest first; single-object mode invokes disposal only for the selected object.
-- Live and disposal records are removed together under the existing creation locks. Disposal
-  callbacks run after those locks are released.
-- If disposal fails, other selected objects are still attempted and failures are reported as an
-  `ExceptionGroup`. Removed entries remain removed and are not disposed again during later cleanup.
-- Registrations, compiled contexts and scope objects remain available. A later meld can create a
-  fresh factory-backed instance according to its normal lifetime.
-- Only retained creations can be purged. `many` results without configured disposal are not retained.
-- Existing Python references held by application code are not rewritten, and dependent objects are
-  not recursively purged. An externally supplied object remains referenced by its registration;
-  purge does not unbind it or turn it into a factory.
+Only retained creations are affected: `many` results without configured disposal are not retained.
+Existing application references are not rewritten, and dependent objects are not recursively purged.
+An externally supplied object remains referenced by its registration; purge does not unbind it.
 
-## Validation recorded for this change
+## Recording fix and documentation
 
-The focused source selection passed **270 tests**, covering both selector paths, single/all removal,
-scope authority, creation locks, disposal ordering/failures, concurrent purge and existing
-Creations/Meld/lineage/cluster behavior. Scoped lint checks passed. This is not a full-suite or
-coverage claim.
+- Fixed structural recording when `configure_aether_frame()` has already frozen the Spellbook
+  configuration. Recordings now include the owning Spellbook and settled frame policy needed for
+  faithful restore, including Nexus visibility settings.
+- Added runnable intermediate tutorials for bind lifecycle hooks and named lesser-conduit discovery.
+- Added expert examples for checking agent-supplied bindings, annotating Spell definitions, and
+  discovering and restoring named scope hierarchies through Nexus and Crystallizer.
+- Updated scope, upgrade and restore guidance. Tutorials include downloadable Python sources and
+  collection ZIPs.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

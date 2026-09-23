@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: ae090d3a5ae49f1b83bee9601e56527cac558eddbac4e5dc46f140a40dedfd5a
+SOURCE FINGERPRINT: e6120e7aa41291a0dab9ea5bdd11752c80a4f796df7a4c40d9b091253ad5fdb8
 FILE COUNT: 851
 
 ================================================================================
@@ -221529,7 +221529,7 @@ END FILE: tests/unit/melder/aether/test_lookup_container.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_nexus.py
-CONTENT SHA256: eb59b289100ec8cb467240b7a01fdcac11ace39cfb0b3f67c924ee053e945a9b
+CONTENT SHA256: 60a72cab9d05a4565b262594699bb50edcc94c26c6f113ed5287c2933b948329
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -223650,6 +223650,10 @@ def test_codegen_command_system_can_delegate_selected_runtime_helpers(
     """
     Verify codegen can use the selected conduit/runtime helper subset.
 
+    Contract:
+        Named lookup returns the authorized conduit whose live name matches
+        the published descriptor; the runtime double provides that same name.
+
     Returns:
         None.
     """
@@ -223681,6 +223685,7 @@ def test_codegen_command_system_can_delegate_selected_runtime_helpers(
     contract_spell = object()
     contracted = [("peer", linked_conduit)]
     owner_conduit = SimpleNamespace(
+        name="root",
         list_clusters=lambda: ["alpha"],
         get_links=lambda: [linked_conduit],
         get_contracted_conduits=lambda: contracted,
@@ -234056,7 +234061,7 @@ END FILE: tests/unit/melder/aether/test_rift_memory_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_rift_runtime_contracts.py
-CONTENT SHA256: 08de67e9eb7fbcec189477b221c0a76f9d0ad545c379e0dbd76c87ff927772cb
+CONTENT SHA256: 973474034888ec464ea9335b68dab81bbebf4b892e5a3b4155b654f96fc6e711
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import SimpleNamespace
@@ -234361,6 +234366,10 @@ def test_capability_rift_spaces_expose_conduit_discovery_through_command_system(
     """
     Verify conduit discovery routes through the room-owned command surface.
 
+    Contract:
+        Name and ID discovery return the same authorized conduit with a live
+        name matching the published record.
+
     Returns:
         None.
     """
@@ -234371,7 +234380,7 @@ def test_capability_rift_spaces_expose_conduit_discovery_through_command_system(
     space = rift.space
     command = space.command_system
     conduit_cloud = object()
-    conduit_object = object()
+    conduit_object = SimpleNamespace(name="alpha")
     command._aether = SimpleNamespace(
         _get_existing_frame=lambda frame_name: SimpleNamespace(
             _conduit_cloud=conduit_cloud,
