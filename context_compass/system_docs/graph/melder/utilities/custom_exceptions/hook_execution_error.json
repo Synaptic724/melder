@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/custom_exceptions/hook_execution_error.py",
- "source_sha256": "d8170768017cad173977444e41b8637f7b26bcd205a36bc43cd67bb88f68603e",
+ "source_sha256": "0cb048b2f2b13be085f98f5bd6bb24f16f1e116541517206e85501a8b371aec2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.custom_exceptions.hook_execution_error": {
@@ -11,7 +11,7 @@
    "file": "src/melder/utilities/custom_exceptions/hook_execution_error.py",
    "lineno": 1,
    "include": true,
-   "role": "Raised when a user-supplied lifecycle hook fails during melding, carrying which hook failed and why.",
+   "role": "Raised when a user-supplied lifecycle hook fails during binding or melding, carrying phase, callback identity and original cause.",
    "responsibilities": [
     "separate user hook failure from runtime failure",
     "preserve the identity of the failing hook"
@@ -37,10 +37,11 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a96cf723e6f56c699edf6197b881cd43cb9ac17464d820b345eac36f931034b4",
+   "span_sha256": "3f788c7fac4e9201a97ff26cd783e12c45b39ef1f32622afe6941f4cf98fe3a5",
    "role": "Exception for lifecycle hook failures.",
    "responsibilities": [
-    "signals failures while running configured hooks"
+    "signals failures while running configured bind or meld hooks",
+    "distinguishes pre_bind, bind_activation and post_bind; post failure does not imply published-state rollback"
    ],
    "phases": [
     "runtime"

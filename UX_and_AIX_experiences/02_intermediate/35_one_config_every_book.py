@@ -101,8 +101,8 @@ def main() -> None:
     # the shared configuration is what they have in common, not their identity.
     conduit_a = book_a.conjure(name="shared-policy-a")
     conduit_b = book_b.conjure(name="shared-policy-b")
-    assert isinstance(conduit_a.meld(ServiceA), ServiceA)
-    assert isinstance(conduit_b.meld(ServiceB), ServiceB)
+    assert isinstance(conduit_a.meld("ServiceA"), ServiceA)
+    assert isinstance(conduit_b.meld("ServiceB"), ServiceB)
     print("both worlds conjured under the one shared policy")
 
 

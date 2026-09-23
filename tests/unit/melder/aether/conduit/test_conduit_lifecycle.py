@@ -201,22 +201,23 @@ def test_init_rejects_non_configuration(spellbook_stub: MagicMock) -> None:
         )
 
 
-def test_lesser_conduit_drops_name(
+def test_lesser_conduit_retains_its_requested_creation_name(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify lesser conduits do not retain names assigned at construction.
+    Verify lesser initialization preserves a supplied creation-time label.
 
     Contract:
-        - A name passed to a lesser conduit is discarded.
+        - A name passed to a lesser conduit is retained.
+        - Public creation separately publishes it when the parent link is established.
 
     Args:
         configuration_automatic (SpellbookConfiguration): Automatic configuration.
         spellbook_stub (MagicMock): Spellbook stub used for construction.
 
     Raises:
-        AssertionError: If the name is preserved for a lesser conduit.
+        AssertionError: If initialization silently discards the lesser name.
     """
     conduit = _build_conduit(
         spellbook=spellbook_stub,
@@ -227,7 +228,7 @@ def test_lesser_conduit_drops_name(
         name="alpha",
     )
     try:
-        assert conduit.name is None
+        assert conduit.name == "alpha"
     finally:
         conduit.cleanup()
 
@@ -624,7 +625,7 @@ def test_create_fresh_lesser_conduit_publishes_once_when_nexus_enabled(
     lesser = conduit_normal.create_lesser_conduit()
 
     conduit_normal._spellbook._nexus._publish_conduit_record.assert_called_once_with(
-        lesser
+        lesser, pooled=False,
     )
 
 
@@ -851,7 +852,7 @@ def test_publish_conduit_record_to_nexus_publishes_for_lesser(
     conduit_lesser._publish_conduit_record_to_nexus()
 
     conduit_lesser._nexus._publish_conduit_record.assert_called_once_with(
-        conduit_lesser
+        conduit_lesser, pooled=False,
     )
 
 

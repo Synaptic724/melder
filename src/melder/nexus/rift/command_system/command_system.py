@@ -248,6 +248,48 @@ class CommandSystem(Cleanable):
                 )
             )
 
+    def _get_conduit_by_name_locked(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: str,
+    ) -> Conduit:
+        """
+        Resolve the exact authorized identity published under a conduit name.
+
+        Contract:
+            The caller holds the command lock. Raw/frame access precedes published
+            selection; the existing ID resolver enforces the selected ID's ACL and
+            searches root and lesser runtime scopes. Never resolve a second time
+            by name: a released name may already identify an unauthorized new ID.
+            Reject same-shell reuse under a different name. The returned object is
+            borrowed; this does not grant a lease or prevent subsequent cleanup.
+
+        Args:
+            conduit_name: Exact published name of an active root or lesser scope.
+            frame_name: Resolved frame whose command projection supplies authority.
+
+        Returns:
+            Conduit: Live scope matching the selected ID and requested name.
+
+        Raises:
+            ValueError: Access denied, name missing/ambiguous, ID retired or the
+                live name changed during lookup. Refresh/retry against current state.
+            RuntimeError: The selected conduit was cleaned during the borrowed read.
+        """
+        self._assert_raw_runtime_object_access_allowed("get_conduit_by_name")
+        self._assert_frame_command_enabled(frame_name)
+        conduit_id = self._get_required_published_conduit_id_by_name(
+            conduit_name, frame_name=frame_name,
+        )
+        conduit = self._get_conduit_by_id_locked(conduit_id, frame_name=frame_name)
+        if conduit.name != conduit_name:
+            raise ValueError(
+                f"Conduit name '{conduit_name}' changed during lookup in frame '{frame_name}'. "
+                "Retry discovery against the current named scope."
+            )
+        return conduit
+
     def _get_spell_by_index_id_locked(
             self,
             spell_index_id: str,

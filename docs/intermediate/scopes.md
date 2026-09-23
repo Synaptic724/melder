@@ -23,10 +23,99 @@ explains why the explicit end of the scope matters.
 
 ## A lesser conduit can grow into a named root
 
+A lesser can also have its own discovery name without being promoted. Run
+[Named lesser conduits](../examples/intermediate/41-named-lesser-conduits.md)
+for a complete example with prewarming, collisions, per-conduit state and cleanup.
+
+```python
+job = root.create_lesser_conduit(name="job-42")
+cloud = root.get_conduit_cloud()
+try:
+    assert cloud.get_conduit_by_name("job-42") is job
+    job.meld("JobBuffer")
+finally:
+    job.cleanup()
+
+assert not cloud.has_conduit_name("job-42")
+```
+
+Supply a name only at creation. Names are exact, nonempty strings, unique among
+active named roots and lessers in the frame. There is no later lesser rename.
+Cleanup unregisters and clears the name **before** the scope enters the pool;
+the next acquisition supplies its own name or stays anonymous. Anonymous scopes
+do not enter Cloud discovery. This works in automatic and dynamic mode.
+
+Use a name when another part of the application needs to find the same live
+scope. A direct reference is enough when the job stays local. Cloud returns a
+borrowed reference: it does not extend the owner's lifetime or make reuse after
+cleanup safe. Names are discovery addresses, not matching-lifetime tags; the
+registered `Existence` still decides where objects are shared.
+
+### Promote only when independent ownership is needed
+
 In a dynamic world, `upgrade_to_normal(name=...)` promotes the existing child.
 The promotion lesson asserts that a previously created per-conduit workbench is
 the same object afterward, then finds the promoted conduit through cloud lookup.
 Read [dynamic mode](dynamic-linking.md) before using this operation.
+Promotion can retain the lesser name or choose another available name. It keeps
+the conduit ID but creates its own empty Spellbook; naming alone does none of that.
 
 [Clusters](../advanced/clusters.md) add a group-wide lifetime. The original cluster
 lesson remains in its saved Intermediate collection and is linked from that guide.
+
+## Purge creations while keeping the scope
+
+Run [Purge unneeded objects](../examples/intermediate/39-purge-unneeded-objects.md)
+for a complete example. It releases one finished job buffer, keeps its siblings
+alive, purges the remaining buffers by name, and creates a fresh buffer afterward.
+It also checks that spell-space purge stays local and final cleanup does not
+dispose already-purged objects twice.
+
+Use `purge` to dispose and remove the retained creations for one registered target
+without ending its scope or removing its registration:
+
+```python
+removed = conduit.purge("Job")
+removed = space.purge("RequestSession")
+```
+
+Names, class/function references, spellframe/binding selectors, and explicit
+`spell_id=` work through the same discovery as `meld`. The return value is the
+number removed, or `0` when that authorized store has no matching creation.
+`purge_all=True` is the default: a `many` target removes its whole retained bucket.
+Only `many` objects with configured disposal are retained; untracked results are
+not affected by purge.
+
+An existing object provides a second input path: purge inspects its class and
+passes that reference through the existing binding lookup. Choose the shortcut
+or the explicit selectors for your binding. Both use the same scoped purge:
+
+```python
+job = conduit.meld("Job")
+removed = conduit.purge(job, purge_all=False)  # Remove this object only.
+removed = conduit.purge(job)                  # Remove remaining entries for its binding.
+```
+
+Single-object removal requires the instance and returns `0` if that object is
+not retained in the authorized store. Other instances remain available for later
+purge or normal scope cleanup. The same options work on `SpellSpace`.
+
+| Lifetime | Who may purge it |
+| --- | --- |
+| `many` | The conduit or spell space holding those local creations |
+| `unique_per_spell_space` | That spell space only |
+| `unique_per_conduit` | That conduit only |
+| `unique_per_conduit_lineage` | The lineage root conduit |
+| `unique_per_conduit_cluster` | The elected cluster leader |
+| `unique` | The spell's owning conduit |
+
+A spell space always stays within its own creations. It cannot purge objects
+belonging to its conduit, lineage root, or cluster leader.
+
+Purge follows the configured disposal methods and their ordering. It attempts
+other selected objects after an object's disposal fails, then raises an
+`ExceptionGroup`; removed entries remain removed. A subsequent meld can create a
+fresh factory-backed instance using the existing compiled context. References
+already held by application objects are not rewritten. An externally supplied
+object remains referenced by its registration, so purging its store entry does
+not unbind it or turn it into a factory.

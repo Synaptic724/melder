@@ -2,13 +2,14 @@ class HookExecutionError(Exception):
     """
 
     Purpose:
-        Signal that a user-supplied lifecycle hook raised during spell melding,
+        Signal that a user-supplied lifecycle hook raised during binding or melding,
         while preserving enough context to identify WHICH hook failed and WHY.
 
     Raised When:
-        A hook registered through `SpellbookConfiguration` raises during
-        resolution. Hooks run at defined points around meld - `pre_cast`,
-        `activation`, `post_cast` - and a raising hook aborts that resolution.
+        A registration callback configured on Spellbook raises during `pre_bind`,
+        `bind_activation` or `post_bind`, or an existing creation/resolution hook
+        raises during Meld. A raising hook stops the current callback chain.
+        A post-bind failure does not imply that registration was rolled back.
 
     What To Do About It:
         The failure is in your hook body, not in Melder. Read
@@ -40,27 +41,27 @@ class HookExecutionError(Exception):
         container is broken" apart from "my callback is broken".
 
     System Context:
-        Fires inside the meld pipeline, after a spell has been resolved and
-        while its lifecycle hooks execute. Hooks are one of the DGR's documented
+        Fires inside the bind or meld pipeline while user callbacks execute.
+        Hooks are one of the DGR's documented
         extension points, so this error is the boundary where user-supplied
         behavior re-enters Melder's control flow.
 
     AGENT_ACCESS: public
 
     AGENT_PURPOSE:
-        access: public. Raised when a user lifecycle hook (pre_cast/activation/post_cast) raises
-        during meld; read original_exception, phase, hook_name. It means YOUR callback failed,
+        access: public. Raised when a user lifecycle hook raises during bind or meld;
+        read original_exception, phase, hook_name. It means YOUR callback failed,
         not Melder.
     """
 
 
-    def __init__(self, phase: str, hook_name: str, original_exception: Exception):
+    def __init__(self, phase: str, hook_name: str, original_exception: Exception) -> None:
         """
         Build a hook-execution failure with preserved source metadata.
 
         Args:
             phase (str): Hook phase such as `pre_cast`, `activation`, or
-                `post_cast`.
+                `post_cast`, `pre_bind`, `bind_activation`, or `post_bind`.
             hook_name (str): Name or representation of the hook that failed.
             original_exception (Exception): Original exception raised by the
                 hook body.

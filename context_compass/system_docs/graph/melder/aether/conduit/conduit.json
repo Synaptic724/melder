@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "02a9dbbec7e17d0a450cd28ed260a50957d4bfe3f8360e4fb92778666d912e33",
+ "source_sha256": "fe3686f112a8eb630b8489ec350e096369ebbc06716a1bb31d51a28d4b111bce",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -29,12 +29,13 @@
    "label": "Conduit",
    "kind": "class",
    "file": "src/melder/aether/conduit/conduit.py",
-   "lineno": 78,
+   "lineno": 79,
    "bases": [
     "Cleanable"
    ],
    "markers": [],
    "public_methods": [
+    "add_bind_hooks",
     "add_index_to_contract",
     "add_spell_to_contract",
     "add_spell_to_contract_with_dependencies",
@@ -47,6 +48,7 @@
     "cleanup",
     "cleanup_lesser_conduits",
     "cleanup_spell",
+    "clear_bind_hooks",
     "create_lesser_conduit",
     "create_spellspace",
     "describe_live_creation_status",
@@ -77,6 +79,7 @@
     "get_spells_in_contract_by_conduit",
     "get_spells_in_contract_by_conduit_name",
     "has_live_creation",
+    "hooks_modified",
     "id",
     "inspect_spell",
     "link",
@@ -90,6 +93,7 @@
     "policy",
     "prewarm_lesser_conduits",
     "prewarm_spellspaces",
+    "purge",
     "register_conduit_hooks",
     "remove_from_spell_index",
     "remove_index_from_contract",
@@ -97,6 +101,7 @@
     "remove_spell_from_contract",
     "remove_spells_from_contract",
     "scan",
+    "set_conduit_hooks",
     "set_new_policy",
     "sever_link",
     "snapshot_state",
@@ -108,18 +113,27 @@
     "validate_resolution"
    ],
    "shape": {
-    "method_count": 119,
+    "method_count": 130,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5a727deab084875797759b49e1b2bf69dd5e5b8d84259041b5b44120762995db",
+   "span_sha256": "b475c14ca80b62d7a390ca0de00a79f9cdf17246f3fe81d9853d159a5fd0bf54",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
+    "forwards instance or explicit purge selectors and single/all mode to ConduitMeld while keeping conduit and registration lifetimes intact",
     "forwards per-version resolvable policy through both binding facades without changing conduit state",
     "owns concrete conduit-facing runtime helpers and pooled spellspace state",
     "creates lesser conduits",
-    "supports dynamic linking and ownership transfer in dynamic mode"
+    "promotes childless lessers into independent normal roots through a fresh Book and its private existing-conduit conjure route",
+    "drains creation admission before graduation and restores lesser topology on pre-attachment failure",
+    "supports dynamic linking and ownership transfer in dynamic mode",
+    "facades bind-hook add and clear on the owning Book for live normal conduits; lessers cannot edit borrowed Bind policy",
+    "owns stable root runtime hook maps copied from configuration and exposes validated local or explicit root-shared updates",
+    "restores temporary lesser and prewarmed Space hooks after disposal and before publishing ready shells to their pools",
+    "assigns creation-only names to fresh/pooled lessers and retires named discovery before idle publication",
+    "emits dynamic named structural ancestry and publishes named Nexus lifecycle under existing scope locks",
+    "reserves promotion names and exchanges aliases without changing the live conduit identity"
    ],
    "owns_state": [
     "_meld",
@@ -240,6 +254,12 @@
   },
   {
    "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "Spellbook",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
    "to_label": "Scan",
    "relation": "creates",
    "confidence": "candidate"
@@ -247,6 +267,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "Sequence": "collections.abc.Sequence",
   "contextmanager": "contextlib.contextmanager",
   "ModuleType": "types.ModuleType",
   "TracebackType": "types.TracebackType",
@@ -306,6 +327,18 @@
   "label": "Conduit"
  },
  "edges_authored": [
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
+   "to": "melder.aether.spellbook.spellbook.Spellbook",
+   "relation": "owns_lifecycle_of",
+   "why": "Normal conduits clean their own Book. Lessers borrow the root Book until graduation installs a new empty Book, resets runtime hook/lookup references and detaches former parent ownership.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
   {
    "from": "melder.aether.conduit.conduit.Conduit",
    "to": "melder.aether.aether.Aether",

@@ -1,0 +1,16 @@
+{
+  "completed_at": "2026-09-20T22:13:38Z",
+  "completed_tickets": [
+    "tickets/tasks/completed/2026-09-06_ci_validation_stage_design_task.md",
+    "tickets/tasks/completed/2026-09-08_reproducible_uv_environment_task.md",
+    "tickets/tasks/completed/2026-09-13_sync_owner_uv_environment_task.md",
+    "tickets/tasks/completed/2026-09-19_document_positional_meld_calls_task.md",
+    "tickets/tasks/completed/2026-09-20_teach_meld_string_names_task.md"
+  ],
+  "deleted_artifacts": 0,
+  "moved_patch_directories": 0,
+  "cleanup_status": "blocked_pending_explicit_approval",
+  "error": null,
+  "selected_active_routes_remaining": 0,
+  "retained_evidence_rows_closed": 3
+}

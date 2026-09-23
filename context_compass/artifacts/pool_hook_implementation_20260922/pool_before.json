@@ -1,0 +1,93 @@
+{
+  "python": "3.14.7 free-threading build (main, Sep  1 2026, 14:18:33) [MSC v.1944 64 bit (AMD64)]",
+  "gil_enabled": false,
+  "threads": 1,
+  "iterations": 20000,
+  "repeats": 7,
+  "results": [
+    {
+      "mode": "lesser",
+      "seeded": false,
+      "median_ns": 1313.915,
+      "samples_ns": [
+        1299.11,
+        1313.915,
+        1349.13,
+        1304.515,
+        1313.975,
+        1327.46,
+        1301.635
+      ]
+    },
+    {
+      "mode": "manual_space",
+      "seeded": false,
+      "median_ns": 680.16,
+      "samples_ns": [
+        667.475,
+        665.915,
+        673.725,
+        721.54,
+        725.77,
+        688.88,
+        680.16
+      ]
+    },
+    {
+      "mode": "managed_space",
+      "seeded": false,
+      "median_ns": 404.655,
+      "samples_ns": [
+        402.06,
+        402.63,
+        408.735,
+        418.73,
+        405.02,
+        404.655,
+        401.825
+      ]
+    },
+    {
+      "mode": "lesser",
+      "seeded": true,
+      "median_ns": 1623.665,
+      "samples_ns": [
+        1640.06,
+        1616.42,
+        1643.315,
+        1608.75,
+        1623.665,
+        1619.425,
+        1624.715
+      ]
+    },
+    {
+      "mode": "manual_space",
+      "seeded": true,
+      "median_ns": 668.11,
+      "samples_ns": [
+        673.855,
+        668.11,
+        671.635,
+        664.04,
+        677.69,
+        665.445,
+        666.215
+      ]
+    },
+    {
+      "mode": "managed_space",
+      "seeded": true,
+      "median_ns": 403.685,
+      "samples_ns": [
+        403.685,
+        396.905,
+        395.865,
+        405.89,
+        401.225,
+        458.1,
+        411.655
+      ]
+    }
+  ]
+}

@@ -82,7 +82,7 @@ def main() -> None:
 
     # The shape, unmodified. TWO credentials sockets exist - one under
     # gateway, one under mirror - and they are four hops down.
-    plain = conduit.meld(Edge)
+    plain = conduit.meld("Edge")
     assert plain.gateway.upstream.credentials.label == "real"
     assert plain.mirror.upstream.credentials.label == "real"
     print("graph built: two credentials sockets, both at depth 4")
@@ -92,7 +92,7 @@ def main() -> None:
     swapped = Credentials()
     swapped.label = "gateway-only"
     one = conduit.meld(
-        Edge,
+        "Edge",
         override={"gateway>upstream>credentials": swapped},
     )
     assert one.gateway.upstream.credentials.label == "gateway-only"
@@ -105,7 +105,7 @@ def main() -> None:
     grafted_credentials = Credentials()
     grafted_credentials.label = "grafted"
     grafted = conduit.meld(
-        Edge,
+        "Edge",
         override={"mirror>upstream": Upstream(grafted_credentials)},
     )
     assert grafted.mirror.upstream.credentials.label == "grafted"
@@ -115,7 +115,7 @@ def main() -> None:
     # 3. AMBIGUITY IS THE NORMAL CASE AT DEPTH. `*credentials` matches
     #    twice here, and melder refuses rather than picking one.
     try:
-        conduit.meld(Edge, override={"*credentials": swapped})
+        conduit.meld("Edge", override={"*credentials": swapped})
         raise AssertionError("expected a refusal: *param matched twice")
     except Exception as error:
         print()
@@ -126,7 +126,7 @@ def main() -> None:
     everywhere = Credentials()
     everywhere.label = "all"
     broad = conduit.meld(
-        Edge,
+        "Edge",
         override={"**credentials": everywhere},
     )
     assert broad.gateway.upstream.credentials.label == "all"
@@ -138,7 +138,7 @@ def main() -> None:
     pinned = Credentials()
     pinned.label = "pinned"
     mixed = conduit.meld(
-        Edge,
+        "Edge",
         override={
             "**credentials": everywhere,
             "gateway>upstream>credentials": pinned,
@@ -155,7 +155,7 @@ def main() -> None:
     #    otherwise undetectable - the refusal is the feature.
     try:
         conduit.meld(
-            Edge,
+            "Edge",
             override={"gateway>upstrem>credentials": swapped},
         )
         raise AssertionError("expected a refusal: no such path")

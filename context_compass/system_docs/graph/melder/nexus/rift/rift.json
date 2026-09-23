@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/rift.py",
- "source_sha256": "b5e1345cc0e3e1235512731226d8537bc4cd8a99311e7c95822006f53438ea0c",
+ "source_sha256": "bcd218d4520507c32749f3445c1cdecb2a285a1f83f4d3991169e166ab4846b5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.rift": {
@@ -54,7 +54,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "342c93137c709bad08f8ab9ebd4fd8fa707752b1a1bd8b59f612a2086f5c21da",
+   "span_sha256": "a141a96994f6239f2e6318604e542e85ec11aa4cbb499f29168f2b7678b28a6e",
    "role": "Live AR session object.",
    "responsibilities": [
     "owns exactly one primary room",

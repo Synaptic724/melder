@@ -420,6 +420,55 @@ def test_component_fast_door_guard_trips_on_meld_hooks_in_place_mutation() -> No
         conduit.permanent_cleanup()
 
 
+@pytest.mark.parametrize("scope", ["root", "lesser", "space"])
+@pytest.mark.parametrize("shared", [False, True], ids=["local", "shared"])
+def test_runtime_hook_add_and_clear_preserves_existing_warm_door(scope: str, shared: bool) -> None:
+    """Runtime controls activate hooks and recover the existing no-hooks fast lane.
+
+    Contract:
+        Shared updates reach already-warmed inheritors. Clearing with an empty
+        event list restores warm execution without recompilation or cache resets.
+        The normal-lane lookup spy proves that clear did not leave a truthy
+        mapping containing only empty lists.
+
+    Args:
+        scope: Root, lesser or SpellSpace whose warmed door is exercised.
+        shared: Publish at the root instead of localizing on the target runtime.
+    """
+    book = _make_spellbook()
+    spell_id = book.bind(spell=_UniquePerConduitService, existence=Existence.unique_per_conduit)
+    root = book.conjure(name="hook-fast-door")
+    target = root
+    if scope == "lesser":
+        target = root.create_lesser_conduit()
+    elif scope == "space":
+        target = root.create_spellspace()
+    try:
+        first = target.meld(spell_id=spell_id)
+        spy = _install_lane_spy(target._meld)
+        assert target.meld(spell_id=spell_id) is first
+        assert not spy.normal_lane_entered
+        hooks = root._meld if shared else target._meld
+        calls: list[object] = []
+        hooks.register_meld_hooks(
+            {"on_meld_pre_resolve": calls.append}, create_local_hooks=not shared,
+        )
+        assert target.meld(spell_id=spell_id) is first
+        assert len(calls) == 1
+        assert spy.normal_lane_entered
+        hooks.register_meld_hooks(
+            {"on_meld_pre_resolve": []}, create_local_hooks=not shared, overwrite=True,
+        )
+        spy.normal_lane_entered = False
+        assert target.meld(spell_id=spell_id) is first
+        assert len(calls) == 1
+        assert not spy.normal_lane_entered
+    finally:
+        if target is not root:
+            target.cleanup()
+        root.permanent_cleanup()
+
+
 def test_component_fast_door_guard_trips_on_context_invalidation() -> None:
     """
     Purpose:

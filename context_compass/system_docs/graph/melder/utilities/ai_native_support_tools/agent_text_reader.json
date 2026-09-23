@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/ai_native_support_tools/agent_text_reader.py",
- "source_sha256": "76628b392ad8d7160e44a30f186f3eed89947fb4296968ea5ef9398c37f538dc",
+ "source_sha256": "03602c4a7362463fdb1f72639519841a527dae645d5f7d64b6231f4244b1f3cf",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.ai_native_support_tools.agent_text_reader": {

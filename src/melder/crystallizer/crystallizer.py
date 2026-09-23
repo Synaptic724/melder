@@ -1140,6 +1140,26 @@ class Crystallizer(Cleanable):
         self._persistence_system.remove_spell_crystal(spell_id)
         self._maybe_create_automatic_checkpoint()
 
+    def emit_conduit_removed(self, conduit_id: str) -> None:
+        """Record one scope's retirement without evicting its shared Spellbook.
+
+        Contract:
+            Inactive recording is a no-op. The persistence owner removes and
+            journals the id, then normal checkpoint cadence may seal the event.
+            The facade never reaches back into the live Conduit.
+        Args:
+            conduit_id: Retired runtime identity, used only within the record.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: The Crystallizer has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._activated:
+            return
+        self._persistence_system.remove_conduit_crystal(conduit_id)
+        self._maybe_create_automatic_checkpoint()
+
     def emit_spellbook_removed(self, spellbook_id: str) -> None:
         """
         Evict one dead spellbook's ENTIRE record subtree.
@@ -2275,6 +2295,9 @@ class Crystallizer(Cleanable):
             - Restoration is PLANNED AND GATED rather than a blind replay, so it can
               legitimately refuse or partially apply - read the result rather than
               assuming a full restore.
+            - Callers must quiesce lesser/SpellSpace acquisition, return and lineage
+              changes during live restore. Load authority drains structural
+              transactions; ordinary pooled scope cycles are not transaction spans.
 
         Args:
             formation_name:
@@ -2928,6 +2951,9 @@ class Crystallizer(Cleanable):
             verdicts before activation, and always releases authority.
             Successful payloads include the additive, detached `admission`
             view alongside the restore report.
+            Callers must quiesce lesser/SpellSpace acquisition, return and lineage
+            changes during live restore; those pool cycles are not drained by
+            transaction load authority.
 
         Args:
             checkpoint_id:

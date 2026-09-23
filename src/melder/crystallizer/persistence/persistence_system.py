@@ -334,6 +334,21 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         self.active_profile.remove_spell_crystal(spell_id)
 
+    def remove_conduit_crystal(self, conduit_id: str) -> None:
+        """Retire one conduit twin from the active profile through its record owner.
+
+        Contract:
+            The profile owns removal/journaling; no Book or runtime object is touched.
+        Args:
+            conduit_id: Record-local identity of the retired scope.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: The subsystem has been cleaned.
+        """
+        self.check_cleaned()
+        self.active_profile.remove_conduit_crystal(conduit_id)
+
     def remove_spellbook_subtree(self, spellbook_id: str) -> None:
         """
         Evict one spellbook's record subtree from the ACTIVE profile.

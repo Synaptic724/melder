@@ -40,7 +40,7 @@ def main() -> None:
 
     conduit = book.conjure()
     client = conduit.meld(
-        HttpClient, spellframe="network", binding_name="payments-api",
+        "HttpClient", spellframe="network", binding_name="payments-api",
         override={"base_url": "https://pay.example", "timeout": 30},
     )
     assert client.base_url == "https://pay.example" and client.timeout == 30
@@ -49,8 +49,8 @@ def main() -> None:
     # Constructor arguments ride override= at meld time.
 
     child = conduit.create_lesser_conduit()
-    policy_root = conduit.meld(RetryPolicy, spellframe="network")
-    policy_child = child.meld(RetryPolicy, spellframe="network")
+    policy_root = conduit.meld("RetryPolicy", spellframe="network")
+    policy_child = child.meld("RetryPolicy", spellframe="network")
     assert policy_root is not policy_child
     print("per-conduit policy under a spellframe: one per scope")
 

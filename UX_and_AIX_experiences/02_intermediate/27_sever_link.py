@@ -33,13 +33,13 @@ def main() -> None:
     owner.link(borrower)
     borrower.add_spell_to_contract(spell_id=spell_id, conduit=owner,
                                    permissions="create")
-    shared = borrower.meld(SharedDirectory)
+    shared = borrower.meld("SharedDirectory")
     print("while linked, the borrower resolves:", shared.lookup())
 
     # ...and the undo. The contract dies WITH the link.
     owner.sever_link(borrower)
     try:
-        borrower.meld(SharedDirectory)
+        borrower.meld("SharedDirectory")
         print("post-sever meld unexpectedly resolved")
     except Exception as err:
         print("post-sever meld refused:", type(err).__name__,
@@ -50,7 +50,7 @@ def main() -> None:
     # RIGHTS - it never reaches into anyone's memory.
     print("owner still holds the live creation:",
           owner.has_live_creation(spell=SharedDirectory))
-    still_alive = owner.meld(SharedDirectory)
+    still_alive = owner.meld("SharedDirectory")
     print("owner still resolves its own spell:", still_alive is shared)
 
     # Severing again refuses: there is no contract left to remove.

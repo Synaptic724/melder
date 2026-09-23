@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py",
- "source_sha256": "549912793c5c440717daf127a4c27692f1bff32a2d50f38136e45fc1158fdba8",
+ "source_sha256": "286f991cc0a066bb11f1cb0254817529fd392e3a39429312b28e1ef609eeb069",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.frame_descriptor.conduit_descriptor_payload": {
@@ -38,10 +38,11 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0d1eb211ebfa0ad0b7b01e11008e268d8817e5a44cd17566d13963a78359bd82",
+   "span_sha256": "134bdfa38ef8b9baf46517adf58fd0b5e71205b08937ca9a499c99016f4f3e80",
    "role": "Descriptor-safe published conduit payload.",
    "responsibilities": [
-    "stores published conduit posture and lineage summary values"
+    "stores published conduit posture and lineage summary values",
+    "carries cleared name/parent/peer/depth values for named pooled retirement"
    ],
    "owns_state": [
     "conduit_name",

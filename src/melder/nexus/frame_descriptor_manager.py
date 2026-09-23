@@ -339,29 +339,41 @@ class FrameDescriptorManager(Cleanable):
             descriptor.set_frame_overview(frame_record)
             return True
 
-    def _publish_conduit_record(self, conduit: Conduit) -> bool:
+    def _publish_conduit_record(self, conduit: Conduit, *, pooled: bool = False) -> bool:
         """
         Publish or update one canonical conduit record.
 
         Purpose:
-            Build or refresh the canonical `ConduitRecord` for one normal
-            conduit.
+            Build or refresh a canonical root/lesser record, or retire the named
+            values of an existing record before its shell becomes reusable.
 
         Contract:
-            - Published conduit states in this slice are normal and lesser.
+            - Supports normal, lesser and pooled_lesser payloads.
             - Short-circuits when the frame is not publishable.
             - Replaces the descriptor-owned conduit record for the conduit id.
+            - Pooled publication retains existing IDs only, with no name, parent,
+              peers or depth. Root and Book identity remain the shell's owners.
+            - Does not mutate the live conduit or refresh compiled ACL membership.
+            - Internal publishers use the live manager owned by their Nexus root;
+              cleaned-state admission belongs to public entry points.
 
         Args:
             conduit:
                 Conduit instance to publish.
+            pooled:
+                True publishes detached pooled values before named cleanup unlinks
+                the live scope. The caller holds its lifecycle lock so failure can
+                be retried before pool publication.
+
+        Threading:
+            Serializes record construction/replacement under the manager lock.
+            Caller owns lifecycle ordering; this manager takes no Conduit lock.
 
         Returns:
             bool:
                 True when publication occurred, False when the conduit is not
-                eligible.
+                eligible or pooled retirement has no existing record to retain.
         """
-        self.check_cleaned()
         if conduit is None or conduit._conduit_state not in (
                 ConduitState.normal,
                 ConduitState.lesser,
@@ -375,8 +387,10 @@ class FrameDescriptorManager(Cleanable):
             if frame_posture is None:
                 return False
             descriptor = self._get_or_create_frame_descriptor(frame_name)
+            if pooled and conduit._id not in descriptor.conduit_records_by_id:
+                return False
 
-            peer_conduit_ids = tuple(
+            peer_conduit_ids = tuple() if pooled else tuple(
                 sorted(
                     peer._id
                     for peer in conduit._conduit_ward._get_links()
@@ -386,12 +400,12 @@ class FrameDescriptorManager(Cleanable):
             origin_spellbook_id = None
             if conduit._spellbook is not None:
                 origin_spellbook_id = conduit._spellbook._id
-            parent_conduit_id = self._resolve_parent_conduit_id(conduit)
-            lineage_depth = self._compute_lineage_depth(conduit)
+            parent_conduit_id = None if pooled else self._resolve_parent_conduit_id(conduit)
+            lineage_depth = 0 if pooled else self._compute_lineage_depth(conduit)
 
             payload = ConduitDescriptorPayload(
-                conduit_name=conduit._name,
-                conduit_state=conduit._conduit_state,
+                conduit_name=None if pooled else conduit._name,
+                conduit_state=ConduitState.pooled_lesser if pooled else conduit._conduit_state,
                 policy=conduit._conduit_ward._policy,
                 peer_conduit_ids=peer_conduit_ids,
                 parent_conduit_id=parent_conduit_id,

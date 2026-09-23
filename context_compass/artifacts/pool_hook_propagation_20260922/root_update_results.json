@@ -1,0 +1,108 @@
+[
+  {
+    "seeded": false,
+    "mode": "register",
+    "before_aliases": {
+      "root_has_seed_map": false,
+      "root_effective_is_seed": false,
+      "child_effective_is_root_effective": false,
+      "space_effective_is_root_effective": true
+    },
+    "callbacks": {
+      "root": [
+        "added"
+      ],
+      "existing_lesser": [],
+      "fresh_lesser": [],
+      "existing_space": [],
+      "fresh_space": [
+        "added"
+      ],
+      "recycled_space": []
+    }
+  },
+  {
+    "seeded": true,
+    "mode": "register",
+    "before_aliases": {
+      "root_has_seed_map": true,
+      "root_effective_is_seed": true,
+      "child_effective_is_root_effective": true,
+      "space_effective_is_root_effective": true
+    },
+    "callbacks": {
+      "root": [
+        "initial",
+        "added"
+      ],
+      "existing_lesser": [
+        "initial"
+      ],
+      "fresh_lesser": [
+        "initial"
+      ],
+      "existing_space": [
+        "initial"
+      ],
+      "fresh_space": [
+        "initial",
+        "added"
+      ],
+      "recycled_space": [
+        "initial"
+      ]
+    }
+  },
+  {
+    "seeded": false,
+    "mode": "reference_install",
+    "before_aliases": {
+      "root_has_seed_map": false,
+      "root_effective_is_seed": false,
+      "child_effective_is_root_effective": false,
+      "space_effective_is_root_effective": true
+    },
+    "callbacks": {
+      "root": [
+        "added"
+      ],
+      "existing_lesser": [],
+      "fresh_lesser": [],
+      "existing_space": [],
+      "fresh_space": [
+        "added"
+      ],
+      "recycled_space": []
+    }
+  },
+  {
+    "seeded": true,
+    "mode": "reference_install",
+    "before_aliases": {
+      "root_has_seed_map": true,
+      "root_effective_is_seed": true,
+      "child_effective_is_root_effective": true,
+      "space_effective_is_root_effective": true
+    },
+    "callbacks": {
+      "root": [
+        "added"
+      ],
+      "existing_lesser": [
+        "initial"
+      ],
+      "fresh_lesser": [
+        "initial"
+      ],
+      "existing_space": [
+        "initial"
+      ],
+      "fresh_space": [
+        "added"
+      ],
+      "recycled_space": [
+        "initial"
+      ]
+    }
+  }
+]

@@ -433,6 +433,29 @@ class PersistenceProfile(Cleanable):
                     crystal.cleanup()
             self._journal("spell_removed", spell_id)
 
+    def remove_conduit_crystal(self, conduit_id: str) -> None:
+        """Retire one conduit record without evicting its shared Book or siblings.
+
+        Contract:
+            Missing/already removed records are tolerated. Each call journals a
+            conduit_removed tombstone; sealed history stays immutable. Supporting
+            ancestry is carried inside the removed twin and needs no separate sweep.
+        Args:
+            conduit_id: Record-local identity of the retired scope.
+        Returns:
+            None.
+        Raises:
+            RuntimeError: The profile is cleaned.
+        Threading:
+            Removal, displaced-twin cleanup and journaling share the profile lock.
+        """
+        self.check_cleaned()
+        with self._lock:
+            twin = self._conduit_crystals_by_id.pop(conduit_id, None)
+            if twin is not None and not twin.cleaned:
+                twin.cleanup()
+            self._journal("conduit_removed", conduit_id)
+
     def remove_spellbook_subtree(self, spellbook_id: str) -> None:
         """
         Evict one spellbook's ENTIRE record subtree.
@@ -1074,6 +1097,12 @@ class PersistenceProfile(Cleanable):
             ]
             payloads: Dict[str, Dict[str, Dict[str, object]]] = {}
             for _sequence, kind, key in segment_entries:
+                if kind == "conduit_removed":
+                    payloads.setdefault(kind, {})[key] = {
+                        "conduit_id": key,
+                        "removed": True,
+                    }
+                    continue
                 if kind == "frame_removed":
                     payloads.setdefault(kind, {})[key] = {
                         "frame_name": key,
@@ -1171,8 +1200,8 @@ class PersistenceProfile(Cleanable):
 
         Purpose:
             Users keep the formations they like: a conduit formation
-            (the conduit + its spellbook + that book's custody and
-            indexes + contracts touching the conduit) or a frame
+            (the conduit subtree, its required named/root ancestry, shared Book
+            custody/indexes and touching contracts) or a frame
             formation (the frame posture + every book subtree on it +
             its clusters). The slice is CURRENT-STATE payloads only - no
             journal window - and restores through a manufactured
@@ -1185,6 +1214,9 @@ class PersistenceProfile(Cleanable):
             - Contract/link peers OUTSIDE the slice ride along as
               recorded references (restore shortfalls them; the
               persistence analyzer pre-flights them).
+            - Named lesser anchors retain their normal root and named ancestors;
+              unnamed support travels inside the selected twins. A root anchor
+              includes its named descendants. No unrelated sibling subtree is added.
 
         Args:
             conduit_id:
@@ -1262,11 +1294,13 @@ class PersistenceProfile(Cleanable):
                         "(check describe_profile()).".format(conduit_id)
                     )
                 conduit_payload = conduit.describe()
-                put("conduit", conduit_id, conduit_payload)
+                selected_ids = self._formation_conduit_ids(conduit_id, conduit_payload)
+                for selected_id in selected_ids:
+                    put("conduit", selected_id, self._conduit_crystals_by_id[selected_id].describe())
                 capture_book_subtree(
                     str(conduit_payload.get("spellbook_id"))
                 )
-                capture_contracts_touching([conduit_id])
+                capture_contracts_touching(selected_ids)
                 return payloads
 
             frame = self._frame_crystals_by_name.get(str(frame_name))
@@ -1304,6 +1338,45 @@ class PersistenceProfile(Cleanable):
                     put("cluster", cluster_id, cluster_payload)
             capture_contracts_touching(frame_conduit_ids)
             return payloads
+
+    def _formation_conduit_ids(self, anchor_id: str, anchor: Dict[str, object]) -> List[str]:
+        """Select a conduit subtree plus the explicit ancestors required to replay it.
+
+        Contract:
+            Called with the profile lock held. Reads only recorded values: the
+            record never imports a loader/analyzer or inspects the live world.
+            Anonymous support remains inside named twins, so no unrelated unnamed
+            row or cleanup obligation is introduced. Named ancestors must be present.
+        Args:
+            anchor_id: Recorded root or named lesser selected by the caller.
+            anchor: Its detached value payload.
+        Returns:
+            List[str]: Explicit selected ids in stable record order.
+        Raises:
+            ValueError: A selected named scope depends on an unrecorded named/root ancestor.
+        """
+        selected = {anchor_id}
+        book_id = anchor.get("spellbook_id")
+        anchor_configuration = dict(anchor.get("configuration_payload", {}))
+        root_anchor = anchor_configuration.get("conduit_state", "normal") == "normal"
+        for conduit_id, twin in self._conduit_crystals_by_id.items():
+            if twin.cleaned or twin.spellbook_id != book_id:
+                continue
+            configuration = twin.configuration_payload
+            lineage = list(configuration.get("lineage_ancestors", []))
+            if (
+                    conduit_id == anchor_id
+                    or (root_anchor and configuration.get("root_conduit_id") == anchor_id)
+                    or any(ancestor.get("conduit_id") == anchor_id for ancestor in lineage)
+            ):
+                selected.add(conduit_id)
+                for ancestor in lineage:
+                    ancestor_id = str(ancestor["conduit_id"])
+                    if ancestor.get("conduit_name") is not None or ancestor.get("parent_conduit_id") is None:
+                        if ancestor_id not in self._conduit_crystals_by_id:
+                            raise ValueError(f"Formation requires unrecorded named/root ancestor {ancestor_id!r}.")
+                        selected.add(ancestor_id)
+        return [conduit_id for conduit_id in self._conduit_crystals_by_id if conduit_id in selected]
 
     def mark_checkpoint(self, sequence: int) -> None:
         """

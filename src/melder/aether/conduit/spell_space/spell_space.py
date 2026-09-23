@@ -199,6 +199,9 @@ class SpellSpace(Cleanable):
             dynamic_environment=conduit_meld._dynamic_environment,
             meld_hooks=conduit_meld._meld_hooks,
         )
+        # A temporary owner map must be reset on return even when this Space
+        # never registers a callback itself.
+        self._meld._inherit_meld_hooks(conduit_meld)
         self._registry_tracked: bool = False
         self._spellspace_registry: set[SpellSpace] = spellspace_registry
         self._spellspace_pool: SpellSpacePool = spellspace_pool
@@ -316,7 +319,8 @@ class SpellSpace(Cleanable):
               teardown was requested or the spellspace is registry-tracked.
             - Clears spellspace-local creations before returning this
               spellspace to the pool.
-            - Keeps collaborator references intact for later reuse.
+            - Keeps collaborator references intact for later reuse, restoring
+              temporary hooks after disposal and before idle publication.
 
         Threading / Concurrency:
             - This lane runs without the spellspace `RLock` because managed
@@ -347,12 +351,15 @@ class SpellSpace(Cleanable):
         if self._permanent_cleanup_requested or self._registry_tracked:
             self.cleanup()
             return
-        # Hot path: fully lock-free by the thread-confinement contract above.
+        # Common unchanged path is lock-free by the confinement contract above;
+        # a temporary hook map uses the existing Meld lock only while resetting.
         # The unlocked variant is valid here precisely because this lane is
         # the confinement-guaranteed managed exit; the explicit
         # spellspace-local clear still happens before pool return so scope
         # teardown stays deterministic and owner-driven.
         self._creations.reset_for_pool_unlocked()
+        if self._meld._meld_hooks_modified:
+            self._meld._reset_pooled_meld_hooks()
         self._spellspace_pool.release(self)
         
     def _cleanup_for_pool_reuse(self) -> None:
@@ -366,12 +373,15 @@ class SpellSpace(Cleanable):
             - Still tolerates direct/manual registry insertion paths by
               discarding the spellspace when it is currently present.
             - Keeps collaborator references intact for later reuse.
+            - Restores temporary Meld hooks after disposal, before idle publication.
         """
         self._creations.reset_for_pool()
         if self._registry_tracked or self in self._spellspace_registry:
             self._spellspace_registry.discard(self)
             self._registry_tracked = False
         self._permanent_cleanup_requested = False
+        if self._meld._meld_hooks_modified:
+            self._meld._reset_pooled_meld_hooks()
 
     def _cleanup_for_destroy(self) -> None:
         """
@@ -383,8 +393,10 @@ class SpellSpace(Cleanable):
             - Still tolerates direct/manual registry insertion paths by
               discarding the spellspace when it is currently present.
             - Deletes the pool reference as part of final teardown.
+            - Cleans the owned Meld before dropping it, releasing both hook references.
         """
         self._creations.cleanup()
+        self._meld.cleanup()
         if self._registry_tracked or self in self._spellspace_registry:
             self._spellspace_registry.discard(self)
         self._cleaned = True
@@ -492,6 +504,85 @@ class SpellSpace(Cleanable):
             spellframe=spellframe,
             binding_name=binding_name,
             spell_override=override,
+        )
+
+    def purge(
+            self,
+            spell: Optional[Union[str, object]] = None,
+            *,
+            spell_id: Optional[str] = None,
+            spellframe: Optional[Union[str, object]] = None,
+            binding_name: Optional[str] = None,
+            purge_all: bool = True,
+    ) -> int:
+        """
+        Purge a registered target's retained creations from this SpellSpace.
+
+        Purpose:
+            Expose request-local retirement through the owned SpellSpaceMeld
+            door while keeping this explicit scope usable.
+
+        Contract:
+            - SpellSpaceMeld authorizes only many and unique_per_spell_space.
+            - The target store is always this space's own Creations. No conduit,
+              Spell owner, lineage-root or cluster-leader store can be selected.
+            - Identity normalization follows meld's name/type/frame/id rules.
+            - Purge does not exit the scope, pop its stack or return it to a pool.
+
+        Args:
+            spell:
+                Logical name, class/function reference or application instance.
+                An instance is inspected for its class before ordinary lookup.
+                The original reference is retained for single-object removal.
+            spell_id:
+                Explicit machine identity, mutually exclusive with spell.
+            spellframe:
+                Optional frame/type used by ordinary binding discovery.
+            binding_name:
+                Optional binding name within that frame.
+            purge_all:
+                True removes every retained local entry for the target. False
+                requires an instance as spell and removes only that object.
+
+        Returns:
+            int:
+                Removed local creation count; zero when none are retained.
+
+        Raises:
+            ValueError:
+                If selectors conflict, no target is supplied, or single-object
+                removal is requested without an instance.
+            KeyError:
+                If normal meld discovery cannot find the binding.
+            RuntimeError:
+                If permanently cleaned or the target has a broader lifetime.
+            TypeError:
+                If purge_all is not a bool.
+            ExceptionGroup:
+                Disposal failures after selected local entries have been removed.
+
+        Threading / Lifecycle:
+            Creations uses this space's store lock and releases it before
+            disposal. Direct manual use needs no active managed stack entry.
+            Managed thread confinement and pool ownership rules remain unchanged;
+            a returned/recycled space must not be used through an old reference.
+        """
+        self.check_cleaned()
+        if spell is not None and spell_id is not None:
+            raise ValueError("purge accepts either `spell` or `spell_id`, not both.")
+        internal_spell = spell
+        internal_spell_name = None
+        if spell_id is not None:
+            internal_spell = spell_id
+        elif isinstance(spell, str):
+            internal_spell = None
+            internal_spell_name = spell
+        return self._meld.purge(
+            internal_spell,
+            spell_name=internal_spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            purge_all=purge_all,
         )
 
     # Machine identity remains explicit at the public boundary via `spell_id=`;

@@ -105,6 +105,15 @@ def _build_conduit(
     if conduit_state is ConduitState.lesser:
         root = MagicMock()
         root._id = root_conduit_id
+        # Real roots copy configured containers once; lessers borrow that baseline.
+        root._conduit_hooks = {
+            name: list(callbacks)
+            for name, callbacks in configuration.get_conduit_hooks(spellbook._id).items()
+        }
+        root._meld_hooks = {
+            name: list(callbacks)
+            for name, callbacks in configuration.get_meld_hooks(spellbook._id).items()
+        }
         root._conduit_pool = ConduitPool(
             root_conduit=root,
             baseline_idle=10,
@@ -370,22 +379,22 @@ def test_conduit_constructor_respects_dynamic_input(
         conduit.cleanup()
 
 
-def test_configure_conduit_state_clears_name_for_lesser(
+def test_configure_conduit_state_preserves_creation_name_for_lesser(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify lesser conduits discard names during initialization.
+    Verify lesser initialization preserves its supplied creation label.
 
     Contract:
-        - Lesser conduits cannot retain a name.
+        - Naming does not require promoting the conduit to normal.
 
     Args:
         configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
         spellbook_stub (MagicMock): Spellbook stub for construction.
 
     Raises:
-        AssertionError: If the name remains set for a lesser conduit.
+        AssertionError: If the creation name is discarded or the scope is promoted.
     """
     conduit = _build_conduit(
         spellbook=spellbook_stub,
@@ -396,20 +405,22 @@ def test_configure_conduit_state_clears_name_for_lesser(
         name="alpha",
     )
     try:
-        assert conduit.name is None
+        assert conduit.name == "alpha"
+        assert conduit._conduit_state is ConduitState.lesser
     finally:
         conduit.cleanup()
 
 
-def test_configure_conduit_state_logs_warning_when_lesser_name_is_overridden(
+def test_configure_conduit_state_does_not_publish_lesser_as_root(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify lesser conduit name override emits a warning.
+    Verify a lesser name grants no root registration or early Cloud publication.
 
     Contract:
-        - Lesser conduits log a warning when a provided name is discarded.
+        - Named shells remain unpublished until the parent attachment boundary.
+        - State configuration neither discards the name nor enrolls a root.
     """
     conduit = _build_conduit(
         spellbook=spellbook_stub,
@@ -420,11 +431,10 @@ def test_configure_conduit_state_logs_warning_when_lesser_name_is_overridden(
         name="alpha",
     )
     try:
-        conduit._name = "alpha"
-        conduit._logger = MagicMock()
         conduit._configure_conduit_state()
-        conduit._logger.warning.assert_called()
-        assert conduit.name is None
+        assert conduit.name == "alpha"
+        conduit._aetheric_frame.register_root_conduit.assert_not_called()
+        conduit._aetheric_frame._conduit_cloud._register_named_conduit.assert_not_called()
     finally:
         conduit.cleanup()
 
@@ -556,7 +566,7 @@ def test_initialize_conduit_hooks_attaches_for_lesser_permanent_cleanup(
     )
     try:
         assert conduit._conduit_hooks is not None
-        assert conduit._conduit_hooks is configuration.get_conduit_hooks(spellbook_stub._id)
+        assert conduit._conduit_hooks is conduit._conduit_pool.root_conduit._conduit_hooks
         conduit.permanent_cleanup()
         assert events == [conduit]
     finally:
@@ -564,15 +574,15 @@ def test_initialize_conduit_hooks_attaches_for_lesser_permanent_cleanup(
             conduit.permanent_cleanup()
 
 
-def test_initialize_conduit_hooks_shares_configuration_hook_refs_until_local_edit(
+def test_initialize_conduit_hooks_isolates_configuration_containers(
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify Conduit shares configuration hook refs until a local edit occurs.
+    Verify runtime hook containers remain isolated from configuration seeds.
 
     Contract:
-        - Conduit uses shared configuration refs for conduit and meld hooks.
-        - Later configuration mutations remain visible until a local copy-on-write edit happens.
+        - A lesser borrows its root's independent runtime containers.
+        - Even unsupported direct seed edits cannot mutate those runtime lists.
     """
     configuration = SpellbookConfiguration()
     set_frame_system_state_for_spellbook_configuration(configuration, "automatic")
@@ -620,8 +630,8 @@ def test_initialize_conduit_hooks_shares_configuration_hook_refs_until_local_edi
 
         assert conduit._conduit_hooks is not None
         assert conduit._meld_hooks is not None
-        assert conduit._conduit_hooks["on_conduit_cleanup_start"] == [conduit_hook, conduit_hook_2]
-        assert conduit._meld_hooks["on_meld_pre_resolve"] == [meld_hook, meld_hook_2]
+        assert conduit._conduit_hooks["on_conduit_cleanup_start"] == [conduit_hook]
+        assert conduit._meld_hooks["on_meld_pre_resolve"] == [meld_hook]
     finally:
         conduit.cleanup()
 
@@ -928,7 +938,7 @@ def test_register_conduit_hooks_local_preserves_shared_map(
             {"on_conduit_cleanup_start": local_hook}
         )
 
-        assert conduit._conduit_hooks is shared_hooks
+        assert conduit._conduit_hooks is not shared_hooks
         assert conduit._conduit_hooks["on_conduit_cleanup_start"][0] is shared_hooks["on_conduit_cleanup_start"][0]
         assert conduit._local_conduit_hooks is not None
         assert conduit._local_conduit_hooks["on_conduit_cleanup_start"][-1] is local_hook

@@ -13,6 +13,7 @@ from typing import (
     Sequence,
     ClassVar,
     NoReturn,
+    Union,
 )
 
 
@@ -152,6 +153,8 @@ class Meld(Cleanable, ABC):
         "_max_resolution_cache_size",
         "_change_control_manager_by_frame",
         "_meld_hooks",
+        "_baseline_meld_hooks",
+        "_meld_hooks_modified",
         "_spell_compiler_system",
         "_fast_meld_doors",
         # Canonical creation-store surface (both concrete doors inherit these).
@@ -190,6 +193,9 @@ class Meld(Cleanable, ABC):
               `meld(...)` front doors.
             - Stores the meld-hooks mapping by reference when supplied so shared
               hook updates stay visible without additional synchronization.
+            - Starts on that baseline with no local divergence. Pooled runtimes
+              track temporary hook references with one bool, read only at lease
+              boundaries; ordinary meld dispatch remains unchanged.
             - Owns the canonical creation-store surface (`_conduit_creations`,
               `_root_creations`, `_cluster_creations` facade,
               `_spellspace_creations`); concrete subclasses pass their values in
@@ -259,9 +265,11 @@ class Meld(Cleanable, ABC):
 
         # Optional hook map pulled from Configuration (via Conduit).
         # This is stored by reference when provided.
-        self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = (
+        self._baseline_meld_hooks: Dict[str, list[Callable[..., Any]]] = (
             meld_hooks if meld_hooks is not None else {}
         )
+        self._meld_hooks: Optional[Dict[str, list[Callable[..., Any]]]] = self._baseline_meld_hooks
+        self._meld_hooks_modified: bool = False
 
         # Fast meld door registry: success-only memoization of warm id-string
         # melds. Entries are (spell, captured_context, creations_store)
@@ -334,6 +342,8 @@ class Meld(Cleanable, ABC):
             del self._resolution_conduit_id
             del self._dynamic_environment
             del self._meld_hooks
+            del self._baseline_meld_hooks
+            del self._meld_hooks_modified
             del self._input_resolution_cache
             del self._max_resolution_cache_size
             del self._change_control_manager_by_frame
@@ -484,6 +494,117 @@ class Meld(Cleanable, ABC):
         """
         raise NotImplementedError(
             "Concrete Meld subclasses must implement meld_existing_spell()."
+        )
+
+    @abstractmethod
+    def purge(
+            self,
+            spell: Optional[Union[str, object]] = None,
+            *,
+            spell_name: Optional[str] = None,
+            spellframe: Optional[Union[str, object]] = None,
+            binding_name: Optional[str] = None,
+            purge_all: bool = True,
+    ) -> int:
+        """
+        Define the retirement contract implemented by each concrete Meld door.
+
+        Purpose:
+            Keep conduit and SpellSpace purge orchestration on the concrete
+            door that owns the corresponding scope rules.
+
+        Contract:
+            - Concrete doors use `_resolve_purge_spell` for shared discovery.
+            - Each door authorizes and selects its existing creation store.
+            - Creations owns the removal locks and recorded disposal work.
+            - Discovery never creates an instance or compiles a dependency graph.
+
+        Args:
+            spell: Canonical id string, class/function reference or application instance.
+            spell_name: Logical name forwarded by the public facade.
+            spellframe: Optional frame/type used for binding lookup.
+            binding_name: Optional binding name within that frame.
+            purge_all: True retires the target's retained entries. False retires
+                only the supplied instance from the authorized store.
+
+        Returns:
+            int: Number of retired creations, or zero when the selected store
+            contains none for the resolved target.
+
+        Raises:
+            NotImplementedError: If a subclass calls this abstract body rather
+                than implementing its own scope-specific purge operation.
+        """
+        raise NotImplementedError(
+            "Concrete Meld subclasses must implement purge()."
+        )
+
+    def _resolve_purge_spell(
+            self,
+            *,
+            spell: Optional[Union[str, object]],
+            spell_name: Optional[str],
+            spellframe: Optional[Union[str, object]],
+            binding_name: Optional[str],
+            purge_all: bool,
+    ) -> Spell:
+        """
+        Discover a purge target through the existing meld lookup machinery.
+
+        Purpose:
+            Share selector validation and discovery without moving either
+            concrete door's scope policy into this base class.
+
+        Contract:
+            - Uses `_resolve_spell` unchanged for local/contracted lookup.
+            - Returns the already-registered internal definition, never an
+              application instance and never a newly constructed definition.
+            - Inspects an application instance to obtain its class reference,
+              then submits that reference to the existing spell lookup.
+            - Explicit selectors remain available; no stored-object search or
+              automatic binding/frame recovery is performed during discovery.
+            - False requires an instance so retirement never guesses one.
+            - Does not select a store, authorize a scope, compile, or dispose.
+
+        Args:
+            spell: Canonical id string, class/function reference or application instance.
+            spell_name: Optional logical name from the public facade.
+            spellframe: Optional frame/type used by ordinary meld discovery.
+            binding_name: Optional named binding within that frame.
+            purge_all: True selects the whole binding; False requires an instance.
+
+        Returns:
+            Spell: Existing definition visible to this Meld door.
+
+        Raises:
+            RuntimeError: If this Meld has been cleaned.
+            TypeError: If purge_all is not a bool.
+            ValueError: If no usable selector is supplied, or False has no instance.
+            KeyError: If ordinary meld discovery cannot find the binding.
+
+        Threading / Lifecycle:
+            Uses the same lookup maps as meld. Structural changes keep their
+            existing coordination contract; this helper owns no new state or lock.
+        """
+        self.check_cleaned()
+        if not isinstance(purge_all, bool):
+            raise TypeError("purge_all must be a bool.")
+        if spell is not None and not (
+            isinstance(spell, str) or inspect.isclass(spell) or inspect.isroutine(spell)
+        ):
+            # Discovery uses the class; the concrete door retains the original
+            # reference separately for Creations when single removal is requested.
+            spell = type(spell)
+        elif not purge_all:
+            raise ValueError(
+                "purge_all=False requires an object instance. Pass that instance "
+                "as spell, or use purge_all=True with a binding selector."
+            )
+        return self._resolve_spell(
+            spell=spell,
+            spell_name=spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
         )
 
     def has_live_creation(
@@ -1149,9 +1270,152 @@ class Meld(Cleanable, ABC):
         return compiler_system
 
 
+    @property
+    def hooks_modified(self) -> bool:
+        """
+        Report whether this runtime uses temporary hooks instead of its baseline.
+
+        Contract:
+            Includes a Space borrowing its owner's local map, not just callbacks
+            registered directly here. This is a diagnostic read under the existing
+            Meld lock; pool paths inspect the bool under their lease ownership.
+
+        Returns:
+            bool: True when pool return must restore the baseline reference.
+
+        Raises:
+            RuntimeError: The runtime has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            return self._meld_hooks_modified
+
+    def _bind_meld_hook_baseline(self, hooks: Dict[str, list[Callable[..., Any]]]) -> None:
+        """
+        Attach a trusted baseline during initialization or quiesced graduation.
+
+        Args:
+            hooks: Stable dictionary owned by the current normal root.
+
+        Contract:
+            Replaces both references and clears divergence; never edits either
+            dictionary. The caller owns quiescence. Callback objects are borrowed.
+
+        Returns:
+            None.
+        """
+        self._baseline_meld_hooks = hooks
+        self._meld_hooks = hooks
+        self._meld_hooks_modified = False
+
+    def _inherit_meld_hooks(self, source: Meld) -> None:
+        """
+        Capture an immediate owner's current hooks for a new or acquired Space.
+
+        Args:
+            source: Live owner Meld whose baseline and effective map are borrowed.
+
+        Contract:
+            A temporary owner map marks this runtime for restoration even though
+            it has not registered local callbacks itself. Compare the captured
+            references, so an owner switching sources cannot leave a false clean
+            flag on a captured local map. Caller exclusively owns this new lease.
+
+        Returns:
+            None. No callback containers are copied and no callback is invoked.
+        """
+        self._baseline_meld_hooks = source._baseline_meld_hooks
+        self._meld_hooks = source._meld_hooks
+        self._meld_hooks_modified = self._meld_hooks is not self._baseline_meld_hooks
+
+    def _reset_pooled_meld_hooks(self) -> None:
+        """
+        Restore temporary hook state after current-lease disposal has finished.
+
+        Contract:
+            Called only when the pool's bool check reports divergence. Uses the
+            existing mutation lock, restores one reference and clears one bool.
+            Does not clear borrowed maps or dispose callable objects. Hook edits
+            must finish before a caller hands its scope back to the pool.
+
+        Returns:
+            None.
+        """
+        with self._lock:
+            self._meld_hooks = self._baseline_meld_hooks
+            self._meld_hooks_modified = False
+
+    def register_meld_hooks(
+            self,
+            hooks: Dict[str, Any],
+            *,
+            create_local_hooks: bool = True,
+            overwrite: bool = False,
+    ) -> None:
+        """
+        Register validated Meld callbacks locally or in a normal root's baseline.
+
+        Args:
+            hooks: Meld event names mapped to a callable or list/tuple of callables.
+            create_local_hooks: True copies the effective map for this runtime.
+                False publishes into a normal root's stable shared baseline and
+                selects that baseline for the caller. Lesser/Space shared writes
+                are refused; use their normal root for lineage-wide changes.
+            overwrite: False appends in order. True replaces the selected Meld
+                map; an empty replacement clears its callbacks.
+
+        Contract:
+            Validates the whole batch before publication. Local maps stay isolated;
+            shared maps retain identity so existing inheritors see changes. Shared
+            publication replaces event lists under the existing lock. Readers keep
+            current per-event semantics; a multi-event update is not an operation-
+            wide snapshot. Callbacks never execute under the mutation lock.
+
+        Returns:
+            None. Empty additive input is a no-op.
+
+        Raises:
+            RuntimeError: Cleaned runtime or shared update from a lesser/Space.
+            ValueError: Unknown Meld event name.
+            TypeError: Invalid mapping or non-callable entries.
+        """
+        self.check_cleaned()
+        if not isinstance(hooks, dict):
+            raise TypeError("Meld hooks must be a dictionary of event names to callbacks.")
+        # Cold mutation path: local import avoids introducing a bootstrap cycle.
+        from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+
+        additions: Dict[str, list[Callable[..., Any]]] = {}
+        for name, value in hooks.items():
+            if name not in SpellbookConfiguration._MELD_HOOK_NAMES:
+                raise ValueError(f"Unknown Meld hook name: {name!r}")
+            if callable(value):
+                additions[name] = [value]
+            elif isinstance(value, (list, tuple)) and all(callable(item) for item in value):
+                additions[name] = list(value)
+            else:
+                raise TypeError(f"Meld hook '{name}' must be a callable or list/tuple of callables.")
+        if not additions and not overwrite:
+            return
+        if create_local_hooks:
+            self.set_meld_hooks(additions, create_local_hooks=True, overwrite=overwrite)
+            return
+        if self._conduit_id != self._resolution_conduit_id or self._spellspace_creations is not None:
+            raise RuntimeError("Shared Meld hooks must be changed through the normal root conduit.")
+        with self._lock:
+            self.check_cleaned()
+            if overwrite:
+                self._baseline_meld_hooks.clear()
+            for name, callbacks in additions.items():
+                if callbacks:
+                    self._baseline_meld_hooks[name] = self._baseline_meld_hooks.get(name, []) + callbacks
+            self._meld_hooks = self._baseline_meld_hooks
+            self._meld_hooks_modified = False
+
     def set_meld_hooks(
             self,
-            hooks: Dict[str, list[Callable[..., Any]]] | None,
+            hooks: Optional[Dict[str, list[Callable[..., Any]]]],
             *,
             create_local_hooks: bool = False,
             overwrite: bool = False,
@@ -1169,30 +1433,52 @@ class Meld(Cleanable, ABC):
               current effective hook map.
             - overwrite=True: incoming hooks replace the local map.
 
+        Reference mode remains an internal installation operation, not a shared
+        root publication API. Both modes track divergence for pool restoration.
+        Uses the existing lock only on this mutation path. To publish a root
+        update to existing inheritors, use register_meld_hooks with
+        create_local_hooks=False. Local copying snapshots the source mapping
+        because a root writer may replace shared event entries concurrently.
+        Empty event lists are omitted so clearing keeps the native no-hooks
+        fast-door guard available without another dispatch flag.
+
+        Args:
+            hooks: Trusted event lists, or None to install no effective hooks.
+            create_local_hooks: False borrows this exact reference; True creates
+                independent callback containers for this runtime.
+            overwrite: In local mode, replace the effective map when True;
+                otherwise append to a copy. Ignored for reference installation.
+
         Returns:
             None.
+
+        Raises:
+            RuntimeError: This Meld runtime has been cleaned.
         """
-        if not create_local_hooks:
-            self._meld_hooks = hooks
-            return
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            if not create_local_hooks:
+                self._meld_hooks = hooks
+                self._meld_hooks_modified = hooks is not self._baseline_meld_hooks
+                return
 
-        local_hooks: Dict[str, list[Callable[..., Any]]] = {}
-
-        if not overwrite and self._meld_hooks:
-            for name, hook_list in self._meld_hooks.items():
-                if hook_list is None:
-                    continue
-                local_hooks[name] = list(hook_list)
-
-        if hooks:
-            for name, hook_list in hooks.items():
-                if hook_list is None:
-                    continue
-                if overwrite:
+            local_hooks: Dict[str, list[Callable[..., Any]]] = {}
+            if not overwrite and self._meld_hooks:
+                for name, hook_list in self._meld_hooks.copy().items():
+                    if not hook_list:
+                        continue
                     local_hooks[name] = list(hook_list)
-                else:
-                    local_hooks.setdefault(name, []).extend(hook_list)
-        self._meld_hooks = local_hooks
+            if hooks:
+                for name, hook_list in hooks.items():
+                    if not hook_list:
+                        continue
+                    if overwrite:
+                        local_hooks[name] = list(hook_list)
+                    else:
+                        local_hooks.setdefault(name, []).extend(hook_list)
+            self._meld_hooks = local_hooks
+            self._meld_hooks_modified = True
 
     def _fire_meld_hooks(self, hook_name: str, *args: Any) -> None:
         """
