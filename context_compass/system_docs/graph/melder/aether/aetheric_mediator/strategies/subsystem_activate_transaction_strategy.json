@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/strategies/subsystem_activate_transaction_strategy.py",
- "source_sha256": "d282afbe821d27ff39bdcff8ece599a3da59a65d7b2323f2c2a8c002f23d139f",
+ "source_sha256": "3ba60f3146eb235a43facbb3b922fc5ba36c83b2de99ed3064378965c29ae88e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.strategies.subsystem_activate_transaction_strategy": {

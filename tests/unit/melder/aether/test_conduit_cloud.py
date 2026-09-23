@@ -33,11 +33,11 @@ def mock_frame():
 @pytest.fixture
 def conduit_cloud(mock_frame, registry):
     """
-    Provide a fresh ConduitCloud plus its borrowed backing stores.
+    Provide a fresh Cloud and separate frame-owned root stores.
 
     Returns:
         tuple[ConduitCloud, dict[str, Conduit], dict[str, str]]:
-            The cloud plus the borrowed root registries.
+            The cloud plus root id/name registries; Cloud borrows only root ids for clusters.
     """
     root_conduits: dict[str, Conduit] = {}
     conduit_ids_by_name: dict[str, str] = {}
@@ -45,7 +45,6 @@ def conduit_cloud(mock_frame, registry):
         "test_frame",
         mock_frame,
         root_conduits,
-        conduit_ids_by_name,
         registry,
     )
     yield cloud, root_conduits, conduit_ids_by_name
@@ -73,13 +72,14 @@ def mock_conduit():
 
 def test_init(conduit_cloud) -> None:
     """
-    Verify initialization stores borrowed registries and owned lock/id state.
+    Verify initialization separates empty named discovery from borrowed root state.
     """
     cloud, root_conduits, conduit_ids_by_name = conduit_cloud
 
     assert cloud._name == "test_frame"
     assert cloud._conduits is root_conduits
-    assert cloud._conduit_ids_by_name is conduit_ids_by_name
+    assert cloud.count_conduits() == 0
+    assert conduit_ids_by_name == {}
     assert isinstance(cloud._lock, type(threading.RLock()))
     assert cloud._id is not None
     assert not cloud._cleaned
@@ -87,11 +87,13 @@ def test_init(conduit_cloud) -> None:
 
 def test_get_conduit_success(conduit_cloud, mock_conduit) -> None:
     """
-    Verify root conduit lookup reads the borrowed frame-owned root stores.
+    Verify explicit lifecycle publication makes the same reference discoverable.
     """
     cloud, root_conduits, conduit_ids_by_name = conduit_cloud
     root_conduits["conduit-1"] = mock_conduit
     conduit_ids_by_name["test_conduit"] = "conduit-1"
+
+    cloud._register_named_conduit(mock_conduit)
 
     result = cloud.get_conduit("test_conduit")
 
@@ -118,11 +120,13 @@ def test_conduit_cloud_discovery_helpers_return_registered_names_and_ids(
         mock_conduit,
 ) -> None:
     """
-    Verify the root-registry discovery helpers reflect the borrowed root stores.
+    Verify name/id/count helpers agree on the explicitly published named directory.
     """
     cloud, root_conduits, conduit_ids_by_name = conduit_cloud
     root_conduits["conduit-1"] = mock_conduit
     conduit_ids_by_name["test_conduit"] = "conduit-1"
+
+    cloud._register_named_conduit(mock_conduit)
 
     assert cloud.list_conduit_ids() == ("conduit-1",)
     assert cloud.list_conduit_names() == ("test_conduit",)
@@ -146,16 +150,18 @@ def test_conduit_cloud_discovery_helpers_report_missing_entries(
     assert cloud.find_conduit_id_by_name("missing") is None
 
 
-def test_list_cloud_names_reflects_borrowed_dynamic_registry(
+def test_list_cloud_names_reflects_published_named_directory(
         conduit_cloud,
         mock_conduit,
 ) -> None:
     """
-    Verify the cloud-name surface is derived from the borrowed root registry.
+    Verify Cloud names are published independently of the root ownership maps.
     """
     cloud, root_conduits, conduit_ids_by_name = conduit_cloud
     root_conduits["conduit-1"] = mock_conduit
     conduit_ids_by_name["test_conduit"] = "conduit-1"
+
+    cloud._register_named_conduit(mock_conduit)
 
     assert cloud.list_cloud_names() == ("test_conduit",)
 

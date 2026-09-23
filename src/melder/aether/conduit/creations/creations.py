@@ -1,9 +1,14 @@
 from threading import RLock
-from typing import Any, ClassVar, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
+from melder.aether.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+
 StoredDisposalEntry = Tuple[object, List[str]]
+StoredDisposalValue = Union[StoredDisposalEntry, List[StoredDisposalEntry]]
 
 
 class Creations(Cleanable):
@@ -220,12 +225,63 @@ class Creations(Cleanable):
                 )
         return None
 
+    def _dispose_many_creations(
+            self,
+            entries: List[StoredDisposalEntry],
+    ) -> List[Exception]:
+        """
+        Dispose every recorded object in one detached many bucket.
+
+        Purpose:
+            Share the existing multi-object disposal loop between targeted purge
+            and whole-store cleanup without constructing a temporary registry.
+
+        Contract:
+            - Visit entries newest-first, preserving existing many disposal order.
+            - Delegate each object to `_attempt_cleanup`, which invokes its method
+              names in order and stops that object at its first failing method.
+            - Collect each object's failure and continue with the other objects.
+            - Do not mutate entries, clear borrowed method-name lists, or reach
+              into a live creation store.
+
+        Args:
+            entries:
+                Detached `(object, disposal_method_names)` records for one many
+                target, still ordered by their original registration.
+
+        Returns:
+            List[Exception]:
+                Disposal failures in attempt order. The caller aggregates or
+                raises them after processing its selected retirement set.
+
+        Threading / Lifecycle:
+            The caller has already detached these records under the appropriate
+            writer lock. This helper takes no lock and owns no scope policy;
+            user disposal methods run after the removal locks are released.
+        """
+        errors: List[Exception] = []
+        for entry in reversed(entries):
+            maybe_error = self._attempt_cleanup(entry)
+            if maybe_error is not None:
+                errors.append(maybe_error)
+        return errors
+
     def _dispose_disposable_registry(
             self,
             disposable_registry: Dict[str, Any],
     ) -> List[Exception]:
         """
         Dispose every entry recorded in one detached disposable registry.
+
+        Purpose:
+            Preserve whole-store disposal order while using the same singular
+            and many-object mechanics as targeted purge.
+
+        Contract:
+            - Singleton metadata delegates to `_attempt_cleanup`.
+            - Many buckets delegate to `_dispose_many_creations`.
+            - Collected failures never prevent trying the next selected object.
+            - The caller owns registry detachment and final reference release.
 
         Args:
             disposable_registry:
@@ -258,10 +314,7 @@ class Creations(Cleanable):
                     errors.append(maybe_error)
                 continue
             if isinstance(value, list):
-                for entry in reversed(value):
-                    maybe_error = self._attempt_cleanup(entry)
-                    if maybe_error:
-                        errors.append(maybe_error)
+                errors.extend(self._dispose_many_creations(value))
         return errors
 
     def add_creation(
@@ -372,6 +425,212 @@ class Creations(Cleanable):
             - Returns the stored object directly.
         """
         return self._creations.get(spell_id)
+
+    def purge(
+            self,
+            spell: Spell,
+            *,
+            purge_all: bool = True,
+            creation: Optional[object] = None,
+    ) -> int:
+        """
+        Dispose and remove one registered target's creations from this store.
+
+        Purpose:
+            Provide native targeted retirement using the same disposal metadata
+            and helpers as whole-store cleanup, without extracting transfer rows.
+
+        Contract:
+            - The concrete Meld door has already selected and authorized this
+              store. Creations neither discovers scopes nor authorizes callers.
+            - True removes the target key from both live and disposal registries.
+              Many removes its retained bucket; every other existence removes
+              one stored value, even when that value is falsey or a container.
+            - False removes only the supplied creation and its disposal record.
+              Other many entries remain in their original order. Empty buckets
+              are removed; an absent reference leaves the store unchanged.
+            - Disposal uses the recorded methods without rematching or copying
+              the Spell-owned method-name list. Many entries run newest-first;
+              each object's methods run in their established order.
+            - The first failing method stops that object's remaining methods;
+              other selected objects are still attempted, matching cleanup.
+            - Unrelated keys, the registration and this reusable store survive.
+
+        Args:
+            spell:
+                Existing definition discovered by Meld. Its id selects the
+                stored entry, and its Existence selects multiplicity and the
+                same writer-lock family used during creation.
+            purge_all:
+                True retires every retained entry for the discovered target.
+                False retires one entry for the supplied object reference.
+            creation:
+                Original application instance, required when purge_all is False.
+                Ignored for whole-target removal; never used to discover a spell.
+
+        Returns:
+            int:
+                Number of removed creations, or zero when the target key is
+                absent or the supplied instance is not retained. An untracked
+                many result contributes no retained entry.
+
+        Raises:
+            RuntimeError:
+                If this store has been permanently cleaned.
+            ValueError:
+                If single-object retirement has no supplied creation reference.
+            ExceptionGroup:
+                Collected disposal failures after removal and best-effort
+                processing of the selected objects. There is no disposal rollback.
+
+        Threading / Concurrency:
+            Unique takes Spell._lock before this store's lock. Other modes take
+            only this store's lock, including lineage/cluster stores selected by
+            their Meld door. Both maps detach in one critical section. All
+            removal locks are released before any user disposal method runs.
+
+        Lifecycle / Cleanup:
+            Detached live references stay alive until lock release, so implicit
+            finalizers also run outside that critical section. Later replacement
+            registrations are untouched, and repeated purge of an absent key
+            returns zero. References held by application code are not revoked.
+        """
+        self.check_cleaned()
+        if not purge_all and creation is None:
+            raise ValueError("Single-object purge requires a creation reference.")
+        if spell.existence is Existence.unique:
+            with spell._lock:
+                count, retired, disposal = self._detach_purge_entries(
+                    spell, purge_all=purge_all, creation=creation,
+                )
+        else:
+            count, retired, disposal = self._detach_purge_entries(
+                spell, purge_all=purge_all, creation=creation,
+            )
+        errors: List[Exception] = []
+        if isinstance(disposal, tuple):
+            maybe_error = self._attempt_cleanup(disposal)
+            if maybe_error is not None:
+                errors.append(maybe_error)
+        elif isinstance(disposal, list):
+            errors = self._dispose_many_creations(disposal)
+        # Keep non-disposable objects alive until the removal locks are released.
+        del retired
+        if errors:
+            raise ExceptionGroup("Errors occurred during creations purge", errors)
+        return count
+
+    def _detach_purge_entries(
+            self,
+            spell: Spell,
+            *,
+            purge_all: bool,
+            creation: Optional[object],
+    ) -> Tuple[int, object, Optional[StoredDisposalValue]]:
+        """
+        Detach one target's paired entries while holding this store's writer lock.
+
+        Purpose:
+            Separate atomic registry removal from user disposal callbacks while
+            preserving a strong reference to every removed live value.
+
+        Contract:
+            - The caller already holds Spell._lock when Existence is unique.
+            - Rechecks cleaned state after acquiring the store lock.
+            - Key membership determines presence; Existence determines whether
+              the value is one object or an owned many bucket.
+            - Removes no other key and does not inspect caller/scope identity.
+            - Single retirement touches only the supplied creation, preserving
+              all other entries and their disposal metadata in a many bucket.
+            - Performs no disposal and never builds extraction/restore payloads.
+
+        Args:
+            spell: Discovered definition supplying the exact id and Existence.
+            purge_all: Whether to detach the entire target or one supplied instance.
+            creation: Original instance for single retirement; otherwise ignored.
+
+        Returns:
+            Tuple[int, object, Optional[StoredDisposalValue]]:
+                Removal count, detached live value and detached disposal metadata.
+                The caller retains these references beyond lock release. An
+                absent key returns (0, None, None).
+
+        Raises:
+            RuntimeError: If the store was permanently cleaned before removal.
+
+        Threading / Lifecycle:
+            The store lock covers membership, count and both pops. No callback
+            runs here; the caller owns disposal and release of the returned values.
+        """
+        with self._lock:
+            self.check_cleaned()
+            spell_id = spell.spell_id
+            if spell_id not in self._creations:
+                return 0, None, None
+            live = self._creations[spell_id]
+            if not purge_all:
+                if spell.existence is Existence.many:
+                    return self._detach_single_many_creation(spell_id, creation)
+                if live is not creation:
+                    return 0, None, None
+            count = len(live) if spell.existence is Existence.many else 1
+            self._creations.pop(spell_id)
+            disposal = self._disposable_creations.pop(spell_id, None)
+            return count, live, disposal
+
+    def _detach_single_many_creation(
+            self,
+            spell_id: str,
+            creation: object,
+    ) -> Tuple[int, object, Optional[StoredDisposalEntry]]:
+        """
+        Detach one supplied object from an already-selected many bucket.
+
+        Purpose:
+            Preserve paired live/disposal removal for single-object purge without
+            changing registration storage or creating a reverse discovery index.
+
+        Contract:
+            - The caller holds this store's lock and established key presence.
+            - Search only this target's bucket, using object identity so custom
+              equality cannot select a different creation or invoke user code.
+            - Remove one retained entry and its disposal metadata, if recorded.
+              Metadata may be sparse, so its position is found independently.
+            - Preserve remaining order and remove buckets only when empty.
+            - Missing references return zero; no disposal callback runs here.
+
+        Args:
+            spell_id: Existing key selected through normal spell discovery.
+            creation: Original application instance requested for retirement.
+
+        Returns:
+            Tuple[int, object, Optional[StoredDisposalEntry]]:
+                Count, detached live object and its optional disposal record.
+                The caller retains both references until removal locks release.
+
+        Threading / Lifecycle:
+            Called only inside `_detach_purge_entries`' locked critical section.
+            This helper owns no scope policy, additional lock or disposal action.
+        """
+        for index, retired in enumerate(self._creations[spell_id]):
+            if retired is creation:
+                break
+        else:
+            return 0, None, None
+
+        self._creations[spell_id].pop(index)
+        if not self._creations[spell_id]:
+            del self._creations[spell_id]
+
+        disposal: Optional[StoredDisposalEntry] = None
+        if spell_id in self._disposable_creations:
+            for index, entry in enumerate(self._disposable_creations[spell_id]):
+                if entry[0] is creation:
+                    disposal = self._disposable_creations[spell_id].pop(index)
+                    break
+            if not self._disposable_creations[spell_id]:
+                del self._disposable_creations[spell_id]
+        return 1, retired, disposal
 
     def extract_spell_creations(
             self,

@@ -168,10 +168,10 @@ def main() -> None:
               % (class_name, module_name, class_name.lower()))
 
     # MELD THEM. Now they are objects.
-    tokenizer = conduit.meld(classes["Tokenizer"],
+    tokenizer = conduit.meld("Tokenizer",
                              binding_name="tokenizer")
-    counter = conduit.meld(classes["Counter"], binding_name="counter")
-    reporter = conduit.meld(classes["Reporter"],
+    counter = conduit.meld("Counter", binding_name="counter")
+    reporter = conduit.meld("Reporter",
                             binding_name="reporter")
     print()
     print("melded three OBJECTS:", type(tokenizer).__name__,
@@ -202,7 +202,7 @@ def main() -> None:
     print("  moment they landed")
 
     # UNIQUE MEANS THE SAME OBJECT BACK.
-    again = conduit.meld(classes["Tokenizer"],
+    again = conduit.meld("Tokenizer",
                          binding_name="tokenizer")
     assert again is tokenizer, "existence='unique' returns the same object"
     print()
@@ -222,7 +222,7 @@ def main() -> None:
     book.bind(spell=worker_class, existence="many", permissions="create",
               binding_name="worker")
 
-    workers = [conduit.meld(worker_class, binding_name="worker")
+    workers = [conduit.meld("Worker", binding_name="worker")
                for _ in range(5)]
     assert len({id(worker) for worker in workers}) == 5, (
         "existence='many' must build a NEW instance per meld"

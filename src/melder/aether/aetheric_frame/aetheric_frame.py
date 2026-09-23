@@ -186,12 +186,11 @@ class AethericFrame(Cleanable):
             DevopsInformationRegistry(self.name)
         )
 
-        # Frame-local conduit facade over the borrowed frame-owned root stores.
+        # Cloud borrows roots for clusters and owns separate named-scope discovery.
         self._conduit_cloud: ConduitCloud = ConduitCloud(
             name=name,
             aetheric_frame=self,
             conduits=self._conduits,
-            conduit_ids_by_name=self._conduit_ids_by_name,
             devops_information_registry=self._devops_information_registry,
         )
 
@@ -341,6 +340,11 @@ class AethericFrame(Cleanable):
         """
         Register one root conduit into the frame-owned root-conduit stores.
 
+        Contract:
+            Admit its name through Cloud's shared root/lesser namespace before
+            changing root ownership. Promotion may replace this same identity's
+            prior lesser alias. Lock order is frame then the leaf Cloud lock.
+
         Args:
             conduit:
                 Root conduit to attach to this frame.
@@ -350,8 +354,8 @@ class AethericFrame(Cleanable):
 
         Raises:
             ValueError:
-                If the conduit name is missing or the root id/name already
-                exists in this frame.
+                If the conduit name is missing, its root id is registered, or
+                another root/lesser owns or reserves the requested name.
         """
         self.check_cleaned()
         with self._lock:
@@ -365,11 +369,7 @@ class AethericFrame(Cleanable):
                 raise ValueError(
                     "Conduit with ID {0} already exists.".format(conduit_id)
                 )
-            existing_name_id = self._conduit_ids_by_name.get(conduit_name)
-            if existing_name_id is not None and existing_name_id != conduit_id:
-                raise ValueError(
-                    "Conduit with name {0} already exists.".format(conduit_name)
-                )
+            self._conduit_cloud._register_named_conduit(conduit)
             self._conduits[conduit_id] = conduit
             self._conduit_ids_by_name[conduit_name] = conduit_id
             self._devops_information_registry.register_spellbook_conduit_ownership(
@@ -380,6 +380,12 @@ class AethericFrame(Cleanable):
     def unregister_root_conduit(self, conduit: Conduit) -> None:
         """
         Remove one root conduit from the frame-owned root-conduit stores.
+
+        Contract:
+            Retire this exact identity's named entry before dropping root maps.
+            Also retire an old lesser alias when a post-attachment promotion
+            failed before root registration; the missing-root error still raises.
+            Directory helpers do not call back into the frame or the conduit.
 
         Args:
             conduit:
@@ -395,6 +401,7 @@ class AethericFrame(Cleanable):
         self.check_cleaned()
         with self._lock:
             conduit_id = conduit._id
+            self._conduit_cloud._unregister_named_conduit(conduit)
             removed = self._conduits.pop(conduit_id, None)
             if removed is None:
                 raise ValueError(

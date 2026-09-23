@@ -1,0 +1,111 @@
+{
+  "baseline_tag": "0.2.37",
+  "baseline_commit": "a30a754d0bb61db0b142936010cdb82cffecec6f",
+  "target_version": "0.2.43",
+  "target_commit": "05ebf662b64b60b8c105903de43c4a956607cda8",
+  "branch": "codex_features2",
+  "commits": [
+    "9c53071bb8a643d87a4634064cbd9dac7544b97e|2026-09-07T12:02:06-06:00|Refactor and update CI qualification documentation.",
+    "ed9f5047d8a7305954ae4d1cc74818323c118c88|2026-09-12T05:57:06-06:00|Add epic for stateful application recovery and assisted restore",
+    "a425aa1a16925edd17836b3cbb45904a2ff6a291|2026-09-13T10:42:36-06:00|Add benchmark task comparing dynamic bind/conjure order with cache modes under upgraded Python 3.14.7. Document results, validate performance scaling, and retain raw evidence for owner review.",
+    "4b3ab72ee0a12139aaa543c33336613987d2ffb6|2026-09-13T15:18:27-06:00|Add stories and tasks for \"Provider Artifact Ownership and Existing Instance Planning\" epic.",
+    "98c0c348a6523351a294dd81d65db018433b720a|2026-09-18T05:34:57-06:00|Add task for comparing existing-object ownership and reuse across external DI systems.",
+    "7a9eea3a10994c0054ff28bf7b3378873275dc1a|2026-09-19T07:42:33-06:00|Remove \"Existing Object Lifecycle Ownership\" epic.",
+    "63ef620e36071027e9d022937406aefbc3ccb41b|2026-09-19T15:47:13-06:00|Remove implementation maps and plans for \"Named Conduit Lesser Discovery\" and \"Bind/Conjure Order Benchmark\" tasks. Transition task states to \"review\" following owner-requested planning finalization and performance validation.",
+    "f3fa43281c7ed6c872ebf6c02ac71da1bfdb4386|2026-09-19T16:31:05-06:00|Implement runtime refusal for non-resolvable targets with validation and tests.",
+    "2644dced80ed615def6522d5797faa1e7d7da3dc|2026-09-19T17:55:25-06:00|Add tasks and documentation for non-resolvable graph publication and replay. Implement capability propagation, ensure compatibility, and finalize validation/tests for owner review.",
+    "0005a7a9f6cf23f433127262bcfb33617417b4b5|2026-09-19T18:53:05-06:00|Remove caller-supplied socket compiler story and associated task drafts. Transition related tickets to \"review\" as implementation plans and validation artifacts are finalized.",
+    "05ebf662b64b60b8c105903de43c4a956607cda8|2026-09-19T19:16:50-06:00|Draft purge epic and repair outdated benchmark spell-ID selectors. Regenerate Melder build assets and execute compatibility fixes across benchmarks, ensuring validation passes for scoped changes. Transition all tasks to review."
+  ],
+  "areas": {
+    "default_precedence": {
+      "paths": [
+        "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py",
+        "src/melder/utilities/caching_system/caching_system.py"
+      ],
+      "commits": [
+        "a425aa1a16925edd17836b3cbb45904a2ff6a291|2026-09-13T10:42:36-06:00|Add benchmark task comparing dynamic bind/conjure order with cache modes under upgraded Python 3.14.7. Document results, validate performance scaling, and retain raw evidence for owner review.",
+        "4b3ab72ee0a12139aaa543c33336613987d2ffb6|2026-09-13T15:18:27-06:00|Add stories and tasks for \"Provider Artifact Ownership and Existing Instance Planning\" epic."
+      ]
+    },
+    "deferred_annotations": {
+      "paths": [
+        "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py"
+      ],
+      "commits": [
+        "4b3ab72ee0a12139aaa543c33336613987d2ffb6|2026-09-13T15:18:27-06:00|Add stories and tasks for \"Provider Artifact Ownership and Existing Instance Planning\" epic."
+      ]
+    },
+    "existing_instance_planning": {
+      "paths": [
+        "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py"
+      ],
+      "commits": [
+        "4b3ab72ee0a12139aaa543c33336613987d2ffb6|2026-09-13T15:18:27-06:00|Add stories and tasks for \"Provider Artifact Ownership and Existing Instance Planning\" epic."
+      ]
+    },
+    "provider_artifacts": {
+      "paths": [
+        "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py"
+      ],
+      "commits": [
+        "7a9eea3a10994c0054ff28bf7b3378873275dc1a|2026-09-19T07:42:33-06:00|Remove \"Existing Object Lifecycle Ownership\" epic.",
+        "63ef620e36071027e9d022937406aefbc3ccb41b|2026-09-19T15:47:13-06:00|Remove implementation maps and plans for \"Named Conduit Lesser Discovery\" and \"Bind/Conjure Order Benchmark\" tasks. Transition task states to \"review\" following owner-requested planning finalization and performance validation."
+      ]
+    },
+    "protocol_and_capability_admission": {
+      "paths": [
+        "src/melder/aether/spellbook/bind/bind.py"
+      ],
+      "commits": [
+        "7a9eea3a10994c0054ff28bf7b3378873275dc1a|2026-09-19T07:42:33-06:00|Remove \"Existing Object Lifecycle Ownership\" epic.",
+        "63ef620e36071027e9d022937406aefbc3ccb41b|2026-09-19T15:47:13-06:00|Remove implementation maps and plans for \"Named Conduit Lesser Discovery\" and \"Bind/Conjure Order Benchmark\" tasks. Transition task states to \"review\" following owner-requested planning finalization and performance validation."
+      ]
+    },
+    "non_resolvable_runtime": {
+      "paths": [
+        "src/melder/aether/conduit/meld/conduit_meld.py",
+        "src/melder/aether/conduit/meld/spellspace_meld.py"
+      ],
+      "commits": [
+        "f3fa43281c7ed6c872ebf6c02ac71da1bfdb4386|2026-09-19T16:31:05-06:00|Implement runtime refusal for non-resolvable targets with validation and tests."
+      ]
+    },
+    "graph_and_replay": {
+      "paths": [
+        "src/melder/nexus/frame_descriptor_manager.py",
+        "src/melder/crystallizer/crystals/spell_crystal.py",
+        "src/melder/crystallizer/persistence/record_version.py"
+      ],
+      "commits": [
+        "2644dced80ed615def6522d5797faa1e7d7da3dc|2026-09-19T17:55:25-06:00|Add tasks and documentation for non-resolvable graph publication and replay. Implement capability propagation, ensure compatibility, and finalize validation/tests for owner review."
+      ]
+    },
+    "local_cancellation": {
+      "paths": [
+        "tests/component/melder/spellbook/test_spellbook_component_local_phase_cancellation.py"
+      ],
+      "commits": [
+        "0005a7a9f6cf23f433127262bcfb33617417b4b5|2026-09-19T18:53:05-06:00|Remove caller-supplied socket compiler story and associated task drafts. Transition related tickets to \"review\" as implementation plans and validation artifacts are finalized."
+      ]
+    },
+    "benchmarks": {
+      "paths": [
+        "benchmarks/testing_other_di/test_melder_gauntlet.py"
+      ],
+      "commits": [
+        "05ebf662b64b60b8c105903de43c4a956607cda8|2026-09-19T19:16:50-06:00|Draft purge epic and repair outdated benchmark spell-ID selectors. Regenerate Melder build assets and execute compatibility fixes across benchmarks, ensuring validation passes for scoped changes. Transition all tasks to review."
+      ]
+    },
+    "locked_environment": {
+      "paths": [
+        "uv.lock",
+        "CONTRIBUTING.md"
+      ],
+      "commits": [
+        "ed9f5047d8a7305954ae4d1cc74818323c118c88|2026-09-12T05:57:06-06:00|Add epic for stateful application recovery and assisted restore"
+      ]
+    }
+  },
+  "version_history": "commit f3fa43281c7ed6c872ebf6c02ac71da1bfdb4386\nAuthor: Mark <MtG@live.ca>\nDate:   Sat Sep 19 16:31:05 2026 -0600\n\n    Implement runtime refusal for non-resolvable targets with validation and tests.\n    \n    Ensure direct and reuse-only resolution paths reject non-resolvable targets at runtime through consistent Conduit and SpellSpace checks. Add focused regression tests, update related documentation, and synchronize task handoffs for subsequent execution enforcement.\n\ndiff --git a/src/melder/__version__.py b/src/melder/__version__.py\nindex 36d166100..b08a3240c 100644\n--- a/src/melder/__version__.py\n+++ b/src/melder/__version__.py\n@@ -9,4 +9,4 @@ Contract:\n   negotiation or runtime compatibility checks by itself.\n \"\"\"\n \n-__version__ = \"0.2.40\"\n+__version__ = \"0.2.43\"\n\ncommit a425aa1a16925edd17836b3cbb45904a2ff6a291\nAuthor: Mark <MtG@live.ca>\nDate:   Sun Sep 13 10:42:36 2026 -0600\n\n    Add benchmark task comparing dynamic bind/conjure order with cache modes under upgraded Python 3.14.7. Document results, validate performance scaling, and retain raw evidence for owner review.\n\ndiff --git a/src/melder/__version__.py b/src/melder/__version__.py\nindex 6b203825d..36d166100 100644\n--- a/src/melder/__version__.py\n+++ b/src/melder/__version__.py\n@@ -9,4 +9,4 @@ Contract:\n   negotiation or runtime compatibility checks by itself.\n \"\"\"\n \n-__version__ = \"0.2.37\"\n+__version__ = \"0.2.40\""
+}

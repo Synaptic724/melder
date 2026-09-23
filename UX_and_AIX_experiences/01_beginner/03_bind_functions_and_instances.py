@@ -27,12 +27,13 @@ def main() -> None:
 
     conduit = book.conjure()
 
-    settings = conduit.meld(make_settings)
+    settings = conduit.meld("make_settings")
     print("function spell melded ->", settings)
-    again = conduit.meld(make_settings)
+    again = conduit.meld("make_settings")
     print("unique law: same product back?", settings is again)
 
-    held = conduit.meld(prebuilt)
+    # An instance registers under its type's name, not the variable "prebuilt".
+    held = conduit.meld("AlreadyBuilt")
     assert held is prebuilt and held.label == "built-by-hand"
     print("instance spell melded:", held.label)
 

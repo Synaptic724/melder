@@ -202,7 +202,12 @@ class CapabilityCommandSystem(CommandSystem):
             frame_name: Optional[str] = None,
     ) -> object:
         """
-        Return one live root/normal conduit object by name.
+        Return one ACL-authorized root or lesser conduit by its published name.
+
+        Contract:
+            Resolves the published identity through the existing ID access gates.
+            New IDs require explicit projection refresh; same-ID named reuse reads
+            current metadata. Returns a borrowed reference without extending lifetime.
 
         Args:
             conduit_name:
@@ -213,6 +218,10 @@ class CapabilityCommandSystem(CommandSystem):
 
         Returns:
             object: Live conduit object.
+
+        Raises:
+            ValueError: Name/identity is unavailable, changed or denied by command ACLs.
+            RuntimeError: The selected scope was cleaned during the borrowed lookup.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -220,19 +229,9 @@ class CapabilityCommandSystem(CommandSystem):
                 frame_name=frame_name,
         ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            self._assert_raw_runtime_object_access_allowed("get_conduit_by_name")
-            self._assert_frame_command_enabled(resolved_frame_name)
-            conduit_id = self._get_required_published_conduit_id_by_name(
+            return self._get_conduit_by_name_locked(
                 conduit_name,
                 frame_name=resolved_frame_name,
-            )
-            self._assert_conduit_command_enabled(
-                conduit_id,
-                frame_name=resolved_frame_name,
-            )
-            return self._aether.get_conduit_by_name(
-                conduit_name,
-                resolved_frame_name,
             )
 
     def list_conduit_ids(
@@ -430,6 +429,7 @@ class CapabilityCommandSystem(CommandSystem):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
+            name: Optional[str] = None,
     ) -> object:
         """
         Create one lesser conduit beneath an existing conduit.
@@ -439,15 +439,28 @@ class CapabilityCommandSystem(CommandSystem):
             creation without forcing callers to fetch a conduit first and then
             call into it directly.
 
+        Contract:
+            Preserves parent ACL admission and ordinary lesser capabilities.
+            Publication does not refresh projections inside this admitted command;
+            explicitly refresh afterward to authorize a newly allocated ID.
+
         Args:
             conduit_id:
                 Conduit id that should own the new lesser conduit.
             frame_name:
                 Optional frame name. When omitted, the room default frame is
                 used.
+            name:
+                Optional exact creation-only scope name, unique across active named
+                roots and lessers in this frame. Cleanup retires it before reuse.
 
         Returns:
             object: Newly created lesser conduit object.
+
+        Raises:
+            ValueError: Parent access is denied or the supplied name is empty/taken.
+            TypeError: A supplied name is not a string.
+            RuntimeError: Parent lifecycle no longer permits creation.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -459,7 +472,7 @@ class CapabilityCommandSystem(CommandSystem):
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
-            return conduit.create_lesser_conduit()
+            return conduit.create_lesser_conduit(name=name)
 
     def create_cluster(
             self,

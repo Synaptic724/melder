@@ -123,7 +123,7 @@ id = "intermediate/hooks"
 title = "Lifecycle hooks"
 level = "intermediate"
 source = "intermediate/hooks.md"
-lessons = ["intermediate:32", "intermediate:03", "intermediate:33", "intermediate:34"]
+lessons = ["intermediate:40", "intermediate:03", "intermediate:32", "intermediate:33", "intermediate:34"]
 show_steps = true
 
 [[chapter]]
@@ -131,7 +131,7 @@ id = "intermediate/scopes"
 title = "Spell spaces, lineage, and child scopes"
 level = "intermediate"
 source = "intermediate/scopes.md"
-lessons = ["intermediate:29", "intermediate:04", "intermediate:05", "intermediate:07", "intermediate:28"]
+lessons = ["intermediate:29", "intermediate:41", "intermediate:04", "intermediate:05", "intermediate:07", "intermediate:28", "intermediate:39"]
 show_steps = true
 
 [[chapter]]
@@ -287,7 +287,7 @@ id = "expert/agent-rooms"
 title = "Agent rooms and explicit authority"
 level = "expert"
 source = "expert/agent-rooms.md"
-lessons = ["expert:11", "expert:08", "expert:13", "expert:20"]
+lessons = ["expert:11", "expert:08", "expert:13", "expert:20", "expert:38"]
 show_steps = true
 
 [[chapter]]
@@ -296,6 +296,14 @@ title = "Build a working system from generated code"
 level = "expert"
 source = "expert/codegen.md"
 lessons = ["expert:36", "expert:07", "expert:12", "expert:26", "expert:33", "expert:10"]
+show_steps = true
+
+[[chapter]]
+id = "expert/bind-hooks"
+title = "Review agent proposals with bind hooks"
+level = "expert"
+source = "expert/bind-hooks.md"
+lessons = ["expert:37"]
 show_steps = true
 
 [[chapter]]
@@ -319,7 +327,7 @@ id = "expert/restore"
 title = "Restore and cold boot"
 level = "expert"
 source = "expert/restore.md"
-lessons = ["expert:27", "expert:24", "expert:01"]
+lessons = ["expert:38", "expert:27", "expert:24", "expert:01"]
 show_steps = true
 
 [[chapter]]

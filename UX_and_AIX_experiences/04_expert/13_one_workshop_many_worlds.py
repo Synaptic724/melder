@@ -183,10 +183,10 @@ def main() -> None:
     # seeing both worlds did not merge them. Note we meld through the
     # conduit that BOUND these spells - a fresh book in the same frame
     # would own nothing and resolve nothing.
-    invoice = billing_conduit.meld(Invoice, binding_name="billing")
+    invoice = billing_conduit.meld("Invoice", binding_name="billing")
     assert invoice.kind == "invoice"
     try:
-        billing_conduit.meld(Product, binding_name="catalog")
+        billing_conduit.meld("Product", binding_name="catalog")
         raise AssertionError("catalog's object must not resolve in billing")
     except Exception as error:
         print()

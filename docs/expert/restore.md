@@ -19,9 +19,30 @@ Preflight can refuse an incomplete chain before construction. Preserve the full
 required profile chain when preparing a cold start; reloading a single checkpoint
 does not imply every predecessor has been reloaded.
 
+## Restore named lesser structure
+
+Run [Named scopes in Nexus and restore](../examples/expert/38-named-scopes-in-nexus-and-restore.md)
+for a successful replay with assertions. It records a named job beneath an unnamed
+parent, tears down the live roots and restores from the retained in-memory checkpoint.
+This is different from a process restart, which also needs the flush/reload steps above.
+
+Dynamic named scopes carry their name, parent and root relationships. Required
+unnamed ancestry is saved as supporting values inside named records. Restoring
+rebuilds one shared Book/root and its children in parent order with fresh IDs;
+unnamed support stays outside Cloud discovery. Scope names do not restore the
+mutable contents of previously created objects. A later `meld` creates fresh state.
+
+Released names disappear from later checkpoints while earlier sealed checkpoints
+retain their earlier structure. Formations rooted at a named lesser include its
+required ancestry and selected subtree. Record schema **3.0.0** makes older
+root-only readers refuse safely; valid older root-only records remain readable.
+
+Quiesce ordinary lesser/SpellSpace creation, cleanup and lineage changes during
+live restore. Transaction load authority does not drain those pool cycles.
+
 ## Follow both demonstrations
 
-Expert 24 walks the checkpoint verbs while holding the existing world. Expert 27
+Expert 24 keeps the recorder alive and retires the original root before rebuilding it. Expert 27
 flushes, tears down the root, creates a new runtime, and reads the cache again.
 The latter deliberately reports an admission refusal if the bundle is incomplete.
 A script finishing successfully therefore does not, on its own, prove a complete

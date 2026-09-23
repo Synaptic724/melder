@@ -9,6 +9,10 @@ The foresight example checks that preview leaves research heads unchanged and th
 original pricing object still returns its original result. A malformed candidate
 returns parse information that the caller can inspect.
 
+For application checks at registration itself, use the
+[bind-hook review pipeline](bind-hooks.md). Its pre callbacks inspect the supplied
+reference, activation annotates the new Spell, and post observes the registered result.
+
 ## Staging is not promotion
 
 `bind_inactive` places a candidate into the existing SpellIndex while the selected

@@ -24,13 +24,13 @@ def main() -> None:
     root = book.conjure()
     child = root.create_lesser_conduit()
 
-    assert root.meld(AppWideConfig) is child.meld(AppWideConfig)
+    assert root.meld("AppWideConfig") is child.meld("AppWideConfig")
     print("unique: shared across root and child")
 
-    root_session = root.meld(PerScopeSession)
-    child_session = child.meld(PerScopeSession)
+    root_session = root.meld("PerScopeSession")
+    child_session = child.meld("PerScopeSession")
     assert root_session is not child_session
-    assert child.meld(PerScopeSession) is child_session
+    assert child.meld("PerScopeSession") is child_session
     print("unique_per_conduit: one per scope, stable within it")
 
 

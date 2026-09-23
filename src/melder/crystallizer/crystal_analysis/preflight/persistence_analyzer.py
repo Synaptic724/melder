@@ -7,6 +7,7 @@ from melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy 
 from melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy import (
     ConfigurationLossStrategy,
 )
+from melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy import ConduitHierarchyStrategy
 from melder.crystallizer.crystal_analysis.preflight.contract_peer_strategy import (
     ContractPeerStrategy,
 )
@@ -48,7 +49,7 @@ class PersistenceAnalyzer(Cleanable):
         peers, unhydratable custody, code participation expectations.
 
     Contract:
-        - The ten-strategy default set runs, in order: link integrity,
+        - The eleven-strategy default set runs, in order: conduit hierarchy, link integrity,
           contract peers, hydration, configuration loss, cluster membership,
           frame posture, synthetic source integrity, retained user-source
           integrity, mutation-research composition, and live source drift.
@@ -77,7 +78,7 @@ class PersistenceAnalyzer(Cleanable):
 
     Subsystem Context:
         The preflight orchestrator of the `crystal_analysis` subsystem. It runs
-        the ten-strategy default set (link integrity, contract peers, hydration,
+        the eleven-strategy default set (conduit hierarchy, link integrity, contract peers, hydration,
         configuration loss, cluster membership, frame posture, synthetic-source
         integrity, retained user-source integrity, mutation-research composition,
         live source drift) over a record's payloads and folds their finding rows
@@ -117,7 +118,7 @@ class PersistenceAnalyzer(Cleanable):
 
         Args:
             strategies:
-                Optional explicit strategy sequence. None installs the ten
+                Optional explicit strategy sequence. None installs the eleven
                 default passes documented on the class. Supplying even one
                 strategy replaces, rather than extends, that default set.
 
@@ -129,6 +130,7 @@ class PersistenceAnalyzer(Cleanable):
             list(strategies)
             if strategies is not None
             else [
+                ConduitHierarchyStrategy(),
                 LinkIntegrityStrategy(),
                 ContractPeerStrategy(),
                 HydrationStrategy(),

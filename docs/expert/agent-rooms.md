@@ -25,6 +25,32 @@ For multiple worlds, configure the allowed names, permit multiple targets, and
 set the target count. Attach each world explicitly. A shared observer leaves
 the underlying worlds isolated.
 
+## Find a named live scope
+
+[Named scopes in Nexus and restore](../examples/expert/38-named-scopes-in-nexus-and-restore.md)
+shows the complete public setup. Capability rooms can create a named child directly:
+
+```python
+job = commands.create_lesser_conduit(root.id, frame_name="jobs", name="job-42")
+rift.refresh_runtime_projections(frame_names=("jobs",))
+assert commands.get_conduit_by_name("job-42", frame_name="jobs") is job
+```
+
+The refresh admits a new published ID into the room's compiled access set. Named
+getters in capability and codegen rooms still enforce the selected ID's command
+ACL. Naming never grants normal-root bind/link/cluster rights, and static rooms
+still do not expose raw conduit objects.
+
+Named cleanup clears its Nexus name and parent metadata while retaining a pooled
+record for the reusable ID. Named reuse updates that record. A projection that
+already admitted the ID can read those replacement values without recompiling.
+Anonymous pool cycles retain their existing local-only publication behavior.
+
+A new ID or permanent record deletion still uses explicit projection refresh.
+A stale view of a permanently deleted record can raise until refreshed. Creation
+commands do not synchronously refresh while inside their own Rift gate. Neither
+published records nor raw lookup results are leases on a scope's lifetime.
+
 ## Hold objects deliberately
 
 The workstation holds named handles; the command system resolves permitted world

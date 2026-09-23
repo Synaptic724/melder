@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
- "source_sha256": "69b0a2b8775bc9fd01b45bc642e7c9fb0b3163bd51f74f11a34d988890fc4918",
+ "source_sha256": "3c2ba15f36ff87528785d336dd8337fcdb361d33cdde2d416547fc941f945369",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.restore_engine": {
@@ -29,7 +29,7 @@
    "label": "RestoreReport",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
-   "lineno": 23,
+   "lineno": 27,
    "bases": [
     "Cleanable"
    ],
@@ -81,7 +81,7 @@
    "label": "RestoreEngine",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_loader_system/restore_engine.py",
-   "lineno": 378,
+   "lineno": 382,
    "bases": [
     "Cleanable"
    ],
@@ -91,11 +91,11 @@
     "restore"
    ],
    "shape": {
-    "method_count": 42,
+    "method_count": 43,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "98797dd645d1f7c4c3e8395f70c739cb94778b6ea423ae0ec76f3458bcd1f7a1",
+   "span_sha256": "298834b3077fe4ec7c9426544415190eac079eed59680658192c4291a6a1c9d5",
    "role": "Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.",
    "responsibilities": [
     "fold: oldest-first later-wins with tombstones and custody routing; journal-without-payload is an honesty shortfall",
@@ -104,7 +104,9 @@
     "M3: rebuilds recorded synthetic modules (register->publish->execute) before hydration",
     "forwards ordered disposal for active/staged binds; translated actual IDs drive anchors, exact selections, and contract grants",
     "fresh structural identities and changed Spell IDs are reported; failure tears down in reverse order",
-    "forwards recorded resolution capability through active and staged binding with legacy True defaults"
+    "forwards recorded resolution capability through active and staged binding with legacy True defaults",
+    "folds surviving named carriers before expanding and validating supporting ancestry",
+    "selects each Book root explicitly and replays parent-ordered lessers in the shared per-Book unit"
    ],
    "owns_state": [
     "folded stores",
@@ -239,9 +241,13 @@
   "Set": "typing.Set",
   "Tuple": "typing.Tuple",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "cast": "typing.cast",
+  "ConduitHierarchy": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "PhaseExecutionError": "melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError",
   "PhaseTimeoutError": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",
+  "Conduit": "melder.aether.conduit.conduit.Conduit",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
   "PhaseScheduler": "melder.utilities.synchronization.phase_scheduler.PhaseScheduler",
   "DirectedAcyclicWorkGraph": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
   "PersistenceAnalyzer": "melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer",
@@ -252,7 +258,6 @@
   "Nexus": "melder.nexus.nexus.Nexus",
   "AethericFrameConfiguration": "melder.aether.aetheric_frame.aetheric_frame_configuration.AethericFrameConfiguration",
   "SpellbookConfiguration": "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration",
-  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
   "SyntheticModule": "melder.crystallizer.synthetic_module.SyntheticModule",
   "rebuild_absent_user_modules": "melder.crystallizer.crystal_loader_system.user_world_rebuild.rebuild_absent_user_modules",
   "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState"
@@ -284,6 +289,17 @@
    "to": "melder.crystallizer.crystal_loader_system.user_world_rebuild",
    "relation": "delegates_to",
    "why": "_rebuild_user_world delegates the S2 rebuild mechanics via callbacks so the rebuild laws live in exactly one place."
+  },
+  {
+   "from": "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   "to": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
+   "relation": "uses",
+   "cardinality": "many_to_one",
+   "phase": [
+    "validation",
+    "restore"
+   ],
+   "why": "Shares the stateless interpretation of recorded parent/Book structure; owns no live scopes."
   }
  ]
 }

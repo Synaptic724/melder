@@ -1,5 +1,6 @@
 
 
+from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
@@ -90,7 +91,7 @@ class PersistenceCrystal(Cleanable):
         Initialize one sealed checkpoint from a captured profile segment.
 
         Contract:
-            Normalizes journal tuples, copies each captured payload mapping,
+            Normalizes journal tuples, recursively detaches captured value payloads,
             and stores no profile or twin reference. A missing `created_at`
             mints an ISO-8601 UTC timestamp; rehydration preserves the recorded
             timestamp supplied by the cached item.
@@ -146,10 +147,9 @@ class PersistenceCrystal(Cleanable):
             (int(sequence), str(kind), str(key))
             for sequence, kind, key in journal_segment
         ]
-        self._captured_payloads: Dict[str, Dict[str, Dict[str, object]]] = {
-            kind: {key: dict(payload) for key, payload in by_key.items()}
-            for kind, by_key in captured_payloads.items()
-        }
+        # Payloads contain nested configuration and lineage values. Owning these
+        # copies is required for sealed history to survive caller-side mutation.
+        self._captured_payloads: Dict[str, Dict[str, Dict[str, object]]] = deepcopy(captured_payloads)
         self._sequence_range: Tuple[int, int] = (
             int(sequence_range[0]),
             int(sequence_range[1]),
@@ -367,10 +367,7 @@ class PersistenceCrystal(Cleanable):
                 [sequence, kind, key]
                 for sequence, kind, key in self._journal_segment
             ],
-            "payloads": {
-                kind: {key: dict(payload) for key, payload in by_key.items()}
-                for kind, by_key in self._captured_payloads.items()
-            },
+            "payloads": deepcopy(self._captured_payloads),
         }
 
     def to_cached_item(self) -> Dict[str, object]:
@@ -401,10 +398,7 @@ class PersistenceCrystal(Cleanable):
                 [sequence, kind, key]
                 for sequence, kind, key in self._journal_segment
             ],
-            "captured_payloads": {
-                kind: {key: dict(payload) for key, payload in by_key.items()}
-                for kind, by_key in self._captured_payloads.items()
-            },
+            "captured_payloads": deepcopy(self._captured_payloads),
         })
 
     @classmethod

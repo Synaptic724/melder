@@ -25,27 +25,28 @@ class ConduitCloud(Cleanable):
     Frame-scoped conduit and cluster service facade.
 
     `ConduitCloud` is the current-frame service surface used for:
-    - direct root-conduit lookup inside one frame,
-    - derived named-cloud visibility over frame-owned conduits,
+    - direct named-conduit lookup inside one frame,
+    - discovery of named normal roots and active lesser scopes,
     - cluster creation / membership / share refresh, and
     - frame-local conduit discovery that does not belong on `Conduit`.
 
     Contract:
     - One cloud belongs to one frame name.
-    - Borrows frame-owned root-conduit stores by reference.
+    - Borrows the frame-owned root-conduit store for cluster operations.
+    - Owns a separate named directory; discovery never grants root ownership.
     - Owns the frame-local cluster registry and cluster lifecycle.
     - Does not own conduit lifecycle; `AethericFrame` remains the owner of the
       borrowed conduit stores.
     - Thread-safe access is serialized with the instance `RLock`.
 
     Owned State:
-        The frame-local cluster registry and its lifecycle. Everything
-        conduit-shaped is BORROWED BY REFERENCE from the owning frame.
+        The cluster registry, named directory and temporary promotion-name claims.
+        Directory values are borrowed live conduits, not owned lifecycle objects.
 
     Threading:
-        One instance `RLock` serializes access. Because the conduit stores are
-        borrowed rather than copied, reads see live frame state rather than a
-        snapshot.
+        One instance `RLock` serializes directory and claim mutation. Directory
+        helpers never acquire frame/ward locks or invoke callbacks. Frame root
+        registration enters in frame -> cloud order. Lookups confer no lease.
 
     Lifecycle / Cleanup:
         Owned by one `AethericFrame` and cleaned with it. Cleaning the cloud
@@ -62,7 +63,7 @@ class ConduitCloud(Cleanable):
         export advertised a door that was painted on. The REACH is unchanged.
 
     Subsystem Context:
-        The discovery and cluster facade over frame-owned registries. It exists
+        The discovery and cluster facade for one frame. It exists
         so that lookup-by-name and cluster mechanics do not have to live on
         `Conduit` itself - a conduit knows its own lineage and peers, but "which
         conduits exist in this frame" is a frame-scoped question.
@@ -71,7 +72,8 @@ class ConduitCloud(Cleanable):
         The borrow-versus-own split is the load-bearing distinction and it
         decides teardown correctness. Clusters are OWNED, so cloud cleanup
         destroys them; conduits are BORROWED, so cloud cleanup must leave them
-        completely alone - the frame will tear them down on its own schedule.
+        completely alone - their root or parent tears them down. The name directory
+        does not insert lesser scopes into the frame's root-ownership registry.
         Getting this backwards would either strand cluster state or destroy
         live conduits out from under their owner.
         `has_conduit_name` and `has_cluster_name` are the sanctioned public
@@ -97,7 +99,9 @@ class ConduitCloud(Cleanable):
         "_name",
         "_aetheric_frame",
         "_conduits",
-        "_conduit_ids_by_name",
+        "_named_conduits",
+        "_conduit_names_by_id",
+        "_reserved_conduit_names",
         "_conduit_clusters",
         "_id",
         "_devops_identity",
@@ -110,7 +114,6 @@ class ConduitCloud(Cleanable):
             name: str,
             aetheric_frame: "AethericFrame",
             conduits: Dict[str, "Conduit"],
-            conduit_ids_by_name: Dict[str, str],
             devops_information_registry: DevopsInformationRegistry,
     ) -> None:
         """
@@ -127,16 +130,14 @@ class ConduitCloud(Cleanable):
                 cluster features are requested.
             conduits (Dict[str, Conduit]):
                 Borrowed root-conduit registry owned by the frame.
-            conduit_ids_by_name (Dict[str, str]):
-                Borrowed root-conduit name registry owned by the frame.
             devops_information_registry:
                 Frame-owned dev-ops registry used for cloud identity and
                 cluster-relation tracking.
         Contract:
-            - Starts with an empty owned cluster registry.
+            - Starts with empty cluster, named-discovery and promotion-claim registries.
             - Stores the owning frame name for later diagnostics/identity.
-            - Retains borrowed references to the frame-owned root-conduit
-              stores instead of copying them.
+            - Retains the frame-owned root store for clusters. Root and lesser
+              lifecycle code explicitly publishes names into the owned directory.
 
         Returns:
             None.
@@ -146,7 +147,9 @@ class ConduitCloud(Cleanable):
         self._name: str = name
         self._aetheric_frame: AethericFrame = aetheric_frame
         self._conduits: Dict[str, "Conduit"] = conduits
-        self._conduit_ids_by_name: Dict[str, str] = conduit_ids_by_name
+        self._named_conduits: Dict[str, Conduit] = {}
+        self._conduit_names_by_id: Dict[str, str] = {}
+        self._reserved_conduit_names: Dict[str, str] = {}
         self._conduit_clusters: Dict[str, ConduitCluster] = {}
         self._id: str = new_ulid()
         self._devops_information_registry: DevopsInformationRegistry = (
@@ -168,11 +171,11 @@ class ConduitCloud(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Clear the owned dynamic cloud registry and finalize the cloud.
+        Release named discovery, promotion claims and owned clusters.
 
         Purpose:
-            Drop the cloud-owned dynamic registry without mutating the
-            frame-owned conduit stores.
+            Drop directory references without disposing borrowed conduits or
+            mutating the frame-owned root store.
 
         Contract:
             - Idempotent and lock-guarded.
@@ -197,12 +200,17 @@ class ConduitCloud(Cleanable):
                 except Exception:
                     continue
             self._conduit_clusters.clear()
+            self._named_conduits.clear()
+            self._conduit_names_by_id.clear()
+            self._reserved_conduit_names.clear()
             self._cleaned = True
 
             self._devops_identity.cleanup()
 
             del self._conduits
-            del self._conduit_ids_by_name
+            del self._named_conduits
+            del self._conduit_names_by_id
+            del self._reserved_conduit_names
             del self._conduit_clusters
             del self._devops_information_registry
             del self._devops_identity
@@ -210,6 +218,134 @@ class ConduitCloud(Cleanable):
             del self._name
             del self._id
         del self._lock
+
+    @staticmethod
+    def _validate_conduit_name(name: Optional[str]) -> str:
+        """Validate an exact application name before any lifecycle side effects.
+
+        Contract:
+            Names are nonempty strings. No trimming or case normalization occurs.
+        Args:
+            name: Requested root or lesser name.
+        Raises:
+            TypeError: The supplied name is not a string.
+            ValueError: The supplied name is empty.
+        Returns:
+            str: The unchanged, validated name.
+        """
+        if not isinstance(name, str):
+            raise TypeError("Conduit name must be a string.")
+        if not name:
+            raise ValueError("Conduit name must be a nonempty string.")
+        return name
+
+    def _assert_name_available(self, name: str, conduit_id: Optional[str] = None) -> None:
+        """Refuse another scope's live name or pending promotion claim.
+
+        Contract:
+            A scope may retain its own name. This probe reserves nothing; final
+            publication rechecks under the same reentrant directory lock.
+            Internal callers operate within the owning frame's live lifecycle.
+        Args:
+            name: Exact, nonempty requested name.
+            conduit_id: Existing identity allowed to retain its own name/claim.
+        Raises:
+            TypeError: Name is not a string.
+            ValueError: Name is empty or belongs to another identity.
+        Returns:
+            None.
+        """
+        self._validate_conduit_name(name)
+        with self._lock:
+            registered = self._named_conduits.get(name)
+            reserved_id = self._reserved_conduit_names.get(name)
+            if (
+                    (registered is not None and registered._id != conduit_id)
+                    or (reserved_id is not None and reserved_id != conduit_id)
+            ):
+                raise ValueError(f"Conduit with name {name} already exists.")
+
+    def _register_named_conduit(self, conduit: Conduit) -> None:
+        """Publish a named scope, replacing its former alias on normal promotion.
+
+        Contract:
+            The caller owns the scope's lifecycle lock/attachment window. Both
+            maps change in one directory critical section. Only this identity's
+            old alias is retired; no root ownership or callback is invoked here.
+            The frame-owned Cloud remains live for this internal operation.
+        Args:
+            conduit: Live named root or attached lesser being published.
+        Raises:
+            TypeError: The scope has no string name.
+            ValueError: Its name is empty or occupied by another scope/claim.
+        Returns:
+            None.
+        """
+        with self._lock:
+            name = self._validate_conduit_name(conduit._name)
+            self._assert_name_available(name, conduit._id)
+            previous_name = self._conduit_names_by_id.get(conduit._id)
+            if previous_name is not None and previous_name != name:
+                del self._named_conduits[previous_name]
+            self._named_conduits[name] = conduit
+            self._conduit_names_by_id[conduit._id] = name
+
+    def _unregister_named_conduit(self, conduit: Conduit) -> None:
+        """Retire this exact scope's directory entry without touching its lifecycle.
+
+        Contract:
+            Idempotent for an unpublished or already retired scope. Resolves the
+            stored name by id, so failed promotion cleanup can retire an old alias
+            even after the Conduit's requested name changed. Runs no callbacks.
+            Frame teardown calls this before cleaning its owned Cloud.
+        Args:
+            conduit: Scope being returned, destroyed or removed as a root.
+        Returns:
+            None. The caller clears a reusable lesser's name before pooling.
+        """
+        with self._lock:
+            name = self._conduit_names_by_id.get(conduit._id)
+            if name is not None and self._named_conduits[name] is conduit:
+                del self._named_conduits[name]
+                del self._conduit_names_by_id[conduit._id]
+
+    def _reserve_conduit_name(self, conduit: Conduit, name: str) -> None:
+        """Reserve a promotion destination while retaining the lesser's live entry.
+
+        Contract:
+            Claims are private admission state, absent from discovery. The upgrade
+            caller releases its claim in finally. No lock remains held during setup.
+            Public promotion has already admitted the live scope/frame lifecycle.
+        Args:
+            conduit: Existing identity requesting promotion.
+            name: Requested normal-root name.
+        Raises:
+            ValueError: Another identity owns or claims the name.
+            TypeError: Name is not a string.
+        Returns:
+            None.
+        """
+        with self._lock:
+            self._assert_name_available(name, conduit._id)
+            self._reserved_conduit_names[name] = conduit._id
+
+    def _release_conduit_name(self, conduit: Conduit, name: str) -> None:
+        """Release only this identity's temporary promotion claim.
+
+        Contract:
+            Safe after a failed promotion or frame teardown: a cleaned Cloud has
+            already cleared every claim. Does not remove a published directory entry.
+        Args:
+            conduit: Identity that reserved the name.
+            name: Reserved destination name.
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._reserved_conduit_names.get(name) == conduit._id:
+                del self._reserved_conduit_names[name]
 
     def _assert_cluster_operations_allowed(self) -> None:
         """
@@ -320,16 +456,16 @@ class ConduitCloud(Cleanable):
 
     def get_conduit(self, name: str) -> Conduit:
         """
-        Return a root conduit by name from this frame.
+        Return a named normal or lesser conduit from this frame.
 
         Purpose:
-            Provide the direct human-readable root-conduit lookup path for one frame.
+            Provide direct named-scope lookup without changing scope ownership.
 
         Args:
             name (str): The unique name of the conduit.
 
         Contract:
-            - Returns the live root conduit object registered in this frame.
+            - Returns the borrowed live conduit registered under this exact name.
             - Raises instead of silently returning None when the name is
               missing.
 
@@ -344,11 +480,11 @@ class ConduitCloud(Cleanable):
 
     def get_conduit_by_name(self, name: str) -> Conduit:
         """
-        Return a root conduit by name from this frame.
+        Return a named normal or lesser conduit from this frame.
 
         Args:
             name:
-                Root conduit name to resolve.
+                Exact live scope name to resolve.
 
         Returns:
             Conduit: Matching conduit instance.
@@ -359,21 +495,18 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            conduit_id = self._conduit_ids_by_name.get(name)
-            if conduit_id is None:
-                raise ValueError("Conduit with name {0} not found.".format(name))
-            conduit = self._conduits.get(conduit_id)
+            conduit = self._named_conduits.get(name)
             if conduit is None:
                 raise ValueError("Conduit with name {0} not found.".format(name))
             return conduit
 
     def get_conduit_by_id(self, conduit_id: str) -> Conduit:
         """
-        Return a root conduit by id from this frame.
+        Return a named normal or lesser conduit by id from this frame.
 
         Args:
             conduit_id:
-                Root conduit id to resolve.
+                Named scope's live conduit id to resolve.
 
         Returns:
             Conduit: Matching conduit instance.
@@ -384,14 +517,14 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            conduit = self._conduits.get(conduit_id)
-            if conduit is not None:
-                return conduit
+            name = self._conduit_names_by_id.get(conduit_id)
+            if name is not None:
+                return self._named_conduits[name]
         raise ValueError("Conduit with id {0} not found.".format(conduit_id))
 
     def list_conduit_ids(self) -> Tuple[str, ...]:
         """
-        Return the registered root-conduit ids in this frame.
+        Return the registered named-scope ids in this frame.
 
         Contract:
             - Returns a TUPLE SNAPSHOT taken under the lock, so it cannot mutate
@@ -414,16 +547,16 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return tuple(self._conduits.keys())
+            return tuple(self._conduit_names_by_id.keys())
 
     def list_conduit_names(self) -> Tuple[str, ...]:
         """
-        Return the registered root-conduit names in this frame.
+        Return the registered normal-root and lesser-scope names in this frame.
 
         Contract:
-            - Returns only NAMED conduits, so unnamed registered conduits are absent.
-              This list can therefore be SHORTER than `list_conduit_ids()` and the
-              two are NOT positionally aligned - do not zip them.
+            - Returns only live named scopes; unnamed and idle shells are absent.
+              It has the same membership count as list_conduit_ids(), but callers
+              must resolve by key rather than relying on positional alignment.
 
         Threading:
             Reads and writes under `self._lock`, so the result is a coherent
@@ -440,11 +573,11 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return tuple(self._conduit_ids_by_name.keys())
+            return tuple(self._named_conduits.keys())
 
     def list_cloud_names(self) -> Tuple[str, ...]:
         """
-        Return the derived named dynamic root-conduit view for this frame.
+        Return named normal and lesser scopes in either runtime mode.
 
         Contract:
             - CURRENTLY IDENTICAL to `list_conduit_names()` - both return the keys of
@@ -462,20 +595,19 @@ class ConduitCloud(Cleanable):
             RuntimeError: If the cloud has been cleaned.
 
         Returns:
-            Tuple[str, ...]: Snapshot of dynamic cloud-entry names.
+            Tuple[str, ...]: Snapshot of named cloud entries.
         """
         self.check_cleaned()
         with self._lock:
-            return tuple(self._conduit_ids_by_name.keys())
+            return tuple(self._named_conduits.keys())
 
     def count_conduits(self) -> int:
         """
-        Return the number of registered root conduits in this frame.
+        Return the number of named scopes registered in this frame.
 
         Contract:
-            - Counts REGISTERED CONDUITS, so it matches `len(list_conduit_ids())` and
-              NOT `len(list_conduit_names())` - unnamed conduits are counted here but
-              absent from the name list.
+            - Matches both list_conduit_ids() and list_conduit_names(). Only named
+              scopes are counted; this is not the frame's normal-root count.
 
         Threading:
             Reads and writes under `self._lock`, so the result is a coherent
@@ -492,11 +624,11 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return len(self._conduits)
+            return len(self._named_conduits)
 
     def has_conduit_id(self, conduit_id: str) -> bool:
         """
-        Return whether one root conduit id is registered in this frame.
+        Return whether one named-scope id is registered in this frame.
 
         Args:
             conduit_id:
@@ -521,19 +653,19 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return conduit_id in self._conduits
+            return conduit_id in self._conduit_names_by_id
 
     def has_conduit_name(self, name: str) -> bool:
         """
-        Return whether one root conduit name is registered in this frame.
+        Return whether one live scope name is registered in this frame.
 
         Args:
             name:
                 Conduit name to check.
 
         Contract:
-            - Tests the NAME map, so it returns False for a registered but UNNAMED
-              conduit. A False here does not mean the conduit is absent.
+            - Tests live discovery only. Unnamed scopes and temporary promotion
+              claims are absent; a False result does not reserve the name.
 
         Threading:
             Reads and writes under `self._lock`, so the result is a coherent
@@ -550,7 +682,7 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return name in self._conduit_ids_by_name
+            return name in self._named_conduits
 
     def has_cluster_name(self, cluster_name: str) -> bool:
         """
@@ -576,7 +708,7 @@ class ConduitCloud(Cleanable):
 
     def find_conduit_id_by_name(self, name: str) -> Optional[str]:
         """
-        Return the root conduit id registered under one conduit name, if present.
+        Return the live normal or lesser id registered under one name, if present.
 
         Args:
             name:
@@ -602,7 +734,8 @@ class ConduitCloud(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return self._conduit_ids_by_name.get(name)
+            conduit = self._named_conduits.get(name)
+            return None if conduit is None else conduit._id
 
     def create_cluster(self, cluster_name: str) -> None:
         """

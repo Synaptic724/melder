@@ -1,0 +1,28 @@
+{
+  "python": "3.14.7 free-threading build (main, Sep  1 2026, 14:18:33) [MSC v.1944 64 bit (AMD64)]",
+  "gil_enabled": false,
+  "iterations_per_repeat": 1000000,
+  "repeats": 7,
+  "results": {
+    "flag": {
+      "median_ns_per_call": 18.44149999669753,
+      "min_ns_per_call": 18.298799986951053
+    },
+    "dict_empty": {
+      "median_ns_per_call": 23.318699997616932,
+      "min_ns_per_call": 23.11610002652742
+    },
+    "dict_len": {
+      "median_ns_per_call": 27.899700013222173,
+      "min_ns_per_call": 27.518900024006143
+    },
+    "uncontended_rlock": {
+      "median_ns_per_call": 84.92980001028627,
+      "min_ns_per_call": 84.1925999848172
+    },
+    "flag_false_skips_lock": {
+      "median_ns_per_call": 22.173200006363913,
+      "min_ns_per_call": 21.81489998474717
+    }
+  }
+}

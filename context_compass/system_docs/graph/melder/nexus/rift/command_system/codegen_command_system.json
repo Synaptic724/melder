@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/codegen_command_system.py",
- "source_sha256": "df9755e2d8f58d21ac6a0ba733a5515d9e4ee43ae3eb44efbb5eb1af25956232",
+ "source_sha256": "1098778744b7a349ac5ad463200e062545e6ecdd7b4f144c2d0b689702dff93d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.codegen_command_system": {
@@ -83,13 +83,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6da3a9748e03b5ae90fce8d83b9e1287d2691a1c6d1375c19e4fcb5716d0f63d",
+   "span_sha256": "a9318878cd95f09ac584cb99e41b60f9b45ab7d14ae8d7b7deaabcfb24a751e4",
    "role": "Codegen-room command facade over the internal engine.",
    "responsibilities": [
     "preserves the selected runtime-helper subset for codegen rooms",
     "delegates validate and execute requests into the attached CodegenSystem",
     "emits full-source codegen room-memory records for top-level codegen actions",
-    "owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal"
+    "owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal",
+    "uses lesser-aware authorized named lookup without expanding room capabilities"
    ],
    "owns_state": [
     "_codegen_system"

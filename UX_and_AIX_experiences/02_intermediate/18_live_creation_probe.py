@@ -18,7 +18,7 @@ def main() -> None:
     conduit = book.conjure()
 
     before = conduit.has_live_creation(spell=ExpensiveEngine)
-    conduit.meld(ExpensiveEngine)
+    conduit.meld("ExpensiveEngine")
     after = conduit.has_live_creation(spell=ExpensiveEngine)
     print("live before meld?", before, "| after?", after)
     assert after is True and before is False

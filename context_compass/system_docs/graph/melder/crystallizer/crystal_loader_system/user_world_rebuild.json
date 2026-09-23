@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py",
- "source_sha256": "e97de4390170ff5ec0a2c111dcc79537086f1e10d2f8b7981e73c95b21227cfe",
+ "source_sha256": "c8cf5ce95e44c823d7b73e85d4b7fce4a40877f6ea0e35c8d27bf5ba686b759b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.user_world_rebuild": {
