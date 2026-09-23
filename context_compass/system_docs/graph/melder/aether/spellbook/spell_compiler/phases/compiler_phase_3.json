@@ -12,10 +12,10 @@
    "lineno": 1,
    "include": true,
    "role": "Phase 3: local-frame and DAG build - where socket truth including is_collection is established.",
-   "semantics_authored_against": "f667ca74748f0f2dc641ed40143b96041015c2fd4b0bdac7269b75a3a963b1f2",
    "responsibilities": [
     "republishes enabled late-compiled Nexus records after local topology is available"
-   ]
+   ],
+   "semantics_authored_against": "f667ca74748f0f2dc641ed40143b96041015c2fd4b0bdac7269b75a3a963b1f2"
   },
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3": {
    "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3",

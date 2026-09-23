@@ -1,0 +1,84 @@
+{
+  "approval": "Owner explicitly approved the two named scratch deletions and patch archival on 2026-09-20.",
+  "started_at": "2026-09-20T22:29:56Z",
+  "deleted": [
+    {
+      "path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\ci_stage_qualification_20260906",
+      "files": 6037,
+      "bytes": 140382447.0,
+      "absent_after": true
+    },
+    {
+      "path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\uv_environment_20260908",
+      "files": 6590,
+      "bytes": 179475847.0,
+      "absent_after": true
+    }
+  ],
+  "archived": [
+    {
+      "source": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\system_docs\\patches\\active\\ci_stage_qualification_2026_09_06",
+      "destination": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\system_docs\\patches\\completed\\ci_stage_qualification_2026_09_06",
+      "files": [
+        {
+          "path": "architecture_patch_index.md",
+          "sha256": "38C7AFC1F61828DA3BF2D48B7CB067596FCB1B25A567F7CFA0B3EA5B327700BC"
+        },
+        {
+          "path": "architecture_patch.md",
+          "sha256": "C5E1633A03FC9E5EB709B91EA91A17378B4472649B1F4A7BF0B2F0A6F634EE3C"
+        },
+        {
+          "path": "code_description_patch_source_proof_index.md",
+          "sha256": "66FFB29D00E57E2FFC78812F4ADEA69606F53879852760FAE00A7316076196C6"
+        },
+        {
+          "path": "code_description_patch_source_proof.md",
+          "sha256": "6C642F118B08003F13925B9DA53FD0D0C282BE7623F795A5A364F0F7564D177D"
+        },
+        {
+          "path": "component_patch_ci_profiles_index.md",
+          "sha256": "A040322CFAAB676ABAAEA270C046A1168A36F6452951BF2ED86C5AE0F745181E"
+        },
+        {
+          "path": "component_patch_ci_profiles.md",
+          "sha256": "6A2AF4952843CD1585942E0125EAEBB2C731B580442D445D36E330E03940E039"
+        }
+      ],
+      "hashes_preserved": true
+    },
+    {
+      "source": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\system_docs\\patches\\active\\uv_environment_2026_09_08",
+      "destination": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\system_docs\\patches\\completed\\uv_environment_2026_09_08",
+      "files": [
+        {
+          "path": "architecture_patch_index.md",
+          "sha256": "1A33695A7B69BAAA3BA441A5D81AB71BCD40C9B519D25878C8F3E5A8E152CE31"
+        },
+        {
+          "path": "architecture_patch.md",
+          "sha256": "1019E2EC7FCAA3C7D90EE7E1F620266EAFEA82C90152C71B8CE7E58D8884C275"
+        },
+        {
+          "path": "code_description_patch_ci_lock_index.md",
+          "sha256": "FFE48E57C8E247B303BB895F7500A24B78116AC42B1666C60A0F9BAA4C97BCC1"
+        },
+        {
+          "path": "code_description_patch_ci_lock.md",
+          "sha256": "695D7E21C525834A5F21D5CBFB6D7687D53BEE437E50428DA1D7ED99A04A4B70"
+        },
+        {
+          "path": "component_patch_uv_setup_index.md",
+          "sha256": "E134661D29C2825B16AF5EBCC7AF58C0176E62175A9677009DF8C7EF35C39A08"
+        },
+        {
+          "path": "component_patch_uv_setup.md",
+          "sha256": "139BFEE933C682E63FF7B386EE7B22D1A985B437DADAE8B62DE33CF839A7D947"
+        }
+      ],
+      "hashes_preserved": true
+    }
+  ],
+  "finished_at": "2026-09-20T22:30:00Z",
+  "error": null
+}

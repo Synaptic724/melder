@@ -1,0 +1,1126 @@
+{
+  "mode": "apply",
+  "scanned_files": 137,
+  "changed_files": 61,
+  "target_replacements": 138,
+  "ast_verification": "passed",
+  "changes": [
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/01_hello_meld.py",
+      "calls": [
+        {
+          "line": 23,
+          "before": "Greeter",
+          "registered_name": "Greeter"
+        },
+        {
+          "line": 29,
+          "before": "Greeter",
+          "registered_name": "Greeter"
+        }
+      ],
+      "before_sha256": "8af729c852ab427452c3fbf6fbb060539315d3bc1bdbcf7b62fc44684d667904",
+      "after_sha256": "4451c8075c70304118cc87e445fffe6251fc26b93a0e68f222de5c62802ba848"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/02_lifecycles_unique_vs_many.py",
+      "calls": [
+        {
+          "line": 25,
+          "before": "SharedCache",
+          "registered_name": "SharedCache"
+        },
+        {
+          "line": 26,
+          "before": "SharedCache",
+          "registered_name": "SharedCache"
+        },
+        {
+          "line": 30,
+          "before": "RequestScratchpad",
+          "registered_name": "RequestScratchpad"
+        },
+        {
+          "line": 31,
+          "before": "RequestScratchpad",
+          "registered_name": "RequestScratchpad"
+        }
+      ],
+      "before_sha256": "9250358501e8e890c6544b3cd1d5ef782113a7bcc86349acdc5186b58ebb9bf1",
+      "after_sha256": "fbaa1c8d2e0ca7fcf6ec1e23669ad5b4f3b1a1a92569c97dbc4915554fe071a1"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/03_bind_functions_and_instances.py",
+      "calls": [
+        {
+          "line": 30,
+          "before": "make_settings",
+          "registered_name": "make_settings"
+        },
+        {
+          "line": 32,
+          "before": "make_settings",
+          "registered_name": "make_settings"
+        },
+        {
+          "line": 35,
+          "before": "prebuilt",
+          "registered_name": "AlreadyBuilt"
+        }
+      ],
+      "before_sha256": "8b18c3bc765bdeb995c719a84ee2b6c0ac792745cbb09e2b3f522d36af3efed3",
+      "after_sha256": "ff97da95aaeeae60a57d38a515048a7a65e364aeb70865fdadcab61d338df398"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/04_named_bindings.py",
+      "calls": [
+        {
+          "line": 32,
+          "before": "PostgresStore",
+          "registered_name": "PostgresStore"
+        },
+        {
+          "line": 33,
+          "before": "SqliteStore",
+          "registered_name": "SqliteStore"
+        }
+      ],
+      "before_sha256": "c93f76b42849d7ebca0710d568740473542e51bb7bc075b3b887a6dcf79cc037",
+      "after_sha256": "fb31f7178752ef48566e5b85f194a22808db920d64a66d9b1e3e9437846f933a"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/05_lesser_conduit_scopes.py",
+      "calls": [
+        {
+          "line": 27,
+          "before": "AppWideConfig",
+          "registered_name": "AppWideConfig"
+        },
+        {
+          "line": 27,
+          "before": "AppWideConfig",
+          "registered_name": "AppWideConfig"
+        },
+        {
+          "line": 30,
+          "before": "PerScopeSession",
+          "registered_name": "PerScopeSession"
+        },
+        {
+          "line": 31,
+          "before": "PerScopeSession",
+          "registered_name": "PerScopeSession"
+        },
+        {
+          "line": 33,
+          "before": "PerScopeSession",
+          "registered_name": "PerScopeSession"
+        }
+      ],
+      "before_sha256": "8f66f32f9482b29b5d1adc348e9f5d9fbc48056411b6f988e1c4653f1b4abc4f",
+      "after_sha256": "9dcb742240603a63badfb992fa89e9692b073e81f66b8f01177e99464b21c6a9"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/06_error_vocabulary.py",
+      "calls": [
+        {
+          "line": 24,
+          "before": "NeverRegistered",
+          "registered_name": "NeverRegistered"
+        }
+      ],
+      "before_sha256": "2a0ea57515b608ce9a36518212f438384900ebbf791fac12d301f1f22fd52671",
+      "after_sha256": "dac1ddeb72554d925747bcf1a1dc1c675033c7eac490c76fcd07b8114ef69659"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/07_strings_as_vocabulary.py",
+      "calls": [
+        {
+          "line": 29,
+          "before": "FromStrings",
+          "registered_name": "FromStrings"
+        },
+        {
+          "line": 29,
+          "before": "FromStrings",
+          "registered_name": "FromStrings"
+        },
+        {
+          "line": 30,
+          "before": "FromEnums",
+          "registered_name": "FromEnums"
+        },
+        {
+          "line": 30,
+          "before": "FromEnums",
+          "registered_name": "FromEnums"
+        }
+      ],
+      "before_sha256": "f166765b1deeeb6962987e6b3fa150eb1a4e08bcf7ec0c9129ce36bb475a29d1",
+      "after_sha256": "bf33412874e4d7971d02d629644e27053c6df2260d26c862ce29fbbbe61eef4c"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/08_disposal_contract.py",
+      "calls": [
+        {
+          "line": 27,
+          "before": "PooledConnection",
+          "registered_name": "PooledConnection"
+        }
+      ],
+      "before_sha256": "f60e278f5c91aef73780da08c5202b17bda0bfc3ab0ce338ac4bb0baaf96a7a7",
+      "after_sha256": "7e5508cbe1f2c308adeda01b7e772ee6e4ae40de75ea6277803653ef7f4566b8"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/09_spellframe_grouping.py",
+      "calls": [
+        {
+          "line": 33,
+          "before": "PrimaryStore",
+          "registered_name": "PrimaryStore"
+        },
+        {
+          "line": 35,
+          "before": "ReplicaStore",
+          "registered_name": "ReplicaStore"
+        },
+        {
+          "line": 37,
+          "before": "CacheStore",
+          "registered_name": "CacheStore"
+        }
+      ],
+      "before_sha256": "7223215dcac159e277b9dd2415c81cf705fc8bbb76ace1d686aa33ec72d5b804",
+      "after_sha256": "0069b733e8a68ec9fbb54e95100aa36be705ca214572998e222df2ea1a4ccea8"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/10_explicit_cleanup.py",
+      "calls": [
+        {
+          "line": 19,
+          "before": "Service",
+          "registered_name": "Service"
+        }
+      ],
+      "before_sha256": "36100624d6205a5fdad6a2e50dd2f8ddb80e96cbb16c13cf503a7a025f1e388c",
+      "after_sha256": "bc6e24cda424685c817dd3f9a374e2b37c1df6e195d9a2ebb0a23e686354bd7d"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/13_existence_unique.py",
+      "calls": [
+        {
+          "line": 21,
+          "before": "WorldClock",
+          "registered_name": "WorldClock"
+        },
+        {
+          "line": 21,
+          "before": "WorldClock",
+          "registered_name": "WorldClock"
+        },
+        {
+          "line": 22,
+          "before": "WorldClock",
+          "registered_name": "WorldClock"
+        }
+      ],
+      "before_sha256": "e3773def5f63fed291ee6e4fce3faac2e3692a8fab18f3d71ba11a694d40a14d",
+      "after_sha256": "ba3929c5747cdb8ca2a6d251471384b7cb6923ee787ec00fd4e672c3bbdf4332"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/14_existence_many.py",
+      "calls": [
+        {
+          "line": 23,
+          "before": "WorkOrder",
+          "registered_name": "WorkOrder"
+        }
+      ],
+      "before_sha256": "24867b071e1525d91b084dade4a3a2b91a1e84fef0b65d9c2e24782799c65280",
+      "after_sha256": "7cf580f529af0b839273071762f11525b777034a3d661ec75a218d38f265f49c"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/15_existence_unique_per_conduit.py",
+      "calls": [
+        {
+          "line": 21,
+          "before": "ScopeLocalSession",
+          "registered_name": "ScopeLocalSession"
+        },
+        {
+          "line": 21,
+          "before": "ScopeLocalSession",
+          "registered_name": "ScopeLocalSession"
+        },
+        {
+          "line": 22,
+          "before": "ScopeLocalSession",
+          "registered_name": "ScopeLocalSession"
+        },
+        {
+          "line": 23,
+          "before": "ScopeLocalSession",
+          "registered_name": "ScopeLocalSession"
+        }
+      ],
+      "before_sha256": "466d92dd380d547a21d21fa58de512745b9028bf70e0cdd2d549e9fff4465ba5",
+      "after_sha256": "9ea04a537c3c81a50764a238487505747ca06289e6090a41197c7cf30a89cde8"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/16_typed_melding.py",
+      "calls": [
+        {
+          "line": 21,
+          "before": "WeatherService",
+          "registered_name": "WeatherService"
+        }
+      ],
+      "before_sha256": "c097e58e011148f5ac9b3a7cbcc88fe6fab1a4a77271d2423e2848228c239422",
+      "after_sha256": "1eb01c8c018fc295774ac36b2963b0678c1edb24dab81581189d400087483989"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/20_defaults_just_work.py",
+      "calls": [
+        {
+          "line": 22,
+          "before": "HttpClient",
+          "registered_name": "HttpClient"
+        }
+      ],
+      "before_sha256": "bfb6eb40d64488f80d1f6df05b3fcc993886d3284e753cadf6517a49db240f3e",
+      "after_sha256": "ce2e312ffa1ab00582fec46f4a9c9d2617cd5c8635856647ea22a120b73ec50c"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/21_the_basic_rhythm.py",
+      "calls": [
+        {
+          "line": 35,
+          "before": "Server",
+          "registered_name": "Server"
+        },
+        {
+          "line": 37,
+          "before": "Config",
+          "registered_name": "Config"
+        },
+        {
+          "line": 37,
+          "before": "Config",
+          "registered_name": "Config"
+        }
+      ],
+      "before_sha256": "f6757d00db0260298c71b8d093e55f7b3f4986914bd62e218d2028fe8205e48d",
+      "after_sha256": "a867ba19db5edb4830f1966a05935250e6922037ec78e7ef7df7d737aa96fbe5"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/25_frames_as_dict_classification.py",
+      "calls": [
+        {
+          "line": 49,
+          "before": "UsersRepo",
+          "registered_name": "UsersRepo"
+        },
+        {
+          "line": 51,
+          "before": "EmailNotifier",
+          "registered_name": "EmailNotifier"
+        }
+      ],
+      "before_sha256": "34e5e86856b60d0ca1bf347e0990ce0ae7b554cd94145cbc27c60b75a2f85817",
+      "after_sha256": "0bfa976be7343e7c01d60cd4b76f34be574bb5fa37a168b51b214aa8833fd7ed"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/27_pass_the_conduit_around.py",
+      "calls": [
+        {
+          "line": 17,
+          "before": "Mailer",
+          "registered_name": "Mailer"
+        },
+        {
+          "line": 40,
+          "before": "Mailer",
+          "registered_name": "Mailer"
+        },
+        {
+          "line": 40,
+          "before": "Mailer",
+          "registered_name": "Mailer"
+        }
+      ],
+      "before_sha256": "3960d4212ceae9d0343c35a4d4586acbcc170234b461924193f129f1089eab0c",
+      "after_sha256": "9ca6a6bb9b6b9c8575f8977600aced0c772afc515c6cc4a09fb81d7219f02b78"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/28_real_objects_no_wrappers.py",
+      "calls": [
+        {
+          "line": 21,
+          "before": "Engine",
+          "registered_name": "Engine"
+        },
+        {
+          "line": 24,
+          "before": "Engine",
+          "registered_name": "Engine"
+        }
+      ],
+      "before_sha256": "250ef58c3a4d54691d6a992a648fdccf0d827e0780b46383cc30e1fe2d3b4684",
+      "after_sha256": "f122873803c3816cb5a72a553fd87a51b2d1f1a957c02c8da4bd00b887fb1939"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/29_many_state_isolation.py",
+      "calls": [
+        {
+          "line": 21,
+          "before": "Basket",
+          "registered_name": "Basket"
+        },
+        {
+          "line": 23,
+          "before": "Basket",
+          "registered_name": "Basket"
+        }
+      ],
+      "before_sha256": "f1e265e54e4036273bd245b20d2dc68915e0a131269031c2ba163575dbbc63dc",
+      "after_sha256": "eeab3c74a8ff16d5eb1612331561f4973ac10496e2c64a7928a377a6f823206e"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/34_scope_contrast_one_tree.py",
+      "calls": [
+        {
+          "line": 26,
+          "before": "GlobalRegistry",
+          "registered_name": "GlobalRegistry"
+        },
+        {
+          "line": 28,
+          "before": "ScopeCache",
+          "registered_name": "ScopeCache"
+        }
+      ],
+      "before_sha256": "2b435a858c8e397ee748ed9811aebe9f451fa039189c4d76a23306ab0b14c436",
+      "after_sha256": "c87dfb95d1171b53229cf65cf8f563c7a6f029b2c020f89e10b89278017047a1"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/36_one_book_one_conduit.py",
+      "calls": [
+        {
+          "line": 28,
+          "before": "WorldState",
+          "registered_name": "WorldState"
+        },
+        {
+          "line": 28,
+          "before": "WorldState",
+          "registered_name": "WorldState"
+        }
+      ],
+      "before_sha256": "623ea341e57a19efe4cfae6494f5984db3156d4d055923c695a9ccfb02d2a48c",
+      "after_sha256": "5f39451ea37c3c7dbfc3a3e3bc1e271932f66145e7465473be460d82fef12f22"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/37_bind_vocabulary_cheatsheet.py",
+      "calls": [
+        {
+          "line": 41,
+          "before": "FullyDressed",
+          "registered_name": "FullyDressed"
+        }
+      ],
+      "before_sha256": "7a333376a926bb78bd0b6deb13b5203e36be0c5de3ed6b4256fcfdea889e3d3d",
+      "after_sha256": "44765b3efe566a726fbab6d622f5417fb11da10876c7dd891261d111f251c6df"
+    },
+    {
+      "path": "UX_and_AIX_experiences/01_beginner/41_you_own_the_memory_now.py",
+      "calls": [
+        {
+          "line": 30,
+          "before": "HeavyThing",
+          "registered_name": "HeavyThing"
+        }
+      ],
+      "before_sha256": "3ab3eaf89e80b0233589314642a014de0b98fd726fb144d566b7145787531054",
+      "after_sha256": "c3f05d2b15ed2a26e81d069cf80271868cd38fced8c8d8b9933eeee620509035"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/01_scan_bind_decorator.py",
+      "calls": [
+        {
+          "line": 30,
+          "before": "MetricsHub",
+          "registered_name": "MetricsHub"
+        },
+        {
+          "line": 31,
+          "before": "MetricsHub",
+          "registered_name": "MetricsHub"
+        },
+        {
+          "line": 32,
+          "before": "JobTicket",
+          "registered_name": "JobTicket"
+        },
+        {
+          "line": 33,
+          "before": "JobTicket",
+          "registered_name": "JobTicket"
+        }
+      ],
+      "before_sha256": "cef09d41bbc1b93a1fbb603a4ebf603adbf60ce3436136693704355b2ab36326",
+      "after_sha256": "dde49db0f038234b0a8feafcb9740369edbc2283d48fbb8988d122fa42fdee81"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/02_spellbinder_full_chain.py",
+      "calls": [
+        {
+          "line": 43,
+          "before": "HttpClient",
+          "registered_name": "HttpClient"
+        },
+        {
+          "line": 52,
+          "before": "RetryPolicy",
+          "registered_name": "RetryPolicy"
+        },
+        {
+          "line": 53,
+          "before": "RetryPolicy",
+          "registered_name": "RetryPolicy"
+        }
+      ],
+      "before_sha256": "e97e19ed0984fc18f612d79df33e89077f24a5bca80faf24c5a65be0908456ba",
+      "after_sha256": "d7ab5dbc71bf74256894de7c5979f562d9cb5e91ecec54dc63d870c1e73c6735"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/03_registration_hooks.py",
+      "calls": [
+        {
+          "line": 36,
+          "before": "Engine",
+          "registered_name": "Engine"
+        }
+      ],
+      "before_sha256": "5048689282b5e561dc54a8bd30c1476d5322e8f4f8f2cef8b80d6f9f088aea4b",
+      "after_sha256": "d4bd3d97cb53ef28faa5294c6a5bd981e76d568b7cb2724725251b3cc9d11bd8"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/04_spellspace_scoped_resolution.py",
+      "calls": [
+        {
+          "line": 25,
+          "before": "RoomState",
+          "registered_name": "RoomState"
+        },
+        {
+          "line": 26,
+          "before": "RoomState",
+          "registered_name": "RoomState"
+        },
+        {
+          "line": 27,
+          "before": "RoomState",
+          "registered_name": "RoomState"
+        }
+      ],
+      "before_sha256": "aebe667ed7a3cd3cc4f430756d6cb33437af753e8d2558900288f9857245ac52",
+      "after_sha256": "e9b190be95b14b17cbb63de575115c639e831b8629a78910d0b716b8c577be04"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/05_existence_unique_per_conduit_lineage.py",
+      "calls": [
+        {
+          "line": 28,
+          "before": "FamilyLedger",
+          "registered_name": "FamilyLedger"
+        },
+        {
+          "line": 29,
+          "before": "FamilyLedger",
+          "registered_name": "FamilyLedger"
+        },
+        {
+          "line": 30,
+          "before": "FamilyLedger",
+          "registered_name": "FamilyLedger"
+        }
+      ],
+      "before_sha256": "5d785cfc3dce8f41cc7c2e97bdbf25189c8b8d850c2fe1c67951e061fc4a435a",
+      "after_sha256": "f3267583211ea8c2e6ff0b993c422d61274bef57c2f50e486be1d9cf4fe9e044"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/07_lesser_conduits_child_scopes.py",
+      "calls": [
+        {
+          "line": 30,
+          "before": "ScopedService",
+          "registered_name": "ScopedService"
+        },
+        {
+          "line": 31,
+          "before": "ScopedService",
+          "registered_name": "ScopedService"
+        }
+      ],
+      "before_sha256": "3be0733bd967a02af1fd937fe4210e3a1db09fe11d9819bfcd70bb3ef6bb6bfa",
+      "after_sha256": "99102494d39259c480ca36fc9983b12bf2b1ecd7c136f1c85c3f7c7ec91d81fa"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/10_spellbinder_fluent_basics.py",
+      "calls": [
+        {
+          "line": 29,
+          "before": "TelemetrySink",
+          "registered_name": "TelemetrySink"
+        },
+        {
+          "line": 30,
+          "before": "TelemetrySink",
+          "registered_name": "TelemetrySink"
+        },
+        {
+          "line": 31,
+          "before": "AuditTrail",
+          "registered_name": "AuditTrail"
+        },
+        {
+          "line": 32,
+          "before": "AuditTrail",
+          "registered_name": "AuditTrail"
+        }
+      ],
+      "before_sha256": "645ba6cfb94c1ee907ebe235fd8aa43632d757118c2685c6b18c265f597013a0",
+      "after_sha256": "0e244eec8fe8f986f4e400afcdb314e9e39a8618849715e73e2f2781a8d7e4b6"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/11_permissions_linking_vocabulary.py",
+      "calls": [
+        {
+          "line": 24,
+          "before": "prebuilt",
+          "registered_name": "PublishedConfig"
+        }
+      ],
+      "before_sha256": "b17d314e719542a9e0b51e8c51fc31e716c28e0d5a85288ecd66b48fc5ebe8d8",
+      "after_sha256": "6e2aa534881495e923f4accabbeb1276c754dda48ad7555e1e97b2c8d7fdf9cb"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/15_constructor_di_by_annotation.py",
+      "calls": [
+        {
+          "line": 30,
+          "before": "ReportService",
+          "registered_name": "ReportService"
+        }
+      ],
+      "before_sha256": "0848e41b4327eaee77d9b0fc541b722635de7550dc30a149bec509fa49cd644d",
+      "after_sha256": "9f1356f1524e9243036aeeaa23b43adbbc86f543123d944f602cc7b28fc6531d"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/16_spellmap_defaults.py",
+      "calls": [
+        {
+          "line": 27,
+          "before": "Consumer",
+          "registered_name": "Consumer"
+        }
+      ],
+      "before_sha256": "aa6c0361d96cd3a69d30907009f89ebee6427127cce3f1fe5cfc1097d81bfa3b",
+      "after_sha256": "1759947e0fb017435f26c926d1c0d9c13ee5c6dbfb660eb30261db3f0aacc09f"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/17_collection_di.py",
+      "calls": [
+        {
+          "line": 43,
+          "before": "Dispatcher",
+          "registered_name": "Dispatcher"
+        }
+      ],
+      "before_sha256": "3f63666451e89c34c0a597977dd05d318705d5100d273779d6628e95acd20633",
+      "after_sha256": "0a4e97aba1caae8dc6c23c8ad3fa2002d9972de73b6bfdcc7c71b583c96ca6e8"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/18_live_creation_probe.py",
+      "calls": [
+        {
+          "line": 21,
+          "before": "ExpensiveEngine",
+          "registered_name": "ExpensiveEngine"
+        }
+      ],
+      "before_sha256": "857280011c14fea2e260cefe99292d00d64c175e14db159b92db2764f5adc9f3",
+      "after_sha256": "8543b0ec70af7662e88775993032f8cb5397f015156631a74d17f6975db253c8"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/19_spellbook_configuration_basics.py",
+      "calls": [
+        {
+          "line": 23,
+          "before": "Service",
+          "registered_name": "Service"
+        }
+      ],
+      "before_sha256": "d355d60cb45b0605dc36afa1a4b081b38ffccb642eedeac5c6ee04f81806667f",
+      "after_sha256": "d932d5b012714245d28f397c5448b7752f1835cc01201702cd43da8fc7a5a3ec"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/20_phase_scheduler_knobs.py",
+      "calls": [
+        {
+          "line": 35,
+          "before": "Beta",
+          "registered_name": "Beta"
+        }
+      ],
+      "before_sha256": "9d9ba2d6144e5e7f1abf6d03610496545b3f4ba36ad8260a18c4d340d918f4bf",
+      "after_sha256": "a36323191165d728517381661ed3a9af10cdb70b92bf1ab49d90c06d9f8db994"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/21_dynamic_linking_basics.py",
+      "calls": [
+        {
+          "line": 44,
+          "before": "SharedDirectory",
+          "registered_name": "SharedDirectory"
+        }
+      ],
+      "before_sha256": "62182ca868ddf552386c5f95eba1c03f60df597d6b2a151e9ce313c10fc73a39",
+      "after_sha256": "f909ae0ffc6c97a851250d192aaba7c52443f3eb76ccdf9dba2aba07d611667c"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/22_permissions_create_vs_read.py",
+      "calls": [
+        {
+          "line": 41,
+          "before": "OpenService",
+          "registered_name": "OpenService"
+        },
+        {
+          "line": 43,
+          "before": "GuardedService",
+          "registered_name": "GuardedService"
+        }
+      ],
+      "before_sha256": "6c2fccd34022e5db021dac4b76e68d648b2d3e513b562642de69e8e04d019a1e",
+      "after_sha256": "d384b6b286f694cede7683dbac076b2e6987a93d7764bf59e829df84e066cd81"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/23_transfer_of_ownership.py",
+      "calls": [
+        {
+          "line": 38,
+          "before": "MigratingService",
+          "registered_name": "MigratingService"
+        },
+        {
+          "line": 46,
+          "before": "MigratingService",
+          "registered_name": "MigratingService"
+        }
+      ],
+      "before_sha256": "6717df75607903a08505dcb2d07fd3a9098eb64c392e804981d35f122b888413",
+      "after_sha256": "8a38d5c08b58dbbf3f92f958e367e9919b71bd0a51b18127f984dd4141f56fed"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/25_clusters_unique_per_cluster.py",
+      "calls": [
+        {
+          "line": 50,
+          "before": "ClusterBus",
+          "registered_name": "ClusterBus"
+        },
+        {
+          "line": 51,
+          "before": "ClusterBus",
+          "registered_name": "ClusterBus"
+        }
+      ],
+      "before_sha256": "586f66863dcfb0f40ce936179703aaf3580a09f03d774dfa32e8f86f7081a3fb",
+      "after_sha256": "3608b163621bc2bbac96c2073d7d3ad5a73c589c7efcd6be6f7364ae64a9d373"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/27_sever_link.py",
+      "calls": [
+        {
+          "line": 36,
+          "before": "SharedDirectory",
+          "registered_name": "SharedDirectory"
+        },
+        {
+          "line": 42,
+          "before": "SharedDirectory",
+          "registered_name": "SharedDirectory"
+        },
+        {
+          "line": 53,
+          "before": "SharedDirectory",
+          "registered_name": "SharedDirectory"
+        }
+      ],
+      "before_sha256": "aca3a932450b22da607de3782d8e0f880b0b443c96e880cf82f36b95158b6975",
+      "after_sha256": "9e0a4d867a49fff368b0ef7ca0d68defb01fba21b306a36e46a4853f263c83c0"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/28_upgrade_to_normal.py",
+      "calls": [
+        {
+          "line": 33,
+          "before": "Workbench",
+          "registered_name": "Workbench"
+        },
+        {
+          "line": 39,
+          "before": "Workbench",
+          "registered_name": "Workbench"
+        }
+      ],
+      "before_sha256": "154d055db07826e8f12e32b70cd3403fd378508da3db4eb4e0e7a25eecb669e1",
+      "after_sha256": "94f42faf7744ceb91e8dfa4e439db08a88a51e185dcee03c9042a6b3385b9fc4"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/29_scoped_cleanup_lesser_conduits.py",
+      "calls": [
+        {
+          "line": 40,
+          "before": "JobSession",
+          "registered_name": "JobSession"
+        },
+        {
+          "line": 44,
+          "before": "JobSession",
+          "registered_name": "JobSession"
+        },
+        {
+          "line": 53,
+          "before": "JobSession",
+          "registered_name": "JobSession"
+        }
+      ],
+      "before_sha256": "c55638df187f57d7a16c13388f7f5b3316b6d051e79b4b0aaab7f8ae7bb21699",
+      "after_sha256": "173ced876673324b6f70530414ecf5f6acd49153fe27f50d4efc1167026f1cb4"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py",
+      "calls": [
+        {
+          "line": 76,
+          "before": "Service",
+          "registered_name": "Service"
+        }
+      ],
+      "before_sha256": "2f4a10458fbd818ce06f1148bf7b9ff4704974113cdda302db8ba3f48487f317",
+      "after_sha256": "ad014812694e728665f152964bc19bac2b985475c737885bf46a5451c07db53a"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/32_config_meld_hooks.py",
+      "calls": [
+        {
+          "line": 32,
+          "before": "Watched",
+          "registered_name": "Watched"
+        },
+        {
+          "line": 33,
+          "before": "Watched",
+          "registered_name": "Watched"
+        }
+      ],
+      "before_sha256": "21925917bdef3d76cb837bbfc660529d636568dab4fa6806dcc1c8ba900fbd68",
+      "after_sha256": "9ee2841c5787bd547bc5b2cda0fb07dd90e67aca68a2fbb7f908accda6edb135"
+    },
+    {
+      "path": "UX_and_AIX_experiences/02_intermediate/35_one_config_every_book.py",
+      "calls": [
+        {
+          "line": 104,
+          "before": "ServiceA",
+          "registered_name": "ServiceA"
+        },
+        {
+          "line": 105,
+          "before": "ServiceB",
+          "registered_name": "ServiceB"
+        }
+      ],
+      "before_sha256": "ce8829200536d17d1b7c706c12aba3f66856edd6258e773387ebbc24392a699d",
+      "after_sha256": "4f9aa5b3aa2064d9a1e93e2b27016382ffde9cb0cfeeadf570f60b0591db9585"
+    },
+    {
+      "path": "UX_and_AIX_experiences/03_advanced/01_deep_spell_override_paths.py",
+      "calls": [
+        {
+          "line": 47,
+          "before": "MailPipeline",
+          "registered_name": "MailPipeline"
+        },
+        {
+          "line": 59,
+          "before": "Transport",
+          "registered_name": "Transport"
+        }
+      ],
+      "before_sha256": "d40380f11f43a2c5948956f44dd1bea7f4d3f531e18386d2793de1b18b9cf7a8",
+      "after_sha256": "06613c2ef93451954cd9938d3b94375e63cf828510ee67e2132cb292c0fab06b"
+    },
+    {
+      "path": "UX_and_AIX_experiences/03_advanced/02_frames_as_worlds.py",
+      "calls": [
+        {
+          "line": 64,
+          "before": "TenantCache",
+          "registered_name": "TenantCache"
+        },
+        {
+          "line": 65,
+          "before": "TenantCache",
+          "registered_name": "TenantCache"
+        },
+        {
+          "line": 73,
+          "before": "TenantCache",
+          "registered_name": "TenantCache"
+        },
+        {
+          "line": 74,
+          "before": "TenantCache",
+          "registered_name": "TenantCache"
+        }
+      ],
+      "before_sha256": "cacb871d7035c038127d1e91a62d8020d9a59ee2ef934aee3ea1d659cab442e3",
+      "after_sha256": "96e32f77c11f8b6d5eb616963957dfbbeccf2ef92d4383da86808d8476c97273"
+    },
+    {
+      "path": "UX_and_AIX_experiences/03_advanced/19_wildcard_and_broadcast_overrides.py",
+      "calls": [
+        {
+          "line": 114,
+          "before": "MailPipeline",
+          "registered_name": "MailPipeline"
+        },
+        {
+          "line": 126,
+          "before": "BackupPipeline",
+          "registered_name": "BackupPipeline"
+        },
+        {
+          "line": 136,
+          "before": "BackupPipeline",
+          "registered_name": "BackupPipeline"
+        },
+        {
+          "line": 149,
+          "before": "MailPipeline",
+          "registered_name": "MailPipeline"
+        },
+        {
+          "line": 161,
+          "before": "BackupPipeline",
+          "registered_name": "BackupPipeline"
+        },
+        {
+          "line": 175,
+          "before": "BackupPipeline",
+          "registered_name": "BackupPipeline"
+        }
+      ],
+      "before_sha256": "466a13991f7b8583c8508db34d464e83da1a563e7be531b7dcf7500f5774af04",
+      "after_sha256": "d42a1a1e2229c1a406614f00a6bbdf2f194da5c9d77e0b6c02fc35c426ed695b"
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/10_deep_overrides_paths_through_a_graph.py",
+      "calls": [
+        {
+          "line": 85,
+          "before": "Edge",
+          "registered_name": "Edge"
+        },
+        {
+          "line": 95,
+          "before": "Edge",
+          "registered_name": "Edge"
+        },
+        {
+          "line": 108,
+          "before": "Edge",
+          "registered_name": "Edge"
+        },
+        {
+          "line": 118,
+          "before": "Edge",
+          "registered_name": "Edge"
+        },
+        {
+          "line": 129,
+          "before": "Edge",
+          "registered_name": "Edge"
+        },
+        {
+          "line": 141,
+          "before": "Edge",
+          "registered_name": "Edge"
+        },
+        {
+          "line": 158,
+          "before": "Edge",
+          "registered_name": "Edge"
+        }
+      ],
+      "before_sha256": "e028560c231b7fc5f45437d84393a8ae85cd9b45a2b332be8af4ddc8ba84f09a",
+      "after_sha256": "8c734ecf5ab55488296ed27a6fc84560204999afc92c60281bf67cfab3fde768"
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/13_one_workshop_many_worlds.py",
+      "calls": [
+        {
+          "line": 186,
+          "before": "Invoice",
+          "registered_name": "Invoice"
+        },
+        {
+          "line": 189,
+          "before": "Product",
+          "registered_name": "Product"
+        }
+      ],
+      "before_sha256": "448c5a086342f46098947108e538bf9135772073c28a9c1a333685986d31c4fd",
+      "after_sha256": "a5897abc0835c839b879354fb66fd2d4ef2cfa20db3a65b0387e3fdd002f527e"
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py",
+      "calls": [
+        {
+          "line": 120,
+          "before": "Service",
+          "registered_name": "Service"
+        },
+        {
+          "line": 140,
+          "before": "Service",
+          "registered_name": "Service"
+        }
+      ],
+      "before_sha256": "8b5bc21bf45178eba526498bd6aac01e1128d499a566249c7ecdcc4894ece195",
+      "after_sha256": "d423b700d1f541d5c39711af6032b91101b5d495bbed2337ed9568db8b409362"
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py",
+      "calls": [
+        {
+          "line": 99,
+          "before": "HotSwapPricingV1",
+          "registered_name": "HotSwapPricingV1"
+        },
+        {
+          "line": 122,
+          "before": "HotSwapPricingV1",
+          "registered_name": "HotSwapPricingV1"
+        }
+      ],
+      "before_sha256": "8eba2df8c72320630fcb6c731df077feb68de47569441c8e57048cd04927f968",
+      "after_sha256": "4991545f2413ae3a88e484f4cb1bfa612659d90c7b65be9593a8a791fe5fced6"
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/20_the_workstation_an_agents_workbench.py",
+      "calls": [
+        {
+          "line": 114,
+          "before": "Ledger",
+          "registered_name": "Ledger"
+        }
+      ],
+      "before_sha256": "237c5d8f7936ac828f5b5368543da0d71608b1e46deec73094ac50601ba186f6",
+      "after_sha256": "f05e60b82b9f244b54e208c9bd9245026d46e0d9299e8b1a4a3086cdf37b1638"
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/22_asking_what_code_would_do_before_running_it.py",
+      "calls": [
+        {
+          "line": 154,
+          "before": "PriceRule",
+          "registered_name": "PriceRule"
+        },
+        {
+          "line": 220,
+          "before": "PriceRule",
+          "registered_name": "PriceRule"
+        }
+      ],
+      "before_sha256": "b278eff526b943f0ac5a7e10f28f59cc134d579ec89a06567a0f356a0f1162ca",
+      "after_sha256": "38990a9f56794c1fe5979a1fac76a0ac1dfdf570519a5b419f206a1d07d2e8b7"
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py",
+      "calls": [
+        {
+          "line": 111,
+          "before": "Ledger",
+          "registered_name": "Ledger"
+        }
+      ],
+      "before_sha256": "a1500c326b426d3b22effe5bfcab05094c1b1dfdbed8b889af653084b37afa09",
+      "after_sha256": "a1a5af28b51cdac5a19929f0724240e04a5fbec53a84f948540543202b33e2f6"
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py",
+      "calls": [
+        {
+          "line": 181,
+          "before": "Rate",
+          "registered_name": "Rate"
+        },
+        {
+          "line": 189,
+          "before": "Rate",
+          "registered_name": "Rate"
+        }
+      ],
+      "before_sha256": "49129dfc715c8eb0100a170c719f19b63d192c18ce9a59b90d7e8dbc0e924462",
+      "after_sha256": "e2500d3a2486dc559d2691dca44371c9513451a2738f3d4b09324ae906b22f28"
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runtime.py",
+      "calls": [
+        {
+          "line": 114,
+          "before": "Vault",
+          "registered_name": "Vault"
+        }
+      ],
+      "before_sha256": "0931b9465229da72d61b21a8300c77a72c0d958adf71c3e07dcb2be4d29edf37",
+      "after_sha256": "08e4d4a7ab607d2d4b8decd4bd0717fa2d89c36f116e59582d9d6d1dfa59ba33"
+    },
+    {
+      "path": "UX_and_AIX_experiences/04_expert/36_an_agent_builds_a_working_system.py",
+      "calls": [
+        {
+          "line": 171,
+          "before": "classes[\"Tokenizer\"]",
+          "registered_name": "Tokenizer"
+        },
+        {
+          "line": 173,
+          "before": "classes[\"Counter\"]",
+          "registered_name": "Counter"
+        },
+        {
+          "line": 174,
+          "before": "classes[\"Reporter\"]",
+          "registered_name": "Reporter"
+        },
+        {
+          "line": 205,
+          "before": "classes[\"Tokenizer\"]",
+          "registered_name": "Tokenizer"
+        },
+        {
+          "line": 225,
+          "before": "worker_class",
+          "registered_name": "Worker"
+        }
+      ],
+      "before_sha256": "c5de308df54624435c5a862403d85d19b66a048be9cb2cae30889fdf1ad01c78",
+      "after_sha256": "c95add0663a25ba1f15c63a76708b4f3d36139545821237af26592a7115ceb18"
+    }
+  ]
+}

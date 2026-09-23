@@ -389,17 +389,18 @@ def test_component_conduit_cleanup_disposes_across_scopes() -> None:
         conduit.permanent_cleanup()
 
 
-def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique() -> None:
+def test_component_conduit_upgrade_retains_creations_without_inheriting_spells() -> None:
     """
     Purpose:
-        Validate lesser upgrade transfers creations and preserves reuse.
+        Validate lesser upgrade retains local creations with an empty new Book.
     Contract:
         - Unique-per-conduit creations are preserved across upgrade.
         - Many creations remain tracked after upgrade.
+        - Old definitions are not resolvable through the independent new Book.
     Returns:
         None.
     Raises:
-        AssertionError: If creations are not transferred or reused correctly.
+        AssertionError: If retained creations disappear or old definitions remain visible.
     """
     spellbook = _make_spellbook(dynamic=True, disposal=True)
     unique_id = spellbook.bind(
@@ -421,16 +422,13 @@ def test_component_conduit_upgrade_transfers_lesser_creations_and_reuses_unique(
         lesser.upgrade_to_normal(name="upgraded")
 
         assert isinstance(lesser._creations, Creations)
-        reused_unique = lesser.meld(spell_id=unique_id)
-        assert reused_unique is unique_instance
-
-        many_instance_after = lesser.meld(spell_id=many_id)
-        assert many_instance_after is not many_instance
-
-        bucket = lesser._creations._creations.get(many_id)
-        assert bucket is not None
-        assert many_instance in bucket
-        assert many_instance_after in bucket
+        assert lesser._creations._creations[unique_id] is unique_instance
+        assert lesser._creations._creations[many_id] == [many_instance]
+        assert lesser._spellbook.spells == {}
+        with pytest.raises(KeyError):
+            lesser.meld(spell_id=unique_id)
+        with pytest.raises(KeyError):
+            lesser.meld(spell_id=many_id)
     finally:
         lesser.permanent_cleanup()
         root.permanent_cleanup()

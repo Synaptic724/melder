@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystallizer.py",
- "source_sha256": "06de01c3f23694c48d1a8a9a605928acaefdb52c51ef979683c04311d2fc92ce",
+ "source_sha256": "e4eee6727a3a6361862e8d200639c523532106773a5b768a43016619d44c9993",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystallizer": {
@@ -28,7 +28,7 @@
    "label": "Crystallizer",
    "kind": "class",
    "file": "src/melder/crystallizer/crystallizer.py",
-   "lineno": 41,
+   "lineno": 44,
    "bases": [
     "Cleanable"
    ],
@@ -51,6 +51,7 @@
     "configured",
     "create_checkpoint",
     "create_configuration",
+    "create_configuration_builder",
     "create_contract_crystal",
     "create_profile",
     "create_spell_crystal",
@@ -67,6 +68,7 @@
     "describe_record",
     "emit",
     "emit_cluster_removed",
+    "emit_conduit_removed",
     "emit_contract_removed",
     "emit_frame_removed",
     "emit_mutation_research_state",
@@ -100,16 +102,17 @@
     "verify_checkpoint_chain"
    ],
    "shape": {
-    "method_count": 69,
+    "method_count": 71,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5a222f223ffa2379de04b360add034af3febfdd6742b83e295cbeffde631e8f8",
+   "span_sha256": "c8030d1a739966e1a02bb6e7ba3af75a30e091bf28fef488ff0facce6bbc94cf",
    "role": "Hosted singleton crystallizer root.",
    "responsibilities": [
     "owns installed crystallizer configuration and activation state",
     "builds SpellCrystal manifests from live spells under installed policy",
-    "anchors crystallizer policy above retained and live module-world surfaces"
+    "anchors crystallizer policy above retained and live module-world surfaces",
+    "facades conduit-only structural retirement without evicting a shared Book"
    ],
    "owns_state": [
     "_configuration",
@@ -143,6 +146,12 @@
   {
    "from": "melder.crystallizer.crystallizer.Crystallizer",
    "to_label": "CrystallizerConfiguration",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.crystallizer.crystallizer.Crystallizer",
+   "to_label": "CrystallizerConfigurationBuilder",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -232,6 +241,7 @@
   "AssetManagementSystem": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
   "ExternalPersistenceManagerConfiguration": "melder.crystallizer.asset_management.external_persistence_manager_configuration.ExternalPersistenceManagerConfiguration",
   "CrystallizerConfiguration": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",
+  "CrystallizerConfigurationBuilder": "melder.crystallizer.configuration.crystallizer_configuration_builder.CrystallizerConfigurationBuilder",
   "CrystalLoaderSystem": "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
   "ContractCrystal": "melder.crystallizer.crystals.contract_crystal.ContractCrystal",
   "CrystallizerCrystal": "melder.crystallizer.crystals.crystallizer_crystal.CrystallizerCrystal",

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py",
- "source_sha256": "b8cb57f73130ba84b6851be93891155c5a000e80b92863b46f5658f7a9356a8d",
+ "source_sha256": "3a50e04ef24c45ffdba797df308a7cad874902e7f76fb5449b7a9039cbb80821",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_loader_system.crystal_loader_system": {
@@ -45,11 +45,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e820ed1aac6dca31652b001f265e22dbcb5d45ca0a2c74d6d5078f2c25a31a98",
+   "span_sha256": "c8b1797cb8d821f859920592ee35d97f4ec97c85a6ce6994ddfc31e1754f95b5",
    "role": "The unfold owner (S4): mediated load verbs + durable last-load state over a borrowed record.",
    "responsibilities": [
     "load_checkpoint / restore_formation_record through the BootMediator admission pipeline",
-    "describe_last_load = durable detached last-load payload + admission view"
+    "describe_last_load = durable detached last-load payload + admission view",
+    "requires caller quiescence of ordinary scope lifecycles during live structural restore"
    ],
    "owns_state": [
     "BootMediator",

@@ -47,7 +47,7 @@ book.bind(spell=Worker, existence="many")
 conduit = book.conjure()
 try:
     service = ExternalService()
-    worker = conduit.meld(Worker, override={"service": service})
+    worker = conduit.meld("Worker", override={"service": service})
     assert worker.service is service
 finally:
     conduit.permanent_cleanup()

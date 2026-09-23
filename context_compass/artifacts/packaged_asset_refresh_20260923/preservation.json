@@ -1,0 +1,21 @@
+{
+  "source_count_before": 595,
+  "source_count_after": 595,
+  "changed_generated_files": [
+    "src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py",
+    "src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
+    "src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py",
+    "src/melder/_build_assets/_system_documents/manifest/system_documents_index.py",
+    "src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
+    "src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py",
+    "src/melder/_build_assets/_system_documents/payloads/src_components_payload.py",
+    "src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py"
+  ],
+  "unexpected_source_changes": [],
+  "skips": [
+    {
+      "test": "test_running_the_runner_never_imports_melder",
+      "reason": "melder already imported by another test in this session"
+    }
+  ]
+}

@@ -20,7 +20,7 @@ def main() -> None:
     book = md.Spellbook(configuration=configuration)
     book.bind(spell=Service, existence="unique")
     conduit = book.conjure()  # validates + freezes the configuration here
-    assert isinstance(conduit.meld(Service), Service)
+    assert isinstance(conduit.meld("Service"), Service)
     print("configured, conjured, melded")
 
     try:

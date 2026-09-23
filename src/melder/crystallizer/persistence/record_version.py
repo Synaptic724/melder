@@ -73,8 +73,9 @@ class RecordVersion:
         machinery: read it to understand the runtime, do not drive it directly.
     """
 
-    # Older readers must refuse records whose False capability they would otherwise ignore.
-    CURRENT: ClassVar[str] = "2.0.0"
+    # Major 2 fenced non-resolvable capability. Major 3 additionally fences child
+    # topology: older loaders would otherwise mistake a lesser row for a Book root.
+    CURRENT: ClassVar[str] = "3.0.0"
     KEY: ClassVar[str] = "record_version"
 
     @staticmethod

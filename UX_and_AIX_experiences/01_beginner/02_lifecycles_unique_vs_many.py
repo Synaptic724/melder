@@ -22,13 +22,13 @@ def main() -> None:
     book.bind(spell=RequestScratchpad, existence="many")
     conduit = book.conjure()
 
-    cache_a = conduit.meld(SharedCache)
-    cache_b = conduit.meld(SharedCache)
+    cache_a = conduit.meld("SharedCache")
+    cache_b = conduit.meld("SharedCache")
     assert cache_a is cache_b
     print("unique: one instance, shared -", cache_a is cache_b)
 
-    pad_a = conduit.meld(RequestScratchpad)
-    pad_b = conduit.meld(RequestScratchpad)
+    pad_a = conduit.meld("RequestScratchpad")
+    pad_b = conduit.meld("RequestScratchpad")
     assert pad_a is not pad_b
     print("many: fresh instance per meld -", pad_a is not pad_b)
 

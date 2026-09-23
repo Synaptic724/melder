@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/general_base/cleanable.py",
- "source_sha256": "d530df3c1b1c2d97af0695c1be5b94da43dcabf3c50d4e6af05f1c5067f69a4a",
+ "source_sha256": "dc25bcce431ba9f159e34cc64d2e914fad1eea739a1798f973b8793296989297",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.general_base.cleanable": {
@@ -34,6 +34,7 @@
    ],
    "public_methods": [
     "async_cleanup",
+    "async_using_cleanup",
     "check_cleaned",
     "cleaned",
     "cleanup",
@@ -41,11 +42,11 @@
     "using_cleanup"
    ],
    "shape": {
-    "method_count": 6,
+    "method_count": 7,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6ba91f755243b57c72cee5712c5a94e94728af02266f90bc1950f50cf7e31944",
+   "span_sha256": "5bb5aaf2ad46eaf8935d5b293111e169fba879b1dd622fa9e1f71625b8a35462",
    "role": "Universal explicit-cleanup base contract.",
    "responsibilities": [
     "stores the canonical cleaned-state flag",
@@ -76,7 +77,7 @@
     "has_bases": false,
     "trivial": true
    },
-   "span_sha256": "3da0ba73d972566c9a658ab10bfc2961e1969216e7994793695448d4be4d6abf",
+   "span_sha256": "53f990c7c30e25135d207bed4fb97f20a83901630f4ecc0d46a68f28ea76b889",
    "include": true,
    "role": "Internal context helper supporting the Cleanable teardown contract.",
    "responsibilities": [
@@ -86,6 +87,22 @@
     "cleanup"
    ],
    "semantics_authored_against": "3da0ba73d972566c9a658ab10bfc2961e1969216e7994793695448d4be4d6abf"
+  },
+  "melder.utilities.general_base.cleanable._AsyncCleanupContext": {
+   "id": "melder.utilities.general_base.cleanable._AsyncCleanupContext",
+   "label": "_AsyncCleanupContext",
+   "kind": "class",
+   "file": "src/melder/utilities/general_base/cleanable.py",
+   "lineno": 296,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "8a0c9189a732f2135cb804963d187e20f8aabb58263b370b41901f0e112be229"
   }
  },
  "edges_out": [],
@@ -116,6 +133,18 @@
   },
   {
    "from": "melder.utilities.general_base.cleanable._CleanupContext",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.general_base.cleanable._AsyncCleanupContext",
+   "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.utilities.general_base.cleanable._AsyncCleanupContext",
    "to_label": "RuntimeError",
    "relation": "creates",
    "confidence": "candidate"

@@ -1,0 +1,60 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py",
+ "source_sha256": "e3b8fbd0dbbe6f900f90f9a0bd403015cd1af04fab4a5ed9796025a3c853855c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.conduit.meld.creation_context.creation_context_rebuild": {
+   "id": "melder.aether.conduit.meld.creation_context.creation_context_rebuild",
+   "label": "creation_context_rebuild",
+   "kind": "module",
+   "file": "src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py",
+   "lineno": 1
+  },
+  "melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild": {
+   "id": "melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild",
+   "label": "CreationContextRebuild",
+   "kind": "class",
+   "file": "src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py",
+   "lineno": 14,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup"
+   ],
+   "shape": {
+    "method_count": 3,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "a4b29bf01e977f5f926f0ca94ef6629ba25671151368374046aab84a4859b95e"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Iterable": "collections.abc.Iterable",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Optional": "typing.Optional",
+  "Self": "typing.Self",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "TracebackType": "types.TracebackType",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "CreationGate": "melder.utilities.synchronization.creation_gate.CreationGate"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.conduit.meld.creation_context.creation_context_rebuild",
+  "class": "melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild",
+  "label": "CreationContextRebuild"
+ }
+}

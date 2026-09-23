@@ -1,0 +1,9 @@
+{
+  "version": "0.2.45",
+  "setuptools_uses_canonical_version": true,
+  "uv_root_has_dynamic_version": true,
+  "release_notes_checked": true,
+  "build_asset_files_unchanged": 26,
+  "generators_run": false,
+  "runtime_tests_rerun": false
+}

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="0.318" timestamp="2026-09-22T12:03:35.128225-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="UX_and_AIX_experiences.pytest_examples.test_intermediate_examples" name="test_intermediate_example_runs_green[28_upgrade_to_normal]" time="0.081" /><testcase classname="UX_and_AIX_experiences.pytest_examples.test_expert_examples" name="test_expert_example_runs_green[05_protocol_crafter_the_tool_that_writes]" time="0.005"><failure message="PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\bind_hook_examples_20260922\\temp\\tmpv640mcgl'">UX_and_AIX_experiences\04_expert\05_protocol_crafter_the_tool_that_writes.py:129: in main
+    updated = crafter.add_protocol_to_interface_file(interface_file, code)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\ai_native_support_tools\protocol_crafter.py:525: in add_protocol_to_interface_file
+    path.write_text(updated_text, encoding="utf-8")
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\pathlib\__init__.py:809: in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\pathlib\__init__.py:771: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 13] Permission denied: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\bind_hook_examples_20260922\\temp\\tmpv640mcgl\\interfaces.py'
+
+During handling of the above exception, another exception occurred:
+&lt;frozen os&gt;:377: in walk
+    ???
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\bind_hook_examples_20260922\\temp\\tmpv640mcgl'
+
+During handling of the above exception, another exception occurred:
+UX_and_AIX_experiences\pytest_examples\test_expert_examples.py:33: in test_expert_example_runs_green
+    module.main()
+UX_and_AIX_experiences\04_expert\05_protocol_crafter_the_tool_that_writes.py:122: in main
+    with tempfile.TemporaryDirectory() as scratch:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\tempfile.py:972: in __exit__
+    self.cleanup()
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\tempfile.py:976: in cleanup
+    self._rmtree(self.name, ignore_errors=self._ignore_cleanup_errors)
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\tempfile.py:956: in _rmtree
+    _shutil.rmtree(name, onexc=onexc)
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\shutil.py:852: in rmtree
+    _rmtree_impl(path, dir_fd, onexc)
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\shutil.py:689: in _rmtree_unsafe
+    for dirpath, dirnames, filenames in results:
+                                        ^^^^^^^
+&lt;frozen os&gt;:413: in walk
+    ???
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\shutil.py:687: in onerror
+    onexc(os.scandir, err.filename, err)
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\tempfile.py:928: in onexc
+    _resetperms(path)
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\tempfile.py:283: in _resetperms
+    _dont_follow_symlinks(_os.chmod, path, 0o700)
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\tempfile.py:272: in _dont_follow_symlinks
+    func(path, *args, follow_symlinks=False)
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\PycharmProjects\\melder_private\\context_compass\\artifacts\\bind_hook_examples_20260922\\temp\\tmpv640mcgl'</failure></testcase></testsuite></testsuites>

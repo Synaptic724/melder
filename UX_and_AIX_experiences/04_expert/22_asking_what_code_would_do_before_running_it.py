@@ -151,7 +151,7 @@ def main() -> None:
         binding_name="foresight-rule",
     )
     conduit = book.conjure(name="foresight-root")
-    live = conduit.meld(PriceRule, binding_name="foresight-rule")
+    live = conduit.meld("PriceRule", binding_name="foresight-rule")
     assert live.apply(4) == 40
     print()
     print("world up; PriceRule.apply(4) ->", live.apply(4))
@@ -217,7 +217,7 @@ def main() -> None:
         "research_preview must not move the record - it is foresight, "
         "not a dry-run that half-commits"
     )
-    still = conduit.meld(PriceRule, binding_name="foresight-rule")
+    still = conduit.meld("PriceRule", binding_name="foresight-rule")
     assert still.apply(4) == 40
     print("record heads: IDENTICAL before and after the preview")
     print("live object : still the old rule ->", still.apply(4))

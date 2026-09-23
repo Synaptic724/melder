@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/command_system.py",
- "source_sha256": "88a640e5db37bf07202a6ecff9d63caaf026df916cec20edbd76b316648b99c7",
+ "source_sha256": "8cac70ad93ba6e217130ab952ff1da1259a7af773d0dec1933e61b8e295e639a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.command_system": {
@@ -46,17 +46,18 @@
     "snapshot_state"
    ],
    "shape": {
-    "method_count": 43,
+    "method_count": 44,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8c6c599af7c2fffc2f0f1e37d1dc3c908ddce9426538b176b68e11ed6a20a8c5",
+   "span_sha256": "b3caf0db2de1d55a7e74c9694a02d3c8e9b65c30b348eec48fee25654295a408",
    "role": "Room-local mediated command layer.",
    "responsibilities": [
     "resolves room-scoped records and runtime objects",
     "executes allowed runtime actions",
     "binds command results into the workstation when requested",
-    "enforces room and ACL posture on command paths"
+    "enforces room and ACL posture on command paths",
+    "resolves named access by the exact authorized published ID and rejects changed live names"
    ],
    "owns_state": [
     "_id",

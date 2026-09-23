@@ -1,0 +1,16 @@
+{
+  "closed_at": "2026-09-22T18:47:41Z",
+  "closed_tickets": {
+    "tickets/epics/2026-09-20_bind_lifecycle_hooks_and_reference_strategies_epic.md": "tickets/epics/completed/2026-09-20_bind_lifecycle_hooks_and_reference_strategies_epic.md",
+    "tickets/tasks/2026-09-21_investigate_bind_lifecycle_hooks_task.md": "tickets/tasks/completed/2026-09-21_investigate_bind_lifecycle_hooks_task.md",
+    "tickets/tasks/2026-09-21_implement_bind_lifecycle_hooks_task.md": "tickets/tasks/completed/2026-09-21_implement_bind_lifecycle_hooks_task.md",
+    "tickets/tasks/2026-09-22_add_bind_hook_intermediate_and_expert_examples_task.md": "tickets/tasks/completed/2026-09-22_add_bind_hook_intermediate_and_expert_examples_task.md"
+  },
+  "patch_archive": "system_docs/patches/completed/bind_lifecycle_hooks_2026_09_21/",
+  "archived_patch_files": 5,
+  "held_assets_checked": 26,
+  "held_assets_changed": [],
+  "closed_anchor_count": 12,
+  "active_ticket_routes_verified": 11,
+  "runtime_tests_rerun": false
+}

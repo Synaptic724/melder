@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/spellspace_meld.py",
- "source_sha256": "03441843572e6c4a8feb1979e1a666ead411f41ddbe74fd068504b62e0780795",
+ "source_sha256": "9990fffb0678f64313939781ec005c957a5b7264281b706ddb6cf17b502f1e2a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.spellspace_meld": {
@@ -35,19 +35,21 @@
     "cleanup",
     "describe_live_creation_status",
     "meld",
-    "meld_existing_spell"
+    "meld_existing_spell",
+    "purge"
    ],
    "shape": {
-    "method_count": 5,
+    "method_count": 6,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b174aabee88352c3ec95a1e92e69da29e2bf3ea73b7252fcc922157cbeee7407",
+   "span_sha256": "5d4c497c7cd58edf002b55aa44dc8d7654b7543bd4452262253bf208e1e6e7b3",
    "role": "Spellspace-facing meld front door.",
    "responsibilities": [
     "routes unique_per_spell_space storage through spellspace-local Creations",
     "routes conduit-owned lifetimes through owner-conduit ConduitCreations",
     "provides live-creation status over spellspace-local and owner-conduit storage",
+    "restricts purge to this space's many and unique_per_spell_space entries before delegating single or all retirement to Creations",
     "refuses immutable non-resolvable registrations before normal resolution and reuse-only access"
    ],
    "owns_state": [
@@ -93,6 +95,7 @@
   "Any": "typing.Any",
   "Callable": "typing.Callable",
   "ClassVar": "typing.ClassVar",
+  "Union": "typing.Union",
   "Meld": "melder.aether.conduit.meld.meld.Meld",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
   "ConduitCreations": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",

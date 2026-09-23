@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/rift_space/workstation.py",
- "source_sha256": "36da76ad52ff0de4a8ad21a936f41afb436998ad8615f2a8ff7fb049cc340778",
+ "source_sha256": "c0ed8955cf615984080ed74452e2fb6b508246b3bc140143d43ba11815995d90",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.rift_space.workstation": {
@@ -45,7 +45,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5f0d389fb388333acad7fc68b14bbfd4913c65d997b1b1c7333b4132bb4c037d",
+   "span_sha256": "360d00b6ead14d57e99d1f771db15c321c95e6729ebe2a5693a82687e78ec15e",
    "role": "Room-local binding canvas.",
    "responsibilities": [
     "stores bound objects, attributes, and methods",

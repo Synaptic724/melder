@@ -47,6 +47,8 @@ class _ConduitMeldStub:
         self._resolution_conduit_id = "conduit-test"
         self._dynamic_environment = False
         self._meld_hooks: dict[str, list[Any]] = {}
+        self._baseline_meld_hooks = self._meld_hooks
+        self._meld_hooks_modified = False
         self._root_creations = _ConduitCreationsStub(owner_conduit_id="conduit-test")
         self._cluster_creations = ClusterCreations()
 

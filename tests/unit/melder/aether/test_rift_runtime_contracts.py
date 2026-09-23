@@ -300,6 +300,10 @@ def test_capability_rift_spaces_expose_conduit_discovery_through_command_system(
     """
     Verify conduit discovery routes through the room-owned command surface.
 
+    Contract:
+        Name and ID discovery return the same authorized conduit with a live
+        name matching the published record.
+
     Returns:
         None.
     """
@@ -310,7 +314,7 @@ def test_capability_rift_spaces_expose_conduit_discovery_through_command_system(
     space = rift.space
     command = space.command_system
     conduit_cloud = object()
-    conduit_object = object()
+    conduit_object = SimpleNamespace(name="alpha")
     command._aether = SimpleNamespace(
         _get_existing_frame=lambda frame_name: SimpleNamespace(
             _conduit_cloud=conduit_cloud,

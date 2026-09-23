@@ -350,6 +350,7 @@ def test_conduit_upgrade_to_normal_allows_binding_and_lookup() -> None:
         cloud = root._spellbook._aether.get_conduit_cloud(root._aetheric_frame_name)
         assert cloud.get_conduit_by_name("upgraded") is lesser
     finally:
+        lesser.permanent_cleanup()
         root.permanent_cleanup()
 
 

@@ -1,5 +1,6 @@
 import threading
 import time
+from collections.abc import Sequence
 from contextlib import contextmanager
 from types import ModuleType, TracebackType
 from typing import (
@@ -94,7 +95,7 @@ class Conduit(Cleanable):
     - Uses a `CreationGate` to control meld entry and track in-flight meld work for
       safe drain and shutdown behavior.
     - Normal conduits own the Spellbook lifecycle; lesser conduits share the parent
-      Spellbook and do not unregister frame-level state directly.
+      Spellbook and retire only their own named discovery entry, never root ownership.
     - Becomes unusable after cleanup completes.
 
     Meld gating:
@@ -256,9 +257,10 @@ class Conduit(Cleanable):
                 a new gate is created via the injected frame-owned
                 CreationGateController.
             conduit_hooks (Optional[dict[str, list[Any]]], optional):
-                Optional shared conduit hook map to attach by reference.
+                Selected lifecycle hooks. Normal roots copy the containers;
+                lessers borrow the root map when no explicit map is supplied.
             meld_hooks (Optional[dict[str, list[Callable[..., Any]]]], optional):
-                Optional shared meld hook map to attach by reference.
+                Selected Meld hooks, with the same root-copy/lesser-borrow rule.
 
         Raises:
             TypeError:
@@ -332,24 +334,7 @@ class Conduit(Cleanable):
             self._register_existing_gate_for_current_root(conduit_id, creation_gate)
         self._creation_gate: CreationGate = creation_gate
 
-        if conduit_hooks is None:
-            resolved_conduit_hooks = self._configuration.get_conduit_hooks(
-                self._spellbook._id,
-            )
-            self._conduit_hooks = resolved_conduit_hooks or None
-        else:
-            self._conduit_hooks = conduit_hooks
-
-        if meld_hooks is None:
-            resolved_meld_hooks = self._configuration.get_meld_hooks(
-                self._spellbook._id,
-            )
-            self._meld_hooks = resolved_meld_hooks or None
-        else:
-            self._meld_hooks = meld_hooks
-
-        # Local hook overlays for this conduit only.
-        self._local_conduit_hooks: dict[str, list[Any]] | None = None
+        self._initialize_hook_baselines(conduit_hooks=conduit_hooks, meld_hooks=meld_hooks)
 
         self._meld: ConduitMeld = ConduitMeld(
             conduit_creations=self._creations,
@@ -412,28 +397,28 @@ class Conduit(Cleanable):
             aetheric_frame=self._aetheric_frame,
         )
         self._refresh_devops_identity_state()
-        # Conduits carry no configuration object, so the ROOT conduit emits
-        # its twin directly from the object at initialization (config-less
-        # units emit from the object; configuration-bearing units emit from
-        # their configurations at activation). Lesser conduits never emit.
-        self._emit_conduit_twin()
+        # Config-less roots emit at initialization. Named lesser acquisition
+        # emits later, after its name and actual parent link have been established;
+        # unpublished/unnamed shells do not record a structural scope here.
+        if conduit_state is ConduitState.normal:
+            self._emit_conduit_twin()
 
     def _emit_conduit_twin(self) -> None:
         """
         Internal
 
-        Emit this ROOT conduit's twin snapshot into the record.
+        Emit a normal root or active named lesser's structural twin.
 
         Purpose:
-            Config-less units emit directly from the object: at
-            initialization (conjure lock-in) and again whenever the
-            conduit's LINK topology changes (link / sever re-emission;
-            replace-on-emit keeps exactly one snapshot per conduit).
-            Lesser conduits never emit.
+            Roots emit at conjure and structural changes. Named lessers emit
+            after parent attachment, including pooled acquisition. Their required
+            ancestor descriptions are detached values inside this twin, so ordinary
+            unnamed scopes need neither their own record nor a cleanup probe.
 
         Contract:
-            - NO-OP unless normal-state + dynamic environment + the
-              crystallizer is activated (the recorded lane).
+            - NO-OP unless a normal root or named lesser in the active dynamic
+              recorded lane. No created objects, callback code or runtime resources
+              enter the payload. Caller serializes the named lifecycle with its lock.
             - `link_targets` records OUTBOUND (initiated) links only:
               the ward's `_initiated_index` keys. Inbound edges are
               derivable from the initiators' twins, and restore
@@ -442,12 +427,24 @@ class Conduit(Cleanable):
         Returns:
             None.
         """
-        if not (
-                self._conduit_state is ConduitState.normal
-                and self.__dynamic_environment__
-                and self._crystallizer.activated
+        if self._conduit_state is not ConduitState.normal and (
+                self._conduit_state is not ConduitState.lesser or self._name is None
         ):
             return
+        if not self.__dynamic_environment__ or not self._crystallizer.activated:
+            return
+        configuration_payload: Dict[str, object] = {
+            "conduit_state": self._conduit_state.name,
+            "root_conduit_id": self._root_conduit_id,
+            "spellspace_pool_present": self._spellspace_pool is not None,
+            "conduit_pool_present": self._conduit_pool is not None,
+        }
+        if self._conduit_state is ConduitState.lesser:
+            parent = self._conduit_ward._parent_conduit
+            if parent is None:
+                raise RuntimeError("A named lesser must be attached before recording its structure.")
+            configuration_payload["parent_conduit_id"] = parent._id
+            configuration_payload["lineage_ancestors"] = self._recorded_lineage_ancestors()
         self._crystallizer.emit(
             ConduitCrystal(
                 conduit_id=self._id,
@@ -456,14 +453,50 @@ class Conduit(Cleanable):
                 policy_name=self._conduit_ward._policy.name,
                 dynamic=self.__dynamic_environment__,
                 link_targets=list(self._conduit_ward._initiated_index.keys()),
-                configuration_payload={
-                    "conduit_state": self._conduit_state.name,
-                    "root_conduit_id": self._root_conduit_id,
-                    "spellspace_pool_present": self._spellspace_pool is not None,
-                    "conduit_pool_present": self._conduit_pool is not None,
-                },
+                configuration_payload=configuration_payload,
             )
         )
+
+    def _recorded_lineage_ancestors(self) -> list[Dict[str, object]]:
+        """Capture root-to-parent value rows for this attached named lesser.
+
+        Contract:
+            Called only while emitting a named structural record. Named ancestors
+            remain references to their own twins; unnamed ancestors are the support
+            values needed to rebuild the original hierarchy. No live object escapes.
+            The caller holds its lifecycle/attachment window; callers must quiesce
+            concurrent lineage mutation during promotion and live restore.
+        Returns:
+            list[Dict[str, object]]: Ancestor id/name/parent/policy, root first.
+        """
+        lineage: list[Dict[str, object]] = []
+        ancestor = self._conduit_ward._parent_conduit
+        while ancestor is not None:
+            parent = ancestor._conduit_ward._parent_conduit
+            lineage.append({
+                "conduit_id": ancestor._id,
+                "conduit_name": ancestor._name,
+                "parent_conduit_id": None if parent is None else parent._id,
+                "policy_name": ancestor._conduit_ward._policy.name,
+            })
+            ancestor = parent
+        lineage.reverse()
+        return lineage
+
+    def _emit_conduit_retirement(self) -> None:
+        """Retire this identity's structural record without touching its Book.
+
+        Contract:
+            Internal teardown may call after _cleaned is set. Dynamic/recorder
+            gates are checked before reaching the facade. Lesser callers enter only
+            inside the existing named branch, preserving unnamed pool-return cost.
+            Identity-based removal also covers a failed normal promotion whose last
+            emitted twin still referred to its former Book.
+        Returns:
+            None.
+        """
+        if self.__dynamic_environment__ and self._crystallizer.activated:
+            self._crystallizer.emit_conduit_removed(self._id)
 
     def _emit_contract_record_for(self, peer_conduit: "Conduit") -> None:
         """
@@ -534,21 +567,30 @@ class Conduit(Cleanable):
         """
         Public API
 
-        Idempotently clean this conduit and release its owned runtime state.
+        Release this scope, recycling a lesser or permanently tearing down a root.
 
         Contract:
-            - Idempotent: repeated calls are safe after `_cleaned` flips.
-            - Fires `on_conduit_cleanup_start` before teardown and
-              `on_conduit_cleanup_complete` after teardown finishes.
+            - Permanent cleanup is idempotent after `_cleaned` flips. A successful
+              soft lesser return ends its current use; callers must reacquire it
+              through create_lesser_conduit before starting another use.
+            - Permanent teardown fires `on_conduit_cleanup_start` and
+              `on_conduit_cleanup_complete`. Soft return preserves the shell.
             - Dispatches to the lesser- or normal-conduit cleanup path based on the
               current conduit state.
             - Tears down logger state last, after the rest of the runtime surface has
               been released.
             - This is local conduit teardown only; it does not clean Aether or the
               owning frame itself.
+            - Soft cleanup does not publish idle until descendants and named record/
+              directory retirement finish. Failed cleanup remains owned for retry;
+              already completed disposal work is not rolled back.
 
         Returns:
             None.
+
+        Raises:
+            ExceptionGroup: Creation disposal or descendant soft cleanup failed.
+            Exception: Named record/directory retirement failed before pool return.
 
         """
         if self._cleaned:
@@ -561,7 +603,7 @@ class Conduit(Cleanable):
             else:
                 self._prepare_for_pool()
 
-    def _prepare_for_pool(self):
+    def _prepare_for_pool(self) -> None:
         """
         Reset one lesser conduit into the pooled idle state.
 
@@ -569,20 +611,63 @@ class Conduit(Cleanable):
             - Normal conduits do not enter the lesser pool and still hard-clean.
             - Lesser conduits transition to `pooled_lesser` locally before they
               are returned to the root-owned pool.
-            - Pool return is a local lifecycle change only; it does not refresh
-              dev-ops identity or republish the conduit to Nexus.
+            - Anonymous pool return stays local and does not refresh dev-ops or
+              Nexus. Named return first retires its published scope metadata.
+            - Dispose Spaces and creations before clearing local lifecycle hooks
+              and restoring temporary Meld hooks. The ordinary path checks one
+              bool; only a modified Meld acquires its existing mutation lock.
+            - Named scopes unregister and clear their label before idle publication.
+              Unnamed return performs only the direct name check: no directory
+              call, lock, allocation or scan is introduced on that branch.
+            - Failed descendant cleanup or named record retirement keeps this
+              scope attached and out of the pool so its owner can retry cleanup.
+
+        Returns:
+            None. The caller holds the conduit lock through idle publication.
         """
         if self._conduit_state is ConduitState.normal:
             self._permanent_cleanup()
             return
         self._cleanup_spellspaces_for_pool()
         self._creations.reset_for_pool()
-        self._conduit_ward._detach_for_pool()
+        if self._name is not None:
+            self._prepare_named_for_pool()
+        else:
+            self._conduit_ward._detach_for_pool()
         self._conduit_state = ConduitState.pooled_lesser
         self._conduit_ward._conduit_type = ConduitState.pooled_lesser
         if self._local_conduit_hooks is not None:
             self._local_conduit_hooks.clear()
+        if self._meld._meld_hooks_modified:
+            self._meld._reset_pooled_meld_hooks()
         self._conduit_pool.return_lesser_conduit(self)
+
+    def _prepare_named_for_pool(self) -> None:
+        """Retire a named scope only after descendants finish, retaining ownership on failure.
+
+        Contract:
+            The caller holds this Conduit's lock and has disposed its own stores.
+            Children retire first so no checkpoint loses a named parent while its
+            recorded descendants remain. Existing Nexus records become unnamed
+            pooled values before the shell can be reused; this does not refresh
+            compiled Rift membership. Keep the live name and parent until fallible
+            publication finishes so a failure retains the cleanup route for retry.
+            Own detachment is the final step; completed record/Cloud retirement
+            is not rolled back if later publication fails.
+            This helper is never entered for an unnamed pool return.
+        Returns:
+            None.
+        Raises:
+            ExceptionGroup: One or more descendants could not finish cleanup.
+            Exception: Record, directory or Nexus publication failed before detachment.
+        """
+        self._conduit_ward._cleanup_children_for_pool()
+        self._emit_conduit_retirement()
+        self._publish_conduit_record_to_nexus(pooled=True)
+        self._aetheric_frame._conduit_cloud._unregister_named_conduit(self)
+        self._publish_frame_record_to_nexus()
+        self._name = None
+        self._conduit_ward._detach_for_pool()
 
     def _cleanup_spellspaces_for_pool(self) -> None:
         """
@@ -696,8 +781,30 @@ class Conduit(Cleanable):
         """
         Internal
 
-        Cleans up a lesser Conduit.
+        Permanently retire a lesser and its owned runtime collaborators.
+
+        Contract:
+            Remove named discovery before deleting frame/ward references. Unnamed
+            shells skip directory work. The shared Book and root maps remain owned
+            by the lineage root; local children and stores follow existing teardown.
+        Returns:
+            None.
         """
+        if self._name is not None:
+            try:
+                self._emit_conduit_retirement()
+            except Exception:
+                # Hard teardown must still remove discovery and release resources
+                # if recording/cadence fails. Soft pool return remains retryable.
+                self._logger.error("Error retiring lesser record", "_cleanup_lesser_conduit", exc_info=True)
+            self._aetheric_frame._conduit_cloud._unregister_named_conduit(self)
+            self._name = None
+            try:
+                self._publish_frame_record_to_nexus()
+            except Exception:
+                # Hard teardown must release owned resources even when an
+                # observational frame-summary sink is unavailable.
+                self._logger.error("Error publishing retired scope summary", "_cleanup_lesser_conduit", exc_info=True)
         self._remove_conduit_record_from_nexus()
         # Lesser conduits share the parent Spellbook and are not root-registered
         # in Aether. We tear down local runtime and lineage links, but do not
@@ -840,6 +947,14 @@ class Conduit(Cleanable):
             self._logger.error("Error dropping conduit resolution state", "_cleanup_normal_conduit", exc_info=True)
 
         # 5) Spellbook (owned by normal conduits)
+        # Retire by scope identity before Book eviction too: failed promotion can
+        # leave its last twin under the former Book even after runtime attachment.
+        try:
+            self._emit_conduit_retirement()
+        except Exception:
+            # Permanent teardown stays best-effort like adjacent owner cleanup;
+            # a recorder/cadence failure must not strand the owned Book/resources.
+            self._logger.error("Error retiring conduit record", "_cleanup_normal_conduit", exc_info=True)
         try:
             if self._spellbook is not None:
                 self._spellbook.cleanup()
@@ -869,7 +984,7 @@ class Conduit(Cleanable):
         del self._mutation_research
         del self._nexus
 
-    def _publish_conduit_record_to_nexus(self) -> None:
+    def _publish_conduit_record_to_nexus(self, *, pooled: bool = False) -> None:
         """
         Internal
 
@@ -877,11 +992,17 @@ class Conduit(Cleanable):
         conduit is eligible for passive ingest.
 
         Contract:
-            - Published conduit states in the current passive-ingest slice are
-              normal and lesser.
+            - Publishes normal, lesser and retained pooled scope records.
             - Publication is skipped when Nexus publication is disabled for this
               conduit.
             - Uses the conduit-owned Nexus reference directly.
+            - Named soft return may publish cleared pooled values before runtime
+              detachment. It retains an existing record only; failed acquisition
+              does not create a new record through this retirement path.
+
+        Args:
+            pooled: Publish an unnamed, detached pooled payload for this identity.
+                The caller holds the scope's cleanup lock until actual pool return.
 
         Returns:
             None.
@@ -895,7 +1016,7 @@ class Conduit(Cleanable):
         ):
             return
 
-        self._nexus._publish_conduit_record(self)
+        self._nexus._publish_conduit_record(self, pooled=pooled)
 
     def _publish_frame_record_to_nexus(self) -> None:
         """
@@ -1132,6 +1253,9 @@ class Conduit(Cleanable):
               any thread's active-scope stack.
             - Idempotent in effect: already-idle shells count toward the
               target and are reused, not rebuilt.
+            - Restore temporary owner hooks before publishing idle shells, just
+              as normal Space return does. Acquisition reapplies current local
+              owner hooks when the shell is actually leased.
 
         Args:
             count:
@@ -1155,6 +1279,8 @@ class Conduit(Cleanable):
         target = min(count, pool.max_idle)
         held = [pool.acquire_untracked() for _ in range(target)]
         for space in held:
+            if space._meld._meld_hooks_modified:
+                space._meld._reset_pooled_meld_hooks()
             pool.release(space)
         return target
 
@@ -1366,10 +1492,17 @@ class Conduit(Cleanable):
         """
         Internal
 
-        Configures the conduit state based on the provided configuration.
+        Register a normal root or retain an unpublished lesser shell.
+
+        Contract:
+            Root admission publishes both ownership and named discovery. Lesser
+            names are assigned by create_lesser_conduit for each acquisition and
+            published only when its parent link is established.
 
         Raises:
             RuntimeError: If normal conduit registration fails.
+        Returns:
+            None.
         """
         if self._conduit_state == ConduitState.normal:
             try:
@@ -1378,10 +1511,6 @@ class Conduit(Cleanable):
             except Exception as e:
                 self._logger.error(f"Normal conduit registration failed: {e}", "__init__", exc_info=True)
                 raise
-        elif self._conduit_state is ConduitState.lesser:
-            if self._name is not None:
-                self._logger.warning("Lesser conduits cannot have a name. Overriding to None.", "__init__")
-                self._name = None
 
     def _register_to_creations(self, spell: Spell, instance: Any) -> None:
         """
@@ -1592,9 +1721,9 @@ class Conduit(Cleanable):
         Assign a name to this conduit exactly once.
 
         Contract:
-            - Conduit names are write-once after creation.
-            - Intended primarily for normal conduits that will participate in cloud or
-              diagnostics surfaces.
+            - Normal-conduit labels remain write-once.
+            - Lesser and pooled scopes reject this setter. Supply their name to
+              create_lesser_conduit; release clears it internally before reuse.
 
         Args:
             name (str):
@@ -1602,7 +1731,7 @@ class Conduit(Cleanable):
 
         Raises:
             RuntimeError:
-                If the conduit name is already set.
+                If the conduit is lesser/pooled or its name is already set.
 
 
         Contract:
@@ -1624,6 +1753,11 @@ class Conduit(Cleanable):
             None.
         """
         self.check_cleaned()
+        if self._conduit_state is not ConduitState.normal:
+            raise RuntimeError(
+                "Lesser conduit names are assigned only at creation; use "
+                "create_lesser_conduit(name=...) for each scope."
+            )
         if self._name is not None:
             self._logger.error("Attempt to rename conduit after name set", "name")
             raise RuntimeError("Conduit name is set.")
@@ -1653,61 +1787,190 @@ class Conduit(Cleanable):
     #endregion
 
     #region Conduit Configuration
+    def _initialize_hook_baselines(
+            self,
+            *,
+            conduit_hooks: Optional[dict[str, list[Any]]] = None,
+            meld_hooks: Optional[dict[str, list[Callable[..., Any]]]] = None,
+    ) -> None:
+        """
+        Establish hook-container ownership during construction or graduation.
+
+        Args:
+            conduit_hooks: Selected lifecycle events, or ordinary configuration/root defaults.
+            meld_hooks: Selected Meld events, or ordinary configuration/root defaults.
+
+        Contract:
+            Normal roots own shallow container copies, even when empty. Lessers
+            borrow root baselines so later shared edits remain visible. Callback
+            objects are borrowed; frozen configuration containers are never mutated.
+            Resets local lifecycle overlays. The caller initializes/rebinds Meld
+            references afterward and owns quiescence during graduation.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: A lesser has no live root from which to inherit hooks.
+        """
+        if self._conduit_state is ConduitState.normal:
+            if conduit_hooks is None:
+                conduit_hooks = self._configuration.get_conduit_hooks(self._spellbook._id)
+            if meld_hooks is None:
+                meld_hooks = self._configuration.get_meld_hooks(self._spellbook._id)
+            self._conduit_hooks = {name: list(callbacks) for name, callbacks in conduit_hooks.items()}
+            self._meld_hooks = {name: list(callbacks) for name, callbacks in meld_hooks.items()}
+        else:
+            root = self._aetheric_frame._conduits.get(self._root_conduit_id)
+            if root is None:
+                raise RuntimeError("Root conduit is unavailable for hook inheritance.")
+            self._conduit_hooks = root._conduit_hooks if conduit_hooks is None else conduit_hooks
+            self._meld_hooks = root._meld_hooks if meld_hooks is None else meld_hooks
+        # Local event overlays are owned by this conduit only.
+        self._local_conduit_hooks: Optional[dict[str, list[Any]]] = None
+
+    @property
+    def hooks_modified(self) -> bool:
+        """
+        Report local lifecycle overlays or temporary Meld hooks on this conduit.
+
+        Contract:
+            Diagnostic read under existing mutation locks. Root-shared changes
+            update the baseline and do not themselves count as local divergence.
+            Pool paths inspect existing local state and the Meld bool directly.
+
+        Returns:
+            bool: Whether lease return has local hook state to restore.
+
+        Raises:
+            RuntimeError: This conduit or its Meld has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            return bool(self._local_conduit_hooks) or self._meld.hooks_modified
+
     def register_conduit_hooks(
             self,
             hooks: dict[str, Any],
+            *,
+            create_local_hooks: bool = True,
+            overwrite: bool = False,
     ) -> None:
         """
         Public API
 
         Register hook callables for this Conduit.
 
-        Hooks are always registered locally on this Conduit and do not propagate
-        to other conduits or mutate the shared Configuration hook registry.
+        The default is local additive registration. Explicit shared mode updates
+        a normal root's live baseline so inheriting scopes see the changes without
+        a hierarchy walk. Configuration and other normal roots are unaffected.
 
         Contract:
-            - EMPTY INPUT IS A SILENT NO-OP: passing no hooks returns without error.
+            - Empty additive input is a no-op. Empty replacement selects both families.
             - SPLITS the supplied mapping into conduit-lane and meld-lane updates and
               applies each to its own registry, so one call can touch two subsystems.
             - Additive registration - it does not clear hooks registered earlier.
+              overwrite=True replaces the supplied families instead.
+            - Validates the whole batch before changing either family. Local
+              lifecycle lists retain their existing event-shadow/fallback rules;
+              local Meld updates copy the effective map. Shared mode selects the
+              root baseline for the caller, dropping its selected local overrides.
+            - Writers use existing locks and replace event lists. Readers retain
+              current per-event semantics, not a whole-operation callback snapshot.
 
         Args:
             hooks: Mapping of hook name -> callable or iterable of callables.
+            create_local_hooks: True isolates changes on this conduit. False is
+                normal-root-only and publishes into its stable lineage maps.
+            overwrite: True replaces each supplied family; omitted families stay
+                unchanged. An empty replacement clears local lifecycle overlays
+                (revealing inherited hooks) and installs an empty local Meld map;
+                shared empty replacement clears both root baselines.
 
         Raises:
-            RuntimeError: If the conduit is cleaned.
+            RuntimeError: Cleaned conduit or a shared update attempted through a lesser.
             ValueError / TypeError: If hook names or values are invalid.
 
         Returns:
             None.
         """
         self.check_cleaned()
-        if not hooks:
+        if not hooks and not overwrite:
             return
+        if not isinstance(hooks, dict):
+            raise TypeError("Conduit hooks must be a dictionary of event names to callbacks.")
+        if not create_local_hooks and self._conduit_state is not ConduitState.normal:
+            raise RuntimeError("Shared hooks must be changed through the normal root conduit.")
 
+        # Normalize into owned lists before publication, so a late invalid Meld
+        # entry cannot leave a lifecycle update partially installed.
+        normalized: dict[str, list[Any]] = {}
+        self._merge_conduit_hooks(normalized, hooks)
         conduit_hook_updates: dict[str, Any] = {}
         meld_hook_updates: dict[str, Any] = {}
-        for name, value in hooks.items():
+        for name, value in normalized.items():
             if name in self._configuration._MELD_HOOK_NAMES:
                 meld_hook_updates[name] = value
             else:
                 conduit_hook_updates[name] = value
 
-        if conduit_hook_updates:
-            self._ensure_local_conduit_hooks()
-            local_conduit_hooks = self._local_conduit_hooks
-            if local_conduit_hooks is None:
-                raise RuntimeError("Local conduit hooks were not initialized.")
-            self._merge_conduit_hooks(local_conduit_hooks, conduit_hook_updates)
+        with self._lock:
+            self.check_cleaned()
+            if conduit_hook_updates or not normalized:
+                if create_local_hooks:
+                    if overwrite or self._local_conduit_hooks is None:
+                        self._local_conduit_hooks = {}
+                    target = self._local_conduit_hooks
+                else:
+                    target = self._conduit_hooks
+                    if overwrite:
+                        target.clear()
+                    self._local_conduit_hooks = None
+                for name, callbacks in conduit_hook_updates.items():
+                    if callbacks:
+                        target[name] = target.get(name, []) + callbacks
+            if meld_hook_updates or not normalized:
+                self._meld.register_meld_hooks(
+                    meld_hook_updates,
+                    create_local_hooks=create_local_hooks,
+                    overwrite=overwrite,
+                )
 
-        if meld_hook_updates:
-            local_meld_hooks: dict[str, list[Any]] = {}
-            self._merge_conduit_hooks(local_meld_hooks, meld_hook_updates)
-            self._meld.set_meld_hooks(
-                local_meld_hooks,
-                create_local_hooks=True,
-                overwrite=False,
-            )
+    def set_conduit_hooks(
+            self,
+            hooks: dict[str, Any],
+            *,
+            create_local_hooks: bool = True,
+            overwrite: bool = True,
+    ) -> None:
+        """
+        Replace supplied runtime hook families, with local state as the default.
+
+        Args:
+            hooks: Lifecycle/Meld events and callable or list/tuple values.
+                Empty input replaces both families; it clears local lifecycle
+                overlays and mutes local Meld callbacks, or clears shared roots.
+            create_local_hooks: True changes this scope only. False publishes a
+                normal root baseline update to inheriting scopes.
+            overwrite: True replaces the selected family maps. False explicitly
+                selects additive registration through the same implementation.
+
+        Contract:
+            Delegates complete validation, root authority and mutation locking to
+            register_conduit_hooks. Callback objects are not cloned or invoked.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: Cleaned scope or shared changes requested from a lesser.
+            ValueError: Unknown hook event.
+            TypeError: Invalid callback payload.
+        """
+        self.register_conduit_hooks(
+            hooks, create_local_hooks=create_local_hooks, overwrite=overwrite,
+        )
 
     def _validate_conduit_hooks_payload(
             self,
@@ -1961,179 +2224,228 @@ class Conduit(Cleanable):
             self,
             name: str,
             *,
-            hooks: dict[str, Any] | None = None,
+            configuration: Optional[SpellbookConfiguration] = None,
+            hooks: Optional[dict[str, Any]] = None,
     ) -> None:
         """
         Public API
 
-        Upgrades this Conduit from a lesser to a **normal** state.
+        Promote this childless lesser into an independent normal root in place.
 
-        This process allows the conduit to create its own links through the Aether system.
-        It effectively forks this conduit into a new tree, retaining its children and
-        creation data, and establishes new links with the parent. The local Meld is
-        rewired to the new Creations manager after transfer. Only a normal conduit
-        can access the Spellbook to bind new spells.
+        Purpose:
+            Keep this runtime's identity and retained creations while giving it
+            a fresh, empty Spellbook for its own bindings and links. Spellbook's
+            private existing-conduit conjure route owns configuration, phases,
+            attachment and normal activation; this method prepares its target.
 
-        Optionally, in **dynamic mode**, you can supply a `hooks` mapping that will be
-        registered through register_conduit_hooks(...) and attached only to this
-        upgraded conduit:
-
-            hooks = {
-                "on_meld_pre_resolve": trace_before_meld,
-                "on_conduit_post_link": [log_link, audit_link],
-            }
-
-        The hooks mapping shape is:
-
-            hook_name -> callable | list[callable] | tuple[callable, ...]
-
-        Please name the conduit if your intention is to add it to the Conduit Cloud.
+        Contract:
+            - Requires a live, attached, childless lesser in a dynamic frame.
+            - The new root has no parent or inherited definitions/contracts.
+              Old spell IDs are no longer resolvable; retained objects remain
+              in their existing stores for eventual disposal.
+            - Uses ordinary Spellbook configuration selection: omitted local
+              configuration means fresh defaults; frame-wide sharing adopts its
+              canonical configuration and refuses a conflicting supplied object.
+            - Bind callbacks start empty unless the selected configuration seeds
+              them. Conduit/Meld hooks likewise start from that configuration.
+              Changes to the new Book's Bind registry never change the old Book.
+            - Validates hooks before mutation. Configuration/setup failures before
+              Book attachment restore the lesser and retire only newly owned state.
+              After attachment, publication failures leave a normal root whose
+              cleanup belongs to the caller, as with ordinary conjure.
+            - Reserves the requested name during preparation, retaining any existing
+              lesser entry until root registration atomically replaces its alias.
+              Same-name promotion is legal. Failure releases the temporary claim.
 
         Args:
-            name (str, optional):
-                An optional name to assign to the upgraded conduit.
-            hooks (dict[str, Any] | None, keyword-only):
-                Optional mapping of hook_name -> callable or iterable[callable].
-                Only honored when the system is in dynamic mode.
+            name: Name for the new root and ConduitCloud registration.
+            configuration: Prepared same-frame configuration, or None for ordinary
+                default/shared selection. A local configuration already owned by
+                the former Book cannot be reused; supply a new one instead.
+            hooks: Optional local runtime additions, installed after normal conjure
+                activation. Values are callables or lists/tuples of callables.
 
         Raises:
-            RuntimeError: If the dynamic environment is not enabled.
-            RuntimeError: If the current conduit state is not 'lesser'.
-            ValueError / TypeError:
-                Raised by hook-payload validation BEFORE any mutation if the
-                hook set is invalid (unknown hook names, non-callables, etc.);
-                the conduit is left exactly as it was and the upgrade may be
-                retried (BUG-071, 2026-07-17 audit).
-        Contract:
-            - The hooks payload is validated BEFORE the first mutation: an
-              invalid mapping fails the upgrade with zero state change instead
-              of raising after the upgrade has irreversibly committed.
-            - Preserves the current creations manager during lesser -> normal upgrade.
-            - Rewires Meld/CreationContext execution to use the current creations manager.
-            - Seeds per-conduit resolution state from the prior root conduit when available.
-            - Rebinds lineage gates to the frame DevOps CreationGateController.
+            RuntimeError: Invalid lifecycle/posture, children, detached target,
+                configuration conflict, gate drain timeout or conjure failure.
+            ValueError: Duplicate name, invalid configuration, or unknown hook.
+            TypeError: Invalid name, configuration type or hook payload.
 
         Returns:
-            None.
+            None. The same Conduit becomes the new Book's sole normal root.
+
+        Threading / Lifecycle:
+            Drains this conduit before taking structural locks. Parent ward is
+            locked before the target conduit/ward for detachment. Admission is
+            restored before activation callbacks; an initially parked gate stays
+            parked. Callers must quiesce concurrent scope acquisition, managed
+            SpellSpaces on other threads, and lineage mutation/teardown during
+            graduation. No locking or checks are added to ordinary meld calls.
         """
         self.check_cleaned()
         with self._lock:
-            if not self.__dynamic_environment__:
-                self._logger.error("upgrade_to_normal in non-dynamic env", "upgrade_to_normal")
-                raise RuntimeError("Dynamic environment is not enabled. Cannot upgrade to normal conduit.")
-            if self._conduit_state != ConduitState.lesser:
-                self._logger.error("upgrade_to_normal called when not lesser", "upgrade_to_normal")
-                raise RuntimeError("Only lesser conduits can be upgraded.")
-            # BUG-071 (2026-07-17 audit): hook registration is the only
-            # input-fallible step of this upgrade and used to run LAST, so an
-            # invalid payload raised only after the state flip, pool creation,
-            # ward conversion, and root registration had all committed - an
-            # irreversible half-upgrade behind a reported failure. Validate
-            # the payload up front so failure means zero state change.
+            self.check_cleaned()
+            parent, root = self._validate_normal_upgrade(name)
+            # BUG-071: reject the complete hook payload before changing status.
             self._validate_conduit_hooks_payload(hooks)
-
-            try:
-                # Snapshot root conduit resolution state before converting lineage.
-                spell_system_states = None
-                source_resolution_state = None
-                source_conduit_id = None
-                if self._spellbook is not None:
-                    spell_system_states = self._spellbook._spell_system_states
-                if spell_system_states is not None and self._conduit_ward is not None:
-                    try:
-                        root_conduit = self._conduit_ward.root_conduit
-                    except Exception:
-                        root_conduit = None
-                    if root_conduit is not None:
-                        source_conduit_id = root_conduit._id
-                        source_resolution_state = spell_system_states.get_conduit_resolution_state(
-                            source_conduit_id
-                        )
-
-                # Step 1: Change state + root name
-                self._conduit_state = ConduitState.normal
-                self._root_conduit_id = self._id
-                self._name = name
-                self._ensure_transaction_identity_registered()
-                self._refresh_devops_identity_state()
-                self._conduit_pool = ConduitPool(
-                    root_conduit=self,
-                    baseline_idle=20,
-                    max_idle=20,
-                )
-
-                # Step 2: Keep the current creations object.
-                # The creations owner id already matches this conduit id, so
-                # lesser -> normal upgrade does not need to rebind ownership
-                # metadata on the creations manager itself.
-
-                # Step 2.1: Ensure Meld uses the same creations manager.
-                if self._meld is not None:
-                    self._meld._conduit_creations = self._creations
-                    self._meld._resolution_conduit_id = self._root_conduit_id
-                # Upgraded conduit is now its own lineage root: its meld's root
-                # store becomes its own creations. Lessers are re-pointed to this
-                # new root by the lineage controller rebind below.
-                self._meld._root_creations = self._creations
-                # Upgraded conduit is now its own cluster root too: it owns a
-                # fresh empty facade (the old one was borrowed from the previous
-                # root and must not be cleaned here). Re-point the meld at it.
-                self._cluster_creations = ClusterCreations()
-                self._meld._cluster_creations = self._cluster_creations
-
-                # Step 3: Reconfigure the conduit ward
-                self._conduit_ward._convert_to_normal_conduit()
-                # Step 3.5: Rebind gates for this lineage to the injected
-                # frame-owned DevOps controller.
-                self._set_creation_gate_controller_for_lineage()
-
-                # Step 4: Reconfigure the spellbook
-                self._spellbook.create_new_preset_spellbook()
-
-                # Step 4.5: Seed resolution state from the former root conduit.
+            if configuration is not None:
+                if not isinstance(configuration, SpellbookConfiguration):
+                    raise TypeError("configuration must be a SpellbookConfiguration or None.")
+                configuration.check_cleaned()
                 if (
-                        spell_system_states is not None
-                        and source_resolution_state is not None
-                        and source_conduit_id
-                        and source_conduit_id != self._id
+                        configuration is self._configuration
+                        and not self._spellbook._is_frame_owned_shared_configuration(configuration)
                 ):
+                    raise ValueError(
+                        "The former Spellbook owns this local configuration. Supply a new "
+                        "configuration or omit it for defaults; only frame-owned policy is shared."
+                    )
+
+        # The concrete constructor is needed here; importing locally avoids the
+        # Spellbook -> Conduit module cycle while keeping conjure owned by Book.
+        from melder.aether.spellbook.spellbook import Spellbook
+
+        gate = self._creation_gate
+        gate_was_enabled = gate.enabled
+        new_book: Optional[Spellbook] = None
+        prepared = False
+        # Retain only the state needed to unwind a failed, pre-attachment promotion.
+        previous_name = self._name
+        previous_policy = self._conduit_ward._policy
+        cloud = self._aetheric_frame._conduit_cloud
+        cloud._reserve_conduit_name(self, name)
+        try:
+            gate.close_and_drain()
+            with parent._conduit_ward._lock:
+                with self._lock:
+                    self.check_cleaned()
+                    self._validate_normal_upgrade(name)
+                    new_book = Spellbook(
+                        aetheric_frame=self._aetheric_frame_name,
+                        configuration=configuration,
+                    )
+                    new_book.get_configuration().validate()
+                    # Retain Creations; its owner/scope already use this conduit ID.
+                    # New root resources replace borrowed ones without cleaning them.
+                    self._conduit_pool = ConduitPool(root_conduit=self, baseline_idle=20, max_idle=20)
+                    self._cluster_creations = ClusterCreations()
+                    prepared = True
+                    self._conduit_state = ConduitState.normal
+                    self._root_conduit_id = self._id
+                    self._conduit_ward._convert_to_normal_conduit()
+                    self._set_creation_gate_controller_for_lineage()
+
+            # Do not copy old root verdicts: the independent empty Book runs its
+            # own normal phases under this preserved conduit ID before attachment.
+            new_book._conjure_existing_conduit(
+                self, dynamic=True, name=name, restore_gate_enabled=gate_was_enabled,
+            )
+            if hooks:
+                self.register_conduit_hooks(hooks)
+        finally:
+            try:
+                if new_book is not None and self._spellbook is not new_book:
+                    # Conjure has not attached the new owner. Restore the original
+                    # lesser before retiring the failed Book and its local resources.
                     try:
-                        target_state = spell_system_states.get_or_create_conduit_resolution_state(self._id)
-                        target_state.bulk_set_spell_validity(
-                            source_resolution_state.snapshot_spell_validity()
-                        )
-                        target_state.bulk_set_root_validity(
-                            source_resolution_state.snapshot_root_validity()
-                        )
-                        target_state.record_diagnostics(
-                            source_resolution_state.list_diagnostics()
-                        )
-                        if source_resolution_state.is_dirty():
-                            target_state.mark_dirty()
-                        else:
-                            last_validated_at = source_resolution_state.last_validated_at()
-                            if last_validated_at is not None:
-                                target_state.clear_dirty(last_validated_at)
-                    except Exception:
-                        self._logger.error(
-                            "Failed to seed conduit resolution state from root conduit.",
-                            "upgrade_to_normal",
-                            exc_info=True,
-                        )
+                        if prepared:
+                            self._restore_lesser_after_failed_upgrade(
+                                parent, root, previous_name, previous_policy,
+                            )
+                        new_book._spell_system_states.drop_conduit_resolution_state(self._id)
+                    finally:
+                        new_book.cleanup()
+            finally:
+                try:
+                    cloud._release_conduit_name(self, name)
+                finally:
+                    if gate_was_enabled and not gate.is_closed():
+                        gate.open()
 
-                # Step 5: Register as a full Conduit in frame-owned runtime state.
-                self._add_root_conduit()
+    def _validate_normal_upgrade(self, name: str) -> tuple[Conduit, Conduit]:
+        """
+        Validate promotion admission without mutating the lesser or its owners.
 
-                # Step 6: If the caller supplied per-conduit hooks, register them now.
-                if hooks:
-                    self.register_conduit_hooks(hooks)
+        Args:
+            name: Requested nonempty normal-root name.
 
-                self._publish_frame_record_to_nexus()
-                self._publish_conduit_record_to_nexus()
+        Contract:
+            Called before draining and rechecked under the structural locks.
+            Rejects pooled/detached shells, descendants and other scopes' names.
+            The same live identity may keep its own name during promotion.
+            The public upgrade entry point owns cleaned-state admission.
 
-            except Exception as e:
-                self._logger.error(f"upgrade_to_normal failed: {e}", "upgrade_to_normal", exc_info=True)
-                raise
+        Returns:
+            tuple[Conduit, Conduit]: Former direct parent and lineage root.
+
+        Raises:
+            RuntimeError: Non-dynamic, non-lesser, closed or invalid lineage.
+            TypeError: Name is not a string.
+            ValueError: Name is empty or belongs to another root/lesser in this frame.
+        """
+        if not self.__dynamic_environment__:
+            raise RuntimeError("Dynamic environment is not enabled. Cannot upgrade to normal conduit.")
+        if self._conduit_state is not ConduitState.lesser:
+            raise RuntimeError("Only lesser conduits can be upgraded.")
+        if not isinstance(name, str):
+            raise TypeError("The upgraded conduit's name must be a string.")
+        if not name:
+            raise ValueError("The upgraded conduit requires a nonempty root name.")
+        if self._creation_gate.is_closed():
+            raise RuntimeError("A terminally closed conduit cannot be upgraded.")
+        parent = self._conduit_ward._parent_conduit
+        root = self._conduit_ward._root_conduit
+        if parent is None or root is None:
+            raise RuntimeError("Only an attached lesser conduit can be upgraded; acquire it from its root first.")
+        if self._conduit_ward._lesser_conduits:
+            raise RuntimeError("Cannot upgrade a lesser with children. Clean up its lesser conduits first.")
+        self._aetheric_frame._conduit_cloud._assert_name_available(name, self._id)
+        return parent, root
+
+    def _restore_lesser_after_failed_upgrade(
+            self,
+            parent: Conduit,
+            root: Conduit,
+            name: Optional[str],
+            policy: Policies,
+    ) -> None:
+        """
+        Undo target preparation when conjure failed before replacing its Book.
+
+        Args:
+            parent: Original direct parent, quiesced for this transition.
+            root: Original lineage owner of the borrowed pool/cluster facade.
+            name: Original lesser name.
+            policy: Original ward policy.
+
+        Contract:
+            Retires newly allocated root resources and ward identity, restores
+            both lineage directions and gate membership, and keeps Creations and
+            the borrowed Book alive. Called only while the creation gate is parked.
+            Parent ward locks precede target locks, matching detachment ordering.
+
+        Returns:
+            None. Any teardown failure propagates instead of claiming a full undo.
+        """
+        with parent._conduit_ward._lock:
+            with self._lock:
+                self._conduit_pool.cleanup()
+                self._cluster_creations.cleanup()
+                self._conduit_pool = root._conduit_pool
+                self._cluster_creations = root._cluster_creations
+                self._conduit_state = ConduitState.lesser
+                self._root_conduit_id = root._id
+                self._name = name
+                with self._conduit_ward._lock:
+                    if self._conduit_ward._devops_identity is not None:
+                        self._conduit_ward._devops_identity.cleanup()
+                        self._conduit_ward._devops_identity = None
+                    self._conduit_ward._conduit_type = ConduitState.lesser
+                    self._conduit_ward._parent_conduit = parent
+                    self._conduit_ward._root_conduit = root
+                    self._conduit_ward._policy = policy
+                    parent._conduit_ward._lesser_conduits[self._id] = self
+                self._set_creation_gate_controller_for_lineage()
 
 
 
@@ -2224,7 +2536,12 @@ class Conduit(Cleanable):
 
         self._publish_conduit_record_to_nexus()
 
-    def create_lesser_conduit(self, logger: Any | None = None) -> "Conduit":
+    def create_lesser_conduit(
+            self,
+            logger: Optional[Any] = None,
+            *,
+            name: Optional[str] = None,
+    ) -> Conduit:
         """
         Public API
 
@@ -2234,9 +2551,10 @@ class Conduit(Cleanable):
         injected frame-owned services, but is restricted in its ability to
         establish external links or register new spells. It owns a
         conduit-local CreationGate created by the lineage CreationGateController.
-        Fresh lesser creation is published to Nexus when passive ingest is
-        enabled. Reused pooled lesser conduits are reactivated locally without
-        republishing or refreshing dev-ops identity metadata.
+        Named acquisition publishes current Nexus metadata on both fresh and
+        pooled paths before post-created callbacks. Anonymous fresh allocation
+        keeps its existing publication; anonymous pooled cycles remain local
+        without refreshing Nexus or dev-ops identity metadata.
 
         If this (parent) Conduit has lifecycle hooks attached via the Configuration
         for its Spellbook, the following hooks will be fired in order:
@@ -2263,34 +2581,46 @@ class Conduit(Cleanable):
 
         Concurrency:
             The parent lock is held only for the cleaned re-check and the
-            ward link (a narrow window inside `_link_new_lesser_under_lock`).
+            ward link plus named-only publication (a narrow window inside
+            `_link_new_lesser_under_lock`).
             Pool acquisition, fresh construction, pooled-shell reactivation,
-            hook firing, and Nexus publishing run outside the parent lock,
+            hook firing, and anonymous Nexus publishing run outside the parent lock,
             so concurrent lesser creation from many threads does not
             serialize on this parent. Hook implementations must be
             thread-safe under concurrent lesser creation.
 
         Contract:
-            - The ROOT is resolved before anything is built: a `normal` conduit is its
-              own root, while a non-normal conduit derives the root from its ward -
-              so lesser conduits created off a lesser conduit still attach to the
-              original root rather than nesting.
+            - The ROOT is resolved before anything is built: a normal conduit is
+              its own root; a lesser borrows the original root's Book and pool
+              while preserving this caller as its immediate parent.
             - Lesser conduits are a LINEAGE attachment, not a peer link; this is why
               `link()` explicitly refuses a lesser target.
+            - A supplied name is an exact, nonempty, frame-wide unique string in
+              either mode. Fresh and pooled scopes receive it before activation;
+              Cloud publishes it with parent attachment, before post-created.
+            - Names are creation-only. Cleanup unregisters and clears a name before
+              pool return; unnamed scopes perform no directory mutation.
+            - Discovery returns a borrowed reference and does not extend lifetime.
 
         Returns:
             Conduit: The newly created lesser Conduit instance.
 
         Raises:
-            RuntimeError: If the parent Conduit is cleaned.
+            RuntimeError: If the parent or named child is cleaned during acquisition.
+            ValueError: Name is empty or already owned/reserved in this frame.
+            TypeError: A supplied name is not a string.
 
         Args:
+            logger:
+                Optional logger; its existing positional calling convention is retained.
             name:
-                Optional name for the child scope.
-            hooks:
-                Optional per-conduit hook overlay applied to the child only.
+                Optional exact name for this use of the child scope.
         """
         self.check_cleaned()
+        if name is not None:
+            if self._conduit_state is ConduitState.pooled_lesser:
+                raise RuntimeError("Named lesser creation requires an active parent, not a pooled conduit.")
+            self._aetheric_frame._conduit_cloud._assert_name_available(name)
 
         root_conduit: Optional["Conduit"]
         if self._conduit_state == ConduitState.normal:
@@ -2336,6 +2666,9 @@ class Conduit(Cleanable):
                 new_conduit._conduit_ward._conduit_type = ConduitState.lesser
             new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
 
+            if name is not None:
+                new_conduit._name = name
+
             # Fire activation hook with the new conduit instance.
             self._fire_conduit_hooks(
                 "on_conduit_activated",
@@ -2344,7 +2677,7 @@ class Conduit(Cleanable):
 
             # 3) Link the lesser conduit into the parent's ConduitWard
             #    inside the narrow parent-lock window.
-            self._link_new_lesser_under_lock(new_conduit)
+            self._link_new_lesser_under_lock(new_conduit, name=name)
 
             # Fire post-create hook with both parent and child.
             self._fire_conduit_hooks(
@@ -2352,7 +2685,7 @@ class Conduit(Cleanable):
                 self,         # parent_conduit
                 new_conduit,  # child_conduit
             )
-            if not reused_from_pool:
+            if not reused_from_pool and name is None:
                 new_conduit._publish_conduit_record_to_nexus()
         else:
             new_conduit = root_conduit._conduit_pool.create_object()
@@ -2379,13 +2712,17 @@ class Conduit(Cleanable):
                 new_conduit._conduit_state = ConduitState.lesser
                 new_conduit._conduit_ward._conduit_type = ConduitState.lesser
             new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
-            self._link_new_lesser_under_lock(new_conduit)
-            if not reused_from_pool:
+            if name is not None:
+                new_conduit._name = name
+            self._link_new_lesser_under_lock(new_conduit, name=name)
+            if not reused_from_pool and name is None:
                 new_conduit._publish_conduit_record_to_nexus()
 
         return new_conduit
 
-    def _link_new_lesser_under_lock(self, new_conduit: "Conduit") -> None:
+    def _link_new_lesser_under_lock(
+            self, new_conduit: Conduit, *, name: Optional[str] = None,
+    ) -> None:
         """
         Internal
 
@@ -2393,35 +2730,65 @@ class Conduit(Cleanable):
         window.
 
         Contract:
-            - Holds the parent lock ONLY for the cleaned re-check and the
-              ward link. Pool acquisition, fresh construction, pooled-shell
-              reactivation, hook firing, and Nexus publishing all run
-              outside this lock. (Contention harness, melds-off mode: the
+            - Holds the parent lock ONLY for the cleaned re-check, ward link and
+              named-only publication. Pool acquisition, fresh construction, pooled-shell
+              reactivation, hook firing, and anonymous Nexus publishing all run
+              outside this lock. Named publication runs inside the existing
+              named-only child lock, ordering it before cleanup and reuse.
+              (Contention harness, melds-off mode: the
               previous whole-body hold cost 58-73% of thread-time in
               root-lock wait at threads=3/5 with negative throughput
               scaling; see profile_scope_cycle_contention.py.)
             - Create racing parent cleanup stays safe: cleanup holds this
               same lock, so the re-check either links before the teardown
               sweep observes the child or takes the unwind path below.
-            - Unwind path: the shell is unlinked and invisible to the
-              lineage, so it is recycled through its own `cleanup()` (ward
-              detach tolerates a missing parent) before the standard
-              cleaned error surfaces to the caller.
+            - Unwind path: an unnamed shell uses its existing soft-cleanup path.
+              A named orphan is permanently retired when its parent has already
+              been cleaned/pooled, because the old owner's pool may be gone.
+            - Named children additionally hold their own lock across attachment
+              and directory publication. Cleanup cannot publish that shell idle
+              between those steps. Failed named admission retires the shell through
+              existing cleanup after the directory lock has been released.
 
         Args:
             new_conduit (Conduit): The unlinked lesser conduit to link.
+            name: Requested creation name; None preserves ordinary unnamed linking.
 
         Raises:
-            RuntimeError: If this parent conduit was cleaned concurrently.
+            RuntimeError: Parent or named child was retired during acquisition.
+            ValueError: A competing scope claimed the requested name.
         """
         with self._lock:
             if not self._cleaned:
+                if name is not None:
+                    if self._conduit_state is ConduitState.pooled_lesser:
+                        new_conduit.permanent_cleanup()
+                        raise RuntimeError("Named lesser creation requires an active parent, not a pooled conduit.")
+                    with new_conduit._lock:
+                        if new_conduit._cleaned or new_conduit._conduit_state is not ConduitState.lesser:
+                            raise RuntimeError("Named lesser was retired (cleaned or pooled) during its creation hook.")
+                        try:
+                            self._conduit_ward._link_lesser_conduit(new_conduit)
+                            self._aetheric_frame._conduit_cloud._register_named_conduit(new_conduit)
+                            # Cloud's leaf lock is released before record callbacks.
+                            # The child lock orders emission before any return/reuse.
+                            new_conduit._emit_conduit_twin()
+                            new_conduit._publish_conduit_record_to_nexus()
+                            new_conduit._publish_frame_record_to_nexus()
+                        except Exception:
+                            # Admission failed after shell acquisition: retire only
+                            # this candidate, preserving the registered name owner.
+                            new_conduit.cleanup()
+                            raise
+                    return
                 self._conduit_ward._link_lesser_conduit(new_conduit)
                 return
         # Parent cleaned between shell acquisition and the link window:
         # recycle the orphan shell, then raise the standard cleaned error.
-        new_conduit.cleanup()
-        self.check_cleaned()
+        if name is not None:
+            new_conduit.permanent_cleanup()
+        else:
+            new_conduit.cleanup()
         raise RuntimeError("Conduit has been cleaned.")
 
 
@@ -3093,6 +3460,89 @@ class Conduit(Cleanable):
             raise
         else:
             self.end_transaction(transaction_type=transaction_type, success=True)
+
+    def add_bind_hooks(
+            self,
+            *,
+            pre: Optional[Sequence[Callable[[Any], object]]] = None,
+            activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+            post: Optional[Sequence[Callable[[Spell], object]]] = None,
+    ) -> None:
+        """
+        Register bind lifecycle callbacks on this normal conduit's owning Spellbook.
+
+        Purpose:
+            Expose the same registration customization through the Conduit that
+            already facades bind and bind_inactive, using one Book-owned registry.
+
+        Contract:
+            - Requires a live normal conduit. Lessers borrow a Book and cannot
+              change its bind-hook policy through this facade.
+            - Delegates unchanged to Spellbook.add_bind_hooks. Sequences append
+              in order; all supplied callbacks are validated before mutation.
+            - Pre receives the incoming reference and rejects by raising.
+              Activation receives the actual newly constructed Spell; post
+              receives the completed active or parked registration before outer
+              transaction commit. Callback return values are ignored.
+            - Updates affect subsequent binds through either the Book or Conduit;
+              an in-flight bind retains its captured callback set.
+            - Hook setup follows Book's live-update contract independently of
+              configuration freeze. It does not enable binding when the frame's
+              existing bind admission rules prohibit it.
+            - Existing Conduit/Meld runtime hooks and per-Spell creation hooks
+              remain separate. Recording and cleanup stay with the owning Book.
+
+        Args:
+            pre: Ordered synchronous reference-checking callbacks.
+            activation: Ordered callbacks receiving the new Spell definition.
+            post: Ordered callbacks receiving the completed binding.
+
+        Threading:
+            Adds no Conduit lock or transaction window around delegation. The
+            Book/Bind owner coordinates registry updates and recording.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the conduit is cleaned or is not normal.
+            TypeError: If the owning Book rejects a non-callable callback.
+        """
+        self.check_cleaned()
+        if self._conduit_state is not ConduitState.normal:
+            self._logger.error("add_bind_hooks called when conduit is not normal", "add_bind_hooks")
+            raise RuntimeError("Only normal conduits can configure Spellbook bind hooks.")
+        self._spellbook.add_bind_hooks(pre=pre, activation=activation, post=post)
+
+    def clear_bind_hooks(self) -> None:
+        """
+        Clear all bind lifecycle callbacks from this normal conduit's owning Book.
+
+        Contract:
+            - Requires a live normal conduit; lessers cannot clear the borrowed
+              Book's registration policy.
+            - Delegates to Spellbook.clear_bind_hooks. Future Book/Conduit binds
+              see the empty registry; in-flight binds keep their captured set.
+            - Leaves existing Spell creation hooks and Conduit/Meld runtime hooks
+              unchanged. Does not dispose user callbacks or existing creations.
+            - The Book refreshes recording markers where applicable. Setup and
+              clearing do not change actual bind admission or frame posture.
+
+        Threading:
+            Delegates without an additional Conduit lock or transaction. Callback
+            storage, synchronization and recording remain owned by Book/Bind.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the conduit is cleaned or is not normal.
+        """
+        self.check_cleaned()
+        if self._conduit_state is not ConduitState.normal:
+            self._logger.error("clear_bind_hooks called when conduit is not normal", "clear_bind_hooks")
+            raise RuntimeError("Only normal conduits can configure Spellbook bind hooks.")
+        self._spellbook.clear_bind_hooks()
 
     def bind(
             self,
@@ -4117,6 +4567,91 @@ class Conduit(Cleanable):
 
     # Machine identity remains explicit at the public boundary via `spell_id=`;
     # this facade forwards it positionally into the internal ID fast lane.
+
+    def purge(
+            self,
+            spell: Optional[Union[str, object]] = None,
+            *,
+            spell_id: Optional[str] = None,
+            spellframe: Optional[Union[str, object]] = None,
+            binding_name: Optional[str] = None,
+            purge_all: bool = True,
+    ) -> int:
+        """
+        Purge a registered target's retained creations through this conduit.
+
+        Purpose:
+            Expose targeted disposal without ending the conduit or removing the
+            binding. Identity normalization mirrors this facade's meld method.
+
+        Contract:
+            - Delegates discovery and authority to the owned ConduitMeld door.
+            - Many and per-conduit creations are local. Unique requires the
+              binding owner, lineage the lineage root, and cluster its leader.
+            - Never redirects into an active SpellSpace; use that space's purge.
+            - Preserves the binding, compiled context, conduit and pools.
+
+        Args:
+            spell:
+                Logical name, class/function reference or application instance.
+                An instance is inspected for its class before ordinary lookup.
+                The original reference is retained for single-object removal.
+            spell_id:
+                Explicit machine identity. Mutually exclusive with spell and
+                forwarded directly into the internal id lookup lane.
+            spellframe:
+                Optional frame/type used by ordinary binding discovery.
+            binding_name:
+                Optional named binding within the selected frame.
+            purge_all:
+                True removes all retained target entries. False requires an
+                instance as spell and removes only that object from the store.
+
+        Returns:
+            int:
+                Removed creation count; zero when no matching entry is retained
+                in the authorized store. Untracked many results cannot be purged.
+
+        Raises:
+            ValueError:
+                If selectors conflict, no target is supplied, or single-object
+                removal is requested without an instance.
+            KeyError:
+                If normal meld discovery cannot find the binding.
+            RuntimeError:
+                If cleaned, the cluster is inert, or this conduit lacks authority.
+            TypeError:
+                If purge_all is not a bool.
+            ExceptionGroup:
+                Disposal failures after selected entries have been removed.
+
+        Threading / Concurrency:
+            Creations coordinates removal with the existing creation writer
+            locks and runs disposal after releasing them. This call does not
+            drain in-flight resolution or perform an ownership transaction.
+
+        Lifecycle / Cleanup:
+            Existing application references remain valid Python references;
+            they are not rewritten or revoked. Supplied objects also remain on
+            their registration. Scope ownership must remain live for this call.
+        """
+        self.check_cleaned()
+        if spell is not None and spell_id is not None:
+            raise ValueError("purge accepts either `spell` or `spell_id`, not both.")
+        internal_spell = spell
+        internal_spell_name = None
+        if spell_id is not None:
+            internal_spell = spell_id
+        elif isinstance(spell, str):
+            internal_spell = None
+            internal_spell_name = spell
+        return self._meld.purge(
+            internal_spell,
+            spell_name=internal_spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            purge_all=purge_all,
+        )
 
     def meld_existing_spell(
             self,

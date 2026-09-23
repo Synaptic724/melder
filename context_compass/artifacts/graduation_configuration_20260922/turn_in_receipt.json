@@ -1,0 +1,10 @@
+{
+  "completed_at": "2026-09-22T14:41:23Z",
+  "archived": [
+    "tickets/epics/completed/2026-09-22_graduated_conduit_spellbook_ownership_and_configuration_epic.md",
+    "tickets/tasks/completed/2026-09-22_implement_graduation_configuration_and_hook_ownership_task.md",
+    "tickets/tasks/completed/2026-09-22_add_graduation_ownership_red_regressions_task.md",
+    "system_docs/patches/completed/graduation_configuration_2026_09_22"
+  ],
+  "pending": "tickets/tasks/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md"
+}

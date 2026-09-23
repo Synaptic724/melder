@@ -16,7 +16,7 @@ def main() -> None:
     book = md.Spellbook()
     book.bind(spell=Service, existence="unique")
     conduit = book.conjure()
-    assert isinstance(conduit.meld(Service), Service)
+    assert isinstance(conduit.meld("Service"), Service)
 
     conduit.cleanup()
     book.cleanup()

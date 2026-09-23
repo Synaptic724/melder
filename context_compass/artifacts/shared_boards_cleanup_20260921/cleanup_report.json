@@ -1,0 +1,21 @@
+{
+  "completed_at": "2026-09-21T00:19:19Z",
+  "departed_removed": [
+    "codex_2",
+    "workflows_1",
+    "muse_0"
+  ],
+  "stale_marked": [
+    "codex_1",
+    "knowledge_expert_0"
+  ],
+  "notices_retired": 2,
+  "alerts_retired": 2,
+  "cleared_artifact_rows_archived": 214,
+  "recent_artifact_groups_retained": 12,
+  "active_attention_region_unchanged": true,
+  "active_artifact_region_unchanged": true,
+  "context_board_unchanged": true,
+  "managed_blocks_unchanged": true,
+  "archived_history_sha256": "02051E0BFF176E114720A9512C98E3A5D49CCC78E5FA8BF9AF6683846F22F215"
+}

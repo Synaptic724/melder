@@ -18,7 +18,8 @@ def main() -> None:
     book.bind(spell=WeatherService, existence="unique")
     conduit: md.Conduit = book.conjure()
 
-    weather: WeatherService = conduit.meld(WeatherService)
+    # The string selects the spell; the annotation describes the returned object.
+    weather: WeatherService = conduit.meld("WeatherService")
     report: str = weather.today()
     assert report == "sunny, 24C"
     print("typed end to end:", report)

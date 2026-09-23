@@ -389,8 +389,12 @@ class ConduitWard(Cleanable):
             - Removes this conduit from its current parent's lesser registry.
             - Clears the lesser-child registry and parent pointer.
             - Keeps the root conduit reference intact for later reuse.
+            - Failed descendants remain owned; raises before detaching this ward
+              so an ancestor cannot enter the pool while a child is still live.
+
+        Raises:
+            ExceptionGroup: One or more descendant cleanup operations failed.
         """
-        children: list[Conduit] = []
         parent_conduit: Optional[Conduit] = None
         with self._lock:
             if not self._lesser_conduits:
@@ -405,22 +409,8 @@ class ConduitWard(Cleanable):
                     )
                 self._parent_conduit = None
                 return
-            children = list(self._lesser_conduits.values())
 
-        for lesser_conduit in children:
-            try:
-                lesser_conduit.cleanup()
-            except Exception as e:
-                self._logger.error(
-                    f"detach_for_pool lesser cleanup failed: {e}",
-                    method_name="_detach_for_pool",
-                    exc_info=True,
-                    owner_id=self._id,
-                    owner_display=self._display_name,
-                    mask=True,
-                    groups=self._log_groups,
-                    system_groups=self._log_sysgroups,
-                )
+        self._cleanup_children_for_pool()
 
         with self._lock:
             parent_conduit = self._parent_conduit
@@ -431,6 +421,44 @@ class ConduitWard(Cleanable):
                 parent_conduit._conduit_ward._lesser_conduits.pop(self._id, None)
             self._parent_conduit = None
             self._lesser_conduits.clear()
+
+    def _cleanup_children_for_pool(self) -> None:
+        """Soft-clean current descendants while retaining every failed child for retry.
+
+        Contract:
+            Used by ordinary recursive detach and named record retirement. Snapshot
+            membership under the ward lock because successful child cleanup removes
+            its own entry; call children outside that lock. Attempt every sibling,
+            then raise grouped failures before the caller can detach/reuse its scope.
+            The ordinary no-children detach path does not enter this helper.
+        Returns:
+            None when descendant cleanup completes.
+        Raises:
+            ExceptionGroup: One or more children failed; their parent links remain.
+        """
+        with self._lock:
+            if not self._lesser_conduits:
+                return
+            children = list(self._lesser_conduits.values())
+        failures: list[Exception] = []
+        for lesser_conduit in children:
+            try:
+                lesser_conduit.cleanup()
+            except Exception as error:
+                failures.append(error)
+                self._logger.error(
+                    f"pool descendant cleanup failed: {error}",
+                    method_name="_cleanup_children_for_pool", exc_info=True,
+                    owner_id=self._id, owner_display=self._display_name,
+                    mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+                )
+        if failures:
+            raise ExceptionGroup("Cannot pool a conduit while descendant cleanup is incomplete.", failures)
+        with self._lock:
+            # Normally each child removed itself. Retire any completed snapshot
+            # entries still present, without discarding newly attached identities.
+            for lesser_conduit in children:
+                self._lesser_conduits.pop(lesser_conduit._id, None)
     #endregion Cleanup
 
     #region Context Manager
@@ -530,7 +558,12 @@ class ConduitWard(Cleanable):
         Converts this Conduit from a `lesser` state to a `normal` state.
 
         This method is called internally during the conduit upgrade process.
-        It detaches the parent link and updates the policy state.
+        It detaches both directions of the parent link and updates policy state.
+
+        Contract:
+            The caller holds the former parent's ward lock before entering this
+            ward's lock. Only a childless lesser can become an independent root.
+            No parent Spellbook, definitions or peer contracts transfer.
 
         Raises:
             RuntimeError: If the Conduit is not a lesser conduit.
@@ -555,6 +588,7 @@ class ConduitWard(Cleanable):
                 )
                 raise RuntimeError("Dynamic environment is not enabled. Cannot upgrade to normal conduit.")
             if self._parent_conduit is not None and self._conduit_type == ConduitState.lesser and len(self._lesser_conduits) == 0:
+                self._parent_conduit._conduit_ward._lesser_conduits.pop(self._id, None)
                 self._parent_conduit = None
                 self._root_conduit = self._conduit
                 self._conduit_type = ConduitState.normal

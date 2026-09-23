@@ -51,6 +51,8 @@ def _attach_root_pool_stub(
     """
     root = MagicMock()
     root._id = root_conduit_id
+    root._conduit_hooks = {}
+    root._meld_hooks = {}
     root._conduit_pool = ConduitPool(
         root_conduit=root,
         baseline_idle=10,
