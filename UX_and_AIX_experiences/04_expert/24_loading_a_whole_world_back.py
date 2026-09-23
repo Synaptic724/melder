@@ -13,6 +13,8 @@ GOAL: SEAL A WORLD, THEN UNFOLD IT AGAIN. Expert 01 taught the pod-boot
         load_checkpoint(id)                     -> UNFOLD into the runtime
       Only the last one touches the live world. The first four move a
       record around; `load_checkpoint` is the boot verb.
+      The lesson retires its original root before replay so the saved root name
+      and binding identities are available. The recorder itself stays alive.
 
       A RESTORE IS NOT A RESURRECTION, AND THE REPORT SAYS SO
       `load_checkpoint` hands back a RestoreReport carrying:
@@ -61,7 +63,6 @@ VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
 import melder as md
 
-
 FRAME = "restore-world"
 
 
@@ -76,6 +77,15 @@ class Auditor:
 
 
 def main() -> None:
+    """Seal and replay a complete world while keeping its in-memory recorder alive.
+
+    Contract:
+        Establish recording posture before binds, retire original runtime claims
+        before replay and assert that rebuilt application state starts fresh.
+        A retained ordinary Ledger reference has no disposer in this example.
+    Returns:
+        None.
+    """
     # Custody first - nothing is recorded into a crystallizer that is not
     # yet recording (expert 22's ordering law).
     crystallizer = md.Crystallizer()
@@ -98,17 +108,19 @@ def main() -> None:
     )
     book = md.Spellbook(aetheric_frame=FRAME,
                         configuration=spellbook_configuration)
-    ledger_id = book.bind(spell=Ledger, existence="unique",
-                          permissions="create", binding_name="restore-ledger")
-    book.bind(spell=Auditor, existence="many",
-              permissions="create", binding_name="restore-auditor")
+    # Establish dynamic recording posture before binding custody. Configuring
+    # the frame afterward cannot retroactively record earlier automatic binds.
     book.configure_aether_frame(
         system_state="dynamic",
         disposal=None,
         disposal_method_names=None,
     )
+    book.bind(spell=Ledger, existence="unique",
+              permissions="create", binding_name="restore-ledger")
+    book.bind(spell=Auditor, existence="many",
+              permissions="create", binding_name="restore-auditor")
     conduit = book.conjure(name="restore-root")
-    ledger = conduit.meld(Ledger, binding_name="restore-ledger")
+    ledger = conduit.meld("Ledger", binding_name="restore-ledger")
     ledger.entries.append("before the checkpoint")
     print("world up; ledger holds", len(ledger.entries), "entry")
 
@@ -149,9 +161,15 @@ def main() -> None:
     print("reload_cached_checkpoint -> the checkpoint's own summary")
     print("  still no live object touched; that is the NEXT verb")
 
-    # 5. THE BOOT VERB. This one unfolds the record into the runtime.
+    # 5. THE BOOT VERB. Release the old runtime's name and binding claims first;
+    # the sealed checkpoint and its predecessor remain in the living recorder.
+    conduit.permanent_cleanup()
     report = crystallizer.load_checkpoint(second_id)
-    assert isinstance(report, dict)
+    assert report["status"] == "complete"
+    restored_conduit = md.Aether().get_conduit_by_name("restore-root", FRAME)
+    restored_ledger = restored_conduit.meld("Ledger", binding_name="restore-ledger")
+    assert restored_ledger is not ledger
+    assert restored_ledger.entries == []
     print()
     print("load_checkpoint -> RestoreReport keys:", sorted(report))
     print("   status:", report.get("status"))
@@ -184,13 +202,14 @@ def main() -> None:
             print("  had those things - so it names them instead")
             break
 
-    # THE ORIGINAL SPELL STILL ANSWERS through the pre-restore handle we
-    # kept, which is the point of holding OBJECTS rather than ids.
+    # This Ledger has no disposer. Our ordinary Python reference therefore
+    # still holds its earlier data; it is not the object in the rebuilt runtime.
+    # Objects with disposal contracts may be unusable after their scope ends.
     assert ledger.entries == ["before the checkpoint"]
     print()
     print("the object we held across all of this is untouched:",
           ledger.entries)
-    print("  ids go stale across a boot; the handle in your hand does not")
+    print("  the rebuilt ledger is a different object with fresh empty state")
 
     # 6. THE OPERATOR'S ONE-CALL VERSION exists and is exported.
     assert hasattr(md, "CrystallizerBootstrap")
@@ -203,6 +222,7 @@ def main() -> None:
     print()
     print("seal, cache, reload, unfold - and only the last one is a boot")
     print("a restore rebuilds an EQUIVALENT world and hands you the map")
+    restored_conduit.permanent_cleanup()
 
 
 if __name__ == "__main__":

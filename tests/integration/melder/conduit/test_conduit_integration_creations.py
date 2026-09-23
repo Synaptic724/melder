@@ -175,10 +175,11 @@ def test_conduit_integration_creations_extract_restore_reuses_instances() -> Non
 def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
     """
     Purpose:
-        Validate lesser upgrade transfers creations into normal scope.
+        Validate lesser upgrade retains creations separately from new registration state.
     Contract:
-        - Unique-per-conduit instance is reused after upgrade.
+        - Unique-per-conduit instance remains retained for disposal after upgrade.
         - Many instances remain tracked after upgrade.
+        - The new independent Book cannot resolve old spell IDs.
     Returns:
         None.
     Raises:
@@ -210,16 +211,15 @@ def test_conduit_integration_upgrade_transfers_lesser_creations() -> None:
         lesser.upgrade_to_normal(name="upgraded")
 
         assert isinstance(lesser._creations, Creations)
-        reused_unique = lesser.meld(spell_id=unique_id)
-        assert reused_unique is unique_instance
-
-        many_after = lesser.meld(spell_id=many_id)
-        assert many_after is not many_instance
+        assert lesser._creations._creations[unique_id] is unique_instance
+        with pytest.raises(KeyError):
+            lesser.meld(spell_id=unique_id)
+        with pytest.raises(KeyError):
+            lesser.meld(spell_id=many_id)
         bucket = lesser._creations._disposable_creations.get(many_id)
         assert bucket is not None
         values = [entry[0] for entry in bucket]
-        assert many_instance in values
-        assert many_after in values
+        assert values == [many_instance]
     finally:
         lesser.cleanup()
         root.cleanup()

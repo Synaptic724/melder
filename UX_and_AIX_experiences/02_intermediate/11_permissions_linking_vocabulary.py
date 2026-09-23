@@ -21,7 +21,7 @@ def main() -> None:
               permissions="read")
     conduit = book.conjure()
 
-    held = conduit.meld(prebuilt)
+    held = conduit.meld("PublishedConfig")
     assert held is prebuilt
     print("read permission: resolve works, instance handed back untouched")
     print("vocabulary: read < create (create implies read); block stops sharing")

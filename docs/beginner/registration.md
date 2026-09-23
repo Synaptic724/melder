@@ -4,6 +4,12 @@ Registration is ordinary Python code. The saved lessons demonstrate three
 useful inputs: a class Melder can construct, a function that supplies a value,
 and an instance you already constructed.
 
+Registration takes the Python object: `book.bind(spell=Greeter, existence="unique")`.
+Resolution uses its registered name: `conduit.meld("Greeter")`. Function spells use
+their function names, such as `conduit.meld("make_settings")`. A prebuilt instance
+uses its type's name, such as `conduit.meld("AlreadyBuilt")`; the local variable
+holding that instance is not its registered name.
+
 ## Pick the form that expresses your ownership
 
 Use the class examples when you want to study construction and instance

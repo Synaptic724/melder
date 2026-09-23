@@ -11,8 +11,10 @@ reason about changes before applying them.
 - Read the package's architecture, component, and graph documents.
 - Use capability and codegen rooms, workstations, and command surfaces.
 - Follow code generation from validation to live objects.
+- Check agent-supplied references and annotate registered Spells with bind hooks.
 - Understand transaction admission and concurrent structural change.
 - Record checkpoints, restore worlds, and integrate external storage.
+- Discover named scopes through Nexus and restore their structure without restoring prior object state.
 - Work with research sets, lanes, compositions, diffs, and impact views.
 - Preview, stage, promote, and retire implementations deliberately.
 

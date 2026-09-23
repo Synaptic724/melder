@@ -1,0 +1,21 @@
+{
+  "lessons": [
+    {
+      "source": "UX_and_AIX_experiences/02_intermediate/40_bind_lifecycle_hooks.py",
+      "page": "examples/intermediate/40-bind-lifecycle-hooks.html",
+      "sha256": "e42a74aeb3faddce693ba1e54e1e7123d9c3a53722002ab711414f48dad0bb0c"
+    },
+    {
+      "source": "UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py",
+      "page": "examples/expert/37-review-agent-bindings.html",
+      "sha256": "b41ed7164d697403ba259347060e05423acc5ef6a5f529155220a698110d9551"
+    }
+  ],
+  "unique_examples_passed_across_runs": 76,
+  "qualification_reports": [
+    "tier_examples.xml",
+    "followup.xml",
+    "protocol_temp_retry.xml"
+  ],
+  "hosted_publication": false
+}

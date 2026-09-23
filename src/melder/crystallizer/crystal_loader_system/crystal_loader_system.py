@@ -279,6 +279,10 @@ class CrystalLoaderSystem(Cleanable):
             gated engine (blockers refuse pre-replay) -> adjudicated
             payload -> remembered as the last load.
 
+        Threading:
+            Caller quiesces ordinary lesser/SpellSpace lifecycle work during live
+            replay. The load gate drains transactions, not untracked pooled cycles.
+
         Args:
             checkpoint_id:
                 ULID identity of the checkpoint to load.
@@ -341,6 +345,10 @@ class CrystalLoaderSystem(Cleanable):
             engine replays it, and the adjudicated payload is remembered.
             S1 load-scope maturity: the load can RETARGET onto another
             frame and can SKIP host name collisions instead of refusing.
+
+        Threading:
+            Caller quiesces ordinary lesser/SpellSpace lifecycle work during live
+            replay. The load gate drains transactions, not untracked pooled cycles.
 
         Args:
             formation_record:

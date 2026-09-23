@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/system_document.py",
- "source_sha256": "3453c6d0c2d5b8150a21d03dd9a0bf6d516e8b2e03454d6bf41f782b19c1ddc8",
+ "source_sha256": "c6867f7e901f94c2b7082d7e5a282806a88e6c6dae4bfa69b03eb011f68d4cdb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.system_document": {
@@ -47,7 +47,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "de1668e3324a3ba4a9209f4b314c659c5bed4600d22f36be5240a61fe65f1ba0",
+   "span_sha256": "50a9c2a13991eb139aa20746f4edb3e7095308d8b6f4882f8c4d0435ba8ff053",
    "role": "Packaged hardcopy system document object.",
    "responsibilities": [
     "stores one minified JSON hardcopy string for a system document",

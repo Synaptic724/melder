@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/helpers/package.py",
- "source_sha256": "314498d9a1472da9432e5ee0246a8e2c6d6181b3e5afcf147768524de99989b3",
+ "source_sha256": "8d36a769fba4d21759fae69970f54effb30b5c53ebe32757058d0a2d25b5a591",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.helpers.package": {
@@ -60,7 +60,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ca29b1e319139bbacde8a86f308b1e5518693c70e22287be8ae71d8ff3f2b417",
+   "span_sha256": "7314ac34e376854df0c02bcd5be84152637dd90217f2e5a23136490d0e457b7c",
    "role": "Packaged callable/result helper wrapper.",
    "responsibilities": [
     "wraps a callable and its result metadata in one reusable helper object"
@@ -119,13 +119,13 @@
   },
   {
    "from": "melder.utilities.helpers.package.Package",
-   "to_label": "SimpleNamespace",
+   "to_label": "AttributeError",
    "relation": "creates",
    "confidence": "candidate"
   },
   {
    "from": "melder.utilities.helpers.package.Package",
-   "to_label": "AttributeError",
+   "to_label": "SimpleNamespace",
    "relation": "creates",
    "confidence": "candidate"
   }
@@ -134,7 +134,7 @@
   {
    "alias": "Pack",
    "target": "Package",
-   "lineno": 941
+   "lineno": 997
   }
  ],
  "imports": {

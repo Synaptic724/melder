@@ -2116,6 +2116,10 @@ def test_codegen_command_system_can_delegate_selected_runtime_helpers(
     """
     Verify codegen can use the selected conduit/runtime helper subset.
 
+    Contract:
+        Named lookup returns the authorized conduit whose live name matches
+        the published descriptor; the runtime double provides that same name.
+
     Returns:
         None.
     """
@@ -2147,6 +2151,7 @@ def test_codegen_command_system_can_delegate_selected_runtime_helpers(
     contract_spell = object()
     contracted = [("peer", linked_conduit)]
     owner_conduit = SimpleNamespace(
+        name="root",
         list_clusters=lambda: ["alpha"],
         get_links=lambda: [linked_conduit],
         get_contracted_conduits=lambda: contracted,

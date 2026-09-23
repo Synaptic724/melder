@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/frame_descriptor_manager.py",
- "source_sha256": "35af138e3a44bdfc6818dc00a4a0aaa46ea29bea9b366e4e053863061e52daa6",
+ "source_sha256": "121a53f0c53d064fe345b61f99f1af4d653ebc1638fbf15fdac3616bdca31a00",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.frame_descriptor_manager": {
@@ -42,14 +42,16 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ee92aca13a2b1974aba5219fb51b613f6348cc718b58f3d185d8e9365b9d6fe2",
+   "span_sha256": "5fb2c165271c84b9028e9724eab6a3a160b0b951df2330c036c430bf8f557a16",
    "role": "Nexus-owned frame descriptor and canonical record manager.",
    "responsibilities": [
     "owns frame descriptors by frame name",
     "publishes frame, conduit, and spell records",
     "owns Nexus-managed frame record creation and lookup",
     "refreshes frame posture cache from Aether",
-    "publishes native resolution capability and value-only selected dependency, supplied-reference and base links"
+    "publishes native resolution capability and value-only selected dependency, supplied-reference and base links",
+    "publishes named lesser lifecycle and cleared pooled values for existing records only",
+    "keeps named Cloud summaries distinct from normal-root inventory"
    ],
    "owns_state": [
     "_frame_descriptors_by_name",

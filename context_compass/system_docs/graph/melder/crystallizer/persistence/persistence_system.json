@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/persistence/persistence_system.py",
- "source_sha256": "6ddc89180add867c176cd2dffb5fb06cf1a5638e08b458d9fad9cbf8eefe747a",
+ "source_sha256": "12a9df0e25520cf679191689a450ecee0a7983268e82eb0e2b1082a35d56b928",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.persistence.persistence_system": {
@@ -64,6 +64,7 @@
     "record_spell_activity",
     "record_spell_crystal",
     "remove_cluster_crystal",
+    "remove_conduit_crystal",
     "remove_contract_crystal",
     "remove_frame_crystal",
     "remove_spell_crystal",
@@ -74,11 +75,11 @@
     "verify_checkpoint_chain"
    ],
    "shape": {
-    "method_count": 41,
+    "method_count": 42,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "603ec1f03735e3586da60b769e07801b616fda1b590bab71025df2258ff0d9b0",
+   "span_sha256": "0a0f797d638b421e5da8ff3eb9ea9bc75419461e158a6f9aae75b693f80280ec",
    "role": "Owns ALL persistence stores: profiles, the checkpoint ledger, and the cache.",
    "responsibilities": [
     "routes twin emissions to the ACTIVE profile",
@@ -86,7 +87,8 @@
     "verifies chain fold-safety (verify_checkpoint_chain)",
     "flushes/reloads the profile-scoped cache and enforces its FIFO cap",
     "constructs the RestoreEngine for load_checkpoint (chain detached under lock, engine runs outside it)",
-    "inserts cached items insert-if-absent (cache and external-manager import sinks)"
+    "inserts cached items insert-if-absent (cache and external-manager import sinks)",
+    "routes conduit-only removal to the active profile without loader dependencies"
    ],
    "owns_state": [
     "profiles_by_name",

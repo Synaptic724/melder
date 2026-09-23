@@ -1,0 +1,62 @@
+[
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_build_asset_runner.py",
+    "Hash": "A70D3F111FBF30F1F7B849C6E95892DB14EE1F26BC14D1B8B3233EE2B8DB1321"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_agent_documentation\\_builder.py",
+    "Hash": "3355739447BE32D3FEDB2ACF1E34709011D030BE4B03ED460897E4EABA1BD6DE"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_agent_documentation\\agent_documentation.py",
+    "Hash": "97D18A65DCA4046578E0354A3AECAFE376E9FFF01A15CBC1EC5727514B31793C"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_agent_documentation\\manifest\\agent_documentation_manifest.py",
+    "Hash": "D5A2A0C0B3E66B9B2C7112438D2B49E02B80AC91900A412D142D10216C12B636"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_bind_guard\\_builder.py",
+    "Hash": "D489C6F750871953F94521C402A00EDE1D84A598F071017B4E015FBE0D340241"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_bind_guard\\bind_guard.py",
+    "Hash": "051831289A91E4851C1016448743C7D8DC084E4DA82CF6AC9C8531581A76DAE2"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_bind_guard\\manifest\\bind_guard_manifest.py",
+    "Hash": "5529699E17706381306EAFE1CF0D1667353CC022EC7DF0903DB333732608775E"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_system_documents\\_builder.py",
+    "Hash": "84066D37F33C13695B6ADC89904719248C0BF7740F289A1FF8298C8662972F30"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_system_documents\\system_documents.py",
+    "Hash": "6A11E3037F4453E794E91255BBEE0CFC901107640432B41299ECD2903DA02863"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_system_documents\\manifest\\graph_adjacency_manifest.py",
+    "Hash": "5F15F493AFC433EB246B6B56AB7542737AC5558601D1F846350AA9448A2EB32B"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_system_documents\\manifest\\system_documents_index.py",
+    "Hash": "E793CFE5099FCC9F8F931B058648F3F1D137A82DA9F41CB5E3D480756EF0A615"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_system_documents\\manifest\\system_documents_manifest.py",
+    "Hash": "55296A44AC9F3FC736ECA57954C66485CCDE940AEF2FD0FA4A93EB027CEE1F12"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_system_documents\\payloads\\src_architecture_payload.py",
+    "Hash": "7AEFE9AA79FF035F548F0FFCFB3F9A6F82D874A299CD88CC8AA3BCE19A1BBDE7"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_system_documents\\payloads\\src_components_payload.py",
+    "Hash": "AE423E5170BBC458A10F62F669F55B1ADD29C203D8B6C4E2F9682323304CE04A"
+  },
+  {
+    "Path": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\_build_assets\\_system_documents\\payloads\\src_graph_payload.py",
+    "Hash": "33553A040B07B6C40F441780696B5748F0FA5648F239B2351CAC10C2E306761E"
+  }
+]

@@ -29,8 +29,8 @@ def main() -> None:
     book.bind(spell=Watched, existence="many")
     conduit = book.conjure()
 
-    conduit.meld(Watched)
-    conduit.meld(Watched)
+    conduit.meld("Watched")
+    conduit.meld("Watched")
     print("meld pipeline observed:", events)
     assert events.count("pre") >= 2 and events.count("post") >= 2
     print("every meld fired pre and post - the pipeline is watchable")

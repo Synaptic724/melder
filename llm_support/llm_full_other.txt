@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 672e05c9834f7097574228a8e54388017a6680de8504657b380e769ba1a490e2
-FILE COUNT: 358
+SOURCE FINGERPRINT: 57c2034b7b93b4429a1fa9b04df70bc4138442ba7bb38bfa8b65c54eba27eaec
+FILE COUNT: 366
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -4321,7 +4321,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: 7fb7c607315d42b8491d7a1f155c80fb3cc4605ef992bb043a68abe845c20e56
+CONTENT SHA256: a57cf2af2457ecc58524e6f65341e00f8966cc54a0539bc90672f78297c3463d
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -4645,6 +4645,10 @@ assert conduit.meld("Greeter") is greeter   # `unique` → same instance
 
 Your classes stay plain Python. Everything lives on `md.*` — if you ever need a
 deep import path, that's a bug in our public surface, not a pattern to copy.
+
+Pass the Python class or callable to `bind`; resolve it by its quoted registered
+name with `meld("Greeter")`. The tutorials use this name-based lookup throughout.
+Keep opaque machine identities explicit with `meld(spell_id=...)`.
 
 ## 🟢 The Rhythm
 <sub>**Beginner.** Three verbs, one order.</sub>
@@ -5443,7 +5447,7 @@ END FILE: README.md
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/01_hello_meld.py
-CONTENT SHA256: 31da401764c7aa1f8fb5d40be906508cc30333b1d68edf96b359d15b848a35b2
+CONTENT SHA256: f5c8a20b4c1ff728124862acbfdce5a76fd39010efc0793c8aed251588140d19
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5468,13 +5472,13 @@ def main() -> None:
     book.bind(spell=Greeter, existence="unique")
     conduit = book.conjure()
 
-    greeter = conduit.meld(Greeter)
+    greeter = conduit.meld("Greeter")
     assert isinstance(greeter, Greeter)
     assert isinstance(conduit, md.Conduit)
     print(greeter.greet())
 
     # unique existence means the SAME instance comes back every meld
-    again = conduit.meld(Greeter)
+    again = conduit.meld("Greeter")
     assert again is greeter
     print("unique lifecycle held:", again is greeter)
 
@@ -5486,7 +5490,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/01_hello_meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/02_lifecycles_unique_vs_many.py
-CONTENT SHA256: 9a1b5c17ba1be86b6a436e36a1e05ba7aeb2c0a1469d684b608d0be69f018960
+CONTENT SHA256: 2f6a3cc6de0ecc6fc23f6a892f64f75896672825fbd49a41d8dffe4260554029
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5513,13 +5517,13 @@ def main() -> None:
     book.bind(spell=RequestScratchpad, existence="many")
     conduit = book.conjure()
 
-    cache_a = conduit.meld(SharedCache)
-    cache_b = conduit.meld(SharedCache)
+    cache_a = conduit.meld("SharedCache")
+    cache_b = conduit.meld("SharedCache")
     assert cache_a is cache_b
     print("unique: one instance, shared -", cache_a is cache_b)
 
-    pad_a = conduit.meld(RequestScratchpad)
-    pad_b = conduit.meld(RequestScratchpad)
+    pad_a = conduit.meld("RequestScratchpad")
+    pad_b = conduit.meld("RequestScratchpad")
     assert pad_a is not pad_b
     print("many: fresh instance per meld -", pad_a is not pad_b)
 
@@ -5531,7 +5535,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/02_lifecycles_unique_vs_many.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/03_bind_functions_and_instances.py
-CONTENT SHA256: 116bdae139bf8e992bbe676adbe83b32e47ca58da9de7ccdcbd999c92250e30c
+CONTENT SHA256: de4dc9877162ae5f26fa3bc0aa555a3f8b7b62e8bbb93ff3709ca827403847bf
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5563,12 +5567,13 @@ def main() -> None:
 
     conduit = book.conjure()
 
-    settings = conduit.meld(make_settings)
+    settings = conduit.meld("make_settings")
     print("function spell melded ->", settings)
-    again = conduit.meld(make_settings)
+    again = conduit.meld("make_settings")
     print("unique law: same product back?", settings is again)
 
-    held = conduit.meld(prebuilt)
+    # An instance registers under its type's name, not the variable "prebuilt".
+    held = conduit.meld("AlreadyBuilt")
     assert held is prebuilt and held.label == "built-by-hand"
     print("instance spell melded:", held.label)
 
@@ -5580,7 +5585,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/03_bind_functions_and_instances.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/04_named_bindings.py
-CONTENT SHA256: 04555e7824c864d54a95851f70394e45319089ef100259f151853fbbf50b17e2
+CONTENT SHA256: fbdbb85d6d33267d72ccdc7671b70516d06ba8594907393f037c680962a8102b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5614,8 +5619,8 @@ def main() -> None:
     )
     conduit = book.conjure()
 
-    primary = conduit.meld(PostgresStore, binding_name="primary")
-    local = conduit.meld(SqliteStore, binding_name="local")
+    primary = conduit.meld("PostgresStore", binding_name="primary")
+    local = conduit.meld("SqliteStore", binding_name="local")
     assert primary.kind == "postgres" and local.kind == "sqlite"
     print("named bindings resolved:", primary.kind, "+", local.kind)
 
@@ -5627,7 +5632,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/04_named_bindings.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/05_lesser_conduit_scopes.py
-CONTENT SHA256: b50ce7fd0996fd3a11c008ea705ea9d70ccd3995a7d3968b5e56af48d5273019
+CONTENT SHA256: abda5f535f78154fb4a7279d412401b2704fe11648a6449840d2c868b0eb537a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5656,13 +5661,13 @@ def main() -> None:
     root = book.conjure()
     child = root.create_lesser_conduit()
 
-    assert root.meld(AppWideConfig) is child.meld(AppWideConfig)
+    assert root.meld("AppWideConfig") is child.meld("AppWideConfig")
     print("unique: shared across root and child")
 
-    root_session = root.meld(PerScopeSession)
-    child_session = child.meld(PerScopeSession)
+    root_session = root.meld("PerScopeSession")
+    child_session = child.meld("PerScopeSession")
     assert root_session is not child_session
-    assert child.meld(PerScopeSession) is child_session
+    assert child.meld("PerScopeSession") is child_session
     print("unique_per_conduit: one per scope, stable within it")
 
 
@@ -5673,7 +5678,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/05_lesser_conduit_scopes.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/06_error_vocabulary.py
-CONTENT SHA256: 2a108bac7745d3a473fadcd73907a811dd36bbba16586cb65d40a9eb29b3a3cd
+CONTENT SHA256: fde6333eab0801c69647833347fd4aa92376fc28789da2a9973d9235179773b5
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5699,7 +5704,7 @@ def main() -> None:
     conduit = book.conjure()
 
     try:
-        conduit.meld(NeverRegistered)
+        conduit.meld("NeverRegistered")
     except KeyError as err:
         # the documented "not found anywhere" contract is one stable KeyError
         print("unregistered spell -> KeyError:", err)
@@ -5722,7 +5727,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/06_error_vocabulary.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/07_strings_as_vocabulary.py
-CONTENT SHA256: f52dabc98eb5056113f0eff63c01fe7977df464918dc745fa6c5e44dfffceebb
+CONTENT SHA256: 5c852cc277c0ec0fcfd152be2c6c99e84a63f9a9d5e926615348cab26fcd4aef
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5753,8 +5758,8 @@ def main() -> None:
     )
     conduit = book.conjure()
 
-    s_a, s_b = conduit.meld(FromStrings), conduit.meld(FromStrings)
-    e_a, e_b = conduit.meld(FromEnums), conduit.meld(FromEnums)
+    s_a, s_b = conduit.meld("FromStrings"), conduit.meld("FromStrings")
+    e_a, e_b = conduit.meld("FromEnums"), conduit.meld("FromEnums")
     assert s_a is not s_b and e_a is not e_b
     print("string and enum registrations behave identically (many)")
 
@@ -5766,7 +5771,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/07_strings_as_vocabulary.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/08_disposal_contract.py
-CONTENT SHA256: 76177c3fb8a453d2c5c69a92572a24f7feef4d05d6c0a24c22a09410a6f44b52
+CONTENT SHA256: 4cae9eb4d344346e06d6e1cfb04c2b68c96b26601edc5ff49b2cffe9ffcd325f
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5795,7 +5800,7 @@ def main() -> None:
         disposal_method_names=["close"],
     )
     conduit = book.conjure()
-    conn = conduit.meld(PooledConnection)
+    conn = conduit.meld("PooledConnection")
     assert isinstance(conn, PooledConnection) and not CLOSED
 
     conduit.cleanup()
@@ -5813,7 +5818,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/08_disposal_contract.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/09_spellframe_grouping.py
-CONTENT SHA256: 4a411f46429b943325e71106b532e92de9d1089b3ce7c5792b12972d138b5033
+CONTENT SHA256: 3ae707d68163ad5cce87cf834ac2b528b7faa28d93aee92accf07752e5a2a41d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5848,11 +5853,11 @@ def main() -> None:
               spellframe="memory", binding_name="cache")
     conduit = book.conjure()
 
-    primary = conduit.meld(PrimaryStore, spellframe="storage",
+    primary = conduit.meld("PrimaryStore", spellframe="storage",
                            binding_name="primary")
-    replica = conduit.meld(ReplicaStore, spellframe="storage",
+    replica = conduit.meld("ReplicaStore", spellframe="storage",
                            binding_name="replica")
-    cache = conduit.meld(CacheStore, spellframe="memory",
+    cache = conduit.meld("CacheStore", spellframe="memory",
                          binding_name="cache")
     assert (primary.role, replica.role, cache.role) == (
         "primary", "replica", "cache")
@@ -5866,7 +5871,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/09_spellframe_grouping.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/10_explicit_cleanup.py
-CONTENT SHA256: 5777fad5b8fc7e71131037ecfa2a4e46401b46ed58ea1f0feb9b0fe26ffc891c
+CONTENT SHA256: 4a9687b14d4a69f2de0c2038ef9a87660a47a28601a9a581c93ec752f2d46a92
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5887,7 +5892,7 @@ def main() -> None:
     book = md.Spellbook()
     book.bind(spell=Service, existence="unique")
     conduit = book.conjure()
-    assert isinstance(conduit.meld(Service), Service)
+    assert isinstance(conduit.meld("Service"), Service)
 
     conduit.cleanup()
     book.cleanup()
@@ -5907,7 +5912,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/10_explicit_cleanup.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/11_bind_many_at_once.py
-CONTENT SHA256: efa10e0765169bfd96a0e80af3f483afc1acb8c42a4465bb20036e249892fd49
+CONTENT SHA256: ac0abe17c1b027457524182153c85210590af6a93d642a09818c4b0a64428ebc
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -5937,8 +5942,10 @@ def main() -> None:
         book.bind(spell=cls, existence="unique")
     conduit = book.conjure()
 
-    assert all(isinstance(conduit.meld(c), c)
-               for c in (Users, Orders, Invoices))
+    # Registration takes classes; resolution uses their registered names.
+    assert isinstance(conduit.meld("Users"), Users)
+    assert isinstance(conduit.meld("Orders"), Orders)
+    assert isinstance(conduit.meld("Invoices"), Invoices)
     print("three spells bound with one plain loop")
 
 
@@ -5988,7 +5995,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/12_agent_first_read.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/13_existence_unique.py
-CONTENT SHA256: 83a5d8290e01eb5a279adfdba4945ef43b62d6233ed6571a307d393f3c4cf747
+CONTENT SHA256: a43ed9f47a27a1cf89693687f43f4c112b9e78c082a1751fc6e8eac1fe185519
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6011,8 +6018,8 @@ def main() -> None:
     child = root.create_lesser_conduit()
     grandchild = child.create_lesser_conduit()
 
-    instances = {root.meld(WorldClock), child.meld(WorldClock),
-                 grandchild.meld(WorldClock)}
+    instances = {root.meld("WorldClock"), child.meld("WorldClock"),
+                 grandchild.meld("WorldClock")}
     assert len(instances) == 1
     print("unique: one WorldClock across three scopes")
 
@@ -6024,7 +6031,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/13_existence_unique.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/14_existence_many.py
-CONTENT SHA256: 847417534748284674b79e7a49af4c8ae01649d9c83158477ed91d23c8ddede4
+CONTENT SHA256: 992bb738c1aa09a70e6215aa05af289ff6e8f221147bd6dfb383f973ba84d0ec
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6049,7 +6056,7 @@ def main() -> None:
     book.bind(spell=WorkOrder, existence="many")
     conduit = book.conjure()
 
-    orders = [conduit.meld(WorkOrder) for _ in range(4)]
+    orders = [conduit.meld("WorkOrder") for _ in range(4)]
     assert len({id(o) for o in orders}) == 4
     assert [o.number for o in orders] == [1, 2, 3, 4]
     print("many: four melds, four fresh WorkOrders:", [o.number for o in orders])
@@ -6062,7 +6069,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/14_existence_many.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/15_existence_unique_per_conduit.py
-CONTENT SHA256: ef8f251f6da3269fcafcac0dc3e9a7ebc881403a75e77c848141251c1b6d76e3
+CONTENT SHA256: 5a6165cc4b5519e69d3c86db57b7be8823e27ae8ecbe06d8a95ace9b90801dd4
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6085,9 +6092,9 @@ def main() -> None:
     child_a = root.create_lesser_conduit()
     child_b = root.create_lesser_conduit()
 
-    a1, a2 = child_a.meld(ScopeLocalSession), child_a.meld(ScopeLocalSession)
-    b1 = child_b.meld(ScopeLocalSession)
-    r1 = root.meld(ScopeLocalSession)
+    a1, a2 = child_a.meld("ScopeLocalSession"), child_a.meld("ScopeLocalSession")
+    b1 = child_b.meld("ScopeLocalSession")
+    r1 = root.meld("ScopeLocalSession")
     assert a1 is a2
     assert len({id(a1), id(b1), id(r1)}) == 3
     print("unique_per_conduit: stable within a scope, three scopes = three instances")
@@ -6100,7 +6107,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/15_existence_unique_per_conduit.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/16_typed_melding.py
-CONTENT SHA256: c048344bbe2584ef6000d105ac41f9eb45abb23e4f1f1bd1f4639444744e08ce
+CONTENT SHA256: e53775c0fcc3f49c14f24e3d0acd2c1b67cec4ca2e2c8bc9cae471094e197f0b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6123,7 +6130,8 @@ def main() -> None:
     book.bind(spell=WeatherService, existence="unique")
     conduit: md.Conduit = book.conjure()
 
-    weather: WeatherService = conduit.meld(WeatherService)
+    # The string selects the spell; the annotation describes the returned object.
+    weather: WeatherService = conduit.meld("WeatherService")
     report: str = weather.today()
     assert report == "sunny, 24C"
     print("typed end to end:", report)
@@ -6283,7 +6291,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/19_lifecycle_map.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/20_defaults_just_work.py
-CONTENT SHA256: 4901ae4ba5c752a7a906b0eeb7f200fb3fa1ea4156a01d9d40b9f3ad1911648d
+CONTENT SHA256: 55d6615fd26da5ba69ba5baf260680b5b2af7d1b6299c68ee202c2bfe430d636
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6307,7 +6315,7 @@ def main() -> None:
     book.bind(spell=HttpClient, existence="unique")
     conduit = book.conjure()
 
-    client = conduit.meld(HttpClient)
+    client = conduit.meld("HttpClient")
     assert (client.timeout, client.retries) == (30, 3)
     print("defaults arrived untouched:", client.timeout, client.retries)
 
@@ -6319,7 +6327,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/20_defaults_just_work.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/21_the_basic_rhythm.py
-CONTENT SHA256: 372777617b9e14bfe29cac66b23901fc2e0c3fa9a156fbac088345199ea66df1
+CONTENT SHA256: f5406d2c839d8466ce2afbf041a3af34cb5dfeaa44b9ef9eebba757bc5fb627a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6356,9 +6364,9 @@ def main() -> None:
 
     # 3. meld everywhere, as often as you like
     for _ in range(3):
-        server = conduit.meld(Server)
+        server = conduit.meld("Server")
         assert isinstance(server, Server)
-    assert conduit.meld(Config) is conduit.meld(Config)
+    assert conduit.meld("Config") is conduit.meld("Config")
     print("bind everything, conjure once, meld everywhere")
 
 
@@ -6508,7 +6516,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/24_same_class_many_names.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/25_frames_as_dict_classification.py
-CONTENT SHA256: 404288c08cc7e2690deb22361aacb0a496c230c078f871370b16b41adef18022
+CONTENT SHA256: 77605ce25139d5cdd14386407db0b24779ff2f0d9d7526d3ecbf7f1879be6a3c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6559,9 +6567,9 @@ def main() -> None:
     conduit = book.conjure()
 
     # melding = looking up a category member by its full address
-    users = conduit.meld(UsersRepo, spellframe="repositories",
+    users = conduit.meld("UsersRepo", spellframe="repositories",
                          binding_name="users")
-    email = conduit.meld(EmailNotifier, spellframe="notifiers",
+    email = conduit.meld("EmailNotifier", spellframe="notifiers",
                          binding_name="email")
     assert isinstance(users, UsersRepo) and isinstance(email, EmailNotifier)
     print("categories addressed as [category][name]: repositories, notifiers")
@@ -6574,7 +6582,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/25_frames_as_dict_classification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/26_meld_address_forms.py
-CONTENT SHA256: 5b951eba78852c0bccf3c3e9d56d2b33a89ef915f89f86396c30f6142b5c264c
+CONTENT SHA256: 5baabfaa5b31da865eb4a690e161b438a5c4f2ceb8abb47e5e9935c8a41da568
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6582,11 +6590,11 @@ TIER: beginner (26)
 GOAL: THE ADDRESS LAW (run-proven + doc-canon): every spell lives at
       one (frame_key, binding_key) address - frame_key is your spellframe,
       or the spell's normalized name if you gave none; binding_key is
-      your binding_name, or the default slot. The meld forms are just
-      three ways to CONSTRUCT that key - so a frameless, nameless bind
-      answers to the spell object and to spell_name; a framed+named
-      bind answers only at (frame, name).
-SURFACE EXERCISED: meld(Class), meld("SpellName"), meld(spell_id=...),
+      your binding_name, or the default slot. Human callers use a quoted
+      spell name; machine callers use an explicit spell_id. A categorized
+      registration also has a complete (spellframe, binding_name) address.
+      A name alone does not supply a custom spellframe.
+SURFACE EXERCISED: meld("SpellName"), meld(spell_id=...),
                    meld(spellframe=..., binding_name=...)
 """
 import melder as md
@@ -6610,12 +6618,11 @@ def main() -> None:
               spellframe="finance", binding_name="ledger")
     conduit = book.conjure()
 
-    by_object = conduit.meld(BillingService)
     by_name = conduit.meld("BillingService")
     # Explicit machine form: SHA identity never shares the human string slot.
     by_id = conduit.meld(spell_id=spell_id)
-    assert by_object is by_name is by_id
-    print("default-address spell answers all three:", by_object.total())
+    assert by_name is by_id
+    print("quoted name and explicit ID resolve the same spell:", by_name.total())
 
     ledger = conduit.meld(spellframe="finance", binding_name="ledger")
     assert isinstance(ledger, LedgerService)
@@ -6639,7 +6646,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/26_meld_address_forms.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/27_pass_the_conduit_around.py
-CONTENT SHA256: b7e1c24bb3b05ca77d266e5bed3b72a5ae430fa6fe016174c7d9a93163fbb039
+CONTENT SHA256: 54b5766fd0769f3bde0be1890f415c622b979f974c481baa6ba9182ce842f3c3
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6658,7 +6665,7 @@ class Mailer:
 
 
 def welcome_new_user(conduit: md.Conduit, username: str) -> str:
-    mailer = conduit.meld(Mailer)
+    mailer = conduit.meld("Mailer")
     return mailer.send(username)
 
 
@@ -6681,7 +6688,7 @@ def main() -> None:
     # the whole reason to pass the conduit instead of re-conjuring: a
     # second conjure would have built a second world with its own Mailer,
     # and these two would not be the same object.
-    assert conduit.meld(Mailer) is conduit.meld(Mailer)
+    assert conduit.meld("Mailer") is conduit.meld("Mailer")
     print("one world handle, passed where needed - and the SAME Mailer")
     print("  answered both calls, which is what re-conjuring would break")
 
@@ -6693,7 +6700,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/27_pass_the_conduit_around.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/28_real_objects_no_wrappers.py
-CONTENT SHA256: a36c7b048770adaebd81df4eba5e4f4325e42181d168c53c489fed488e494b09
+CONTENT SHA256: 19d089777bc0879c28649d361747c272cb120f741fdb1fdf7c24ddf39063f3f4
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6716,10 +6723,10 @@ def main() -> None:
     book.bind(spell=Engine, existence="unique")
     conduit = book.conjure()
 
-    engine = conduit.meld(Engine)
+    engine = conduit.meld("Engine")
     assert type(engine) is Engine
     assert isinstance(engine, Engine) and engine.cylinders == 8
-    assert engine is conduit.meld(Engine)
+    assert engine is conduit.meld("Engine")
     print("the real object, every time:", type(engine).__name__)
 
 
@@ -6730,7 +6737,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/28_real_objects_no_wrappers.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/29_many_state_isolation.py
-CONTENT SHA256: f4be714c7a07222d6ee29bd947305b938defaa519876612a062c8ce2a33f27fa
+CONTENT SHA256: 5d6344d5d62de113c0505fae2f144a3378a565e577ede20c6a8737c10815bc58
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6753,9 +6760,9 @@ def main() -> None:
     book.bind(spell=Basket, existence="many")
     conduit = book.conjure()
 
-    first = conduit.meld(Basket)
+    first = conduit.meld("Basket")
     first.items.append("apples")
-    second = conduit.meld(Basket)
+    second = conduit.meld("Basket")
     assert first.items == ["apples"] and second.items == []
     print("fresh instances, fresh state:", first.items, "vs", second.items)
 
@@ -6936,7 +6943,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/33_prebuilt_registry.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/34_scope_contrast_one_tree.py
-CONTENT SHA256: 61283cc67c3a66a4d9f43b561772847cdc53f2942402f08bbe8f39358534d869
+CONTENT SHA256: 82c5d4ef228eb3ae59d6561af914761d69eff8ce52b5b159d048d0c359b9e154
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -6964,9 +6971,9 @@ def main() -> None:
     child = root.create_lesser_conduit()
     grandchild = child.create_lesser_conduit()
 
-    registries = {id(c.meld(GlobalRegistry))
+    registries = {id(c.meld("GlobalRegistry"))
                   for c in (root, child, grandchild)}
-    caches = {id(c.meld(ScopeCache))
+    caches = {id(c.meld("ScopeCache"))
               for c in (root, child, grandchild)}
     assert len(registries) == 1 and len(caches) == 3
     print("same tree: 1 shared registry, 3 scope-local caches")
@@ -7028,7 +7035,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/35_disposal_multiple_methods.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/36_one_book_one_conduit.py
-CONTENT SHA256: ea5e82b4e4a8a441ca14d77ec3520db911fc83ba456a612bf229d8cd8aa00b42
+CONTENT SHA256: 6da96a061d2c7a392a862e381e1ef720d56038bb42cd3a9a7f07347da9a88d1c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7058,7 +7065,7 @@ def main() -> None:
 
     # scopes within the world: lesser conduits
     child = root.create_lesser_conduit()
-    assert root.meld(WorldState) is child.meld(WorldState)
+    assert root.meld("WorldState") is child.meld("WorldState")
     print("scopes via lesser conduits; roots via separate books")
 
 
@@ -7069,7 +7076,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/36_one_book_one_conduit.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/37_bind_vocabulary_cheatsheet.py
-CONTENT SHA256: 230b25e5c31d8dbf1416e6a3015bfaa64afd50882b9bdcda678119a40b904cd4
+CONTENT SHA256: 741c9016c00badca7b281ae4e4e3a4db2d07c760ddee8bbadcc8e72a041a38f4
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7112,7 +7119,7 @@ def main() -> None:
         profile="general",
     )
     instance = book.conjure().meld(
-        FullyDressed, spellframe="demo", binding_name="fully-dressed"
+        "FullyDressed", spellframe="demo", binding_name="fully-dressed"
     )
     assert isinstance(instance, FullyDressed)
     print("registration using the full vocabulary melded:", type(instance).__name__)
@@ -7278,7 +7285,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/40_beginner_capstone.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/41_you_own_the_memory_now.py
-CONTENT SHA256: 09634543f77e020858add5ad4e06a35ebe8c4373d359c19bc8ddb9493b7f4a7c
+CONTENT SHA256: abb7c8bab79e0f78b5793d0b6bcd0baa81e1fd6980898fe87eef3672ac2dd65f
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7310,7 +7317,7 @@ def main() -> None:
     book.bind(spell=HeavyThing, existence="unique")
     conduit = book.conjure()
 
-    thing = conduit.meld(HeavyThing)
+    thing = conduit.meld("HeavyThing")
     watcher = weakref.ref(thing)   # watches WITHOUT holding
 
     # Drop OUR reference. In plain Python this object would now die...
@@ -7549,7 +7556,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/capstone_models.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/01_scan_bind_decorator.py
-CONTENT SHA256: ba6477c604da5d40ff11af72b2751233c34584416cca1f3ecf7125962c139d87
+CONTENT SHA256: b594f0cc561fedc8f0e318e77784d76a34a2f7b6e998466a577fc6e1bf353d6d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7581,10 +7588,10 @@ def main() -> None:
     assert len(bound) == 2
 
     conduit = book.conjure()
-    hub_a = conduit.meld(MetricsHub)
-    hub_b = conduit.meld(MetricsHub)
-    ticket_a = conduit.meld(JobTicket)
-    ticket_b = conduit.meld(JobTicket)
+    hub_a = conduit.meld("MetricsHub")
+    hub_b = conduit.meld("MetricsHub")
+    ticket_a = conduit.meld("JobTicket")
+    ticket_b = conduit.meld("JobTicket")
     assert hub_a is hub_b and ticket_a is not ticket_b
     print("decorated lifecycles held: unique hub, many tickets")
 
@@ -7596,7 +7603,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/01_scan_bind_decorator.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/02_spellbinder_full_chain.py
-CONTENT SHA256: 24339ce3af28a34ceb0893d2e9395dbc394f66fd7dc99b2564d32eb86957a602
+CONTENT SHA256: 02db97401e43c0fcaa72651796eedac9da9a3bb98523216218df548736c56363
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7641,7 +7648,7 @@ def main() -> None:
 
     conduit = book.conjure()
     client = conduit.meld(
-        HttpClient, spellframe="network", binding_name="payments-api",
+        "HttpClient", spellframe="network", binding_name="payments-api",
         override={"base_url": "https://pay.example", "timeout": 30},
     )
     assert client.base_url == "https://pay.example" and client.timeout == 30
@@ -7650,8 +7657,8 @@ def main() -> None:
     # Constructor arguments ride override= at meld time.
 
     child = conduit.create_lesser_conduit()
-    policy_root = conduit.meld(RetryPolicy, spellframe="network")
-    policy_child = child.meld(RetryPolicy, spellframe="network")
+    policy_root = conduit.meld("RetryPolicy", spellframe="network")
+    policy_child = child.meld("RetryPolicy", spellframe="network")
     assert policy_root is not policy_child
     print("per-conduit policy under a spellframe: one per scope")
 
@@ -7663,7 +7670,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/02_spellbinder_full_chain.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/03_registration_hooks.py
-CONTENT SHA256: d57a256da6f1b8df69ce7d9dc14e17bc732a07ed5bfb38d401a929c088960b55
+CONTENT SHA256: cdb4442a767935ca41a3b6d9535575c3257a176e1d86b2d3d95605ad85469eb7
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7701,7 +7708,7 @@ def main() -> None:
         .finalize()
 
     conduit = book.conjure()
-    engine = conduit.meld(Engine)
+    engine = conduit.meld("Engine")
     assert isinstance(engine, Engine)
     assert "engine constructed" in EVENTS
     print("lifecycle event order:", " -> ".join(EVENTS))
@@ -7714,7 +7721,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/03_registration_hooks.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/04_spellspace_scoped_resolution.py
-CONTENT SHA256: 640d768c09652832611d7be6464e3a0c6c7888bb29610bd9d0fb66b375a20288
+CONTENT SHA256: d66bbcd0467cc0a0d47867d21d7ffc751bce0585d87217d190b9415fe33730c2
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7741,9 +7748,9 @@ def main() -> None:
     space_two = conduit.enter_spellspace()
     assert isinstance(space_one, md.SpellSpace)
 
-    one_a = space_one.meld(RoomState)
-    one_b = space_one.meld(RoomState)
-    two_a = space_two.meld(RoomState)
+    one_a = space_one.meld("RoomState")
+    one_b = space_one.meld("RoomState")
+    two_a = space_two.meld("RoomState")
     print("stable within a space:", one_a is one_b)
     print("separate across spaces:", one_a is not two_a)
 
@@ -7755,7 +7762,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/04_spellspace_scoped_resolution
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/05_existence_unique_per_conduit_lineage.py
-CONTENT SHA256: 9a390a16846abbd66b1a163a84141905411f677bdd0da2cbf0c803b5a502563c
+CONTENT SHA256: cadae7d732d0dc5bdd039d45ed5b6009caaf4f7aa5281f56d76e779f601121b6
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7785,9 +7792,9 @@ def main() -> None:
     child = root.create_lesser_conduit()
     grandchild = child.create_lesser_conduit()
 
-    ledgers = [root.meld(FamilyLedger),
-               child.meld(FamilyLedger),
-               grandchild.meld(FamilyLedger)]
+    ledgers = [root.meld("FamilyLedger"),
+               child.meld("FamilyLedger"),
+               grandchild.meld("FamilyLedger")]
     assert ledgers[0] is ledgers[1] is ledgers[2]
     print("three generations, one ledger:", type(ledgers[0]).__name__)
     print("a sibling family = a second book with its own root (one "
@@ -7846,7 +7853,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/06_spell_metadata_kwargs.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/07_lesser_conduits_child_scopes.py
-CONTENT SHA256: a6464fb0416bf2a4397b47b0846849a649178d7cf5d315449b37fc20b5bb809b
+CONTENT SHA256: 627700c6e10ff5531478e520c5796f95c1a2c4428a144db51e69d49104afc83b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -7878,8 +7885,8 @@ def main() -> None:
 
     # "unique" is a world singleton, so the child resolves the SAME
     # instance the root does.
-    from_root = root.meld(ScopedService)
-    from_child = child.meld(ScopedService)
+    from_root = root.meld("ScopedService")
+    from_child = child.meld("ScopedService")
     assert from_root is from_child
     print("child scope melds the root's world:", type(from_child).__name__)
 
@@ -7990,7 +7997,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/09_permissions_block_sharing.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/10_spellbinder_fluent_basics.py
-CONTENT SHA256: 09e95d9e657152fae248de3b9d9e597194799fdb64cb7c3daa62ec97afb5eb43
+CONTENT SHA256: d9d3d306966efc3192f937cd46b43b8bca5f2fd3bb24d5b634883f10fb1f64e3
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8021,10 +8028,10 @@ def main() -> None:
     print("fluent binds returned spell ids:", sink_id[:8], audit_id[:8])
 
     conduit = book.conjure()
-    sink_a = conduit.meld(TelemetrySink, binding_name="sink")
-    sink_b = conduit.meld(TelemetrySink, binding_name="sink")
-    audit_a = conduit.meld(AuditTrail)
-    audit_b = conduit.meld(AuditTrail)
+    sink_a = conduit.meld("TelemetrySink", binding_name="sink")
+    sink_b = conduit.meld("TelemetrySink", binding_name="sink")
+    audit_a = conduit.meld("AuditTrail")
+    audit_b = conduit.meld("AuditTrail")
     assert sink_a is sink_b and audit_a is not audit_b
     print("fluent lifecycles held: unique sink, many audit trails")
 
@@ -8036,7 +8043,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/10_spellbinder_fluent_basics.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/11_permissions_linking_vocabulary.py
-CONTENT SHA256: c796881a755facd08ceca357a40c9d14a9f7cf6f3f53f2d2c44556c0104ac2fa
+CONTENT SHA256: 7f4c09eb78398131cf2202a8e342a6eb1dafc85c4e43dbbe10cfff5ffd7c2e68
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8062,7 +8069,7 @@ def main() -> None:
               permissions="read")
     conduit = book.conjure()
 
-    held = conduit.meld(prebuilt)
+    held = conduit.meld("PublishedConfig")
     assert held is prebuilt
     print("read permission: resolve works, instance handed back untouched")
     print("vocabulary: read < create (create implies read); block stops sharing")
@@ -8213,7 +8220,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/14_introspect_the_book.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/15_constructor_di_by_annotation.py
-CONTENT SHA256: c236299fa3f92bc554c13028d6abb57c444586548d233a1d8f648722858d98be
+CONTENT SHA256: 4c4d76e275b3458ae6e5e22c76a6c82c41518781443c6deb211bd8e74a32ddfe
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8245,7 +8252,7 @@ def main() -> None:
     book.bind(spell=ReportService, existence="unique")
     conduit = book.conjure()
 
-    report = conduit.meld(ReportService)
+    report = conduit.meld("ReportService")
     assert isinstance(report.database, Database)
     print(report.run())
     print("annotated the parameter; melder built the graph")
@@ -8258,7 +8265,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/15_constructor_di_by_annotation
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/16_spellmap_defaults.py
-CONTENT SHA256: 46f4ded8b4264dfb35a7c84828462b84cad31cdc71c90a6ad56e0d10f82d86ed
+CONTENT SHA256: c64c13d2d4f8dbcbc5435ff1039772dc1aaf797663e51ce9c6389f900b79feb1
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8287,7 +8294,7 @@ def main() -> None:
     book.bind(spell=Consumer, existence="unique")
     conduit = book.conjure()
 
-    consumer = conduit.meld(Consumer)
+    consumer = conduit.meld("Consumer")
     assert isinstance(consumer.store, PrimaryStore)
     print("SpellMap default resolved:", consumer.store.label)
 
@@ -8299,7 +8306,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/16_spellmap_defaults.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/17_collection_di.py
-CONTENT SHA256: 84c6fbebb4774785c8d255469435d19996f64c3bdd194a48dac093ae57d32aaa
+CONTENT SHA256: e61054fe25bfc6efdf8ea2882830d1f64718a1641ad12245b2852c8e1eb7ae73
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8344,7 +8351,7 @@ def main() -> None:
     book.bind(spell=Dispatcher, existence="unique")
     conduit = book.conjure()
 
-    dispatcher = conduit.meld(Dispatcher)
+    dispatcher = conduit.meld("Dispatcher")
     results = [h.handle() for h in dispatcher.handlers]
     assert results == ["email", "sms"]
     print("collection DI delivered all implementations:", results)
@@ -8357,7 +8364,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/17_collection_di.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/18_live_creation_probe.py
-CONTENT SHA256: 52cd0d83a7ede9f0ab2663cfb0de89a5a8366e7a0584b59c2fb1c8adeb09ee8f
+CONTENT SHA256: 9454636215f1e7661457effebd7edb5d587d394f5755a0a1827d8e74fe6914ba
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8380,7 +8387,7 @@ def main() -> None:
     conduit = book.conjure()
 
     before = conduit.has_live_creation(spell=ExpensiveEngine)
-    conduit.meld(ExpensiveEngine)
+    conduit.meld("ExpensiveEngine")
     after = conduit.has_live_creation(spell=ExpensiveEngine)
     print("live before meld?", before, "| after?", after)
     assert after is True and before is False
@@ -8394,7 +8401,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/18_live_creation_probe.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/19_spellbook_configuration_basics.py
-CONTENT SHA256: 33b322aca9ef3f6c2040077271491ba01c7f59826356222cfa35c935c5daf23c
+CONTENT SHA256: be38784da643e92d8a5dd804c02e9bffbaee93d860e18c9f1f58e908a2524e57
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8419,7 +8426,7 @@ def main() -> None:
     book = md.Spellbook(configuration=configuration)
     book.bind(spell=Service, existence="unique")
     conduit = book.conjure()  # validates + freezes the configuration here
-    assert isinstance(conduit.meld(Service), Service)
+    assert isinstance(conduit.meld("Service"), Service)
     print("configured, conjured, melded")
 
     try:
@@ -8436,7 +8443,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/19_spellbook_configuration_basi
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/20_phase_scheduler_knobs.py
-CONTENT SHA256: e493cffdc3c8fd42c6a57ae16bc8088826a9354020e2fa1bc65c8a1a35c2c9a5
+CONTENT SHA256: 6ef45be8cb4fc2e2b44b6f1067f0db804f75a24599baaccb4b3e137131288af8
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8473,7 +8480,7 @@ def main() -> None:
     book.bind(spell=Beta, existence="unique")
     conduit = book.conjure()  # phases run under the tuned scheduler
 
-    beta = conduit.meld(Beta)
+    beta = conduit.meld("Beta")
     assert isinstance(beta.alpha, Alpha)
     print("compiled on one worker with a generous barrier; DI intact")
     print("if conjure ever raises PhaseTimeoutError, this timeout knob is why")
@@ -8486,7 +8493,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/20_phase_scheduler_knobs.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/21_dynamic_linking_basics.py
-CONTENT SHA256: f57ce95f06bb9981c2346683a4d860df3a39fbe404bcfed9d150111a71f90ce1
+CONTENT SHA256: b8815e640760f7ff5952e1a031c339fa101e0ba2991dfa1746258281e6113cc1
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8532,7 +8539,7 @@ def main() -> None:
     # must OWN the spell being pulled.
     borrower.add_spell_to_contract(spell_id=spell_id, conduit=owner,
                                    permissions="create")
-    shared = borrower.meld(SharedDirectory)
+    shared = borrower.meld("SharedDirectory")
     print("borrower melded the owner's spell:", shared.lookup())
     print("settled once at first conjure; every later conduit inherited")
 
@@ -8544,7 +8551,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/21_dynamic_linking_basics.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/22_permissions_create_vs_read.py
-CONTENT SHA256: e75d78f437297bd77fb3d2114f7e8d7343abe63864c9c7fa4656082095c7f45c
+CONTENT SHA256: 56f1a7f18fc816c6f5aab06a5cbe5fb6e7206a79cd087621bdeb48009ca9a835
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8587,9 +8594,9 @@ def main() -> None:
     borrower.add_spell_to_contract(spell_id=guarded_id, conduit=owner,
                                    permissions="read")
 
-    print("create-shared meld:", type(borrower.meld(OpenService)).__name__)
+    print("create-shared meld:", type(borrower.meld("OpenService")).__name__)
     try:
-        result = borrower.meld(GuardedService)
+        result = borrower.meld("GuardedService")
         print("read-shared meld answered:", type(result).__name__,
               "(read = resolve-only; construction rights stay with the owner)")
     except Exception as err:
@@ -8603,7 +8610,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/22_permissions_create_vs_read.p
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/23_transfer_of_ownership.py
-CONTENT SHA256: 13b55c392a7e8d3228fd5cac32525c4a7bc21daab67c11aa29e8b7ac05a0c1d1
+CONTENT SHA256: cafe65b5cf767d54c5c76ffeb81bde7894fb22da81e11ea9884c83fe1f3c4e1d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8643,7 +8650,7 @@ def main() -> None:
     print("transfer report keys:", sorted(report))
 
     # THE NEW HOME CAN MELD IT.
-    moved = target.meld(MigratingService)
+    moved = target.meld("MigratingService")
     assert isinstance(moved, MigratingService)
     print("new home melds it:", type(moved).__name__)
 
@@ -8651,7 +8658,7 @@ def main() -> None:
     # TRANSFER rather than a share - if the source could still meld it,
     # ownership would have been copied, not moved.
     try:
-        source.meld(MigratingService)
+        source.meld("MigratingService")
         raise AssertionError(
             "the source still melds it - that is sharing, not transfer"
         )
@@ -8712,7 +8719,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/24_conduit_cloud.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/25_clusters_unique_per_cluster.py
-CONTENT SHA256: a2572f485cbfd068b689fcf9ee8d9a738d985e3fee418b79357ec7f0b975e82c
+CONTENT SHA256: 6e6f726bbd6a2569d3ed5ee77c1bbb70b5089a741aa89dde45c541f99d180e85
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8764,8 +8771,8 @@ def main() -> None:
 
     cloud.add_conduit_to_cluster(member, "workers")
 
-    bus_a = owner.meld(ClusterBus)
-    bus_b = member.meld(ClusterBus)
+    bus_a = owner.meld("ClusterBus")
+    bus_b = member.meld("ClusterBus")
     assert bus_a is bus_b, "cluster members must share the elected leader's bus"
     print("one bus per cluster, shared by members:", bus_a is bus_b)
 
@@ -8906,7 +8913,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/26_conduit_categories_as_factor
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/27_sever_link.py
-CONTENT SHA256: ceb768540b5abd49dbed85f69067f6fb9e15b80e443421ecfdbceffad9f077cb
+CONTENT SHA256: 1b3f730a7f9c9b9b035f70d8892e7927eb7d92ed808022352a50fe7e49f8f126
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8944,13 +8951,13 @@ def main() -> None:
     owner.link(borrower)
     borrower.add_spell_to_contract(spell_id=spell_id, conduit=owner,
                                    permissions="create")
-    shared = borrower.meld(SharedDirectory)
+    shared = borrower.meld("SharedDirectory")
     print("while linked, the borrower resolves:", shared.lookup())
 
     # ...and the undo. The contract dies WITH the link.
     owner.sever_link(borrower)
     try:
-        borrower.meld(SharedDirectory)
+        borrower.meld("SharedDirectory")
         print("post-sever meld unexpectedly resolved")
     except Exception as err:
         print("post-sever meld refused:", type(err).__name__,
@@ -8961,7 +8968,7 @@ def main() -> None:
     # RIGHTS - it never reaches into anyone's memory.
     print("owner still holds the live creation:",
           owner.has_live_creation(spell=SharedDirectory))
-    still_alive = owner.meld(SharedDirectory)
+    still_alive = owner.meld("SharedDirectory")
     print("owner still resolves its own spell:", still_alive is shared)
 
     # Severing again refuses: there is no contract left to remove.
@@ -8979,7 +8986,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/27_sever_link.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/28_upgrade_to_normal.py
-CONTENT SHA256: 4ef30efa686509ed7dfc3f2595a818856042d192b212d1e4cc8c4d1700635762
+CONTENT SHA256: 7fe89abf4742774cbd5bb8d72ed624cd4e657ac7597132f777f309c9f3b60be0
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8988,9 +8995,10 @@ GOAL: upgrade_to_normal - a lesser conduit GROWS UP in place. Lessers
       are unnamed child scopes (lesson 07); in a dynamic world one can
       be promoted to a full named citizen: registered in the world,
       discoverable by name in the cloud, able to do everything a normal
-      conduit does. The promotion KEEPS what the child already built -
-      its creations ride through the upgrade untouched. Dynamic-only
-      verb: in a static world the same call refuses.
+      conduit does. The promotion retains what the child already built
+      for disposal, but owns a NEW EMPTY Spellbook: former definitions
+      are no longer visible. Bind the new root's definitions explicitly.
+      Dynamic-only verb: in a static world the same call refuses.
 SURFACE EXERCISED: create_lesser_conduit, upgrade_to_normal,
                    cloud name lookup after promotion
 """
@@ -9004,30 +9012,59 @@ import melder as md
 
 
 class Workbench:
-    pass
+    """Track disposal of an object created before promotion."""
+
+    def __init__(self) -> None:
+        """Start with no cleanup calls so promotion can prove retention."""
+        self.cleanup_calls = 0
+
+    def cleanup(self) -> None:
+        """Record disposal by the scope retaining this creation."""
+        self.cleanup_calls += 1
+
+
+class IndependentWorkbench:
+    """A definition owned only by the newly graduated root's Book."""
 
 
 def main() -> None:
+    """Promote in place, register independent definitions and prove disposal ownership."""
     book = dynamic_spellbook()
-    book.bind(spell=Workbench, existence="unique_per_conduit")
+    book.bind(spell=Workbench, existence="unique_per_conduit", disposal_method_names=["cleanup"])
     root = book.conjure(dynamic=True, name="factory-floor")   # settles
 
     # An unnamed child scope, working away...
     worker = root.create_lesser_conduit()
-    bench_before = worker.meld(Workbench)
+    bench_before = worker.meld("Workbench")
 
-    # ...promoted in place. Name granted, world registration performed.
-    worker.upgrade_to_normal(name="worker")
+    try:
+        # ...promoted in place. Its new empty Book is already conjured.
+        worker.upgrade_to_normal(name="worker")
 
-    # It KEPT its stuff: the per-conduit bench survives the promotion.
-    bench_after = worker.meld(Workbench)
-    assert bench_after is bench_before
-    print("promotion kept the child's creations:", type(bench_after).__name__)
+        # It KEPT its object for disposal, without inheriting the old definition.
+        assert bench_before.cleanup_calls == 0
+        try:
+            worker.meld("Workbench")
+        except KeyError:
+            print("new Book has no former Workbench definition")
+        else:
+            raise AssertionError("Graduation must start with an empty Book.")
+        worker.bind(spell=IndependentWorkbench, existence="unique_per_conduit")
+        assert isinstance(worker.meld("IndependentWorkbench"), IndependentWorkbench)
+        print("new root can bind and meld its own definitions")
 
-    # And it is now a discoverable citizen of the world.
-    cloud = root.get_conduit_cloud()
-    assert cloud.get_conduit_by_name("worker") is worker
-    print("promoted conduit found by name:", worker.name)
+        # And it is now a discoverable citizen of the world.
+        cloud = root.get_conduit_cloud()
+        assert cloud.get_conduit_by_name("worker") is worker
+        print("promoted conduit found by name:", worker.name)
+        worker.cleanup()
+        assert bench_before.cleanup_calls == 1
+        assert isinstance(root.meld("Workbench"), Workbench)
+        print("new root disposed its retained bench; former root still works")
+    finally:
+        worker.cleanup()
+        root.cleanup()
+        book.cleanup()
 
 
 if __name__ == "__main__":
@@ -9037,7 +9074,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/28_upgrade_to_normal.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/29_scoped_cleanup_lesser_conduits.py
-CONTENT SHA256: 7f8d1fa11e1285682e55dfe6c6b7c17ced5c80372e1f8b2d00dd7dfe8d5128ef
+CONTENT SHA256: aaa09d6462a64cc1d3c305d35373a4a5c2d7219243f214d0b7b404456849e430
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -9079,11 +9116,11 @@ def main() -> None:
     root = book.conjure()
 
     # The long-lived scope holds its own session...
-    root_session = root.meld(JobSession)
+    root_session = root.meld("JobSession")
 
     # ...and each job gets a THROWAWAY scope with its own.
     job = root.create_lesser_conduit()
-    job_session = job.meld(JobSession)
+    job_session = job.meld("JobSession")
     assert job_session is not root_session  # per-conduit = per-scope
 
     # Job done: end the SCOPE, not the world.
@@ -9092,7 +9129,7 @@ def main() -> None:
     print("root session untouched:", root_session.closed is False)
 
     # The root never noticed - it keeps resolving.
-    assert root.meld(JobSession) is root_session
+    assert root.meld("JobSession") is root_session
     print("root still resolves after the child scope ended")
 
     # And when the whole world is done, the same verb one level up.
@@ -9220,7 +9257,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/30_config_disposal_and_the_froz
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py
-CONTENT SHA256: 56f5763477c77d6c599031e6dfd1aeee57f817b6c33adedf17b54c1241b77b76
+CONTENT SHA256: f19ccbadff09de41ac5abc90683c3e034a5dbc8a492c39d68d58ef81ab42ed6e
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -9298,7 +9335,7 @@ def main() -> None:
     book = md.Spellbook(configuration=configuration)
     book.bind(spell=Service, existence="unique")
     conduit = book.conjure()   # LAW 3 happens here: validate + freeze
-    assert isinstance(conduit.meld(Service), Service)
+    assert isinstance(conduit.meld("Service"), Service)
 
     try:
         configuration.set_property(
@@ -9325,7 +9362,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/31_spellbook_config_defined.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/32_config_meld_hooks.py
-CONTENT SHA256: 02883f47d4d8f2aae166bcee76eb125d66d72a30786af368ce926d5a1a54bfe2
+CONTENT SHA256: 06ca674249fa5892738da160ccfb9e3d1c7974cde397446907523f457307c508
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -9359,8 +9396,8 @@ def main() -> None:
     book.bind(spell=Watched, existence="many")
     conduit = book.conjure()
 
-    conduit.meld(Watched)
-    conduit.meld(Watched)
+    conduit.meld("Watched")
+    conduit.meld("Watched")
     print("meld pipeline observed:", events)
     assert events.count("pre") >= 2 and events.count("post") >= 2
     print("every meld fired pre and post - the pipeline is watchable")
@@ -9483,7 +9520,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/34_config_link_and_contract_hoo
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/35_one_config_every_book.py
-CONTENT SHA256: af9fccd0cf3e4330813d53aa0dd1417a25d5e5ef6dcf6ed549a6238fb4e49e7a
+CONTENT SHA256: ed39079902a8a7dec2bd22e0290971347c55630bf953ce406598659709f0a53a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -9589,8 +9626,8 @@ def main() -> None:
     # the shared configuration is what they have in common, not their identity.
     conduit_a = book_a.conjure(name="shared-policy-a")
     conduit_b = book_b.conjure(name="shared-policy-b")
-    assert isinstance(conduit_a.meld(ServiceA), ServiceA)
-    assert isinstance(conduit_b.meld(ServiceB), ServiceB)
+    assert isinstance(conduit_a.meld("ServiceA"), ServiceA)
+    assert isinstance(conduit_b.meld("ServiceB"), ServiceB)
     print("both worlds conjured under the one shared policy")
 
 
@@ -9887,8 +9924,337 @@ if __name__ == "__main__":
 END FILE: UX_and_AIX_experiences/02_intermediate/37_the_frame_conduit_cloud.py
 ================================================================================
 ================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/39_purge_unneeded_objects.py
+CONTENT SHA256: f58966c91b80400c760b84b142d964883a50cc1c2942531211fdc562b4e23a8a
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (39)
+GOAL: Release objects you no longer need while their scope keeps working.
+      This job buffer declares close as its disposal method, so Melder retains
+      each many creation until explicit disposal. Pass an instance with
+      purge_all=False to retire only that object. The default purge_all=True
+      retires all retained objects for the selected binding in that scope.
+
+      Purge returns the removed count, keeps the registration available, and
+      lets later melds create fresh objects. A SpellSpace can purge its own
+      objects without touching the conduit. Application-held Python references
+      still point to the old objects: stop using their resources after disposal.
+SURFACE EXERCISED: md.Spellbook.bind, md.Existence.many, md.Conduit.meld,
+                  md.Conduit.purge, md.Conduit.enter_spellspace,
+                  md.SpellSpace.meld, md.SpellSpace.purge, md.Conduit.cleanup
+"""
+import melder as md
+
+
+class WorkBuffer:
+    """Own a small job payload with observable, explicit disposal.
+
+    The payload belongs to this object and is released by close. The public
+    closed flag and close_calls counter remain as lesson diagnostics, so the
+    example can check disposal without reaching into Melder's private state.
+    """
+
+    def __init__(self) -> None:
+        """Allocate an open buffer; no file, network or background work is started."""
+        self._payload: bytearray = bytearray(128)
+        self.closed: bool = False
+        self.close_calls: int = 0
+
+    def close(self) -> None:
+        """Release the payload once and count each actual disposal invocation.
+
+        Repeated calls leave the resource closed. Diagnostic fields remain
+        readable; the owned payload field is removed after its contents clear.
+        """
+        self.close_calls += 1
+        if self.closed:
+            return
+        self._payload.clear()
+        del self._payload
+        self.closed = True
+
+
+def main() -> None:
+    """Verify early disposal, retained siblings, remelding and scope isolation.
+
+    The book and conduit are cleaned in finally blocks. Each assertion checks
+    an observable removal count, object identity or disposal callback result.
+    """
+    book = md.Spellbook()
+    try:
+        # many creates a fresh object each time. Declared disposal makes these
+        # buffers retained resources that Melder can retire through purge.
+        book.bind(
+            spell=WorkBuffer,
+            existence=md.Existence.many,
+            disposal_method_names=["close"],
+        )
+        conduit = book.conjure()
+        try:
+            first: WorkBuffer = conduit.meld("WorkBuffer")
+            second: WorkBuffer = conduit.meld("WorkBuffer")
+            third: WorkBuffer = conduit.meld("WorkBuffer")
+
+            # The first job finished. Keep the other two objects alive.
+            removed = conduit.purge(first, purge_all=False)
+            assert removed == 1
+            assert first.closed and first.close_calls == 1
+            assert not second.closed and not third.closed
+            assert conduit.purge(first, purge_all=False) == 0
+            print("one finished buffer removed; its siblings remain:", removed)
+
+            # A name selects the binding. Default True removes all of its
+            # remaining retained objects in this conduit, not just one.
+            removed = conduit.purge("WorkBuffer")
+            assert removed == 2
+            assert second.closed and third.closed
+            assert conduit.purge("WorkBuffer") == 0
+            print("remaining buffers removed by name:", removed)
+
+            # The binding and the conduit still work after the bucket is empty.
+            replacement: WorkBuffer = conduit.meld("WorkBuffer")
+            assert replacement is not first and not replacement.closed
+            print("the same registration creates a fresh buffer:", not replacement.closed)
+
+            with conduit.enter_spellspace() as space:
+                local: WorkBuffer = space.meld("WorkBuffer")
+                # An instance does not grant access to a different scope.
+                assert space.purge(replacement, purge_all=False) == 0
+                assert conduit.purge(local, purge_all=False) == 0
+                assert space.purge(local, purge_all=False) == 1
+                assert local.closed and not replacement.closed
+                local_replacement: WorkBuffer = space.meld("WorkBuffer")
+                assert local_replacement is not local and not local_replacement.closed
+
+            # Managed space exit closes its remaining buffer, not the root's.
+            assert local_replacement.closed and not replacement.closed
+            print("spell-space purge and exit leave the conduit buffer open:", not replacement.closed)
+        finally:
+            conduit.cleanup()
+
+        # Purged objects are no longer retained for later scope cleanup.
+        resources = (first, second, third, replacement, local, local_replacement)
+        assert all(resource.closed for resource in resources)
+        assert all(resource.close_calls == 1 for resource in resources)
+        print("every buffer was disposed exactly once:", len(resources))
+    finally:
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/39_purge_unneeded_objects.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/40_bind_lifecycle_hooks.py
+CONTENT SHA256: e42a74aeb3faddce693ba1e54e1e7123d9c3a53722002ab711414f48dad0bb0c
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (40)
+GOAL: Observe pre-bind, configure the actual Spell during bind activation,
+      and inspect its completed registration in post-bind. Seed a callback
+      through configuration, add stages on the Book, then clear and re-add
+      through its normal Conduit. These hooks run at bind time, not meld time.
+SURFACE EXERCISED: md.SpellbookConfiguration.with_bind_hooks,
+                  md.Spellbook.add_bind_hooks / find_spell_by_id,
+                  md.Conduit.clear_bind_hooks / add_bind_hooks / bind / meld,
+                  md.Spell.metadata / tags
+"""
+import inspect
+
+import melder as md
+
+
+class Report:
+    """Simple application object whose registration will be annotated by hooks."""
+
+    def render(self) -> str:
+        """Return an observable result after normal name-based resolution."""
+        return "report ready"
+
+
+class Metrics:
+    """Separate registration used while all bind hooks are cleared."""
+
+
+class Notifier:
+    """Separate registration proving callbacks can be added again after clear."""
+
+
+def main() -> None:
+    """Exercise the three stages and future-bind updates in one dynamic Book.
+
+    Contract:
+        Assertions distinguish raw class references, unpublished Spells and
+        completed registrations. Final cleanup releases the Book's callbacks.
+    """
+    events: list[str] = []
+
+    def check_reference(reference: object) -> None:
+        """Apply this application's class-only registration policy before reflection."""
+        if not inspect.isclass(reference):
+            raise TypeError("This example accepts class references only.")
+        events.append(f"pre:{reference.__name__}")
+
+    def configure_spell(spell: md.Spell) -> None:
+        """Annotate the actual new Spell before it becomes publicly discoverable."""
+        assert isinstance(spell, md.Spell)
+        assert book.find_spell_by_id(spell.spell_id) is None
+        spell.metadata["reviewed_by"] = "application-bind-policy"
+        spell.tags.append("reviewed")
+        events.append(f"activation:{spell.spell_name}")
+
+    def observe_registration(spell: md.Spell) -> None:
+        """Verify the registered Spell is the same object activation annotated."""
+        assert book.find_spell_by_id(spell.spell_id) is spell
+        assert spell.metadata["reviewed_by"] == "application-bind-policy"
+        events.append(f"post:{spell.spell_name}")
+
+    # Configuration seeds are captured when this Book is constructed.
+    configuration = md.SpellbookConfiguration().with_defaults()
+    configuration.with_bind_hooks(pre=[check_reference])
+    book = md.Spellbook(configuration=configuration)
+    conduit = None
+    try:
+        # Runtime setup appends stages to this Book's captured seed callbacks.
+        book.add_bind_hooks(activation=[configure_spell], post=[observe_registration])
+        report_id = book.bind(spell=Report, existence="unique")
+        assert events == ["pre:Report", "activation:Report", "post:Report"]
+        registered = book.find_spell_by_id(report_id)
+        assert registered is not None
+        assert "reviewed" in registered.tags
+        print("bind order:", " -> ".join(events))
+
+        conduit = book.conjure(dynamic=True, name="bind-hook-basics")
+        assert conduit.meld("Report").render() == "report ready"
+        assert events == ["pre:Report", "activation:Report", "post:Report"]
+        print("meld returned the Report; bind callbacks did not run again")
+
+        # The normal Conduit facades the same Book-owned bind-hook registry.
+        conduit.clear_bind_hooks()
+        metrics_id = conduit.bind(spell=Metrics, existence="unique")
+        metrics_spell = book.find_spell_by_id(metrics_id)
+        assert metrics_spell is not None
+        assert metrics_spell.metadata == {}
+        assert len(events) == 3
+        assert registered.metadata["reviewed_by"] == "application-bind-policy"
+        print("clear affected future binds; the earlier Spell kept its metadata")
+
+        conduit.add_bind_hooks(
+            pre=[check_reference], activation=[configure_spell], post=[observe_registration],
+        )
+        conduit.bind(spell=Notifier, existence="unique")
+        assert events[3:] == ["pre:Notifier", "activation:Notifier", "post:Notifier"]
+        print("re-added hooks:", " -> ".join(events[3:]))
+    finally:
+        if conduit is not None:
+            conduit.cleanup()
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/40_bind_lifecycle_hooks.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/41_named_lesser_conduits.py
+CONTENT SHA256: e207c13275a9adb02cf2d86f517c3cab402e0fde3d54dc086dd5ab01ae53c29b
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (41)
+GOAL: Find a live job scope by name, then retire the name when that job ends.
+      A name is a discovery address, not a new lifetime or a normal-root promotion.
+      Names are exact, nonempty and unique within a frame. Supply them only when
+      creating a lesser; prewarmed shells receive the new scope's name on acquisition.
+      Cleanup removes the name before pool reuse. Keep the scope owner responsible
+      for cleanup: a Cloud lookup borrows the object and does not extend its lifetime.
+SURFACE EXERCISED: md.Spellbook.bind / conjure, md.Conduit.create_lesser_conduit /
+                   get_conduit_cloud / meld / cleanup / prewarm_lesser_conduits,
+                   ConduitCloud.get_conduit_by_name / has_conduit_name.
+VERIFY: Runnable assertions cover lookup, collision, separate per-conduit values,
+        retirement and fresh values after pooled reuse. No Nexus or recorder setup.
+"""
+
+import melder as md
+
+
+class JobBuffer:
+    """Own the mutable work list for one scope; naming does not select its lifetime."""
+
+    def __init__(self) -> None:
+        """Start every newly created job buffer with independent empty state."""
+        self.items: list[str] = []
+
+
+def main() -> None:
+    """Run two jobs and reuse a finished scope under a new discovery name.
+
+    Contract:
+        Uses automatic mode to demonstrate that naming needs no dynamic mutation
+        policy. The root owns cleanup of remaining children even if an assertion fails.
+    Returns:
+        None.
+    """
+    book = md.Spellbook(aetheric_frame="named-jobs")
+    book.bind(spell=JobBuffer, existence="unique_per_conduit", permissions="create")
+    root = book.conjure(name="job-owner")
+    try:
+        root.prewarm_lesser_conduits(2)
+        cloud = root.get_conduit_cloud()
+        first = root.create_lesser_conduit(name="job-41")
+        second = root.create_lesser_conduit(name="job-42")
+        assert cloud.get_conduit_by_name("job-41") is first
+        assert cloud.get_conduit_by_name("job-42") is second
+
+        first_buffer = first.meld("JobBuffer")
+        second_buffer = second.meld("JobBuffer")
+        first_buffer.items.append("prepare invoice")
+        assert second_buffer is not first_buffer
+        assert second_buffer.items == []
+        print("Named lookup reaches the exact job; per-conduit values stay separate.")
+
+        try:
+            root.create_lesser_conduit(name="job-41")
+        except ValueError:
+            print("A duplicate active name is refused; the original job is still registered.")
+        else:
+            raise AssertionError("Duplicate active names must be rejected.")
+        assert cloud.get_conduit_by_name("job-41") is first
+
+        first.cleanup()
+        assert not cloud.has_conduit_name("job-41")
+        assert cloud.has_conduit_name("job-42")
+        replacement = root.create_lesser_conduit(name="job-43")
+        assert cloud.get_conduit_by_name("job-43") is replacement
+        assert replacement.meld("JobBuffer").items == []
+        assert not cloud.has_conduit_name("job-41")
+        print("Cleanup retires the old name; the next job begins with fresh scoped state.")
+
+        replacement.cleanup()
+        anonymous = root.create_lesser_conduit()
+        assert anonymous.name is None
+        assert not cloud.has_conduit_name("job-43")
+        anonymous.cleanup()
+        second.cleanup()
+        assert cloud.list_conduit_names() == ("job-owner",)
+        print("Anonymous scopes need no discovery entry. Names are not lifetime-matching tags.")
+    finally:
+        root.permanent_cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/41_named_lesser_conduits.py
+================================================================================
+================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/_concept_map.txt
-CONTENT SHA256: e0d5373f08218bd693d1c59143cb4c0820240162c2ebc52ee1282d9fbc838bb7
+CONTENT SHA256: c0a900d37450ce51bfe0da0f4e3b86e12a06794ac6809b5a89019e2539a03bf3
 SOURCE ENCODING: utf-8
 ================================================================================
 CONCEPT MAP - 02_intermediate (README tier: YELLOW Intermediate)
@@ -10065,6 +10431,22 @@ KNOWN GAPS INSIDE THE FENCE (remaining)
       policies, three refusals). What remains here is the LIVE LINK
       behaviour under each mode, which is a different lesson.
 
+EARLY DISPOSAL WHILE A SCOPE STAYS LIVE (2026-09-21)
+  39 purge_unneeded_objects (Conduit.purge and SpellSpace.purge:
+     one supplied object with purge_all=False, all retained entries by
+     default, removal counts, remelding, local scope isolation and
+     exactly-once disposal across later cleanup). Lesson 38 remains
+     withdrawn; this lesson adds methods on existing public root types.
+
+BIND LIFECYCLE POLICY (2026-09-22)
+  40 bind_lifecycle_hooks (pre-bind reference checks, actual-Spell activation,
+     post registration, configuration seeds and Book/normal-Conduit add/clear/re-add).
+     Bind callbacks run at registration; lesson 03's creation callbacks run at meld.
+
+NAMED SCOPE DISCOVERY (2026-09-23)
+  41 named_lesser_conduits (creation-only names, frame-wide Cloud discovery,
+     collisions, separate per-conduit state, retirement and anonymous reuse).
+
 HARNESS
   pytest_examples/test_intermediate_examples.py (every lesson runs)
   pytest_examples/test_intermediate_probes.py (contract probes)
@@ -10095,7 +10477,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/_dynamic_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/03_advanced/01_deep_spell_override_paths.py
-CONTENT SHA256: bad4b16740458ae8b56d7cddb7b2757f21790f408bcbb367133b476c3744d095
+CONTENT SHA256: 23d4a20911e60466daa3fa9d1d93cdd6930130262a30d50acd58db6efa5745a2
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -10144,7 +10526,7 @@ def main() -> None:
     test_credentials = Credentials()
     test_credentials.source = "test-fixture"
     pipeline = conduit.meld(
-        MailPipeline,
+        "MailPipeline",
         override={"transport>credentials": test_credentials},
     )
     assert pipeline.transport.credentials is test_credentials
@@ -10156,7 +10538,7 @@ def main() -> None:
     # above did not build a private throwaway graph. It CONSTRUCTED the
     # singleton Transport - around your fixture - and registered it as the
     # canonical one. The override therefore did not end when the call did.
-    plain = conduit.meld(Transport)
+    plain = conduit.meld("Transport")
     assert plain is pipeline.transport
     assert plain.credentials.source == "test-fixture"
     print("the override BUILT the singleton; later melds reuse it:",
@@ -10176,7 +10558,7 @@ END FILE: UX_and_AIX_experiences/03_advanced/01_deep_spell_override_paths.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/03_advanced/02_frames_as_worlds.py
-CONTENT SHA256: af0add3aee9cc3052e19eaf3fa8c7029c7caa43cdc1c870f83e5c90c1c3d36c3
+CONTENT SHA256: 162ce6915dc691d5a29da723e969966f5f3154f2a06fa746e0beb1c3449b6f3c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -10242,8 +10624,8 @@ def main() -> None:
     conduit_a = book_a.conjure(name="cache-a")
     conduit_b = book_b.conjure(name="cache-b")
 
-    cache_a = conduit_a.meld(TenantCache, binding_name="tenant-a")
-    cache_b = conduit_b.meld(TenantCache, binding_name="tenant-b")
+    cache_a = conduit_a.meld("TenantCache", binding_name="tenant-a")
+    cache_b = conduit_b.meld("TenantCache", binding_name="tenant-b")
 
     # "unique" = one instance per FRAME. Two frames, two singletons.
     assert type(cache_a) is type(cache_b) is TenantCache
@@ -10251,8 +10633,8 @@ def main() -> None:
     print("one class, two worlds, two singletons:", cache_a is not cache_b)
 
     # Each world reuses ITS OWN singleton, forever.
-    assert conduit_a.meld(TenantCache, binding_name="tenant-a") is cache_a
-    assert conduit_b.meld(TenantCache, binding_name="tenant-b") is cache_b
+    assert conduit_a.meld("TenantCache", binding_name="tenant-a") is cache_a
+    assert conduit_b.meld("TenantCache", binding_name="tenant-b") is cache_b
     print("per-frame reuse holds; nothing leaked across the wall")
 
     # THE LINE, PROVEN. A third world binding the SAME class the SAME way
@@ -12486,7 +12868,7 @@ END FILE: UX_and_AIX_experiences/03_advanced/18_loading_it_back.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/03_advanced/19_wildcard_and_broadcast_overrides.py
-CONTENT SHA256: 34f2bf761d8ac2032433cfa12407c40d102f7e357167fd4aa08c6f9c31161da1
+CONTENT SHA256: 39527bf1a89e759812239813fc27932682e567cfaeef25c7d547fc32d8a3d846
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -12602,7 +12984,7 @@ def main() -> None:
     # UNIQUE - *param. MailPipeline has exactly ONE credentials socket
     # under it, so the wildcard resolves without naming the path.
     mail = conduit.meld(
-        MailPipeline,
+        "MailPipeline",
         override={"*credentials": fixture},
     )
     assert mail.transport.credentials is fixture
@@ -12614,7 +12996,7 @@ def main() -> None:
     # the whole reason the form is safe to reach for.
     try:
         conduit.meld(
-            BackupPipeline,
+            "BackupPipeline",
             override={"*credentials": fixture},
         )
         raise AssertionError("expected a refusal - *param matched twice")
@@ -12624,7 +13006,7 @@ def main() -> None:
     # BROADCAST - **param. Same graph, and now hitting every match is
     # exactly what was asked for.
     backup = conduit.meld(
-        BackupPipeline,
+        "BackupPipeline",
         override={"**credentials": fixture},
     )
     assert backup.transport.credentials is fixture
@@ -12637,7 +13019,7 @@ def main() -> None:
     # also enforced. A no-op override is a caller mistake, not a default.
     try:
         conduit.meld(
-            MailPipeline,
+            "MailPipeline",
             override={"**nosuchparam": fixture},
         )
         raise AssertionError("expected a refusal - **param matched nothing")
@@ -12649,7 +13031,7 @@ def main() -> None:
     specific = Credentials()
     specific.source = "archive-only"
     mixed = conduit.meld(
-        BackupPipeline,
+        "BackupPipeline",
         override={
             "**credentials": fixture,
             "archive>credentials": specific,
@@ -12663,7 +13045,7 @@ def main() -> None:
 
     # `many` kept the blast radius inside the call: a plain meld gets a
     # clean graph with no fixture in it.
-    clean = conduit.meld(BackupPipeline)
+    clean = conduit.meld("BackupPipeline")
     assert clean.transport.credentials is not fixture
     assert clean.archive.credentials.source == "vault"
     print("plain meld is untouched:", clean.archive.credentials.source)
@@ -14704,7 +15086,7 @@ END FILE: UX_and_AIX_experiences/04_expert/09_getting_data_into_your_database.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/10_deep_overrides_paths_through_a_graph.py
-CONTENT SHA256: 9260b9ec373bec5e77ea32aec1ad36852b0b38cc8e0c0dc1703129b3b35b3392
+CONTENT SHA256: 197e4339dbad0aef62681346aa69c3b81a176758203ef428101aa2daaf7d2757
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -14791,7 +15173,7 @@ def main() -> None:
 
     # The shape, unmodified. TWO credentials sockets exist - one under
     # gateway, one under mirror - and they are four hops down.
-    plain = conduit.meld(Edge)
+    plain = conduit.meld("Edge")
     assert plain.gateway.upstream.credentials.label == "real"
     assert plain.mirror.upstream.credentials.label == "real"
     print("graph built: two credentials sockets, both at depth 4")
@@ -14801,7 +15183,7 @@ def main() -> None:
     swapped = Credentials()
     swapped.label = "gateway-only"
     one = conduit.meld(
-        Edge,
+        "Edge",
         override={"gateway>upstream>credentials": swapped},
     )
     assert one.gateway.upstream.credentials.label == "gateway-only"
@@ -14814,7 +15196,7 @@ def main() -> None:
     grafted_credentials = Credentials()
     grafted_credentials.label = "grafted"
     grafted = conduit.meld(
-        Edge,
+        "Edge",
         override={"mirror>upstream": Upstream(grafted_credentials)},
     )
     assert grafted.mirror.upstream.credentials.label == "grafted"
@@ -14824,7 +15206,7 @@ def main() -> None:
     # 3. AMBIGUITY IS THE NORMAL CASE AT DEPTH. `*credentials` matches
     #    twice here, and melder refuses rather than picking one.
     try:
-        conduit.meld(Edge, override={"*credentials": swapped})
+        conduit.meld("Edge", override={"*credentials": swapped})
         raise AssertionError("expected a refusal: *param matched twice")
     except Exception as error:
         print()
@@ -14835,7 +15217,7 @@ def main() -> None:
     everywhere = Credentials()
     everywhere.label = "all"
     broad = conduit.meld(
-        Edge,
+        "Edge",
         override={"**credentials": everywhere},
     )
     assert broad.gateway.upstream.credentials.label == "all"
@@ -14847,7 +15229,7 @@ def main() -> None:
     pinned = Credentials()
     pinned.label = "pinned"
     mixed = conduit.meld(
-        Edge,
+        "Edge",
         override={
             "**credentials": everywhere,
             "gateway>upstream>credentials": pinned,
@@ -14864,7 +15246,7 @@ def main() -> None:
     #    otherwise undetectable - the refusal is the feature.
     try:
         conduit.meld(
-            Edge,
+            "Edge",
             override={"gateway>upstrem>credentials": swapped},
         )
         raise AssertionError("expected a refusal: no such path")
@@ -15338,7 +15720,7 @@ END FILE: UX_and_AIX_experiences/04_expert/12_the_codegen_loop_end_to_end.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/13_one_workshop_many_worlds.py
-CONTENT SHA256: 84cbfe0ce9dbfd5d22af86c875a88a4c3c33f155bef48dc228d1ba19cfdfeacc
+CONTENT SHA256: 8a01fed3aec7e1a0c44278263ffbe0da21903d18010a81de7a6bcf22a35ac009
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -15526,10 +15908,10 @@ def main() -> None:
     # seeing both worlds did not merge them. Note we meld through the
     # conduit that BOUND these spells - a fresh book in the same frame
     # would own nothing and resolve nothing.
-    invoice = billing_conduit.meld(Invoice, binding_name="billing")
+    invoice = billing_conduit.meld("Invoice", binding_name="billing")
     assert invoice.kind == "invoice"
     try:
-        billing_conduit.meld(Product, binding_name="catalog")
+        billing_conduit.meld("Product", binding_name="catalog")
         raise AssertionError("catalog's object must not resolve in billing")
     except Exception as error:
         print()
@@ -16136,7 +16518,7 @@ END FILE: UX_and_AIX_experiences/04_expert/15_campaigns_the_why_that_rides_along
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py
-CONTENT SHA256: efef8ade265bf83ed729ec76b071f8d9f5e9891a06221896cbd5033df9433b54
+CONTENT SHA256: d0113e8342e468d873843571e94430038712482d3f2aeac7a9f913cf992f670f
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -16258,7 +16640,7 @@ def main() -> None:
 
     # The owner resolves its own spell. This works before any linking -
     # ownership and sharing are different questions.
-    assert owner.meld(Service,
+    assert owner.meld("Service",
                       binding_name="rewire-service").label == "service"
     print("owner melds its own spell -> service")
 
@@ -16278,7 +16660,7 @@ def main() -> None:
     print("  sharing is a PULL - the named conduit must OWN the spell")
 
     # STEP 5: meld completes the late binding across the new edge.
-    borrowed = borrower.meld(Service, binding_name="rewire-service")
+    borrowed = borrower.meld("Service", binding_name="rewire-service")
     assert borrowed.label == "service"
     print("borrower melds it ->", borrowed.label)
     print()
@@ -16325,7 +16707,7 @@ END FILE: UX_and_AIX_experiences/04_expert/16_rewiring_a_running_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py
-CONTENT SHA256: 2381c74c2ecab6c3e473a9316efde3c13d0a5118829b1d9ffef343535609a8d8
+CONTENT SHA256: 4a71c21302ef2654db158a1483b43eeca77735ae422b0e81d3d86938992006af
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -16426,7 +16808,7 @@ def main() -> None:
     print("index: 1 member, selected =", v1_id[:12], "...")
 
     # v1 RESOLVES. This is the world as it stands.
-    before = conduit.meld(HotSwapPricingV1)
+    before = conduit.meld("HotSwapPricingV1")
     assert before.rate == 100
     print("meld -> rate", before.rate)
 
@@ -16449,7 +16831,7 @@ def main() -> None:
     # AND THE PARKED CANDIDATE IS INERT. The expensive half of the swap
     # has already happened - v2 is compiled, registered and owned - while
     # the old version is still the one serving traffic.
-    still = conduit.meld(HotSwapPricingV1)
+    still = conduit.meld("HotSwapPricingV1")
     assert still.rate == 100
     print("meld -> rate", still.rate, " (v2 is parked, not resolvable)")
     print("  the costly half of a swap is done while v1 still serves")
@@ -16852,7 +17234,7 @@ END FILE: UX_and_AIX_experiences/04_expert/19_the_codebase_as_a_walkable_graph.p
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/20_the_workstation_an_agents_workbench.py
-CONTENT SHA256: 53e783239b532ecace596e9be63cd1663b3798fb5924830a52abe148d9a08e0f
+CONTENT SHA256: 9719a1508591ccdbefebdac331330b1955cdad989607b78fb0d18cd9a71351af
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -16968,7 +17350,7 @@ def main() -> None:
 
     # THE WORKSTATION HOLDS; IT DOES NOT MAKE. The object comes from the
     # runtime; the bench just keeps a name on it.
-    ledger = conduit.meld(Ledger, binding_name="bench-ledger")
+    ledger = conduit.meld("Ledger", binding_name="bench-ledger")
     workstation.bind_object("ledger", ledger)
     # A bare get() works RIGHT NOW because the name is unique. Watch what
     # happens to this exact call a few lines below.
@@ -17312,7 +17694,7 @@ END FILE: UX_and_AIX_experiences/04_expert/21_many_agents_writing_code_at_once.p
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/22_asking_what_code_would_do_before_running_it.py
-CONTENT SHA256: ab486498e1799026eb3d54dbcd5d6034c091e5ad289ae1ccb8f4d824613d4357
+CONTENT SHA256: 46f751e35cc3498fabdb2f0f96c29eead424f4bf160dd21fcebd468825485be5
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -17468,7 +17850,7 @@ def main() -> None:
         binding_name="foresight-rule",
     )
     conduit = book.conjure(name="foresight-root")
-    live = conduit.meld(PriceRule, binding_name="foresight-rule")
+    live = conduit.meld("PriceRule", binding_name="foresight-rule")
     assert live.apply(4) == 40
     print()
     print("world up; PriceRule.apply(4) ->", live.apply(4))
@@ -17534,7 +17916,7 @@ def main() -> None:
         "research_preview must not move the record - it is foresight, "
         "not a dry-run that half-commits"
     )
-    still = conduit.meld(PriceRule, binding_name="foresight-rule")
+    still = conduit.meld("PriceRule", binding_name="foresight-rule")
     assert still.apply(4) == 40
     print("record heads: IDENTICAL before and after the preview")
     print("live object : still the old rule ->", still.apply(4))
@@ -17790,7 +18172,7 @@ END FILE: UX_and_AIX_experiences/04_expert/23_branching_the_record_and_joining_b
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py
-CONTENT SHA256: 90262ed0fad1cb50a26558f08a3d8141bb0a6542de0f7c2e31eb3170650c770e
+CONTENT SHA256: 35b0458aca1c530b97144241713b4d28e73b6ae6c23f0879f410ceae579f8f0d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -17808,6 +18190,8 @@ GOAL: SEAL A WORLD, THEN UNFOLD IT AGAIN. Expert 01 taught the pod-boot
         load_checkpoint(id)                     -> UNFOLD into the runtime
       Only the last one touches the live world. The first four move a
       record around; `load_checkpoint` is the boot verb.
+      The lesson retires its original root before replay so the saved root name
+      and binding identities are available. The recorder itself stays alive.
 
       A RESTORE IS NOT A RESURRECTION, AND THE REPORT SAYS SO
       `load_checkpoint` hands back a RestoreReport carrying:
@@ -17856,7 +18240,6 @@ VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
 import melder as md
 
-
 FRAME = "restore-world"
 
 
@@ -17871,6 +18254,15 @@ class Auditor:
 
 
 def main() -> None:
+    """Seal and replay a complete world while keeping its in-memory recorder alive.
+
+    Contract:
+        Establish recording posture before binds, retire original runtime claims
+        before replay and assert that rebuilt application state starts fresh.
+        A retained ordinary Ledger reference has no disposer in this example.
+    Returns:
+        None.
+    """
     # Custody first - nothing is recorded into a crystallizer that is not
     # yet recording (expert 22's ordering law).
     crystallizer = md.Crystallizer()
@@ -17893,17 +18285,19 @@ def main() -> None:
     )
     book = md.Spellbook(aetheric_frame=FRAME,
                         configuration=spellbook_configuration)
-    ledger_id = book.bind(spell=Ledger, existence="unique",
-                          permissions="create", binding_name="restore-ledger")
-    book.bind(spell=Auditor, existence="many",
-              permissions="create", binding_name="restore-auditor")
+    # Establish dynamic recording posture before binding custody. Configuring
+    # the frame afterward cannot retroactively record earlier automatic binds.
     book.configure_aether_frame(
         system_state="dynamic",
         disposal=None,
         disposal_method_names=None,
     )
+    book.bind(spell=Ledger, existence="unique",
+              permissions="create", binding_name="restore-ledger")
+    book.bind(spell=Auditor, existence="many",
+              permissions="create", binding_name="restore-auditor")
     conduit = book.conjure(name="restore-root")
-    ledger = conduit.meld(Ledger, binding_name="restore-ledger")
+    ledger = conduit.meld("Ledger", binding_name="restore-ledger")
     ledger.entries.append("before the checkpoint")
     print("world up; ledger holds", len(ledger.entries), "entry")
 
@@ -17944,9 +18338,15 @@ def main() -> None:
     print("reload_cached_checkpoint -> the checkpoint's own summary")
     print("  still no live object touched; that is the NEXT verb")
 
-    # 5. THE BOOT VERB. This one unfolds the record into the runtime.
+    # 5. THE BOOT VERB. Release the old runtime's name and binding claims first;
+    # the sealed checkpoint and its predecessor remain in the living recorder.
+    conduit.permanent_cleanup()
     report = crystallizer.load_checkpoint(second_id)
-    assert isinstance(report, dict)
+    assert report["status"] == "complete"
+    restored_conduit = md.Aether().get_conduit_by_name("restore-root", FRAME)
+    restored_ledger = restored_conduit.meld("Ledger", binding_name="restore-ledger")
+    assert restored_ledger is not ledger
+    assert restored_ledger.entries == []
     print()
     print("load_checkpoint -> RestoreReport keys:", sorted(report))
     print("   status:", report.get("status"))
@@ -17979,13 +18379,14 @@ def main() -> None:
             print("  had those things - so it names them instead")
             break
 
-    # THE ORIGINAL SPELL STILL ANSWERS through the pre-restore handle we
-    # kept, which is the point of holding OBJECTS rather than ids.
+    # This Ledger has no disposer. Our ordinary Python reference therefore
+    # still holds its earlier data; it is not the object in the rebuilt runtime.
+    # Objects with disposal contracts may be unusable after their scope ends.
     assert ledger.entries == ["before the checkpoint"]
     print()
     print("the object we held across all of this is untouched:",
           ledger.entries)
-    print("  ids go stale across a boot; the handle in your hand does not")
+    print("  the rebuilt ledger is a different object with fresh empty state")
 
     # 6. THE OPERATOR'S ONE-CALL VERSION exists and is exported.
     assert hasattr(md, "CrystallizerBootstrap")
@@ -17998,6 +18399,7 @@ def main() -> None:
     print()
     print("seal, cache, reload, unfold - and only the last one is a boot")
     print("a restore rebuilds an EQUIVALENT world and hands you the map")
+    restored_conduit.permanent_cleanup()
 
 
 if __name__ == "__main__":
@@ -18198,7 +18600,7 @@ END FILE: UX_and_AIX_experiences/04_expert/25_many_research_sets_one_world.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py
-CONTENT SHA256: 8c6a5cb7d32c3eaa570a0c4d08e4d2fa8ecfd14a8fb415b52a699a06c59e76e8
+CONTENT SHA256: d62eb8e309a37b801c84eb2e67ae1d3b0c6af0733c29c23d60e3a1898a55e310
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -18381,7 +18783,7 @@ def main() -> None:
     # Now mint versions the only way that works: bind / bind_inactive.
     index = conduit.get_spell_by_id(v1).spell_index
     assert index.spells_in_index() == {v1}
-    assert conduit.meld(Rate, binding_name="iterate-rate").value == 1
+    assert conduit.meld("Rate", binding_name="iterate-rate").value == 1
 
     staged = conduit.bind_inactive(
         spell=RateV2, spell_index=index,
@@ -18389,7 +18791,7 @@ def main() -> None:
     )
     assert index.spells_in_index() == {v1, staged}
     assert index.selected_spell_id == v1, "staging must NOT move selection"
-    assert conduit.meld(Rate, binding_name="iterate-rate").value == 1
+    assert conduit.meld("Rate", binding_name="iterate-rate").value == 1
     print("v2 STAGED: 2 members, selection unchanged, candidate inert")
 
     walked_default = commands.research_walk("default")
@@ -18449,7 +18851,7 @@ END FILE: UX_and_AIX_experiences/04_expert/26_codegen_create_modify_iterate.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/27_a_world_that_outlives_its_own_runtime.py
-CONTENT SHA256: ed47915cdc8bd3d555207d85cbe75bb6573d2b27eea42115c312c21d6e17d3e0
+CONTENT SHA256: 2f5139d8f25612f27c9f3425bb739e6dc126747e43511cfb02c6fd62e685edf4
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -18565,7 +18967,7 @@ def build_world():
 
 def main() -> None:
     crystallizer, conduit, commands = build_world()
-    vault = conduit.meld(Vault, binding_name="outlive-vault")
+    vault = conduit.meld("Vault", binding_name="outlive-vault")
     vault.contents.append("written before any codegen")
     print("world up; custody recording:", crystallizer.activated)
 
@@ -20627,7 +21029,7 @@ END FILE: UX_and_AIX_experiences/04_expert/35_the_gate_that_waits_for_readers.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/36_an_agent_builds_a_working_system.py
-CONTENT SHA256: 51d2ad36a77d0c17b0ee8d8ead6d7d6f6d374dfc79374d95671d7de5660b144a
+CONTENT SHA256: 5f4e3d19246c5759534a1e2c2341797e5c431529a37d376b8d36a483176f856b
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -20800,10 +21202,10 @@ def main() -> None:
               % (class_name, module_name, class_name.lower()))
 
     # MELD THEM. Now they are objects.
-    tokenizer = conduit.meld(classes["Tokenizer"],
+    tokenizer = conduit.meld("Tokenizer",
                              binding_name="tokenizer")
-    counter = conduit.meld(classes["Counter"], binding_name="counter")
-    reporter = conduit.meld(classes["Reporter"],
+    counter = conduit.meld("Counter", binding_name="counter")
+    reporter = conduit.meld("Reporter",
                             binding_name="reporter")
     print()
     print("melded three OBJECTS:", type(tokenizer).__name__,
@@ -20834,7 +21236,7 @@ def main() -> None:
     print("  moment they landed")
 
     # UNIQUE MEANS THE SAME OBJECT BACK.
-    again = conduit.meld(classes["Tokenizer"],
+    again = conduit.meld("Tokenizer",
                          binding_name="tokenizer")
     assert again is tokenizer, "existence='unique' returns the same object"
     print()
@@ -20854,7 +21256,7 @@ def main() -> None:
     book.bind(spell=worker_class, existence="many", permissions="create",
               binding_name="worker")
 
-    workers = [conduit.meld(worker_class, binding_name="worker")
+    workers = [conduit.meld("Worker", binding_name="worker")
                for _ in range(5)]
     assert len({id(worker) for worker in workers}) == 5, (
         "existence='many' must build a NEW instance per meld"
@@ -20881,8 +21283,325 @@ if __name__ == "__main__":
 END FILE: UX_and_AIX_experiences/04_expert/36_an_agent_builds_a_working_system.py
 ================================================================================
 ================================================================================
+BEGIN FILE: UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py
+CONTENT SHA256: b41ed7164d697403ba259347060e05423acc5ef6a5f529155220a698110d9551
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: expert (37)
+GOAL: Gate agent-supplied existing objects with ordered pre-bind checks,
+      verify agent metadata and annotate the new Spell during activation,
+      then update and audit the published Spell in post-bind. Demonstrate
+      rejection phases and why a post-bind failure does not undo registration.
+SURFACE EXERCISED: md.Spellbook / find_spell_by_id / describe_spells_in_spellbook,
+                  md.Conduit.add_bind_hooks / clear_bind_hooks / bind / meld,
+                  md.Spell.metadata / tags, md.HookExecutionError
+"""
+import melder as md
+
+
+class ReportTool:
+    """Application-created tool that an agent proposes for registration.
+
+    Contract:
+        Carries its schema version as ordinary instance state. It owns no
+        external resources; Melder must resolve the exact supplied reference.
+    """
+
+    def __init__(self, schema_version: int = 1) -> None:
+        """Retain the supplied application schema version without registration work."""
+        self.schema_version = schema_version
+
+    def render(self, subject: str) -> str:
+        """Render a deterministic result using the already-existing object."""
+        return f"report:{subject}"
+
+
+class BackupReport(ReportTool):
+    """Distinct registration used to demonstrate failure after publication."""
+
+
+class BindingReview:
+    """Application policy and local audit for one Book's agent submissions.
+
+    Contract:
+        Borrows the Book and owns a list of published IDs. Pre checks run in
+        declared order. Metadata updates annotate a Spell; they do not change
+        its ID, replace its implementation or automatically refresh persistence.
+        This small audit is used sequentially in the example.
+    """
+
+    def __init__(self, book: md.Spellbook) -> None:
+        """Borrow the target Book and initialize this review's independent audit."""
+        self.book = book
+        self.published_ids: list[str] = []
+
+    def require_report_tool(self, reference: object) -> None:
+        """Reject references outside this application's supported existing-object type."""
+        if not isinstance(reference, ReportTool):
+            raise TypeError("Agent submissions must be existing ReportTool objects.")
+
+    def require_supported_schema(self, reference: ReportTool) -> None:
+        """Check instance state after the preceding callback has validated its type."""
+        if reference.schema_version != 1:
+            raise ValueError("ReportTool schema_version must be 1.")
+
+    def configure_spell(self, spell: md.Spell) -> None:
+        """Check bind metadata and decorate the actual unpublished Spell.
+
+        Contract:
+            Pre-bind receives only the reference. The submitted_by bind keyword
+            is available here, on the newly constructed Spell's metadata.
+        """
+        if spell.metadata.get("submitted_by") != "report-agent":
+            raise PermissionError("This Book accepts submissions from report-agent only.")
+        assert self.book.find_spell_by_id(spell.spell_id) is None
+        spell.metadata["review_policy"] = "report-schema-v1"
+        spell.tags.append("agent-reviewed")
+
+    def record_registration(self, spell: md.Spell) -> None:
+        """Update and audit the same Spell after it becomes publicly discoverable.
+
+        Contract:
+            The post_checked annotation is live metadata. Post is not a
+            transaction-commit or durable-record refresh callback.
+        """
+        assert self.book.find_spell_by_id(spell.spell_id) is spell
+        assert spell.metadata["review_policy"] == "report-schema-v1"
+        spell.metadata["post_checked"] = True
+        self.published_ids.append(spell.spell_id)
+
+
+def unavailable_audit_sink(spell: md.Spell) -> None:
+    """Simulate an application notification failure after the earlier post callback."""
+    raise RuntimeError(f"Audit sink unavailable for {spell.spell_name}.")
+
+
+def main() -> None:
+    """Bind accepted agent proposals and assert the precise refusal boundaries.
+
+    Contract:
+        Uses ordinary public binding against a live normal Conduit. The
+        proposal references stand for objects supplied by an agent workflow;
+        acquiring or generating those references is a separate concern.
+    """
+    book = md.Spellbook(configuration=md.SpellbookConfiguration().with_defaults())
+    conduit = None
+    try:
+        conduit = book.conjure(dynamic=True, name="agent-bind-review")
+        review = BindingReview(book)
+        conduit.add_bind_hooks(
+            pre=[review.require_report_tool, review.require_supported_schema],
+            activation=[review.configure_spell],
+            post=[review.record_registration],
+        )
+
+        # A reference check rejects by raising, not by returning False.
+        for proposal, cause in ((object(), TypeError), (ReportTool(2), ValueError)):
+            try:
+                conduit.bind(spell=proposal, existence="unique", submitted_by="report-agent")
+            except md.HookExecutionError as error:
+                assert error.phase == "pre_bind"
+                assert isinstance(error.original_exception, cause)
+                print("reference refused:", error.phase, str(error.original_exception))
+            else:
+                raise AssertionError("The unsuitable proposal was registered.")
+        assert book.describe_spells_in_spellbook() == []
+        assert review.published_ids == []
+
+        supplied = ReportTool()
+        try:
+            conduit.bind(spell=supplied, existence="unique", submitted_by="unknown-agent")
+        except md.HookExecutionError as error:
+            assert error.phase == "bind_activation"
+            assert isinstance(error.original_exception, PermissionError)
+            print("agent metadata refused:", error.phase)
+        else:
+            raise AssertionError("The unapproved agent was admitted.")
+        assert book.describe_spells_in_spellbook() == []
+        assert supplied.render("still-owned-by-caller") == "report:still-owned-by-caller"
+
+        spell_id = conduit.bind(
+            spell=supplied, existence="unique", submitted_by="report-agent",
+        )
+        registered = book.find_spell_by_id(spell_id)
+        assert registered is not None
+        assert registered.metadata == {
+            "submitted_by": "report-agent",
+            "review_policy": "report-schema-v1",
+            "post_checked": True,
+        }
+        assert "agent-reviewed" in registered.tags
+        assert conduit.meld("ReportTool") is supplied
+        assert supplied.render("weekly") == "report:weekly"
+        assert review.published_ids == [spell_id]
+        print("accepted existing object:", registered.metadata)
+
+        # add appends: record_registration runs before the later failing callback.
+        conduit.add_bind_hooks(post=[unavailable_audit_sink])
+        backup = BackupReport()
+        try:
+            conduit.bind(spell=backup, existence="unique", submitted_by="report-agent")
+        except md.HookExecutionError as error:
+            assert error.phase == "post_bind"
+            assert isinstance(error.original_exception, RuntimeError)
+            print("post notification failed; inspect the published binding before retrying")
+        else:
+            raise AssertionError("The audit failure was not propagated.")
+        assert len(review.published_ids) == 2
+        published_backup = book.find_spell_by_id(review.published_ids[-1])
+        assert published_backup is not None
+        assert published_backup.spell_name == "BackupReport"
+        assert published_backup.metadata["post_checked"] is True
+        assert conduit.meld("BackupReport") is backup
+        print("binding survived post failure:", published_backup.spell_name)
+
+        conduit.clear_bind_hooks()
+        assert conduit.meld("ReportTool") is supplied
+        assert registered.metadata["post_checked"] is True
+    finally:
+        if conduit is not None:
+            conduit.cleanup()
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/04_expert/38_named_scopes_in_nexus_and_restore.py
+CONTENT SHA256: c5530147ed0b3235c40512d6fcdc6c84447092f3d804f33c16cc23d3dde6f162
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: expert (38)
+GOAL: Observe named lesser scopes through Nexus, then restore their recorded structure.
+      New conduit IDs need the normal explicit Rift projection refresh. A known
+      pooled ID keeps its compiled membership while named reuse replaces its payload.
+      Crystallizer records dynamic scope structure and required unnamed ancestry;
+      it does not save application instances or their mutable contents.
+SURFACE EXERCISED: md.Crystallizer.activate / create_checkpoint / load_checkpoint,
+                   md.Spellbook.configure_aether_frame / bind / conjure,
+                   md.Nexus.activate / create_rift, md.Rift.create_frame_link /
+                   refresh_runtime_projections, capability create_lesser_conduit /
+                   get_conduit_by_name, md.Conduit.get_conduit_cloud / cleanup.
+VERIFY: Requires a complete successful in-memory checkpoint replay. No exception is
+        treated as success. A cold process restart additionally needs flush/reload.
+"""
+
+import melder as md
+
+
+class JobNotebook:
+    """Application state created inside each job, deliberately excluded from structural replay."""
+
+    def __init__(self) -> None:
+        """Initialize the state that a fresh meld must recreate after restore."""
+        self.notes: list[str] = []
+
+
+def open_observer(name: str) -> md.Rift:
+    """Open a capability room on the already-published named-jobs world.
+
+    Contract:
+        Nexus configuration must already allow the target frame. The returned Rift
+        is caller-owned and must be cleaned before tearing down its observed world.
+    Args:
+        name: Unique name for this observer.
+    Returns:
+        md.Rift: Attached observer with the current compiled projection.
+    """
+    nexus = md.Nexus()
+    configuration = nexus.create_rift_configuration().with_space_type("capability")
+    rift = nexus.create_rift(configuration=configuration, rift_name=name)
+    rift.create_frame_link("named-jobs")
+    return rift
+
+
+def main() -> None:
+    """Capture a live named hierarchy, retire it and rebuild fresh structural identities.
+
+    Contract:
+        Single-threaded: no scope acquisition/return races with load_checkpoint.
+        The recorder remains alive, so this demonstrates in-memory replay; flush
+        and reload are required when crossing process teardown instead.
+    Returns:
+        None.
+    """
+    recorder = md.Crystallizer()
+    recorder.activate(md.CrystallizerConfigurationBuilder().with_defaults().activate())
+    nexus = md.Nexus()
+    nexus_configuration = nexus.create_configuration()
+    nexus_configuration.with_rift_creation_enabled(True)
+    nexus_configuration.with_allowed_target_frame_names(["named-jobs"])
+    nexus.activate(nexus_configuration)
+
+    configuration = md.SpellbookConfiguration("named-jobs").with_defaults().finalize()
+    book = md.Spellbook(aetheric_frame="named-jobs", configuration=configuration)
+    book.configure_aether_frame(
+        system_state="dynamic", disposal=None, disposal_method_names=None,
+        rift_enabled=True, ai_native=True,
+    )
+    book.bind(spell=JobNotebook, existence="unique_per_conduit", permissions="create")
+    root = book.conjure(name="job-owner")
+    observer = open_observer("before-restore")
+    try:
+        commands = observer.space.command_system
+        job = commands.create_lesser_conduit(root.id, frame_name="named-jobs", name="job-42")
+        observer.refresh_runtime_projections(frame_names=("named-jobs",))
+        assert commands.get_conduit_by_name("job-42", frame_name="named-jobs") is job
+        print("The capability command creates a named job; explicit refresh admits its new ID.")
+
+        job.cleanup()
+        assert "job-42" not in commands.list_conduit_names(frame_name="named-jobs")
+        next_job = commands.create_lesser_conduit(root.id, frame_name="named-jobs", name="job-43")
+        assert commands.get_conduit_by_name("job-43", frame_name="named-jobs") is next_job
+        print("Named reuse updates the existing ID's descriptor without an in-command refresh.")
+
+        support = root.create_lesser_conduit()
+        nested = support.create_lesser_conduit(name="nested-job")
+        original_id, support_id = nested.id, support.id
+        original = nested.meld("JobNotebook")
+        original.notes.append("not part of the structural record")
+        observer.refresh_runtime_projections(frame_names=("named-jobs",))
+        checkpoint = recorder.create_checkpoint()
+        print("Checkpoint captured names and unnamed supporting ancestry, not notebook contents.")
+    finally:
+        observer.cleanup()
+        root.permanent_cleanup()
+
+    report = recorder.load_checkpoint(checkpoint)
+    assert report["status"] == "complete"
+    cloud = md.Aether().get_conduit_cloud("named-jobs")
+    restored_root = cloud.get_conduit_by_name("job-owner")
+    restored = cloud.get_conduit_by_name("nested-job")
+    restored_observer = open_observer("after-restore")
+    try:
+        assert restored.id != original_id
+        assert report["identity_map"][original_id] == restored.id
+        assert support_id in report["identity_map"]
+        assert not cloud.has_conduit_id(report["identity_map"][support_id])
+        assert restored.meld("JobNotebook").notes == []
+        assert restored_observer.space.command_system.get_conduit_by_name(
+            "nested-job", frame_name="named-jobs",
+        ) is restored
+        print("Restore rebuilt named scopes with fresh IDs and retained the unnamed ancestor.")
+        print("A new meld creates an empty notebook; earlier application data is not restored.")
+    finally:
+        restored_observer.cleanup()
+        restored_root.permanent_cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/04_expert/38_named_scopes_in_nexus_and_restore.py
+================================================================================
+================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/_concept_map.txt
-CONTENT SHA256: eb20db5f20693e352d1f20659a601e1e04af052bb56bfc59dc0de17f5234cd0e
+CONTENT SHA256: 49f25182aa7369f5297dc710a689ded96a9d3c5588549de57fb0233bbcd58797
 SOURCE ENCODING: utf-8
 ================================================================================
 CONCEPT MAP - 04_expert (README tier: BLUE Expert)
@@ -22145,6 +22864,18 @@ THE TIER'S OWN SHAPE, NOW THAT IT IS DONE
   REFUSE precisely. That is the through-line worth naming out loud:
   melder buys concurrency and agency with precision of refusal, never
   with permissiveness.
+
+AGENT REGISTRATION POLICY (2026-09-22)
+  37 review_agent_bindings: ordered checks over an agent-supplied existing object,
+     metadata validation and annotation on the actual Spell during activation,
+     post-registration metadata/audit, and publication surviving a post-hook failure.
+     Uses active bind, public md.* surfaces and unique supplied-object reuse.
+     Metadata updates do not rewrite source, rehash identity or refresh prior records.
+
+NAMED SCOPE DISCOVERY AND REPLAY (2026-09-23)
+  38 named_scopes_in_nexus_and_restore: capability name forwarding, explicit
+     membership refresh, named pooled reuse, required unnamed ancestry and
+     successful structural replay with fresh identities/application values.
 
 REMAINING / NOT YET AUTHORED
   - boot melds (owner epic 2026-07-20, unassigned): conjure-time warm-up
@@ -61030,7 +61761,7 @@ END FILE: docs/beginner/install.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/beginner/registration.md
-CONTENT SHA256: f4344577c3b46b65228c4657ad83ddcd58469c72b9ff27f524d12e14d3b3bed0
+CONTENT SHA256: 905097ec7c2262efc48d8999a4c8b54d5083730e7f91393bf22477be692210cb
 SOURCE ENCODING: utf-8
 ================================================================================
 # What you can bind
@@ -61038,6 +61769,12 @@ SOURCE ENCODING: utf-8
 Registration is ordinary Python code. The saved lessons demonstrate three
 useful inputs: a class Melder can construct, a function that supplies a value,
 and an instance you already constructed.
+
+Registration takes the Python object: `book.bind(spell=Greeter, existence="unique")`.
+Resolution uses its registered name: `conduit.meld("Greeter")`. Function spells use
+their function names, such as `conduit.meld("make_settings")`. A prebuilt instance
+uses its type's name, such as `conduit.meld("AlreadyBuilt")`; the local variable
+holding that instance is not its registered name.
 
 ## Pick the form that expresses your ownership
 
@@ -61073,7 +61810,7 @@ END FILE: docs/beginner/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/catalog.toml
-CONTENT SHA256: d0a6f59df68efc7dbf4eb9d1d027d2ecf251f9f8eb6807077ec238476383fb9f
+CONTENT SHA256: 8758eee86284ce1431a81e2ce753c45b261ac006f117c5ca88de5457bcf0a172
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -61168,6 +61905,9 @@ sources = [
   "35_one_config_every_book.py",
   "36_late_binding_with_spellcontract.py",
   "37_the_frame_conduit_cloud.py",
+  "39_purge_unneeded_objects.py",
+  "40_bind_lifecycle_hooks.py",
+  "41_named_lesser_conduits.py",
 ]
 
 [[level]]
@@ -61235,6 +61975,8 @@ sources = [
   "34_several_worlds_of_record_in_one_process.py",
   "35_the_gate_that_waits_for_readers.py",
   "36_an_agent_builds_a_working_system.py",
+  "37_review_agent_bindings.py",
+  "38_named_scopes_in_nexus_and_restore.py",
 ]
 
 [[lesson]]
@@ -61374,7 +62116,7 @@ END FILE: docs/conf.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/curriculum.toml
-CONTENT SHA256: 57d89e8450f7ce0d2e722368351f5ccda242d1fbdfc6b0e025287439e1c682c7
+CONTENT SHA256: c09d9ab346cfbb88723c60e0d8d4137da3e2a31acfac74daa8b58f60770c3afa
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -61502,7 +62244,7 @@ id = "intermediate/hooks"
 title = "Lifecycle hooks"
 level = "intermediate"
 source = "intermediate/hooks.md"
-lessons = ["intermediate:32", "intermediate:03", "intermediate:33", "intermediate:34"]
+lessons = ["intermediate:40", "intermediate:03", "intermediate:32", "intermediate:33", "intermediate:34"]
 show_steps = true
 
 [[chapter]]
@@ -61510,7 +62252,7 @@ id = "intermediate/scopes"
 title = "Spell spaces, lineage, and child scopes"
 level = "intermediate"
 source = "intermediate/scopes.md"
-lessons = ["intermediate:29", "intermediate:04", "intermediate:05", "intermediate:07", "intermediate:28"]
+lessons = ["intermediate:29", "intermediate:41", "intermediate:04", "intermediate:05", "intermediate:07", "intermediate:28", "intermediate:39"]
 show_steps = true
 
 [[chapter]]
@@ -61666,7 +62408,7 @@ id = "expert/agent-rooms"
 title = "Agent rooms and explicit authority"
 level = "expert"
 source = "expert/agent-rooms.md"
-lessons = ["expert:11", "expert:08", "expert:13", "expert:20"]
+lessons = ["expert:11", "expert:08", "expert:13", "expert:20", "expert:38"]
 show_steps = true
 
 [[chapter]]
@@ -61675,6 +62417,14 @@ title = "Build a working system from generated code"
 level = "expert"
 source = "expert/codegen.md"
 lessons = ["expert:36", "expert:07", "expert:12", "expert:26", "expert:33", "expert:10"]
+show_steps = true
+
+[[chapter]]
+id = "expert/bind-hooks"
+title = "Review agent proposals with bind hooks"
+level = "expert"
+source = "expert/bind-hooks.md"
+lessons = ["expert:37"]
 show_steps = true
 
 [[chapter]]
@@ -61698,7 +62448,7 @@ id = "expert/restore"
 title = "Restore and cold boot"
 level = "expert"
 source = "expert/restore.md"
-lessons = ["expert:27", "expert:24", "expert:01"]
+lessons = ["expert:38", "expert:27", "expert:24", "expert:01"]
 show_steps = true
 
 [[chapter]]
@@ -61782,7 +62532,7 @@ END FILE: docs/examples/index.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/agent-rooms.md
-CONTENT SHA256: a3ac696c60161c7215be94f868409be526597c62c321bb33d3cdce14690191bc
+CONTENT SHA256: 6693e0374099c2c6145745d23f1471a82be716caafaa7f4e8782ad1144861faf
 SOURCE ENCODING: utf-8
 ================================================================================
 # Give each agent an explicit room and target
@@ -61812,6 +62562,32 @@ For multiple worlds, configure the allowed names, permit multiple targets, and
 set the target count. Attach each world explicitly. A shared observer leaves
 the underlying worlds isolated.
 
+## Find a named live scope
+
+[Named scopes in Nexus and restore](../examples/expert/38-named-scopes-in-nexus-and-restore.md)
+shows the complete public setup. Capability rooms can create a named child directly:
+
+```python
+job = commands.create_lesser_conduit(root.id, frame_name="jobs", name="job-42")
+rift.refresh_runtime_projections(frame_names=("jobs",))
+assert commands.get_conduit_by_name("job-42", frame_name="jobs") is job
+```
+
+The refresh admits a new published ID into the room's compiled access set. Named
+getters in capability and codegen rooms still enforce the selected ID's command
+ACL. Naming never grants normal-root bind/link/cluster rights, and static rooms
+still do not expose raw conduit objects.
+
+Named cleanup clears its Nexus name and parent metadata while retaining a pooled
+record for the reusable ID. Named reuse updates that record. A projection that
+already admitted the ID can read those replacement values without recompiling.
+Anonymous pool cycles retain their existing local-only publication behavior.
+
+A new ID or permanent record deletion still uses explicit projection refresh.
+A stale view of a permanently deleted record can raise until refreshed. Creation
+commands do not synchronously refresh while inside their own Rift gate. Neither
+published records nor raw lookup results are leases on a scope's lifetime.
+
 ## Hold objects deliberately
 
 The workstation holds named handles; the command system resolves permitted world
@@ -61823,6 +62599,103 @@ Room policy and code validation are application controls. They are not an operat
 system sandbox or a proof that arbitrary hostile Python is safely isolated.
 ================================================================================
 END FILE: docs/expert/agent-rooms.md
+================================================================================
+================================================================================
+BEGIN FILE: docs/expert/bind-hooks.md
+CONTENT SHA256: 513e1e35c1a974de8a9c6daac09f1925ba537b8e5a21ed4c7db9b449c1cfb05a
+SOURCE ENCODING: utf-8
+================================================================================
+# Review agent proposals with bind hooks
+
+Prerequisite: [bind and runtime hooks](../intermediate/hooks.md). Expert 37 shows an
+application installing its own registration policy on a live normal Conduit, then
+passing it object references supplied by an agent workflow. Use the existing
+[codegen lessons](codegen.md) when the workflow must first produce those references.
+
+## Check the actual supplied reference
+
+The example registers two ordered `pre` strategies:
+
+1. Require an existing `ReportTool` object.
+2. Require its `schema_version` to be `1`.
+
+The second check sees the same object as the first, including its current instance
+state. An unrelated object and a tool with an unsupported schema both fail in
+`pre_bind`, before a Spell is created or registered.
+
+```python
+conduit.add_bind_hooks(
+    pre=[review.require_report_tool, review.require_supported_schema],
+    activation=[review.configure_spell],
+    post=[review.record_registration],
+)
+
+supplied = ReportTool()
+spell_id = conduit.bind(
+    spell=supplied,
+    existence="unique",
+    submitted_by="report-agent",
+)
+assert conduit.meld("ReportTool") is supplied
+```
+
+The unique-only lifetime is Melder's existing rule for supplied objects. The hook
+pipeline checks and annotates that registration; resolution returns the same supplied
+reference. The example's type/schema checks are application policy, not new built-in
+restrictions on every Melder binding.
+
+## Modify the Spell at the right stage
+
+Pre-bind receives only the target reference. Bind keyword metadata becomes available
+on the new `Spell` in activation. The example checks its `submitted_by` label there,
+then sets `spell.metadata["review_policy"]` and appends an `agent-reviewed` tag.
+The label is application-provided metadata; trusted caller identity must come from
+the application's own authenticated context if that distinction is required.
+
+Post-bind receives the same Spell after registration. The example verifies that
+`book.find_spell_by_id(spell.spell_id)` returns it, sets
+`spell.metadata["post_checked"] = True`, and records its ID in the application's audit.
+The caller then inspects those changes through the public lookup.
+
+These are **live metadata changes**. They do not replace source code, create a new
+version, recompute a Spell ID or automatically republish a recorded snapshot. Native
+identity is established before bind activation; identity-bearing changes need the
+normal binding/version workflow. Recording and Nexus publication can precede post-bind,
+so a post-hook metadata edit is not a promise that an earlier published record changed.
+
+This example uses active `bind` registrations. `bind_inactive` also runs the lifecycle,
+but its post callback receives a parked candidate. A callback for that path should
+not assume ordinary selected-version lookup returns the parked Spell.
+
+## Handle failure according to its phase
+
+| Failure phase | Demonstrated result |
+| --- | --- |
+| `pre_bind` | An unsuitable reference is refused; activation and post do not run |
+| `bind_activation` | An unsupported submitter label is refused; the unpublished Spell is retired and the caller's object remains usable |
+| `post_bind` | The notification fails after registration; the binding and earlier post metadata changes remain |
+
+Inspect `HookExecutionError.original_exception` for the application's cause. Raising
+stops the remaining callbacks in that stage; return values are ignored.
+
+Expert 37 appends a simulated failing audit callback after its normal post callback.
+It catches the resulting `post_bind` error and proves `meld("BackupReport")` still
+returns the registered object. Inspect existing state before retrying such a bind;
+a failed notification does not mean a second registration is needed.
+
+## Keep policy updates on the Book's existing lifecycle
+
+`add_bind_hooks` appends and `clear_bind_hooks` clears all stages for future binds.
+Each bind retains its captured callbacks, including when callbacks change the registry.
+Use the Book or its normal-Conduit facade for updates. Configuration seeds are captured
+when a Book is constructed; changing another Book's runtime registry is separate.
+
+The example's audit is sequential and in memory. Concurrent callbacks must coordinate
+any application state they share, and external notifications keep their own failure
+and retry policy. The existing [transaction admission](transactions.md) and
+[versioning workflow](governed-change.md) continue to govern structural changes.
+================================================================================
+END FILE: docs/expert/bind-hooks.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/codegen.md
@@ -61974,7 +62847,7 @@ END FILE: docs/expert/external-storage.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/governed-change.md
-CONTENT SHA256: 7fb1f4b4612e1b81bd44846a409ae89be9f265c4799c32aaca407f77d9a34ed8
+CONTENT SHA256: 0ef07f48fe73c413cec14e4c9b420230618ff9b1b4d5e1b121399872e97c5d37
 SOURCE ENCODING: utf-8
 ================================================================================
 # Preview, stage, and govern structural change
@@ -61987,6 +62860,10 @@ selected frame's codegen verdict before any candidate is bound.
 The foresight example checks that preview leaves research heads unchanged and the
 original pricing object still returns its original result. A malformed candidate
 returns parse information that the caller can inspect.
+
+For application checks at registration itself, use the
+[bind-hook review pipeline](bind-hooks.md). Its pre callbacks inspect the supplied
+reference, activation annotates the new Spell, and post observes the registered result.
 
 ## Staging is not promotion
 
@@ -62015,7 +62892,7 @@ END FILE: docs/expert/governed-change.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/index.md
-CONTENT SHA256: d5fbfe340b2abf032949efd639321987b41acaf9e2ad3f1d2a6112d9f0ada719
+CONTENT SHA256: 220ae5a44e83e95d5843062714164c4a57c6a2b126aebee4aaf7d4180c4402be
 SOURCE ENCODING: utf-8
 ================================================================================
 # 🔵 Expert
@@ -62031,8 +62908,10 @@ reason about changes before applying them.
 - Read the package's architecture, component, and graph documents.
 - Use capability and codegen rooms, workstations, and command surfaces.
 - Follow code generation from validation to live objects.
+- Check agent-supplied references and annotate registered Spells with bind hooks.
 - Understand transaction admission and concurrent structural change.
 - Record checkpoints, restore worlds, and integrate external storage.
+- Discover named scopes through Nexus and restore their structure without restoring prior object state.
 - Work with research sets, lanes, compositions, diffs, and impact views.
 - Preview, stage, promote, and retire implementations deliberately.
 
@@ -62137,7 +63016,7 @@ END FILE: docs/expert/research.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/restore.md
-CONTENT SHA256: 302d6044e7253ac5970ad47697d64f525010c2427866eb3099bbad4434519b78
+CONTENT SHA256: 663c9760dab1d9a224431d74b351ff038f232d967896c13ff5581e46a7d6bbf8
 SOURCE ENCODING: utf-8
 ================================================================================
 # Restore and cold boot
@@ -62161,9 +63040,30 @@ Preflight can refuse an incomplete chain before construction. Preserve the full
 required profile chain when preparing a cold start; reloading a single checkpoint
 does not imply every predecessor has been reloaded.
 
+## Restore named lesser structure
+
+Run [Named scopes in Nexus and restore](../examples/expert/38-named-scopes-in-nexus-and-restore.md)
+for a successful replay with assertions. It records a named job beneath an unnamed
+parent, tears down the live roots and restores from the retained in-memory checkpoint.
+This is different from a process restart, which also needs the flush/reload steps above.
+
+Dynamic named scopes carry their name, parent and root relationships. Required
+unnamed ancestry is saved as supporting values inside named records. Restoring
+rebuilds one shared Book/root and its children in parent order with fresh IDs;
+unnamed support stays outside Cloud discovery. Scope names do not restore the
+mutable contents of previously created objects. A later `meld` creates fresh state.
+
+Released names disappear from later checkpoints while earlier sealed checkpoints
+retain their earlier structure. Formations rooted at a named lesser include its
+required ancestry and selected subtree. Record schema **3.0.0** makes older
+root-only readers refuse safely; valid older root-only records remain readable.
+
+Quiesce ordinary lesser/SpellSpace creation, cleanup and lineage changes during
+live restore. Transaction load authority does not drain those pool cycles.
+
 ## Follow both demonstrations
 
-Expert 24 walks the checkpoint verbs while holding the existing world. Expert 27
+Expert 24 keeps the recorder alive and retires the original root before rebuilding it. Expert 27
 flushes, tears down the root, creates a new runtime, and reads the cache again.
 The latter deliberately reports an admission refusal if the bundle is incomplete.
 A script finishing successfully therefore does not, on its own, prove a complete
@@ -62575,7 +63475,7 @@ END FILE: docs/intermediate/connected-subsystems.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/hooks.md
-CONTENT SHA256: 9b492de634c3f6eb6a9dc06c704c21461fb585233a37d85b5005013ecccc53fd
+CONTENT SHA256: 3c9e3dc42708cb0f4602ef3bed5afa1ead516b2f90dce440366fdc899f931073
 SOURCE ENCODING: utf-8
 ================================================================================
 # Observe registration and runtime lifecycles
@@ -62587,14 +63487,66 @@ book or registration so call sites can keep using ordinary `meld` and lifecycle 
 
 | Boundary | Registration surface | Saved demonstration |
 | --- | --- | --- |
+| Bind registration | `book.add_bind_hooks(pre=..., activation=..., post=...)` | Check the reference, annotate its Spell, observe registration |
 | Spell creation | `SpellBinder.with_pre_hook`, `with_activation_hook`, `with_post_hook` | Record construction events |
 | Meld | `configuration.add_hook(book.id, name, callback)` | Observe pre/post resolution |
 | Conduit | The same book-keyed hook registration | Observe creation and cleanup |
 | Links and contracts | The same book-keyed hook registration | Observe linking, pull, and sever |
 
-The book ID matters when a configuration serves several books. Register the
-callbacks before the lifecycle operation you intend to observe. The runnable
-examples collect events in memory so you can inspect what actually fired.
+Register callbacks before the lifecycle operation you intend to observe. For
+configuration-based Conduit/Meld hooks, a Book ID selects Book-specific events;
+omitting it supplies defaults. Bind hooks belong to the Book itself and use the
+three named stages below.
+
+## Follow a binding through its three stages
+
+Intermediate 40 is the runnable bind-hook example. Its callbacks receive these subjects:
+
+| Stage | Callback argument | Timing and purpose |
+| --- | --- | --- |
+| `pre` | The exact class, function or existing object passed to bind | Before reflection; check the reference and raise to reject it |
+| `activation` | The actual new `Spell` | Before publication; inspect it and add application metadata or tags |
+| `post` | That `Spell` after registration | Inspect the registered result or record an application audit |
+
+```python
+book.add_bind_hooks(
+    pre=[check_reference],
+    activation=[configure_spell],
+    post=[observe_registration],
+)
+```
+
+Pass sequences of synchronous callbacks. Calls append in order; returning `False`
+does not reject a reference, and returning another object does not replace it.
+Raise an exception to reject. Melder wraps callback failures in `HookExecutionError`
+and preserves their `phase`, `hook_name`, and `original_exception`.
+
+Bind activation constructs/configures the **Spell definition**. It does not create
+the application object. The older fluent creation-hook lesson runs callbacks during
+Meld instead. Intermediate 40 proves this distinction: binding records pre → activation
+→ post, and a later `meld("Report")` leaves that bind-event list unchanged.
+
+## Configure once or adjust future bindings
+
+For initial callbacks, call `configuration.with_bind_hooks(...)` before constructing
+the Book. Each Book captures those seeds during construction. Runtime
+`book.add_bind_hooks(...)` then appends to that Book's own registry.
+
+`book.clear_bind_hooks()` removes all three stages from future bindings. Register
+them again with `add_bind_hooks`; an empty sequence does not clear a stage.
+The normal Conduit exposes the same `add_bind_hooks` and `clear_bind_hooks` methods.
+These methods remain usable after configuration freezes, subject to the existing
+rules for actually binding new definitions. Lessers cannot change their borrowed
+Book's bind hooks through the Conduit facade.
+
+An in-flight bind keeps one captured callback set; updates affect subsequent binds.
+Clearing does not erase metadata from earlier Spells or remove their creation hooks.
+Shared configuration does not turn runtime Bind-hook edits into cross-Book updates.
+
+Post-bind runs after registration, before any enclosing transaction's final completion.
+A post-hook failure can leave the binding registered. The
+[expert bind-hook lesson](../expert/bind-hooks.md) demonstrates that case alongside
+agent-supplied reference checks and changes to the actual Spell.
 
 ## Keep the result separate from the observation
 
@@ -62610,7 +63562,7 @@ END FILE: docs/intermediate/hooks.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/index.md
-CONTENT SHA256: 41e7d1b48b8b2e818767ce46259d3a6264d3136102705b1e49c1e249c83fd66a
+CONTENT SHA256: a36fe4ce9074516766725c2fd88909b4efb58b474fef5ac74760860025ac1d2c
 SOURCE ENCODING: utf-8
 ================================================================================
 # 🟡 Intermediate
@@ -62625,10 +63577,11 @@ explicit public operations.
 
 - Fluent registration with `SpellBinder` and module registration with `scan_bind`.
 - Constructor, explicit, and collection dependency injection.
-- Configuration, hooks, spell spaces, and lineage lifetimes.
+- Configuration, bind lifecycle hooks, runtime hooks, spell spaces, and lineage lifetimes.
 - Dynamic posture, links, permissions, and ownership.
 - Late binding with `SpellContract` and connected-subsystem composition.
-- Scoped cleanup, transfer, and severing relationships.
+- Early object disposal with `purge`, scoped cleanup, transfer, and severing relationships.
+- Named lesser scopes: Cloud lookup, creation-only names, collisions and retirement before pool reuse.
 
 ## Choose a route
 
@@ -62755,7 +63708,7 @@ END FILE: docs/intermediate/permissions.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/registration.md
-CONTENT SHA256: f5d7f6d355be8dd9b1764345d1aaf6f6ad8c554a1f549d03f8b2bae244749ad0
+CONTENT SHA256: 4f94ddeb7320af564ae3a65de9add910248a4898adf309850ba72c5cdcd7d976
 SOURCE ENCODING: utf-8
 ================================================================================
 # Fluent registration and module scanning
@@ -62807,7 +63760,7 @@ book.bind(spell=Worker, existence="many")
 conduit = book.conjure()
 try:
     service = ExternalService()
-    worker = conduit.meld(Worker, override={"service": service})
+    worker = conduit.meld("Worker", override={"service": service})
     assert worker.service is service
 finally:
     conduit.permanent_cleanup()
@@ -62839,7 +63792,7 @@ END FILE: docs/intermediate/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/scopes.md
-CONTENT SHA256: c4f8b8287c0affdbe7793a354308d698c82b744a498fae27eea2a9d71adf2d78
+CONTENT SHA256: 992bb942c4163e44f6570892424d6dde1d7ba22c2095606a12a607556704f5dd
 SOURCE ENCODING: utf-8
 ================================================================================
 # Spell spaces, lineage, and scopes that end
@@ -62867,19 +63820,108 @@ explains why the explicit end of the scope matters.
 
 ## A lesser conduit can grow into a named root
 
+A lesser can also have its own discovery name without being promoted. Run
+[Named lesser conduits](../examples/intermediate/41-named-lesser-conduits.md)
+for a complete example with prewarming, collisions, per-conduit state and cleanup.
+
+```python
+job = root.create_lesser_conduit(name="job-42")
+cloud = root.get_conduit_cloud()
+try:
+    assert cloud.get_conduit_by_name("job-42") is job
+    job.meld("JobBuffer")
+finally:
+    job.cleanup()
+
+assert not cloud.has_conduit_name("job-42")
+```
+
+Supply a name only at creation. Names are exact, nonempty strings, unique among
+active named roots and lessers in the frame. There is no later lesser rename.
+Cleanup unregisters and clears the name **before** the scope enters the pool;
+the next acquisition supplies its own name or stays anonymous. Anonymous scopes
+do not enter Cloud discovery. This works in automatic and dynamic mode.
+
+Use a name when another part of the application needs to find the same live
+scope. A direct reference is enough when the job stays local. Cloud returns a
+borrowed reference: it does not extend the owner's lifetime or make reuse after
+cleanup safe. Names are discovery addresses, not matching-lifetime tags; the
+registered `Existence` still decides where objects are shared.
+
+### Promote only when independent ownership is needed
+
 In a dynamic world, `upgrade_to_normal(name=...)` promotes the existing child.
 The promotion lesson asserts that a previously created per-conduit workbench is
 the same object afterward, then finds the promoted conduit through cloud lookup.
 Read [dynamic mode](dynamic-linking.md) before using this operation.
+Promotion can retain the lesser name or choose another available name. It keeps
+the conduit ID but creates its own empty Spellbook; naming alone does none of that.
 
 [Clusters](../advanced/clusters.md) add a group-wide lifetime. The original cluster
 lesson remains in its saved Intermediate collection and is linked from that guide.
+
+## Purge creations while keeping the scope
+
+Run [Purge unneeded objects](../examples/intermediate/39-purge-unneeded-objects.md)
+for a complete example. It releases one finished job buffer, keeps its siblings
+alive, purges the remaining buffers by name, and creates a fresh buffer afterward.
+It also checks that spell-space purge stays local and final cleanup does not
+dispose already-purged objects twice.
+
+Use `purge` to dispose and remove the retained creations for one registered target
+without ending its scope or removing its registration:
+
+```python
+removed = conduit.purge("Job")
+removed = space.purge("RequestSession")
+```
+
+Names, class/function references, spellframe/binding selectors, and explicit
+`spell_id=` work through the same discovery as `meld`. The return value is the
+number removed, or `0` when that authorized store has no matching creation.
+`purge_all=True` is the default: a `many` target removes its whole retained bucket.
+Only `many` objects with configured disposal are retained; untracked results are
+not affected by purge.
+
+An existing object provides a second input path: purge inspects its class and
+passes that reference through the existing binding lookup. Choose the shortcut
+or the explicit selectors for your binding. Both use the same scoped purge:
+
+```python
+job = conduit.meld("Job")
+removed = conduit.purge(job, purge_all=False)  # Remove this object only.
+removed = conduit.purge(job)                  # Remove remaining entries for its binding.
+```
+
+Single-object removal requires the instance and returns `0` if that object is
+not retained in the authorized store. Other instances remain available for later
+purge or normal scope cleanup. The same options work on `SpellSpace`.
+
+| Lifetime | Who may purge it |
+| --- | --- |
+| `many` | The conduit or spell space holding those local creations |
+| `unique_per_spell_space` | That spell space only |
+| `unique_per_conduit` | That conduit only |
+| `unique_per_conduit_lineage` | The lineage root conduit |
+| `unique_per_conduit_cluster` | The elected cluster leader |
+| `unique` | The spell's owning conduit |
+
+A spell space always stays within its own creations. It cannot purge objects
+belonging to its conduit, lineage root, or cluster leader.
+
+Purge follows the configured disposal methods and their ordering. It attempts
+other selected objects after an object's disposal fails, then raises an
+`ExceptionGroup`; removed entries remain removed. A subsequent meld can create a
+fresh factory-backed instance using the existing compiled context. References
+already held by application objects are not rewritten. An externally supplied
+object remains referenced by its registration, so purging its store entry does
+not unbind it or turn it into a factory.
 ================================================================================
 END FILE: docs/intermediate/scopes.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/maintaining.md
-CONTENT SHA256: 06244272805e09e1cf0da650854e65bf3322ff2609a504afc7e8e2773aaa2962
+CONTENT SHA256: e34fd39e119d2f5e767cab323c187f2d64b07bbf33a84417120ea023390e8dcc
 SOURCE ENCODING: utf-8
 ================================================================================
 # Maintain and publish the documentation
@@ -62943,6 +63985,12 @@ modules in each collection download.
 Keep TIER, GOAL, and SURFACE metadata accurate. Link the lesson from an appropriate
 guide through `docs/curriculum.toml`. Guides and lessons receive reciprocal links;
 recognized public names in lesson surface metadata also link to the API reference.
+
+Teach human-facing resolution with quoted registered names: `conduit.meld("Service")`.
+Keep class/function/object references in registration and returned-object type annotations.
+Use `spell_id=` explicitly for machine identities, and retain frame/binding selectors when needed.
+When updating a prebuilt or generated-object example, verify its registered name rather than
+quoting the local variable that holds it.
 
 Run the applicable existing example harness on **Python 3.14t with the GIL disabled**.
 Example execution is separate from Sphinx rendering. Check the asserted result and
@@ -66415,6 +67463,484 @@ exclude = [
 ]
 ================================================================================
 END FILE: pyproject.toml
+================================================================================
+================================================================================
+BEGIN FILE: release_docs/0.2.43.md
+CONTENT SHA256: 1865e61282295b272c2e2d43d7cd255ff50688f5d38852e97ad9eacdde0409ae
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder 0.2.43
+
+**Draft release notes — changes since 0.2.37**
+
+Prepared September 20, 2026. The target is **0.2.43**, as selected by the owner to match the current
+source version. This document does not announce a published 0.2.43 release.
+
+## Release boundaries
+
+| Boundary | Verified evidence |
+| --- | --- |
+| Previous published GitHub release | [Melder 0.2.37](https://github.com/Synaptic724/melder/releases/tag/0.2.37) |
+| Publication time | **September 6, 2026, 18:42:22 UTC — 12:42:22 p.m. MDT in Edmonton** |
+| Baseline commit | `a30a754d0bb61db0b142936010cdb82cffecec6f`, the 0.2.37 tag |
+| Proposed next release | **0.2.43** |
+| Source snapshot used here | `05ebf662b64b60b8c105903de43c4a956607cda8` on `codex_features2` |
+| Snapshot commit time | September 20, 2026, 01:16:50 UTC — September 19, 7:16:50 p.m. MDT |
+
+GitHub's release list still ends at 0.2.37 at preparation time. The checked-in package version moves
+from 0.2.37 to 0.2.40 on September 13, then to 0.2.43 on September 19. No 0.2.42 release, local tag or
+package-version boundary was found. These notes cover the complete target snapshot, including work
+committed after the 0.2.43 version bump; they do not invent intervening release histories.
+
+## Suggested release summary
+
+Melder 0.2.43 adds registered definitions that agents can inspect and version without allowing
+Melder to resolve them. It also fixes constructor-default handling, Python 3.14 deferred annotations,
+existing-instance dependency planning, and provider-artifact ownership during validation.
+
+Applications upgrading from 0.2.37 should review defaulted dependency parameters and Crystallizer
+record compatibility. Existing bindings remain resolvable unless explicitly registered otherwise.
+
+## Added
+
+- **Non-resolvable registrations.** `bind(..., resolvable=False)` and
+  `bind_inactive(..., resolvable=False)` retain a definition in Melder's registered world without
+  permitting direct resolution or reuse through Meld. The default is `resolvable=True`.
+- **Definitions remain useful to agents.** Abstract bases, internal helpers and explicitly
+  non-resolvable Protocol definitions can retain registration identity and participate in existing
+  source/history/version workflows without becoming automatic construction targets.
+- **References remain visible without construction edges.** Required consumer inputs selecting a
+  non-resolvable definition retain descriptive target relationships. Callers supply their values
+  through existing overrides. Ordinary missing-argument errors remain Python's responsibility;
+  this feature adds no runtime argument preflight.
+- **Nexus relationship navigation.** `describe_spell_relationships` on ViewSpell/FrameViewer exposes
+  visible incoming and outgoing dependency, supplied-reference and registered direct-base links.
+  Existing ACL visibility applies to both endpoints. External changes retain the normal explicit
+  Rift projection-refresh requirement.
+- **Crystallizer preserves resolution policy.** SpellCrystal capture, active/staged restore and
+  supported graft paths retain each version's `resolvable` value. Replayed bindings reconstruct
+  their relationships through the existing compilation process.
+
+## Fixed
+
+- **Ordinary Python defaults are honored.** A matching registered provider no longer replaces an
+  ordinary constructor default such as `None`, `0`, `False`, a collection or a chosen instance.
+  Explicit SpellMap/SpellContract descriptors keep their DI meaning; explicit overrides still work.
+- **Python 3.14 deferred annotations survive inspection.** Binding and dependency inspection retain
+  unresolved names as ForwardRefs instead of failing immediately when annotation evaluation meets
+  a name imported only under `TYPE_CHECKING`. Existing normalization/provider matching handles the
+  reference; missing providers still follow normal validation rules.
+- **Existing instances work as dependency providers.** Planning no longer tries to inspect a
+  supplied, non-callable object as a constructor. Direct and nested consumers can receive the same
+  registered reference. This repair does not introduce new instance lifetimes or ownership modes.
+- **Protocol admission checks the supplied object.** Binding an existing object under a Protocol
+  now checks the actual value for the supported directly declared public members and callability.
+  Instance-only members and non-callable shadows are handled at bind time. This is not a full
+  static type checker or a new inherited-Protocol/signature-validation system.
+- **Borrower validation preserves provider execution artifacts.** Compiling a borrower or a local
+  consumer no longer clears executable artifacts on providers that the pass will not rebuild.
+  Provider instances and their retained state remain usable afterward.
+- **Local revalidation uses the current cancellation event.** Local Phase-5/6 calls no longer capture
+  the previous scheduler run's event. A failed run cannot poison the next validation, while
+  cancellation during the current run still reaches the phase body.
+
+## Documentation, benchmarks and development tooling
+
+- Benchmark/profile adapters now use `spell_id=` for IDs returned by bind: **134 selector corrections
+  across 23 files**, plus three old public `spell_override=` calls corrected to `override=`.
+- Published examples were updated to consistent human-target calling syntax; registration/override
+  guidance documents the new definition capability and its persistence limits.
+- Added the repository's `uv.lock`, contributor setup instructions and locked CI installation flows.
+  The dynamic free-threaded Python matrix remains intact. This is development/build tooling;
+  it does not add runtime dependencies to applications installing Melder.
+- Refreshed generated agent documentation, bind-guard/system-document assets and repository bundles.
+
+## Upgrade notes
+
+### Defaulted parameters now keep their defaults
+
+Code that relied on Melder overriding an ordinary Python default must express its injection intent
+explicitly. For example:
+
+```python
+# Retains None, even if Service has a registered provider.
+def __init__(self, service: Optional[Service] = None):
+    ...
+
+# Requests annotation-based injection.
+def __init__(self, service: Service):
+    ...
+```
+
+Use an explicit SpellMap/SpellContract where that descriptor's semantics are intended, or pass a
+per-call `override`. Do not make an argument nullable solely to represent required caller supply.
+
+### Crystallizer record format advances to 2.0.0
+
+The record format's major version changes from **1.0.0 to 2.0.0**, independently of Melder's package
+version. Older readers must reject new records rather than silently discard `resolvable=False`
+and turn a definition into a resolution target. Update consumers of newly written records together.
+
+New readers retain legacy handling: an old record without the capability field defaults to True.
+Restore continues to reconstruct recorded structure; this release does not serialize arbitrary
+live application objects, their state or suspended execution.
+
+### Compiled cache version advances from 7 to 8
+
+The existing cache mismatch mechanism rebuilds plans compiled under the former default-injection
+policy. No separate invalidation service or manual cache migration is introduced.
+
+### Existing identity and ownership rules remain
+
+- Omitted/True resolution capability preserves the existing binding fingerprint scheme;
+  False uses a distinct fingerprint domain.
+- Existing version rules remain: a same-identity method-body edit does not automatically create
+  a new version. Use the normal registration/module/binding and version-selection workflows.
+- Supplied existing objects retain the current unique-only model and existing disposal/transfer rules.
+- The public distinction between a logical name and `spell_id=` **already existed in 0.2.37**.
+  The benchmark changes repair stale callers; they are not a new addressing API in 0.2.43.
+
+## Completed epic mapping
+
+Ticket closure is evidence of accepted scope, not proof of a release date. Each inclusion below is
+also backed by source changes after the 0.2.37 tag. Historical proposals inside a closed ticket are
+excluded where the completion record says they were deferred.
+
+| Completed epic | Completion recorded | Included in 0.2.43 | Source commits after 0.2.37 |
+| --- | --- | --- | --- |
+| Preserve provider artifact ownership and plan existing instances correctly | September 19, 2026, 14:51:36 UTC | Deferred-annotation acquisition; supplied-instance planning/injection; actual-instance Protocol admission; provider-artifact preservation | `4b3ab72ee`, `7a9eea3a1` |
+| Expose versioned registrations in Nexus without runtime resolution | September 20, 2026, 00:25:59 UTC | Native capability flag; compiler reference/construction separation; runtime refusal; Nexus graph/history; Crystallizer replay; final local-cancellation repair | `63ef620e3`, `f3fa43281`, `2644dced8`, `0005a7a9f` |
+
+Additional delivered work is tracked outside those two completed epics:
+
+| Work record | Recorded state | Release treatment |
+| --- | --- | --- |
+| Constructor default precedence | Done; September 19 turn-in | Include default-first classification and cache version 8. Initial source delivery is in `a425aa1a1`. |
+| Final reported-failure repairs | Done; September 20, 00:25:59 UTC | Include current-run cancellation wiring; the crystal test-double adjustment is validation maintenance, not a separate public feature. Source delivery is in `0005a7a9f`. |
+| Benchmark spell-ID compatibility | Review; implemented and committed | Include benchmark maintenance in `05ebf662b`; do not call it a completed epic or a runtime addressing change. |
+| Positional meld documentation | Review; implemented and committed | Include documentation alignment, not a new runtime API. |
+| Reproducible uv environment | Review; implemented and committed | Include repository/CI tooling in `ed9f5047d`; distinguish it from application runtime behavior. |
+
+## Do not announce these as new in this release
+
+**Already in the 0.2.37 baseline:** ordered live-spell disposal, the original Read the Docs
+documentation rollout, and the human-name versus explicit-machine-ID Meld API. Their completed
+records predate the baseline release. Current fixes/docs updates do not make those original features new.
+
+**Not implemented by this release:**
+
+- Named lesser conduits:
+  naming, ConduitCloud registration and corresponding persistence remain design/discovery work.
+- Purge:
+  draft scope rules only; no purge runtime implementation.
+- Existing-object lifecycle/ownership redesign:
+  parked; multiple external-instance lifetimes, new disposal policy and ownership redesign are not delivered.
+- Stateful application recovery:
+  a proposed extension beyond structural restore, not a completed recovery feature.
+- Broad shared-context rebuild/publication redesign:
+  closed as cancelled/deferred, with its runtime repair unimplemented/unqualified. Do not convert
+  that closure into a concurrency guarantee. The narrow cancellation fix above is a separate delivery.
+
+## Validation and remaining limits
+
+These are retained development results, **not a newly executed release-wide test run**:
+
+- Non-resolvable feature qualification: **8,055 distinct selected passes**, one existing skip and
+  four existing expected failures; 39 documentation tests and a strict 294-page documentation build.
+- Final reported-failure repair: **394 distinct focused passes**, one asset-runner skip and
+  25 fresh-process churn passes. Six deterministic regressions failed before the repair and pass afterward.
+- Provider ownership: the original **nine CommandOps provider acceptance cases passed**. That does
+  not imply the separate Iris builder-cleanup acceptance issue was repaired.
+- Benchmark migration: the standalone gauntlet passes its default 1,000 iterations, plus 18 selected
+  benchmark checks and nine additional adapter checks. The shared comparative gauntlet still has
+  a separate frozen-configuration setup-order failure before its Meld calls.
+
+The selections overlap and must not be summed. Full repository coverage and a fresh full-suite run
+were not performed for this document. Existing eager construction of overridden child branches,
+process-wide identity uniqueness, explicit Rift refresh and the deferred Iris cleanup boundary remain.
+
+Before publication, use the normal CI/distribution checks against the exact release candidate.
+No version bump, tag, wheel publication or GitHub release was performed while preparing these notes.
+
+## Evidence for the maintainer
+
+- GitHub release metadata
+  and release list, read September 20.
+- Tag, version and per-area commit map.
+- Integrated feature validation.
+- Provider-artifact repair evidence.
+- Cancellation repair evidence.
+- Benchmark migration evidence and remaining setup issue.
+
+The evidence folder retains the original 0.2.42 intake name. The owner subsequently selected
+**0.2.43**, and every release recommendation in this document uses that corrected target.
+================================================================================
+END FILE: release_docs/0.2.43.md
+================================================================================
+================================================================================
+BEGIN FILE: release_docs/next_version_release.md
+CONTENT SHA256: 20cd5e45272a67eb1a4c47451950ac3206dd06d2599d31472e302e36fc12e87a
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder 0.2.50
+
+**Unreleased**
+
+This release adds named lesser conduits with discovery through ConduitCloud, configurable bind
+lifecycle hooks, and scoped creation purge. It also fixes hook isolation when scopes are reused
+and gives conduits upgraded from lesser scopes an independent Spellbook.
+
+## Named lesser conduits and ConduitCloud discovery
+
+Give a lesser conduit a name when creating it so other parts of an application can find the same
+active scope through its frame's **ConduitCloud**. This works in both automatic and dynamic mode,
+including when the scope comes from a prewarmed pool.
+
+Given an existing root conduit:
+
+```python
+cloud = root.get_conduit_cloud()
+job = root.create_lesser_conduit(name="job-42")
+
+try:
+    discovered = cloud.get_conduit_by_name("job-42")
+    assert discovered is job
+    assert cloud.get_conduit_by_id(job.id) is job
+finally:
+    job.cleanup()
+
+assert not cloud.has_conduit_name("job-42")
+```
+
+ConduitCloud now exposes named normal and lesser conduits through the same discovery APIs:
+
+| API | Result |
+| --- | --- |
+| `get_conduit_by_name(name)` | The active conduit registered under that name |
+| `get_conduit_by_id(conduit_id)` | The named conduit registered under that ID |
+| `list_conduit_names()` / `list_conduit_ids()` | Snapshots of registered names or IDs |
+| `has_conduit_name(name)` / `has_conduit_id(conduit_id)` | Whether that scope is registered |
+| `find_conduit_id_by_name(name)` | Its ID, or `None` when the name is absent |
+
+Names are exact, nonempty strings and must be unique among active named conduits in the same
+`AethericFrame`. Duplicate names are rejected. Supply a lesser conduit name at creation; an active
+lesser cannot be renamed afterward.
+
+**Cleanup removes the name and ID from discovery before the conduit returns to its pool.** The name
+can then be reused. A later acquisition receives its own name or remains unnamed; it never inherits
+the previous use's name. Unnamed lesser conduits stay outside ConduitCloud's named directory.
+
+Naming preserves the scope's lesser status, shared Spellbook and existing `Existence` rules.
+Discovery returns a reference to the live scope without extending its lifetime. The scope's owner
+remains responsible for cleanup; do not continue using a discovered reference after that cleanup.
+
+In dynamic mode, `upgrade_to_normal(name=...)` can keep the lesser conduit's name or select another
+available name. Discovery follows the promoted conduit, which keeps its ID and receives its own
+empty Spellbook.
+
+### Nexus discovery and structural restore
+
+Named lesser conduits are also available through authorized Nexus capability and codegen lookup.
+Capability rooms can pass `name=` to `create_lesser_conduit`. Existing ACLs and lesser-conduit
+restrictions still apply. Use the existing Rift projection refresh when scope membership changes.
+
+When dynamic structural recording is enabled, Crystallizer preserves named lesser conduits and
+the parent relationships needed to rebuild their hierarchy, including required unnamed ancestors.
+Cleanup and name reuse affect subsequent checkpoints while sealed checkpoints retain their history.
+Restore creates fresh conduit identities; previously created application objects and their mutable
+state are not restored.
+
+The record schema advances to **3.0.0** for named-scope topology. Older readers reject the new schema;
+valid older root-only recordings remain readable. During live restore, pause ordinary scope creation,
+cleanup and lineage changes until restoration finishes.
+
+## Bind lifecycle hooks
+
+Spellbook now supports callbacks at three points in registration:
+
+| Stage | Callback receives | Use it to |
+| --- | --- | --- |
+| `pre` | The supplied class, function or existing object | Check a reference before reflection; raise to reject it |
+| `activation` | The newly created `Spell` | Inspect or annotate the definition before publication |
+| `post` | The registered `Spell` | Observe the completed registration |
+
+```python
+book.add_bind_hooks(
+    pre=[check_reference],
+    activation=[configure_spell],
+    post=[observe_registration],
+)
+```
+
+Callbacks are synchronous and run in registration order. Return values are ignored; raise an
+exception to reject an operation. Callback failures raise `HookExecutionError` with the original
+cause and the failing stage. A post-hook failure can leave the binding registered because post
+runs after registration, before an enclosing transaction necessarily completes.
+
+Use `clear_bind_hooks()` to remove all three stages from future binds, then `add_bind_hooks()` to
+register replacements. Both methods are available on Spellbook and normal Conduit instances.
+Each Spellbook owns its callback registry; an in-progress bind keeps the callback set it started with.
+
+Configure initial callbacks with `SpellbookConfiguration.with_bind_hooks(...)` before constructing
+the Spellbook. Runtime add/clear operations remain available after configuration freezes. These
+callbacks concern binding definitions; existing application-object creation hooks still run during
+meld. Crystallizer records hook presence, while restoring callback code remains application setup.
+
+## Hook isolation during scope reuse
+
+Reused lesser conduits and SpellSpaces no longer retain temporary Meld callbacks from a previous
+use. Cleanup disposes the scope's creations and resets temporary hooks **before returning it to
+the pool**. This also covers manual, managed and prewarmed SpellSpaces.
+
+On acquisition, a SpellSpace selects its owner's current Meld hooks. Active SpellSpaces retain
+their selected hook source until their next acquisition when the owner switches between local
+and shared hook maps.
+
+### Update local or shared runtime hooks
+
+`Conduit.register_conduit_hooks(...)` accepts `create_local_hooks=True` and `overwrite=False`.
+It appends locally by default. `Conduit.set_conduit_hooks(...)` provides local replacement by default:
+
+```python
+# Add a local callback.
+conduit.register_conduit_hooks({"on_meld_pre_resolve": before_meld})
+
+# Replace this conduit's Meld hook family.
+conduit.set_conduit_hooks({"on_meld_pre_resolve": replacement})
+
+# Update the shared Meld hooks from the normal root.
+root.set_conduit_hooks({"on_meld_pre_resolve": replacement}, create_local_hooks=False)
+
+# Clear the shared Meld hook family.
+root.set_conduit_hooks({"on_meld_pre_resolve": []}, create_local_hooks=False)
+```
+
+- Setting replaces the supplied hook families: Conduit lifecycle, Meld, or both. Omitted families
+  remain unchanged; an empty mapping selects both families.
+- Clearing local lifecycle hooks reveals inherited callbacks. Clearing local Meld hooks mutes that
+  scope until its hooks change again or it returns to the pool.
+- Shared updates are normal-root-only and reach scopes using the shared baseline. Explicit local
+  copies remain isolated. Runtime updates do not modify frozen configuration or other normal roots.
+- `Meld.register_meld_hooks(...)` provides matching registration controls for Meld hooks.
+  `hooks_modified` on Conduit and Meld reports temporary local hook state.
+- Invalid callback batches are rejected before either family changes. Use the public methods;
+  direct mutation of internal lists or dictionaries is not tracked.
+
+## Independent Spellbooks after lesser-to-normal upgrade
+
+After `Conduit.upgrade_to_normal(...)` succeeds, the same conduit is fully conjured with its own
+empty Spellbook, ready for independent binding and resolution. Its object identity, ID and retained
+creations are preserved. The upgrade happens in place; the method returns `None`.
+
+```python
+lesser = root.create_lesser_conduit(name="job-42")
+lesser.upgrade_to_normal("job-42")
+
+lesser.bind(spell=Service, existence="unique_per_conduit", permissions="create")
+service = lesser.meld(Service)
+```
+
+Previously, an upgraded conduit could continue using its former root's Spellbook, allowing binding,
+hook changes or cleanup to affect that root. Each normal conduit now owns its registrations and
+cleanup independently.
+
+**The upgraded conduit inherits no spell definitions or contracts.** Bind the definitions it needs
+explicitly. Earlier creations remain its disposal responsibility, but their old spell IDs are no
+longer resolvable through the new Spellbook.
+
+Pass an optional same-frame `SpellbookConfiguration` to customize the new Spellbook:
+
+```python
+configuration = SpellbookConfiguration("application").with_defaults()
+configuration.with_bind_hooks(pre=[check_reference])
+configuration.with_hooks(on_meld_pre_resolve=before_meld)
+
+# The lesser must already belong to the "application" frame.
+lesser.upgrade_to_normal("independent", configuration=configuration)
+```
+
+| Configuration mode | New Spellbook setup |
+| --- | --- |
+| Local, configuration omitted | Fresh defaults and empty hooks |
+| Local, fresh matching configuration supplied | Supplied configuration and its initial hooks |
+| Frame-wide sharing enabled | The frame's frozen shared configuration; a different supplied object is rejected |
+
+Frame-wide sharing shares configuration, not Spellbooks or registrations. Configured defaults may
+seed the new Spellbook's hooks, while runtime hook changes remain independent. Former Spellbook
+hooks and temporary lesser/SpellSpace hook overrides do not carry over.
+
+Configuration `add_hooks` and `with_hooks` now allow an omitted Spellbook ID to provide default
+Conduit/Meld events. Explicit Spellbook event lists take precedence. Upgrade's `hooks=` argument
+adds local callbacks after activation; configure activation callbacks through the configuration.
+
+Upgrade requires an attached, childless lesser in a dynamic frame. Pause concurrent scope
+acquisition and lineage changes, and return managed SpellSpaces held on other threads before
+upgrading. Failures before the new Spellbook attaches restore the lesser. After attachment, the
+caller remains responsible for cleaning up the normal conduit if later publication fails.
+
+## Scoped creation purge
+
+`Conduit.purge(...)` and `SpellSpace.purge(...)` dispose of retained creations while keeping the
+scope, registrations and compiled creation contexts available for later melds.
+
+Use the same selectors as `meld`, or pass an existing object as a shortcut:
+
+```python
+conduit.purge("Worker")
+conduit.purge(Worker, binding_name="primary")
+conduit.purge(spellframe=IWorker, binding_name="primary")
+conduit.purge(spell_id=worker_spell_id)
+```
+
+`purge_all=True` is the default and removes every retained creation for that binding in the
+authorized scope. To remove only one object, pass its instance with `purge_all=False`:
+
+```python
+# Worker is bound as Existence.many with configured disposal.
+first = conduit.meld(Worker)
+second = conduit.meld(Worker)
+
+removed = conduit.purge(first, purge_all=False)  # 1; second remains retained.
+removed = conduit.purge(Worker)                 # 1; removes the remaining object.
+```
+
+The instance shortcut discovers the binding from the object's class. Use explicit selectors for
+bindings that require a spellframe or binding name. Purge returns the number removed, or `0` when
+the authorized store has no matching creation. Single-object mode requires an actual instance.
+
+| Existence | Authorized caller |
+| --- | --- |
+| `many` | The conduit or SpellSpace holding those local creations |
+| `unique_per_spell_space` | That SpellSpace |
+| `unique_per_conduit` | That conduit |
+| `unique_per_conduit_lineage` | The lineage root conduit |
+| `unique_per_conduit_cluster` | The elected cluster leader |
+| `unique` | The spell's owning conduit |
+
+A SpellSpace purges only its own creations. A Conduit does not redirect purge into an ambient
+SpellSpace. Unauthorized scope requests fail before removal.
+
+Purge follows the configured disposal methods. Retained `many` objects are disposed newest first;
+single-object purge disposes only the selected object. If disposal fails, other selected objects
+are still attempted and errors are reported in an `ExceptionGroup`. Removed objects are not disposed
+again by subsequent scope cleanup.
+
+Only retained creations are affected: `many` results without configured disposal are not retained.
+Existing application references are not rewritten, and dependent objects are not recursively purged.
+An externally supplied object remains referenced by its registration; purge does not unbind it.
+
+## Recording fix and documentation
+
+- Fixed structural recording when `configure_aether_frame()` has already frozen the Spellbook
+  configuration. Recordings now include the owning Spellbook and settled frame policy needed for
+  faithful restore, including Nexus visibility settings.
+- Added runnable intermediate tutorials for bind lifecycle hooks and named lesser-conduit discovery.
+- Added expert examples for checking agent-supplied bindings, annotating Spell definitions, and
+  discovering and restoring named scope hierarchies through Nexus and Crystallizer.
+- Updated scope, upgrade and restore guidance. Tutorials include downloadable Python sources and
+  collection ZIPs.
+================================================================================
+END FILE: release_docs/next_version_release.md
 ================================================================================
 ================================================================================
 BEGIN FILE: requirements.txt

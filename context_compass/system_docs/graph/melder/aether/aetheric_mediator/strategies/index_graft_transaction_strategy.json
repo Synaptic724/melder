@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_mediator/strategies/index_graft_transaction_strategy.py",
- "source_sha256": "c8bf7f5dedd15237bd99a669058314062d758e6a8154b5f78e47a5d77c0ba9d4",
+ "source_sha256": "b87c1141cea51a5e80ba69f8dbddcf3f57ae6e0461876579e1da280c5120b212",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy": {

@@ -32,9 +32,9 @@ def main() -> None:
 
     # 3. meld everywhere, as often as you like
     for _ in range(3):
-        server = conduit.meld(Server)
+        server = conduit.meld("Server")
         assert isinstance(server, Server)
-    assert conduit.meld(Config) is conduit.meld(Config)
+    assert conduit.meld("Config") is conduit.meld("Config")
     print("bind everything, conjure once, meld everywhere")
 
 

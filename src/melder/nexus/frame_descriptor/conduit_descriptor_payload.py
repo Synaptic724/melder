@@ -38,7 +38,11 @@ class ConduitDescriptorPayload(Cleanable):
         destabilizing identity. `payload_version` makes that explicit: a
         consumer can reason about the payload contract it received rather than
         assuming the current shape.
-        Conduit payloads matter because root conduits publish by default while lesser conduits stay derived - the payload describes what was published without implying every conduit is independently targetable.
+        Root and lesser payloads describe published scope state without granting
+        command authority. Named soft return clears name, parent, peers and depth
+        and publishes pooled_lesser; its reusable ID and root stay on the record.
+        Anonymous pool cycles keep their existing local-only behavior, so this is
+        publication state rather than a lease or a live observer of every cycle.
         Payloads carry no live runtime object references, which is what makes a
         descriptor safe to publish, hold, and project. A payload holding live
         objects would extend their lifetime and let a viewer reach the runtime

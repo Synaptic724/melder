@@ -151,6 +151,8 @@ def test_publish_frame_record_captures_frame_summary() -> None:
     frame._conduits["conduit-a"] = conduit_alpha
     frame._conduits["conduit-b"] = conduit_beta
     frame._conduit_ids_by_name["alpha"] = "conduit-a"
+    # Named discovery is published separately from frame-owned root accounting.
+    frame._conduit_cloud._register_named_conduit(conduit_alpha)
     frame._conduit_cloud._conduit_clusters["cluster-z"] = types.SimpleNamespace()
     frame._conduit_cloud._conduit_clusters["cluster-a"] = types.SimpleNamespace()
 

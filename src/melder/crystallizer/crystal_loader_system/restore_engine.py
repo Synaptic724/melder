@@ -4,7 +4,9 @@ import importlib
 import sys
 import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING, cast
+
+from melder.crystallizer.crystal_analysis.conduit_hierarchy import ConduitHierarchy
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.custom_exceptions.phase_execution_error import (
@@ -15,6 +17,8 @@ from melder.utilities.custom_exceptions.phase_timeout_error import (
 )
 
 if TYPE_CHECKING:
+    from melder.aether.conduit.conduit import Conduit
+    from melder.aether.spellbook.spellbook import Spellbook
     from melder.utilities.synchronization.phase_scheduler import (
         PhaseScheduler,
     )
@@ -450,6 +454,7 @@ class RestoreEngine(Cleanable):
         "_postured_frames",
         "_books",
         "_conduits",
+        "_conduit_replay_order",
         "_indexes",
         "_contracts",
         "_clusters",
@@ -549,6 +554,7 @@ class RestoreEngine(Cleanable):
         self._postured_frames: Set[str] = set()
         self._books: Dict[str, Dict[str, object]] = {}
         self._conduits: Dict[str, Dict[str, object]] = {}
+        self._conduit_replay_order: Dict[str, List[str]] = {}
         self._indexes: Dict[str, Dict[str, object]] = {}
         self._contracts: Dict[str, Dict[str, object]] = {}
         self._clusters: Dict[str, Dict[str, object]] = {}
@@ -612,6 +618,7 @@ class RestoreEngine(Cleanable):
         del self._postured_frames
         del self._books
         del self._conduits
+        del self._conduit_replay_order
         del self._indexes
         del self._contracts
         del self._clusters
@@ -706,6 +713,14 @@ class RestoreEngine(Cleanable):
                     ),
                 )
             )
+        # Child structure is a hard replay contract even for direct-engine
+        # callers that disabled the general preflight refusal knob. Expansion
+        # happens only after folding, so retired carriers leave no support rows.
+        try:
+            self._conduits, self._conduit_replay_order = ConduitHierarchy.build(self._conduits, self._books)
+        except ValueError as error:
+            self._report.mark_failed("conduit_hierarchy")
+            raise RuntimeError(f"Conduit hierarchy cannot be restored: {error}; nothing was built.") from error
         if self._scheduler is None:
             return self._restore_sequential()
         return self._restore_parallel()
@@ -1181,6 +1196,10 @@ class RestoreEngine(Cleanable):
             self._books[key] = payload
         elif kind == "conduit":
             self._conduits[key] = payload
+        elif kind == "conduit_removed":
+            # Support ancestry belongs to its named carrier, so removing this
+            # final payload also retires that carrier's unnamed support values.
+            self._conduits.pop(key, None)
         elif kind == "spell_index":
             self._indexes[key] = payload
         elif kind == "contract":
@@ -1749,7 +1768,8 @@ class RestoreEngine(Cleanable):
             drivers: frame-posture guarantee -> configuration reload +
             freeze -> active binds in recorded bind_order -> conjure the
             recorded root conduit -> staged binds onto live anchors ->
-            selection enforcement. Books are independent of one another;
+            selection enforcement, then parent-ordered lesser reconstruction.
+            Books are independent of one another;
             the parallel driver runs one unit per book, and this method IS
             the sequential loop body verbatim.
 
@@ -1823,14 +1843,19 @@ class RestoreEngine(Cleanable):
                     self._custody_inactive[spell_id],
                 )
         self._enforce_selections(spellbook_id, spellbook, conduit)
+        self._replay_lesser_conduits(spellbook_id)
 
     def _conjure_for_book(
             self,
             spellbook_id: str,
-            spellbook: Any,
-    ) -> Optional[Any]:
+            spellbook: Spellbook,
+    ) -> Optional[Conduit]:
         """
         Conjure one recorded root conduit for a rebuilt book.
+
+        Contract:
+            Select the normal row explicitly; a lesser can never become the
+            Book's root because it appears first in a captured mapping.
 
         Args:
             spellbook_id:
@@ -1839,7 +1864,7 @@ class RestoreEngine(Cleanable):
                 The live rebuilt Spellbook.
 
         Returns:
-            Optional[Any]:
+            Optional[Conduit]:
                 The live conduit, or None when the record holds no conduit
                 twin for the book (pre-conjure world).
         """
@@ -1847,9 +1872,12 @@ class RestoreEngine(Cleanable):
             (conduit_id, payload)
             for conduit_id, payload in self._conduits.items()
             if payload.get("spellbook_id") == spellbook_id
+            and ConduitHierarchy.role(payload) == "normal"
         ]
         if not recorded:
             return None
+        if len(recorded) != 1:
+            raise ValueError(f"Spellbook {spellbook_id!r} requires exactly one recorded normal root.")
         conduit_id, payload = recorded[0]
         recorded_name = payload.get("conduit_name")
         if (
@@ -1878,6 +1906,40 @@ class RestoreEngine(Cleanable):
         self._report.record_built("conduit")
         self._report.map_identity(conduit_id, conduit._id)
         return conduit
+
+    def _replay_lesser_conduits(self, spellbook_id: str) -> None:
+        """Reconstruct one Book's lesser tree after its root, bindings and selections.
+
+        Contract:
+            Both drivers enter through the shared per-Book unit. The validated
+            order places parents first and coalesces supporting unnamed ancestors.
+            Every scope gets a fresh id, empty Creations and the parent's shared
+            Book through public create_lesser_conduit. Build tracking precedes
+            further child work so any failure can unwind the complete subtree.
+            Lesser policy is default by runtime contract and validated before replay.
+        Args:
+            spellbook_id: Recorded owner whose root is already live.
+        Returns:
+            None.
+        Raises:
+            ValueError: A name collides and skip_existing is disabled.
+            RuntimeError: Public scope creation fails.
+        """
+        for conduit_id in self._conduit_replay_order.get(spellbook_id, []):
+            payload = self._conduits[conduit_id]
+            if ConduitHierarchy.role(payload) == "normal":
+                continue
+            configuration = ConduitHierarchy.configuration(payload)
+            parent: Conduit = self._live_conduits[str(configuration["parent_conduit_id"])]
+            name = cast(Optional[str], payload.get("conduit_name"))
+            if self._skip_existing and name is not None and parent.get_conduit_cloud().has_conduit_name(name):
+                self._report.add_shortfall("conduit", conduit_id, "lesser_name_taken_built_unnamed")
+                name = None
+            child = parent.create_lesser_conduit(name=name)
+            self._record_built_unit("conduit", child)
+            self._live_conduits[conduit_id] = child
+            self._report.record_built("conduit")
+            self._report.map_identity(conduit_id, child.id)
 
     def _book_bind_order(self, spellbook_id: str) -> List[str]:
         """

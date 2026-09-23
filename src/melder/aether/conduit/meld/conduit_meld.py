@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar, Union
 
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.spellbook.existence.existence import Existence
@@ -139,6 +139,122 @@ class ConduitMeld(Meld):
             None.
         """
         super().cleanup()
+
+    def purge(
+            self,
+            spell: Optional[Union[str, object]] = None,
+            *,
+            spell_name: Optional[str] = None,
+            spellframe: Optional[Union[str, object]] = None,
+            binding_name: Optional[str] = None,
+            purge_all: bool = True,
+    ) -> int:
+        """
+        Retire a target's creations through the authorized conduit store.
+
+        Purpose:
+            Own conduit-specific purge orchestration alongside this door's
+            existing conduit-specific resolution behavior.
+
+        Contract:
+            - Shared discovery returns the existing registered definition.
+            - `_get_purge_creations` applies conduit lifetime/authority rules.
+            - The chosen Creations performs synchronized removal and disposal.
+            - No SpellSpace is inferred, entered, or cleared by this door.
+            - Registrations and compiled contexts remain available for re-meld.
+
+        Args:
+            spell: Canonical id string, class/function reference or application instance.
+            spell_name: Optional logical name forwarded by the public facade.
+            spellframe: Optional frame/type for ordinary binding discovery.
+            binding_name: Optional binding name within the selected frame.
+            purge_all: True retires the full target entry. False requires an
+                instance and retires only that object from the selected store.
+
+        Returns:
+            int: Removed creation count, or zero for an empty authorized entry.
+
+        Raises:
+            ValueError: If no usable selector is supplied, or False has no instance.
+            KeyError: If normal meld discovery cannot find the target.
+            TypeError: If purge_all is not a bool.
+            RuntimeError: If cleaned, a cluster has no elected leader, or the
+                caller lacks the required local/root/leader authority.
+            ExceptionGroup: Disposal failures after selected entries are removed.
+
+        Threading / Lifecycle:
+            Creations uses the same writer locks as construction and releases
+            them before disposal. Existing caller references are not revoked;
+            in-flight later registrations are outside this retirement operation.
+        """
+        target_spell = self._resolve_purge_spell(
+            spell=spell,
+            spell_name=spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            purge_all=purge_all,
+        )
+        creations = self._get_purge_creations(target_spell)
+        return creations.purge(
+            target_spell,
+            purge_all=purge_all,
+            creation=spell if not purge_all else None,
+        )
+
+    def _get_purge_creations(self, spell: Spell) -> ConduitCreations:
+        """
+        Select and authorize the conduit store for one discovered definition.
+
+        Contract:
+            - Many and per-conduit lifetimes use this caller's local store.
+            - Unique uses the Spell owner, lineage uses this lineage's root,
+              and cluster uses the currently elected leader's concrete store.
+            - Shared-store purge requires the actual `_conduit_id` to own that
+              store. A lesser's `_resolution_conduit_id` grants no authority.
+            - SpellSpace lifetime is refused even when a space is active.
+            - Does not remove entries, take creation locks, or invoke callbacks.
+
+        Args:
+            spell: Existing definition obtained through this door's discovery.
+
+        Returns:
+            ConduitCreations: Existing store that this conduit may purge.
+
+        Raises:
+            RuntimeError: If the lifetime is unsupported here, the cluster is
+                inert, or the caller is not the required owner/root/leader.
+
+        Lifecycle:
+            Uses current ownership/store references on every call. Ownership
+            transfer, election and terminal cleanup keep their existing
+            coordination requirements; this helper does not cache authority.
+        """
+        existence = spell.existence
+        if existence in (Existence.many, Existence.unique_per_conduit):
+            return self._conduit_creations
+        if existence is Existence.unique_per_spell_space:
+            raise RuntimeError(
+                f"Cannot purge spell '{spell.spell_name}' from a conduit; "
+                "call purge on the specific SpellSpace."
+            )
+        if existence is Existence.unique:
+            creations = spell._owner_creations
+            authority = "spell-owning conduit"
+        elif existence is Existence.unique_per_conduit_lineage:
+            creations = self._root_creations
+            authority = "lineage root conduit"
+        elif existence is Existence.unique_per_conduit_cluster:
+            creations = self._cluster_creations.resolved_store()
+            authority = "elected cluster leader"
+        else:
+            raise RuntimeError(f"Unsupported purge existence: {existence!r}.")
+        if self._conduit_id != creations.owner_conduit_id:
+            raise RuntimeError(
+                f"Cannot purge spell '{spell.spell_name}' ({spell.spell_id}) "
+                f"from conduit '{self._conduit_id}'; the {authority} "
+                f"'{creations.owner_conduit_id}' must call purge."
+            )
+        return creations
 
     def meld(
             self,

@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="39" skipped="0" tests="71" time="1.440" timestamp="2026-09-22T07:09:56.306242-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduation_attaches_an_independent_book_to_the_new_root[local-config]" time="0.057" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduation_attaches_an_independent_book_to_the_new_root[framewide-config]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_binding_is_not_registered_in_the_parent_book[local-config]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_binding_is_not_registered_in_the_parent_book[framewide-config]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduation_starts_with_empty_book_bind_hooks[local-config-pre]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduation_starts_with_empty_book_bind_hooks[local-config-activation]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduation_starts_with_empty_book_bind_hooks[local-config-post]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduation_starts_with_empty_book_bind_hooks[framewide-config-pre]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduation_starts_with_empty_book_bind_hooks[framewide-config-activation]" time="0.007" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduation_starts_with_empty_book_bind_hooks[framewide-config-post]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_registration_does_not_change_parent_hooks[local-config-pre]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_registration_does_not_change_parent_hooks[local-config-activation]" time="0.012" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_registration_does_not_change_parent_hooks[local-config-post]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_registration_does_not_change_parent_hooks[framewide-config-pre]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_registration_does_not_change_parent_hooks[framewide-config-activation]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_registration_does_not_change_parent_hooks[framewide-config-post]" time="0.010" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_clear_preserves_parent_callbacks[local-config-pre]" time="0.010" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_clear_preserves_parent_callbacks[local-config-activation]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_clear_preserves_parent_callbacks[local-config-post]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_clear_preserves_parent_callbacks[framewide-config-pre]" time="0.010" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_clear_preserves_parent_callbacks[framewide-config-activation]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_bind_hook_clear_preserves_parent_callbacks[framewide-config-post]" time="0.010" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_cleanup_keeps_parent_book_and_creation_usable[local-config]" time="0.016" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_cleanup_keeps_parent_book_and_creation_usable[framewide-config]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_parent_cleanup_keeps_graduated_book_and_own_binding_usable[local-config]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_parent_cleanup_keeps_graduated_book_and_own_binding_usable[framewide-config]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_cleanup_disposes_its_own_unique_without_disposing_parent[local-config]" time="0.011" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_graduated_cleanup_disposes_its_own_unique_without_disposing_parent[framewide-config]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_post_graduation_spellspace_resolves_only_the_new_books_local_binding[local-config-fresh-space]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_post_graduation_spellspace_resolves_only_the_new_books_local_binding[local-config-pooled-space]" time="0.009" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_post_graduation_spellspace_resolves_only_the_new_books_local_binding[framewide-config-fresh-space]" time="0.008" /><testcase classname="tests.component.melder.aether.conduit.test_conduit_graduation_ownership_regression" name="test_post_graduation_spellspace_resolves_only_the_new_books_local_binding[framewide-config-pooled-space]" time="0.008" /><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_retains_target_and_store_with_an_empty_new_book[local]" time="0.007"><failure message="KeyError: '01M34KSG78R8FZ7MQEFN9AP3ZV'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:153: in test_existing_conjure_retains_target_and_store_with_an_empty_new_book
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSG78R8FZ7MQEFN9AP3ZV'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_retains_target_and_store_with_an_empty_new_book[framewide]" time="0.007"><failure message="KeyError: '01M34KSGBHKB6Q3VFQS9TG26RM'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:153: in test_existing_conjure_retains_target_and_store_with_an_empty_new_book
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGBHKB6Q3VFQS9TG26RM'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_runs_new_definitions_under_the_supplied_id[local]" time="0.007"><failure message="KeyError: '01M34KSGBZCX8QB7JRYA8NFDJD'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:181: in test_existing_conjure_runs_new_definitions_under_the_supplied_id
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGBZCX8QB7JRYA8NFDJD'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_runs_new_definitions_under_the_supplied_id[framewide]" time="0.007"><failure message="KeyError: '01M34KSGCC9JTRM6J5DSP8S786'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:181: in test_existing_conjure_runs_new_definitions_under_the_supplied_id
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGCC9JTRM6J5DSP8S786'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_supports_later_binding_through_the_same_conduit[local]" time="0.006"><failure message="KeyError: '01M34KSGCTZ4FAKYV3SZ9J2232'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:196: in test_existing_conjure_supports_later_binding_through_the_same_conduit
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGCTZ4FAKYV3SZ9J2232'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_supports_later_binding_through_the_same_conduit[framewide]" time="0.006"><failure message="KeyError: '01M34KSGD7BCDYP2K4NEKB0BQ6'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:196: in test_existing_conjure_supports_later_binding_through_the_same_conduit
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGD7BCDYP2K4NEKB0BQ6'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_uses_receiving_configuration_hooks_in_normal_order[local]" time="0.007"><failure message="KeyError: '01M34KSGDMWV56R1G5MEE7ZJ9F'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:227: in test_existing_conjure_uses_receiving_configuration_hooks_in_normal_order
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGDMWV56R1G5MEE7ZJ9F'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_uses_receiving_configuration_hooks_in_normal_order[framewide]" time="0.007"><failure message="KeyError: '01M34KSGE2VKE9R90W9H7AAT5A'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:227: in test_existing_conjure_uses_receiving_configuration_hooks_in_normal_order
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGE2VKE9R90W9H7AAT5A'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rebinds_retained_spellspace_lookup[local-pooled]" time="0.007"><failure message="KeyError: '01M34KSGEFHQQMMHYG3EYZBF2G'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:247: in test_existing_conjure_rebinds_retained_spellspace_lookup
+    target = existing_case.prepare_target(prewarm=space_kind == "pooled")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGEFHQQMMHYG3EYZBF2G'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rebinds_retained_spellspace_lookup[local-manual]" time="0.007"><failure message="KeyError: '01M34KSGEXG5CJKSZJAWF4S0E4'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:247: in test_existing_conjure_rebinds_retained_spellspace_lookup
+    target = existing_case.prepare_target(prewarm=space_kind == "pooled")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGEXG5CJKSZJAWF4S0E4'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rebinds_retained_spellspace_lookup[local-managed]" time="0.007"><failure message="KeyError: '01M34KSGFAPM8C40DMFXS4M1VV'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:247: in test_existing_conjure_rebinds_retained_spellspace_lookup
+    target = existing_case.prepare_target(prewarm=space_kind == "pooled")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGFAPM8C40DMFXS4M1VV'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rebinds_retained_spellspace_lookup[framewide-pooled]" time="0.007"><failure message="KeyError: '01M34KSGFRXA75JRS2PCS0PY4W'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:247: in test_existing_conjure_rebinds_retained_spellspace_lookup
+    target = existing_case.prepare_target(prewarm=space_kind == "pooled")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGFRXA75JRS2PCS0PY4W'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rebinds_retained_spellspace_lookup[framewide-manual]" time="0.007"><failure message="KeyError: '01M34KSGG5REEPKKBNZ74E0AVT'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:247: in test_existing_conjure_rebinds_retained_spellspace_lookup
+    target = existing_case.prepare_target(prewarm=space_kind == "pooled")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGG5REEPKKBNZ74E0AVT'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rebinds_retained_spellspace_lookup[framewide-managed]" time="0.007"><failure message="KeyError: '01M34KSGGKZTZXX27XG1DDM5KF'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:247: in test_existing_conjure_rebinds_retained_spellspace_lookup
+    target = existing_case.prepare_target(prewarm=space_kind == "pooled")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGGKZTZXX27XG1DDM5KF'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_cleans_its_book_and_preserves_retained_disposal[local]" time="0.006"><failure message="KeyError: '01M34KSGH0JW98X2G0T6WZ97TZ'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:272: in test_existing_conjure_cleans_its_book_and_preserves_retained_disposal
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGH0JW98X2G0T6WZ97TZ'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_cleans_its_book_and_preserves_retained_disposal[framewide]" time="0.007"><failure message="KeyError: '01M34KSGHEDXYBFMG5AECYVFAT'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:272: in test_existing_conjure_cleans_its_book_and_preserves_retained_disposal
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGHEDXYBFMG5AECYVFAT'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_refuses_a_second_conjure_on_the_same_book[local]" time="0.006"><failure message="KeyError: '01M34KSGHVAV0FC58FXZQPDAYM'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:286: in test_existing_conjure_refuses_a_second_conjure_on_the_same_book
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGHVAV0FC58FXZQPDAYM'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_refuses_a_second_conjure_on_the_same_book[framewide]" time="0.006"><failure message="KeyError: '01M34KSGJ8X9DP935850ESM7RH'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:286: in test_existing_conjure_refuses_a_second_conjure_on_the_same_book
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGJ8X9DP935850ESM7RH'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rejects_lesser_status_without_promoting_it[local]" time="0.008"><failure message="KeyError: '01M34KSGJP2SXRYRFBHB019CET'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:298: in test_existing_conjure_rejects_lesser_status_without_promoting_it
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGJP2SXRYRFBHB019CET'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rejects_lesser_status_without_promoting_it[framewide]" time="0.006"><failure message="KeyError: '01M34KSGK4KB70ZSM9MB5HZN9Q'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:298: in test_existing_conjure_rejects_lesser_status_without_promoting_it
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGK4KB70ZSM9MB5HZN9Q'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rejects_cross_frame_target[local]" time="0.007"><failure message="KeyError: '01M34KSGKJFA3DSK9EDAXG20ZM'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:311: in test_existing_conjure_rejects_cross_frame_target
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGKJFA3DSK9EDAXG20ZM'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rejects_cross_frame_target[framewide]" time="0.007"><failure message="KeyError: '01M34KSGKZY89XZJPTW8JTPE7S'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:311: in test_existing_conjure_rejects_cross_frame_target
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGKZY89XZJPTW8JTPE7S'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_duplicate_name_does_not_replace_target_book[local]" time="0.006"><failure message="KeyError: '01M34KSGMC3C2GBEMHY8211254'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:326: in test_existing_conjure_duplicate_name_does_not_replace_target_book
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGMC3C2GBEMHY8211254'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_duplicate_name_does_not_replace_target_book[framewide]" time="0.006"><failure message="KeyError: '01M34KSGMSN9E55V0K7DN4CQS6'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:326: in test_existing_conjure_duplicate_name_does_not_replace_target_book
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGMSN9E55V0K7DN4CQS6'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_preserves_a_previously_parked_gate[local]" time="0.006"><failure message="KeyError: '01M34KSGN7B79EBJJVCPHY34PQ'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:339: in test_existing_conjure_preserves_a_previously_parked_gate
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGN7B79EBJJVCPHY34PQ'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_preserves_a_previously_parked_gate[framewide]" time="0.007"><failure message="KeyError: '01M34KSGNMGB077P8TY46GMGB6'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:339: in test_existing_conjure_preserves_a_previously_parked_gate
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGNMGB077P8TY46GMGB6'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rejects_an_existing_root_before_compiling[local]" time="0.006"><failure message="KeyError: '01M34KSGP13RF37AYCQVM4Y7K4'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:351: in test_existing_conjure_rejects_an_existing_root_before_compiling
+    existing_case.prepare_target()
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGP13RF37AYCQVM4Y7K4'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rejects_an_existing_root_before_compiling[framewide]" time="0.006"><failure message="KeyError: '01M34KSGPEBQ1SGTFMMCB3DPK6'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:351: in test_existing_conjure_rejects_an_existing_root_before_compiling
+    existing_case.prepare_target()
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGPEBQ1SGTFMMCB3DPK6'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_phase_failure_releases_admission_and_allows_retry[local]" time="0.007"><failure message="KeyError: '01M34KSGPWTHW2AM6X7DWJFQPX'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:369: in test_existing_conjure_phase_failure_releases_admission_and_allows_retry
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGPWTHW2AM6X7DWJFQPX'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_phase_failure_releases_admission_and_allows_retry[framewide]" time="0.007"><failure message="KeyError: '01M34KSGQB8CWXF2FGPC6DGE7K'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:369: in test_existing_conjure_phase_failure_releases_admission_and_allows_retry
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGQB8CWXF2FGPC6DGE7K'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_drain_failure_restores_gate_without_attaching[local]" time="0.007"><failure message="KeyError: '01M34KSGQS4175FKWWB2CKFK5N'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:390: in test_existing_conjure_drain_failure_restores_gate_without_attaching
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGQS4175FKWWB2CKFK5N'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_drain_failure_restores_gate_without_attaching[framewide]" time="0.008"><failure message="KeyError: '01M34KSGR8ZSSK2056EMA23Z7Z'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:390: in test_existing_conjure_drain_failure_restores_gate_without_attaching
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGR8ZSSK2056EMA23Z7Z'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_refuses_terminal_gate[local]" time="0.007"><failure message="KeyError: '01M34KSGRQV775G9KJ3725TC8V'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:409: in test_existing_conjure_refuses_terminal_gate
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGRQV775G9KJ3725TC8V'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_refuses_terminal_gate[framewide]" time="0.007"><failure message="KeyError: '01M34KSGS5Y9FBMEKKGPAM1YSG'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:409: in test_existing_conjure_refuses_terminal_gate
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGS5Y9FBMEKKGPAM1YSG'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rejects_invalid_policy_before_attachment[local]" time="0.007"><failure message="KeyError: '01M34KSGSK242BWF4HBDNRD7CR'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:421: in test_existing_conjure_rejects_invalid_policy_before_attachment
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGSK242BWF4HBDNRD7CR'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rejects_invalid_policy_before_attachment[framewide]" time="0.006"><failure message="KeyError: '01M34KSGT0870KQJPJNZ8XQAZZ'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:421: in test_existing_conjure_rejects_invalid_policy_before_attachment
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGT0870KQJPJNZ8XQAZZ'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_rejects_invalid_local_configuration" time="0.006"><failure message="KeyError: '01M34KSGTD0FHC1KH8S593GXDM'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:432: in test_existing_conjure_rejects_invalid_local_configuration
+    target = case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGTD0FHC1KH8S593GXDM'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_records_new_book_and_preserved_conduit[local]" time="0.007"><failure message="KeyError: '01M34KSGTTK9WAYX4F95Z1M6WS'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:446: in test_existing_conjure_records_new_book_and_preserved_conduit
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGTTK9WAYX4F95Z1M6WS'</failure></testcase><testcase classname="tests.component.melder.spellbook.test_spellbook_conjure_existing_conduit" name="test_existing_conjure_records_new_book_and_preserved_conduit[framewide]" time="0.007"><failure message="KeyError: '01M34KSGV8ZQYMZ9RNKQGCF4SY'">tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:446: in test_existing_conjure_records_new_book_and_preserved_conduit
+    target = existing_case.prepare_target()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\component\melder\spellbook\test_spellbook_conjure_existing_conduit.py:86: in prepare_target
+    self.root._conduit_ward._lesser_conduits.pop(self.target.id)
+E   KeyError: '01M34KSGV8ZQYMZ9RNKQGCF4SY'</failure></testcase></testsuite></testsuites>

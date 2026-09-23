@@ -1,0 +1,72 @@
+{
+  "updated_at": "2026-09-22T19:45:23Z",
+  "descriptors": [
+    "context_compass\\system_docs\\graph\\melder\\aether\\conduit\\conduit.json",
+    "context_compass\\system_docs\\graph\\melder\\aether\\spellbook\\spellbook.json",
+    "context_compass\\system_docs\\graph\\melder\\aether\\conduit\\meld\\meld.json",
+    "context_compass\\system_docs\\graph\\melder\\aether\\conduit\\spell_space\\spell_space.json",
+    "context_compass\\system_docs\\graph\\melder\\aether\\conduit\\spell_space\\spell_space_pool.json"
+  ],
+  "measured_lengths": {
+    "src/melder/aether/conduit/conduit.py": 6635,
+    "src/melder/aether/spellbook/spellbook.py": 7191,
+    "src/melder/aether/conduit/meld/meld.py": 1890,
+    "src/melder/aether/conduit/spell_space/spell_space.py": 589
+  },
+  "preservation": [
+    {
+      "document": "src_architecture.md",
+      "historical_target": "context_compass\\artifacts\\recent_finished_turn_in_20260922\\canonical_before\\src_architecture.md",
+      "replaced_lines_preserved_in_target": [
+        "verified_at: 2026-09-22T18:41:58Z",
+        "verified_at: 2026-09-22T18:41:58Z",
+        "end_line: 1716",
+        "loc: 1716",
+        "verified_at: 2026-09-21T00:25:48Z",
+        "verified_at: 2026-09-21T00:25:48Z",
+        "end_line: 577",
+        "loc: 577"
+      ]
+    },
+    {
+      "document": "src_components.md",
+      "historical_target": "context_compass\\artifacts\\recent_finished_turn_in_20260922\\canonical_before\\src_components.md",
+      "replaced_lines_preserved_in_target": [
+        "- Pull hook map from `SpellbookConfiguration` and attach to Conduit and Meld.",
+        "- `SpellbookCreationSystem.get_conjure_hook_map(spellbook)` builds the conjure",
+        "hook map; `Conduit._ensure_local_conduit_hooks()` localises it onto the",
+        "Conduit, and `Conduit._collect_conduit_hook_chain(hook_name)` assembles the",
+        "chain that `_fire_conduit_hooks(...)` runs.",
+        "- src/melder/aether/spellbook/spellbook_creation_system.py:1231",
+        "- src/melder/aether/conduit/conduit.py:1778, 1818, 6164",
+        "- Hook map keyed by spellbook id.",
+        "- Conduit lock.",
+        "verified_at: 2026-09-22T18:41:58Z",
+        "verified_at: 2026-09-22T18:41:58Z",
+        "verified_at: 2026-09-21T00:25:48Z",
+        "verified_at: 2026-09-21T00:25:48Z",
+        "end_line: 577",
+        "loc: 577",
+        "end_line: 1716",
+        "loc: 1716"
+      ]
+    }
+  ],
+  "retained_semantics_stale_notes": {
+    "melder/aether/conduit/conduit.py": [
+      "SEMANTICS_STALE node melder.aether.conduit.conduit.Conduit - source changed since its semantics were written; re-verify then re-accept"
+    ],
+    "melder/aether/spellbook/spellbook.py": [
+      "SEMANTICS_STALE node melder.aether.spellbook.spellbook.Spellbook - source changed since its semantics were written; re-verify then re-accept"
+    ],
+    "melder/aether/conduit/meld/meld.py": [
+      "SEMANTICS_STALE node melder.aether.conduit.meld.meld.Meld - source changed since its semantics were written; re-verify then re-accept"
+    ],
+    "melder/aether/conduit/spell_space/spell_space.py": [
+      "SEMANTICS_STALE node melder.aether.conduit.spell_space.spell_space.SpellSpace - source changed since its semantics were written; re-verify then re-accept"
+    ],
+    "melder/aether/conduit/spell_space/spell_space_pool.py": [
+      "SEMANTICS_STALE node melder.aether.conduit.spell_space.spell_space_pool.SpellSpacePool - source changed since its semantics were written; re-verify then re-accept"
+    ]
+  }
+}

@@ -1,5 +1,6 @@
 
 
+from copy import deepcopy
 from typing import Dict, List, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
@@ -7,18 +8,18 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 class ConduitCrystal(Cleanable):
     """
-    Pure-data digital twin of one ROOT conduit's structural surface.
+    Pure-data twin of one normal root or named lesser conduit's structure.
 
     Purpose:
-        Carry the persistable truth of one root conduit: identity, conjure
-        posture (name / policy / dynamic), and its peer-link edges. Restore
-        replays this twin as the conjure step AFTER the owning spellbook's
-        binds (L3 intra-level rule), and applies link edges LAST, once every
-        conduit in the profile exists.
+        Carry identity, name, policy and structural parent/root relationships.
+        Roots replay through conjure after Book binding; named lessers replay
+        through their parent's creation API. Required unnamed ancestor values
+        travel with the named twin. No prior Creations or application data is held.
 
     Guidance:
-        Read this twin as the root conduit's conjure record plus its outbound
-        initiated link edges. It does not contain borrowed spell/lineage detail;
+        Read normal twins as conjure records and lesser twins as scope-creation
+        records. configuration_payload carries the role and lineage; it contains
+        no live borrowed spell or scope reference. For peer relationships,
         join it with `ContractCrystal` for contract projections and
         `ClusterCrystal` for cluster membership. During restore, resolve
         `spellbook_id` and `link_targets` through fresh identity translation
@@ -26,8 +27,9 @@ class ConduitCrystal(Cleanable):
 
     Contract:
         - Value payload only; immutable after construction (replace-on-emit).
-        - ROOT conduits only: lesser conduits are ephemeral scope machinery,
-          reconstructable at runtime, and never emit (call-site gate).
+        - Normal roots and active named lessers emit. Required unnamed ancestry
+          is value-only support inside the named twin, never a separately owned
+          runtime or an independently retained unnamed record.
         - `link_targets` records peer conduit ids as edges, not objects; the
           restore engine resolves them in its final link pass.
         - Runtime identities (ULIDs) are RECORD-LOCAL: they express edges
@@ -53,10 +55,10 @@ class ConduitCrystal(Cleanable):
     Subsystem Context:
         One member of the crystal-twin family - the pure-data value objects the
         crystallizer records and the restore engine replays. This twin is the
-        root conduit's slice: a builder projects a live root Conduit into it,
-        `PersistenceProfile` holds it (replace-on-emit), and restore replays it as
-        the conjure step AFTER the owning spellbook's binds, applying its link
-        edges LAST once every conduit exists. `ContractCrystal` and
+        conduit structural slice: its runtime owner pushes detached values,
+        `PersistenceProfile` holds them replace-on-emit, and restore rebuilds the
+        root and child hierarchy after Book binding. Link edges apply LAST.
+        `ContractCrystal` and
         `ClusterCrystal` carry the borrowed-detail and membership slices it joins
         with.
 
@@ -66,15 +68,14 @@ class ConduitCrystal(Cleanable):
         them in dependency order. Keeping runtime ULIDs RECORD-LOCAL (translated
         to fresh identities on restore, normalized out of seal fingerprints) is
         what lets two structurally-identical worlds compare equal across boots and
-        lets restore rebuild the graph without reusing stale ids. Recording ROOT
-        conduits only - lessers are ephemeral scope machinery rebuilt at runtime -
-        is the boundary that keeps the record the durable structural truth, not a
-        snapshot of transient runtime state.
+        lets restore rebuild the graph without reusing stale ids. Named scope
+        records preserve hierarchy, not previously created instances. Supporting
+        unnamed ancestor snapshots disappear with their last retained named carrier.
 
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: internal. Pure-data digital twin of one ROOT conduit's structural surface.
+        access: internal. Pure-data twin of one normal or named lesser conduit's structure.
         Melder kernel machinery: read it to understand the runtime, do not drive it directly.
     """
 
@@ -99,15 +100,15 @@ class ConduitCrystal(Cleanable):
             configuration_payload: Optional[Dict[str, object]] = None,
     ) -> None:
         """
-        Initialize one root-conduit twin from emitted conjure-time truth.
+        Initialize a conduit twin from emitted structural values.
 
         Args:
             conduit_id:
                 Stable conduit identity within the profile.
             spellbook_id:
-                Owning spellbook's id (parent edge; conjure source).
+                Owning root's spellbook id; lessers share that Book.
             conduit_name:
-                Optional registered conduit name (None for unnamed roots).
+                Recorded root or lesser name; None is retained for legacy roots.
             policy_name:
                 Recorded Policies enum name active at conjure.
             dynamic:
@@ -117,9 +118,11 @@ class ConduitCrystal(Cleanable):
                 Peer conduit ids this conduit had initiated links to at
                 emission time; replayed in the final link pass.
             configuration_payload:
-                Value-typed conduit configuration surface retained at
-                emission (state, lineage root, pool posture). None is
-                treated as an empty payload.
+                Value-only state/root/parent and pool posture. Named lessers also
+                carry lineage_ancestors from root to immediate parent, with each
+                ancestor's id/name/parent/policy. Nested values are copied so neither
+                emitter mutation nor exported views can change this immutable twin.
+                None is treated as an empty payload.
 
         Returns:
             None.
@@ -145,7 +148,7 @@ class ConduitCrystal(Cleanable):
         self._dynamic: bool = dynamic
         self._link_targets: List[str] = list(link_targets) if link_targets else []
         self._configuration_payload: Dict[str, object] = (
-            dict(configuration_payload) if configuration_payload else {}
+            deepcopy(configuration_payload) if configuration_payload else {}
         )
 
     def cleanup(self) -> None:
@@ -207,12 +210,12 @@ class ConduitCrystal(Cleanable):
         Return the registered conduit name, when one existed.
 
         Contract:
-            - None for unnamed root conduits; a name is present only when the
-              root was registered under one.
+            - Names identify normal roots or active named lesser scopes. None
+              remains readable for legacy root payloads.
 
         Returns:
             Optional[str]:
-                Conduit name or None for unnamed roots.
+                Conduit name, or None for a legacy unnamed root.
         """
         self.check_cleaned()
         return self._conduit_name
@@ -279,7 +282,7 @@ class ConduitCrystal(Cleanable):
                 Detached mapping of configuration name -> value.
         """
         self.check_cleaned()
-        return dict(self._configuration_payload)
+        return deepcopy(self._configuration_payload)
 
     def describe(self) -> Dict[str, object]:
         """
@@ -302,5 +305,5 @@ class ConduitCrystal(Cleanable):
             "policy_name": self._policy_name,
             "dynamic": self._dynamic,
             "link_targets": list(self._link_targets),
-            "configuration_payload": dict(self._configuration_payload),
+            "configuration_payload": deepcopy(self._configuration_payload),
         }

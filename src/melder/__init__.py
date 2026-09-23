@@ -12,7 +12,7 @@ Quickstart:
     book = md.Spellbook()
     book.bind(spell=MyService, existence=md.Existence.unique)
     conduit = book.conjure(dynamic=True, name="root")
-    service = conduit.meld(MyService)
+    service = conduit.meld("MyService")
 
 Workflow map - every name below is importable from this root:
 - BIND: Spellbook, SpellBinder, scan_bind (decorator), Spell,

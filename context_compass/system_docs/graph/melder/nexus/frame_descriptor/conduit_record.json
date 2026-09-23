@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/frame_descriptor/conduit_record.py",
- "source_sha256": "79af7e30d854a3b58114a8e6cd688cf9dd7a5eb400858948c6a16b18ab0512c4",
+ "source_sha256": "9c7a2d43c30f6ccb5663b574531dcc5544df080c6ca58a6db8985bf016a8063b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.frame_descriptor.conduit_record": {
@@ -38,11 +38,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "7ca9df1ffbc5518b5c7ccfe7abc671273196c3c3c2f061f14cc7e161684a01b7",
+   "span_sha256": "88c040d2e3f4732b49da4e8025142dc316341ff57ecbde796b8d49a33ef48b98",
    "role": "Canonical Nexus record for one published conduit.",
    "responsibilities": [
     "stores published conduit identity and lineage anchor data",
-    "owns one conduit descriptor payload"
+    "owns one conduit descriptor payload",
+    "retains reusable published identity through named scope retirement and reuse"
    ],
    "owns_state": [
     "conduit_id",

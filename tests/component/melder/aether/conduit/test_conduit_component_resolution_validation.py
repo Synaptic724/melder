@@ -290,14 +290,14 @@ def test_component_conduit_add_spell_to_contract_self_admits_standalone() -> Non
         owner.permanent_cleanup()
 
 
-def test_component_conduit_upgrade_seeds_resolution_state_from_root() -> None:
+def test_component_conduit_upgrade_does_not_copy_root_resolution_state() -> None:
     """
     Purpose:
-        Validate upgraded lesser conduits inherit root resolution state.
+        Validate upgraded lesser conduits start independent resolution state.
     Contract:
         - Root validation records a valid resolution state.
-        - Upgrading a lesser conduit seeds a distinct resolution state.
-        - Seeded state preserves root validity.
+        - The empty new Book receives no verdicts from the former root.
+        - Empty-Book validation has no state; a new local bind compiles its own verdicts.
     Returns:
         None.
     Raises:
@@ -324,12 +324,22 @@ def test_component_conduit_upgrade_seeds_resolution_state_from_root() -> None:
         lesser.upgrade_to_normal(name="upgraded")
         upgraded_state = lesser.get_resolution_state()
 
-        assert upgraded_state is not None
+        assert upgraded_state is None
+        assert lesser.validate_resolution() is None
+
+        class GraduatedLeaf:
+            """Independent definition absent from the former root's compiled graph."""
+
+        new_id = lesser.bind(spell=GraduatedLeaf, existence=Existence.many)
+        assert isinstance(lesser.meld(spell_id=new_id), GraduatedLeaf)
+        upgraded_state = lesser.get_resolution_state()
         assert upgraded_state is not root_state
-        assert upgraded_state.has_errors() is False
-        assert upgraded_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
+        assert upgraded_state.get_root_validity(new_id) is SpellValidity.valid
+        assert upgraded_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.unknown
+        assert root_state.get_root_validity(depth3_ids[Depth3Root]) is SpellValidity.valid
         assert lesser.id == original_id
     finally:
+        lesser.permanent_cleanup()
         root.permanent_cleanup()
 
 

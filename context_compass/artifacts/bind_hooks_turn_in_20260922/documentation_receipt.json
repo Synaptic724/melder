@@ -1,0 +1,76 @@
+{
+  "updated_at": "2026-09-22T18:41:58Z",
+  "descriptors": [
+    "context_compass\\system_docs\\graph\\melder\\aether\\conduit\\conduit.json",
+    "context_compass\\system_docs\\graph\\melder\\aether\\spellbook\\spellbook.json",
+    "context_compass\\system_docs\\graph\\melder\\aether\\spellbook\\bind\\bind.json",
+    "context_compass\\system_docs\\graph\\melder\\aether\\spellbook\\configuration\\spellbook_configuration.json",
+    "context_compass\\system_docs\\graph\\melder\\utilities\\custom_exceptions\\hook_execution_error.json"
+  ],
+  "measured_lengths": {
+    "src/melder/aether/conduit/conduit.py": 6635,
+    "src/melder/aether/spellbook/spellbook.py": 7191,
+    "src/melder/aether/spellbook/bind/bind.py": 1226,
+    "src/melder/aether/spellbook/configuration/spellbook_configuration.py": 1427
+  },
+  "preservation": [
+    {
+      "document": "src_architecture.md",
+      "historical_target": "context_compass\\artifacts\\bind_hooks_turn_in_20260922\\canonical_before\\src_architecture.md",
+      "replaced_lines_preserved_in_target": [
+        "end_line: 7193",
+        "loc: 7193",
+        "verified_at: 2026-09-22T14:36:10Z",
+        "verified_at: 2026-09-22T14:36:10Z",
+        "verified_at: 2026-09-22T14:36:10Z",
+        "verified_at: 2026-09-22T14:36:10Z",
+        "end_line: 6509",
+        "loc: 6509"
+      ]
+    },
+    {
+      "document": "src_components.md",
+      "historical_target": "context_compass\\artifacts\\bind_hooks_turn_in_20260922\\canonical_before\\src_components.md",
+      "replaced_lines_preserved_in_target": [
+        "3) Spellbook attaches hooks and registers the spell into local maps.",
+        "- New hook names in the `_hooks[spellbook_id][hook_name]` registry. The",
+        "categories are fixed sets today - Meld pipeline, Conduit lifecycle, linking,",
+        "and contract hooks - and consumers look up by exact name, so an unrecognised",
+        "hook name registers successfully and is never invoked. Extending here means",
+        "adding the name AND its call site.",
+        "- src/melder/aether/spellbook/configuration/spellbook_configuration.py:659-700",
+        "- Sweep a mid-flight-activated live world into the record",
+        "(`_catch_up_live_world`, shared-spellbook deduped).",
+        "- SpellIndex, Spell, lookup maps.",
+        "- Attaches hooks and registers local lookup keys.",
+        "end_line: 7193",
+        "loc: 7193",
+        "verified_at: 2026-09-22T14:36:10Z",
+        "verified_at: 2026-09-22T14:36:10Z",
+        "verified_at: 2026-09-22T14:36:10Z",
+        "verified_at: 2026-09-22T14:36:10Z",
+        "end_line: 6509",
+        "loc: 6509"
+      ]
+    }
+  ],
+  "retained_semantics_stale_notes": {
+    "melder/aether/conduit/conduit.py": [
+      "SEMANTICS_STALE node melder.aether.conduit.conduit.Conduit - source changed since its semantics were written; re-verify then re-accept"
+    ],
+    "melder/aether/spellbook/spellbook.py": [
+      "SEMANTICS_STALE node melder.aether.spellbook.spellbook.Spellbook - source changed since its semantics were written; re-verify then re-accept"
+    ],
+    "melder/aether/spellbook/bind/bind.py": [
+      "UNVERIFIED node melder.aether.spellbook.bind.bind - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed",
+      "SEMANTICS_STALE node melder.aether.spellbook.bind.bind.Bind - source changed since its semantics were written; re-verify then re-accept"
+    ],
+    "melder/aether/spellbook/configuration/spellbook_configuration.py": [
+      "UNVERIFIED node melder.aether.spellbook.configuration.spellbook_configuration - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed",
+      "SEMANTICS_STALE node melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration - source changed since its semantics were written; re-verify then re-accept"
+    ],
+    "melder/utilities/custom_exceptions/hook_execution_error.py": [
+      "SEMANTICS_STALE node melder.utilities.custom_exceptions.hook_execution_error.HookExecutionError - source changed since its semantics were written; re-verify then re-accept"
+    ]
+  }
+}

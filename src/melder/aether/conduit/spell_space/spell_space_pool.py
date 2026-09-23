@@ -158,6 +158,8 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             the spellspace registry-tracked and adds it to the shared registry;
             when False, leaves it untracked (the managed enter path tracks on
             the conduit-local stack instead). Returns the same object.
+            An owner with temporary hooks supplies its current map on acquisition;
+            unchanged owners need only one bool read, with no copying or lock.
 
         Args:
             obj:
@@ -173,6 +175,8 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Returns:
             SpellSpace: The same, reactivated spellspace.
         """
+        if self._conduit_meld._meld_hooks_modified:
+            obj._meld._inherit_meld_hooks(self._conduit_meld)
         if track_registry:
             obj._registry_tracked = True
             obj._spellspace_registry.add(obj)
@@ -194,11 +198,16 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
             - Performs no registry add and no `prepare_object(...)` call.
             - Uses one direct deque pop miss path instead of pre-checking idle
               state under an outer Python lock.
+            - A reused Space adopts temporary owner hooks only when the owner's
+              divergence bool is set. Construction handles the fresh path.
         """
         try:
-            return self._idle.pop()
+            space = self._idle.pop()
         except IndexError:
             return self.create_object(*args, **kwargs)
+        if self._conduit_meld._meld_hooks_modified:
+            space._meld._inherit_meld_hooks(self._conduit_meld)
+        return space
 
     def acquire(
             self,

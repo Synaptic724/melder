@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar, Union
 
 from melder.aether.conduit.meld.meld import Meld
 from melder.aether.spellbook.existence.existence import Existence
@@ -164,6 +164,73 @@ class SpellSpaceMeld(Meld):
             del self._spellspace
             del self._spellspace_id
             del self._owner_conduit_id
+
+    def purge(
+            self,
+            spell: Optional[Union[str, object]] = None,
+            *,
+            spell_name: Optional[str] = None,
+            spellframe: Optional[Union[str, object]] = None,
+            binding_name: Optional[str] = None,
+            purge_all: bool = True,
+    ) -> int:
+        """
+        Retire creations belonging to this explicit SpellSpace only.
+
+        Purpose:
+            Keep request-local purge policy on the SpellSpace-facing door,
+            independently of the broader stores available for normal resolution.
+
+        Contract:
+            - Uses shared discovery to find the registered definition.
+            - Accepts only many and unique_per_spell_space lifetimes.
+            - Always delegates to `_spellspace_creations`; never to the owner
+              conduit, Spell owner, lineage root, or cluster leader store.
+            - Creations owns locking, paired-map removal and recorded disposal.
+            - Does not pop the managed stack, recycle this scope or recompile.
+
+        Args:
+            spell: Canonical id string, class/function reference or application instance.
+            spell_name: Optional logical name forwarded by the public facade.
+            spellframe: Optional frame/type for ordinary binding discovery.
+            binding_name: Optional binding name within the selected frame.
+            purge_all: True retires all retained local target entries. False
+                requires an instance and retires only that object from this space.
+
+        Returns:
+            int: Removed local creation count, or zero if none are retained.
+
+        Raises:
+            ValueError: If no usable selector is supplied, or False has no instance.
+            KeyError: If normal meld discovery cannot find the target.
+            TypeError: If purge_all is not a bool.
+            RuntimeError: If cleaned or the target has a broader lifetime.
+            ExceptionGroup: Disposal failures after selected entries are removed.
+
+        Threading / Lifecycle:
+            Local retirement uses the store's writer lock and disposes after
+            releasing it. Direct manual use needs no active stack entry. Managed
+            scope ownership and pool-reuse rules remain the caller's existing
+            lifecycle contract; this operation does not extend a scope's lease.
+        """
+        target_spell = self._resolve_purge_spell(
+            spell=spell,
+            spell_name=spell_name,
+            spellframe=spellframe,
+            binding_name=binding_name,
+            purge_all=purge_all,
+        )
+        if target_spell.existence not in (Existence.many, Existence.unique_per_spell_space):
+            raise RuntimeError(
+                f"Cannot purge spell '{target_spell.spell_name}' "
+                f"({target_spell.existence.name}) from a SpellSpace; "
+                "purge it from its authorized conduit."
+            )
+        return self._spellspace_creations.purge(
+            target_spell,
+            purge_all=purge_all,
+            creation=spell if not purge_all else None,
+        )
 
     def meld(
             self,

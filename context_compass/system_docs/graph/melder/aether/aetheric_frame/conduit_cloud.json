@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/conduit_cloud.py",
- "source_sha256": "b542c1e631f32562e5c5b571ed40f1d0416607111fb063ff3c3f1bcc6b21491f",
+ "source_sha256": "96511ab6e7cae0977ce24178015ee5e68216751d340b24726296c5373c3f5f4a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.conduit_cloud": {
@@ -48,19 +48,26 @@
     "remove_conduit_from_cluster"
    ],
    "shape": {
-    "method_count": 24,
+    "method_count": 30,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "df0b1f661b17689724af017252608af47153b6e2d7f41b5846393207c9902a90",
+   "span_sha256": "e0d9dc48870cb2dfdfdf1ff57bd638fd422d5df7fdbdd33f8061827574ff6959",
    "role": "Frame-scoped registry of named conduits.",
    "responsibilities": [
     "stores conduit name to conduit mappings",
     "resolves conduits by name or id within one frame",
-    "provides the frame-local named conduit lookup surface"
+    "provides the frame-local named conduit lookup surface",
+    "owns active named root/lesser discovery separately from borrowed normal-root maps",
+    "serializes frame-wide name admission, identity-safe retirement and temporary promotion claims"
    ],
    "owns_state": [
-    "_registry",
+    "_named_conduits",
+    "_conduit_names_by_id",
+    "_reserved_conduit_names",
+    "_conduit_clusters",
+    "_devops_identity",
+    "_id",
     "_name"
    ],
    "phases": [
@@ -95,6 +102,12 @@
   {
    "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
    "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud",
+   "to_label": "TypeError",
    "relation": "creates",
    "confidence": "candidate"
   },

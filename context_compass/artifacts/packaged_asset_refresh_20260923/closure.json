@@ -1,0 +1,10 @@
+{
+  "closed_tickets": [
+    "tickets/tasks/completed/2026-09-23_audit_named_lesser_private_cleanup_guards_task.md",
+    "tickets/tasks/completed/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md"
+  ],
+  "active_rows_preserved": 6,
+  "closed_anchor_count": 12,
+  "temporary_test_trees_removed": true,
+  "linked_reference_files_updated": 2
+}

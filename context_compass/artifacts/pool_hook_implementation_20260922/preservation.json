@@ -1,0 +1,123 @@
+{
+  "checked_at": "2026-09-22T16:51:11Z",
+  "runtime_doors_and_version": [
+    {
+      "path": "src/melder/aether/conduit/meld/spellspace_meld.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/aether/conduit/meld/conduit_meld.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/__version__.py",
+      "unchanged": true
+    }
+  ],
+  "held_assets": [
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\diagrams\\mermaid\\c2_meld_resolution.mmd",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\diagrams\\svg\\c3_runtime_components.svg",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_agent_documentation\\manifest\\agent_documentation_manifest.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\diagrams\\mermaid\\c4_system_context.mmd",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\diagrams\\svg\\c4_system_context.svg",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\diagrams\\svg\\c2_meld_resolution.svg",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\payloads\\src_components_payload.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_agent_documentation\\_builder.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\manifest\\system_documents_index.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\system_documents.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\diagrams\\README.md",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_agent_documentation\\agent_documentation.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/__architecture__.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\manifest\\graph_adjacency_manifest.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\payloads\\src_graph_payload.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\payloads\\src_architecture_payload.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_bind_guard\\_builder.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\diagrams\\mermaid\\c3_runtime_components.mmd",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_bind_guard\\manifest\\bind_guard_manifest.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/__components__.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/__graph_network__.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_bind_guard\\bind_guard.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_build_asset_runner.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/__graph_details__.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\manifest\\system_documents_manifest.py",
+      "unchanged": true
+    },
+    {
+      "path": "src/melder/_build_assets\\_system_documents\\_builder.py",
+      "unchanged": true
+    }
+  ]
+}

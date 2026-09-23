@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.43"
-SOURCE_SHA256 = "c8e55a63be7769cf4adca2e287f7edc4d022e7575c5489e6b7bd90945b26696e"
-ENTRY_COUNT = 629
+BUILT_FOR_VERSION = "0.2.50"
+SOURCE_SHA256 = "a15df69c6b14d971f79f713895a7e72709a53ed29fd4fbf4ff972280c7d1f4fc"
+ENTRY_COUNT = 631
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -391,6 +391,7 @@ ENTRIES = (
     ('melder.crystallizer.asset_management.mesh_interface_contract', 'MeshInterfaceContract'),
     ('melder.crystallizer.configuration.crystallizer_configuration', 'CrystallizerConfiguration'),
     ('melder.crystallizer.configuration.crystallizer_configuration_builder', 'CrystallizerConfigurationBuilder'),
+    ('melder.crystallizer.crystal_analysis.conduit_hierarchy', 'ConduitHierarchy'),
     ('melder.crystallizer.crystal_analysis.crystal_analysis_result', 'CrystalAnalysisResult'),
     ('melder.crystallizer.crystal_analysis.crystal_analyzer', 'CrystalAnalyzer'),
     ('melder.crystallizer.crystal_analysis.custody.binary_unknown_custody_strategy', 'BinaryUnknownCustodyStrategy'),
@@ -401,6 +402,7 @@ ENTRIES = (
     ('melder.crystallizer.crystal_analysis.impact_engine', 'ImpactEngine'),
     ('melder.crystallizer.crystal_analysis.physical_source_cache', 'PhysicalSourceCache'),
     ('melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy', 'ClusterMembershipStrategy'),
+    ('melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy', 'ConduitHierarchyStrategy'),
     ('melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy', 'ConfigurationLossStrategy'),
     ('melder.crystallizer.crystal_analysis.preflight.contract_peer_strategy', 'ContractPeerStrategy'),
     ('melder.crystallizer.crystal_analysis.preflight.frame_posture_strategy', 'FramePostureStrategy'),

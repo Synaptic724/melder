@@ -1313,22 +1313,29 @@ class Nexus(Cleanable):
             self._ensure_frame_acl_container(spellbook._aetheric_frame_name)
         return published
 
-    def _publish_conduit_record(self, conduit: Conduit) -> bool:
+    def _publish_conduit_record(self, conduit: Conduit, *, pooled: bool = False) -> bool:
         """
         Internal
 
-        Publish or update one canonical conduit record for a normal/root
-        conduit.
+        Publish or update one canonical root, lesser or retained pooled record.
+
+        Contract:
+            Delegates record ownership to the descriptor manager. Pooled publication
+            clears scope values on an existing identity only, without changing Rift
+            projection membership or exposing raw runtime objects.
 
         Args:
             conduit:
                 Conduit instance to publish.
+            pooled:
+                Publish cleared pooled values during named retirement, before
+                runtime detachment. The caller serializes that lifecycle transition.
 
         Returns:
             bool: True when the record was published, False when publication
             short-circuited.
         """
-        published = self._frame_descriptor_manager._publish_conduit_record(conduit)
+        published = self._frame_descriptor_manager._publish_conduit_record(conduit, pooled=pooled)
         if self._frame_descriptor_manager._has_frame_descriptor(conduit._aetheric_frame_name):
             self._ensure_frame_acl_container(conduit._aetheric_frame_name)
         return published

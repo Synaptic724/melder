@@ -18,8 +18,9 @@ class ConduitRecord(Cleanable):
 
     Contract:
         - Root conduits publish by default.
-        - Lesser conduits remain derived through lineage walking unless later
-          promoted to normal.
+        - Fresh lesser allocation and every named lesser acquisition publish
+          lineage metadata. Named soft return retains an unnamed pooled record;
+          ordinary anonymous pool cycles do not continually republish.
         - Carries one deterministic Nexus publication contract.
         - Mutable through explicit Nexus upsert/remove paths only.
         - Cleanup is idempotent and clears all owned references.
@@ -33,11 +34,11 @@ class ConduitRecord(Cleanable):
         `ConduitDescriptorPayload` and owned by `FrameDescriptorManager`.
 
     System Context:
-        "Root conduits publish by default; lesser conduits remain derived" is
-        the rule that keeps the AR surface proportional. A lineage can spawn
-        many lesser conduits, and publishing each as an independently targetable
-        record would flood the descriptor registry with objects no agent means
-        to address directly.
+        Publication is separate from command authority. An existing ID's named
+        lifecycle can replace its payload through pool reuse, while a newly
+        published ID requires the Rift's usual explicit projection refresh.
+        Retaining a cleared pooled record keeps existing compiled ID sets valid;
+        it does not make an idle shell available through live lineage lookup.
         Holding only DIRECTLY TARGETABLE information is the matching
         restraint - the record answers "can I aim at this", not "what is
         everything about it", which is the payload's job.
