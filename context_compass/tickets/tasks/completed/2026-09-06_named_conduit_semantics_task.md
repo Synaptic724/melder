@@ -1,14 +1,19 @@
 # Task: Discover conduit naming and compare tagged lifetime scopes
 
+- Completed: 2026-09-23T11:55:35Z
+- Summary: Owner-authorized named-lesser feature turn-in. Runtime, structural replay,
+  Nexus, examples and canonical documentation are delivered; package assets remain held.
+- Closure evidence: artifacts/named_lesser_finish_20260923/validation.md
+
 ## Metadata
 - Task ID: TASK-2026-09-06-named-conduit-semantics
 - Story: none (owner-requested discovery)
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p2
 - Created: 2026-09-06T16:48:36Z
-- Updated: 2026-09-06T17:03:17Z
+- Updated: 2026-09-23T11:55:35Z
 
 ## Objective
 Explain which Melder conduit/scope forms can be named, how names are registered and consumed,
@@ -177,3 +182,8 @@ Lessers have no creation name argument, but the setter permits unregistered labe
 has no naming surface. No Autofac-style matching-name lifetime exists in Existence.
 Owner is considering dynamic named lesser registration without root promotion. Discuss a separate
 discovery contract, name uniqueness and pool-reset lifecycle; no runtime changes are authorized yet.
+
+## Closure Transition
+- from_state: review
+- to_state: done
+- transition_reason: Owner requested full finish and turn-in; qualification is complete.

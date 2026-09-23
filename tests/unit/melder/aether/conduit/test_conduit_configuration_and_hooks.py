@@ -379,22 +379,22 @@ def test_conduit_constructor_respects_dynamic_input(
         conduit.cleanup()
 
 
-def test_configure_conduit_state_clears_name_for_lesser(
+def test_configure_conduit_state_preserves_creation_name_for_lesser(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify lesser conduits discard names during initialization.
+    Verify lesser initialization preserves its supplied creation label.
 
     Contract:
-        - Lesser conduits cannot retain a name.
+        - Naming does not require promoting the conduit to normal.
 
     Args:
         configuration_automatic (SpellbookConfiguration): Automatic configuration defaults.
         spellbook_stub (MagicMock): Spellbook stub for construction.
 
     Raises:
-        AssertionError: If the name remains set for a lesser conduit.
+        AssertionError: If the creation name is discarded or the scope is promoted.
     """
     conduit = _build_conduit(
         spellbook=spellbook_stub,
@@ -405,20 +405,22 @@ def test_configure_conduit_state_clears_name_for_lesser(
         name="alpha",
     )
     try:
-        assert conduit.name is None
+        assert conduit.name == "alpha"
+        assert conduit._conduit_state is ConduitState.lesser
     finally:
         conduit.cleanup()
 
 
-def test_configure_conduit_state_logs_warning_when_lesser_name_is_overridden(
+def test_configure_conduit_state_does_not_publish_lesser_as_root(
     configuration_automatic: SpellbookConfiguration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify lesser conduit name override emits a warning.
+    Verify a lesser name grants no root registration or early Cloud publication.
 
     Contract:
-        - Lesser conduits log a warning when a provided name is discarded.
+        - Named shells remain unpublished until the parent attachment boundary.
+        - State configuration neither discards the name nor enrolls a root.
     """
     conduit = _build_conduit(
         spellbook=spellbook_stub,
@@ -429,11 +431,10 @@ def test_configure_conduit_state_logs_warning_when_lesser_name_is_overridden(
         name="alpha",
     )
     try:
-        conduit._name = "alpha"
-        conduit._logger = MagicMock()
         conduit._configure_conduit_state()
-        conduit._logger.warning.assert_called()
-        assert conduit.name is None
+        assert conduit.name == "alpha"
+        conduit._aetheric_frame.register_root_conduit.assert_not_called()
+        conduit._aetheric_frame._conduit_cloud._register_named_conduit.assert_not_called()
     finally:
         conduit.cleanup()
 

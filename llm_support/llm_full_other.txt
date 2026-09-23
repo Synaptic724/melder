@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 66ff140468c3f41a072dd6f1561642d6fb577f722b48a352466b35606a1321e1
-FILE COUNT: 360
+SOURCE FINGERPRINT: 12dc1f47d8f7c212aa9c74bdbe1cf00e3f6ed9b2dbc034d1b1492ffcee48cacf
+FILE COUNT: 366
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -8986,7 +8986,7 @@ END FILE: UX_and_AIX_experiences/02_intermediate/27_sever_link.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/28_upgrade_to_normal.py
-CONTENT SHA256: 0cc47e55c85d23d43d1297f1f5819aa260e23f5009dfeca0d319d5765e715a60
+CONTENT SHA256: 7fe89abf4742774cbd5bb8d72ed624cd4e657ac7597132f777f309c9f3b60be0
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -8995,9 +8995,10 @@ GOAL: upgrade_to_normal - a lesser conduit GROWS UP in place. Lessers
       are unnamed child scopes (lesson 07); in a dynamic world one can
       be promoted to a full named citizen: registered in the world,
       discoverable by name in the cloud, able to do everything a normal
-      conduit does. The promotion KEEPS what the child already built -
-      its creations ride through the upgrade untouched. Dynamic-only
-      verb: in a static world the same call refuses.
+      conduit does. The promotion retains what the child already built
+      for disposal, but owns a NEW EMPTY Spellbook: former definitions
+      are no longer visible. Bind the new root's definitions explicitly.
+      Dynamic-only verb: in a static world the same call refuses.
 SURFACE EXERCISED: create_lesser_conduit, upgrade_to_normal,
                    cloud name lookup after promotion
 """
@@ -9011,30 +9012,59 @@ import melder as md
 
 
 class Workbench:
-    pass
+    """Track disposal of an object created before promotion."""
+
+    def __init__(self) -> None:
+        """Start with no cleanup calls so promotion can prove retention."""
+        self.cleanup_calls = 0
+
+    def cleanup(self) -> None:
+        """Record disposal by the scope retaining this creation."""
+        self.cleanup_calls += 1
+
+
+class IndependentWorkbench:
+    """A definition owned only by the newly graduated root's Book."""
 
 
 def main() -> None:
+    """Promote in place, register independent definitions and prove disposal ownership."""
     book = dynamic_spellbook()
-    book.bind(spell=Workbench, existence="unique_per_conduit")
+    book.bind(spell=Workbench, existence="unique_per_conduit", disposal_method_names=["cleanup"])
     root = book.conjure(dynamic=True, name="factory-floor")   # settles
 
     # An unnamed child scope, working away...
     worker = root.create_lesser_conduit()
     bench_before = worker.meld("Workbench")
 
-    # ...promoted in place. Name granted, world registration performed.
-    worker.upgrade_to_normal(name="worker")
+    try:
+        # ...promoted in place. Its new empty Book is already conjured.
+        worker.upgrade_to_normal(name="worker")
 
-    # It KEPT its stuff: the per-conduit bench survives the promotion.
-    bench_after = worker.meld("Workbench")
-    assert bench_after is bench_before
-    print("promotion kept the child's creations:", type(bench_after).__name__)
+        # It KEPT its object for disposal, without inheriting the old definition.
+        assert bench_before.cleanup_calls == 0
+        try:
+            worker.meld("Workbench")
+        except KeyError:
+            print("new Book has no former Workbench definition")
+        else:
+            raise AssertionError("Graduation must start with an empty Book.")
+        worker.bind(spell=IndependentWorkbench, existence="unique_per_conduit")
+        assert isinstance(worker.meld("IndependentWorkbench"), IndependentWorkbench)
+        print("new root can bind and meld its own definitions")
 
-    # And it is now a discoverable citizen of the world.
-    cloud = root.get_conduit_cloud()
-    assert cloud.get_conduit_by_name("worker") is worker
-    print("promoted conduit found by name:", worker.name)
+        # And it is now a discoverable citizen of the world.
+        cloud = root.get_conduit_cloud()
+        assert cloud.get_conduit_by_name("worker") is worker
+        print("promoted conduit found by name:", worker.name)
+        worker.cleanup()
+        assert bench_before.cleanup_calls == 1
+        assert isinstance(root.meld("Workbench"), Workbench)
+        print("new root disposed its retained bench; former root still works")
+    finally:
+        worker.cleanup()
+        root.cleanup()
+        book.cleanup()
 
 
 if __name__ == "__main__":
@@ -10018,8 +10048,213 @@ if __name__ == "__main__":
 END FILE: UX_and_AIX_experiences/02_intermediate/39_purge_unneeded_objects.py
 ================================================================================
 ================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/40_bind_lifecycle_hooks.py
+CONTENT SHA256: e42a74aeb3faddce693ba1e54e1e7123d9c3a53722002ab711414f48dad0bb0c
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (40)
+GOAL: Observe pre-bind, configure the actual Spell during bind activation,
+      and inspect its completed registration in post-bind. Seed a callback
+      through configuration, add stages on the Book, then clear and re-add
+      through its normal Conduit. These hooks run at bind time, not meld time.
+SURFACE EXERCISED: md.SpellbookConfiguration.with_bind_hooks,
+                  md.Spellbook.add_bind_hooks / find_spell_by_id,
+                  md.Conduit.clear_bind_hooks / add_bind_hooks / bind / meld,
+                  md.Spell.metadata / tags
+"""
+import inspect
+
+import melder as md
+
+
+class Report:
+    """Simple application object whose registration will be annotated by hooks."""
+
+    def render(self) -> str:
+        """Return an observable result after normal name-based resolution."""
+        return "report ready"
+
+
+class Metrics:
+    """Separate registration used while all bind hooks are cleared."""
+
+
+class Notifier:
+    """Separate registration proving callbacks can be added again after clear."""
+
+
+def main() -> None:
+    """Exercise the three stages and future-bind updates in one dynamic Book.
+
+    Contract:
+        Assertions distinguish raw class references, unpublished Spells and
+        completed registrations. Final cleanup releases the Book's callbacks.
+    """
+    events: list[str] = []
+
+    def check_reference(reference: object) -> None:
+        """Apply this application's class-only registration policy before reflection."""
+        if not inspect.isclass(reference):
+            raise TypeError("This example accepts class references only.")
+        events.append(f"pre:{reference.__name__}")
+
+    def configure_spell(spell: md.Spell) -> None:
+        """Annotate the actual new Spell before it becomes publicly discoverable."""
+        assert isinstance(spell, md.Spell)
+        assert book.find_spell_by_id(spell.spell_id) is None
+        spell.metadata["reviewed_by"] = "application-bind-policy"
+        spell.tags.append("reviewed")
+        events.append(f"activation:{spell.spell_name}")
+
+    def observe_registration(spell: md.Spell) -> None:
+        """Verify the registered Spell is the same object activation annotated."""
+        assert book.find_spell_by_id(spell.spell_id) is spell
+        assert spell.metadata["reviewed_by"] == "application-bind-policy"
+        events.append(f"post:{spell.spell_name}")
+
+    # Configuration seeds are captured when this Book is constructed.
+    configuration = md.SpellbookConfiguration().with_defaults()
+    configuration.with_bind_hooks(pre=[check_reference])
+    book = md.Spellbook(configuration=configuration)
+    conduit = None
+    try:
+        # Runtime setup appends stages to this Book's captured seed callbacks.
+        book.add_bind_hooks(activation=[configure_spell], post=[observe_registration])
+        report_id = book.bind(spell=Report, existence="unique")
+        assert events == ["pre:Report", "activation:Report", "post:Report"]
+        registered = book.find_spell_by_id(report_id)
+        assert registered is not None
+        assert "reviewed" in registered.tags
+        print("bind order:", " -> ".join(events))
+
+        conduit = book.conjure(dynamic=True, name="bind-hook-basics")
+        assert conduit.meld("Report").render() == "report ready"
+        assert events == ["pre:Report", "activation:Report", "post:Report"]
+        print("meld returned the Report; bind callbacks did not run again")
+
+        # The normal Conduit facades the same Book-owned bind-hook registry.
+        conduit.clear_bind_hooks()
+        metrics_id = conduit.bind(spell=Metrics, existence="unique")
+        metrics_spell = book.find_spell_by_id(metrics_id)
+        assert metrics_spell is not None
+        assert metrics_spell.metadata == {}
+        assert len(events) == 3
+        assert registered.metadata["reviewed_by"] == "application-bind-policy"
+        print("clear affected future binds; the earlier Spell kept its metadata")
+
+        conduit.add_bind_hooks(
+            pre=[check_reference], activation=[configure_spell], post=[observe_registration],
+        )
+        conduit.bind(spell=Notifier, existence="unique")
+        assert events[3:] == ["pre:Notifier", "activation:Notifier", "post:Notifier"]
+        print("re-added hooks:", " -> ".join(events[3:]))
+    finally:
+        if conduit is not None:
+            conduit.cleanup()
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/40_bind_lifecycle_hooks.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/02_intermediate/41_named_lesser_conduits.py
+CONTENT SHA256: e207c13275a9adb02cf2d86f517c3cab402e0fde3d54dc086dd5ab01ae53c29b
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: intermediate (41)
+GOAL: Find a live job scope by name, then retire the name when that job ends.
+      A name is a discovery address, not a new lifetime or a normal-root promotion.
+      Names are exact, nonempty and unique within a frame. Supply them only when
+      creating a lesser; prewarmed shells receive the new scope's name on acquisition.
+      Cleanup removes the name before pool reuse. Keep the scope owner responsible
+      for cleanup: a Cloud lookup borrows the object and does not extend its lifetime.
+SURFACE EXERCISED: md.Spellbook.bind / conjure, md.Conduit.create_lesser_conduit /
+                   get_conduit_cloud / meld / cleanup / prewarm_lesser_conduits,
+                   ConduitCloud.get_conduit_by_name / has_conduit_name.
+VERIFY: Runnable assertions cover lookup, collision, separate per-conduit values,
+        retirement and fresh values after pooled reuse. No Nexus or recorder setup.
+"""
+
+import melder as md
+
+
+class JobBuffer:
+    """Own the mutable work list for one scope; naming does not select its lifetime."""
+
+    def __init__(self) -> None:
+        """Start every newly created job buffer with independent empty state."""
+        self.items: list[str] = []
+
+
+def main() -> None:
+    """Run two jobs and reuse a finished scope under a new discovery name.
+
+    Contract:
+        Uses automatic mode to demonstrate that naming needs no dynamic mutation
+        policy. The root owns cleanup of remaining children even if an assertion fails.
+    Returns:
+        None.
+    """
+    book = md.Spellbook(aetheric_frame="named-jobs")
+    book.bind(spell=JobBuffer, existence="unique_per_conduit", permissions="create")
+    root = book.conjure(name="job-owner")
+    try:
+        root.prewarm_lesser_conduits(2)
+        cloud = root.get_conduit_cloud()
+        first = root.create_lesser_conduit(name="job-41")
+        second = root.create_lesser_conduit(name="job-42")
+        assert cloud.get_conduit_by_name("job-41") is first
+        assert cloud.get_conduit_by_name("job-42") is second
+
+        first_buffer = first.meld("JobBuffer")
+        second_buffer = second.meld("JobBuffer")
+        first_buffer.items.append("prepare invoice")
+        assert second_buffer is not first_buffer
+        assert second_buffer.items == []
+        print("Named lookup reaches the exact job; per-conduit values stay separate.")
+
+        try:
+            root.create_lesser_conduit(name="job-41")
+        except ValueError:
+            print("A duplicate active name is refused; the original job is still registered.")
+        else:
+            raise AssertionError("Duplicate active names must be rejected.")
+        assert cloud.get_conduit_by_name("job-41") is first
+
+        first.cleanup()
+        assert not cloud.has_conduit_name("job-41")
+        assert cloud.has_conduit_name("job-42")
+        replacement = root.create_lesser_conduit(name="job-43")
+        assert cloud.get_conduit_by_name("job-43") is replacement
+        assert replacement.meld("JobBuffer").items == []
+        assert not cloud.has_conduit_name("job-41")
+        print("Cleanup retires the old name; the next job begins with fresh scoped state.")
+
+        replacement.cleanup()
+        anonymous = root.create_lesser_conduit()
+        assert anonymous.name is None
+        assert not cloud.has_conduit_name("job-43")
+        anonymous.cleanup()
+        second.cleanup()
+        assert cloud.list_conduit_names() == ("job-owner",)
+        print("Anonymous scopes need no discovery entry. Names are not lifetime-matching tags.")
+    finally:
+        root.permanent_cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/02_intermediate/41_named_lesser_conduits.py
+================================================================================
+================================================================================
 BEGIN FILE: UX_and_AIX_experiences/02_intermediate/_concept_map.txt
-CONTENT SHA256: fdb78a26089e70ec97d858ee67f6a96175bf2d5d55c5347a036a6fdc5d74aa0b
+CONTENT SHA256: c0a900d37450ce51bfe0da0f4e3b86e12a06794ac6809b5a89019e2539a03bf3
 SOURCE ENCODING: utf-8
 ================================================================================
 CONCEPT MAP - 02_intermediate (README tier: YELLOW Intermediate)
@@ -10202,6 +10437,15 @@ EARLY DISPOSAL WHILE A SCOPE STAYS LIVE (2026-09-21)
      default, removal counts, remelding, local scope isolation and
      exactly-once disposal across later cleanup). Lesson 38 remains
      withdrawn; this lesson adds methods on existing public root types.
+
+BIND LIFECYCLE POLICY (2026-09-22)
+  40 bind_lifecycle_hooks (pre-bind reference checks, actual-Spell activation,
+     post registration, configuration seeds and Book/normal-Conduit add/clear/re-add).
+     Bind callbacks run at registration; lesson 03's creation callbacks run at meld.
+
+NAMED SCOPE DISCOVERY (2026-09-23)
+  41 named_lesser_conduits (creation-only names, frame-wide Cloud discovery,
+     collisions, separate per-conduit state, retirement and anonymous reuse).
 
 HARNESS
   pytest_examples/test_intermediate_examples.py (every lesson runs)
@@ -17928,7 +18172,7 @@ END FILE: UX_and_AIX_experiences/04_expert/23_branching_the_record_and_joining_b
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/24_loading_a_whole_world_back.py
-CONTENT SHA256: 64b0668bbfba0946d7676bb30bffbf17e8f18b740b2466fe9667cae9a351ce82
+CONTENT SHA256: 35b0458aca1c530b97144241713b4d28e73b6ae6c23f0879f410ceae579f8f0d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -17946,6 +18190,8 @@ GOAL: SEAL A WORLD, THEN UNFOLD IT AGAIN. Expert 01 taught the pod-boot
         load_checkpoint(id)                     -> UNFOLD into the runtime
       Only the last one touches the live world. The first four move a
       record around; `load_checkpoint` is the boot verb.
+      The lesson retires its original root before replay so the saved root name
+      and binding identities are available. The recorder itself stays alive.
 
       A RESTORE IS NOT A RESURRECTION, AND THE REPORT SAYS SO
       `load_checkpoint` hands back a RestoreReport carrying:
@@ -17994,7 +18240,6 @@ VERIFY: rides the owner's 3.14t harness; asserts are the contract.
 """
 import melder as md
 
-
 FRAME = "restore-world"
 
 
@@ -18009,6 +18254,15 @@ class Auditor:
 
 
 def main() -> None:
+    """Seal and replay a complete world while keeping its in-memory recorder alive.
+
+    Contract:
+        Establish recording posture before binds, retire original runtime claims
+        before replay and assert that rebuilt application state starts fresh.
+        A retained ordinary Ledger reference has no disposer in this example.
+    Returns:
+        None.
+    """
     # Custody first - nothing is recorded into a crystallizer that is not
     # yet recording (expert 22's ordering law).
     crystallizer = md.Crystallizer()
@@ -18031,15 +18285,17 @@ def main() -> None:
     )
     book = md.Spellbook(aetheric_frame=FRAME,
                         configuration=spellbook_configuration)
-    ledger_id = book.bind(spell=Ledger, existence="unique",
-                          permissions="create", binding_name="restore-ledger")
-    book.bind(spell=Auditor, existence="many",
-              permissions="create", binding_name="restore-auditor")
+    # Establish dynamic recording posture before binding custody. Configuring
+    # the frame afterward cannot retroactively record earlier automatic binds.
     book.configure_aether_frame(
         system_state="dynamic",
         disposal=None,
         disposal_method_names=None,
     )
+    book.bind(spell=Ledger, existence="unique",
+              permissions="create", binding_name="restore-ledger")
+    book.bind(spell=Auditor, existence="many",
+              permissions="create", binding_name="restore-auditor")
     conduit = book.conjure(name="restore-root")
     ledger = conduit.meld("Ledger", binding_name="restore-ledger")
     ledger.entries.append("before the checkpoint")
@@ -18082,9 +18338,15 @@ def main() -> None:
     print("reload_cached_checkpoint -> the checkpoint's own summary")
     print("  still no live object touched; that is the NEXT verb")
 
-    # 5. THE BOOT VERB. This one unfolds the record into the runtime.
+    # 5. THE BOOT VERB. Release the old runtime's name and binding claims first;
+    # the sealed checkpoint and its predecessor remain in the living recorder.
+    conduit.permanent_cleanup()
     report = crystallizer.load_checkpoint(second_id)
-    assert isinstance(report, dict)
+    assert report["status"] == "complete"
+    restored_conduit = md.Aether().get_conduit_by_name("restore-root", FRAME)
+    restored_ledger = restored_conduit.meld("Ledger", binding_name="restore-ledger")
+    assert restored_ledger is not ledger
+    assert restored_ledger.entries == []
     print()
     print("load_checkpoint -> RestoreReport keys:", sorted(report))
     print("   status:", report.get("status"))
@@ -18117,13 +18379,14 @@ def main() -> None:
             print("  had those things - so it names them instead")
             break
 
-    # THE ORIGINAL SPELL STILL ANSWERS through the pre-restore handle we
-    # kept, which is the point of holding OBJECTS rather than ids.
+    # This Ledger has no disposer. Our ordinary Python reference therefore
+    # still holds its earlier data; it is not the object in the rebuilt runtime.
+    # Objects with disposal contracts may be unusable after their scope ends.
     assert ledger.entries == ["before the checkpoint"]
     print()
     print("the object we held across all of this is untouched:",
           ledger.entries)
-    print("  ids go stale across a boot; the handle in your hand does not")
+    print("  the rebuilt ledger is a different object with fresh empty state")
 
     # 6. THE OPERATOR'S ONE-CALL VERSION exists and is exported.
     assert hasattr(md, "CrystallizerBootstrap")
@@ -18136,6 +18399,7 @@ def main() -> None:
     print()
     print("seal, cache, reload, unfold - and only the last one is a boot")
     print("a restore rebuilds an EQUIVALENT world and hands you the map")
+    restored_conduit.permanent_cleanup()
 
 
 if __name__ == "__main__":
@@ -21019,8 +21283,325 @@ if __name__ == "__main__":
 END FILE: UX_and_AIX_experiences/04_expert/36_an_agent_builds_a_working_system.py
 ================================================================================
 ================================================================================
+BEGIN FILE: UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py
+CONTENT SHA256: b41ed7164d697403ba259347060e05423acc5ef6a5f529155220a698110d9551
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: expert (37)
+GOAL: Gate agent-supplied existing objects with ordered pre-bind checks,
+      verify agent metadata and annotate the new Spell during activation,
+      then update and audit the published Spell in post-bind. Demonstrate
+      rejection phases and why a post-bind failure does not undo registration.
+SURFACE EXERCISED: md.Spellbook / find_spell_by_id / describe_spells_in_spellbook,
+                  md.Conduit.add_bind_hooks / clear_bind_hooks / bind / meld,
+                  md.Spell.metadata / tags, md.HookExecutionError
+"""
+import melder as md
+
+
+class ReportTool:
+    """Application-created tool that an agent proposes for registration.
+
+    Contract:
+        Carries its schema version as ordinary instance state. It owns no
+        external resources; Melder must resolve the exact supplied reference.
+    """
+
+    def __init__(self, schema_version: int = 1) -> None:
+        """Retain the supplied application schema version without registration work."""
+        self.schema_version = schema_version
+
+    def render(self, subject: str) -> str:
+        """Render a deterministic result using the already-existing object."""
+        return f"report:{subject}"
+
+
+class BackupReport(ReportTool):
+    """Distinct registration used to demonstrate failure after publication."""
+
+
+class BindingReview:
+    """Application policy and local audit for one Book's agent submissions.
+
+    Contract:
+        Borrows the Book and owns a list of published IDs. Pre checks run in
+        declared order. Metadata updates annotate a Spell; they do not change
+        its ID, replace its implementation or automatically refresh persistence.
+        This small audit is used sequentially in the example.
+    """
+
+    def __init__(self, book: md.Spellbook) -> None:
+        """Borrow the target Book and initialize this review's independent audit."""
+        self.book = book
+        self.published_ids: list[str] = []
+
+    def require_report_tool(self, reference: object) -> None:
+        """Reject references outside this application's supported existing-object type."""
+        if not isinstance(reference, ReportTool):
+            raise TypeError("Agent submissions must be existing ReportTool objects.")
+
+    def require_supported_schema(self, reference: ReportTool) -> None:
+        """Check instance state after the preceding callback has validated its type."""
+        if reference.schema_version != 1:
+            raise ValueError("ReportTool schema_version must be 1.")
+
+    def configure_spell(self, spell: md.Spell) -> None:
+        """Check bind metadata and decorate the actual unpublished Spell.
+
+        Contract:
+            Pre-bind receives only the reference. The submitted_by bind keyword
+            is available here, on the newly constructed Spell's metadata.
+        """
+        if spell.metadata.get("submitted_by") != "report-agent":
+            raise PermissionError("This Book accepts submissions from report-agent only.")
+        assert self.book.find_spell_by_id(spell.spell_id) is None
+        spell.metadata["review_policy"] = "report-schema-v1"
+        spell.tags.append("agent-reviewed")
+
+    def record_registration(self, spell: md.Spell) -> None:
+        """Update and audit the same Spell after it becomes publicly discoverable.
+
+        Contract:
+            The post_checked annotation is live metadata. Post is not a
+            transaction-commit or durable-record refresh callback.
+        """
+        assert self.book.find_spell_by_id(spell.spell_id) is spell
+        assert spell.metadata["review_policy"] == "report-schema-v1"
+        spell.metadata["post_checked"] = True
+        self.published_ids.append(spell.spell_id)
+
+
+def unavailable_audit_sink(spell: md.Spell) -> None:
+    """Simulate an application notification failure after the earlier post callback."""
+    raise RuntimeError(f"Audit sink unavailable for {spell.spell_name}.")
+
+
+def main() -> None:
+    """Bind accepted agent proposals and assert the precise refusal boundaries.
+
+    Contract:
+        Uses ordinary public binding against a live normal Conduit. The
+        proposal references stand for objects supplied by an agent workflow;
+        acquiring or generating those references is a separate concern.
+    """
+    book = md.Spellbook(configuration=md.SpellbookConfiguration().with_defaults())
+    conduit = None
+    try:
+        conduit = book.conjure(dynamic=True, name="agent-bind-review")
+        review = BindingReview(book)
+        conduit.add_bind_hooks(
+            pre=[review.require_report_tool, review.require_supported_schema],
+            activation=[review.configure_spell],
+            post=[review.record_registration],
+        )
+
+        # A reference check rejects by raising, not by returning False.
+        for proposal, cause in ((object(), TypeError), (ReportTool(2), ValueError)):
+            try:
+                conduit.bind(spell=proposal, existence="unique", submitted_by="report-agent")
+            except md.HookExecutionError as error:
+                assert error.phase == "pre_bind"
+                assert isinstance(error.original_exception, cause)
+                print("reference refused:", error.phase, str(error.original_exception))
+            else:
+                raise AssertionError("The unsuitable proposal was registered.")
+        assert book.describe_spells_in_spellbook() == []
+        assert review.published_ids == []
+
+        supplied = ReportTool()
+        try:
+            conduit.bind(spell=supplied, existence="unique", submitted_by="unknown-agent")
+        except md.HookExecutionError as error:
+            assert error.phase == "bind_activation"
+            assert isinstance(error.original_exception, PermissionError)
+            print("agent metadata refused:", error.phase)
+        else:
+            raise AssertionError("The unapproved agent was admitted.")
+        assert book.describe_spells_in_spellbook() == []
+        assert supplied.render("still-owned-by-caller") == "report:still-owned-by-caller"
+
+        spell_id = conduit.bind(
+            spell=supplied, existence="unique", submitted_by="report-agent",
+        )
+        registered = book.find_spell_by_id(spell_id)
+        assert registered is not None
+        assert registered.metadata == {
+            "submitted_by": "report-agent",
+            "review_policy": "report-schema-v1",
+            "post_checked": True,
+        }
+        assert "agent-reviewed" in registered.tags
+        assert conduit.meld("ReportTool") is supplied
+        assert supplied.render("weekly") == "report:weekly"
+        assert review.published_ids == [spell_id]
+        print("accepted existing object:", registered.metadata)
+
+        # add appends: record_registration runs before the later failing callback.
+        conduit.add_bind_hooks(post=[unavailable_audit_sink])
+        backup = BackupReport()
+        try:
+            conduit.bind(spell=backup, existence="unique", submitted_by="report-agent")
+        except md.HookExecutionError as error:
+            assert error.phase == "post_bind"
+            assert isinstance(error.original_exception, RuntimeError)
+            print("post notification failed; inspect the published binding before retrying")
+        else:
+            raise AssertionError("The audit failure was not propagated.")
+        assert len(review.published_ids) == 2
+        published_backup = book.find_spell_by_id(review.published_ids[-1])
+        assert published_backup is not None
+        assert published_backup.spell_name == "BackupReport"
+        assert published_backup.metadata["post_checked"] is True
+        assert conduit.meld("BackupReport") is backup
+        print("binding survived post failure:", published_backup.spell_name)
+
+        conduit.clear_bind_hooks()
+        assert conduit.meld("ReportTool") is supplied
+        assert registered.metadata["post_checked"] is True
+    finally:
+        if conduit is not None:
+            conduit.cleanup()
+        book.cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/04_expert/37_review_agent_bindings.py
+================================================================================
+================================================================================
+BEGIN FILE: UX_and_AIX_experiences/04_expert/38_named_scopes_in_nexus_and_restore.py
+CONTENT SHA256: c5530147ed0b3235c40512d6fcdc6c84447092f3d804f33c16cc23d3dde6f162
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+TIER: expert (38)
+GOAL: Observe named lesser scopes through Nexus, then restore their recorded structure.
+      New conduit IDs need the normal explicit Rift projection refresh. A known
+      pooled ID keeps its compiled membership while named reuse replaces its payload.
+      Crystallizer records dynamic scope structure and required unnamed ancestry;
+      it does not save application instances or their mutable contents.
+SURFACE EXERCISED: md.Crystallizer.activate / create_checkpoint / load_checkpoint,
+                   md.Spellbook.configure_aether_frame / bind / conjure,
+                   md.Nexus.activate / create_rift, md.Rift.create_frame_link /
+                   refresh_runtime_projections, capability create_lesser_conduit /
+                   get_conduit_by_name, md.Conduit.get_conduit_cloud / cleanup.
+VERIFY: Requires a complete successful in-memory checkpoint replay. No exception is
+        treated as success. A cold process restart additionally needs flush/reload.
+"""
+
+import melder as md
+
+
+class JobNotebook:
+    """Application state created inside each job, deliberately excluded from structural replay."""
+
+    def __init__(self) -> None:
+        """Initialize the state that a fresh meld must recreate after restore."""
+        self.notes: list[str] = []
+
+
+def open_observer(name: str) -> md.Rift:
+    """Open a capability room on the already-published named-jobs world.
+
+    Contract:
+        Nexus configuration must already allow the target frame. The returned Rift
+        is caller-owned and must be cleaned before tearing down its observed world.
+    Args:
+        name: Unique name for this observer.
+    Returns:
+        md.Rift: Attached observer with the current compiled projection.
+    """
+    nexus = md.Nexus()
+    configuration = nexus.create_rift_configuration().with_space_type("capability")
+    rift = nexus.create_rift(configuration=configuration, rift_name=name)
+    rift.create_frame_link("named-jobs")
+    return rift
+
+
+def main() -> None:
+    """Capture a live named hierarchy, retire it and rebuild fresh structural identities.
+
+    Contract:
+        Single-threaded: no scope acquisition/return races with load_checkpoint.
+        The recorder remains alive, so this demonstrates in-memory replay; flush
+        and reload are required when crossing process teardown instead.
+    Returns:
+        None.
+    """
+    recorder = md.Crystallizer()
+    recorder.activate(md.CrystallizerConfigurationBuilder().with_defaults().activate())
+    nexus = md.Nexus()
+    nexus_configuration = nexus.create_configuration()
+    nexus_configuration.with_rift_creation_enabled(True)
+    nexus_configuration.with_allowed_target_frame_names(["named-jobs"])
+    nexus.activate(nexus_configuration)
+
+    configuration = md.SpellbookConfiguration("named-jobs").with_defaults().finalize()
+    book = md.Spellbook(aetheric_frame="named-jobs", configuration=configuration)
+    book.configure_aether_frame(
+        system_state="dynamic", disposal=None, disposal_method_names=None,
+        rift_enabled=True, ai_native=True,
+    )
+    book.bind(spell=JobNotebook, existence="unique_per_conduit", permissions="create")
+    root = book.conjure(name="job-owner")
+    observer = open_observer("before-restore")
+    try:
+        commands = observer.space.command_system
+        job = commands.create_lesser_conduit(root.id, frame_name="named-jobs", name="job-42")
+        observer.refresh_runtime_projections(frame_names=("named-jobs",))
+        assert commands.get_conduit_by_name("job-42", frame_name="named-jobs") is job
+        print("The capability command creates a named job; explicit refresh admits its new ID.")
+
+        job.cleanup()
+        assert "job-42" not in commands.list_conduit_names(frame_name="named-jobs")
+        next_job = commands.create_lesser_conduit(root.id, frame_name="named-jobs", name="job-43")
+        assert commands.get_conduit_by_name("job-43", frame_name="named-jobs") is next_job
+        print("Named reuse updates the existing ID's descriptor without an in-command refresh.")
+
+        support = root.create_lesser_conduit()
+        nested = support.create_lesser_conduit(name="nested-job")
+        original_id, support_id = nested.id, support.id
+        original = nested.meld("JobNotebook")
+        original.notes.append("not part of the structural record")
+        observer.refresh_runtime_projections(frame_names=("named-jobs",))
+        checkpoint = recorder.create_checkpoint()
+        print("Checkpoint captured names and unnamed supporting ancestry, not notebook contents.")
+    finally:
+        observer.cleanup()
+        root.permanent_cleanup()
+
+    report = recorder.load_checkpoint(checkpoint)
+    assert report["status"] == "complete"
+    cloud = md.Aether().get_conduit_cloud("named-jobs")
+    restored_root = cloud.get_conduit_by_name("job-owner")
+    restored = cloud.get_conduit_by_name("nested-job")
+    restored_observer = open_observer("after-restore")
+    try:
+        assert restored.id != original_id
+        assert report["identity_map"][original_id] == restored.id
+        assert support_id in report["identity_map"]
+        assert not cloud.has_conduit_id(report["identity_map"][support_id])
+        assert restored.meld("JobNotebook").notes == []
+        assert restored_observer.space.command_system.get_conduit_by_name(
+            "nested-job", frame_name="named-jobs",
+        ) is restored
+        print("Restore rebuilt named scopes with fresh IDs and retained the unnamed ancestor.")
+        print("A new meld creates an empty notebook; earlier application data is not restored.")
+    finally:
+        restored_observer.cleanup()
+        restored_root.permanent_cleanup()
+
+
+if __name__ == "__main__":
+    main()
+================================================================================
+END FILE: UX_and_AIX_experiences/04_expert/38_named_scopes_in_nexus_and_restore.py
+================================================================================
+================================================================================
 BEGIN FILE: UX_and_AIX_experiences/04_expert/_concept_map.txt
-CONTENT SHA256: eb20db5f20693e352d1f20659a601e1e04af052bb56bfc59dc0de17f5234cd0e
+CONTENT SHA256: 49f25182aa7369f5297dc710a689ded96a9d3c5588549de57fb0233bbcd58797
 SOURCE ENCODING: utf-8
 ================================================================================
 CONCEPT MAP - 04_expert (README tier: BLUE Expert)
@@ -22283,6 +22864,18 @@ THE TIER'S OWN SHAPE, NOW THAT IT IS DONE
   REFUSE precisely. That is the through-line worth naming out loud:
   melder buys concurrency and agency with precision of refusal, never
   with permissiveness.
+
+AGENT REGISTRATION POLICY (2026-09-22)
+  37 review_agent_bindings: ordered checks over an agent-supplied existing object,
+     metadata validation and annotation on the actual Spell during activation,
+     post-registration metadata/audit, and publication surviving a post-hook failure.
+     Uses active bind, public md.* surfaces and unique supplied-object reuse.
+     Metadata updates do not rewrite source, rehash identity or refresh prior records.
+
+NAMED SCOPE DISCOVERY AND REPLAY (2026-09-23)
+  38 named_scopes_in_nexus_and_restore: capability name forwarding, explicit
+     membership refresh, named pooled reuse, required unnamed ancestry and
+     successful structural replay with fresh identities/application values.
 
 REMAINING / NOT YET AUTHORED
   - boot melds (owner epic 2026-07-20, unassigned): conjure-time warm-up
@@ -61217,7 +61810,7 @@ END FILE: docs/beginner/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/catalog.toml
-CONTENT SHA256: 19d692c15ac448727033e21b6fa9c2c7c8552e98c3cf64f1c4fe58d54aefd2c4
+CONTENT SHA256: 8758eee86284ce1431a81e2ce753c45b261ac006f117c5ca88de5457bcf0a172
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -61313,6 +61906,8 @@ sources = [
   "36_late_binding_with_spellcontract.py",
   "37_the_frame_conduit_cloud.py",
   "39_purge_unneeded_objects.py",
+  "40_bind_lifecycle_hooks.py",
+  "41_named_lesser_conduits.py",
 ]
 
 [[level]]
@@ -61380,6 +61975,8 @@ sources = [
   "34_several_worlds_of_record_in_one_process.py",
   "35_the_gate_that_waits_for_readers.py",
   "36_an_agent_builds_a_working_system.py",
+  "37_review_agent_bindings.py",
+  "38_named_scopes_in_nexus_and_restore.py",
 ]
 
 [[lesson]]
@@ -61519,7 +62116,7 @@ END FILE: docs/conf.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/curriculum.toml
-CONTENT SHA256: 6b0a0d4e956f0e2f0a5bd3f3efd4f9d28c15656bcc2cf890635d1b17f53688fb
+CONTENT SHA256: c09d9ab346cfbb88723c60e0d8d4137da3e2a31acfac74daa8b58f60770c3afa
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -61647,7 +62244,7 @@ id = "intermediate/hooks"
 title = "Lifecycle hooks"
 level = "intermediate"
 source = "intermediate/hooks.md"
-lessons = ["intermediate:32", "intermediate:03", "intermediate:33", "intermediate:34"]
+lessons = ["intermediate:40", "intermediate:03", "intermediate:32", "intermediate:33", "intermediate:34"]
 show_steps = true
 
 [[chapter]]
@@ -61655,7 +62252,7 @@ id = "intermediate/scopes"
 title = "Spell spaces, lineage, and child scopes"
 level = "intermediate"
 source = "intermediate/scopes.md"
-lessons = ["intermediate:29", "intermediate:04", "intermediate:05", "intermediate:07", "intermediate:28", "intermediate:39"]
+lessons = ["intermediate:29", "intermediate:41", "intermediate:04", "intermediate:05", "intermediate:07", "intermediate:28", "intermediate:39"]
 show_steps = true
 
 [[chapter]]
@@ -61811,7 +62408,7 @@ id = "expert/agent-rooms"
 title = "Agent rooms and explicit authority"
 level = "expert"
 source = "expert/agent-rooms.md"
-lessons = ["expert:11", "expert:08", "expert:13", "expert:20"]
+lessons = ["expert:11", "expert:08", "expert:13", "expert:20", "expert:38"]
 show_steps = true
 
 [[chapter]]
@@ -61820,6 +62417,14 @@ title = "Build a working system from generated code"
 level = "expert"
 source = "expert/codegen.md"
 lessons = ["expert:36", "expert:07", "expert:12", "expert:26", "expert:33", "expert:10"]
+show_steps = true
+
+[[chapter]]
+id = "expert/bind-hooks"
+title = "Review agent proposals with bind hooks"
+level = "expert"
+source = "expert/bind-hooks.md"
+lessons = ["expert:37"]
 show_steps = true
 
 [[chapter]]
@@ -61843,7 +62448,7 @@ id = "expert/restore"
 title = "Restore and cold boot"
 level = "expert"
 source = "expert/restore.md"
-lessons = ["expert:27", "expert:24", "expert:01"]
+lessons = ["expert:38", "expert:27", "expert:24", "expert:01"]
 show_steps = true
 
 [[chapter]]
@@ -61927,7 +62532,7 @@ END FILE: docs/examples/index.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/agent-rooms.md
-CONTENT SHA256: a3ac696c60161c7215be94f868409be526597c62c321bb33d3cdce14690191bc
+CONTENT SHA256: 6693e0374099c2c6145745d23f1471a82be716caafaa7f4e8782ad1144861faf
 SOURCE ENCODING: utf-8
 ================================================================================
 # Give each agent an explicit room and target
@@ -61957,6 +62562,32 @@ For multiple worlds, configure the allowed names, permit multiple targets, and
 set the target count. Attach each world explicitly. A shared observer leaves
 the underlying worlds isolated.
 
+## Find a named live scope
+
+[Named scopes in Nexus and restore](../examples/expert/38-named-scopes-in-nexus-and-restore.md)
+shows the complete public setup. Capability rooms can create a named child directly:
+
+```python
+job = commands.create_lesser_conduit(root.id, frame_name="jobs", name="job-42")
+rift.refresh_runtime_projections(frame_names=("jobs",))
+assert commands.get_conduit_by_name("job-42", frame_name="jobs") is job
+```
+
+The refresh admits a new published ID into the room's compiled access set. Named
+getters in capability and codegen rooms still enforce the selected ID's command
+ACL. Naming never grants normal-root bind/link/cluster rights, and static rooms
+still do not expose raw conduit objects.
+
+Named cleanup clears its Nexus name and parent metadata while retaining a pooled
+record for the reusable ID. Named reuse updates that record. A projection that
+already admitted the ID can read those replacement values without recompiling.
+Anonymous pool cycles retain their existing local-only publication behavior.
+
+A new ID or permanent record deletion still uses explicit projection refresh.
+A stale view of a permanently deleted record can raise until refreshed. Creation
+commands do not synchronously refresh while inside their own Rift gate. Neither
+published records nor raw lookup results are leases on a scope's lifetime.
+
 ## Hold objects deliberately
 
 The workstation holds named handles; the command system resolves permitted world
@@ -61968,6 +62599,103 @@ Room policy and code validation are application controls. They are not an operat
 system sandbox or a proof that arbitrary hostile Python is safely isolated.
 ================================================================================
 END FILE: docs/expert/agent-rooms.md
+================================================================================
+================================================================================
+BEGIN FILE: docs/expert/bind-hooks.md
+CONTENT SHA256: 513e1e35c1a974de8a9c6daac09f1925ba537b8e5a21ed4c7db9b449c1cfb05a
+SOURCE ENCODING: utf-8
+================================================================================
+# Review agent proposals with bind hooks
+
+Prerequisite: [bind and runtime hooks](../intermediate/hooks.md). Expert 37 shows an
+application installing its own registration policy on a live normal Conduit, then
+passing it object references supplied by an agent workflow. Use the existing
+[codegen lessons](codegen.md) when the workflow must first produce those references.
+
+## Check the actual supplied reference
+
+The example registers two ordered `pre` strategies:
+
+1. Require an existing `ReportTool` object.
+2. Require its `schema_version` to be `1`.
+
+The second check sees the same object as the first, including its current instance
+state. An unrelated object and a tool with an unsupported schema both fail in
+`pre_bind`, before a Spell is created or registered.
+
+```python
+conduit.add_bind_hooks(
+    pre=[review.require_report_tool, review.require_supported_schema],
+    activation=[review.configure_spell],
+    post=[review.record_registration],
+)
+
+supplied = ReportTool()
+spell_id = conduit.bind(
+    spell=supplied,
+    existence="unique",
+    submitted_by="report-agent",
+)
+assert conduit.meld("ReportTool") is supplied
+```
+
+The unique-only lifetime is Melder's existing rule for supplied objects. The hook
+pipeline checks and annotates that registration; resolution returns the same supplied
+reference. The example's type/schema checks are application policy, not new built-in
+restrictions on every Melder binding.
+
+## Modify the Spell at the right stage
+
+Pre-bind receives only the target reference. Bind keyword metadata becomes available
+on the new `Spell` in activation. The example checks its `submitted_by` label there,
+then sets `spell.metadata["review_policy"]` and appends an `agent-reviewed` tag.
+The label is application-provided metadata; trusted caller identity must come from
+the application's own authenticated context if that distinction is required.
+
+Post-bind receives the same Spell after registration. The example verifies that
+`book.find_spell_by_id(spell.spell_id)` returns it, sets
+`spell.metadata["post_checked"] = True`, and records its ID in the application's audit.
+The caller then inspects those changes through the public lookup.
+
+These are **live metadata changes**. They do not replace source code, create a new
+version, recompute a Spell ID or automatically republish a recorded snapshot. Native
+identity is established before bind activation; identity-bearing changes need the
+normal binding/version workflow. Recording and Nexus publication can precede post-bind,
+so a post-hook metadata edit is not a promise that an earlier published record changed.
+
+This example uses active `bind` registrations. `bind_inactive` also runs the lifecycle,
+but its post callback receives a parked candidate. A callback for that path should
+not assume ordinary selected-version lookup returns the parked Spell.
+
+## Handle failure according to its phase
+
+| Failure phase | Demonstrated result |
+| --- | --- |
+| `pre_bind` | An unsuitable reference is refused; activation and post do not run |
+| `bind_activation` | An unsupported submitter label is refused; the unpublished Spell is retired and the caller's object remains usable |
+| `post_bind` | The notification fails after registration; the binding and earlier post metadata changes remain |
+
+Inspect `HookExecutionError.original_exception` for the application's cause. Raising
+stops the remaining callbacks in that stage; return values are ignored.
+
+Expert 37 appends a simulated failing audit callback after its normal post callback.
+It catches the resulting `post_bind` error and proves `meld("BackupReport")` still
+returns the registered object. Inspect existing state before retrying such a bind;
+a failed notification does not mean a second registration is needed.
+
+## Keep policy updates on the Book's existing lifecycle
+
+`add_bind_hooks` appends and `clear_bind_hooks` clears all stages for future binds.
+Each bind retains its captured callbacks, including when callbacks change the registry.
+Use the Book or its normal-Conduit facade for updates. Configuration seeds are captured
+when a Book is constructed; changing another Book's runtime registry is separate.
+
+The example's audit is sequential and in memory. Concurrent callbacks must coordinate
+any application state they share, and external notifications keep their own failure
+and retry policy. The existing [transaction admission](transactions.md) and
+[versioning workflow](governed-change.md) continue to govern structural changes.
+================================================================================
+END FILE: docs/expert/bind-hooks.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/codegen.md
@@ -62119,7 +62847,7 @@ END FILE: docs/expert/external-storage.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/governed-change.md
-CONTENT SHA256: 7fb1f4b4612e1b81bd44846a409ae89be9f265c4799c32aaca407f77d9a34ed8
+CONTENT SHA256: 0ef07f48fe73c413cec14e4c9b420230618ff9b1b4d5e1b121399872e97c5d37
 SOURCE ENCODING: utf-8
 ================================================================================
 # Preview, stage, and govern structural change
@@ -62132,6 +62860,10 @@ selected frame's codegen verdict before any candidate is bound.
 The foresight example checks that preview leaves research heads unchanged and the
 original pricing object still returns its original result. A malformed candidate
 returns parse information that the caller can inspect.
+
+For application checks at registration itself, use the
+[bind-hook review pipeline](bind-hooks.md). Its pre callbacks inspect the supplied
+reference, activation annotates the new Spell, and post observes the registered result.
 
 ## Staging is not promotion
 
@@ -62160,7 +62892,7 @@ END FILE: docs/expert/governed-change.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/index.md
-CONTENT SHA256: d5fbfe340b2abf032949efd639321987b41acaf9e2ad3f1d2a6112d9f0ada719
+CONTENT SHA256: 220ae5a44e83e95d5843062714164c4a57c6a2b126aebee4aaf7d4180c4402be
 SOURCE ENCODING: utf-8
 ================================================================================
 # 🔵 Expert
@@ -62176,8 +62908,10 @@ reason about changes before applying them.
 - Read the package's architecture, component, and graph documents.
 - Use capability and codegen rooms, workstations, and command surfaces.
 - Follow code generation from validation to live objects.
+- Check agent-supplied references and annotate registered Spells with bind hooks.
 - Understand transaction admission and concurrent structural change.
 - Record checkpoints, restore worlds, and integrate external storage.
+- Discover named scopes through Nexus and restore their structure without restoring prior object state.
 - Work with research sets, lanes, compositions, diffs, and impact views.
 - Preview, stage, promote, and retire implementations deliberately.
 
@@ -62282,7 +63016,7 @@ END FILE: docs/expert/research.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/restore.md
-CONTENT SHA256: 302d6044e7253ac5970ad47697d64f525010c2427866eb3099bbad4434519b78
+CONTENT SHA256: 663c9760dab1d9a224431d74b351ff038f232d967896c13ff5581e46a7d6bbf8
 SOURCE ENCODING: utf-8
 ================================================================================
 # Restore and cold boot
@@ -62306,9 +63040,30 @@ Preflight can refuse an incomplete chain before construction. Preserve the full
 required profile chain when preparing a cold start; reloading a single checkpoint
 does not imply every predecessor has been reloaded.
 
+## Restore named lesser structure
+
+Run [Named scopes in Nexus and restore](../examples/expert/38-named-scopes-in-nexus-and-restore.md)
+for a successful replay with assertions. It records a named job beneath an unnamed
+parent, tears down the live roots and restores from the retained in-memory checkpoint.
+This is different from a process restart, which also needs the flush/reload steps above.
+
+Dynamic named scopes carry their name, parent and root relationships. Required
+unnamed ancestry is saved as supporting values inside named records. Restoring
+rebuilds one shared Book/root and its children in parent order with fresh IDs;
+unnamed support stays outside Cloud discovery. Scope names do not restore the
+mutable contents of previously created objects. A later `meld` creates fresh state.
+
+Released names disappear from later checkpoints while earlier sealed checkpoints
+retain their earlier structure. Formations rooted at a named lesser include its
+required ancestry and selected subtree. Record schema **3.0.0** makes older
+root-only readers refuse safely; valid older root-only records remain readable.
+
+Quiesce ordinary lesser/SpellSpace creation, cleanup and lineage changes during
+live restore. Transaction load authority does not drain those pool cycles.
+
 ## Follow both demonstrations
 
-Expert 24 walks the checkpoint verbs while holding the existing world. Expert 27
+Expert 24 keeps the recorder alive and retires the original root before rebuilding it. Expert 27
 flushes, tears down the root, creates a new runtime, and reads the cache again.
 The latter deliberately reports an admission refusal if the bundle is incomplete.
 A script finishing successfully therefore does not, on its own, prove a complete
@@ -62720,7 +63475,7 @@ END FILE: docs/intermediate/connected-subsystems.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/hooks.md
-CONTENT SHA256: 9b492de634c3f6eb6a9dc06c704c21461fb585233a37d85b5005013ecccc53fd
+CONTENT SHA256: 3c9e3dc42708cb0f4602ef3bed5afa1ead516b2f90dce440366fdc899f931073
 SOURCE ENCODING: utf-8
 ================================================================================
 # Observe registration and runtime lifecycles
@@ -62732,14 +63487,66 @@ book or registration so call sites can keep using ordinary `meld` and lifecycle 
 
 | Boundary | Registration surface | Saved demonstration |
 | --- | --- | --- |
+| Bind registration | `book.add_bind_hooks(pre=..., activation=..., post=...)` | Check the reference, annotate its Spell, observe registration |
 | Spell creation | `SpellBinder.with_pre_hook`, `with_activation_hook`, `with_post_hook` | Record construction events |
 | Meld | `configuration.add_hook(book.id, name, callback)` | Observe pre/post resolution |
 | Conduit | The same book-keyed hook registration | Observe creation and cleanup |
 | Links and contracts | The same book-keyed hook registration | Observe linking, pull, and sever |
 
-The book ID matters when a configuration serves several books. Register the
-callbacks before the lifecycle operation you intend to observe. The runnable
-examples collect events in memory so you can inspect what actually fired.
+Register callbacks before the lifecycle operation you intend to observe. For
+configuration-based Conduit/Meld hooks, a Book ID selects Book-specific events;
+omitting it supplies defaults. Bind hooks belong to the Book itself and use the
+three named stages below.
+
+## Follow a binding through its three stages
+
+Intermediate 40 is the runnable bind-hook example. Its callbacks receive these subjects:
+
+| Stage | Callback argument | Timing and purpose |
+| --- | --- | --- |
+| `pre` | The exact class, function or existing object passed to bind | Before reflection; check the reference and raise to reject it |
+| `activation` | The actual new `Spell` | Before publication; inspect it and add application metadata or tags |
+| `post` | That `Spell` after registration | Inspect the registered result or record an application audit |
+
+```python
+book.add_bind_hooks(
+    pre=[check_reference],
+    activation=[configure_spell],
+    post=[observe_registration],
+)
+```
+
+Pass sequences of synchronous callbacks. Calls append in order; returning `False`
+does not reject a reference, and returning another object does not replace it.
+Raise an exception to reject. Melder wraps callback failures in `HookExecutionError`
+and preserves their `phase`, `hook_name`, and `original_exception`.
+
+Bind activation constructs/configures the **Spell definition**. It does not create
+the application object. The older fluent creation-hook lesson runs callbacks during
+Meld instead. Intermediate 40 proves this distinction: binding records pre → activation
+→ post, and a later `meld("Report")` leaves that bind-event list unchanged.
+
+## Configure once or adjust future bindings
+
+For initial callbacks, call `configuration.with_bind_hooks(...)` before constructing
+the Book. Each Book captures those seeds during construction. Runtime
+`book.add_bind_hooks(...)` then appends to that Book's own registry.
+
+`book.clear_bind_hooks()` removes all three stages from future bindings. Register
+them again with `add_bind_hooks`; an empty sequence does not clear a stage.
+The normal Conduit exposes the same `add_bind_hooks` and `clear_bind_hooks` methods.
+These methods remain usable after configuration freezes, subject to the existing
+rules for actually binding new definitions. Lessers cannot change their borrowed
+Book's bind hooks through the Conduit facade.
+
+An in-flight bind keeps one captured callback set; updates affect subsequent binds.
+Clearing does not erase metadata from earlier Spells or remove their creation hooks.
+Shared configuration does not turn runtime Bind-hook edits into cross-Book updates.
+
+Post-bind runs after registration, before any enclosing transaction's final completion.
+A post-hook failure can leave the binding registered. The
+[expert bind-hook lesson](../expert/bind-hooks.md) demonstrates that case alongside
+agent-supplied reference checks and changes to the actual Spell.
 
 ## Keep the result separate from the observation
 
@@ -62755,7 +63562,7 @@ END FILE: docs/intermediate/hooks.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/index.md
-CONTENT SHA256: 03e1eb7a44819dddc3ca5912eb77046351fbc6f9618613f89e187d9d0fdf3171
+CONTENT SHA256: a36fe4ce9074516766725c2fd88909b4efb58b474fef5ac74760860025ac1d2c
 SOURCE ENCODING: utf-8
 ================================================================================
 # 🟡 Intermediate
@@ -62770,10 +63577,11 @@ explicit public operations.
 
 - Fluent registration with `SpellBinder` and module registration with `scan_bind`.
 - Constructor, explicit, and collection dependency injection.
-- Configuration, hooks, spell spaces, and lineage lifetimes.
+- Configuration, bind lifecycle hooks, runtime hooks, spell spaces, and lineage lifetimes.
 - Dynamic posture, links, permissions, and ownership.
 - Late binding with `SpellContract` and connected-subsystem composition.
 - Early object disposal with `purge`, scoped cleanup, transfer, and severing relationships.
+- Named lesser scopes: Cloud lookup, creation-only names, collisions and retirement before pool reuse.
 
 ## Choose a route
 
@@ -62984,7 +63792,7 @@ END FILE: docs/intermediate/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/scopes.md
-CONTENT SHA256: 561b002c9201906f8255db93cec66a4f0bbc5e0bf02b1aefeac3416bcdd780d0
+CONTENT SHA256: 992bb942c4163e44f6570892424d6dde1d7ba22c2095606a12a607556704f5dd
 SOURCE ENCODING: utf-8
 ================================================================================
 # Spell spaces, lineage, and scopes that end
@@ -63012,10 +63820,42 @@ explains why the explicit end of the scope matters.
 
 ## A lesser conduit can grow into a named root
 
+A lesser can also have its own discovery name without being promoted. Run
+[Named lesser conduits](../examples/intermediate/41-named-lesser-conduits.md)
+for a complete example with prewarming, collisions, per-conduit state and cleanup.
+
+```python
+job = root.create_lesser_conduit(name="job-42")
+cloud = root.get_conduit_cloud()
+try:
+    assert cloud.get_conduit_by_name("job-42") is job
+    job.meld("JobBuffer")
+finally:
+    job.cleanup()
+
+assert not cloud.has_conduit_name("job-42")
+```
+
+Supply a name only at creation. Names are exact, nonempty strings, unique among
+active named roots and lessers in the frame. There is no later lesser rename.
+Cleanup unregisters and clears the name **before** the scope enters the pool;
+the next acquisition supplies its own name or stays anonymous. Anonymous scopes
+do not enter Cloud discovery. This works in automatic and dynamic mode.
+
+Use a name when another part of the application needs to find the same live
+scope. A direct reference is enough when the job stays local. Cloud returns a
+borrowed reference: it does not extend the owner's lifetime or make reuse after
+cleanup safe. Names are discovery addresses, not matching-lifetime tags; the
+registered `Existence` still decides where objects are shared.
+
+### Promote only when independent ownership is needed
+
 In a dynamic world, `upgrade_to_normal(name=...)` promotes the existing child.
 The promotion lesson asserts that a previously created per-conduit workbench is
 the same object afterward, then finds the promoted conduit through cloud lookup.
 Read [dynamic mode](dynamic-linking.md) before using this operation.
+Promotion can retain the lesser name or choose another available name. It keeps
+the conduit ID but creates its own empty Spellbook; naming alone does none of that.
 
 [Clusters](../advanced/clusters.md) add a group-wide lifetime. The original cluster
 lesson remains in its saved Intermediate collection and is linked from that guide.
@@ -66836,6 +67676,360 @@ The evidence folder retains the original 0.2.42 intake name. The owner subsequen
 **0.2.43**, and every release recommendation in this document uses that corrected target.
 ================================================================================
 END FILE: release_docs/0.2.43.md
+================================================================================
+================================================================================
+BEGIN FILE: release_docs/next_version_release.md
+CONTENT SHA256: ea6ccb11e34a1a9e1aa7488509c20829e9f1ca03a8dc4afe8e7c7fef1c4f95fa
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder 0.2.50 — next release
+
+**Draft release notes. Publication date to be assigned; more changes may follow.**
+
+## Added: named lesser conduits
+
+Lesser conduits can now receive a name when created, in automatic or dynamic mode:
+
+```python
+job = root.create_lesser_conduit(name="job-42")
+cloud = root.get_conduit_cloud()
+try:
+    assert cloud.get_conduit_by_name("job-42") is job
+    # Resolve this job's objects through job.meld(...).
+finally:
+    job.cleanup()
+
+assert not cloud.has_conduit_name("job-42")
+```
+
+Names are exact, nonempty strings and unique among active named roots and lessers in a frame.
+They are assigned only through creation, including acquisition of a prewarmed pooled scope.
+Cleanup unregisters and clears the name before returning the scope to its pool. Unnamed scope
+return keeps its single name check and performs no Cloud, Crystallizer or Nexus publication work.
+
+Naming preserves the scope's lesser status, shared Spellbook and existing instance lifetimes.
+Discovery returns the live borrowed object; it does not extend the scope's lifetime. Dynamic
+promotion can retain the name or select another available name while preserving the conduit ID
+and using the upgraded root's independent Book.
+
+When dynamic structural recording is enabled, Crystallizer captures named lesser names and parent
+relationships, including the unnamed ancestry needed for faithful reconstruction. Release and
+reuse update later checkpoints without changing sealed history. Both replay drivers reconstruct
+fresh structural identities through ordinary creation; previously created application objects
+and their mutable data are not restored. Record schema **3.0.0** prevents older root-only readers
+from misinterpreting these records; valid older root-only input remains readable. Live restore
+requires the caller to quiesce ordinary scope acquisition and cleanup.
+
+Nexus publishes named acquisition, retirement and reuse. A returned named scope retains an unnamed
+pooled record so existing projections remain valid; named reuse replaces its current name and
+parent information. Capability and codegen named getters resolve the exact authorized identity,
+and capability's `create_lesser_conduit(..., name=...)` forwards the creation name. Existing ACLs
+and lesser-operation restrictions remain in force. New IDs and permanently removed records use
+the existing explicit Rift projection refresh; commands do not refresh while admitted to a Rift.
+
+### Public setup and documentation
+
+Normal conjure now records both the owning Spellbook and settled frame posture when
+`configure_aether_frame()` already locked the configuration. Previously that public setup could
+omit its Book or frame twin, causing restore to refuse or lose the frame's Nexus visibility policy.
+The repair reuses the existing origin-aware freeze/bind machinery; ordinary meld and pool paths
+gain no work.
+
+- **Intermediate 41 — Named lesser conduits:** runnable naming, collision, lookup, scoped-state,
+  cleanup and anonymous-reuse examples, including prewarmed scopes.
+- **Expert 38 — Named scopes in Nexus and restore:** capability creation and authorized lookup,
+  explicit projection refresh, named reuse and a successful structural replay with fresh IDs and
+  newly created application state, including required unnamed ancestry.
+- Scope, agent-room and restore guides now explain the contracts and link the lessons. Source
+  downloads and collection ZIPs include both. Canonical architecture/components and the source
+  graph now describe all three feature stages.
+- Expert 24 now establishes dynamic recording before binding and retires the original root before
+  replay, proving successful restoration instead of colliding with its existing runtime.
+
+### Validation and packaging
+
+The Nexus-stage affected selection passed **471 tests**. After the public-setup correction, the final
+Book/conjure/naming/Nexus/restore selection passed **392 tests**. These selections overlap and should
+not be added together. All **78 intermediate/expert examples** qualify across the main run and the
+focused correction; **39 documentation tests**, a strict **300-page HTML build**, local links and
+lesson-source/download checks pass. No full-repository coverage claim is made.
+
+The final cleanup audit removed redundant cleaned-state checks from the changed private helpers;
+public entry points retain their lifecycle guards. Its affected selection passed **206 tests**.
+
+Packaged Melder and repository LLM assets were regenerated for **0.2.50** after code approval.
+The guard, agent documentation, packaged system documents and LLM bundles pass their currentness
+checks. **253 asset/document/builder tests** pass across the main run and one isolated test process.
+The rebuild changed generated assets only; runtime source is unchanged.
+
+## Added: intermediate and expert bind-hook tutorials
+
+The Read the Docs curriculum now includes two runnable lessons for the new bind lifecycle:
+
+- **Intermediate 40 — Bind lifecycle hooks:** follows the original reference through pre-bind,
+  actual-Spell activation and post-registration callbacks. Demonstrates configuration seeds,
+  Book registration, and clearing/re-adding hooks through the normal Conduit. Shows that these
+  callbacks run during binding, separately from application-object creation during meld.
+- **Expert 37 — Review agent bindings:** applies ordered checks to agent-supplied existing objects,
+  validates submission metadata, and updates the actual Spell's metadata and tags. Demonstrates
+  rejection at each relevant stage and verifies that a post-bind notification failure can leave
+  the binding registered and resolvable.
+
+The lessons include assertions and printed outcomes, with linked intermediate/expert guides,
+curriculum navigation, individual source downloads and collection ZIPs. The guidance distinguishes
+live metadata edits from source/version changes and automatic persistence updates.
+
+The existing graduation lesson also now teaches the new empty Spellbook correctly: former
+definitions are no longer visible, new definitions can be bound, and retained creations remain
+the upgraded conduit's disposal responsibility.
+
+Both new lessons passed. Across the main run and focused reruns, **76 intermediate/expert examples**
+were verified, along with **39 documentation tests**. The strict local HTML build, local-link checks
+and byte-for-byte download checks passed. These are repository documentation changes prepared for
+the normal publication flow.
+
+## Fixed: pooled hook isolation and runtime hook updates
+
+Reused lesser conduits and SpellSpaces no longer retain temporary Meld callbacks from their
+previous use. They are prepared **before returning to the pool**, preserving the existing lifecycle:
+
+1. Dispose the current scope's creations.
+2. Clear lesser-conduit local lifecycle hooks and restore temporary Meld hooks to the shared baseline.
+3. Reset the hook-modification flag.
+4. Return the ready scope to the pool.
+
+This covers lesser conduits and both manual and managed SpellSpace cleanup. Prewarmed SpellSpaces
+also restore their hook baseline before entering the idle pool. Permanent SpellSpace cleanup now
+cleans its owned Meld runtime and releases callback references; borrowed callbacks are not disposed.
+
+When acquired, a SpellSpace selects its owner's current local Meld hooks when applicable, including
+changes made while it was idle. This selects hooks for the new use; disposal and removal of the
+previous use's temporary hooks have already completed before pool return.
+
+### Add, replace and clear runtime hooks
+
+`Conduit.register_conduit_hooks(...)` now accepts `create_local_hooks=True` and `overwrite=False`.
+The default appends locally. The new `Conduit.set_conduit_hooks(...)` defaults to local replacement:
+
+```python
+# Append a callback on this conduit only.
+conduit.register_conduit_hooks({"on_meld_pre_resolve": before_meld})
+
+# Replace this conduit's Meld hook family.
+conduit.set_conduit_hooks({"on_meld_pre_resolve": replacement})
+
+# Publish a shared replacement from the normal root.
+root.set_conduit_hooks({"on_meld_pre_resolve": replacement}, create_local_hooks=False)
+
+# Clear the shared Meld hook family.
+root.set_conduit_hooks({"on_meld_pre_resolve": []}, create_local_hooks=False)
+```
+
+- Setting replaces the supplied hook families: Conduit lifecycle, Meld, or both. Omitted families
+  remain unchanged; an empty mapping selects both families.
+- Local lifecycle hooks retain their event-shadowing behavior. Clearing the local lifecycle family
+  reveals inherited events. Clearing local Meld hooks mutes that scope until hooks are changed
+  again or the scope returns to its pool.
+- Shared updates are normal-root-only and reach scopes still using the root's shared baseline,
+  including an initially empty baseline. Explicit local copies remain isolated.
+- Normal roots own independent runtime hook containers. Runtime changes do not mutate frozen
+  configuration or another normal root, even when frame-wide configuration is shared.
+- `Meld.register_meld_hooks(...)` provides matching local/shared and append/replace controls for its
+  hook family. `hooks_modified` on Conduit and Meld reports temporary local hook state.
+- Invalid callback batches are rejected before either hook family changes. Use the mutation methods;
+  direct changes to internal lists or dictionaries are not tracked.
+- Graduation installs the new root's baselines, so later pool reuse cannot restore the former
+  root's callbacks. Active SpellSpaces retain their selected source until their next acquisition
+  when an owner switches between local and shared hook maps.
+
+The common pool path uses simple flag checks; only modified state takes the existing reset lock.
+Ordinary meld execution gains no additional checks or locks. Clearing hooks restores the existing
+warm fast path without recompilation or cache reset.
+
+### Pool-hook validation
+
+The affected selection passed **2,102 tests**, with two existing owner-deferred skips. **73 new
+parameterized cases** cover pool reuse, prewarming, local/shared controls, graduation, callback
+release, disposal order, concurrent updates and warm-path recovery. Scoped lint passed. These
+results do not claim full-repository coverage.
+
+## Fixed: lesser-to-normal graduation owns its new Spellbook
+
+`Conduit.upgrade_to_normal(...)` now completes normal Spellbook setup against the existing conduit.
+When it returns successfully, the conduit is already conjured and ready to bind and meld through
+its own new, empty Spellbook. Its object identity, conduit ID and retained creations are preserved.
+
+```python
+lesser = root.create_lesser_conduit()
+lesser.upgrade_to_normal("independent")
+
+service_id = lesser.bind(spell=Service, existence=Existence.unique_per_conduit)
+service = lesser.meld(spell_id=service_id)
+```
+
+The upgraded conduit has no parent and inherits no spell definitions, contracts or resolution
+verdicts. Earlier creations remain retained for disposal, but their old spell IDs are no longer
+resolvable through the new Book. Register the definitions needed by the new root explicitly.
+
+Previously, graduation discarded the new Book and continued using the former root's Book. Binding,
+Bind-hook changes and cleanup could consequently affect the former root. Graduation now attaches
+the correct Book, removes both parent relationship links, and gives the new root independent pool
+and cluster resources. Each root cleans up its own Book and bindings.
+
+### Configuration and hook initialization
+
+Pass an optional same-frame `SpellbookConfiguration` to configure the new Book:
+
+```python
+configuration = SpellbookConfiguration("application").with_defaults()
+configuration.with_bind_hooks(
+    pre=[check_reference],
+    activation=[inspect_bound_spell],
+    post=[record_binding],
+)
+configuration.with_hooks(on_meld_pre_resolve=before_meld)
+
+# The lesser must already belong to the "application" frame.
+lesser.upgrade_to_normal("configured", configuration=configuration)
+```
+
+| Configuration mode | New Book setup |
+| --- | --- |
+| Local, configuration omitted | Fresh defaults and empty hooks |
+| Local, fresh matching configuration supplied | Uses the supplied configuration and its initial hooks |
+| Frame-wide sharing enabled | Uses the frame's existing frozen configuration; a different supplied object is rejected |
+
+Frame-wide sharing shares configuration, not the Book or its registrations. It applies within that
+AethericFrame, not across all frames. Individual Books leave the canonical shared configuration
+alive; its frame owns cleanup.
+
+Successful graduation discards the former Book's runtime Bind-hook changes, old Book-specific
+Conduit/Meld hooks, and lesser/SpellSpace runtime hook overrides. The selected configuration's
+deliberate defaults may apply again. Callback objects can therefore be reused by shared policy;
+their state is not cloned.
+
+- Configuration now supports `add_bind_hooks`, `clear_bind_hooks`, `get_bind_hooks` and fluent
+  `with_bind_hooks`. These stage initial pre/activation/post callbacks before freeze.
+- Each Book captures its own Bind hook set during construction. Later runtime add/clear operations
+  affect that Book only; changes to configuration seeds apply to subsequently constructed Books.
+- Configuration `add_hooks` and `with_hooks` accept an omitted Book ID for default Conduit/Meld
+  events. Existing explicit Book IDs remain supported; their event lists take precedence.
+- The upgrade's existing `hooks=` mapping supplies local runtime additions after conjure activation.
+  Configure creation/activation callbacks through the selected configuration itself.
+- Recording preserves effective hook-presence markers, without serializing callback code.
+
+### Lifecycle and failure behavior
+
+Graduation remains limited to an attached, childless lesser in a dynamic frame. It drains the
+existing creation gate before changing ownership and restores its original admission state.
+Retained manual, idle pooled and current-thread managed SpellSpaces receive the new Book lookup
+references and hooks; stale lookup caches cannot resolve the former Book's definitions.
+
+The caller must stop concurrent lineage changes and scope acquisition, and return managed
+SpellSpaces held on other threads before upgrading. Failures before Book attachment restore the
+lesser and clean newly allocated state. Failures after attachment retain ordinary conjure's
+caller-owned cleanup responsibility. Existing hook exception behavior is unchanged.
+
+### Graduation validation
+
+The affected source selection passed **4,118 tests**, with two existing owner-deferred skips.
+The final **157-test** graduation/configuration selection includes **12 additional regression
+cases** for hook isolation, retained SpellSpaces, shared defaults, separate frames and failure/retry.
+Scoped lint passed. These results do not claim full-repository coverage.
+
+## Added: scoped creation purge
+
+`Conduit.purge(...)` and `SpellSpace.purge(...)` retire retained creations without ending their
+scope or removing the registered spell. This gives applications an explicit way to dispose of
+objects while keeping their bindings and compiled creation machinery available for later melds.
+
+### Choose an object reference or explicit selectors
+
+Pass an existing object as a shortcut. Purge inspects its class and uses the existing spell lookup:
+
+```python
+worker = conduit.meld(Worker)
+removed = conduit.purge(worker)
+```
+
+The normal meld-style selectors are also available. These are alternative call forms:
+
+```python
+conduit.purge(Worker)                           # Class reference
+conduit.purge("Worker")                         # Registered name
+conduit.purge(Worker, binding_name="primary")    # Named binding
+conduit.purge(spellframe=IWorker, binding_name="primary")
+conduit.purge(spell_id=worker_spell_id)           # Explicit machine identity
+```
+
+Both input paths use the same scope checks and creation-disposal machinery. Discovery itself
+does not call a constructor or invoke meld execution.
+
+### Remove all retained creations or one object
+
+`purge_all=True` is the default. It removes all retained creations for the selected spell within
+the authorized scope. For `many`, that means the spell's entire local retained bucket.
+
+Use `purge_all=False` with an actual object instance to remove only that object:
+
+```python
+# Worker is bound as Existence.many with configured disposal.
+first = conduit.meld(Worker)
+second = conduit.meld(Worker)
+
+removed = conduit.purge(first, purge_all=False)  # 1; second remains retained
+removed = conduit.purge(Worker)                 # 1; removes second
+```
+
+The same options are available on a spell space:
+
+```python
+with conduit.enter_spellspace() as space:
+    session = space.meld(RequestSession)
+    removed = space.purge(session, purge_all=False)
+```
+
+Purge returns the number of removed creations. It returns `0` when the selected store has no
+matching entry, including when a requested single object is no longer retained. Single-object
+mode requires an instance; it does not choose an arbitrary object from a name or class selector.
+
+### Scope authority follows the creation lifetime
+
+| Existence | Authorized caller and target |
+| --- | --- |
+| `many` | The calling conduit or spell space removes its own local creations |
+| `unique_per_spell_space` | That spell space removes its own creation |
+| `unique_per_conduit` | That conduit removes its own creation |
+| `unique_per_conduit_lineage` | Only the lineage root conduit removes the shared creation |
+| `unique_per_conduit_cluster` | Only the elected cluster leader removes the shared creation |
+| `unique` | Only the spell's owning conduit removes the creation |
+
+A spell space can purge only its own `many` and `unique_per_spell_space` creations. A conduit
+does not redirect purge into an ambient spell space. Unauthorized scope requests fail before removal.
+
+### Disposal and subsequent melds
+
+- Purge uses the configured disposal methods and their existing order. Retained `many` entries
+  are disposed newest first; single-object mode invokes disposal only for the selected object.
+- Live and disposal records are removed together under the existing creation locks. Disposal
+  callbacks run after those locks are released.
+- If disposal fails, other selected objects are still attempted and failures are reported as an
+  `ExceptionGroup`. Removed entries remain removed and are not disposed again during later cleanup.
+- Registrations, compiled contexts and scope objects remain available. A later meld can create a
+  fresh factory-backed instance according to its normal lifetime.
+- Only retained creations can be purged. `many` results without configured disposal are not retained.
+- Existing Python references held by application code are not rewritten, and dependent objects are
+  not recursively purged. An externally supplied object remains referenced by its registration;
+  purge does not unbind it or turn it into a factory.
+
+## Validation recorded for this change
+
+The focused source selection passed **270 tests**, covering both selector paths, single/all removal,
+scope authority, creation locks, disposal ordering/failures, concurrent purge and existing
+Creations/Meld/lineage/cluster behavior. Scoped lint checks passed. This is not a full-suite or
+coverage claim.
+================================================================================
+END FILE: release_docs/next_version_release.md
 ================================================================================
 ================================================================================
 BEGIN FILE: requirements.txt

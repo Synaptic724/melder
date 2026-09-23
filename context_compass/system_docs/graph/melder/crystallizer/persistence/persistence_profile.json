@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/persistence/persistence_profile.py",
- "source_sha256": "74bd90305f04b5e8cb3ea5cf50ae136adcb6c922661eb86467d1c1bd977155d6",
+ "source_sha256": "f8e4573b340f29312d7dfef1e0498f1d232715230c08205222c72f2749cc762c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.persistence.persistence_profile": {
@@ -50,6 +50,7 @@
     "record_spell_activity",
     "record_spell_crystal",
     "remove_cluster_crystal",
+    "remove_conduit_crystal",
     "remove_contract_crystal",
     "remove_frame_crystal",
     "remove_spell_crystal",
@@ -57,16 +58,18 @@
     "remove_spellbook_subtree"
    ],
    "shape": {
-    "method_count": 29,
+    "method_count": 31,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "da6b68be5badc366ea547582b21be41353aed38df4a5f15c2ecaafb36a4fe69b",
+   "span_sha256": "a1beef223be276489e146ca46f2f8175e5b8bec9e014fe16b054561bbb1dbbda",
    "role": "One recorded world: replace-on-emit twin stores plus the insertion-ordered emission journal.",
    "responsibilities": [
     "records every twin kind (root singletons, frames, books, conduits, indexes, contracts, clusters, spell custody)",
     "journals (sequence, kind, key) per emission; tombstones on evictions",
-    "captures delta windows (capture_segment_since) with custody_location annotation"
+    "captures delta windows (capture_segment_since) with custody_location annotation",
+    "journals conduit-only tombstones and preserves pooled-ID chronology in captures",
+    "selects formation subtrees with required named/root ancestry and embedded unnamed support"
    ],
    "owns_state": [
     "twin stores",

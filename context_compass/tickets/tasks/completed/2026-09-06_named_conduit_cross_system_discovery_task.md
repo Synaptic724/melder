@@ -1,14 +1,19 @@
 # Task: Map named lesser conduit implications across subsystems
 
+- Completed: 2026-09-23T11:55:35Z
+- Summary: Owner-authorized named-lesser feature turn-in. Runtime, structural replay,
+  Nexus, examples and canonical documentation are delivered; package assets remain held.
+- Closure evidence: artifacts/named_lesser_finish_20260923/validation.md
+
 ## Metadata
 - Task ID: TASK-2026-09-06-named-conduit-cross-system-discovery
 - Epic: EPIC-2026-09-06-named-lesser-conduit-discovery
 - Story: none (cross-cutting epic discovery)
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: codex_1, updater_0
 - Created: 2026-09-06T17:17:54Z
-- Updated: 2026-09-07T11:46:34Z
+- Updated: 2026-09-23T11:55:35Z
 
 ## Objective
 Map how optional lesser names/discovery interact with pooling, automatic/dynamic mode, frame root
@@ -18,7 +23,7 @@ ownership, Crystallizer recording/replay, Nexus projection/ACL/commands and othe
 - ENTRY_GATE: Owner approved cross-system discovery and the parent epic is recorded.
 - EXECUTION_BOUNDARY: Indexed docs, complete relevant source methods/call paths, focused read-only
   checks/probes and ticket/story findings. No runtime or generated-source edits.
-- DEPENDENCIES: tickets/tasks/2026-09-06_named_conduit_semantics_task.md and the parent epic's draft stories.
+- DEPENDENCIES: tickets/tasks/completed/2026-09-06_named_conduit_semantics_task.md and the parent epic's draft stories.
 - EXIT_GATE: Evidence map, concrete impacts, recommended boundaries and genuine owner decisions are recorded.
 - FAILURE_ESCALATION: Stop before implementing or deciding unapproved recording/lifetime/permission semantics.
 
@@ -65,7 +70,7 @@ Read one call path through; record factual evidence and a next single step befor
   CLAIM: Reuse verified naming evidence instead of repeating it. First identify consumers of the
     frame root maps and cloud enumeration; then follow Nexus publication and Crystallizer replay.
   EVIDENCE:
-  - tickets/tasks/2026-09-06_named_conduit_semantics_task.md
+  - tickets/tasks/completed/2026-09-06_named_conduit_semantics_task.md
   - src/melder/aether/aetheric_frame/aetheric_frame.py:160-196
   IMPACT: Keep discoverability distinct from ownership and avoid scope expansion into new lifetime features.
   NEXT: Inventory and read the relevant frame/cloud consumers.
@@ -158,7 +163,7 @@ Read one call path through; record factual evidence and a next single step befor
     Nexus visibility and commands, Crystallizer restore, and relevant DevOps contracts.
   EVIDENCE:
   - system_docs/src_components_index.md:10-18
-  - tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md:28-41
+  - tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md:28-41
   - Owner's component-reading request and updater_0 certification in this conversation.
   IMPACT: This pass builds documented design context; existing implementation decisions remain open.
     Document descriptions will not be promoted to independently verified runtime behavior.
@@ -195,7 +200,7 @@ Read one call path through; record factual evidence and a next single step befor
   EVIDENCE:
   - system_docs/src_components.md:2106-2116
   - system_docs/src_components.md:4333-4345
-  - tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md:49-59
+  - tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md:49-59
   IMPACT: Do not use these component statements to override the newer discovery or choose mode/API
     semantics. No runtime source was reread to adjudicate the mismatch in this document-reading pass.
   NEXT: Complete the requested component context, then retain these source-verification targets.
@@ -264,7 +269,7 @@ Read one call path through; record factual evidence and a next single step befor
     Check the constructor and pooled lifecycle to narrow the earlier document-conflict note.
   EVIDENCE:
   - Owner's 2026-09-07 clarification in this conversation.
-  - tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md:36-41
+  - tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md:36-41
   IMPACT: Named-only registry work is accepted design overhead. This clarification does not choose
     the remaining mode, namespace, setter, Nexus or persistence semantics or authorize runtime edits.
   NEXT: Read the complete initialization, name setter, lesser acquisition and pool-release paths.
@@ -568,3 +573,8 @@ updates are visible through borrowed descriptors; changed membership needs coher
 All four stories are aligned with the required structural scope. Remaining decisions: mode/namespace,
 unnamed ancestor support, version/collision policy and Nexus pooled-record/refresh semantics.
 Runtime implementation and new test execution were not part of this discovery pass.
+
+## Closure Transition
+- from_state: review
+- to_state: done
+- transition_reason: Owner requested full finish and turn-in; qualification is complete.

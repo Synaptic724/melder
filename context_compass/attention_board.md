@@ -81,9 +81,7 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| upgrade_normal_review | in_progress | discovery | codex | updater_1 | none | Trace graduation imports, ownership and rollback. | Source-backed complexity review and simplification recommendations. | Review delivered to owner. | tickets/tasks/2026-09-22_review_upgrade_to_normal_complexity_task.md | 2026-09-22T22:54:06Z | REQUIRED |
-| named_lesser_plan_refresh | review | handoff | codex | updater_0 | none | Review publication ordering and live-load coordination. | Deep implementation trace and regression matrix. | First runtime patch has explicit concurrency contracts. | tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md | 2026-09-22T21:16:32Z | REQUIRED |
-| graduation_packaged_assets | blocked | handoff | codex | updater_0 | Owner build-asset hold. | Wait for packaged generation authorization. | Preserve completed source while packaging stays queued. | Owner releases build hold. | tickets/tasks/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md | 2026-09-22T14:41:23Z | REQUIRED |
+| upgrade_normal_review | review | handoff | codex | updater_1 | none | None unless owner reopens review. | Code unchanged; import purpose confirmed, broader review stopped. | Owner reopens or closes review. | tickets/tasks/2026-09-22_review_upgrade_to_normal_complexity_task.md | 2026-09-22T23:02:47Z | HELPFUL |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
 | stateful_application_recovery | ready | handoff | user | unassigned | none | Discuss one stateful recovery scenario. | Native replay coverage and partial/assisted recovery opportunities preserved. | Owner selects recovery contracts before implementation. | tickets/epics/2026-09-07_stateful_application_recovery_epic.md | 2026-09-07T19:17:55Z | REQUIRED |
@@ -95,29 +93,25 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| epic_version_notches | done | updater_0 | tickets/tasks/completed/2026-09-22_correct_epic_version_baseline_task.md | Corrected to 0.2.47: baseline 0.2.43 plus four epics; assets held. | 2026-09-22T20:11:00Z |
-| pool_hook_epic | done | updater_0 | tickets/epics/completed/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T19:50:34Z |
-| pooled_hook_discovery | done | updater_0 | tickets/tasks/completed/2026-09-22_investigate_pooled_conduit_hook_reset_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T19:50:34Z |
-| local_hook_tracking | done | updater_0 | tickets/tasks/completed/2026-09-22_add_local_hook_setters_and_tracking_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T19:50:34Z |
-| release_0_2_37_to_0_2_43 | done | updater_0 | tickets/tasks/completed/2026-09-20_prepare_0_2_37_to_0_2_42_release_document_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T19:50:34Z |
-| benchmark_spell_id_lookup | done | updater_0 | tickets/tasks/completed/2026-09-19_repair_benchmark_spell_id_lookup_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T19:50:34Z |
-| bind_hooks_epic | done | updater_0 | tickets/epics/completed/2026-09-20_bind_lifecycle_hooks_and_reference_strategies_epic.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T18:47:41Z |
-| bind_hooks_discovery | done | updater_0 | tickets/tasks/completed/2026-09-21_investigate_bind_lifecycle_hooks_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T18:47:41Z |
-| bind_hooks_implementation | done | updater_0 | tickets/tasks/completed/2026-09-21_implement_bind_lifecycle_hooks_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T18:47:41Z |
-| bind_hook_examples | done | updater_0 | tickets/tasks/completed/2026-09-22_add_bind_hook_intermediate_and_expert_examples_task.md | Owner turn-in; evidence retained, packaging held separately. | 2026-09-22T18:47:41Z |
-| next_version_release | done | updater_0 | tickets/tasks/completed/2026-09-21_draft_next_version_release_task.md | Draft extended with graduation; source version 0.2.45; assets held. | 2026-09-22T15:13:55Z |
-| graduated_conduit_epic | done | updater_0 | tickets/epics/completed/2026-09-22_graduated_conduit_spellbook_ownership_and_configuration_epic.md | Independent Book and hooks; shared policy verified; packaging held separately. | 2026-09-22T14:41:23Z |
+| graduation_packaged_assets | done | updater_0 | tickets/tasks/completed/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md | Both builders rerun after final updates; checks pass. | 2026-09-23T13:01:03Z |
+| named_private_guards | done | updater_0 | tickets/tasks/completed/2026-09-23_audit_named_lesser_private_cleanup_guards_task.md | Private guards cleared; 206 tests passed. | 2026-09-23T12:47:44Z |
+| 2026-09-06_named_lesser_conduit_discovery_epic | done | updater_0 | tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
+| 2026-09-06_named_conduit_directory_lifecycle_story | done | updater_0 | tickets/stories/completed/2026-09-06_named_conduit_directory_lifecycle_story.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
+| 2026-09-06_named_conduit_crystallizer_contract_story | done | updater_0 | tickets/stories/completed/2026-09-06_named_conduit_crystallizer_contract_story.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
+| 2026-09-06_named_conduit_nexus_consumers_story | done | updater_0 | tickets/stories/completed/2026-09-06_named_conduit_nexus_consumers_story.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
+| 2026-09-06_named_conduit_validation_docs_story | done | updater_0 | tickets/stories/completed/2026-09-06_named_conduit_validation_docs_story.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
+| 2026-09-06_named_conduit_semantics_task | done | updater_0 | tickets/tasks/completed/2026-09-06_named_conduit_semantics_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
+| 2026-09-06_named_conduit_cross_system_discovery_task | done | updater_0 | tickets/tasks/completed/2026-09-06_named_conduit_cross_system_discovery_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
+| 2026-09-22_refresh_named_lesser_conduit_plan_task | done | updater_0 | tickets/tasks/completed/2026-09-22_refresh_named_lesser_conduit_plan_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
+| 2026-09-22_implement_named_lesser_directory_lifecycle_task | done | updater_0 | tickets/tasks/completed/2026-09-22_implement_named_lesser_directory_lifecycle_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
+| 2026-09-23_implement_named_lesser_crystallizer_task | done | updater_0 | tickets/tasks/completed/2026-09-23_implement_named_lesser_crystallizer_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- upgrade_normal_review: SWITCH_TRIGGER is delivered review or owner-directed implementation scope.
+- upgrade_normal_review: SWITCH_TRIGGER is explicit owner reopening or closure; further review was stopped.
   RESUME_HIERARCHY: tickets/tasks/2026-09-22_review_upgrade_to_normal_complexity_task.md.
-- named_lesser_plan_refresh: SWITCH_TRIGGER is an agreed named-lifecycle concurrency contract for the first runtime patch.
-  RESUME_HIERARCHY: tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md -> tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md.
-- graduation_packaged_assets: SWITCH_TRIGGER is owner approval of packaged build generation.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md.
 - readme_status_badges: SWITCH_TRIGGER is owner acceptance or first hosted coverage failure evidence.
   RESUME_HIERARCHY: tickets/tasks/2026-09-06_readme_status_badges_task.md.
 - embed_melder_banner: SWITCH_TRIGGER is owner acceptance or a requested presentation adjustment.

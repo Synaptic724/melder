@@ -1,28 +1,116 @@
 # Epic: Named lesser conduits as discoverable live scopes
 
+- Completed: 2026-09-23T11:55:35Z
+- Summary: Owner-authorized named-lesser feature turn-in. Runtime, structural replay,
+  Nexus, examples and canonical documentation are delivered; package assets remain held.
+- Closure evidence: artifacts/named_lesser_finish_20260923/validation.md
+
 ## Metadata
 - Epic ID: EPIC-2026-09-06-named-lesser-conduit-discovery
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Agent Name: codex_1, updater_0
 - Priority: p2
 - Created: 2026-09-06T17:17:54Z
-- Updated: 2026-09-22T21:16:32Z
-- Target Window: Selected on 2026-09-22; deep implementation trace and concurrency choices ready for review.
+- Updated: 2026-09-23T11:55:35Z
+- Target Window: Completed source/documentation delivery; packaged generation remains separately held.
 
 ## Current Resumption
+Owner requested full finish and turn-in. All four stages are delivered, including named discovery,
+promotion, structural replay, Nexus, canonical maps/graph and runnable examples. Final runtime
+selection passes 392 tests; all 78 tier examples qualify, 39 docs tests and the 300-page site pass.
+Source/release target is 0.2.50; record schema is 3.0.0. Package generation remains separately held.
+- tickets/tasks/completed/2026-09-23_finish_named_lesser_epic_task.md
+
+### Prior stage handoffs (historical)
+
+Upgrade/pool qualification preceded Crystallizer work.
+Stage 2's final affected rerun passes 330 tests; its broader run/correction are recorded without
+summing overlapping counts. Record schema is 3.0.0; package version and packaged assets are unchanged.
+- tickets/tasks/completed/2026-09-23_implement_named_lesser_crystallizer_task.md
+Nexus integration is delivered; final docs/examples/qualification remain.
+
+Stage 1 is implemented and in review: 446 related tests pass. Unnamed pool return adds only one
+direct name conditional; named scopes unregister and clear before reuse. Source/test evidence:
+- tickets/tasks/completed/2026-09-22_implement_named_lesser_directory_lifecycle_task.md
+Crystallizer and Nexus are delivered in stages 2 and 3. No packaged assets were regenerated.
+
+Latest owner direction: implement the low-level lifecycle with one name check on unnamed pool return.
+Stage 1 owns creation, discovery, pool retirement and promotion. Stage 2 adds structural persistence
+and replay. Stage 3 integrates Nexus; the epic stays open for final documentation and acceptance.
+
 Owner selected this epic after purge, graduation, bind hooks and pooled-hook repair were completed.
 Current source evidence and first-slice plan:
-- tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md
+- tickets/tasks/completed/2026-09-22_refresh_named_lesser_conduit_plan_task.md
 
 The ignored-Spellbook-return prerequisite is resolved by the completed graduation epic.
-Named promotion still needs shared-name collision admission and directory rollback integration.
+Stage 1 adds shared-name collision admission and directory rollback around that delivered route.
 Pool return already restores temporary hooks before idle publication; name retirement belongs in
 that lifecycle. Preserve unnamed scope performance and the required structural persistence story.
 
 Owner accepted frame-wide unique active names shared with normal roots and discovery in both modes.
 Recording retains the existing dynamic-mode policy. The owner then requested deeper implementation
 investigation before coding. Packaged generation remains held.
+
+## Implementation Catalogue: Work in This Order
+
+| Stage | Deliverable | Existing story |
+| --- | --- | --- |
+| 1 — Conduit and ConduitCloud | Creation-only names, named discovery, unregister/clear before pool return, safe promotion and focused regressions. | STORY-2026-09-06-named-conduit-directory-lifecycle |
+| 2 — Crystallizer | Named lesser structure, removal records, ancestor/formation closure, compatible parent-first replay and restore coordination. | STORY-2026-09-06-named-conduit-crystallizer-contract |
+| 3 — Nexus | Correct published names/states and named resolution, with existing ACL/projection semantics. | STORY-2026-09-06-named-conduit-nexus-consumers |
+| 4 — Full feature qualification | Cross-stage tests, examples, release documentation and authorized asset generation. | STORY-2026-09-06-named-conduit-validation-docs |
+
+### Stage 1 Checklist
+- [x] Add an optional creation-time name to the normal lesser-creation API, preserving logger calls.
+- [x] Initialize the name for each fresh or pooled acquisition; prewarmed idle shells stay unnamed.
+- [x] Register only named conduits in Cloud with frame-wide root/lesser collision checks.
+- [x] Remove the discovery entry and set the lesser name to None BEFORE the pool exposes the shell.
+- [x] Leave unnamed scope cycles free of Cloud register/unregister work.
+- [x] Keep Cloud discovery distinct from frame-owned root maps, cluster inputs and Book ownership.
+- [x] Adapt promotion name checks and directory transitions through the existing upgrade/conjure route.
+- [x] Add focused creation, pool reuse, collision, cleanup and promotion tests.
+
+The implementation centre is Conduit and ConduitCloud. Frame root registration and the existing
+Spellbook conjure route need only the bridge/check changes required to keep root names consistent.
+Do not redesign graduation, change Creations/Meld semantics, or add restore/projection machinery here.
+
+### Promotion Cases in Stage 1
+Promotion keeps the same live object and conduit ID; it moves into ordinary normal-root ownership.
+Its name/discovery transition therefore belongs with the low-level lifecycle:
+
+| Starting scope / outcome | Required discovery result |
+| --- | --- |
+| Unnamed lesser promoted with name X | X resolves to that same object/ID as a normal root. |
+| Named X promoted with name X | Preserve one X entry; its own entry must not cause a duplicate-name error. |
+| Named A promoted with free name B | Retire A and expose B for the same object/ID; no stale A alias. |
+| Requested name belongs to another conduit | Refuse without changing the original lesser or either discovery entry. |
+| Failure before new-Book attachment | Restore the lesser and its original name/discovery state. |
+| Failure after attachment | Follow the existing normal-conjure cleanup contract; do not revive an obsolete lesser entry. |
+| Subsequent normal-root cleanup | Remove its current name through the normal root/directory bridge exactly once. |
+
+Crystallizer emission/replay ordering, live-load coordination and Nexus projection policy remain
+catalogued under stages 2 and 3. Stage 2 uses caller quiescence for live loads and is now implemented;
+the whole epic stays open
+until the later required stages are delivered. Packaged generation remains on the owner's hold.
+
+### Stage 2 Delivered (Review)
+- [x] Capture dynamic named lesser parent/root structure and detached supporting unnamed ancestry.
+- [x] Retire one conduit record without removing its shared Book; preserve sealed history and pooled-id chronology.
+- [x] Validate and reconstruct both replay drivers through their common Book unit with fresh ids.
+- [x] Include required formation ancestry/subtrees and report colliding lesser-name loss under skip_existing.
+- [x] Fence old readers with record major 3 while accepting valid older root-only records.
+- [x] Keep failed cleanup owned/retryable and prove no record work on unnamed leaf returns.
+- [x] Qualify failure unwind, promotion, inactive/automatic controls and nested payload isolation.
+
+### Stage 3 Delivered (Review)
+- [x] Publish named acquisition before post-created callbacks, including pooled reuse.
+- [x] Retain unnamed pooled Nexus records with cleared parent/depth values on named retirement.
+- [x] Refresh frame Cloud summaries while retaining independent root inventory.
+- [x] Resolve capability/codegen names by the published authorized ID and reject changed live names.
+- [x] Forward optional names through capability lesser creation without in-command Rift refresh.
+- [x] Preserve explicit refresh for new/deleted IDs, ACL denial and normal-only/static restrictions.
+- [x] Verify both replay drivers publish restored names and hierarchy; final affected run 471 passed.
 
 ## Problem / Opportunity
 Applications may need to locate a particular request, session, job, or other live scope without
@@ -45,18 +133,19 @@ contract. Do not ship an index that outlives the scope or silently turns ephemer
 
 ## Ticket Contract
 - ENTRY_GATE: Owner requested an epic and cross-system discovery; existing naming evidence is recorded.
-- EXECUTION_BOUNDARY: Planning and source-backed discovery across conduit/frame/cloud/pooling,
-  Crystallizer, Nexus, DevOps, consumers, tests and public documentation.
-- DEPENDENCIES: Four draft stories below and the linked cross-system discovery task.
+- EXECUTION_BOUNDARY: Owner-authorized stage-1 Conduit/Cloud implementation and focused qualification;
+  later Crystallizer/Nexus work stays catalogued until selected.
+- DEPENDENCIES: Four stories below and the linked current implementation/discovery tasks.
 - EXIT_GATE: Agreed contracts, approved implementation, verified stories and owner acceptance.
-- FAILURE_ESCALATION: No runtime edits until naming/mode/lifecycle and persistence decisions are approved.
+- FAILURE_ESCALATION: Resolve correctness for the current story before editing it; later integration
+  questions remain with their later stories and do not expand or block the low-level starting slice.
 
 ## Goals
 - Optional names identify live lesser conduits without changing their lesser status or existing lifetimes.
 - ConduitCloud can locate an eligible named lesser as the same live object.
 - Returning a named lesser to its pool unregisters its discovery entry and clears its assigned name.
 - Unnamed lessers skip cloud registration and unregistration; only named conduits enter cloud discovery.
-- Establish whether naming/discovery should work in automatic and dynamic mode; the owner is open to both.
+- Support naming/discovery in automatic and dynamic mode, as accepted by the owner.
 - Crystallizer saves and restores named lesser conduit structure without restoring created runtime objects.
 - Make Nexus and other consumers distinguish discoverable lesser scopes from structural roots.
 
@@ -66,7 +155,8 @@ contract. Do not ship an index that outlives the scope or silently turns ephemer
 - A new lease/handle or live-object snapshot protocol, distributed discovery, or post-cleanup object-use guarantees.
 - Silent changes to frame root accounting, permissions, recording policy, or release workflows.
 
-## Current Verified Baseline
+## Original Discovery Baseline (Before Stage 1)
+The implementation task now owns current behavior. This section preserves the original defect evidence.
 - Normal roots are named and frame-unique. conjure() defaults to default; both automatic and dynamic
   roots are discoverable through the frame-owned cloud.
 - Upgrade(name) creates a named normal root and requires dynamic mode.
@@ -76,7 +166,7 @@ contract. Do not ship an index that outlives the scope or silently turns ephemer
 - ConduitCloud borrows frame root-only maps, so its existing registry is not a generic scope directory.
 - SpellSpace has no naming API. Scope storage is selected by Existence and identities, not names.
 - Three naming/upgrade integration tests and an isolated name/lookup probe passed.
-- Evidence owner: tickets/tasks/2026-09-06_named_conduit_semantics_task.md.
+- Evidence owner: tickets/tasks/completed/2026-09-06_named_conduit_semantics_task.md.
 
 ## Requirements
 - Preserve the unnamed creation path and existing meld paths; naming work belongs at scope boundaries.
@@ -87,7 +177,7 @@ contract. Do not ship an index that outlives the scope or silently turns ephemer
 - Cloud discovery retains named conduits only. Unnamed scope acquisition/release skips cloud registry work.
 - Before a named lesser becomes available in the pool, unregister its discovery entry and clear its name.
   Apply new-name assignment to both fresh construction and pooled acquisition.
-- Decide the namespace explicitly: frame-wide uniqueness versus parent-qualified names is still open.
+- Names are frame-wide unique across normal roots and active named lessers.
 - A cloud lookup returns a borrowed live conduit; it does not extend the owner's lifetime.
 - Scope registration is not root registration and does not grant normal-conduit operations.
 - Name publication must follow successful scope acquisition; cleanup/pool return must remove it before reuse.
@@ -142,26 +232,32 @@ The namespace and runtime-mode defaults above are settled. Remaining implementat
 ## Decisions Before Implementation
 1. Settled on 2026-09-22: naming/discovery works in automatic and dynamic mode.
 2. Settled on 2026-09-22: frame-wide active-name uniqueness, shared by roots and named lessers.
-3. Decide cloud listing/root-filter behavior and publication ordering; lesser naming is creation-only.
-4. Settle required unnamed ancestry, formation closure, record versioning and restore collision rules.
-5. Decide whether pooled Nexus records are removed or retained as unnamed pooled shells, and whether
-   existing projections require explicit refresh for membership changes. Specify the ACL-preserving named resolver.
+3. Stage 1 implemented: named-directory listings, one conditional on unnamed return, named retirement
+   before idle publication, and reserved-name promotion with explicit rollback.
+4. Stage 2 implemented: supporting ancestor values in named twins, formation closure, schema major 3,
+   shared per-Book replay and documented scope-lifecycle quiescence during live restore.
+5. Stage 3 implemented: retain cleared pooled records for named returns. Existing same-ID projections
+   read replacement payloads; newly published/permanently deleted IDs use explicit refresh. Named
+   getters resolve the authorized published ID and recheck its live name. Anonymous cycles stay local.
 
 ## Stories
-- [ ] STORY-2026-09-06-named-conduit-directory-lifecycle
-  - tickets/stories/2026-09-06_named_conduit_directory_lifecycle_story.md
-- [ ] STORY-2026-09-06-named-conduit-crystallizer-contract
-  - tickets/stories/2026-09-06_named_conduit_crystallizer_contract_story.md
-- [ ] STORY-2026-09-06-named-conduit-nexus-consumers
-  - tickets/stories/2026-09-06_named_conduit_nexus_consumers_story.md
-- [ ] STORY-2026-09-06-named-conduit-validation-docs
-  - tickets/stories/2026-09-06_named_conduit_validation_docs_story.md
+- [x] STORY-2026-09-06-named-conduit-directory-lifecycle
+  - tickets/stories/completed/2026-09-06_named_conduit_directory_lifecycle_story.md
+- [x] STORY-2026-09-06-named-conduit-crystallizer-contract
+  - tickets/stories/completed/2026-09-06_named_conduit_crystallizer_contract_story.md
+- [x] STORY-2026-09-06-named-conduit-nexus-consumers
+  - tickets/stories/completed/2026-09-06_named_conduit_nexus_consumers_story.md
+- [x] STORY-2026-09-06-named-conduit-validation-docs
+  - tickets/stories/completed/2026-09-06_named_conduit_validation_docs_story.md
 
 ## Cross-Cutting Tasks
-- Prior naming evidence: tickets/tasks/2026-09-06_named_conduit_semantics_task.md (review).
-- Initial impact discovery: tickets/tasks/2026-09-06_named_conduit_cross_system_discovery_task.md (review).
+- Prior naming evidence: tickets/tasks/completed/2026-09-06_named_conduit_semantics_task.md (review).
+- Initial impact discovery: tickets/tasks/completed/2026-09-06_named_conduit_cross_system_discovery_task.md (review).
 - Implementation map: tickets/tasks/completed/2026-09-07_named_conduit_implementation_map_task.md (review; planning only).
-- Current refresh: tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md (review; planning only).
+- Current refresh: tickets/tasks/completed/2026-09-22_refresh_named_lesser_conduit_plan_task.md (review; planning only).
+- Directory/upgrade implementation: tickets/tasks/completed/2026-09-22_implement_named_lesser_directory_lifecycle_task.md (review).
+- Crystallizer implementation: tickets/tasks/completed/2026-09-23_implement_named_lesser_crystallizer_task.md (review).
+- Nexus implementation: tickets/tasks/completed/2026-09-23_implement_named_lesser_nexus_task.md (review).
 
 ## Milestones
 - [x] Capture the existing naming/registration/lifetime findings.
@@ -169,9 +265,9 @@ The namespace and runtime-mode defaults above are settled. Remaining implementat
 - [x] Record owner requirements for creation-only naming, conditional cloud cleanup and structural persistence.
 - [x] Trace conduit record/capture/fold, both replay drivers and targeted Nexus publication/name consumers.
 - [x] Confirm frame-wide unique names and both-mode discovery with existing recording policy.
-- [ ] Settle named publication/load concurrency, ancestry/versioning and Nexus lifecycle integration.
-- [ ] Create precise implementation tasks and required patch contracts after decisions.
-- [ ] Implement, verify, document and obtain acceptance.
+- [x] Settle named publication/load concurrency, ancestry/versioning and Nexus lifecycle integration.
+- [x] Create precise implementation tasks and required patch contracts after decisions.
+- [x] Implement, verify, document and obtain acceptance.
 
 ## Acceptance Criteria
 - Automatic/dynamic behavior and name uniqueness are documented and tested according to the agreed policy.
@@ -203,7 +299,8 @@ Use targeted source traces and isolated probes during discovery. Later validate 
 in both modes, duplicate names, parent/child teardown, pool reuse, lookup and existing lifetime behavior.
 Validate required structural persistence, current/historical scope state, parent ordering and compatible readers.
 Add Nexus lifecycle/projection tests for the selected integration. No benchmark claims without measurement.
-No commits, pushes, asset regeneration or runtime implementation are authorized by this planning epic.
+Stage-1 and stage-2 runtime implementation is authorized and tested. Commits, pushes and asset regeneration were
+not requested; the owner's packaged-generation hold remains in force.
 
 ## State Transition Event
 - from_state: ready
@@ -226,7 +323,7 @@ No commits, pushes, asset regeneration or runtime implementation are authorized 
     unregister/clear-on-pool behavior and Crystallizer/Nexus/other-subsystem implications.
     These are design candidates; implementation approval has not been given.
   EVIDENCE:
-  - tickets/tasks/2026-09-06_named_conduit_semantics_task.md
+  - tickets/tasks/completed/2026-09-06_named_conduit_semantics_task.md
   - Owner's epic/discovery request in the current conversation.
   IMPACT: Preserve prior findings and investigate the whole lifecycle before selecting implementation.
   NEXT: Trace discovery versus root ownership, then Nexus and Crystallizer consumers.
@@ -240,10 +337,10 @@ No commits, pushes, asset regeneration or runtime implementation are authorized 
     fields but needs lifecycle-consistent publication; Crystallizer should keep lesser exclusion
     unless the owner explicitly wants child replay. Existing root queries and permission gates stay.
   EVIDENCE:
-  - tickets/tasks/2026-09-06_named_conduit_cross_system_discovery_task.md
-  - tickets/stories/2026-09-06_named_conduit_directory_lifecycle_story.md
-  - tickets/stories/2026-09-06_named_conduit_crystallizer_contract_story.md
-  - tickets/stories/2026-09-06_named_conduit_nexus_consumers_story.md
+  - tickets/tasks/completed/2026-09-06_named_conduit_cross_system_discovery_task.md
+  - tickets/stories/completed/2026-09-06_named_conduit_directory_lifecycle_story.md
+  - tickets/stories/completed/2026-09-06_named_conduit_crystallizer_contract_story.md
+  - tickets/stories/completed/2026-09-06_named_conduit_nexus_consumers_story.md
   IMPACT: The feature has a bounded value proposition and a cross-system contract. It is not yet
     authorized for implementation; five explicit choices are listed above.
   NEXT: Owner selects naming/discovery semantics, then implementation tasks can be defined precisely.
@@ -297,9 +394,9 @@ No commits, pushes, asset regeneration or runtime implementation are authorized 
     automatically follow cloud registration. All four stories now use the required structural scope.
   EVIDENCE:
   - Owner's structural persistence clarification in this conversation.
-  - tickets/tasks/2026-09-06_named_conduit_cross_system_discovery_task.md
-  - tickets/stories/2026-09-06_named_conduit_crystallizer_contract_story.md
-  - tickets/stories/2026-09-06_named_conduit_nexus_consumers_story.md
+  - tickets/tasks/completed/2026-09-06_named_conduit_cross_system_discovery_task.md
+  - tickets/stories/completed/2026-09-06_named_conduit_crystallizer_contract_story.md
+  - tickets/stories/completed/2026-09-06_named_conduit_nexus_consumers_story.md
   IMPACT: Required persistence is core feature work, not a deferred optional extension. Remaining
     choices concern faithful ancestry, mode/namespace, compatibility and Nexus lifecycle behavior.
   NEXT: Review those concrete structural and consumer contracts before implementation tasks and patches.
@@ -326,7 +423,7 @@ No commits, pushes, asset regeneration or runtime implementation are authorized 
     ownership repair from pending prerequisites and retains its named-promotion integration.
     First runtime slice is directory/acquisition/reset; structural replay and Nexus remain required.
   EVIDENCE:
-  - tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md
+  - tickets/tasks/completed/2026-09-22_refresh_named_lesser_conduit_plan_task.md
   IMPACT: Resume from current source ranges and the first-slice plan. Frame-wide names and both-mode
     discovery are recommended choices still awaiting owner direction; generation remains held.
   NEXT: Settle those naming choices before the first runtime patch/task.
@@ -339,7 +436,7 @@ No commits, pushes, asset regeneration or runtime implementation are authorized 
     current hook semantics, record capture/folding, formation selection, both replay drivers,
     Nexus named lookup and compiled ACL membership. The task carries the regression matrix.
   EVIDENCE:
-  - tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md
+  - tickets/tasks/completed/2026-09-22_refresh_named_lesser_conduit_plan_task.md
   IMPACT: Reuse common per-Book replay and current Nexus payloads. Do not add synchronous Rift
     refresh inside a gated command or assume ordinary lesser cycles participate in LoadGate drain.
     Named publication ordering and live-load coordination remain explicit patch-contract choices.
@@ -347,10 +444,50 @@ No commits, pushes, asset regeneration or runtime implementation are authorized 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-22T23:32:58Z
+  TYPE: DECISION
+  CLAIM: Owner directs low-level Conduit/ConduitCloud work first, including promotion, and asks
+    for an epic catalogue. The ordered stages and explicit promotion cases above supersede the
+    earlier suggestion that restore/projection decisions must be settled before starting this slice.
+  EVIDENCE:
+  - Owner's current start-small and catalogue instruction.
+  - tickets/stories/completed/2026-09-06_named_conduit_directory_lifecycle_story.md
+  - tickets/tasks/completed/2026-09-22_refresh_named_lesser_conduit_plan_task.md
+  IMPACT: Keep the first implementation local to name lifecycle/discovery and necessary root bridges.
+    Required persistence and Nexus work remain visible as later stages; no runtime code changed here.
+  NEXT: Prepare the stage-1 lifecycle/promotion regressions and scoped patch contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-23T00:09:14Z
+  TYPE: MEASURE
+  CLAIM: Stage 1 is implemented and in review with 446 related tests passing. Named lesser acquisition,
+    directory lookup, retirement before reuse and name-safe promotion are delivered. Unnamed return
+    adds one direct name check, with no Cloud call/lock/allocation on that branch.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-22_implement_named_lesser_directory_lifecycle_task.md
+  - artifacts/named_lesser_directory_20260922/qualified.xml
+  IMPACT: Keep the epic open for required Crystallizer/Nexus integration and final qualification.
+    No version bump or packaged generation; canonical documentation promotion remains recorded.
+  NEXT: Review stage 1, then take the Crystallizer structural lifecycle story.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Noting Behavior
 Keep program choices and cross-story implications here; detailed source evidence stays in the discovery task.
 
 ## Context / Handoff Summary
+Delivered and owner-authorized for turn-in. Final qualification, public setup repair, examples and
+release detail are recorded in the finish task. Source is 0.2.50; schema is 3.0.0. The only held
+follow-up is packaged generation, outside this completed source epic. Summaries below are historical.
+
+Current: stage 1 implemented, 446 related tests pass; source and patch are ready for review.
+Resume through the implementation task. Crystallizer/Nexus and final qualification remain open.
+
+Latest direction: use Implementation Catalogue stage 1 first. Pool entry must be unnamed and absent
+from named discovery. Promotion belongs in that same low-level slice, with same-name, replacement,
+collision and rollback cases. Later recording/replay and Nexus questions stay in their own stages.
+
 2026-09-22: use the current refresh task before the historical source ranges below. Graduation
 ownership is delivered. Directory, lifecycle, structural replay and Nexus integration remain.
 Owner accepted frame-wide names and both-mode discovery. Deeper investigation and regression matrix
@@ -365,3 +502,8 @@ the earlier ephemeral-only recommendation is superseded. Created-instance data i
 Remaining decisions are mode/namespace, required unnamed ancestry and formation closure, record-version
 safety and Nexus pooled-record/compiled-membership handling. The 2026-09-07 implementation-map task
 contains the proposed twelve-phase sequence, source/test/doc targets and the upgrade ownership prerequisite.
+
+## Closure Transition
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner requested full finish and turn-in; qualification is complete.

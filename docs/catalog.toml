@@ -92,6 +92,7 @@ sources = [
   "37_the_frame_conduit_cloud.py",
   "39_purge_unneeded_objects.py",
   "40_bind_lifecycle_hooks.py",
+  "41_named_lesser_conduits.py",
 ]
 
 [[level]]
@@ -160,6 +161,7 @@ sources = [
   "35_the_gate_that_waits_for_readers.py",
   "36_an_agent_builds_a_working_system.py",
   "37_review_agent_bindings.py",
+  "38_named_scopes_in_nexus_and_restore.py",
 ]
 
 [[lesson]]

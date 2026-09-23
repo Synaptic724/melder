@@ -1,6 +1,82 @@
-# Melder 0.2.47 — next release
+# Melder 0.2.50 — next release
 
 **Draft release notes. Publication date to be assigned; more changes may follow.**
+
+## Added: named lesser conduits
+
+Lesser conduits can now receive a name when created, in automatic or dynamic mode:
+
+```python
+job = root.create_lesser_conduit(name="job-42")
+cloud = root.get_conduit_cloud()
+try:
+    assert cloud.get_conduit_by_name("job-42") is job
+    # Resolve this job's objects through job.meld(...).
+finally:
+    job.cleanup()
+
+assert not cloud.has_conduit_name("job-42")
+```
+
+Names are exact, nonempty strings and unique among active named roots and lessers in a frame.
+They are assigned only through creation, including acquisition of a prewarmed pooled scope.
+Cleanup unregisters and clears the name before returning the scope to its pool. Unnamed scope
+return keeps its single name check and performs no Cloud, Crystallizer or Nexus publication work.
+
+Naming preserves the scope's lesser status, shared Spellbook and existing instance lifetimes.
+Discovery returns the live borrowed object; it does not extend the scope's lifetime. Dynamic
+promotion can retain the name or select another available name while preserving the conduit ID
+and using the upgraded root's independent Book.
+
+When dynamic structural recording is enabled, Crystallizer captures named lesser names and parent
+relationships, including the unnamed ancestry needed for faithful reconstruction. Release and
+reuse update later checkpoints without changing sealed history. Both replay drivers reconstruct
+fresh structural identities through ordinary creation; previously created application objects
+and their mutable data are not restored. Record schema **3.0.0** prevents older root-only readers
+from misinterpreting these records; valid older root-only input remains readable. Live restore
+requires the caller to quiesce ordinary scope acquisition and cleanup.
+
+Nexus publishes named acquisition, retirement and reuse. A returned named scope retains an unnamed
+pooled record so existing projections remain valid; named reuse replaces its current name and
+parent information. Capability and codegen named getters resolve the exact authorized identity,
+and capability's `create_lesser_conduit(..., name=...)` forwards the creation name. Existing ACLs
+and lesser-operation restrictions remain in force. New IDs and permanently removed records use
+the existing explicit Rift projection refresh; commands do not refresh while admitted to a Rift.
+
+### Public setup and documentation
+
+Normal conjure now records both the owning Spellbook and settled frame posture when
+`configure_aether_frame()` already locked the configuration. Previously that public setup could
+omit its Book or frame twin, causing restore to refuse or lose the frame's Nexus visibility policy.
+The repair reuses the existing origin-aware freeze/bind machinery; ordinary meld and pool paths
+gain no work.
+
+- **Intermediate 41 — Named lesser conduits:** runnable naming, collision, lookup, scoped-state,
+  cleanup and anonymous-reuse examples, including prewarmed scopes.
+- **Expert 38 — Named scopes in Nexus and restore:** capability creation and authorized lookup,
+  explicit projection refresh, named reuse and a successful structural replay with fresh IDs and
+  newly created application state, including required unnamed ancestry.
+- Scope, agent-room and restore guides now explain the contracts and link the lessons. Source
+  downloads and collection ZIPs include both. Canonical architecture/components and the source
+  graph now describe all three feature stages.
+- Expert 24 now establishes dynamic recording before binding and retires the original root before
+  replay, proving successful restoration instead of colliding with its existing runtime.
+
+### Validation and packaging
+
+The Nexus-stage affected selection passed **471 tests**. After the public-setup correction, the final
+Book/conjure/naming/Nexus/restore selection passed **392 tests**. These selections overlap and should
+not be added together. All **78 intermediate/expert examples** qualify across the main run and the
+focused correction; **39 documentation tests**, a strict **300-page HTML build**, local links and
+lesson-source/download checks pass. No full-repository coverage claim is made.
+
+The final cleanup audit removed redundant cleaned-state checks from the changed private helpers;
+public entry points retain their lifecycle guards. Its affected selection passed **206 tests**.
+
+Packaged Melder and repository LLM assets were regenerated for **0.2.50** after code approval.
+The guard, agent documentation, packaged system documents and LLM bundles pass their currentness
+checks. **253 asset/document/builder tests** pass across the main run and one isolated test process.
+The rebuild changed generated assets only; runtime source is unchanged.
 
 ## Added: intermediate and expert bind-hook tutorials
 

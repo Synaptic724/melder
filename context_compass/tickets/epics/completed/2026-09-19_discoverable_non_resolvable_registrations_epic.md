@@ -163,7 +163,7 @@ Nexus access, research history, and restore. A meld-only guard or a source catal
 - Predecessor discovery and owner discussion:
   `tickets/tasks/2026-09-19_understand_nexus_crystallizer_spellbook_task.md`
 - Separate related feature, not a prerequisite:
-  `tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md`
+  `tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md`
 - Historical adjacent proposal, not the implementation contract:
   `tickets/epics/archive/2026-04-07_agent_exposable_class_surface_contract_discovery_epic.md`
   That draft concerns class-surface introspection and explicitly excludes mutation integration.

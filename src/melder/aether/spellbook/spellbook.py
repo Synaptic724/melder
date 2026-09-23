@@ -6654,6 +6654,8 @@ class Spellbook(Cleanable):
             - The caller supplies a live, detached, unregistered normal conduit
               on this Book's frame, with normal ward/pool/store ownership ready.
               This method does not promote its status or transfer an old Book.
+              Public lifecycle admission and a live receiving Book are caller
+              preconditions; this private route does not repeat cleaned guards.
             - The Book may conjure once. Configuration selection occurred in
               its constructor; default/local/frame-wide rules remain unchanged.
             - Runs configuration, structural and resolution phases through the
@@ -6671,6 +6673,9 @@ class Spellbook(Cleanable):
             - Input/configuration/phase/policy/name failures precede attachment.
               Once attached, publication failures have normal conjure semantics:
               the caller owns cleanup; arbitrary callback effects are not undone.
+            - Name admission uses the shared Cloud namespace and permits this
+              identity's existing lesser name. The upgrade caller reserves the
+              destination across preparation; frame registration replaces its alias.
 
         Args:
             conduit: Existing runtime already prepared in normal status.
@@ -6685,7 +6690,7 @@ class Spellbook(Cleanable):
             Conduit: The exact supplied instance, attached to this Book.
 
         Raises:
-            RuntimeError: If cleaned, already conjured, not normal, terminally
+            RuntimeError: If already conjured, not normal, terminally
                 closed, or recorded configuration discipline is violated.
                 Gate drain may time out.
             ValueError: If the frame, configuration, policy or root name is invalid,
@@ -6698,8 +6703,6 @@ class Spellbook(Cleanable):
             before activation hooks. Caller owns structural promotion/quiescence.
             Configuration callbacks and former Book objects are never disposed here.
         """
-        self.check_cleaned()
-        conduit.check_cleaned()
         if conduit._conduit_state is not ConduitState.normal:
             raise RuntimeError(
                 "Existing-conduit conjure requires normal status. Prepare the "
@@ -6724,7 +6727,6 @@ class Spellbook(Cleanable):
             effective_dynamic = self._settle_or_inherit_conjure_mode(dynamic)
             self._conjure_dynamic_hint = effective_dynamic
             with self._lock:
-                self.check_cleaned()
                 if self._conjured:
                     raise RuntimeError("This Spellbook has already conjured a Conduit. Only one is allowed.")
                 resolved_name = (
@@ -6735,8 +6737,9 @@ class Spellbook(Cleanable):
                 with self._aetheric_frame._lock:
                     if conduit._id in self._aetheric_frame._conduits:
                         raise ValueError("The supplied conduit is already registered as a root.")
-                    if resolved_name in self._aetheric_frame._conduit_ids_by_name:
-                        raise ValueError(f"Conduit with name {resolved_name} already exists.")
+                    self._aetheric_frame._conduit_cloud._assert_name_available(
+                        resolved_name, conduit._id,
+                    )
                 if (
                         effective_dynamic
                         and self._binds_before_configuration_count > 0
@@ -6789,13 +6792,13 @@ class Spellbook(Cleanable):
                     gate.close_and_drain()
                     with conduit._lock:
                         with self._aetheric_frame._lock:
-                            conduit.check_cleaned()
                             if conduit._conduit_state is not ConduitState.normal:
                                 raise RuntimeError("The supplied conduit is no longer in normal status.")
                             if conduit._id in self._aetheric_frame._conduits:
                                 raise ValueError("The supplied conduit is already registered as a root.")
-                            if resolved_name in self._aetheric_frame._conduit_ids_by_name:
-                                raise ValueError(f"Conduit with name {resolved_name} already exists.")
+                            self._aetheric_frame._conduit_cloud._assert_name_available(
+                                resolved_name, conduit._id,
+                            )
 
                             # Snapshot scope membership only for this one ownership
                             # transition; do not change ordinary pool or meld paths.
@@ -6878,6 +6881,10 @@ class Spellbook(Cleanable):
               flow unchanged.
             - Uses the disposal metadata established at bind without another
               matching pass or private-mutation check.
+            - Re-enters frozen configuration with this Book's origin and effective
+              mode when public frame setup already locked it, and binds the frame
+              posture. Rich values stay frozen; the recorded world receives its
+              Book and settled frame twins, including Rift visibility policy.
         Threading:
             - The CONJURE embargo is acquired by `conjure()` BEFORE this method
               takes the Spellbook lock, preserving embargo-then-lock ordering so
@@ -6939,6 +6946,13 @@ class Spellbook(Cleanable):
             # and a Conduit object exists, leaving a half-built conduit to
             # unwind. This refuses at the cheapest possible moment instead.
             self._spell_id_integrity_checker()
+
+            # Public frame setup and shared configuration can lock this Book before
+            # its effective conjure mode exists. As in existing-conduit conjure,
+            # re-freeze with origin now so recorded scopes have their owning Book.
+            if self.is_configuration_locked():
+                self._validate_and_freeze_configuration()
+                self._bind_aetheric_frame_configuration_to_aether()
 
             spellbook_creation_system = SpellbookCreationSystem(
                 spellbook=self,

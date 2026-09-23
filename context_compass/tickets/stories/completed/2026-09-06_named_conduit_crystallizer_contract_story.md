@@ -1,15 +1,25 @@
 # Story: Persist and restore named lesser conduit structure
 
+- Completed: 2026-09-23T11:55:35Z
+- Summary: Owner-authorized named-lesser feature turn-in. Runtime, structural replay,
+  Nexus, examples and canonical documentation are delivered; package assets remain held.
+- Closure evidence: artifacts/named_lesser_finish_20260923/validation.md
+
 ## Metadata
 - Story ID: STORY-2026-09-06-named-conduit-crystallizer-contract
 - Epic: EPIC-2026-09-06-named-lesser-conduit-discovery
-- Status: draft
+- Status: done
 - Owner: codex
 - Agent Name: codex_1, updater_0
 - Created: 2026-09-06T17:17:54Z
-- Updated: 2026-09-07T11:46:34Z
+- Updated: 2026-09-23T11:55:35Z
 
 ## User Narrative
+Implementation is complete for review. The current task and validation receipt supersede the original
+source-line pointers and unresolved proposals below:
+- tickets/tasks/completed/2026-09-23_implement_named_lesser_crystallizer_task.md
+- artifacts/named_lesser_crystallizer_20260923/validation.md
+
 As a Melder user, I want a checkpoint to preserve the named lesser conduits that existed and restore
 them under the correct parents with the same names and structural roles. Their created instances
 and instance data are outside the restoration contract.
@@ -64,8 +74,11 @@ restore drivers must agree on that structure while preserving the shared Spellbo
 | Record version gate | Newer major refuses; same-major unknown fields are accepted. | Forward-safe schema/version policy for child topology. |
 
 ## Tasks / Validation
-Persistence changes are required. Create exact implementation tasks after the remaining contracts and
-patch design are approved. Validate:
+Implemented in TASK-2026-09-23-implement-named-lesser-crystallizer. Final affected rerun: 330 passed.
+Named twins carry supporting unnamed ancestry as detached values; schema major 3 fences old readers.
+Soft cleanup retains failed ownership for retry. Both drivers, formation closure and compatibility are
+qualified; broad-run outcomes and the bounded correction are retained in the validation receipt.
+The implemented acceptance matrix covers:
 - checkpoint while named lesser is active restores its structural role/name/parent;
 - checkpoint after release omits that scope while an earlier sealed checkpoint retains it;
 - same pooled id under a new name folds correctly in the same window and later windows;
@@ -120,7 +133,18 @@ patch design are approved. Validate:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+## State Transition Event
+- from_state: in_progress
+- to_state: review
+- transition_reason: Owner-authorized implementation is complete and the final affected rerun passes.
+
 ## Context / Handoff Summary
-Named lesser structure must be persisted and recreated in its original hierarchy. Created objects are
-outside this work. The source trace and boundary table replace the old exclusion recommendation.
-Parent closure, consistent mode support, collision outcomes and forward-safe versioning remain design details.
+Implemented and ready for review: dynamic named structural capture/retire, same-id chronology, required
+ancestry, both-driver replay, formation closure and schema-major fencing. Created objects remain outside
+the payload. Supporting unnamed structure belongs to named carriers, preserving the unnamed fast path.
+Use the current implementation task and receipt; original discovery notes remain historical evidence.
+
+## Closure Transition
+- from_state: review
+- to_state: done
+- transition_reason: Owner requested full finish and turn-in; qualification is complete.

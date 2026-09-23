@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/capability_command_system.py",
- "source_sha256": "16c6f715b0e9fccc16f3be47fad1bc70714a23e25f5fba7fa98167eb380c4228",
+ "source_sha256": "ff44f3312d1aa7ceabb12826ee71567b966955c6b77ea534d1089904c9bb7b7a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.capability_command_system": {
@@ -82,11 +82,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5c0956cba257724a338d1aaec223c89c59ec3492783e28ace24103c76fc52036",
+   "span_sha256": "d3ee84cb00b9cde909b1ea83eba03e4bd46e813ebcec80de1f7db5146680a613",
    "role": "Capability-room specialization of the shared command surface.",
    "responsibilities": [
     "preserves the shared broad runtime command behavior for CapabilityRiftSpace",
-    "owns the six research_* READ commands only (walk/history/heads/residency/diff/campaign_view); organization stays codegen-room-only"
+    "owns the six research_* READ commands only (walk/history/heads/residency/diff/campaign_view); organization stays codegen-room-only",
+    "forwards optional creation names and uses lesser-aware authorized named lookup"
    ],
    "phases": [
     "runtime"

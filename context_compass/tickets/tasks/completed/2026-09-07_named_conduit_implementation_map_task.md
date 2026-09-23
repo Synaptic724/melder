@@ -319,8 +319,8 @@ Record source refinements and planning decisions here. Prior behavioral evidence
     the change. Reuse the existing deep source trace; verify root registration and upgrade seams,
     then write a dependency-ordered plan with proposed choices clearly separated from owner decisions.
   EVIDENCE:
-  - tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md
-  - tickets/tasks/2026-09-06_named_conduit_cross_system_discovery_task.md
+  - tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md
+  - tickets/tasks/completed/2026-09-06_named_conduit_cross_system_discovery_task.md
   - Owner's implementation-mapping request in this conversation.
   IMPACT: Only planning records are writable in this task's authorized scope.
   NEXT: Inspect root-registration and upgrade transitions to complete the implementation boundary map.
@@ -368,8 +368,8 @@ Record source refinements and planning decisions here. Prior behavioral evidence
     matrix and rollback order. The existing upgrade ownership concern is a bounded prerequisite.
     All 27 explicitly backticked source/documentation paths resolve; document whitespace checks pass.
   EVIDENCE:
-  - tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md
-  - tickets/tasks/2026-09-06_named_conduit_cross_system_discovery_task.md
+  - tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md
+  - tickets/tasks/completed/2026-09-06_named_conduit_cross_system_discovery_task.md
   - Source readings and path validation recorded during this planning task.
   IMPACT: The owner has a reviewable implementation map; no runtime, test or generated-asset implementation occurred.
   NEXT: Review the map and settle its remaining contract choices before creating implementation patches/tasks.

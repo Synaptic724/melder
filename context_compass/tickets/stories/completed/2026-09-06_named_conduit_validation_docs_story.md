@@ -1,13 +1,25 @@
 # Story: Prove and explain named scope lifecycle guarantees
 
+- Completed: 2026-09-23T11:55:35Z
+- Summary: Owner-authorized named-lesser feature turn-in. Runtime, structural replay,
+  Nexus, examples and canonical documentation are delivered; package assets remain held.
+- Closure evidence: artifacts/named_lesser_finish_20260923/validation.md
+
 ## Metadata
 - Story ID: STORY-2026-09-06-named-conduit-validation-docs
 - Epic: EPIC-2026-09-06-named-lesser-conduit-discovery
-- Status: draft
+- Status: done
 - Owner: codex
 - Agent Name: codex_1, updater_0
 - Created: 2026-09-06T17:17:54Z
-- Updated: 2026-09-07T11:46:34Z
+- Updated: 2026-09-23T11:55:35Z
+
+## Current Resumption
+Delivered under tickets/tasks/completed/2026-09-23_finish_named_lesser_epic_task.md. Canonical source docs and
+graph are promoted, both new lessons run, Expert 24 is corrected and release notes target 0.2.50.
+Final runtime selection 392 passed; all 78 unique tier examples and 39 documentation tests qualify.
+Strict HTML builds 300 pages; 36,469 local links and source/download fidelity checks pass. The owner
+requested full finish/turn-in; packaged generation remains separately held.
 
 ## User Narrative
 As a library user, I want clear examples and dependable naming/cleanup semantics so I can replace
@@ -87,5 +99,10 @@ Existing naming evidence is retained in tasks/2026-09-06_named_conduit_semantics
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-Draft validation contract includes creation-only naming and named-lesser structural persistence.
-The source trace is complete for the recorded boundaries; runtime implementation and test execution remain future work.
+All runtime/documentation/example work is delivered and owner-authorized for turn-in. Read the finish
+task and validation receipt for exact evidence. Packaged generation remains the separate held follow-up.
+
+## Closure Transition
+- from_state: draft
+- to_state: done
+- transition_reason: Owner requested full finish and turn-in; qualification is complete.

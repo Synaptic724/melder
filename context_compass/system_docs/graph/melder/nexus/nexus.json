@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/nexus.py",
- "source_sha256": "f291e1bf3bc9910ae13af8982406a31b67909bee4e70a1cd408775d64c417581",
+ "source_sha256": "b5372e65a57bc56d147a79fa4bd33d79779aa9e9534a04e9a974e3bb92c8ad29",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.nexus": {
@@ -97,14 +97,15 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ae8eef708a490641aaab5106c1fc065b67746f4bb5d9b2ed59f723fb75bf02fb",
+   "span_sha256": "862c8b7f2cd2244149a09c0f86fb223a6d78b2bdd5189b2e30ee24afbb258f41",
    "role": "Public AR root.",
    "responsibilities": [
     "creates and registers live Rift instances",
     "owns managed Nexus-frame authoring and realization policy",
     "owns descriptor publication",
     "owns frame ACL management",
-    "coordinates projection refresh across affected Rifts"
+    "coordinates projection refresh across affected Rifts",
+    "facades existing-ID pooled publication without refreshing admitted Rift commands"
    ],
    "owns_state": [
     "_rifts_by_id",

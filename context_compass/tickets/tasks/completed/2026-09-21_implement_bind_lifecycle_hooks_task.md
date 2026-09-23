@@ -95,7 +95,7 @@ must describe per-binding registration completion rather than an outer transacti
   EVIDENCE:
   - Owner's current instruction: "turn in this epic seems done".
   - tickets/tasks/completed/2026-09-22_add_bind_hook_intermediate_and_expert_examples_task.md
-  - tickets/tasks/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md
+  - tickets/tasks/completed/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md
   IMPACT: User acceptance is supplied; no further confirmation is required for this closure set.
     Other epics, including the narrower pool-hook epic, retain their existing status.
   NEXT: Promote the bind-hook documentation delta, then archive and synchronize the four tickets.

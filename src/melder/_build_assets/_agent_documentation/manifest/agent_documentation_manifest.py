@@ -19,11 +19,11 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.44"
-SOURCE_SHA256 = "373a8df5a2f0e7da8ba7b0285b3b1950c3244bedf854bc646f93783b8ea19351"
+BUILT_FOR_VERSION = "0.2.50"
+SOURCE_SHA256 = "a15df69c6b14d971f79f713895a7e72709a53ed29fd4fbf4ff972280c7d1f4fc"
 MARKED_COUNT = 452
 EXEMPT_COUNT = 163
-PENDING_COUNT = 14
+PENDING_COUNT = 16
 
 AGENT_METADATA = {
     ('melder.aether.aether', 'Aether'): ('public', 'access: public. The global singleton root. `Aether()` returns the process-wide instance and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO frames - the first Spellbook births the frame it names. Use create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to install one directly.'),
@@ -272,7 +272,7 @@ AGENT_METADATA = {
     ('melder.crystallizer.crystals.aether_crystal', 'AetherCrystal'): ('internal', "access: internal. Pure-data digital twin of the Aether root's configured surface. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
     ('melder.crystallizer.crystals.aetheric_frame_crystal', 'AethericFrameCrystal'): ('internal', "access: internal. Pure-data digital twin of one AethericFrame's configured surface. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
     ('melder.crystallizer.crystals.cluster_crystal', 'ClusterCrystal'): ('internal', 'access: internal. Digital twin of one frame-local ConduitCluster. Melder kernel machinery: read it to understand the runtime, do not drive it directly.'),
-    ('melder.crystallizer.crystals.conduit_crystal', 'ConduitCrystal'): ('internal', "access: internal. Pure-data digital twin of one ROOT conduit's structural surface. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
+    ('melder.crystallizer.crystals.conduit_crystal', 'ConduitCrystal'): ('internal', "access: internal. Pure-data twin of one normal or named lesser conduit's structure. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
     ('melder.crystallizer.crystals.contract_crystal', 'ContractCrystal'): ('internal', "access: internal. Digital twin of one ward Contract: the record's relationship map. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
     ('melder.crystallizer.crystals.crystallizer_crystal', 'CrystallizerCrystal'): ('internal', "access: internal. Pure-data digital twin of the crystallizer's own configured surface. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
     ('melder.crystallizer.crystals.mutation_research_crystal', 'MutationResearchCrystal'): ('internal', "access: internal. Pure-data digital twin of the MutationResearch root's configured surface. Melder kernel machinery: read it to understand the runtime, do not drive it directly."),
@@ -442,7 +442,7 @@ AGENT_METADATA = {
     ('melder.utilities.caching_system.caching_system', 'CachingSystem'): ('internal', "access: internal. Per-conduit on-disk payload cache (one .melc marshal bundle per frame_name/conduit_name); upsert/get/remove_spell_payload plus emit() to write. Melder-owned and guarded - the owning conduit gives you this behaviour, you do not construct or bind it. Distinct from the crystallizer's restore record."),
     ('melder.utilities.custom_exceptions.dead_reference_error', 'DeadReferenceError'): ('public', 'access: public. Raised when a weak-reference target is requested after collection; catch it (it subclasses ReferenceError) or hold a strong reference. It means you outlived the referent.'),
     ('melder.utilities.custom_exceptions.empty_error', 'Empty'): ('public', 'access: public. The contextless empty-container signal; catch it when an operation required at least one item. Not queue.Empty - import this one explicitly.'),
-    ('melder.utilities.custom_exceptions.hook_execution_error', 'HookExecutionError'): ('public', 'access: public. Raised when a user lifecycle hook (pre_cast/activation/post_cast) raises during meld; read original_exception, phase, hook_name. It means YOUR callback failed, not Melder.'),
+    ('melder.utilities.custom_exceptions.hook_execution_error', 'HookExecutionError'): ('public', 'access: public. Raised when a user lifecycle hook raises during bind or meld; read original_exception, phase, hook_name. It means YOUR callback failed, not Melder.'),
     ('melder.utilities.custom_exceptions.internal_registration_error', 'InternalRegistrationError'): ('public', 'access: public. Raised by the registration guard when bind() is handed a Melder internal; catch it to detect a kernel-object-bound-as-spell mistake. The guard constructs it - you do not.'),
     ('melder.utilities.custom_exceptions.meld_execution_error', 'MeldExecutionError'): ('public', "access: public. The single 'resolution failed' signal from the Meld runtime; start at inner for the real cause, node_id/param_name narrow it. A dirty-root gate means revalidate, not a defect."),
     ('melder.utilities.custom_exceptions.operation_cancelled_error', 'OperationCancelledError'): ('public', 'access: public. Raised when a unit of work observes cooperative cancellation; catch it distinctly from real failures - it means aborted, not broken.'),
@@ -648,6 +648,8 @@ EXEMPT = (
 
 PENDING = (
     ('melder.aether.conduit.meld.creation_context.creation_context_rebuild', 'CreationContextRebuild'),
+    ('melder.crystallizer.crystal_analysis.conduit_hierarchy', 'ConduitHierarchy'),
+    ('melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy', 'ConduitHierarchyStrategy'),
     ('melder.nexus.configuration.nexus_configuration_builder', 'NexusConfigurationBuilder'),
     ('melder.utilities.caching_system.asset_cache', 'AssetCachePolicy'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictItemsView'),
@@ -978,6 +980,7 @@ CLASS_BASES = {
     ('melder.crystallizer.crystal_analysis.custody.user_source_custody_strategy', 'UserSourceCustodyStrategy'): ('SourceCustodyStrategy',),
     ('melder.crystallizer.crystal_analysis.impact_engine', 'ImpactEngine'): ('Cleanable',),
     ('melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy', 'ClusterMembershipStrategy'): ('PersistenceAnalysisStrategy',),
+    ('melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy', 'ConduitHierarchyStrategy'): ('PersistenceAnalysisStrategy',),
     ('melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy', 'ConfigurationLossStrategy'): ('PersistenceAnalysisStrategy',),
     ('melder.crystallizer.crystal_analysis.preflight.contract_peer_strategy', 'ContractPeerStrategy'): ('PersistenceAnalysisStrategy',),
     ('melder.crystallizer.crystal_analysis.preflight.frame_posture_strategy', 'FramePostureStrategy'): ('PersistenceAnalysisStrategy',),

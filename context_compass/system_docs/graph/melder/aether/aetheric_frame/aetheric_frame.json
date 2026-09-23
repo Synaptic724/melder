@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/aetheric_frame.py",
- "source_sha256": "1236a76e6e8b5cd92a63ec71d93fd949ccbcfeeed942d34def3acc83e726068c",
+ "source_sha256": "3c18ae150e0149a64d90f9b76175c59cb7d35994772d38c6c18d36e966b7f4b5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.aetheric_frame": {
@@ -59,14 +59,15 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6055c2a4c23cd4f6bdbb8542f406624350acc5176432374bf5ded3b7526724c3",
+   "span_sha256": "0cbe83672ddbe9e72a957fad204b83284b7e2ad4a446c2d2538d47fc58d819d2",
    "role": "Per-frame runtime container.",
    "responsibilities": [
     "stores frame-local conduits and registries",
     "owns frame-local control-plane state",
     "hosts cloud and cluster services",
     "holds the frame-bound configuration snapshot",
-    "owns the frame-local dev-ops information registry used by reporting and transaction topology"
+    "owns the frame-local dev-ops information registry used by reporting and transaction topology",
+    "bridges normal-root registration into Cloud's shared name collision authority"
    ],
    "owns_state": [
     "_conduits",

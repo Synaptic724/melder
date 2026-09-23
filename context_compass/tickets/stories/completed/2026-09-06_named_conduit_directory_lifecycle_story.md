@@ -1,19 +1,27 @@
 # Story: Name lesser conduits without changing scope ownership
 
+- Completed: 2026-09-23T11:55:35Z
+- Summary: Owner-authorized named-lesser feature turn-in. Runtime, structural replay,
+  Nexus, examples and canonical documentation are delivered; package assets remain held.
+- Closure evidence: artifacts/named_lesser_finish_20260923/validation.md
+
 ## Metadata
 - Story ID: STORY-2026-09-06-named-conduit-directory-lifecycle
 - Epic: EPIC-2026-09-06-named-lesser-conduit-discovery
-- Status: draft
+- Status: done
 - Owner: codex
 - Agent Name: codex_1, updater_0
 - Created: 2026-09-06T17:17:54Z
-- Updated: 2026-09-22T21:18:35Z
+- Updated: 2026-09-23T11:55:35Z
 
 ## User Narrative
+Stage 1 is implemented; 446 related tests pass. Review and validation receipt:
+- tickets/tasks/completed/2026-09-22_implement_named_lesser_directory_lifecycle_task.md
+
 2026-09-22 accepted direction: active names are unique across the frame, shared with normal roots;
 discovery works in automatic and dynamic mode. Recording keeps its existing dynamic-mode policy.
 Current source/lock/failure trace and implementation regression matrix:
-- tickets/tasks/2026-09-22_refresh_named_lesser_conduit_plan_task.md
+- tickets/tasks/completed/2026-09-22_refresh_named_lesser_conduit_plan_task.md
 
 As an application developer, I want to find an active named lesser conduit without maintaining
 another registry or promoting the scope into a root.
@@ -23,11 +31,17 @@ Discovery is useful across independent application surfaces. Preserve the existi
 instance-lifetime model while making scope boundaries consistently nameable and discoverable.
 
 ## Ticket Contract
-- ENTRY_GATE: Accepted modes/namespace are recorded; publication, load concurrency and consumer contracts are ready.
-- EXECUTION_BOUNDARY: Conduit/frame/cloud discovery, scope acquisition/cleanup/upgrade and focused tests.
-- DEPENDENCIES: Cross-system discovery task; Nexus/Crystallizer decisions before rollout.
+- ENTRY_GATE: Accepted naming rules, current source trace and a scoped low-level patch/test contract.
+- EXECUTION_BOUNDARY: Conduit/Cloud naming, acquire/cleanup/promotion and focused tests, with only
+  necessary frame root-registration and Spellbook existing-conduit name-check bridges.
+- DEPENDENCIES: Current discovery task; later Nexus/Crystallizer integration is separately sequenced.
 - EXIT_GATE: Naming and removal work without altering root accounting or unnamed/meld behavior.
-- FAILURE_ESCALATION: No runtime implementation while lifecycle/publication correctness remains unresolved.
+- FAILURE_ESCALATION: Resolve local name lifecycle correctness; catalogue later subsystem work separately.
+
+## State Transition Event
+- from_state: in_progress
+- to_state: review
+- transition_reason: Owner-authorized lifecycle implementation and focused regressions pass; review precedes turn-in.
 
 ## Requirements
 - Optional name at lesser creation; preserve its current lesser capabilities and parent ownership.
@@ -40,9 +54,8 @@ instance-lifetime model while making scope boundaries consistently nameable and 
 - Apply optional naming to both fresh and pooled acquisition because reuse does not rerun __init__.
 - Define upgrade, permanent destruction, nested cleanup and failed acquisition/collision transitions.
 - Existing root registration remains root-only; enumerate all current consumers before changing cloud lists.
-- Coordinate successful creation-time name/parent publication with required Crystallizer structural emission.
-- On release, remove the named scope from current structural recording as well as cloud discovery before
-  the shell is reusable; preserve enough identity before clearing the name and detaching parent state.
+- Preserve the necessary lifecycle points for the later Crystallizer/Nexus stories; do not implement
+  their sinks, replay or projection coordination in this first low-level slice.
 - Prewarmed idle shells are capacity, not active named structural scopes; do not replay their created objects.
 
 ## Source Orientation
@@ -56,16 +69,27 @@ instance-lifetime model while making scope boundaries consistently nameable and 
 - Prior evidence: tasks/2026-09-06_named_conduit_semantics_task.md.
 
 ## Tasks / Validation
-Create exact implementation tasks after the cross-system findings and owner decisions.
+Owner selected this as the first small implementation slice; see the epic's Implementation Catalogue.
+Create its scoped patch and focused regressions without making later integration choices prerequisites.
 Test both modes, optional names, collisions, concurrent name publication, cleanup, reuse and upgrade.
 Include prewarmed-shell checkout and rejection of later lesser naming/renaming.
 No new leases, wrappers, defensive snapshots, or checks added to every meld solely for naming.
 
-## Open Questions
-- Name publication/retirement ordering across callbacks, cleanup and reuse; naming time and namespace are settled.
-- Named lifecycle participation or required quiescence during live restore; ordinary lesser cycles
-  do not currently enter the transaction sessions drained by LoadGate.
-- Whether cloud enumeration broadens by default or exposes explicit root/all-scope views.
+## Promotion Acceptance Cases
+- Unnamed -> normal X registers X for the same object/ID.
+- Named X -> normal X keeps one entry and does not collide with itself.
+- Named A -> normal B retires A and publishes B for the same object/ID.
+- Collision with another conduit preserves original state and both existing owners.
+- Pre-attachment failure restores the original lesser name and discovery entry.
+- Post-attachment failure follows existing normal-conjure cleanup responsibility.
+- Normal cleanup removes its current directory entry through the root bridge.
+- These tests adapt naming around the delivered graduation route; they do not redesign Book ownership.
+
+## Decisions and Remaining Work
+- Implemented ordering: name assigned before activation; Cloud publication with parent attachment;
+  retirement after disposal/detach and before pool publication. Advisory hook failures remain advisory.
+- Live-restore coordination is tracked by the later Crystallizer story, not a gate for this slice.
+- Cloud enumeration now covers named normal/lesser scopes; existing frame/Aether root maps stay root-only.
 
 ## Findings and Evidence
 - Lesser initialization currently forces None. The pooled-name probe used the separate post-init setter,
@@ -123,10 +147,26 @@ No new leases, wrappers, defensive snapshots, or checks added to every meld sole
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-23T00:09:14Z
+  TYPE: MEASURE
+  CLAIM: The stage-1 lifecycle and promotion implementation passes 446 related tests. Named publication
+    happens with parent attachment; return unregisters/clears only named scopes before idle publication.
+    Cloud listing covers named scopes while frame/cluster ownership remains normal-only.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-22_implement_named_lesser_directory_lifecycle_task.md
+  - artifacts/named_lesser_directory_20260922/qualified.xml
+  IMPACT: Source is ready for review; later structural replay and projection work remain separate.
+  NEXT: Review this slice before story turn-in or later integration.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Draft design scope only. The existing setter label is not a supported discovery/pool lifecycle yet.
-Named-only discovery and conditional unregister/name reset before pool reuse are owner-confirmed.
-Creation-only naming is owner-confirmed; prewarmed shells receive a name only for the requested use.
-Owner additionally requires named-lesser structural persistence. Coordinate record emission/removal with
-creation/release and the shared-book hierarchy. Mode and namespace are settled on 2026-09-22;
-publication ordering and load concurrency remain explicit implementation-contract work.
+Stage 1 implemented and ready for review: creation-only names, named Cloud lookup, one conditional on
+unnamed return, named retirement before pool reuse, and collision-safe promotion/name rollback.
+446 related tests pass; implementation task has the source contract and complete validation receipt.
+Crystallizer and Nexus remain required later stages; packaged generation remains held.
+
+## Closure Transition
+- from_state: review
+- to_state: done
+- transition_reason: Owner requested full finish and turn-in; qualification is complete.

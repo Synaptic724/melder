@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `4b0801083210f446ec591bbbe4c35809618b7d33ff64b431b673b2237e45615e`
+- source_sha256: `849b1f3e6925c6669f74556ca41020139e0362d5dcb96618fb09866ea373c8cc`
 - nodes: 1
 
 ### Nodes
@@ -850,7 +850,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/aetheric_frame.py
 
-- source_sha256: `1236a76e6e8b5cd92a63ec71d93fd949ccbcfeeed942d34def3acc83e726068c`
+- source_sha256: `3c18ae150e0149a64d90f9b76175c59cb7d35994772d38c6c18d36e966b7f4b5`
 - nodes: 2
 
 ### Nodes
@@ -873,6 +873,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - hosts cloud and cluster services
   - holds the frame-bound configuration snapshot
   - owns the frame-local dev-ops information registry used by reporting and transaction topology
+  - bridges normal-root registration into Cloud's shared name collision authority
 - owns_state: `_conduits`, `_spell_registry`, `_selected_spell_registry`, `_spell_system_states`, `_dev_ops_manager`, `_devops_information_registry`, `_configuration`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bind_frame_configuration`, `claim_lookup`, `cleanup`, `conduit_cloud`, `dev_ops_manager`, `devops_information_registry`, `find_conduit_id_for_spell`, `find_index_for_spell`, `frame_configuration`, `freeze_frame_configuration`, `get_lookup`, `get_lookup_sig_by_spell_id` (+16 more)
@@ -973,7 +974,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/conduit_cloud.py
 
-- source_sha256: `50481252d1d509c524a9eccefc1895bb2307e5a8a2ef53e5feb97a5f68de46c6`
+- source_sha256: `96511ab6e7cae0977ce24178015ee5e68216751d340b24726296c5373c3f5f4a`
 - nodes: 2
 
 ### Nodes
@@ -994,7 +995,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - stores conduit name to conduit mappings
   - resolves conduits by name or id within one frame
   - provides the frame-local named conduit lookup surface
-- owns_state: `_registry`, `_name`
+  - owns active named root/lesser discovery separately from borrowed normal-root maps
+  - serializes frame-wide name admission, identity-safe retirement and temporary promotion claims
+- owns_state: `_named_conduits`, `_conduit_names_by_id`, `_reserved_conduit_names`, `_conduit_clusters`, `_devops_identity`, `_id`, `_name`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_conduit_to_cluster`, `cleanup`, `count_conduits`, `create_cluster`, `delete_cluster`, `find_conduit_id_by_name`, `frame_name`, `get_cluster`, `get_clusters_for_conduit`, `get_conduit`, `get_conduit_by_id`, `get_conduit_by_name` (+9 more)
 
@@ -1004,13 +1007,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (5, unconfirmed)
+### Edge candidates (6, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `RLock`
 - `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `DevopsIdentity`
 - `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `ValueError`
+- `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `TypeError`
 - `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `RuntimeError`
 - `melder.aether.aetheric_frame.conduit_cloud.ConduitCloud` creates `ConduitCluster`
 
@@ -4396,7 +4400,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `88700a750fd77400dd893293d4aec868f1e2621bcae1529a581cbcda8947763d`
+- source_sha256: `fe3686f112a8eb630b8489ec350e096369ebbc06716a1bb31d51a28d4b111bce`
 - nodes: 2
 
 ### Nodes
@@ -4430,6 +4434,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - facades bind-hook add and clear on the owning Book for live normal conduits; lessers cannot edit borrowed Bind policy
   - owns stable root runtime hook maps copied from configuration and exposes validated local or explicit root-shared updates
   - restores temporary lesser and prewarmed Space hooks after disposal and before publishing ready shells to their pools
+  - assigns creation-only names to fresh/pooled lessers and retires named discovery before idle publication
+  - emits dynamic named structural ancestry and publishes named Nexus lifecycle under existing scope locks
+  - reserves promotion names and exchanges aliases without changing the live conduit identity
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+64 more)
@@ -4634,7 +4641,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/conduit_ward.py
 
-- source_sha256: `f7f653e79a3ec2065c7addbe92f64cbbfb2a9cc95d69ee3181ec163d08f3fdec`
+- source_sha256: `9f26a5ab364197364c7e358eaf6416f2865dbec7f5820781986d0c6170f50e6a`
 - nodes: 2
 
 ### Nodes
@@ -4662,6 +4669,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - detaches both parent relationship directions when a childless lesser becomes an independent normal root
   - applies policy to link creation and severing
   - updates contracted spell visibility
+  - retains failed descendant ownership and prevents ancestor pooling until child cleanup succeeds
 - owns_state: `_contracts`, `_lesser_conduits`, `_parent_conduit`, `_root_conduit`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `cleanup_all_lesser_conduits`, `root_conduit`
@@ -4681,7 +4689,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard` -> `melder.aether.conduit.conduit_ward.permissions.permissions.Permissions`: ConduitWard checks and propagates Permissions when deciding whether a lineage may be contracted or borrowed.
 - `melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard` -> `melder.aether.conduit.conduit_ward.policies.policies.Policies`: ConduitWard uses Policies to govern dynamic contracting direction and whitelist/block overrides.
 
-### Edge candidates (10, unconfirmed)
+### Edge candidates (11, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -4689,6 +4697,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard` creates `Detail`
 - `melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard` creates `RuntimeError`
 - `melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard` creates `TransferOfOwnership`
+- `melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard` creates `ExceptionGroup`
 - `melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard` creates `DevopsIdentity`
 - `melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard` creates `SafeGuard`
 - `melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard` creates `TypeError`
@@ -15881,7 +15890,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `5e57be91dd84082e84533aad4aa31ab4580bd6e525be707556bf0b41144af1c1`
+- source_sha256: `94c4b05d037dbd079094b8deb7af950d7f571a9b13c657471dcac21da9867874`
 - nodes: 2
 
 ### Nodes
@@ -15909,6 +15918,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - exposes Book-local bind hook add and clear operations through its owned Bind
   - dispatches captured post hooks after active or parked publication and before outer transaction completion
   - refreshes complete recorded Book twins with value-only bind-stage markers and explicitly cleans Bind during teardown
+  - preserves same-identity name admission during existing-conduit conjure
+  - records owning Book and frame twins when public frame setup already locked configuration before conjure
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_spell_validator`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
@@ -16433,6 +16444,44 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/crystallizer/configuration/crystallizer_configuration_builder.py -->
 
+<!-- BEGIN FILE: src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py -->
+
+## src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py
+
+- source_sha256: `ad3d2b05396120b8c76901eb78f8bf9d6360319b80caf2b92fbd382c582993f6`
+- nodes: 2
+
+### Nodes
+
+#### `conduit_hierarchy` (module)
+
+- id: `melder.crystallizer.crystal_analysis.conduit_hierarchy`
+- defined at: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py:1`
+- role: Stateless recorded conduit hierarchy validation and expansion.
+- responsibilities:
+  - coalesces unnamed support from surviving named carriers
+  - validates Book/root/parent/name/policy structure and orders parents first
+- phases: `validation`, `restore`
+
+#### `ConduitHierarchy` (class)
+
+- id: `melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy`
+- defined at: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py:5`
+- role: Stateless recorded conduit hierarchy validation and expansion.
+- responsibilities:
+  - coalesces unnamed support from surviving named carriers
+  - validates Book/root/parent/name/policy structure and orders parents first
+- phases: `validation`, `restore`
+- public methods: `build`, `configuration`, `role`
+
+### Edge candidates (1, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy` creates `ValueError`
+
+<!-- END FILE: src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py -->
+
 <!-- BEGIN FILE: src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py -->
 
 ## src/melder/crystallizer/crystal_analysis/crystal_analysis_result.py
@@ -16853,6 +16902,46 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/crystallizer/crystal_analysis/preflight/cluster_membership_strategy.py -->
 
+<!-- BEGIN FILE: src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py -->
+
+## src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py
+
+- source_sha256: `96316a4216021b14d369203ef0ab0831f50385d6b593493055bf31721912f684`
+- nodes: 2
+
+### Nodes
+
+#### `conduit_hierarchy_strategy` (module)
+
+- id: `melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy`
+- defined at: `src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py:1`
+- role: Named conduit topology preflight strategy.
+- responsibilities:
+  - reports malformed child topology through the existing blocker contract
+- phases: `validation`
+
+#### `ConduitHierarchyStrategy` (class)
+
+- id: `melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy`
+- defined at: `src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py:7`
+- extends: `PersistenceAnalysisStrategy`
+- role: Named conduit topology preflight strategy.
+- responsibilities:
+  - reports malformed child topology through the existing blocker contract
+- phases: `validation`
+- public methods: `analyze`, `name`
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy` | specializes | `melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy.PersistenceAnalysisStrategy` | - | - | derived |
+| `melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy` | uses | `melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy` | many_to_one | validation,restore | authored |
+
+- `melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy` -> `melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy`: Shares the stateless interpretation of recorded parent/Book structure; owns no live scopes.
+
+<!-- END FILE: src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py -->
+
 <!-- BEGIN FILE: src/melder/crystallizer/crystal_analysis/preflight/configuration_loss_strategy.py -->
 
 ## src/melder/crystallizer/crystal_analysis/preflight/configuration_loss_strategy.py
@@ -17099,7 +17188,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_analysis/preflight/persistence_analyzer.py
 
-- source_sha256: `58067e2c592016aae4adeb384ceaf9dc26921716a8490716b81045bfa07d10e3`
+- source_sha256: `6d586ae37e4972c8f3fb5a1268fad664e3258c894e1212a621ed87d4b2fdab3b`
 - nodes: 2
 
 ### Nodes
@@ -17113,13 +17202,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `PersistenceAnalyzer` (class)
 
 - id: `melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer`
-- defined at: `src/melder/crystallizer/crystal_analysis/preflight/persistence_analyzer.py:40`
+- defined at: `src/melder/crystallizer/crystal_analysis/preflight/persistence_analyzer.py:41`
 - extends: `Cleanable`
 - role: Strategy-driven bootload pre-flight: runs the analysis set over a bundle and folds findings into a verdict.
 - responsibilities:
   - run the ten-strategy default set in order, or an explicit caller-supplied sequence
   - run the same default set at load time inside the RestoreEngine (owner ruling)
   - drop the strategy list on cleanup; idempotent, and the stateless strategies need no teardown of their own
+  - applies the named conduit hierarchy preflight blocker strategy
 - owns_state: `_strategies`
 - phases: `restore`, `cleanup`
 - public methods: `analyze`, `cleanup`
@@ -17130,10 +17220,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (10, unconfirmed)
+### Edge candidates (11, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
+- `melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer` creates `ConduitHierarchyStrategy`
 - `melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer` creates `LinkIntegrityStrategy`
 - `melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer` creates `ContractPeerStrategy`
 - `melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer` creates `HydrationStrategy`
@@ -17527,7 +17618,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/crystal_loader_system.py
 
-- source_sha256: `65776dea2e747ca4ec8c686f508c4616314ca33edf5052da9449a6f5b4c1af1e`
+- source_sha256: `3a50e04ef24c45ffdba797df308a7cad874902e7f76fb5449b7a9039cbb80821`
 - nodes: 2
 
 ### Nodes
@@ -17551,6 +17642,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - load_checkpoint / restore_formation_record through the BootMediator admission pipeline
   - describe_last_load = durable detached last-load payload + admission view
+  - requires caller quiescence of ordinary scope lifecycles during live structural restore
 - owns_state: `BootMediator`, `last-load payload`
 - phases: `runtime`
 - public methods: `cleanup`, `configure_restore_scheduler`, `describe_last_load`, `load_checkpoint`, `restore_formation_record`
@@ -17746,7 +17838,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/restore_engine.py
 
-- source_sha256: `69b0a2b8775bc9fd01b45bc642e7c9fb0b3163bd51f74f11a34d988890fc4918`
+- source_sha256: `3c2ba15f36ff87528785d336dd8337fcdb361d33cdde2d416547fc941f945369`
 - nodes: 3
 
 ### Nodes
@@ -17766,7 +17858,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `RestoreReport` (class)
 
 - id: `melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport`
-- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:23`
+- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:27`
 - extends: `Cleanable`
 - role: Detached outcome record for one restore run, built to be judged honestly rather than trusted.
 - responsibilities:
@@ -17780,7 +17872,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `RestoreEngine` (class)
 
 - id: `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine`
-- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:378`
+- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:382`
 - extends: `Cleanable`
 - role: Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.
 - responsibilities:
@@ -17791,6 +17883,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - forwards ordered disposal for active/staged binds; translated actual IDs drive anchors, exact selections, and contract grants
   - fresh structural identities and changed Spell IDs are reported; failure tears down in reverse order
   - forwards recorded resolution capability through active and staged binding with legacy True defaults
+  - folds surviving named carriers before expanding and validating supporting ancestry
+  - selects each Book root explicitly and replays parent-ordered lessers in the shared per-Book unit
 - owns_state: `folded stores`, `built_stack`, `report`
 - phases: `runtime`
 - public methods: `cleanup`, `restore`
@@ -17804,10 +17898,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine` | creates | `melder.crystallizer.synthetic_module.SyntheticModule` | one_to_many | runtime | authored |
 | `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine` | uses | `melder.crystallizer.crystal_analysis.preflight` | 1 | runtime | authored |
 | `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine` | delegates_to | `melder.crystallizer.crystal_loader_system.user_world_rebuild` | - | - | authored |
+| `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine` | uses | `melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy` | many_to_one | validation,restore | authored |
 
 - `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine` -> `melder.crystallizer.synthetic_module.SyntheticModule`: Loader chain M3: recorded synthetic sources rebuild as live modules before target hydration.
 - `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine` -> `melder.crystallizer.crystal_analysis.preflight`: The folded-bundle preflight runs inside restore() before any replay (authoritative admission truth).
 - `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine` -> `melder.crystallizer.crystal_loader_system.user_world_rebuild`: _rebuild_user_world delegates the S2 rebuild mechanics via callbacks so the rebuild laws live in exactly one place.
+- `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine` -> `melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy`: Shares the stateless interpretation of recorded parent/Book structure; owns no live scopes.
 
 ### Edge candidates (16, unconfirmed)
 
@@ -17859,7 +17955,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystallizer.py
 
-- source_sha256: `7a9c7a11a1846d34ccb57c8b48335c6f34b54e1f62f79312dbbad6ba8333671a`
+- source_sha256: `e4eee6727a3a6361862e8d200639c523532106773a5b768a43016619d44c9993`
 - nodes: 2
 
 ### Nodes
@@ -17884,9 +17980,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns installed crystallizer configuration and activation state
   - builds SpellCrystal manifests from live spells under installed policy
   - anchors crystallizer policy above retained and live module-world surfaces
+  - facades conduit-only structural retirement without evicting a shared Book
 - owns_state: `_configuration`, `_configured`, `_activated`, `_aether`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `activate`, `activated`, `active_profile_name`, `analyze_checkpoint`, `analyze_formation`, `analyze_impact`, `apply_external_retention`, `capture_index_graft`, `checkpoint_replay_data`, `cleanup`, `clear_profile`, `configuration` (+53 more)
+- public methods: `activate`, `activated`, `active_profile_name`, `analyze_checkpoint`, `analyze_formation`, `analyze_impact`, `apply_external_retention`, `capture_index_graft`, `checkpoint_replay_data`, `cleanup`, `clear_profile`, `configuration` (+54 more)
 
 ### Edges out
 
@@ -18062,7 +18159,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystals/conduit_crystal.py
 
-- source_sha256: `be0b961630067121ab747a82ab0089d58dabd99faa6d9d8e7007626fb1934333`
+- source_sha256: `bdb4b17ffc1c3790427ed398d97f06f612b1b2f6b2b6435df8979c3c8624cf5e`
 - nodes: 2
 
 ### Nodes
@@ -18079,12 +18176,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ConduitCrystal` (class)
 
 - id: `melder.crystallizer.crystals.conduit_crystal.ConduitCrystal`
-- defined at: `src/melder/crystallizer/crystals/conduit_crystal.py:8`
+- defined at: `src/melder/crystallizer/crystals/conduit_crystal.py:9`
 - extends: `Cleanable`
 - role: Pure-data twin of one ROOT conduit: identity, conjure posture and its initiated link edges.
 - responsibilities:
   - carry name / policy / dynamic as conjured
   - carry outbound link targets
+  - carries detached named lesser role, parent/root and required unnamed ancestry values
 - owns_state: `_conduit_id`, `_spellbook_id`, `_conduit_name`, `_policy_name`, `_dynamic`, `_link_targets`, `_configuration_payload`
 - phases: `init`, `runtime`
 - public methods: `cleanup`, `conduit_id`, `conduit_name`, `configuration_payload`, `describe`, `dynamic`, `link_targets`, `policy_name`, `spellbook_id`
@@ -18436,7 +18534,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/persistence_crystal.py
 
-- source_sha256: `b2dd590d62b1cc83317a7fd2630da84f29485f544dd99b52acbf34a8362b20d8`
+- source_sha256: `125124a345e1deb81a14b1534b871e57eb518080d4364f707fe550cbfcec1911`
 - nodes: 2
 
 ### Nodes
@@ -18454,12 +18552,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `PersistenceCrystal` (class)
 
 - id: `melder.crystallizer.persistence.persistence_crystal.PersistenceCrystal`
-- defined at: `src/melder/crystallizer/persistence/persistence_crystal.py:10`
+- defined at: `src/melder/crystallizer/persistence/persistence_crystal.py:11`
 - extends: `Cleanable`
 - role: One sealed checkpoint: journal window + captured payloads; the durable unit.
 - responsibilities:
   - replay_data() feeds the restore engine
   - to_cached_item()/from_cached_item() is the JSON codec for cache/DB transport
+  - deeply detaches nested captured values at sealed checkpoint input and export boundaries
 - owns_state: `journal_segment`, `captured_payloads`, `sequence_range`
 - phases: `runtime`
 - public methods: `checkpoint_number`, `cleanup`, `created_at`, `describe`, `description`, `from_cached_item`, `id`, `profile_name`, `replay_data`, `sequence_range`, `to_cached_item`
@@ -18485,7 +18584,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/persistence_profile.py
 
-- source_sha256: `74bd90305f04b5e8cb3ea5cf50ae136adcb6c922661eb86467d1c1bd977155d6`
+- source_sha256: `f8e4573b340f29312d7dfef1e0498f1d232715230c08205222c72f2749cc762c`
 - nodes: 2
 
 ### Nodes
@@ -18510,9 +18609,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - records every twin kind (root singletons, frames, books, conduits, indexes, contracts, clusters, spell custody)
   - journals (sequence, kind, key) per emission; tombstones on evictions
   - captures delta windows (capture_segment_since) with custody_location annotation
+  - journals conduit-only tombstones and preserves pooled-ID chronology in captures
+  - selects formation subtrees with required named/root ancestry and embedded unnamed support
 - owns_state: `twin stores`, `emission_log`, `last_checkpoint_sequence`
 - phases: `runtime`
-- public methods: `capture_formation_slice`, `capture_index_graft`, `capture_segment_since`, `cleanup`, `clear`, `describe`, `describe_mutation_research_record`, `describe_spell_crystals`, `get_spell_crystal`, `last_checkpoint_sequence`, `mark_checkpoint`, `profile_name` (+11 more)
+- public methods: `capture_formation_slice`, `capture_index_graft`, `capture_segment_since`, `cleanup`, `clear`, `describe`, `describe_mutation_research_record`, `describe_spell_crystals`, `get_spell_crystal`, `last_checkpoint_sequence`, `mark_checkpoint`, `profile_name` (+12 more)
 
 ### Edges out
 
@@ -18538,7 +18639,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/persistence_system.py
 
-- source_sha256: `6ddc89180add867c176cd2dffb5fb06cf1a5638e08b458d9fad9cbf8eefe747a`
+- source_sha256: `12a9df0e25520cf679191689a450ecee0a7983268e82eb0e2b1082a35d56b928`
 - nodes: 2
 
 ### Nodes
@@ -18566,9 +18667,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - flushes/reloads the profile-scoped cache and enforces its FIFO cap
   - constructs the RestoreEngine for load_checkpoint (chain detached under lock, engine runs outside it)
   - inserts cached items insert-if-absent (cache and external-manager import sinks)
+  - routes conduit-only removal to the active profile without loader dependencies
 - owns_state: `profiles_by_name`, `checkpoint_crystals_by_id`, `crystallizer_cache`, `max_persistence_crystals`
 - phases: `runtime`
-- public methods: `active_profile`, `active_profile_name`, `cached_item_form`, `cached_item_forms`, `capture_formation_record`, `capture_index_graft`, `checkpoint_replay_data`, `cleanup`, `clear_profile`, `create_checkpoint`, `create_profile`, `default_profile` (+26 more)
+- public methods: `active_profile`, `active_profile_name`, `cached_item_form`, `cached_item_forms`, `capture_formation_record`, `capture_index_graft`, `checkpoint_replay_data`, `cleanup`, `clear_profile`, `create_checkpoint`, `create_profile`, `default_profile` (+27 more)
 
 ### Edges out
 
@@ -18599,7 +18701,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/record_version.py
 
-- source_sha256: `697cfc1efb3d38773ce361c2a24edcb134e8514aff6796d6b1baca6b3de8c08c`
+- source_sha256: `2ac527bc26f088098da8161abfd69196085656fc0b4ec524a9252f53f7585b4c`
 - nodes: 2
 
 ### Nodes
@@ -18624,6 +18726,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - stamps cached items, formation records, and emission-tap envelopes
   - refuses newer-major payloads at the read gates
   - uses record major 2 so older readers cannot silently ignore non-resolvable policy
+  - uses major 3 to fence older readers from named lesser child topology
 - phases: `runtime`
 - public methods: `check_readable`, `of`, `parse`, `stamp`
 
@@ -22282,7 +22385,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/frame_descriptor/conduit_descriptor_payload.py
 
-- source_sha256: `549912793c5c440717daf127a4c27692f1bff32a2d50f38136e45fc1158fdba8`
+- source_sha256: `286f991cc0a066bb11f1cb0254817529fd392e3a39429312b28e1ef609eeb069`
 - nodes: 2
 
 ### Nodes
@@ -22304,6 +22407,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Descriptor-safe published conduit payload.
 - responsibilities:
   - stores published conduit posture and lineage summary values
+  - carries cleared name/parent/peer/depth values for named pooled retirement
 - owns_state: `conduit_name`, `conduit_state`, `policy`, `peer_conduit_ids`, `parent_conduit_id`, `lineage_depth`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -22327,7 +22431,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/frame_descriptor/conduit_record.py
 
-- source_sha256: `79af7e30d854a3b58114a8e6cd688cf9dd7a5eb400858948c6a16b18ab0512c4`
+- source_sha256: `9c7a2d43c30f6ccb5663b574531dcc5544df080c6ca58a6db8985bf016a8063b`
 - nodes: 2
 
 ### Nodes
@@ -22350,6 +22454,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - stores published conduit identity and lineage anchor data
   - owns one conduit descriptor payload
+  - retains reusable published identity through named scope retirement and reuse
 - owns_state: `conduit_id`, `root_conduit_id`, `frame_name`, `origin_spellbook_id`, `payload`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -22621,7 +22726,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/frame_descriptor_manager.py
 
-- source_sha256: `35af138e3a44bdfc6818dc00a4a0aaa46ea29bea9b366e4e053863061e52daa6`
+- source_sha256: `121a53f0c53d064fe345b61f99f1af4d653ebc1638fbf15fdac3616bdca31a00`
 - nodes: 2
 
 ### Nodes
@@ -22649,6 +22754,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns Nexus-managed frame record creation and lookup
   - refreshes frame posture cache from Aether
   - publishes native resolution capability and value-only selected dependency, supplied-reference and base links
+  - publishes named lesser lifecycle and cleared pooled values for existing records only
+  - keeps named Cloud summaries distinct from normal-root inventory
 - owns_state: `_frame_descriptors_by_name`, `_aether`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `cleanup`, `list_published_frame_names`
@@ -22684,7 +22791,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/nexus.py
 
-- source_sha256: `f291e1bf3bc9910ae13af8982406a31b67909bee4e70a1cd408775d64c417581`
+- source_sha256: `b5372e65a57bc56d147a79fa4bd33d79779aa9e9534a04e9a974e3bb92c8ad29`
 - nodes: 2
 
 ### Nodes
@@ -22712,6 +22819,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns descriptor publication
   - owns frame ACL management
   - coordinates projection refresh across affected Rifts
+  - facades existing-ID pooled publication without refreshing admitted Rift commands
 - owns_state: `_rifts_by_id`, `_frame_descriptor_manager`, `_frame_acl_manager`, `_frame_manager`, `_rift_gate_controller`, `_configuration`
 - phases: `init`, `runtime`, `refresh`, `cleanup`
 - public methods: `activate`, `activated`, `add_rift`, `authorize_frame_link_for_rift`, `check_for_aetheric_frame`, `cleanup`, `close_and_wait_rift`, `configuration`, `configure`, `configured`, `count_active_rift_threads`, `count_active_rift_threads_total` (+43 more)
@@ -24235,7 +24343,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/capability_command_system.py
 
-- source_sha256: `16c6f715b0e9fccc16f3be47fad1bc70714a23e25f5fba7fa98167eb380c4228`
+- source_sha256: `ff44f3312d1aa7ceabb12826ee71567b966955c6b77ea534d1089904c9bb7b7a`
 - nodes: 2
 
 ### Nodes
@@ -24255,6 +24363,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - preserves the shared broad runtime command behavior for CapabilityRiftSpace
   - owns the six research_* READ commands only (walk/history/heads/residency/diff/campaign_view); organization stays codegen-room-only
+  - forwards optional creation names and uses lesser-aware authorized named lookup
 - phases: `runtime`
 - public methods: `count_conduits`, `create_cluster`, `create_lesser_conduit`, `delete_cluster`, `find_conduit_id_by_name`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_contracted_conduits`, `get_initiated_conduit`, `get_initiated_conduits`, `get_lesser_conduit` (+39 more)
 
@@ -24281,7 +24390,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/codegen_command_system.py
 
-- source_sha256: `86214d8fa305e8a6bb08cdecabe2b55b8255a060dcff1d54532361cbcc8d0821`
+- source_sha256: `1098778744b7a349ac5ad463200e062545e6ecdd7b4f144c2d0b689702dff93d`
 - nodes: 2
 
 ### Nodes
@@ -24303,6 +24412,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - delegates validate and execute requests into the attached CodegenSystem
   - emits full-source codegen room-memory records for top-level codegen actions
   - owns the FULL research_* command family (6 reads + 5 organization verbs + 2 campaign verbs) via a non-constructing MutationResearch peek with teach-grade refusal
+  - uses lesser-aware authorized named lookup without expanding room capabilities
 - owns_state: `_codegen_system`
 - phases: `runtime`
 - public methods: `attach_codegen_system`, `cleanup`, `count_conduits`, `execute_codegen`, `find_conduit_id_by_name`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_contracted_conduits`, `get_links`, `get_spell_in_contracts`, `get_spells_in_contract_by_conduit_name` (+40 more)
@@ -24335,7 +24445,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/command_system.py
 
-- source_sha256: `52fbd6cd5097d9c91b459c394a5aeb9bcac21750a2c8659e92635853d3f51bce`
+- source_sha256: `8cac70ad93ba6e217130ab952ff1da1259a7af773d0dec1933e61b8e295e639a`
 - nodes: 2
 
 ### Nodes
@@ -24357,6 +24467,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - executes allowed runtime actions
   - binds command results into the workstation when requested
   - enforces room and ACL posture on command paths
+  - resolves named access by the exact authorized published ID and rejects changed live names
 - owns_state: `_id`, `_space`, `_workstation`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `command_system_id`, `describe_spells_in_conduit`, `execute_target_method`, `find_spell_id`, `find_spell_key`, `get_active_spellspace`, `get_nexus_frame`, `get_resolution_state`, `get_spell_by_id`, `get_spell_by_index_id`, `get_spell_by_source_id` (+7 more)

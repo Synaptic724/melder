@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-22
+- Updated: 2026-09-23
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -325,7 +325,7 @@ External interfaces are Python APIs:
   surface over the buried persistence record; emit sink verbs (`emit`,
   `emit_spell_crystal`, `emit_spell_activity`, `emit_spell_removed`,
   `emit_spellbook_removed`, `emit_spell_index_removed`,
-  `emit_contract_removed`, `emit_frame_removed`, `emit_nexus_state`,
+  `emit_contract_removed`, `emit_conduit_removed`, `emit_frame_removed`, `emit_nexus_state`,
   `emit_mutation_research_state`) are pushed by structural units at their
   own confirmation/teardown points and are NO-OPs while the crystallizer is
   inactive; `create_spell_index_crystal` / `create_contract_crystal` are
@@ -671,10 +671,14 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 
 ### Sequence: Create Lesser Conduit
 1. Parent Conduit fires pre-create hook.
-2. Constructs lesser Conduit with same Spellbook/`SpellbookConfiguration`.
+2. Acquires a pooled shell or constructs a lesser with the shared Book/configuration.
+   An optional exact name is assigned for this use before activation; idle shells remain unnamed.
 3. Wires root-lineage pointers (`_root_conduit_id`, `_meld._resolution_conduit_id`) and root-conduit ward reference.
-4. Links lesser into ConduitWard lineage tree.
-5. Fires activated and post-create hooks.
+4. Fires activation, then attaches to the immediate parent. The named branch publishes Cloud,
+   structural recording and Nexus metadata under its existing child lock, before post-created.
+5. On named return, complete disposal/descendants, retire records and named discovery, clear the name
+   and detach, restore temporary hooks, then publish the ready shell idle. Anonymous leaf return
+   checks the name once and performs no Cloud/recorder/Nexus work.
 
 ### Sequence: Upgrade Lesser to Normal
 1. `Conduit.upgrade_to_normal(name, configuration=None, hooks=None)` validates an attached,
@@ -813,6 +817,30 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Named lesser scopes (2026-09-23): create_lesser_conduit(logger=None, *, name=None) names only the
+  current use. Exact nonempty names are frame-wide unique across roots and active lessers, in both
+  automatic and dynamic mode. Cloud owns a named directory separate from frame-owned normal-root
+  maps; naming does not create a Book, grant root operations or change Existence-based stores.
+  Promotion reserves its destination, exchanges aliases for the same ID at normal-root registration
+  and preserves the original lesser on pre-attachment rollback. Borrowed discovery grants no lease.
+  EVIDENCE: `src/melder/aether/aetheric_frame/conduit_cloud.py:ConduitCloud`,
+  `src/melder/aether/conduit/conduit.py:Conduit._link_new_lesser_under_lock`,
+  `Conduit._prepare_named_for_pool` and `Conduit.upgrade_to_normal`.
+- Dynamic named recording stores detached ancestor values inside each surviving named twin.
+  Conduit-only tombstones retire scopes without removing their shared Book; sealed history is
+  immutable. Both replay drivers use the common per-Book root/parent-first reconstruction with fresh
+  IDs and no saved application objects. Schema major 3 fences root-only readers. Live restore requires
+  caller quiescence of ordinary scope cycles. Public frame setup and normal conjure still emit the
+  owning Book and settled frame twins even when rich configuration was already locked.
+  EVIDENCE: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py:ConduitHierarchy`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._replay_one_book`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._conjure_logic`.
+- Nexus named lifecycle replaces existing payloads and clears names/parents into pooled records
+  before idle publication. Same-ID named reuse keeps compiled membership; new/deleted IDs retain
+  explicit Rift refresh. Capability/codegen getters resolve the published authorized ID and reject
+  changed live names. Anonymous cycles remain local, and no in-command Rift refresh is introduced.
+  EVIDENCE: `src/melder/nexus/frame_descriptor_manager.py:FrameDescriptorManager._publish_conduit_record`,
+  `src/melder/nexus/rift/command_system/command_system.py:CommandSystem._get_conduit_by_name_locked`.
 - Pooled hook ownership (2026-09-22): normal roots own stable Conduit/Meld baseline dictionaries
   copied from configuration, including empty dictionaries. Explicit shared updates publish only
   through normal roots and preserve dictionary identity; inheritors see new contents without a tree
@@ -1034,6 +1062,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- Named collision/acquisition failures preserve other directory owners. Soft retirement failures
+  retain ownership for retry and never publish idle; failed descendants prevent ancestor return.
+  Hard teardown logs frame-summary publication failure and continues disposal. Cloud/Nexus reads
+  are not one atomic snapshot, and ordinary references do not remain valid through owner cleanup.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._prepare_named_for_pool`,
+  `Conduit._cleanup_lesser_conduit` and
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._cleanup_children_for_pool`.
 - Bind callbacks raise HookExecutionError carrying pre_bind, bind_activation or post_bind plus
   callback identity and the original cause. Pre refusal creates no Spell. Activation failure and
   native collisions retire only the unpublished allocation/index. Post failures retain already
@@ -1096,7 +1131,7 @@ TEXT RATHER THAN CONTRADICT IT - `BootMediator` is absent exactly because the
 topology section records it was renamed to `LoadAdmission` on 2026-07-11, and
 `refuse_on_blockers` is a keyword parameter on `RestoreEngine`, not a method,
 which is what that section calls it. At that verification, RecordVersion was "1.0.0"; it advanced
-to "2.0.0" for non-resolvable registration policy. The `__crystallizer_cache__` folder remains.
+to "2.0.0" for non-resolvable policy and "3.0.0" for named lesser topology. The cache folder remains.
 
 ### Persistence & Restore Architecture (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07)
 
@@ -1228,7 +1263,7 @@ shortfall honesty, R-A covenant) are unchanged.
   record - the thread-safety law - shipped after); melder-driven remote
   retention is opt-in via the delete lane. Callables-first stands: the
   record stores presence flags, never code.
-- RECORD VERSIONING: RecordVersion "2.0.0" stamps every durable
+- RECORD VERSIONING: RecordVersion "3.0.0" stamps every durable
   artifact (cached items, formation records, tap envelopes); readers
   gate on the MAJOR (newer refuses with the upgrade instruction;
   pre-versioning reads as 0.0.0 into the tolerance lanes). The twin
@@ -1350,9 +1385,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7191
-  loc: 7191
-  verified_at: 2026-09-22T19:45:23Z
+  end_line: 7205
+  loc: 7205
+  verified_at: 2026-09-23T12:28:41Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
@@ -1498,9 +1533,9 @@ Aether and frames:
   note: process-wide utility/logging provider host.
 - path: `src/melder/crystallizer/crystallizer.py`
   start_line: 1
-  end_line: 2922
-  loc: 2922
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 3009
+  loc: 3009
+  verified_at: 2026-09-23T11:33:20Z
   note: hosted crystallizer root owned by Aether (owns three same-rank
     children since the 2026-07-10 decomposition: the record, the asset system,
     and the loader - see "Persistence Subsystem Topology" below).
@@ -1512,6 +1547,16 @@ Aether and frames:
   note: bind-signature CARRIER for one spell version; delegates module-world
     analysis to crystal_analysis and carries the result (moved + slimmed,
     2026-07-10).
+- path: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
+  start_line: 1
+  end_line: 264
+  loc: 264
+  verified_at: 2026-09-23T11:33:20Z
+- path: `src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py`
+  start_line: 1
+  end_line: 44
+  loc: 44
+  verified_at: 2026-09-23T11:33:20Z
 - path: `src/melder/crystallizer/synthetic_module.py`
   start_line: 1
   end_line: 1625
@@ -1576,9 +1621,9 @@ Aether and frames:
   note: expanded from the directory entry `src/melder/mutation_research/research_set/`
 - path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
   start_line: 1
-  end_line: 1119
-  loc: 1119
-  verified_at: 2026-08-01T19:12:00Z
+  end_line: 1126
+  loc: 1126
+  verified_at: 2026-09-23T11:33:20Z
   note: per-frame state and control plane.
 
 Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
@@ -1670,15 +1715,15 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: admission verdict; evidence, never a bare bool.
 - path: `src/melder/nexus/nexus.py`
   start_line: 1
-  end_line: 3421
-  loc: 3421
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 3565
+  loc: 3565
+  verified_at: 2026-09-23T11:33:20Z
   note: public AR singleton root.
 - path: `src/melder/nexus/frame_descriptor_manager.py`
   start_line: 1
-  end_line: 857
-  loc: 857
-  verified_at: 2026-09-19T23:13:57Z
+  end_line: 871
+  loc: 871
+  verified_at: 2026-09-23T12:28:41Z
   note: frame-scoped descriptor and canonical-record owner.
 - path: `src/melder/nexus/frame_acl_manager.py`
   start_line: 1
@@ -1820,9 +1865,9 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: immutable room-memory record object.
 - path: `src/melder/nexus/rift/command_system/command_system.py`
   start_line: 1
-  end_line: 1655
-  loc: 1655
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1697
+  loc: 1697
+  verified_at: 2026-09-23T11:33:20Z
   note: shared room-local command surface.
 - path: `src/melder/nexus/rift/command_system/static_command_system.py`
   start_line: 1
@@ -1832,15 +1877,15 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: static command posture.
 - path: `src/melder/nexus/rift/command_system/capability_command_system.py`
   start_line: 1
-  end_line: 1655
-  loc: 1655
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1681
+  loc: 1681
+  verified_at: 2026-09-23T11:33:20Z
   note: capability command posture.
 - path: `src/melder/nexus/rift/command_system/codegen_command_system.py`
   start_line: 1
-  end_line: 1937
-  loc: 1937
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1936
+  loc: 1936
+  verified_at: 2026-09-23T11:33:20Z
   note: codegen command posture.
 - path: `src/melder/nexus/acl/builder/frame_acl_builder.py`
   start_line: 1
@@ -1923,9 +1968,9 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: room-event publisher for codegen lifecycle signals.
 - path: `src/melder/aether/aetheric_frame/conduit_cloud.py`
   start_line: 1
-  end_line: 877
-  loc: 877
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1018
+  loc: 1018
+  verified_at: 2026-09-23T12:28:41Z
   note: dynamic conduit registry.
 - path: `src/melder/aether/conduit/conduit_cluster.py`
   start_line: 1
@@ -1965,9 +2010,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6635
-  loc: 6635
-  verified_at: 2026-09-22T19:45:23Z
+  end_line: 6834
+  loc: 6834
+  verified_at: 2026-09-23T12:28:41Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
@@ -1977,9 +2022,9 @@ Conduit runtime:
   note: conduit state enum.
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
-  end_line: 3752
-  loc: 3752
-  verified_at: 2026-09-22T14:36:10Z
+  end_line: 3780
+  loc: 3780
+  verified_at: 2026-09-23T11:33:20Z
   note: contracts and lineage.
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
   start_line: 1
@@ -2140,6 +2185,25 @@ Non-path notes carried forward from the previous revision:
 - Registration refusal itself lives in `src/melder/aether/spellbook/bind/bind.py`
 
 ## Diagrams
+### Named Scope Discovery and Replay
+```text
+create(name) -> attach -> Cloud + dynamic record + Nexus -> active named lesser
+cleanup -> dispose descendants -> retire name/record -> clear/detach -> ready pool
+checkpoint -> fold surviving carriers -> validate ancestry -> new root and lesser IDs
+```
+
+```mermaid
+flowchart LR
+  A[Acquire named lesser] --> C[Cloud named directory]
+  A --> R[Dynamic structural twin with ancestry]
+  A --> N[Nexus published scope]
+  A --> D[Cleanup and named retirement]
+  D --> P[Unnamed ready pool]
+  R --> F[Fold and validate hierarchy]
+  F --> B[Replay root then lesser parents with fresh IDs]
+  B --> A
+```
+
 ### Pooled Hook Lifecycle
 ```text
 root-owned baseline -> scope lease -> dispose creations -> restore temporary hooks -> idle pool
@@ -2313,6 +2377,8 @@ policy source. Receiving-book order wins on replay. The loader follows changed b
 without rewriting the original record or existing live IDs.
 
 ## Information Sources
+- `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
+- `src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py`
 - `README.md`
 - `src/melder/__init__.py`
 - `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
@@ -2425,6 +2491,12 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-23 named lesser contracts are promoted. Cloud discovery stays separate from root ownership;
+names retire before reuse. Crystallizer retains named structure plus necessary unnamed ancestry,
+never prior creations. Nexus preserves existing-ID projections through named pool cycles and retains
+explicit refresh for membership changes. Public configured-Book conjure records both owner and frame.
+The component map details the lifecycle and shared replay units; application ownership is unchanged.
 
 2026-09-22 pooled hook contracts are promoted. Temporary hook references are retired before idle
 publication, including manual/managed Spaces and prewarming. Root-shared maps retain identity for

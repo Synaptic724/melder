@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "5e57be91dd84082e84533aad4aa31ab4580bd6e525be707556bf0b41144af1c1",
+ "source_sha256": "94c4b05d037dbd079094b8deb7af950d7f571a9b13c657471dcac21da9867874",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -60,7 +60,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ccbb2c6c39b9d45412d2da3f43453e53c83caa989fa614bd4213485d4366c44e",
+   "span_sha256": "b0c0f1d3c25e8b3104ae54ad1e277ec82f89ce0cd8716609a3a87750dc1aeea5",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
@@ -72,7 +72,9 @@
     "coordinates spell lineage state and transaction-sensitive binding changes",
     "exposes Book-local bind hook add and clear operations through its owned Bind",
     "dispatches captured post hooks after active or parked publication and before outer transaction completion",
-    "refreshes complete recorded Book twins with value-only bind-stage markers and explicitly cleans Bind during teardown"
+    "refreshes complete recorded Book twins with value-only bind-stage markers and explicitly cleans Bind during teardown",
+    "preserves same-identity name admission during existing-conduit conjure",
+    "records owning Book and frame twins when public frame setup already locked configuration before conjure"
    ],
    "owns_state": [
     "_bind",

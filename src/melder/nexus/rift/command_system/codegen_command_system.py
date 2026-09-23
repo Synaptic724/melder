@@ -276,7 +276,12 @@ class CodegenCommandSystem(CommandSystem):
             frame_name: Optional[str] = None,
     ) -> object:
         """
-        Return one live root/normal conduit object by name.
+        Return one ACL-authorized root or lesser conduit by its published name.
+
+        Contract:
+            Resolves the published identity through existing ID access gates.
+            New IDs require explicit projection refresh; same-ID named reuse reads
+            current metadata. Returns a borrowed reference without extending lifetime.
 
         Args:
             conduit_name:
@@ -287,6 +292,10 @@ class CodegenCommandSystem(CommandSystem):
 
         Returns:
             object: Live conduit object.
+
+        Raises:
+            ValueError: Name/identity is unavailable, changed or denied by command ACLs.
+            RuntimeError: The selected scope was cleaned during the borrowed lookup.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -294,19 +303,9 @@ class CodegenCommandSystem(CommandSystem):
                 frame_name=frame_name,
         ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            self._assert_raw_runtime_object_access_allowed("get_conduit_by_name")
-            self._assert_frame_command_enabled(resolved_frame_name)
-            conduit_id = self._get_required_published_conduit_id_by_name(
+            return self._get_conduit_by_name_locked(
                 conduit_name,
                 frame_name=resolved_frame_name,
-            )
-            self._assert_conduit_command_enabled(
-                conduit_id,
-                frame_name=resolved_frame_name,
-            )
-            return self._aether.get_conduit_by_name(
-                conduit_name,
-                resolved_frame_name,
             )
 
     def list_conduit_ids(

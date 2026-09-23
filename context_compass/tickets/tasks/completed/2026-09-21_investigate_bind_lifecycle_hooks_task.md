@@ -100,7 +100,7 @@ Fingerprinting precedes Spell construction today; activation-time edits need a c
   EVIDENCE:
   - src/melder/aether/conduit/conduit.py:3160-3197
   - src/melder/aether/conduit/conduit.py:3250-3283
-  - tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md:1-26
+  - tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md:1-26
   - tickets/epics/2026-09-07_stateful_application_recovery_epic.md:1-15
   - tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md:1-13
   IMPACT: The new bind hooks belong to Spellbook's existing registration flow; they do not imply

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
- "source_sha256": "f7f653e79a3ec2065c7addbe92f64cbbfb2a9cc95d69ee3181ec163d08f3fdec",
+ "source_sha256": "9f26a5ab364197364c7e358eaf6416f2865dbec7f5820781986d0c6170f50e6a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.conduit_ward": {
@@ -39,18 +39,19 @@
     "root_conduit"
    ],
    "shape": {
-    "method_count": 64,
+    "method_count": 65,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "bacc05442c57b60a8315013d3474a9f51a294d70b2c4976f9d52a43eaf3dd06e",
+   "span_sha256": "1818550980a9aa353c5ed0e36e70c487450771596df2b72ecfa9c9f976432519",
    "role": "Contract and lineage graph manager for a conduit.",
    "responsibilities": [
     "manages peer contracts",
     "manages lesser-conduit lineage",
     "detaches both parent relationship directions when a childless lesser becomes an independent normal root",
     "applies policy to link creation and severing",
-    "updates contracted spell visibility"
+    "updates contracted spell visibility",
+    "retains failed descendant ownership and prevents ancestor pooling until child cleanup succeeds"
    ],
    "owns_state": [
     "_contracts",
@@ -95,6 +96,12 @@
   {
    "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
    "to_label": "TransferOfOwnership",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+   "to_label": "ExceptionGroup",
    "relation": "creates",
    "confidence": "candidate"
   },

@@ -147,7 +147,7 @@ def test_set_new_policy_delegates_for_dynamic(conduit_dynamic_normal: Conduit) -
 
     conduit_dynamic_normal._conduit_ward._set_new_policy.assert_called_once_with("default")
     conduit_dynamic_normal._nexus._publish_conduit_record.assert_called_once_with(
-        conduit_dynamic_normal
+        conduit_dynamic_normal, pooled=False,
     )
 
 

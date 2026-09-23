@@ -1,13 +1,26 @@
 # Story: Expose named scopes without confusing roots, permissions or consumers
 
+- Completed: 2026-09-23T11:55:35Z
+- Summary: Owner-authorized named-lesser feature turn-in. Runtime, structural replay,
+  Nexus, examples and canonical documentation are delivered; package assets remain held.
+- Closure evidence: artifacts/named_lesser_finish_20260923/validation.md
+
 ## Metadata
 - Story ID: STORY-2026-09-06-named-conduit-nexus-consumers
 - Epic: EPIC-2026-09-06-named-lesser-conduit-discovery
-- Status: draft
+- Status: done
 - Owner: codex
 - Agent Name: codex_1, updater_0
 - Created: 2026-09-06T17:17:54Z
-- Updated: 2026-09-07T11:46:34Z
+- Updated: 2026-09-23T11:55:35Z
+
+## Delivered Implementation
+Named publication and ACL-preserving lookup are implemented. Final affected qualification: 471 passed.
+- tickets/tasks/completed/2026-09-23_implement_named_lesser_nexus_task.md
+Named returns retain unnamed pooled records; anonymous cycles keep their existing local-only policy.
+Same-ID named reuse replaces payloads. Fresh/deleted IDs retain explicit projection refresh. No
+Nexus schema or ACL redesign, synchronous command refresh, new root rights or build assets.
+Historical findings/requirements below remain source-reading context; current contracts live in the task.
 
 ## User Narrative
 As a user or inspection client, I want to locate a named live scope and understand its actual type,
@@ -105,6 +118,12 @@ Test existing compiled projections when a known pooled id gains/loses a name and
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-Existing Nexus fields can describe named lessers. Cloud alone does not serve published named queries.
-Use the recorded source distinctions to select publication, pooled-record and resolver behavior while
-preserving ACLs and root-only capabilities. Structural restore must feed the same resulting contract.
+Delivered in the September 23 implementation task, with 471 passing affected tests. Publication uses
+existing fields and named-only lifecycle seams; commands use authorized IDs and preserve current
+capabilities. Both restore drivers publish the same fresh hierarchy. Canonical docs/examples and
+owner turn-in remain with the qualification story; generation is still held.
+
+## Closure Transition
+- from_state: review
+- to_state: done
+- transition_reason: Owner requested full finish and turn-in; qualification is complete.

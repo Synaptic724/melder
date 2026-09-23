@@ -184,6 +184,10 @@ BIND LIFECYCLE POLICY (2026-09-22)
      post registration, configuration seeds and Book/normal-Conduit add/clear/re-add).
      Bind callbacks run at registration; lesson 03's creation callbacks run at meld.
 
+NAMED SCOPE DISCOVERY (2026-09-23)
+  41 named_lesser_conduits (creation-only names, frame-wide Cloud discovery,
+     collisions, separate per-conduit state, retirement and anonymous reuse).
+
 HARNESS
   pytest_examples/test_intermediate_examples.py (every lesson runs)
   pytest_examples/test_intermediate_probes.py (contract probes)

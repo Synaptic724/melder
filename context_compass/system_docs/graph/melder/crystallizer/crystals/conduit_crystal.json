@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/conduit_crystal.py",
- "source_sha256": "be0b961630067121ab747a82ab0089d58dabd99faa6d9d8e7007626fb1934333",
+ "source_sha256": "bdb4b17ffc1c3790427ed398d97f06f612b1b2f6b2b6435df8979c3c8624cf5e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.conduit_crystal": {
@@ -25,7 +25,7 @@
    "label": "ConduitCrystal",
    "kind": "class",
    "file": "src/melder/crystallizer/crystals/conduit_crystal.py",
-   "lineno": 8,
+   "lineno": 9,
    "bases": [
     "Cleanable"
    ],
@@ -46,12 +46,13 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "76c2e2343cdd5cec199848b501452d1b49740fc6aa108f8b915d59dac367e13d",
+   "span_sha256": "e2e176eed38f69fdacb35e0283c45744c68a09c58bdc10b1b6dec55f256af169",
    "include": true,
    "role": "Pure-data twin of one ROOT conduit: identity, conjure posture and its initiated link edges.",
    "responsibilities": [
     "carry name / policy / dynamic as conjured",
-    "carry outbound link targets"
+    "carry outbound link targets",
+    "carries detached named lesser role, parent/root and required unnamed ancestry values"
    ],
    "owns_state": [
     "_conduit_id",
@@ -87,6 +88,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "deepcopy": "copy.deepcopy",
   "Dict": "typing.Dict",
   "List": "typing.List",
   "Optional": "typing.Optional",

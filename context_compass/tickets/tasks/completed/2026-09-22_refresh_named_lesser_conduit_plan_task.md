@@ -1,14 +1,19 @@
 # Task: Refresh named lesser conduit design after graduation and pool repairs
 
+- Completed: 2026-09-23T11:55:35Z
+- Summary: Owner-authorized named-lesser feature turn-in. Runtime, structural replay,
+  Nexus, examples and canonical documentation are delivered; package assets remain held.
+- Closure evidence: artifacts/named_lesser_finish_20260923/validation.md
+
 ## Metadata
 - Task ID: TASK-2026-09-22-refresh-named-lesser-conduit-plan
 - Epic: EPIC-2026-09-06-named-lesser-conduit-discovery
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p2
 - Created: 2026-09-22T20:51:02Z
-- Updated: 2026-09-22T21:16:32Z
+- Updated: 2026-09-23T11:55:35Z
 
 ## Objective
 Resume the owner's selected named-lesser epic using current graduation and pool behavior.
@@ -32,7 +37,7 @@ Refresh its first implementation boundary and distinguish settled requirements f
 ## State Transition Event
 - from_state: in_progress
 - to_state: review
-- transition_reason: Deeper source boundaries and regression matrix recorded; final concurrency choices remain explicit.
+- transition_reason: Epic catalogue and first story now isolate low-level naming, pool return and promotion.
 
 ## Steps / Checklist
 - [x] Read the four stories and existing implementation map.
@@ -43,11 +48,15 @@ Refresh its first implementation boundary and distinguish settled requirements f
 - [x] Trace record removal/folding, ancestry/formation closure and both restore drivers.
 - [x] Trace Nexus publication, compiled membership and public named lookup consumers.
 - [x] Record a concrete implementation/test matrix with unresolved behavior explicitly identified.
+- [x] Catalogue the small first slice and promotion cases; leave later integration in its own stages.
 
 ## Deliverables
 - Updated epic and source-backed first-slice plan recorded here.
 
 ## First Implementation Slice
+Latest owner direction: start with this low-level slice. Crystallizer and Nexus are catalogued later;
+their coordination choices do not gate the local directory/pool/promotion tests or implementation plan.
+
 Preserve the existing positional logger argument and add keyword-only
 `name: Optional[str] = None` to `Conduit.create_lesser_conduit`.
 
@@ -85,7 +94,8 @@ investigation before coding; ancestry, compatibility and publication details mus
 
 ## Required Reading for Resumption
 Read the deeper investigation conclusions and latest Notes first. These identify changed assumptions,
-source-backed integration points and the two remaining concurrency contracts before code edits.
+source-backed integration points and later integration concerns. The epic's current stage order wins
+over the older suggestion to settle every cross-system concurrency choice before starting stage 1.
 
 ## Deeper Investigation Conclusions
 
@@ -114,7 +124,9 @@ source-backed integration points and the two remaining concurrency contracts bef
 - Lookup returns a borrowed live conduit, not a lease. No new guarantees for a retained reference
   used after owner cleanup or pool reuse are proposed.
 
-### Remaining Concurrency Contracts
+### Later Integration Concurrency Contracts (Stages 2 and 3)
+Stage 1 proves Cloud registration/removal and pool/promotion consistency. The following recorder,
+projection and live-restore coordination work is catalogued for the later integrations.
 1. Serialize named publication/removal sufficiently that delayed work for use A cannot overwrite
    name B after the same shell is reused. Define the critical section and failure boundary without
    calling Nexus/Crystallizer while holding a leaf directory lock or broadening the unnamed path.
@@ -209,7 +221,7 @@ Record findings after each complete source boundary, with explicit evidence and 
     ownership as a prerequisite, now delivered by the September 22 graduation epic. Refresh the
     existing plan against that work and the pool-hook reset contracts before any runtime changes.
   EVIDENCE:
-  - tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md:287-318
+  - tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md:287-318
   - tickets/epics/completed/2026-09-22_graduated_conduit_spellbook_ownership_and_configuration_epic.md:3-23
   - tickets/epics/completed/2026-09-21_runtime_hook_lifecycle_and_adjustment_epic.md
   IMPACT: Graduation repair is no longer pending; naming still needs its own scope-discovery lifecycle.
@@ -225,9 +237,9 @@ Record findings after each complete source boundary, with explicit evidence and 
     is delivered separately; the remaining first slice is shared-name collision and scope lifecycle.
   EVIDENCE:
   - tickets/tasks/completed/2026-09-07_named_conduit_implementation_map_task.md:111-154
-  - tickets/stories/2026-09-06_named_conduit_directory_lifecycle_story.md:26-43
-  - tickets/stories/2026-09-06_named_conduit_crystallizer_contract_story.md:26-48
-  - tickets/stories/2026-09-06_named_conduit_nexus_consumers_story.md:22-39
+  - tickets/stories/completed/2026-09-06_named_conduit_directory_lifecycle_story.md:26-43
+  - tickets/stories/completed/2026-09-06_named_conduit_crystallizer_contract_story.md:26-48
+  - tickets/stories/completed/2026-09-06_named_conduit_nexus_consumers_story.md:22-39
   IMPACT: Reuse the existing story split and map; refresh changed source locations and transitions.
     Do not re-open the completed graduation implementation or reduce persistence to an optional add-on.
   NEXT: Verify component indexes and read the current directory/root/pool source boundary.
@@ -319,7 +331,7 @@ Record findings after each complete source boundary, with explicit evidence and 
     retains the existing dynamic policy. Continue reading real lifecycle/lock/record/consumer code.
   EVIDENCE:
   - Owner's current reply accepting the logic and directing implementation investigation.
-  - tickets/epics/2026-09-06_named_lesser_conduit_discovery_epic.md
+  - tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md
   IMPACT: Do not re-ask these defaults. Investigate correctness and record concrete implementation
     boundaries before runtime edits; existing generation hold still applies.
   NEXT: Trace registry ownership and lifecycle lock/callback ordering, then record/replay consumers.
@@ -443,14 +455,33 @@ Record findings after each complete source boundary, with explicit evidence and 
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
-## Context / Handoff Summary
-Deeper source investigation is recorded with an implementation and regression matrix. Settled:
-frame-wide unique names, both-mode discovery, existing dynamic recording, creation-only naming,
-pool retirement and required structural replay. No runtime edits, tests or generation.
+- DATETIME: 2026-09-22T23:31:10Z
+  TYPE: DECISION
+  CLAIM: Owner directs us to start small with low-level Conduit/ConduitCloud naming, unregistering
+    and clearing before pool return, and promotion into a normal conduit. Catalogue later work in
+    the epic. Crystallizer/Nexus remain later stories; their coordination choices do not block
+    defining or testing the low-level name lifecycle. No runtime implementation is requested here.
+  EVIDENCE:
+  - Owner's current request to catalogue the work and start with low-level lifecycle/discovery.
+  - src/melder/aether/conduit/conduit.py:2087-2305
+  - src/melder/aether/spellbook/spellbook.py:6635-6858
+  IMPACT: The immediate plan covers name admission, acquire, pool retirement and promotion.
+    Preserve the completed graduation machinery; adapt its name checks and directory transitions only.
+  NEXT: Update the epic catalogue and first story with explicit promotion cases and later-stage boundaries.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 
-New findings: lesser hooks suppress exceptions; disposal may abort pool return; checkpoints use
-per-window final payloads; both replay drivers share the Book unit; Nexus retains compiled id sets;
-automatic refresh inside a live command self-waits; LoadGate does not cover ordinary lesser cycles.
-Next: finish named publication/retirement ordering and live-load coordination in the first patch
-contract, then add focused regressions and implement the directory/lifecycle slice. Preserve the
-four-story program and do not claim these source traces are concurrency or performance measurements.
+## Context / Handoff Summary
+Latest owner direction: start small. The epic now catalogues four ordered stages. Stage 1 is Conduit
+and ConduitCloud creation-time naming, unregister/name clearing before pool return, and promotion.
+Same-name promotion, replacement names, collisions and pre-attachment rollback are explicit cases.
+Only necessary frame/Spellbook name-check bridges belong here; graduation ownership is already fixed.
+
+Crystallizer recording/replay and Nexus integration remain later required stories. Their concurrency
+questions are preserved in the research, not prerequisites for beginning the low-level slice.
+Next: prepare stage-1 regressions and its scoped patch contract. No runtime edits, tests or generation.
+
+## Closure Transition
+- from_state: review
+- to_state: done
+- transition_reason: Owner requested full finish and turn-in; qualification is complete.

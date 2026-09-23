@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystal_analysis/preflight/persistence_analyzer.py",
- "source_sha256": "58067e2c592016aae4adeb384ceaf9dc26921716a8490716b81045bfa07d10e3",
+ "source_sha256": "6d586ae37e4972c8f3fb5a1268fad664e3258c894e1212a621ed87d4b2fdab3b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystal_analysis.preflight.persistence_analyzer": {
@@ -19,7 +19,7 @@
    "label": "PersistenceAnalyzer",
    "kind": "class",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/persistence_analyzer.py",
-   "lineno": 40,
+   "lineno": 41,
    "bases": [
     "Cleanable"
    ],
@@ -33,13 +33,14 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "28e9c4497a8c117043148a5856243cfac30d68cebc5c4f2e85896db7e76d04fc",
+   "span_sha256": "eea9bf63edcacb59539765208a722ff306a47a2c93f4e1ff47c53c6638e45b26",
    "include": true,
    "role": "Strategy-driven bootload pre-flight: runs the analysis set over a bundle and folds findings into a verdict.",
    "responsibilities": [
     "run the ten-strategy default set in order, or an explicit caller-supplied sequence",
     "run the same default set at load time inside the RestoreEngine (owner ruling)",
-    "drop the strategy list on cleanup; idempotent, and the stateless strategies need no teardown of their own"
+    "drop the strategy list on cleanup; idempotent, and the stateless strategies need no teardown of their own",
+    "applies the named conduit hierarchy preflight blocker strategy"
    ],
    "owns_state": [
     "_strategies"
@@ -60,6 +61,12 @@
   }
  ],
  "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer",
+   "to_label": "ConduitHierarchyStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
   {
    "from": "melder.crystallizer.crystal_analysis.preflight.persistence_analyzer.PersistenceAnalyzer",
    "to_label": "LinkIntegrityStrategy",
@@ -130,6 +137,7 @@
   "Sequence": "typing.Sequence",
   "ClusterMembershipStrategy": "melder.crystallizer.crystal_analysis.preflight.cluster_membership_strategy.ClusterMembershipStrategy",
   "ConfigurationLossStrategy": "melder.crystallizer.crystal_analysis.preflight.configuration_loss_strategy.ConfigurationLossStrategy",
+  "ConduitHierarchyStrategy": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy",
   "ContractPeerStrategy": "melder.crystallizer.crystal_analysis.preflight.contract_peer_strategy.ContractPeerStrategy",
   "FramePostureStrategy": "melder.crystallizer.crystal_analysis.preflight.frame_posture_strategy.FramePostureStrategy",
   "HydrationStrategy": "melder.crystallizer.crystal_analysis.preflight.hydration_strategy.HydrationStrategy",

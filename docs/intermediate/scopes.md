@@ -23,10 +23,42 @@ explains why the explicit end of the scope matters.
 
 ## A lesser conduit can grow into a named root
 
+A lesser can also have its own discovery name without being promoted. Run
+[Named lesser conduits](../examples/intermediate/41-named-lesser-conduits.md)
+for a complete example with prewarming, collisions, per-conduit state and cleanup.
+
+```python
+job = root.create_lesser_conduit(name="job-42")
+cloud = root.get_conduit_cloud()
+try:
+    assert cloud.get_conduit_by_name("job-42") is job
+    job.meld("JobBuffer")
+finally:
+    job.cleanup()
+
+assert not cloud.has_conduit_name("job-42")
+```
+
+Supply a name only at creation. Names are exact, nonempty strings, unique among
+active named roots and lessers in the frame. There is no later lesser rename.
+Cleanup unregisters and clears the name **before** the scope enters the pool;
+the next acquisition supplies its own name or stays anonymous. Anonymous scopes
+do not enter Cloud discovery. This works in automatic and dynamic mode.
+
+Use a name when another part of the application needs to find the same live
+scope. A direct reference is enough when the job stays local. Cloud returns a
+borrowed reference: it does not extend the owner's lifetime or make reuse after
+cleanup safe. Names are discovery addresses, not matching-lifetime tags; the
+registered `Existence` still decides where objects are shared.
+
+### Promote only when independent ownership is needed
+
 In a dynamic world, `upgrade_to_normal(name=...)` promotes the existing child.
 The promotion lesson asserts that a previously created per-conduit workbench is
 the same object afterward, then finds the promoted conduit through cloud lookup.
 Read [dynamic mode](dynamic-linking.md) before using this operation.
+Promotion can retain the lesser name or choose another available name. It keeps
+the conduit ID but creates its own empty Spellbook; naming alone does none of that.
 
 [Clusters](../advanced/clusters.md) add a group-wide lifetime. The original cluster
 lesson remains in its saved Intermediate collection and is linked from that guide.

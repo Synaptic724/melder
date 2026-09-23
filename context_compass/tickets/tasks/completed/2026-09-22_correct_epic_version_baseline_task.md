@@ -69,7 +69,7 @@ Append correction and verification evidence with a concrete next action.
     intermediate 0.2.45; replace that result with 0.2.47 while retaining its dated history.
   EVIDENCE:
   - tickets/tasks/completed/2026-09-22_notch_version_for_completed_epics_task.md:15-28
-  - tickets/tasks/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md:11-24
+  - tickets/tasks/completed/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md:11-24
   IMPACT: Only release metadata and the notes that route later packaging need correction.
   NEXT: Read the canonical version and current release draft before editing.
   REREAD: REQUIRED
@@ -97,7 +97,7 @@ Append correction and verification evidence with a concrete next action.
   - src/melder/__version__.py:12-12
   - release_docs/next_version_release.md:1-1
   - tickets/tasks/completed/2026-09-22_notch_version_for_completed_epics_task.md:3-6
-  - tickets/tasks/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md:72-74
+  - tickets/tasks/completed/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md:72-74
   IMPACT: Future packaging will use the corrected baseline without repeating the double count.
   NEXT: Verify static version agreement and complete the correction record.
   REREAD: HELPFUL

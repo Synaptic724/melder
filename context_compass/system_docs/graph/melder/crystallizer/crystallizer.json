@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystallizer.py",
- "source_sha256": "7a9c7a11a1846d34ccb57c8b48335c6f34b54e1f62f79312dbbad6ba8333671a",
+ "source_sha256": "e4eee6727a3a6361862e8d200639c523532106773a5b768a43016619d44c9993",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystallizer": {
@@ -68,6 +68,7 @@
     "describe_record",
     "emit",
     "emit_cluster_removed",
+    "emit_conduit_removed",
     "emit_contract_removed",
     "emit_frame_removed",
     "emit_mutation_research_state",
@@ -101,16 +102,17 @@
     "verify_checkpoint_chain"
    ],
    "shape": {
-    "method_count": 70,
+    "method_count": 71,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "545d90c847d0af54d38f4553d372fb5b6e29269062d562f90c670cb27dd3b244",
+   "span_sha256": "c8030d1a739966e1a02bb6e7ba3af75a30e091bf28fef488ff0facce6bbc94cf",
    "role": "Hosted singleton crystallizer root.",
    "responsibilities": [
     "owns installed crystallizer configuration and activation state",
     "builds SpellCrystal manifests from live spells under installed policy",
-    "anchors crystallizer policy above retained and live module-world surfaces"
+    "anchors crystallizer policy above retained and live module-world surfaces",
+    "facades conduit-only structural retirement without evicting a shared Book"
    ],
    "owns_state": [
     "_configuration",

@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-22-review-upgrade-to-normal-complexity
 - Story: none
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Agent Name: updater_1
 - Priority: p1
 - Created: 2026-09-22T22:54:06Z
-- Updated: 2026-09-22T22:54:06Z
+- Updated: 2026-09-22T23:02:47Z
 
 ## Objective
 Review the complete lesser-to-normal graduation change and explain which imports,
@@ -41,15 +41,15 @@ MRP alignment: preserve independent root ownership with the smallest correct lif
 - Provide actionable findings with source ranges and a simpler recommended design.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: Owner explicitly requested review after onboarding and certification.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Owner instructed leaving the implementation unchanged; further review is stopped.
 
 ## Steps / Checklist
-- [ ] Read supplied excerpt and completed graduation contracts; locate all affected changes.
-- [ ] Trace actual source and callers for imports, ownership, and rollback.
-- [ ] Inspect graduation tests and relevant validation evidence.
-- [ ] Record findings and deliver review with prioritized recommendations.
+- [x] Read supplied excerpt and completed graduation contracts; locate affected graduation source.
+- [x] Trace actual source and callers for imports, ownership, and rollback.
+- [x] Inspect focused graduation test source; tests were not executed in this review.
+- [ ] Full prioritized review delivery: stopped by owner before completion.
 
 ## Deliverables
 - Evidence-backed review in ticket notes and owner-facing response.
@@ -60,7 +60,7 @@ MRP alignment: preserve independent root ownership with the smallest correct lif
 - context_compass/mailbox_board.md
 
 ## Validation
-- Not run. Initial scope is source review; run targeted reproduction only if needed to settle a finding.
+- Not run. Source and focused regression tests were read; the owner stopped further review.
 
 ## Risks / Mitigations
 - Documentation may lag source: use verified index slices for navigation and source for behavior claims.
@@ -138,6 +138,24 @@ MRP alignment: preserve independent root ownership with the smallest correct lif
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-22T23:02:47Z
+  TYPE: DECISION
+  CLAIM: Owner instructed leaving the implementation unchanged after clarification that upgrade
+    constructs the new Spellbook. Stop further review. The local import has a concrete construction
+    purpose; this is not a completed approval of all rollback and lifecycle handling.
+  EVIDENCE:
+  - Owner's current instruction to leave the implementation.
+  - src/melder/aether/conduit/conduit.py:2164-2184
+  - src/melder/aether/spellbook/spellbook.py:5582-5634
+  IMPACT: No runtime code was modified. Existing review notes remain available; full review and
+    validation are incomplete, and no implementation or continuing investigation is queued.
+  NEXT: None unless the owner explicitly reopens the review.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Certified updater_1 is reviewing graduation complexity at the owner's request. No runtime edits authorized
-by this review scope. Begin with the pasted excerpt and completed implementation contracts, then trace source.
+Owner stopped the review and requested leaving code unchanged. Current upgrade constructs a fresh
+Spellbook directly, which explains its local import. Omitted configuration is handled by ordinary
+Book default/shared selection. Source and focused test code were read, but the complete prioritized
+rollback review was not delivered and no tests were run. No runtime edits were made. Reopen only
+on explicit owner direction; this ticket is in handoff, not active investigation.
