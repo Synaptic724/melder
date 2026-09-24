@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 2646
-CONTENT_SHA256 = '8e4f197230571be5bc9b28cdec6760262beafd529119ed8be389c8ce6f3d7206'
+LINE_COUNT = 2683
+CONTENT_SHA256 = '01d2059fa749682efcbd3fa221b702246cbc9a8056224263aaf81ce363ab3ca1'
 
 TEXT = """# Src Architecture (C4)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Architecture (C4)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-23
+- Updated: 2026-09-24
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -836,6 +836,15 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Creation-cache release compatibility (2026-09-24): generation 9 stores the canonical Melder
+  release in each conduit .melc envelope. Admission requires exact release, format-generation and
+  Python cache-tag agreement. A missing, malformed or different release produces the existing cold
+  cache before individual payloads are exposed. Normal conjure rebuilds and emits the fresh envelope;
+  subsequent matching runs can reuse it. Old generation-8 readers reject generation 9 on downgrade.
+  The stored release survives normalization and emission. No version check enters ordinary meld,
+  and Crystallizer RecordVersion and durable records are unaffected.
+  EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem` and
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`.
 - Named lesser scopes (2026-09-23): create_lesser_conduit(logger=None, *, name=None) names only the
   current use. Exact nonempty names are frame-wide unique across roots and active lessers, in both
   automatic and dynamic mode. Cloud owns a named directory separate from frame-owned normal-root
@@ -2162,6 +2171,13 @@ Control plane:
 
 Utilities:
 
+- path: `src/melder/utilities/caching_system/caching_system.py`
+  start_line: 1
+  end_line: 613
+  loc: 613
+  verified_at: 2026-09-24T09:38:22Z
+  note: release-bound creation-cache admission and atomic envelope persistence.
+
 - path: `src/melder/utilities/general_base/cleanable.py`
   start_line: 1
   end_line: 301
@@ -2204,6 +2220,21 @@ Non-path notes carried forward from the previous revision:
 - Registration refusal itself lives in `src/melder/aether/spellbook/bind/bind.py`
 
 ## Diagrams
+### Creation Cache Compatibility
+```text
+bundle -> format/release/interpreter admission -> compatible payloads -> existing context loading
+                                           -> cold store -> normal planning -> fresh stamped bundle
+```
+
+```mermaid
+flowchart LR
+  B[Persisted creation bundle] --> G[Format, Melder release and Python tag checks]
+  G -->|Compatible| H[Existing context loading]
+  G -->|Incompatible| C[Empty cache]
+  C --> P[Normal creation planning]
+  P --> W[Fresh release-stamped bundle]
+```
+
 ### Named Scope Discovery and Replay
 ```text
 create(name) -> attach -> Cloud + dynamic record + Nexus -> active named lesser
@@ -2396,6 +2427,7 @@ policy source. Receiving-book order wins on replay. The loader follows changed b
 without rewriting the original record or existing live IDs.
 
 ## Information Sources
+- `src/melder/utilities/caching_system/caching_system.py`
 - `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
 - `src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py`
 - `README.md`
@@ -2510,6 +2542,11 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-24 creation-cache generation 9 adds exact Melder release admission. Release changes,
+unstamped legacy input and other existing incompatibilities cold-reset at load; normal conjure
+handles regeneration. The component map describes the envelope's ownership and write boundaries.
+Ordinary meld and persisted world-record compatibility are unchanged.
 
 2026-09-23 named lesser contracts are promoted. Cloud discovery stays separate from root ownership;
 names retire before reuse. Crystallizer retains named structure plus necessary unnamed ancestry,

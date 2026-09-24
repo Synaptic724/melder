@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `849b1f3e6925c6669f74556ca41020139e0362d5dcb96618fb09866ea373c8cc`
+- source_sha256: `a777f81f30d8219de646017334264cb726075da312668c76ad43feb4f37bb849`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `c0c1635f74957e8800fd1ca20171c954050d6993df5ff7733de7610267e5c19d`
+- source_sha256: `eb72f7444b325e380e8067ddfad486a77529579f9b8fcb73b635713e861f2798`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `ef2ec6db744d962cf239071a8e6de1353b39ee732983e481fbd5c57e0d1052e9`
+- source_sha256: `a76a4f1b801f18e772ceca2081563fed35ca631433ad6994fce940f833832748`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `f31d8c30dc6d0feb0d4a2b0ed482de406a6d0143f82d7c7ed7a2bf50d47fe0a7`
+- source_sha256: `477fc54730c262a043e6c46b3078aea363f683dd3dcfc4314cb50fe9ea3e9d5a`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `76d5df13d826c8cb708b74b77ed17cd026dbac2bacf78501f300d016be5073ca`
+- source_sha256: `4e7c5fbf68e82338fbe503957c1fca5da492570c65706203614250d4e21480bd`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `ac5ef17df3590e1860d9aa8669c300279d0fddc772d7f2b1131194c90ff6ddd2`
+- source_sha256: `2c92abaa1cd090db930e9b29f1accdebc3a2801b4de48682a8945a4968a8bda0`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `b5115d540eae004c2ee1545d3ed8847a37db3909677c4d8347c0640a9ae81676`
+- source_sha256: `98034bfbb1ed76be89795169e151a4c1ec994f2fb5ebde077dbe39d3c643c662`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `d4e43924003389bdcefd1576219435130be89313bf45276dd9da66740f159115`
+- source_sha256: `430eb4b9da16794a6ec9f1f80c35a2ef54f1aad802e28341efaed9470f533b40`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `a80b9ebbd0b0bf141e0f277775ec8438db934826b2e9949c9184872cc9668fb4`
+- source_sha256: `d4c9535e5fd12bc3d9f4058ae01675e20da2f2de61f5171a7b3193afea280fa9`
 - nodes: 1
 
 ### Nodes
@@ -26059,7 +26059,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `61f69eb55890d9d9e834bff0a84d81b4a5e344e5c673c82a9a20c70d4385d65e`
+- source_sha256: `6e299c1e75265ee1bc1ae9a15c433881bc59a31f323c2e36f0a3c0a0e47995a7`
 - nodes: 2
 
 ### Nodes
@@ -26076,13 +26076,15 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CachingSystem` (class)
 
 - id: `melder.utilities.caching_system.caching_system.CachingSystem`
-- defined at: `src/melder/utilities/caching_system/caching_system.py:15`
+- defined at: `src/melder/utilities/caching_system/caching_system.py:16`
 - extends: `Cleanable`
 - role: Conduit-scoped cache persistence utility.
 - responsibilities:
   - owns one rooted-conduit cache file and its in-memory spell-payload dictionary
   - loads, normalizes, mutates, and emits marshal-backed spell payload bundles
   - supports spell-payload transfer and persistence for the spellbook/runtime cache lane
+  - requires exact Melder release, cache generation and interpreter compatibility before exposing persisted payloads
+  - preserves the accepted release stamp through normalization and subsequent emission
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `has_spell_payload`, `remove_spell_payload`, `spell_payloads`, `transfer_spell_payload_to`, `upsert_spell_payload`

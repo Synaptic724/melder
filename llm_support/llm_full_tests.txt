@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: e6120e7aa41291a0dab9ea5bdd11752c80a4f796df7a4c40d9b091253ad5fdb8
+SOURCE FINGERPRINT: fa1a33b6af0b5b6634ec5a0f6b31bc781c7ec724797787741898a618e4042221
 FILE COUNT: 851
 
 ================================================================================
@@ -116000,10 +116000,12 @@ END FILE: tests/integration/melder/mutation_research/test_research_room_commands
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_cache_runtime_integration.py
-CONTENT SHA256: ba0f32dc4abcbd6acf75696f249b80674d78a91e08cc2cd2a2fda2bad5a85dca
+CONTENT SHA256: 64ce36db4da6a66d98faf13608214cb5825af1507232cdb33cec08410cf2d507
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
+from importlib import import_module
+import marshal
 import shutil
 from pathlib import Path
 from typing import Dict, Optional
@@ -116017,6 +116019,7 @@ from melder.aether.aetheric_frame.aetheric_frame_configuration import (
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.nexus.nexus import Nexus
 from tests.mocks.spellbook.core_classes import BasicLogger, BasicService
 
@@ -116445,12 +116448,122 @@ def test_cache_integration_disabled_second_run_ignores_existing_cache(dynamic: b
         assert spellbook._caching_system is None
     finally:
         conduit.cleanup()
+
+
+@pytest.mark.parametrize("dynamic", [False, True])
+@pytest.mark.parametrize(
+    ("previous_release", "current_release"),
+    [
+        pytest.param("1.0.0", "1.0.1", id="upgrade"),
+        pytest.param("1.0.1", "1.0.0", id="downgrade"),
+        pytest.param("1.0.0rc1", "1.0.0", id="prerelease"),
+        pytest.param("1.0.0", "1.0.0+local", id="local-version"),
+    ],
+)
+def test_changed_melder_release_rebuilds_same_bindings_then_reuses_cache(
+        monkeypatch: pytest.MonkeyPatch,
+        dynamic: bool,
+        previous_release: str,
+        current_release: str,
+) -> None:
+    """
+    Reject a previous release before hydration, then reuse the rebuilt bundle.
+
+    Contract:
+        Three fresh runtime lifetimes share identical binding IDs, cache format
+        and cache path. The second must not publish an old cached context. The
+        third must resolve correctly without running plan compilation again.
+        Only the cache loader's imported release value changes; package files
+        and generated assets are never edited by the test.
+
+    Args:
+        monkeypatch: Restore the simulated release and orchestration probes.
+        dynamic: Exercise automatic and dynamic worlds.
+        previous_release: Release recorded by the first runtime.
+        current_release: Different release used by both later runtimes.
+
+    Returns:
+        None.
+    """
+    cache_module = import_module("melder.utilities.caching_system.caching_system")
+    cache_root_path = _prepare_case_cache_root(
+        f"_cache_release_{previous_release}_{current_release}_{dynamic}"
+    )
+    fragment = _build_cache_root_fragment(cache_root_path)
+    frame_name = "cache-release-compatibility"
+    monkeypatch.setattr(cache_module, "__version__", previous_release)
+
+    original_book = _make_spellbook(
+        frame_name=frame_name, cache_root_fragment=fragment, dynamic=dynamic,
+    )
+    original_ids = _bind_simple_spells(original_book, include_logger=True)
+    original_root = _conjure(original_book, conduit_name="root", dynamic=dynamic)
+    try:
+        _seed_cache(original_root, original_ids)
+        bundle_path = _cache_bundle_path(original_book, conduit_name="root")
+        original_bundle = marshal.loads(bundle_path.read_bytes())
+        assert original_bundle["melder_version"] == previous_release
+    finally:
+        original_root.cleanup()
+    _reset_runtime_singletons()
+
+    monkeypatch.setattr(cache_module, "__version__", current_release)
+
+    def reject_old_cached_context(**_kwargs: object) -> None:
+        """Fail if a release mismatch reaches cached-executor publication."""
+        pytest.fail("A previous Melder release reached cached-context publication.")
+
+    with monkeypatch.context() as cold_probe:
+        cold_probe.setattr(
+            SpellbookCreationSystem,
+            "_publish_cached_creation_context_for_spell",
+            staticmethod(reject_old_cached_context),
+        )
+        rebuilt_book = _make_spellbook(
+            frame_name=frame_name, cache_root_fragment=fragment, dynamic=dynamic,
+        )
+        rebuilt_ids = _bind_simple_spells(rebuilt_book, include_logger=True)
+        assert rebuilt_ids == original_ids
+        rebuilt_root = _conjure(rebuilt_book, conduit_name="root", dynamic=dynamic)
+        try:
+            assert isinstance(rebuilt_root.meld(spell_id=rebuilt_ids[BasicService]), BasicService)
+            assert isinstance(rebuilt_root.meld(spell_id=rebuilt_ids[BasicLogger]), BasicLogger)
+            rebuilt_bundle = marshal.loads(bundle_path.read_bytes())
+            assert rebuilt_bundle["version"] == original_bundle["version"]
+            assert rebuilt_bundle["melder_version"] == current_release
+            assert set(rebuilt_bundle["spell_payloads"]) == set(original_ids.values())
+        finally:
+            rebuilt_root.cleanup()
+    _reset_runtime_singletons()
+
+    def reject_unnecessary_plan_rebuild(**_kwargs: object) -> None:
+        """Fail if a compatible subsequent runtime recompiles phases 8-11."""
+        pytest.fail("A same-release cache hit unnecessarily rebuilt the creation plan.")
+
+    with monkeypatch.context() as warm_probe:
+        warm_probe.setattr(
+            SpellbookCreationSystem,
+            "_run_conduit_plan_resolution_phases",
+            staticmethod(reject_unnecessary_plan_rebuild),
+        )
+        warm_book = _make_spellbook(
+            frame_name=frame_name, cache_root_fragment=fragment, dynamic=dynamic,
+        )
+        warm_ids = _bind_simple_spells(warm_book, include_logger=True)
+        assert warm_ids == original_ids
+        warm_root = _conjure(warm_book, conduit_name="root", dynamic=dynamic)
+        try:
+            assert isinstance(warm_root.meld(spell_id=warm_ids[BasicService]), BasicService)
+            assert isinstance(warm_root.meld(spell_id=warm_ids[BasicLogger]), BasicLogger)
+            assert marshal.loads(bundle_path.read_bytes())["melder_version"] == current_release
+        finally:
+            warm_root.cleanup()
 ================================================================================
 END FILE: tests/integration/melder/spellbook/test_cache_runtime_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_cache_schema_version_integration.py
-CONTENT SHA256: 6938b75c5800239d5afa2bfb5a38ea9b8af08f517b21ca884e6197c008394df0
+CONTENT SHA256: c083619bbbce972a47e316e132f1224411f7c7989fa24e4a566761da686638ce
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -116460,6 +116573,7 @@ from pathlib import Path
 
 import pytest
 
+from melder.__version__ import __version__
 from melder.utilities.caching_system.caching_system import CachingSystem
 
 
@@ -116472,6 +116586,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     6: "zero_provider_required_collections",
     7: "root_visible_family_selection",
     8: "ordinary_defaults_are_plain",
+    9: "exact_melder_release_compatibility",
 }
 
 
@@ -116505,6 +116620,7 @@ def test_cache_schema_version_history_accepts_only_current_bundle(
     bundle_path.parent.mkdir(parents=True, exist_ok=True)
     bundle_path.write_bytes(marshal.dumps({
         "version": bundle_version,
+        "melder_version": __version__,
         "python": sys.implementation.cache_tag,
         "frame_name": frame_name,
         "conduit_name": conduit_name,
@@ -321733,10 +321849,9 @@ END FILE: tests/unit/melder/utilities/synchronization/test_unit_of_work.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/utilities/test_caching_system.py
-CONTENT SHA256: 9d5fbe90f42ff30727caf15f9a3a8c5ddf6bc36b8888332169185c6f7dbb3f99
+CONTENT SHA256: acec981b68074d6b178b06c93b5db7e11c710ced1a66a4c520500084d08aad1c
 SOURCE ENCODING: utf-8
 ================================================================================
-import json
 import logging
 import marshal
 from pathlib import Path
@@ -321746,6 +321861,7 @@ from types import MappingProxyType
 
 import pytest
 
+from melder.__version__ import __version__
 from melder.utilities.caching_system.caching_system import CachingSystem
 
 
@@ -321813,6 +321929,44 @@ def _make_spell_payload(label: str) -> dict[str, object]:
         "no_overrides": {"source": f"no-{label}"},
         "overrides": {"source": f"over-{label}"},
     }
+
+
+def _make_populated_cache_bundle() -> dict[str, object]:
+    """
+    Build a valid, populated envelope for admission tests.
+
+    Contract:
+        The frame and conduit match _make_cache_utility defaults. Tests change
+        one field of this accepted control instead of writing an unused path.
+
+    Returns:
+        dict[str, object]: Current metadata and one nested-marshal payload.
+    """
+    return {
+        "version": CachingSystem.CURRENT_VERSION,
+        "melder_version": __version__,
+        "python": sys.implementation.cache_tag,
+        "frame_name": "frame-a",
+        "conduit_name": "root",
+        "spell_payloads": {"a" * 64: marshal.dumps(_make_spell_payload("cached"))},
+    }
+
+
+def _write_cache_bundle(cache_root: Path, contents: bytes) -> Path:
+    """
+    Write admission-test bytes to the actual conduit cache location.
+
+    Args:
+        cache_root: Test-owned cache directory.
+        contents: Serialized bundle or deliberately corrupt bytes.
+
+    Returns:
+        Path: The frame-a/root.melc file read by _make_cache_utility.
+    """
+    bundle_path = cache_root / "frame-a" / "root.melc"
+    bundle_path.parent.mkdir(parents=True, exist_ok=True)
+    bundle_path.write_bytes(contents)
+    return bundle_path
 
 
 def test_caching_system_upsert_remove_and_reload_round_trip() -> None:
@@ -321992,6 +322146,7 @@ def test_caching_system_emit_writes_expected_file_shape() -> None:
     loaded_payload = marshal.loads(caching_system.bundle_path.read_bytes())
 
     assert loaded_payload["version"] == CachingSystem.CURRENT_VERSION
+    assert loaded_payload["melder_version"] == __version__
     assert loaded_payload["conduit_name"] == "root"
     assert loaded_payload["frame_name"] == "frame-a"
     # Version-3 bundle contract: payloads persist as nested-marshal bytes
@@ -322035,93 +322190,130 @@ def test_caching_system_resident_store_holds_untracked_bytes() -> None:
 
 
 @pytest.mark.parametrize(
-    ("file_contents", "label"),
+    ("field", "replacement"),
     [
-        ("not-json", "invalid_json"),
-        (
-            json.dumps(
-                {
-                    "version": 999,
-                    "conduit_name": "root",
-                    "spell_payloads": {},
-                    "sha256": "x",
-                }
-            ),
-            "wrong_version",
-        ),
-        (
-            json.dumps(
-                {
-                    "version": CachingSystem.CURRENT_VERSION,
-                    "conduit_name": "other",
-                    "spell_payloads": {},
-                    "sha256": "x",
-                }
-            ),
-            "wrong_conduit_name",
-        ),
-        (
-            json.dumps(
-                {
-                    "version": CachingSystem.CURRENT_VERSION,
-                    "conduit_name": "root",
-                    "spell_payloads": [],
-                    "sha256": "x",
-                }
-            ),
-            "non_dict_spell_payloads",
-        ),
-        (
-            json.dumps(
-                {
-                    "version": CachingSystem.CURRENT_VERSION,
-                    "conduit_name": "root",
-                    "spell_payloads": {7: {}},
-                    "sha256": "x",
-                }
-            ),
-            "non_string_spell_id",
-        ),
-        (
-            json.dumps(
-                {
-                    "version": CachingSystem.CURRENT_VERSION,
-                    "conduit_name": "root",
-                    "spell_payloads": {"f" * 64: _make_spell_payload("sha-mismatch")},
-                    "sha256": "wrong",
-                }
-            ),
-            "sha_mismatch",
-        ),
+        pytest.param("version", -1, id="wrong-schema"),
+        pytest.param("python", "foreign-interpreter", id="wrong-python"),
+        pytest.param("conduit_name", "other", id="wrong-conduit"),
+        pytest.param("spell_payloads", [], id="wrong-payload-map"),
+        pytest.param("spell_payloads", {"a" * 64: {}}, id="decoded-payload"),
+        pytest.param("melder_version", __version__ + ".other", id="different-release"),
+        pytest.param("melder_version", "", id="empty-release"),
+        pytest.param("melder_version", None, id="null-release"),
+        pytest.param("melder_version", 7, id="numeric-release"),
+        pytest.param("melder_version", __version__.encode(), id="bytes-release"),
     ],
 )
-def test_caching_system_resets_to_empty_cache_on_invalid_bundle_file(
-        file_contents: str,
-        label: str,
+def test_caching_system_rejects_invalid_real_bundle_metadata(
+        tmp_path: Path,
+        field: str,
+        replacement: object,
 ) -> None:
     """
-    Verify invalid bundle files reset to an empty cache dict.
+    Reject invalid metadata from the actual populated marshal bundle.
+
+    Contract:
+        Only the selected field differs from the accepted control. Rejection
+        exposes no old payload and does not delete or rewrite the disk file.
 
     Args:
-        file_contents:
-            Raw file payload to persist before construction.
-        label:
-            Unique suffix for the repo-local scratch path.
+        tmp_path: Isolated test-owned cache root.
+        field: Header field to invalidate.
+        replacement: Deliberately incompatible value.
 
     Returns:
         None.
     """
-    cache_root_path = _prepare_cache_root(
-        Path(f"tests/unit/melder/utilities/_caching_system_tmp_load_{label}")
-    )
-    bundle_path = cache_root_path / "frame-a" / "root" / "bundle.json"
-    bundle_path.parent.mkdir(parents=True, exist_ok=True)
-    bundle_path.write_text(file_contents, encoding="utf-8")
+    bundle = _make_populated_cache_bundle()
+    bundle[field] = replacement
+    raw = marshal.dumps(bundle)
+    bundle_path = _write_cache_bundle(tmp_path, raw)
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.bundle_path == bundle_path
+        assert tuple(caching_system.cached_spell_ids) == ()
+        assert caching_system.get_spell_payload("a" * 64) is None
+        assert bundle_path.read_bytes() == raw
+    finally:
+        caching_system.cleanup()
 
-    caching_system = _make_cache_utility(cache_root_path=cache_root_path)
 
-    assert tuple(caching_system.cached_spell_ids) == ()
-    assert caching_system.spell_payloads == {}
+def test_caching_system_accepts_current_release_populated_bundle(tmp_path: Path) -> None:
+    """
+    Prove the populated admission fixture exposes its matching-release payload.
+
+    Contract:
+        This accepted control proves negative cases are testing field rejection
+        rather than silently reading a missing or invalid fixture file.
+
+    Args:
+        tmp_path: Isolated test-owned cache root.
+
+    Returns:
+        None.
+    """
+    _write_cache_bundle(tmp_path, marshal.dumps(_make_populated_cache_bundle()))
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.get_spell_payload("a" * 64) == _make_spell_payload("cached")
+    finally:
+        caching_system.cleanup()
+
+
+def test_caching_system_rejects_missing_release_then_emits_current_bundle(tmp_path: Path) -> None:
+    """
+    Cold-reset an unstamped bundle and preserve the new stamp through later writes.
+
+    Contract:
+        Freshly compiled payloads replace the old data. Loading, adding another
+        payload and emitting again must retain the accepted release stamp.
+
+    Args:
+        tmp_path: Isolated test-owned cache root.
+
+    Returns:
+        None.
+    """
+    bundle = _make_populated_cache_bundle()
+    del bundle["melder_version"]
+    bundle_path = _write_cache_bundle(tmp_path, marshal.dumps(bundle))
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.get_spell_payload("a" * 64) is None
+        caching_system.upsert_spell_payload("b" * 64, _make_spell_payload("fresh"))
+        caching_system.emit()
+    finally:
+        caching_system.cleanup()
+
+    reloaded = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert reloaded.get_spell_payload("a" * 64) is None
+        assert reloaded.get_spell_payload("b" * 64) == _make_spell_payload("fresh")
+        reloaded.upsert_spell_payload("c" * 64, _make_spell_payload("later"))
+        reloaded.emit()
+        assert marshal.loads(bundle_path.read_bytes())["melder_version"] == __version__
+    finally:
+        reloaded.cleanup()
+
+
+@pytest.mark.parametrize("contents", [b"not-marshal", marshal.dumps([])])
+def test_caching_system_rejects_corrupt_real_bundle(tmp_path: Path, contents: bytes) -> None:
+    """
+    Treat unreadable or non-dictionary .melc contents as a cold cache.
+
+    Args:
+        tmp_path: Isolated test-owned cache root.
+        contents: Invalid marshal bytes or a serialized non-dictionary value.
+
+    Returns:
+        None. No cached spell is exposed by the rejected input.
+    """
+    _write_cache_bundle(tmp_path, contents)
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert tuple(caching_system.cached_spell_ids) == ()
+    finally:
+        caching_system.cleanup()
 
 
 def test_caching_system_transfer_to_self_returns_false() -> None:

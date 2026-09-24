@@ -64,6 +64,7 @@ Disposition values
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_artifacts -->
+| tickets/tasks/2026-09-24_measure_melder_creation_and_overrides_task.md | artifacts/override_execution_performance_20260924/ | performance_experiment | review | retain_as_reference | Review measured baseline and constructor-count findings. | 2026-09-24T09:48:20Z | REQUIRED |
 | tickets/tasks/backlog/2026-09-22_shared_gauntlet_configuration_order_followup_task.md | artifacts/benchmark_spell_id_repair_20260919/ | deferred_setup_finding | backlog | retain_as_reference | Reproduce the distinct setup-order failure only when selected. | 2026-09-22T19:45:53Z | HELPFUL |
 | tickets/tasks/backlog/2026-09-21_investigate_runtime_hook_clearing_task.md | artifacts/runtime_hook_discovery_20260921/ | discovery | backlog | retain_as_reference | Broad epic parked by owner; evidence retained for narrow pool-reset discovery or later reopening. | 2026-09-22T09:11:27Z | HELPFUL |
 | tickets/epics/backlog/2026-09-13_existing_object_lifecycle_ownership_epic.md | artifacts/existing_object_di_comparison_20260913/comparison.md | deferred_design_reference | backlog | retain_as_reference | Parked by owner; resume only on explicit request. | 2026-09-19T14:53:20Z | HELPFUL |
@@ -92,6 +93,8 @@ Disposition values
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/completed/2026-09-24_implement_release_version_cache_invalidation_task.md | artifacts/cache_release_guard_20260924/ | retain_as_reference | Release-stamp regressions, legacy compatibility and source/document preservation evidence. | 2026-09-24T09:52:40Z |
+| tickets/tasks/completed/2026-09-24_implement_release_version_cache_invalidation_task.md | system_docs/patches/completed/cache_release_guard_2026_09_24/ | promote_to_documentation | Cache contracts promoted to canonical maps and graph; originals retained. | 2026-09-24T09:52:40Z |
 | tickets/tasks/completed/2026-09-23_fix_named_conduit_discovery_test_doubles_task.md | artifacts/named_discovery_test_repair_20260923/ | retain_as_reference | Before/after evidence for both CI failures; 201 passing tests. | 2026-09-23T22:37:00Z |
 | tickets/tasks/completed/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md | artifacts/packaged_asset_refresh_20260923/ | retain_as_reference | Authorized rebuild, 253 passing tests and unchanged runtime source evidence. | 2026-09-23T12:55:59Z |
 | tickets/tasks/completed/2026-09-23_audit_named_lesser_private_cleanup_guards_task.md | artifacts/named_lesser_private_guards_20260923/ | retain_as_reference | Accepted guard correction; 33-method audit and 206-test receipt retained. | 2026-09-23T12:47:44Z |

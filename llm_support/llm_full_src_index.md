@@ -10,9 +10,9 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_src.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | eb558ca84e042d2a34f0016f312eb3e68195567693278512eba54c94544abba5 |
-| bundle_sha256 | bf79d422e4142f3bc4b52977ead51af8a9b77d15845f8db4662306356c5d3d38 |
-| bundle_line_count | 279330 |
+| source_fingerprint | 7c14a3cd41f8cf192be745086cf67dd704a7aa1d1a17289dd15eca56661f989d |
+| bundle_sha256 | 0a63f128fafbdaec9e7aff4b36cf63e4c40853314018db758ee421520cde75e9 |
+| bundle_line_count | 279367 |
 | bundle_line_ending | lf |
 | files | 587 |
 
@@ -29,7 +29,7 @@ Line numbers are 1-based and inclusive.
 | 271-547 | 276-544 | 10167 | utf-8 | 1ae707a6b08a50c36dc7acd93a3180df3d2959817ed59365e1ebef31da16a8ad | src/melder/__init__.py |
 | 548-584 | 553-581 | 1254 | utf-8 | 9a0c67a1b8391ab86af1c4242de72b21d3c78abd513f9a5c36bae809bf39a314 | src/melder/__license__.py |
 | 585-597 | 590-594 | 241 | utf-8 | 805e6faacff6b558d223cb1773145cecce81a000d6f401baade5583d35e3fae5 | src/melder/__melder_cache__/__melder_cache__.py |
-| 598-617 | 603-614 | 314 | utf-8 | d684274eebba80402afa23059e74b6ef4bc46501732d3d582e73625b4ccfe09a | src/melder/__version__.py |
+| 598-617 | 603-614 | 314 | utf-8 | a9f09cd814792693c9b889daf51420147323904e0aad0c92438591900d666490 | src/melder/__version__.py |
 | 618-1329 | 623-1326 | 26236 | utf-8 | 1e610b6944779ebc963db6ea6b0f39a1cd8d6a717d6b54f63eb4e9191f89b6a1 | src/melder/_build_assets/_agent_documentation/_builder.py |
 | 1330-1466 | 1335-1463 | 4854 | utf-8 | adf2c02898b3154bd06e4f9b52ae69bec8c7eba59d7c890aeccc7238c260c618 | src/melder/_build_assets/_agent_documentation/agent_documentation.py |
 | 1467-1861 | 1472-1858 | 13734 | utf-8 | df23ba91d82b2f3c0ec8ffb7fc16ac1c4f4f22ea34f62824e5d06cf5622f0148 | src/melder/_build_assets/_bind_guard/_builder.py |
@@ -566,44 +566,44 @@ Line numbers are 1-based and inclusive.
 | 256089-258806 | 256094-258803 | 94509 | utf-8 | f99e3f8ddeb88db96114cce0c3bdaacb23282713c36764d07491cd02043cee7c | src/melder/utilities/ai_native_support_tools/protocol_crafter.py |
 | 258807-260225 | 258812-260222 | 53310 | utf-8 | d9c9b12c884b11794cdee230b59711433367b1bff7fe2329a0312b0ab830608a | src/melder/utilities/ai_native_support_tools/system_document_view.py |
 | 260226-260480 | 260231-260477 | 10768 | utf-8 | 9a6130525118e435cd1ac7eddef9b6ea81ef13ec04176bdb09183521917083c1 | src/melder/utilities/caching_system/asset_cache.py |
-| 260481-261064 | 260486-261061 | 21705 | utf-8 | fd3dbf222201dbd4a3f0c6ebfb54724f1b372dc5da83caabef4bed1a8fe82734 | src/melder/utilities/caching_system/caching_system.py |
-| 261065-261126 | 261070-261123 | 2328 | utf-8 | 5eb1dfd7ecd9eadb937ca36920bfbc5349baeb16b21e8826bfea431a2c4d2adf | src/melder/utilities/custom_exceptions/dead_reference_error.py |
-| 261127-261179 | 261132-261176 | 1818 | utf-8 | c85cc195ce1b82899bccb12857da0ba43ae6c5625b0dc9139dcc5f57c748265a | src/melder/utilities/custom_exceptions/empty_error.py |
-| 261180-261278 | 261185-261275 | 4016 | utf-8 | 616586ee4261abeb4a2b5a90b40d64c2c75af3a5785858a6279677f9ef3e2e87 | src/melder/utilities/custom_exceptions/hook_execution_error.py |
-| 261279-261343 | 261284-261340 | 2444 | utf-8 | ad0986df8fba6b145d3f90e6126cd63081e4373b7e2836d08922d78cf706c04e | src/melder/utilities/custom_exceptions/internal_registration_error.py |
-| 261344-261536 | 261349-261533 | 6713 | utf-8 | d3ebf416076536ff67b0735720af1480cf7336976673d75d6ae2580eb2451ad5 | src/melder/utilities/custom_exceptions/meld_execution_error.py |
-| 261537-261600 | 261542-261597 | 2348 | utf-8 | 2e35b33b741b97c4b72dcee99076ab1873b82f5806b32c3ade47a19484133857 | src/melder/utilities/custom_exceptions/operation_cancelled_error.py |
-| 261601-261707 | 261606-261704 | 3840 | utf-8 | 803200967065e374b79e260fb38fd5b2e77511cc45e34a23d22049c2be7f3c50 | src/melder/utilities/custom_exceptions/phase_execution_error.py |
-| 261708-261791 | 261713-261788 | 2823 | utf-8 | df02677fe51029ed14697ed193fb82416b2c6a5632b136061405e4ce934497bb | src/melder/utilities/custom_exceptions/phase_scheduler_error.py |
-| 261792-261889 | 261797-261886 | 3525 | utf-8 | ca139b8f871bdc750ceb249be55890788943c6ff1915fc0836a6a0be06e37d9e | src/melder/utilities/custom_exceptions/phase_timeout_error.py |
-| 261890-261978 | 261895-261975 | 2969 | utf-8 | 823a6ba216f7b2af3fbfdf8de5f603896cdb397f2556d2e16314a4dd744d9928 | src/melder/utilities/custom_exceptions/spell_space_scope_error.py |
-| 261979-262273 | 261984-262270 | 11077 | utf-8 | bc501e36b6e4213426223428b2c95853f780eb3c2cc9bf77d45faa5dbe58e7f3 | src/melder/utilities/custom_exceptions/spellbook_validation_error.py |
-| 262274-264064 | 262279-264061 | 59996 | utf-8 | 2bab82e6adb11ee2390e333d2f2ecee4edf661d964c669ef3420fdf45db66b99 | src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py |
-| 264065-265187 | 264070-265184 | 36935 | utf-8 | 84e237321d1b2c245cd9b0e29381c0226bb47d99d60e8e52cdb01126c7bd7b99 | src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py |
-| 265188-266468 | 265193-266465 | 42530 | utf-8 | 807a551300fe7b766353d14e8456edd170351b6d0a3a8d65001fab5ead55c5c1 | src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_set.py |
-| 266469-267088 | 266474-267085 | 21851 | utf-8 | f2c9ff454e5a2598567f168b490541c5587d6fe26414b239c97f670ed3060f18 | src/melder/utilities/data_structures/weak_data_structures/weak_ref_node.py |
-| 267089-267566 | 267094-267563 | 16942 | utf-8 | a3a9fe1a4971fea609b7b62185f432996ed39b07e137ab2dc7d33fc072de2926 | src/melder/utilities/general_base/abstract_elastic_pool.py |
-| 267567-267994 | 267572-267991 | 15136 | utf-8 | 4ddc570beeea06a47035e288c83737d330bce90a67f5729211caae6742a885f5 | src/melder/utilities/general_base/cleanable.py |
-| 267995-268219 | 268000-268216 | 8468 | utf-8 | c0f0ab329ce30022d76f61e049d06bd99d8e737d6b798e9515854858ac3aa484 | src/melder/utilities/general_base/sync.py |
-| 268220-269123 | 268225-269120 | 33243 | utf-8 | b6a97dbc3019e91c15ee923634a6830158875f38edad2ebdcbef3f8e55e69cbf | src/melder/utilities/helpers/class_surface_ast_describer.py |
-| 269124-269198 | 269129-269195 | 2539 | utf-8 | 70707db9aea05f1829009b6c73ea61e7896b06bc85fc5e47bf3d619a7d8af3e4 | src/melder/utilities/helpers/class_wraps.py |
-| 269199-269629 | 269204-269626 | 15522 | utf-8 | dc2cf73decf7c76e2030b5367a6f2c8c13040d6f32bbf6182d0a2248fc400668 | src/melder/utilities/helpers/general_helpers.py |
-| 269630-269809 | 269635-269806 | 6528 | utf-8 | 6331c8c40c19233ede718c1c34f730163a55df3b1c0fdc5cb9e3af00e229f31b | src/melder/utilities/helpers/id_builder.py |
-| 269810-269962 | 269815-269959 | 5593 | utf-8 | 89a0ab3da7f842baa7c5d3905583a85c1b8b52a5dc47ba595b6a92ee6584e742 | src/melder/utilities/helpers/init_helpers.py |
-| 269963-270968 | 269968-270965 | 36891 | utf-8 | 1ea6590ff6184394fab55dfcab8b67a4a39e37cfc107510729f605f10e652ea3 | src/melder/utilities/helpers/package.py |
-| 270969-271266 | 270974-271263 | 11118 | utf-8 | cdbc96bc0889f0d315a83b88d0df62b416c7b9281abe5f73362f107b25deea52 | src/melder/utilities/helpers/ulid_factory.py |
-| 271267-272080 | 271272-272077 | 24573 | utf-8 | f54a961e84fc17f0ab9868f211d9f74e4b93a63fad93e33dc86b665720b6e056 | src/melder/utilities/interfaces/ichannellogger.py |
-| 272081-272218 | 272086-272215 | 3924 | utf-8 | 362ed952751cc4b2b79fe2984e975384188a4d4a99464d4111897b2b78671e6b | src/melder/utilities/interfaces/icleanable.py |
-| 272219-272925 | 272224-272922 | 24766 | utf-8 | 777bb328d07c9965a2f47b4c31e8e9e4779c650e4e7bcb2a2e8797fcd31ea5d0 | src/melder/utilities/logger/safe_logger.py |
-| 272926-273322 | 272931-273319 | 14462 | utf-8 | 174cf2e85e38822e9d4a1b63ac91f709c14b2fa52716d79fddc838f604181500 | src/melder/utilities/synchronization/cancellation_event_signal.py |
-| 273323-273672 | 273328-273669 | 13464 | utf-8 | e8b29d3f5b602cf297e60a24a81e32a3cf092b572433f91b66e21df4bef43df4 | src/melder/utilities/synchronization/counter_switch.py |
-| 273673-274283 | 273678-274280 | 21810 | utf-8 | 13ff35d36ae3df3aa0a296a4c052f3ac868d50cc4338c3acf6e59290a3512b12 | src/melder/utilities/synchronization/creation_gate.py |
-| 274284-275402 | 274289-275399 | 34966 | utf-8 | d6e2756e39af1f63bf7206c54bbca536f2413742e434f0fbae38461234287208 | src/melder/utilities/synchronization/creation_gate_controller.py |
-| 275403-275701 | 275408-275698 | 9472 | utf-8 | b216e8086ba6691a8160d645ddb8351034152bcb15e79965a23e37dc6159d688 | src/melder/utilities/synchronization/fast_switch.py |
-| 275702-276226 | 275707-276223 | 21818 | utf-8 | ea90bdbf2b6c2d1062dfa240f621442f1bfffdc945195c17963f81076e5222e4 | src/melder/utilities/synchronization/load_gate.py |
-| 276227-276487 | 276232-276484 | 10978 | utf-8 | 4d7350ff29d5e9c411a9ea3a1f83e888081e8eb3fc2175bbf3d9d0db876c4e17 | src/melder/utilities/synchronization/phase_latch.py |
-| 276488-277483 | 276493-277480 | 40241 | utf-8 | 182089be2e46ca3b6f6b819a3313c370878107eb152e96c1a1424802ca88482b | src/melder/utilities/synchronization/phase_scheduler.py |
-| 277484-277742 | 277489-277739 | 10911 | utf-8 | a8ea86038548446bee8f8a25042f8aeb54e0253e6bdbe4cf9e2c1ca688f70c55 | src/melder/utilities/synchronization/safeguard.py |
-| 277743-278409 | 277748-278406 | 21221 | utf-8 | 424e10c83ad6303e6c29cbc9cd3a29d19c13e8b39ce2beaf5d39dc1424189b16 | src/melder/utilities/synchronization/sync_weak_ref.py |
-| 278410-278800 | 278415-278797 | 11261 | utf-8 | 1c3ca044d13e67f3506d66a53d8a3d9deaac4a5109cee9ae71d18af027e02c8e | src/melder/utilities/synchronization/ticket_flag.py |
-| 278801-279330 | 278806-279327 | 20938 | utf-8 | 3d2fc8225780fbdacab480052b81e7bac3f6aa243c5500b5264853c8ed69c6dc | src/melder/utilities/synchronization/unit_of_work.py |
+| 260481-261101 | 260486-261098 | 23819 | utf-8 | baf6b388595549a87f7b3749bc9fbc3cb0b544b219e099537542459dffb4e097 | src/melder/utilities/caching_system/caching_system.py |
+| 261102-261163 | 261107-261160 | 2328 | utf-8 | 5eb1dfd7ecd9eadb937ca36920bfbc5349baeb16b21e8826bfea431a2c4d2adf | src/melder/utilities/custom_exceptions/dead_reference_error.py |
+| 261164-261216 | 261169-261213 | 1818 | utf-8 | c85cc195ce1b82899bccb12857da0ba43ae6c5625b0dc9139dcc5f57c748265a | src/melder/utilities/custom_exceptions/empty_error.py |
+| 261217-261315 | 261222-261312 | 4016 | utf-8 | 616586ee4261abeb4a2b5a90b40d64c2c75af3a5785858a6279677f9ef3e2e87 | src/melder/utilities/custom_exceptions/hook_execution_error.py |
+| 261316-261380 | 261321-261377 | 2444 | utf-8 | ad0986df8fba6b145d3f90e6126cd63081e4373b7e2836d08922d78cf706c04e | src/melder/utilities/custom_exceptions/internal_registration_error.py |
+| 261381-261573 | 261386-261570 | 6713 | utf-8 | d3ebf416076536ff67b0735720af1480cf7336976673d75d6ae2580eb2451ad5 | src/melder/utilities/custom_exceptions/meld_execution_error.py |
+| 261574-261637 | 261579-261634 | 2348 | utf-8 | 2e35b33b741b97c4b72dcee99076ab1873b82f5806b32c3ade47a19484133857 | src/melder/utilities/custom_exceptions/operation_cancelled_error.py |
+| 261638-261744 | 261643-261741 | 3840 | utf-8 | 803200967065e374b79e260fb38fd5b2e77511cc45e34a23d22049c2be7f3c50 | src/melder/utilities/custom_exceptions/phase_execution_error.py |
+| 261745-261828 | 261750-261825 | 2823 | utf-8 | df02677fe51029ed14697ed193fb82416b2c6a5632b136061405e4ce934497bb | src/melder/utilities/custom_exceptions/phase_scheduler_error.py |
+| 261829-261926 | 261834-261923 | 3525 | utf-8 | ca139b8f871bdc750ceb249be55890788943c6ff1915fc0836a6a0be06e37d9e | src/melder/utilities/custom_exceptions/phase_timeout_error.py |
+| 261927-262015 | 261932-262012 | 2969 | utf-8 | 823a6ba216f7b2af3fbfdf8de5f603896cdb397f2556d2e16314a4dd744d9928 | src/melder/utilities/custom_exceptions/spell_space_scope_error.py |
+| 262016-262310 | 262021-262307 | 11077 | utf-8 | bc501e36b6e4213426223428b2c95853f780eb3c2cc9bf77d45faa5dbe58e7f3 | src/melder/utilities/custom_exceptions/spellbook_validation_error.py |
+| 262311-264101 | 262316-264098 | 59996 | utf-8 | 2bab82e6adb11ee2390e333d2f2ecee4edf661d964c669ef3420fdf45db66b99 | src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py |
+| 264102-265224 | 264107-265221 | 36935 | utf-8 | 84e237321d1b2c245cd9b0e29381c0226bb47d99d60e8e52cdb01126c7bd7b99 | src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py |
+| 265225-266505 | 265230-266502 | 42530 | utf-8 | 807a551300fe7b766353d14e8456edd170351b6d0a3a8d65001fab5ead55c5c1 | src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_set.py |
+| 266506-267125 | 266511-267122 | 21851 | utf-8 | f2c9ff454e5a2598567f168b490541c5587d6fe26414b239c97f670ed3060f18 | src/melder/utilities/data_structures/weak_data_structures/weak_ref_node.py |
+| 267126-267603 | 267131-267600 | 16942 | utf-8 | a3a9fe1a4971fea609b7b62185f432996ed39b07e137ab2dc7d33fc072de2926 | src/melder/utilities/general_base/abstract_elastic_pool.py |
+| 267604-268031 | 267609-268028 | 15136 | utf-8 | 4ddc570beeea06a47035e288c83737d330bce90a67f5729211caae6742a885f5 | src/melder/utilities/general_base/cleanable.py |
+| 268032-268256 | 268037-268253 | 8468 | utf-8 | c0f0ab329ce30022d76f61e049d06bd99d8e737d6b798e9515854858ac3aa484 | src/melder/utilities/general_base/sync.py |
+| 268257-269160 | 268262-269157 | 33243 | utf-8 | b6a97dbc3019e91c15ee923634a6830158875f38edad2ebdcbef3f8e55e69cbf | src/melder/utilities/helpers/class_surface_ast_describer.py |
+| 269161-269235 | 269166-269232 | 2539 | utf-8 | 70707db9aea05f1829009b6c73ea61e7896b06bc85fc5e47bf3d619a7d8af3e4 | src/melder/utilities/helpers/class_wraps.py |
+| 269236-269666 | 269241-269663 | 15522 | utf-8 | dc2cf73decf7c76e2030b5367a6f2c8c13040d6f32bbf6182d0a2248fc400668 | src/melder/utilities/helpers/general_helpers.py |
+| 269667-269846 | 269672-269843 | 6528 | utf-8 | 6331c8c40c19233ede718c1c34f730163a55df3b1c0fdc5cb9e3af00e229f31b | src/melder/utilities/helpers/id_builder.py |
+| 269847-269999 | 269852-269996 | 5593 | utf-8 | 89a0ab3da7f842baa7c5d3905583a85c1b8b52a5dc47ba595b6a92ee6584e742 | src/melder/utilities/helpers/init_helpers.py |
+| 270000-271005 | 270005-271002 | 36891 | utf-8 | 1ea6590ff6184394fab55dfcab8b67a4a39e37cfc107510729f605f10e652ea3 | src/melder/utilities/helpers/package.py |
+| 271006-271303 | 271011-271300 | 11118 | utf-8 | cdbc96bc0889f0d315a83b88d0df62b416c7b9281abe5f73362f107b25deea52 | src/melder/utilities/helpers/ulid_factory.py |
+| 271304-272117 | 271309-272114 | 24573 | utf-8 | f54a961e84fc17f0ab9868f211d9f74e4b93a63fad93e33dc86b665720b6e056 | src/melder/utilities/interfaces/ichannellogger.py |
+| 272118-272255 | 272123-272252 | 3924 | utf-8 | 362ed952751cc4b2b79fe2984e975384188a4d4a99464d4111897b2b78671e6b | src/melder/utilities/interfaces/icleanable.py |
+| 272256-272962 | 272261-272959 | 24766 | utf-8 | 777bb328d07c9965a2f47b4c31e8e9e4779c650e4e7bcb2a2e8797fcd31ea5d0 | src/melder/utilities/logger/safe_logger.py |
+| 272963-273359 | 272968-273356 | 14462 | utf-8 | 174cf2e85e38822e9d4a1b63ac91f709c14b2fa52716d79fddc838f604181500 | src/melder/utilities/synchronization/cancellation_event_signal.py |
+| 273360-273709 | 273365-273706 | 13464 | utf-8 | e8b29d3f5b602cf297e60a24a81e32a3cf092b572433f91b66e21df4bef43df4 | src/melder/utilities/synchronization/counter_switch.py |
+| 273710-274320 | 273715-274317 | 21810 | utf-8 | 13ff35d36ae3df3aa0a296a4c052f3ac868d50cc4338c3acf6e59290a3512b12 | src/melder/utilities/synchronization/creation_gate.py |
+| 274321-275439 | 274326-275436 | 34966 | utf-8 | d6e2756e39af1f63bf7206c54bbca536f2413742e434f0fbae38461234287208 | src/melder/utilities/synchronization/creation_gate_controller.py |
+| 275440-275738 | 275445-275735 | 9472 | utf-8 | b216e8086ba6691a8160d645ddb8351034152bcb15e79965a23e37dc6159d688 | src/melder/utilities/synchronization/fast_switch.py |
+| 275739-276263 | 275744-276260 | 21818 | utf-8 | ea90bdbf2b6c2d1062dfa240f621442f1bfffdc945195c17963f81076e5222e4 | src/melder/utilities/synchronization/load_gate.py |
+| 276264-276524 | 276269-276521 | 10978 | utf-8 | 4d7350ff29d5e9c411a9ea3a1f83e888081e8eb3fc2175bbf3d9d0db876c4e17 | src/melder/utilities/synchronization/phase_latch.py |
+| 276525-277520 | 276530-277517 | 40241 | utf-8 | 182089be2e46ca3b6f6b819a3313c370878107eb152e96c1a1424802ca88482b | src/melder/utilities/synchronization/phase_scheduler.py |
+| 277521-277779 | 277526-277776 | 10911 | utf-8 | a8ea86038548446bee8f8a25042f8aeb54e0253e6bdbe4cf9e2c1ca688f70c55 | src/melder/utilities/synchronization/safeguard.py |
+| 277780-278446 | 277785-278443 | 21221 | utf-8 | 424e10c83ad6303e6c29cbc9cd3a29d19c13e8b39ce2beaf5d39dc1424189b16 | src/melder/utilities/synchronization/sync_weak_ref.py |
+| 278447-278837 | 278452-278834 | 11261 | utf-8 | 1c3ca044d13e67f3506d66a53d8a3d9deaac4a5109cee9ae71d18af027e02c8e | src/melder/utilities/synchronization/ticket_flag.py |
+| 278838-279367 | 278843-279364 | 20938 | utf-8 | 3d2fc8225780fbdacab480052b81e7bac3f6aa243c5500b5264853c8ed69c6dc | src/melder/utilities/synchronization/unit_of_work.py |

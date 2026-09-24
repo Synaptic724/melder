@@ -81,6 +81,7 @@ Message alert rules
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| override_performance_baseline | review | handoff | codex | updater_1 | none | Trace root-input execution after baseline review. | Measured 20-25% graph throughput and eager-construction evidence. | Next override investigation begins. | tickets/tasks/2026-09-24_measure_melder_creation_and_overrides_task.md | 2026-09-24T09:48:20Z | REQUIRED |
 | upgrade_normal_review | review | handoff | codex | updater_1 | none | None unless owner reopens review. | Code unchanged; import purpose confirmed, broader review stopped. | Owner reopens or closes review. | tickets/tasks/2026-09-22_review_upgrade_to_normal_complexity_task.md | 2026-09-22T23:02:47Z | HELPFUL |
 | readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
 | embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
@@ -93,6 +94,8 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| release_cache_invalidation | done | updater_0 | tickets/epics/completed/2026-09-23_invalidate_creation_cache_on_melder_version_change_epic.md | Release-bound cache, schema 9 and 0.2.51 notes delivered. | 2026-09-24T09:52:40Z |
+| release_cache_implementation | done | updater_0 | tickets/tasks/completed/2026-09-24_implement_release_version_cache_invalidation_task.md | 138 unique final-version tests qualified; scoped docs promoted. | 2026-09-24T09:52:40Z |
 | named_discovery_test_repair | done | updater_0 | tickets/tasks/completed/2026-09-23_fix_named_conduit_discovery_test_doubles_task.md | Both CI fixture errors fixed; 201 tests pass. | 2026-09-23T22:37:00Z |
 | public_next_release | done | updater_0 | tickets/tasks/completed/2026-09-23_position_next_release_for_public_task.md | Public naming/discovery release copy verified. | 2026-09-23T22:30:29Z |
 | graduation_packaged_assets | done | updater_0 | tickets/tasks/completed/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md | Both builders rerun after final updates; checks pass. | 2026-09-23T13:01:03Z |
@@ -103,13 +106,13 @@ Message alert rules
 | 2026-09-06_named_conduit_nexus_consumers_story | done | updater_0 | tickets/stories/completed/2026-09-06_named_conduit_nexus_consumers_story.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
 | 2026-09-06_named_conduit_validation_docs_story | done | updater_0 | tickets/stories/completed/2026-09-06_named_conduit_validation_docs_story.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
 | 2026-09-06_named_conduit_semantics_task | done | updater_0 | tickets/tasks/completed/2026-09-06_named_conduit_semantics_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
-| 2026-09-06_named_conduit_cross_system_discovery_task | done | updater_0 | tickets/tasks/completed/2026-09-06_named_conduit_cross_system_discovery_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
-| 2026-09-22_refresh_named_lesser_conduit_plan_task | done | updater_0 | tickets/tasks/completed/2026-09-22_refresh_named_lesser_conduit_plan_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
+- override_performance_baseline: SWITCH_TRIGGER is measured baseline delivery and the next investigation decision.
+  RESUME_HIERARCHY: tickets/epics/2026-09-24_override_execution_performance_epic.md -> tickets/tasks/2026-09-24_measure_melder_creation_and_overrides_task.md.
 - upgrade_normal_review: SWITCH_TRIGGER is explicit owner reopening or closure; further review was stopped.
   RESUME_HIERARCHY: tickets/tasks/2026-09-22_review_upgrade_to_normal_complexity_task.md.
 - readme_status_badges: SWITCH_TRIGGER is owner acceptance or first hosted coverage failure evidence.

@@ -6,6 +6,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, ClassVar, KeysView, Mapping, Optional, Union
 
+from melder.__version__ import __version__
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
@@ -65,12 +66,17 @@ class CachingSystem(Cleanable):
           only the in-memory dict.
         - `emit()` writes the current in-memory dict to disk.
         - The persisted cache format is one `marshal`-serialized top-level
-          dict: `version`, `python`, `frame_name`, `conduit_name`, and
+          dict: `version`, `melder_version`, `python`, `frame_name`, `conduit_name`, and
           `spell_payloads` (spell_id -> nested payload bytes). Payloads may
           contain `CodeType` objects, which is why the encoding is `marshal`
           rather than JSON.
         - Integrity is regeneration-based: a corrupt or version-mismatched
           bundle is treated as a cold cache, not repaired.
+        - Persisted plans require the exact installed Melder release as well as
+          the cache-format generation and Python interpreter tag. A missing or
+          different release stamp makes the whole bundle cold before any spell
+          payload is exposed. Release checking occurs only during cache loading;
+          ordinary meld and payload lookups perform no additional version work.
 
     Threading / Concurrency:
         - Uses one instance `RLock` to serialize load, mutation, and emit work.
@@ -90,6 +96,9 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 9: require the canonical Melder release in the cache envelope.
+    # The separate generation also makes older readers reject these bundles
+    # rather than ignoring the release field during a package downgrade.
     # Version 8: ordinary Python parameter defaults classify as PLAIN. Older
     # plans may inject providers despite those defaults, even when their bind
     # SHA still matches, so they must be rebuilt under the new precedence.
@@ -126,6 +135,7 @@ class CachingSystem(Cleanable):
         6: "zero_provider_required_collections",
         7: "root_visible_family_selection",
         8: "ordinary_defaults_are_plain",
+        9: "exact_melder_release_compatibility",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"
@@ -456,12 +466,17 @@ class CachingSystem(Cleanable):
         """
         Build the default in-memory cache dict for this conduit.
 
+        Contract:
+            Stamps a fresh empty store with the installed release, independent
+            cache-format generation and current Python interpreter tag.
+
         Returns:
             dict[str, Any]:
-                Empty cache payload with stamped metadata and hash.
+                Empty spell-payload store with its compatibility metadata.
         """
         return {
             "version": self.CURRENT_VERSION,
+            "melder_version": __version__,
             "python": sys.implementation.cache_tag,
             "frame_name": self._frame_name,
             "conduit_name": self._conduit_name,
@@ -500,6 +515,12 @@ class CachingSystem(Cleanable):
         """
         Validate and normalize one loaded cache dict.
 
+        Contract:
+            Accepts only the current format, exact installed Melder release
+            and interpreter tag. Preserves the accepted release in the returned
+            envelope so a later emit cannot drop or relabel it. The caller
+            converts rejected or incomplete envelopes into a cold cache.
+
         Args:
             loaded_cache_data:
                 Raw object loaded from disk.
@@ -507,6 +528,12 @@ class CachingSystem(Cleanable):
         Returns:
             dict[str, Any]:
                 Normalized cache dict.
+
+        Raises:
+            KeyError: A required envelope field is absent.
+            ValueError: Format, release, interpreter, conduit or payload
+                metadata is incompatible with this cache utility.
+            AttributeError: The persisted payload store is not a mapping.
         """
         if not isinstance(loaded_cache_data, dict):
             raise ValueError("Cache bundle is not a dict.")
@@ -518,6 +545,12 @@ class CachingSystem(Cleanable):
         if version != self.CURRENT_VERSION:
             raise ValueError(
                 f"Unsupported cache version '{version}'."
+            )
+        melder_version = loaded_cache_data["melder_version"]
+        if melder_version != __version__:
+            raise ValueError(
+                f"Cache Melder release {melder_version!r} does not match "
+                f"the installed release {__version__!r}."
             )
         if python_tag != sys.implementation.cache_tag:
             raise ValueError(
@@ -539,6 +572,7 @@ class CachingSystem(Cleanable):
                 )
         return {
             "version": version,
+            "melder_version": melder_version,
             "python": python_tag,
             "frame_name": loaded_cache_data.get("frame_name", self._frame_name),
             "conduit_name": conduit_name,
@@ -552,12 +586,15 @@ class CachingSystem(Cleanable):
         Contract:
             - Caller must already hold the instance lock.
             - Writes to a temp file and atomically replaces the final file.
+            - Persists the release stamped when this envelope was created or
+              accepted; never assigns a new release to retained old payloads.
 
         Returns:
             None.
         """
         cache_data = {
             "version": self._cache_data["version"],
+            "melder_version": self._cache_data["melder_version"],
             "python": self._cache_data.get(
                 "python", sys.implementation.cache_tag
             ),

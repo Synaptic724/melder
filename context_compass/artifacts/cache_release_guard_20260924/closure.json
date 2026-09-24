@@ -1,0 +1,19 @@
+{
+  "closed_epic": "tickets/epics/completed/2026-09-23_invalidate_creation_cache_on_melder_version_change_epic.md",
+  "closed_task": "tickets/tasks/completed/2026-09-24_implement_release_version_cache_invalidation_task.md",
+  "archived_patch_files": 6,
+  "source_changes": [
+    "src/melder/__version__.py",
+    "src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py",
+    "src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
+    "src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py",
+    "src/melder/_build_assets/_system_documents/manifest/system_documents_index.py",
+    "src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py",
+    "src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py",
+    "src/melder/_build_assets/_system_documents/payloads/src_components_payload.py",
+    "src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py",
+    "src/melder/utilities/caching_system/caching_system.py"
+  ],
+  "all_feature_inputs_tracked": true,
+  "final_llm_mode": "tracked inputs"
+}

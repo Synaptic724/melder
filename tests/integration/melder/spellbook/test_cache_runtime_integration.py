@@ -1,4 +1,6 @@
 import inspect
+from importlib import import_module
+import marshal
 import shutil
 from pathlib import Path
 from typing import Dict, Optional
@@ -12,6 +14,7 @@ from melder.aether.aetheric_frame.aetheric_frame_configuration import (
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 from melder.nexus.nexus import Nexus
 from tests.mocks.spellbook.core_classes import BasicLogger, BasicService
 
@@ -440,3 +443,113 @@ def test_cache_integration_disabled_second_run_ignores_existing_cache(dynamic: b
         assert spellbook._caching_system is None
     finally:
         conduit.cleanup()
+
+
+@pytest.mark.parametrize("dynamic", [False, True])
+@pytest.mark.parametrize(
+    ("previous_release", "current_release"),
+    [
+        pytest.param("1.0.0", "1.0.1", id="upgrade"),
+        pytest.param("1.0.1", "1.0.0", id="downgrade"),
+        pytest.param("1.0.0rc1", "1.0.0", id="prerelease"),
+        pytest.param("1.0.0", "1.0.0+local", id="local-version"),
+    ],
+)
+def test_changed_melder_release_rebuilds_same_bindings_then_reuses_cache(
+        monkeypatch: pytest.MonkeyPatch,
+        dynamic: bool,
+        previous_release: str,
+        current_release: str,
+) -> None:
+    """
+    Reject a previous release before hydration, then reuse the rebuilt bundle.
+
+    Contract:
+        Three fresh runtime lifetimes share identical binding IDs, cache format
+        and cache path. The second must not publish an old cached context. The
+        third must resolve correctly without running plan compilation again.
+        Only the cache loader's imported release value changes; package files
+        and generated assets are never edited by the test.
+
+    Args:
+        monkeypatch: Restore the simulated release and orchestration probes.
+        dynamic: Exercise automatic and dynamic worlds.
+        previous_release: Release recorded by the first runtime.
+        current_release: Different release used by both later runtimes.
+
+    Returns:
+        None.
+    """
+    cache_module = import_module("melder.utilities.caching_system.caching_system")
+    cache_root_path = _prepare_case_cache_root(
+        f"_cache_release_{previous_release}_{current_release}_{dynamic}"
+    )
+    fragment = _build_cache_root_fragment(cache_root_path)
+    frame_name = "cache-release-compatibility"
+    monkeypatch.setattr(cache_module, "__version__", previous_release)
+
+    original_book = _make_spellbook(
+        frame_name=frame_name, cache_root_fragment=fragment, dynamic=dynamic,
+    )
+    original_ids = _bind_simple_spells(original_book, include_logger=True)
+    original_root = _conjure(original_book, conduit_name="root", dynamic=dynamic)
+    try:
+        _seed_cache(original_root, original_ids)
+        bundle_path = _cache_bundle_path(original_book, conduit_name="root")
+        original_bundle = marshal.loads(bundle_path.read_bytes())
+        assert original_bundle["melder_version"] == previous_release
+    finally:
+        original_root.cleanup()
+    _reset_runtime_singletons()
+
+    monkeypatch.setattr(cache_module, "__version__", current_release)
+
+    def reject_old_cached_context(**_kwargs: object) -> None:
+        """Fail if a release mismatch reaches cached-executor publication."""
+        pytest.fail("A previous Melder release reached cached-context publication.")
+
+    with monkeypatch.context() as cold_probe:
+        cold_probe.setattr(
+            SpellbookCreationSystem,
+            "_publish_cached_creation_context_for_spell",
+            staticmethod(reject_old_cached_context),
+        )
+        rebuilt_book = _make_spellbook(
+            frame_name=frame_name, cache_root_fragment=fragment, dynamic=dynamic,
+        )
+        rebuilt_ids = _bind_simple_spells(rebuilt_book, include_logger=True)
+        assert rebuilt_ids == original_ids
+        rebuilt_root = _conjure(rebuilt_book, conduit_name="root", dynamic=dynamic)
+        try:
+            assert isinstance(rebuilt_root.meld(spell_id=rebuilt_ids[BasicService]), BasicService)
+            assert isinstance(rebuilt_root.meld(spell_id=rebuilt_ids[BasicLogger]), BasicLogger)
+            rebuilt_bundle = marshal.loads(bundle_path.read_bytes())
+            assert rebuilt_bundle["version"] == original_bundle["version"]
+            assert rebuilt_bundle["melder_version"] == current_release
+            assert set(rebuilt_bundle["spell_payloads"]) == set(original_ids.values())
+        finally:
+            rebuilt_root.cleanup()
+    _reset_runtime_singletons()
+
+    def reject_unnecessary_plan_rebuild(**_kwargs: object) -> None:
+        """Fail if a compatible subsequent runtime recompiles phases 8-11."""
+        pytest.fail("A same-release cache hit unnecessarily rebuilt the creation plan.")
+
+    with monkeypatch.context() as warm_probe:
+        warm_probe.setattr(
+            SpellbookCreationSystem,
+            "_run_conduit_plan_resolution_phases",
+            staticmethod(reject_unnecessary_plan_rebuild),
+        )
+        warm_book = _make_spellbook(
+            frame_name=frame_name, cache_root_fragment=fragment, dynamic=dynamic,
+        )
+        warm_ids = _bind_simple_spells(warm_book, include_logger=True)
+        assert warm_ids == original_ids
+        warm_root = _conjure(warm_book, conduit_name="root", dynamic=dynamic)
+        try:
+            assert isinstance(warm_root.meld(spell_id=warm_ids[BasicService]), BasicService)
+            assert isinstance(warm_root.meld(spell_id=warm_ids[BasicLogger]), BasicLogger)
+            assert marshal.loads(bundle_path.read_bytes())["melder_version"] == current_release
+        finally:
+            warm_root.cleanup()

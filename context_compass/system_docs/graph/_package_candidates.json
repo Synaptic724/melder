@@ -173,7 +173,7 @@
    "id": "src.melder.crystallizer.crystal_analysis.preflight",
    "kind": "package",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/",
-   "member_count": 12,
+   "member_count": 13,
    "shared_suffix": "strategy",
    "cohesion": 0.92
   },

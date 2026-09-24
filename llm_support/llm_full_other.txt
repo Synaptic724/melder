@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 57c2034b7b93b4429a1fa9b04df70bc4138442ba7bb38bfa8b65c54eba27eaec
-FILE COUNT: 366
+SOURCE FINGERPRINT: 688ace4d38ede1a7a19444f5c5a98a1164e3c54c8e48de92ccf7c5acab69ff45
+FILE COUNT: 367
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -67678,13 +67678,11 @@ The evidence folder retains the original 0.2.42 intake name. The owner subsequen
 END FILE: release_docs/0.2.43.md
 ================================================================================
 ================================================================================
-BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 20cd5e45272a67eb1a4c47451950ac3206dd06d2599d31472e302e36fc12e87a
+BEGIN FILE: release_docs/0.2.50.md
+CONTENT SHA256: 3dd5db190054a458525c1fbc39b655a168375a36efbaa689d7d7e687c2dd8125
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder 0.2.50
-
-**Unreleased**
 
 This release adds named lesser conduits with discovery through ConduitCloud, configurable bind
 lifecycle hooks, and scoped creation purge. It also fixes hook isolation when scopes are reused
@@ -67939,6 +67937,40 @@ An externally supplied object remains referenced by its registration; purge does
   discovering and restoring named scope hierarchies through Nexus and Crystallizer.
 - Updated scope, upgrade and restore guidance. Tutorials include downloadable Python sources and
   collection ZIPs.
+================================================================================
+END FILE: release_docs/0.2.50.md
+================================================================================
+================================================================================
+BEGIN FILE: release_docs/next_version_release.md
+CONTENT SHA256: 79b4b12ff5debf34e04faf02bfa4f7a83faed991bf85ae0766f83fa9e2a65b65
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder 0.2.51
+
+**Unreleased**
+
+## Automatic creation-cache refresh after a Melder update
+
+Persisted creation caches now record the Melder version that produced them. When a different
+release opens an existing cache, Melder treats it as a cache miss and rebuilds the creation plans
+through the normal compilation process. This applies to upgrades, downgrades and prerelease changes.
+
+Previously, a package update could reuse an older plan when its binding IDs and cache-format version
+still matched. The new release check prevents that reuse automatically.
+
+- **No manual cache deletion is required.** Affected caches rebuild when next used; refreshed caches
+  can be reused by subsequent runs of the same Melder release.
+- **The first use after an update may take longer** because the creation plans are rebuilt.
+- **Legacy caches refresh automatically.** The creation-cache format advances to generation 9;
+  caches without the required release stamp are treated as cold. Older generation-8 readers also
+  reject the new format when downgrading.
+- **Existing compatibility checks remain.** Cache-format and Python interpreter compatibility are
+  checked separately from the Melder release.
+- **The check runs when loading the cache.** It adds no version polling to ordinary meld calls.
+
+This change affects derived creation-plan caches only. It does not delete Crystallizer checkpoints,
+formations or research history, and it does not change their record format. Applications with
+creation caching disabled retain their existing behavior.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

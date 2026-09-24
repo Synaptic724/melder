@@ -1,0 +1,12 @@
+{
+  "fresh_process_import_version": "0.2.50",
+  "canonical_import_matches_package": true,
+  "cache_schema": 9,
+  "legacy_reader_rejects_schema_9": true,
+  "asset_accelerator_reuses_then_refreshes_changed_manifest": true,
+  "normalization_only_median_ns": {
+    "baseline": 328.29199997649994,
+    "release_guard": 392.3470000154339,
+    "note": "Seven repeats of 100000 empty-envelope normalizations; excludes file IO and conjure, not meld throughput."
+  }
+}

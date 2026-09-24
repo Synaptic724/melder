@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-23
+- Updated: 2026-09-24
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -337,6 +337,25 @@ Key Files (C1):
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ### Component: Spellbook Core (Binding and Conjure)
+Release-bound creation cache (2026-09-24):
+- The Book owns one CachingSystem for its selected frame/conduit cache path when caching is enabled.
+  Generation 9 stores version, melder_version, python, frame_name, conduit_name and nested-marshal
+  spell_payloads. melder_version comes directly from the canonical package version module.
+- CachingSystem._normalize_loaded_cache_data requires the exact installed release, independent
+  format generation and interpreter tag. Missing or incompatible metadata follows the existing
+  _load_or_initialize_from_disk cold-reset path; stale payloads are not relabeled or exposed.
+- The normalized dictionary retains the accepted release. _write_current_cache_to_disk_locked
+  persists that same value under the existing lock and atomic replacement contract. No new slot,
+  cleanup obligation, public API or per-meld version lookup is introduced.
+- _build_conjure_cache_state observes the empty store on rejection. Existing plan phases,
+  _stage_spell_payloads_at_conjure_end and _emit_cache_file_if_required rebuild and persist the cache.
+  Existing same-release warm behavior, disabled caching and nested payload formats remain intact.
+- Asset accelerator caches keep manifest-change admission; Crystallizer durable-record versioning
+  remains independent. An older generation-8 creation-cache reader rejects a new generation-9 file.
+EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem`,
+`src/melder/aether/spellbook/spellbook.py:Spellbook._emit_cache_file_if_required` and
+`src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`.
+
 Configured-Book recording (2026-09-23): normal _conjure_logic re-enters the origin-aware frozen
 configuration path and binds frame posture when public configure_aether_frame or shared policy
 already locked the Book. This preserves Book and frame twins, including Rift policy, without
@@ -512,6 +531,7 @@ Key Files (C1):
 - `src/melder/aether/spellbook/spellbook.py`
 - `src/melder/aether/spellbook/spellbinder.py`
 - `src/melder/aether/spellbook/bind/scan.py`
+- `src/melder/utilities/caching_system/caching_system.py`
 
 
 #### Architecture narrative (folded in from `src_architecture.md`, 2026-08-01)
@@ -5595,6 +5615,15 @@ Key Files (C1):
 - `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py`
 
 ## Method-Level Call Flows (C1)
+### Flow: Release Change to Cold Creation Cache
+1. Spellbook._get_or_create_caching_system constructs the cache owner for the configured frame/name.
+2. CachingSystem._load_or_initialize_from_disk unmarshals the envelope and calls
+   _normalize_loaded_cache_data; version 9 requires an exact canonical melder_version match.
+3. Rejection installs _build_empty_cache_data. _build_conjure_cache_state then selects a cache miss.
+4. Normal plan phases run. _stage_spell_payloads_at_conjure_end stages new payloads and
+   _emit_cache_file_if_required writes the stamped envelope through CachingSystem.emit.
+5. A subsequent compatible run follows the existing cache-hit and context-hydration paths.
+
 ### Flow: Named Lesser Discovery and Structural Replay
 1. Conduit.create_lesser_conduit validates optional name, acquires/initializes the shell and fires activation.
 2. _link_new_lesser_under_lock attaches Ward, registers Cloud, emits the twin and publishes Nexus.
@@ -5888,6 +5917,13 @@ These flows describe concrete method sequences for core behaviors.
    the general profile contract.
 
 ## C1 Code Map (Core)
+
+- path: `src/melder/utilities/caching_system/caching_system.py`
+  start_line: 1
+  end_line: 613
+  loc: 613
+  verified_at: 2026-09-24T09:38:22Z
+  note: release-bound creation-cache admission and atomic envelope persistence.
 
 The CORE set: every path cited by a `Key Files (C1)` list in the C3 catalog,
 deduplicated. That union IS the definition of core here - a file a component
@@ -8600,6 +8636,7 @@ sequenceDiagram
 ```
 
 ## Information Sources
+- `src/melder/utilities/caching_system/caching_system.py`
 
 Every promoted FACT in this document traces to source. The C3 catalog cites its
 own evidence inline per entry; this is the consolidated list, and it is the same
@@ -8785,6 +8822,11 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-24 creation-cache envelopes are release-bound. The CachingSystem admission check rejects
+missing or differing release stamps alongside existing schema/interpreter checks. Normalization and
+emission preserve the stamp; existing Book/conjure flows rebuild cold and later reuse matching plans.
+This adds no ordinary meld work and does not alter durable Crystallizer records.
 
 2026-09-23 named lesser contracts are promoted across Conduit/Cloud, Crystallizer and Nexus.
 Name-only discovery is distinct from frame root ownership. Named return retires external state before

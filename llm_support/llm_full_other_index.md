@@ -10,11 +10,11 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | 57c2034b7b93b4429a1fa9b04df70bc4138442ba7bb38bfa8b65c54eba27eaec |
-| bundle_sha256 | a5127161dafb2a5286ca45effe064a0808d5f088aff2b86c42f480111c668c67 |
-| bundle_line_count | 68040 |
+| source_fingerprint | 688ace4d38ede1a7a19444f5c5a98a1164e3c54c8e48de92ccf7c5acab69ff45 |
+| bundle_sha256 | bf7eab25e9fbbb38cb0455bcece07306489df6501291982b0ad71cf9cc1727e5 |
+| bundle_line_count | 68072 |
 | bundle_line_ending | lf |
-| files | 366 |
+| files | 367 |
 
 ## Files
 
@@ -383,6 +383,7 @@ Line numbers are 1-based and inclusive.
 | 66880-67213 | 66885-67210 | 13542 | utf-8 | 93ffa350dbbc556831cf68ecac2768697561a71601be1d2bed4814f4d0da2cb2 | experimentation/test_spellframe_type_injection.py |
 | 67214-67466 | 67219-67463 | 7773 | utf-8 | de7c77db321d42a8956257e849606b08210436adb2f387e4aa24a55b5a262232 | pyproject.toml |
 | 67467-67679 | 67472-67676 | 13066 | utf-8 | 1865e61282295b272c2e2d43d7cd255ff50688f5d38852e97ad9eacdde0409ae | release_docs/0.2.43.md |
-| 67680-67944 | 67685-67941 | 12999 | utf-8 | 20cd5e45272a67eb1a4c47451950ac3206dd06d2599d31472e302e36fc12e87a | release_docs/next_version_release.md |
-| 67945-68013 | 67950-68010 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
-| 68014-68040 | 68019-68037 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
+| 67680-67942 | 67685-67939 | 12983 | utf-8 | 3dd5db190054a458525c1fbc39b655a168375a36efbaa689d7d7e687c2dd8125 | release_docs/0.2.50.md |
+| 67943-67976 | 67948-67973 | 1542 | utf-8 | 79b4b12ff5debf34e04faf02bfa4f7a83faed991bf85ae0766f83fa9e2a65b65 | release_docs/next_version_release.md |
+| 67977-68045 | 67982-68042 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
+| 68046-68072 | 68051-68069 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
