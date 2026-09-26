@@ -80,14 +80,14 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
     return None
 
 
-def test_component_phase5_blueprint_includes_deep_socket_paths() -> None:
+def test_component_phase5_blueprint_includes_deep_dag_without_socket_paths() -> None:
     """
     Purpose:
-        Validate Phase 5 builds deep socket paths from real topologies.
+        Validate Phase 5 builds the deep DAG from real topologies and walks no paths.
     Contract:
         - The root blueprint exists for the root spell.
-        - Socket paths include the direct dependency and the nested dependency.
-        - Topological order ends with the root spell id.
+        - Its order holds the direct and nested dependencies and ends with the root.
+        - No SocketRef is recorded (Phase 8 mints the paths).
     Returns:
         None.
     """
@@ -136,19 +136,12 @@ def test_component_phase5_blueprint_includes_deep_socket_paths() -> None:
         blueprint = artifact._root_blueprint_phase5
         assert blueprint is not None
         assert blueprint.root_spell_id == root_id
-        blueprint.ensure_dag_index_built()
-
         ordered = blueprint.ordered_node_ids
         assert ordered[-1] == root_id
         assert repo_id in ordered
         assert logger_id in ordered
-
-        repo_refs = blueprint.dag_index.get_by_exact_path(("repository",))
-        deep_refs = blueprint.dag_index.get_by_exact_path(("repository", "logger"))
-        assert repo_refs
-        assert deep_refs
-        assert any(ref.node_id == root_id for ref in repo_refs)
-        assert any(ref.node_id == repo_id for ref in deep_refs)
+        assert blueprint.socket_refs == []
+        assert blueprint.path_registry.resolve_path_id(("repository",)) is None
     finally:
         spellbook.cleanup()
 

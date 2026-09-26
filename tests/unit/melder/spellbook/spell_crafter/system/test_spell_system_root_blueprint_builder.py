@@ -124,54 +124,28 @@ def test_build_single_root_dag_cleans_on_cycle(monkeypatch):
     assert captured and captured[0]._cleaned is False  # noqa: SLF001
 
 
-def test_overlay_sockets_and_index_builds_paths():
+def test_compiled_blueprint_records_no_socket_refs_or_paths():
+    """Phase 5 keeps the dependency DAG but records no SocketRef and mints no path, whatever the topologies hold."""
     deps = {"root": {"child"}, "child": {"leaf"}, "leaf": set()}
     root_top = SpellLocalTopology(
         spell_id="root",
-        sockets=(
-            SpellSocketDescriptor(
-                spell_id="root",
-                param_name="child",
-                position=0,
-                socket_kind=SocketKind.NORMAL,
-                is_collection=False,
-                is_optional=False,
-                target_spell_ids=("child",),
-            ),
-        ),
+        sockets=(SpellSocketDescriptor("root", "child", 0, SocketKind.NORMAL, False, False, ("child",)),),
     )
     child_top = SpellLocalTopology(
         spell_id="child",
-        sockets=(
-            SpellSocketDescriptor(
-                spell_id="child",
-                param_name="leaf",
-                position=0,
-                socket_kind=SocketKind.NORMAL,
-                is_collection=False,
-                is_optional=True,
-                target_spell_ids=("leaf",),
-            ),
-        ),
+        sockets=(SpellSocketDescriptor("child", "leaf", 0, SocketKind.NORMAL, False, True, ("leaf",)),),
     )
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": root_top, "child": child_top})
     blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
     blueprint.ensure_dag_index_built()
 
-    sockets = blueprint.socket_refs
-    path_registry = blueprint.path_registry
-    assert {path_registry.materialize_path(s.param_path_id) for s in sockets} == {
-        ("child",),
-        ("child", "leaf"),
-    }
-
-    root_socket = blueprint.dag_index.get_by_exact_path(("child",))[0]
-    child_socket = blueprint.dag_index.get_by_exact_path(("child", "leaf"))[0]
-    assert root_socket.node_id == "root" and root_socket.param_name == "child"
-    assert child_socket.node_id == "child" and child_socket.param_name == "leaf"
+    assert set(blueprint.dag.nodes) == {"root", "child", "leaf"}
+    assert blueprint.socket_refs == []
+    assert list(blueprint.dag_index.iter_all_sockets()) == []
+    assert blueprint.path_registry.resolve_path_id(("child",)) is None
 
 
-def test_overlay_sockets_no_topologies_results_in_empty_index():
+def test_blueprint_without_topologies_has_empty_index():
     deps = {"root": {"child"}, "child": set()}
     snapshot = _snapshot(deps, roots={"root"}, topologies={})
     blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
@@ -187,46 +161,21 @@ def test_multiple_roots_returned():
     assert list(result.keys()) == ["r1", "r2"]
 
 
-def test_overlay_sockets_and_index_rejects_none():
+def test_install_fresh_index_rejects_none_and_cleaned_blueprints():
+    """A missing blueprint fails on attribute access; a cleaned blueprint refuses the new index."""
     builder = SpellSystemRootBlueprintBuilder()
-    dag = DirectedAcyclicWorkGraph()
-    bp = RootResolutionBlueprint("r", None, dag)
+    bp = RootResolutionBlueprint("r", None, DirectedAcyclicWorkGraph())
     with pytest.raises(AttributeError):
-        builder._overlay_sockets_and_index(None, {})  # type: ignore[arg-type]
-    with pytest.raises(AttributeError):
-        builder._overlay_sockets_and_index(bp, None)  # type: ignore[arg-type]
+        builder._install_fresh_index(None)
+    bp.cleanup()
+    with pytest.raises(RuntimeError):
+        builder._install_fresh_index(bp)
 
 
 def test_build_single_root_dag_handles_isolated_root():
     dag, ordered = SpellSystemRootBlueprintBuilder()._build_single_root_dag("root", {"root": set()})
     assert set(dag.nodes) == {"root"}
     assert ordered == ["root"]
-
-
-def test_overlay_walks_branching_paths():
-    deps = {"root": {"a", "b"}, "a": set(), "b": set()}
-    topo = SpellLocalTopology(
-        spell_id="root",
-        sockets=(
-            SpellSocketDescriptor("root", "a", 0, SocketKind.NORMAL, False, False, ("a",)),
-            SpellSocketDescriptor("root", "b", 1, SocketKind.NORMAL, False, False, ("b",)),
-        ),
-    )
-    snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
-    blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    blueprint.ensure_dag_index_built()
-    assert {s.param_name for s in blueprint.socket_refs} == {"a", "b"}
-    by_name_a = blueprint.dag_index.get_by_name("a")
-    by_name_b = blueprint.dag_index.get_by_name("b")
-    path_registry = blueprint.path_registry
-    assert (
-        len(by_name_a) == 1
-        and path_registry.materialize_path(by_name_a[0].param_path_id) == ("a",)
-    )
-    assert (
-        len(by_name_b) == 1
-        and path_registry.materialize_path(by_name_b[0].param_path_id) == ("b",)
-    )
 
 
 def test_build_single_root_dag_validates_inputs():
@@ -348,22 +297,7 @@ def test_build_single_root_dag_respects_allowed_spell_ids_filter():
     assert ordered == ["leaf", "mid", "root"]
 
 
-def test_overlay_skips_missing_child_topology():
-    deps = {"root": {"child"}, "child": {"leaf"}, "leaf": set()}
-    root_top = SpellLocalTopology(
-        spell_id="root",
-        sockets=(
-            SpellSocketDescriptor("root", "child", 0, SocketKind.NORMAL, False, False, ("child",)),
-        ),
-    )
-    snapshot = _snapshot(deps, roots={"root"}, topologies={"root": root_top})
-    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    bp.ensure_dag_index_built()
-    assert {s.param_name for s in bp.socket_refs} == {"child"}
-    assert bp.dag_index.get_by_exact_path(("child",))[0].node_id == "root"
-
-
-def test_overlay_handles_cycle_in_topology_without_infinite_loop():
+def test_build_root_blueprints_refuses_dependency_cycle():
     topo_root = SpellLocalTopology(
         spell_id="root",
         sockets=(SpellSocketDescriptor("root", "child", 0, SocketKind.NORMAL, False, False, ("child",)),),
@@ -376,68 +310,6 @@ def test_overlay_handles_cycle_in_topology_without_infinite_loop():
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo_root, "child": topo_child})
     with pytest.raises(RuntimeError):
         SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
-
-
-def test_overlay_preserves_socket_kind():
-    topo = SpellLocalTopology(
-        spell_id="root",
-        sockets=(
-            SpellSocketDescriptor("root", "k", 0, SocketKind.NORMAL, True, True, ("kid",)),
-        ),
-    )
-    deps = {"root": {"kid"}, "kid": set()}
-    snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
-    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    assert bp.socket_refs[0].socket_kind is SocketKind.NORMAL
-
-
-def test_overlay_allows_multiple_sockets_same_path():
-    # Two sockets pointing at the same param_path should both be retained and indexed.
-    topo = SpellLocalTopology(
-        spell_id="root",
-        sockets=(
-            SpellSocketDescriptor("root", "shared", 0, SocketKind.NORMAL, False, False, ()),
-            SpellSocketDescriptor("root", "shared", 1, SocketKind.NORMAL, False, False, ()),
-        ),
-    )
-    deps = {"root": {"child"}, "child": set()}
-    snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
-    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    path_registry = bp.path_registry
-    shared_refs = [
-        s
-        for s in bp.socket_refs
-        if path_registry.materialize_path(s.param_path_id) == ("shared",)
-    ]
-    assert len(shared_refs) == 2
-    assert {s.param_name for s in shared_refs} == {"shared"}
-
-
-def test_overlay_skips_revisiting_same_target_path_pair():
-    topo_root = SpellLocalTopology(
-        spell_id="root",
-        sockets=(
-            SpellSocketDescriptor("root", "shared", 0, SocketKind.NORMAL, False, False, ("child",)),
-            SpellSocketDescriptor("root", "shared", 1, SocketKind.NORMAL, False, False, ("child",)),
-        ),
-    )
-    topo_child = SpellLocalTopology(spell_id="child", sockets=())
-    deps = {"root": {"child"}, "child": set()}
-    snapshot = _snapshot(
-        deps,
-        roots={"root"},
-        topologies={"root": topo_root, "child": topo_child},
-    )
-
-    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    path_registry = bp.path_registry
-    shared_refs = [
-        s
-        for s in bp.socket_refs
-        if path_registry.materialize_path(s.param_path_id) == ("shared",)
-    ]
-
-    assert len(shared_refs) == 2
 
 
 def test_build_single_root_dag_skips_revisiting_reachable_ids():
@@ -462,60 +334,33 @@ def test_dependency_without_topology_still_in_dag():
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo_root})
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
     assert set(bp.dag.nodes.keys()) == {"root", "mid", "leaf"}
-    # Only the socket from root->mid is recorded; no refs for deeper missing topology.
-    path_registry = bp.path_registry
-    assert {path_registry.materialize_path(r.param_path_id) for r in bp.socket_refs} == {
-        ("mid",)
+    assert bp.socket_refs == []
+
+
+def test_shared_binary_chain_builds_without_walking_paths():
+    """Every spell takes the next one twice (2**20 logical paths); Phase 5 builds it in time linear in spells."""
+    depth = 20
+    names = [f"c{i}" for i in range(depth)]
+    deps = {name: ({names[i + 1]} if i + 1 < depth else set()) for i, name in enumerate(names)}
+    topologies = {
+        name: SpellLocalTopology(
+            spell_id=name,
+            sockets=(
+                SpellSocketDescriptor(name, "a", 0, SocketKind.NORMAL, False, False, (names[i + 1],)),
+                SpellSocketDescriptor(name, "b", 1, SocketKind.NORMAL, False, False, (names[i + 1],)),
+            ),
+        )
+        for i, name in enumerate(names[:-1])
     }
+    snapshot = _snapshot(deps, roots={"c0"}, topologies=topologies)
+    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["c0"]
+    assert set(bp.dag.nodes) == set(names)
+    assert bp.ordered_node_ids[-1] == "c0"
+    assert bp.socket_refs == []
+    assert bp.path_registry.resolve_path_id(("a",)) is None
 
 
-def test_overlay_stops_on_missing_topology_paths():
-    deps = {"root": {"mid"}, "mid": {"leaf"}, "leaf": set()}
-    topo = SpellLocalTopology(
-        spell_id="root",
-        sockets=(SpellSocketDescriptor("root", "mid", 0, SocketKind.NORMAL, False, False, ("mid",)),),
-    )
-    snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
-    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    path_registry = bp.path_registry
-    assert {path_registry.materialize_path(s.param_path_id) for s in bp.socket_refs} == {
-        ("mid",)
-    }
-
-
-def test_overlay_handles_shared_target_under_different_paths():
-    deps = {"root": {"a", "b"}, "a": {"leaf"}, "b": {"leaf"}, "leaf": set()}
-    topo_root = SpellLocalTopology(
-        spell_id="root",
-        sockets=(
-            SpellSocketDescriptor("root", "a", 0, SocketKind.NORMAL, False, False, ("a",)),
-            SpellSocketDescriptor("root", "b", 1, SocketKind.NORMAL, False, False, ("b",)),
-        ),
-    )
-    topo_child = SpellLocalTopology(
-        spell_id="a",
-        sockets=(SpellSocketDescriptor("a", "leaf", 0, SocketKind.NORMAL, False, False, ("leaf",)),),
-    )
-    topo_child_b = SpellLocalTopology(
-        spell_id="b",
-        sockets=(SpellSocketDescriptor("b", "leaf", 0, SocketKind.NORMAL, False, False, ("leaf",)),),
-    )
-    snapshot = _snapshot(
-        deps,
-        roots={"root"},
-        topologies={"root": topo_root, "a": topo_child, "b": topo_child_b},
-    )
-    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    path_registry = bp.path_registry
-    paths = {
-        path_registry.materialize_path(s.param_path_id)
-        for s in bp.socket_refs
-        if s.param_name == "leaf"
-    }
-    assert paths == {("a", "leaf"), ("b", "leaf")}
-
-
-def test_overlay_leaves_topologies_map_intact():
+def test_build_root_blueprints_leaves_topologies_map_intact():
     deps = {"root": set()}
     topologies = {"root": SpellLocalTopology(spell_id="root", sockets=())}
     snapshot = _snapshot(deps, roots={"root"}, topologies=topologies)
@@ -523,7 +368,7 @@ def test_overlay_leaves_topologies_map_intact():
     assert topologies == {"root": topologies["root"]}
 
 
-def test_overlay_no_topology_means_no_socket_refs_even_if_dependencies():
+def test_blueprint_without_topologies_records_no_socket_refs():
     deps = {"root": {"child"}, "child": set()}
     snapshot = _snapshot(deps, roots={"root"})
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
@@ -539,7 +384,7 @@ def test_multiple_roots_with_shared_dependency_produce_separate_blueprints():
         assert "x" in bp.dag.nodes
 
 
-def test_overlay_accepts_empty_topologies_and_non_empty_deps():
+def test_build_root_blueprints_accepts_empty_topologies():
     deps = {"root": {"child"}, "child": set()}
     snapshot = _snapshot(deps, roots={"root"}, topologies={})
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
@@ -553,34 +398,17 @@ def test_build_root_blueprints_respects_unreachable_dependencies():
     assert set(bp.dag.nodes) == {"root"}
 
 
-def test_overlay_handles_deep_chain_paths():
-    deps = {"root": {"a"}, "a": {"b"}, "b": {"c"}, "c": set()}
-    topo_root = SpellLocalTopology(
-        spell_id="root",
-        sockets=(SpellSocketDescriptor("root", "a", 0, SocketKind.NORMAL, False, False, ("a",)),),
-    )
-    topo_a = SpellLocalTopology(
-        spell_id="a",
-        sockets=(SpellSocketDescriptor("a", "b", 0, SocketKind.NORMAL, False, False, ("b",)),),
-    )
-    topo_b = SpellLocalTopology(
-        spell_id="b",
-        sockets=(SpellSocketDescriptor("b", "c", 0, SocketKind.NORMAL, False, False, ("c",)),),
-    )
-    snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo_root, "a": topo_a, "b": topo_b})
-    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    path_registry = bp.path_registry
-    assert ("a", "b", "c") in {
-        path_registry.materialize_path(s.param_path_id) for s in bp.socket_refs
-    }
-
-
-def test_overlay_idempotent_call_replaces_index():
+def test_install_fresh_index_replaces_index_and_registry():
+    """A second call drops the old index and registry, so no stale path id survives."""
     deps = {"root": set()}
     topo = SpellLocalTopology(spell_id="root", sockets=())
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
     builder = SpellSystemRootBlueprintBuilder()
     bp = builder.build_root_blueprints(snapshot)["root"]
     old_index = bp.dag_index
-    builder._overlay_sockets_and_index(bp, snapshot.topologies)
+    old_registry = bp.path_registry
+    old_registry.extend_path(old_registry.root_path_id, "stale")
+    builder._install_fresh_index(bp)
     assert bp.dag_index is not old_index
+    assert bp.path_registry is not old_registry
+    assert bp.path_registry.resolve_path_id(("stale",)) is None

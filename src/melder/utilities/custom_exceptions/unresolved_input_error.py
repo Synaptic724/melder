@@ -26,9 +26,10 @@ class UnresolvedInputError(MeldExecutionError):
         socket (a single typed dependency no registered spell provides), and the
         constructing call's overrides did not supply that parameter. It fires only
         when that object is actually built: a stored (reused) object never demands
-        its unresolved inputs, and conjure succeeds regardless. The many_only and
-        generalized plans raise it before constructing anything under that object
-        (2026-09-26); the solo lane raises it from the failed constructor call.
+        its unresolved inputs, and conjure succeeds regardless. It is decided before
+        construction: the many_only and generalized plans raise it before building
+        anything under that object, and a solo root's call target raises it instead
+        of calling the constructor (2026-09-26).
 
     What To Do About It:
         Supply the value in the meld's override payload: the parameter name when
@@ -46,8 +47,7 @@ class UnresolvedInputError(MeldExecutionError):
           unwrapped); the lowercased frame key is used only if that is unreadable.
         - `unresolved_params` lists every missing unresolved parameter of the
           consumer, in signature order.
-        - `inner` carries the constructor-call exception that exposed the gap on
-          the solo failure path; it is None when a plan raised before building.
+        - `inner` is None: nothing has been called when it is raised.
 
     Owned State:
         - Inherited `spell_id`, `spell_name`, `node_id`, `param_name`, `inner`.
@@ -63,9 +63,9 @@ class UnresolvedInputError(MeldExecutionError):
         `MeldExecutionError` for the unresolved-input socket contract.
 
     System Context:
-        Fires in the resolution layer at meld, after conjure produced the Conduit:
-        from a plan before construction (many_only, generalized) or on the solo
-        constructor-failure path. Successful melds never evaluate it.
+        Fires in the resolution layer at meld, after conjure produced the Conduit,
+        before construction: from a plan (many_only, generalized) or from a solo
+        root's call target. Successful melds never evaluate it.
 
     AGENT_ACCESS: public
 
@@ -109,7 +109,8 @@ class UnresolvedInputError(MeldExecutionError):
             param_name:
                 First missing unresolved parameter.
             inner:
-                Constructor-call exception that exposed the missing input.
+                None when Melder raises it (nothing was called); kept for the
+                `MeldExecutionError` shape.
             expected_type:
                 Display name of the first missing parameter's expected type.
             unresolved_params:
@@ -177,90 +178,25 @@ class UnresolvedInputError(MeldExecutionError):
         return repr(annotation)
 
     @classmethod
-    def from_failed_construction(
-            cls,
-            spell: Spell,
-            exc: BaseException,
-            supplied_names: Collection[str] = (),
-            supplied_positional_count: int = 0,
-    ) -> Optional[UnresolvedInputError]:
-        """
-        Name the unresolved inputs a failed constructor call did not receive.
-
-        Purpose:
-            The failure-path decision for the solo lane and the old step emitters
-            after a constructor call raised. The many_only and generalized plans
-            decide the error before calling (`for_unsupplied`, 2026-09-26); this
-            hook retires with the solo guard (S4b, owner decision).
-
-        Contract:
-            - Returns None unless `exc` is a `TypeError`: a missing required
-              argument can only fail at call binding, which raises TypeError.
-            - Reads the consumer's durable Phase-3 topology and selects its
-              UNRESOLVED_INPUT sockets whose name is not in `supplied_names` and,
-              for positional-capable parameters, whose position is not below
-              `supplied_positional_count`. Returns None when none remain, so any
-              other failure keeps its existing error.
-            - A required parameter that was not passed makes binding fail, so a
-              non-empty selection is exactly the cause of `exc`.
-            - Runs only after a call already raised; successful melds never reach it.
-
-        Args:
-            spell:
-                The spell whose constructor call raised.
-            exc:
-                The exception raised by that call.
-            supplied_names:
-                Keyword names actually passed to the call (dependencies, contract
-                payload and overrides together).
-            supplied_positional_count:
-                Number of positional arguments actually passed.
-
-        Returns:
-            Optional[UnresolvedInputError]: The error to raise (chain it from
-                `exc`), or None when no unresolved input explains the failure.
-        """
-        if not isinstance(exc, TypeError):
-            return None
-        topology = spell._spell_system_states.get_local_topology(spell.spell_index)
-        if topology is None:
-            return None
-        missing: List[SpellSocketDescriptor] = []
-        for socket in topology.sockets:
-            if socket.socket_kind is not SocketKind.UNRESOLVED_INPUT:
-                continue
-            if socket.param_name in supplied_names:
-                continue
-            if (
-                    socket.parameter_kind in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")
-                    and socket.position < supplied_positional_count
-            ):
-                continue
-            missing.append(socket)
-        if not missing:
-            return None
-        return cls._from_missing_sockets(spell, missing, exc)
-
-    @classmethod
     def for_unsupplied(cls, spell: Spell, param_names: Collection[str]) -> UnresolvedInputError:
         """
         Build the error for unresolved inputs a plan knows are unsupplied, before any construction.
 
         Purpose:
-            The plan-side decision (design v2 S4a, B6): a many_only or generalized
-            plan raises this instead of calling a constructor that must fail.
+            The decision before construction (design v2 S4, B6): a many_only or
+            generalized plan, or a solo root's call target, raises this instead of
+            calling a constructor that must fail.
 
         Contract:
             - Selects the consumer's UNRESOLVED_INPUT sockets named in
-              `param_names` from its live Phase-3 topology; message, fields and
-              ordering are exactly `from_failed_construction`'s, and `inner` is
-              None (nothing was called).
+              `param_names` from its live Phase-3 topology and builds the message
+              and fields in signature order; `inner` is None (nothing was called).
 
         Args:
             spell:
-                The consumer the plan was about to build.
+                The consumer about to be built.
             param_names:
-                Its UNRESOLVED_INPUT parameters that have no winning key.
+                Its UNRESOLVED_INPUT parameters that the call does not supply.
 
         Raises:
             RuntimeError:
@@ -281,22 +217,20 @@ class UnresolvedInputError(MeldExecutionError):
             raise RuntimeError(
                 f"{spell.spell_name} has no unresolved input named {sorted(wanted)!r}; its plan is stale."
             )
-        return cls._from_missing_sockets(spell, missing, None)
+        return cls._from_missing_sockets(spell, missing)
 
     @classmethod
     def _from_missing_sockets(
             cls,
             spell: Spell,
             missing: List[SpellSocketDescriptor],
-            inner: Optional[BaseException],
     ) -> UnresolvedInputError:
         """
-        Build the error from the consumer's missing UNRESOLVED_INPUT sockets (shared message builder).
+        Build the error from the consumer's missing UNRESOLVED_INPUT sockets.
 
         Args:
             spell: The consumer.
             missing: Its unsupplied UNRESOLVED_INPUT sockets (any order; sorted here).
-            inner: The constructor-call exception, or None when nothing was called.
 
         Returns:
             UnresolvedInputError: The error to raise.
@@ -322,7 +256,7 @@ class UnresolvedInputError(MeldExecutionError):
             message=message,
             node_id=spell_id,
             param_name=param_name,
-            inner=inner,
+            inner=None,
             expected_type=expected_type,
             unresolved_params=tuple(socket.param_name for socket in missing),
         )

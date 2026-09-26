@@ -1,7 +1,12 @@
+from typing import Mapping, Optional
+
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
 from melder.aether.spellbook.bind.spell_index import SpellIndex
-from melder.aether.spellbook.spell_compiler.dag.dag_index import DagTargetingEngine
+from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
+    RootResolutionBlueprint,
+)
+from melder.aether.spellbook.spell_compiler.dag.dag_index import DagTargetingEngine, SocketRef
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpec
 from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder import (
@@ -55,12 +60,52 @@ def _register_index(states, spell_id: str) -> SpellIndex:
     return index
 
 
+def _add_socket_refs(
+        blueprint: RootResolutionBlueprint,
+        topologies: Mapping[str, Optional[SpellLocalTopology]],
+) -> None:
+    """
+    Purpose:
+        Record one SocketRef per socket per root path on a compiled blueprint.
+    Contract:
+        - Compiled blueprints carry no SocketRefs since 2026-09-26 (Phase 5 walks no
+          paths), so these targeting tests give the engine its input by hand,
+          breadth-first from the root, the way the retired overlay did.
+        - Paths are interned in the blueprint's own PathRegistry.
+    Args:
+        blueprint: Compiled root blueprint to populate.
+        topologies: Local topologies keyed by spell id.
+    Returns:
+        None.
+    """
+    registry = blueprint.path_registry
+    queue = [(blueprint.root_spell_id, registry.root_path_id)]
+    while queue:
+        node_id, path_id = queue.pop(0)
+        topology = topologies.get(node_id)
+        if topology is None:
+            continue
+        for socket in topology.sockets:
+            socket_path_id = registry.extend_path(path_id, socket.param_name)
+            blueprint.add_socket_ref(
+                SocketRef(
+                    node_id=node_id,
+                    param_name=socket.param_name,
+                    param_path_id=socket_path_id,
+                    socket_kind=socket.socket_kind,
+                )
+            )
+            for target_id in socket.target_spell_ids:
+                queue.append((target_id, socket_path_id))
+
+
 def _build_blueprint():
     """
     Purpose:
         Build a root blueprint with deep socket paths for targeting tests.
     Contract:
-        - Returns a RootResolutionBlueprint with a populated DagIndex.
+        - Returns a RootResolutionBlueprint with a populated DagIndex (refs added by
+          `_add_socket_refs`, since compiled blueprints record none).
         - The blueprint contains both shallow and deep socket paths.
     Returns:
         tuple: (blueprint, ids) where ids is a dict of spell ids.
@@ -164,6 +209,7 @@ def _build_blueprint():
     snapshot = SpellSystemAdjacencyBuilder.build(states)
     blueprints = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
     blueprint = blueprints[root_id]
+    _add_socket_refs(blueprint, snapshot.topologies)
     blueprint.ensure_dag_index_built()
 
     return blueprint, {

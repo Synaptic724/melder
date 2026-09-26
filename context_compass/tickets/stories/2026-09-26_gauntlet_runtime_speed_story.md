@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T16:15:41Z
+- Updated: 2026-09-26T19:14:12Z
 
 ## User Narrative
 As the Melder owner, I want Melder's per-scope-cycle runtime on the real-world gauntlet (free-threaded, three
@@ -63,6 +63,7 @@ weakens a cleanup or concurrency guarantee is out.
 ## Tasks (Implementation Checklist)
 - [ ] Task: TASK-2026-09-26-measure-gauntlet-scope-cycle-costs - reproduce, attribute, rank candidates (no code).
 - [ ] Task: TASK-2026-09-26-emit-positional-constructor-args - P1, positional constructor arguments.
+- [ ] Task: TASK-2026-09-26-spellspace-meld-warm-id-lane - P4, SpellSpace.meld warm id lane.
 - [ ] Task: one task per candidate the owner picks, each behind patch docs and a gauntlet gate.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
@@ -95,6 +96,10 @@ weakens a cleanup or concurrency guarantee is out.
 ## Decision Log
 - 2026-09-26T15:45:57Z: focus on the meld and SpellSpace hot path (and resolution if the profile points
   there); VM copy for attribution, owner-run for claimed gains; setup parked. See the child task's DECISION note.
+- 2026-09-26T17:29:58Z: P3 (deferred refcounting through a ctypes call into an unstable CPython API) dropped in
+  every form by the owner, opt-in flag included; the prototype stays in artifacts as research only.
+- 2026-09-26T17:32:38Z: owner go-ahead for clean levers, each gated by VM A/B, suites on 3.14t (gil 0/1) and
+  the GIL build, a 30k soak, a NOTICE to the file owner and a byte-identical apply.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -121,6 +126,33 @@ weakens a cleanup or concurrency guarantee is out.
   NEXT: Owner answers D1-D3 in the child task.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T19:14:12Z
+  TYPE: DECISION
+  CLAIM: Where the levers stand.
+    - P1 is in the tree since 16:16Z, but melder_0's S2b-2 (17:26Z) moved normal melds onto the site-plan lowering,
+      which passes operands positionally itself. P1's code is now off the normal path, and its fate goes with
+      S2b-3.
+    - P3 is dropped (owner).
+    - Lever 1, string interning: no gain, dropped.
+    - Lever 2, thread-affine pools: -6% to -7% per cycle on Linux. It changes pooling semantics and its Windows
+      effect is unknown, so it waits for a design.
+    - P4, SpellSpace.meld warm id lane: validated twice, about -17% per cached space meld and -2% to -3% per
+      gauntlet cycle. Its task is open for the apply.
+    - Side finding, a pre-existing RISK (measure task): the documents promise an active-scope check on
+      SpellSpace.meld that the source does not perform. The owner decides between enforcing it and correcting
+      the documents.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md:182-205
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:577-650
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:699-727
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:765-791
+  - tickets/tasks/2026-09-26_spellspace_meld_warm_id_lane_task.md:1-170
+  IMPACT: The gauntlet's positional gain now belongs to melder_0's lowering. melder_2's next levers are the scope
+    lifecycle and pools, both files in this lane.
+  NEXT: Land P4; then take the owner's Windows gauntlet run and the scope-check decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

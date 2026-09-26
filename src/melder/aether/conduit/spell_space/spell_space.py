@@ -466,14 +466,22 @@ class SpellSpace(Cleanable):
 
         Call shape:
             Positional strings are human SpellNames. Machine callers use
-            keyword-only `spell_id=...`, which is forwarded positionally to the
-            spellspace door's existing ID fast lane.
+            keyword-only `spell_id=...`. A warm id meld is served here from the
+            spellspace door's fast-door entry; any other id meld is forwarded
+            positionally to the door's existing ID fast lane.
 
         Contract:
             - Delegates resolution and lifecycle behavior to the shared
               conduit meld runtime through its spellspace front door.
             - Keeps human `spell` and machine `spell_id` identities mutually
               exclusive.
+            - Warm id lane (2026-09-26): a `spell_id=...` meld with no
+              `spell`, `spellframe` or `binding_name` reads the door's
+              fast-door entry and applies the same guard ladder and arms as
+              `SpellSpaceMeld.meld` (plain, non-empty dict override, bound
+              existing object). A hit returns without entering the door; a miss
+              or any failed guard continues in the door, so results, errors and
+              the cache-emit check are identical to calling the door.
             - Propagates runtime failures from the meld pipeline unchanged.
 
         Returns:
@@ -487,6 +495,59 @@ class SpellSpace(Cleanable):
             override:
                 Optional positional or keyword override payload.
         """
+        # Warm id lane (2026-09-26): the dominant scoped call - `spell_id=...` alone - reads the
+        # spellspace door's fast-door entry here, saving the door frame and its keyword marshaling on
+        # a hit. The guard ladder and both arms mirror `SpellSpaceMeld.meld` and `Conduit.meld`
+        # exactly (`Meld._fast_meld_doors` lists every reader); only guard reads sit inside the
+        # AttributeError try, so an executor's own AttributeError is never swallowed. A miss continues
+        # in the door's positional id lane; every other call shape keeps the path below.
+        if (
+            type(spell_id) is str
+            and spell is None
+            and spellframe is None
+            and binding_name is None
+        ):
+            meld_door = self._meld
+            fast_entry = meld_door._fast_meld_doors.get(spell_id)
+            if fast_entry is not None:
+                (
+                    door_spell,
+                    captured_context,
+                    captured_epoch,
+                    existing_object_entry,
+                ) = fast_entry
+                fast_executor = None
+                try:
+                    if (
+                        not meld_door._meld_hooks
+                        and door_spell._door_epoch == captured_epoch
+                        and door_spell._creation_context is captured_context
+                        and not meld_door._spellbook._spellbook_validation_required
+                    ):
+                        # Slots are read per hit: hydration swaps them in place.
+                        if override is None:
+                            fast_executor = captured_context._no_overrides_instance_executor
+                        elif type(override) is dict and override:
+                            fast_executor = captured_context._overrides_executor
+                except AttributeError:
+                    # Cleaned spell/context: guard miss; the door decides.
+                    fast_executor = None
+                if fast_executor is not None:
+                    if override is None:
+                        if existing_object_entry:
+                            # Existing object: the door returns this same bound slot.
+                            instance = door_spell.user_created_object
+                        else:
+                            instance = fast_executor(meld_door)
+                    else:
+                        instance = fast_executor(meld_door, override)[0]
+                    spellbook = meld_door._spellbook
+                    if spellbook._cache_emit_required:
+                        spellbook._emit_cache_file_if_required()
+                    return instance
+            if override is None:
+                return meld_door.meld(spell_id)
+            return meld_door.meld(spell_id, spell_override=override)
         if spell is not None and spell_id is not None:
             raise ValueError("meld accepts either `spell` or `spell_id`, not both.")
 

@@ -2,15 +2,20 @@
 
 # Task: Correct five base-class docstrings that still claim they are unguarded
 
+- Completed: 2026-09-26T17:36:52Z
+- Summary: The five base-class `Registration:` sections (and 58 further wrong sections found on the way) agree
+  with the shipped manifest; no retired-sentinel or "unguarded" claim remains. Landed in 53c9b82c6
+  (2026-07-25); exit gate re-verified on current source and turned in on owner instruction 2026-09-26.
+
 ## Metadata
 - Task ID: TASK-2026-07-25-unguarded-base-docstring-correction
 - Story: STORY-2026-07-25-guard-manifest-truth
-- Status: review
+- Status: done
 - Owner: melder_1
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-07-25T19:25:00Z
-- Updated: 2026-07-31T23:05:38Z
+- Updated: 2026-09-26T17:36:52Z
 
 ## Objective
 Replace the retired-sentinel justification in five base-class `Registration:` sections
@@ -40,16 +45,19 @@ docstrings instruct maintainers to preserve an exclusion that no longer exists.
 - to_state: in_progress
 - transition_reason: Owner directed it, membership is evidenced per class, and the
   contradiction is unambiguous.
+- from_state: review
+- to_state: done
+- transition_reason: Exit gate re-verified on current source; owner: "turn it in if its done" (2026-09-26T17:36:52Z).
 
 ## Steps / Checklist
-- [ ] `utilities/general_base/cleanable.py` - rewrite the `Registration:` section.
-- [ ] `utilities/general_base/sync.py` - same.
-- [ ] `utilities/general_base/abstract_elastic_pool.py` - same, including its claim
+- [x] `utilities/general_base/cleanable.py` - rewrite the `Registration:` section.
+- [x] `utilities/general_base/sync.py` - same.
+- [x] `utilities/general_base/abstract_elastic_pool.py` - same, including its claim
       that the exclusion "has to hold at every level of the chain".
-- [ ] `mutation_research/diff/diff_strategy.py` - same, preserving the open/closed
+- [x] `mutation_research/diff/diff_strategy.py` - same, preserving the open/closed
       extension point reasoning, which is still true and still matters.
-- [ ] `mutation_research/group_diff/group_diff_strategy.py` - same.
-- [ ] Preserve each section's genuine architectural reasoning; only the MECHANISM claim
+- [x] `mutation_research/group_diff/group_diff_strategy.py` - same.
+- [x] Preserve each section's genuine architectural reasoning; only the MECHANISM claim
       and the resulting instruction are wrong.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
@@ -67,7 +75,8 @@ docstrings instruct maintainers to preserve an exclusion that no longer exists.
 - src/melder/mutation_research/group_diff/group_diff_strategy.py
 
 ## Validation
-- Not run.
+- Owner-run pytest: Not run. Docstring-only change, in HEAD since 53c9b82c6; exit gate re-verified by source
+  reading and search on 2026-09-26 (see the last FACT note).
 - Recommended commands (owner-run, 3.14t):
   - `pytest tests/unit/melder -q`
   - `rg -n "DELIBERATELY UNGUARDED" src/`
@@ -86,15 +95,15 @@ docstrings instruct maintainers to preserve an exclusion that no longer exists.
 - [ ] No drive-by edit to any other docstring section in the touched files.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
 - [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
+- [x] Validation status recorded
 - [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >= 7)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -325,9 +334,33 @@ docstrings instruct maintainers to preserve an exclusion that no longer exists.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T17:36:33Z
+  TYPE: FACT
+  CLAIM: Exit gate verified on current source by melder_1 (2026-09-26 session; owner: "turn it in if its done").
+    The five `Registration:` sections read "Your subclasses bind normally: manifest lookup is an EXACT (module,
+    qualname) match and does not inherit", and all five classes are in the committed manifest. No .py file under
+    src/melder says DELIBERATELY UNGUARDED, USER-BINDABLE, "not registration-guarded" or cites the retired
+    inherited/MRO sentinel; `__melder_internal__` survives only as history in bind.py and the packaged system-doc
+    payloads (allowed by the ticket). The 07-31 note's pending "regime ruling" was already settled by the 07-25
+    19:45 ASSUMPTION_CHALLENGE (no conflict; manifest correct). The five files equal HEAD (ignoring CR); the
+    change landed in 53c9b82c6 (2026-07-25). Owner-run pytest: Not run (docstring-only, already committed).
+  EVIDENCE:
+  - ../src/melder/utilities/general_base/cleanable.py:49-52
+  - ../src/melder/utilities/general_base/sync.py:47-49
+  - ../src/melder/utilities/general_base/abstract_elastic_pool.py:62-64
+  - ../src/melder/mutation_research/diff/diff_strategy.py:36-40
+  - ../src/melder/mutation_research/group_diff/group_diff_strategy.py:41-43
+  - ../src/melder/aether/spellbook/bind/bind.py:70-78
+  - ../src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:636-636
+  IMPACT: Nothing left to do; the ticket can close.
+  NEXT: Closure sync.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Five base-class docstrings still teach the retired sentinel and instruct maintainers not
 to guard classes the manifest already guards. Correction is prose-only with zero
 behaviour change; `bind.py` is excluded because its sentinel mention is accurate
 history. The genuine open/closed extension-point reasoning in the two diff-strategy
 files must survive the rewrite - only the mechanism claim and its instruction are wrong.
+CLOSED 2026-09-26T17:36:52Z: exit gate verified on current source (fix in 53c9b82c6); turned in on owner instruction.

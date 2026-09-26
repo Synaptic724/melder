@@ -713,18 +713,9 @@ def _emit_construct_instance(
         lines.append(
             f"{indent}    instance_{step_index} = target_{step_index}()"
         )
-    # Contract-payload keywords and a positional payload are supplied by this
-    # call too; the failure helper needs them to tell an unsupplied unresolved
-    # input apart from any other constructor failure. Dependency keywords never
-    # name an unresolved input, so they are not repeated here.
-    supplied_arguments = ""
-    if positional is not None:
-        supplied_arguments = f", {tuple(payload_names)!r}, len(positional_{step_index})"
-    elif payload_names:
-        supplied_arguments = f", {tuple(payload_names)!r}"
     lines.extend([
         f"{indent}except Exception as exc:",
-        f"{indent}    _raise_meld_construction_error(spell_{step_index}, exc{supplied_arguments})",
+        f"{indent}    _raise_meld_construction_error(spell_{step_index}, exc)",
     ])
 
 

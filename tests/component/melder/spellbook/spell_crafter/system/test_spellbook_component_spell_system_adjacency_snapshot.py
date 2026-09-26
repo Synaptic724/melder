@@ -234,17 +234,17 @@ def test_component_snapshot_mutation_drives_blueprint_builder() -> None:
         frame.cleanup()
 
 
-def test_component_snapshot_topologies_feed_blueprint_builder() -> None:
+def test_component_snapshot_topologies_mint_no_blueprint_paths() -> None:
     """
     Purpose:
-        Validate snapshot topologies are used to seed blueprint socket refs.
+        Validate a snapshot with topologies builds the dependency DAG and no socket refs.
     Contract:
-        - Socket refs match registered topology sockets.
-        - DagIndex resolves the socket path.
+        - The DAG holds the root and its dependency.
+        - Topology sockets are not copied into SocketRefs and mint no path.
     Returns:
         None.
     Raises:
-        AssertionError: If socket refs are not recorded.
+        AssertionError: If socket refs are recorded or the DAG is incomplete.
     """
     frame = AethericFrame(Aether(), "component-snapshot-topology-blueprint")
     states = frame._spell_system_states
@@ -275,10 +275,9 @@ def test_component_snapshot_topologies_feed_blueprint_builder() -> None:
         blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)[
             root_id
         ]
-        blueprint.ensure_dag_index_built()
-        path_registry = blueprint.path_registry
-        assert {path_registry.materialize_path(ref.param_path_id) for ref in blueprint.socket_refs} == {("dep",)}
-        assert blueprint.dag_index.get_by_exact_path(("dep",)) != []
+        assert set(blueprint.dag.nodes) == {root_id, dep_id}
+        assert blueprint.socket_refs == []
+        assert blueprint.path_registry.resolve_path_id(("dep",)) is None
     finally:
         frame.cleanup()
 

@@ -6,7 +6,7 @@ usage: probe_deferred.py {base|deferred} [threads]
 """
 import ctypes, gc, statistics, sys, threading, time
 from pathlib import Path
-ROOT = Path.home() / "work" / "copy"
+import os; ROOT = Path(os.environ.get("MELDER_ROOT", str(Path.home() / "work" / "copy")))
 for p in (ROOT, ROOT / "src"):
     sys.path.insert(0, str(p))
 import benchmarks.testing_other_di.test_real_world_gauntlet as g
@@ -57,6 +57,11 @@ if mode == "deferred":
                 or (scope == "kernel+containers" and (melder_obj or t in (dict, list, tuple, set, frozenset)))
                 or (scope == "kernel+containers+functions" and (melder_obj or t in (dict, list, tuple, set, frozenset,
                     _types.FunctionType, _types.MethodType, _types.CellType))))
+        if scope == "userfree+intern":
+            if t is str:
+                sys.intern(o); continue
+            take = (melder_obj or t in (_types.FunctionType, _types.MethodType, _types.CellType)
+                    or (t in (dict, list, tuple, set, frozenset) and not holds_user(o)))
         if take and gc.is_tracked(o):
             r = f(o); enabled += r
             if r: kinds[t.__name__] = kinds.get(t.__name__, 0) + 1

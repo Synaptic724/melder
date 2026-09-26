@@ -10,7 +10,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T11:28:08Z
-- Updated: 2026-09-26T12:13:26Z
+- Updated: 2026-09-26T18:21:24Z
 
 ## User Narrative
 As a Melder user, I want `meld(Root, override={"a": obj})` to use `obj` without building A or anything only
@@ -161,6 +161,21 @@ parallel path; the prototype showed the behavior and speed on 3.14t and GIL befo
   - tickets/tasks/2026-09-26_fix_collection_member_many_sharing_task.md
   IMPACT: Story order is S1 done -> collection fix -> S2 -> S6.
   NEXT: Trace Phase-8 path minting for the collection fix.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T18:21:24Z
+  TYPE: FACT
+  CLAIM: Cross-task state. S2-S5 ran inside TASK-2026-09-26-build-site-plan-lowering (one lane, step notes there):
+    S3 key-set plans and dispatcher (old override lane retired, cache generation 14), S2 normal melds on the same
+    lowering (parity gate met), S4a unresolved inputs decided in the plan for the plan families, S5a Phase-5
+    per-path overlay retired (conjure linear in sites: 15-site binary chain 117 -> 7 ms). Open, all owner-gated:
+    S4b (solo lane and the failure-path hook), one retirement pass for code these steps left unused (S2b-3 list
+    plus SpellOverrider, targeting engine, SocketRefSanityStrategy, blueprint socket API, resolve_path_registry,
+    Phase-5 capture rows), and S6 (docs promotion, asset rebuild, release note). Version 0.2.65 uncommitted.
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  IMPACT: Behavior work for the story is done except S4b; the rest is deletion and qualification.
+  NEXT: Owner decisions on S4b and the retirement pass; S6 inventory meanwhile.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 

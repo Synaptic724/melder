@@ -17,9 +17,11 @@ class RootResolutionBlueprint(Cleanable):
     This blueprint is the handoff object between structural spell compilation
     and the later system/planning phases. It does not discover dependencies or
     validate policy by itself; instead, it packages the rooted DAG, stable
-    execution order, and socket-targeting metadata that later components use
-    for system validation, change-control/component-of wiring, and Phase 8-10
-    planning/override targeting.
+    execution order, and the PathRegistry that Phase 8 mints root-relative path
+    ids into, for system validation, change-control/component-of wiring, and
+    Phase 8-10 planning. Compiled blueprints record no SocketRefs (the Phase-5
+    per-path overlay was retired on 2026-09-26); the socket collection and its
+    targeting index hold only refs a caller adds through `add_socket_ref`.
 
     Contract:
         - `root_spell_id` is the versioned identity of the root spell at
@@ -92,7 +94,7 @@ class RootResolutionBlueprint(Cleanable):
         self._ordered_node_ids: List[str] = list(ordered_node_ids) if ordered_node_ids else []
         self._requires_spellspace_request: bool = bool(requires_spellspace_request)
 
-        # Socket metadata (can be populated incrementally by Phase 5 builder).
+        # Socket metadata; Phase 5 records none, direct callers may add refs.
         self._socket_refs: List[SocketRef] = list(socket_refs) if socket_refs else []
 
         # Targeting index; always non-None for consumers.
@@ -197,11 +199,11 @@ class RootResolutionBlueprint(Cleanable):
     @property
     def socket_refs(self) -> List[SocketRef]:
         """
-        Return all socket references participating in this rooted DAG.
+        Return the socket references recorded on this blueprint.
 
-        Each socket ref carries the root-relative path information later used
-        for override targeting, diagnostics, and patch-map construction. The
-        returned list is a copy.
+        Compiled Phase-5 blueprints record none; the list holds only refs added
+        through `add_socket_ref`. Each ref carries a root-relative path id from
+        this blueprint's PathRegistry. The returned list is a copy.
         """
         self.check_cleaned()
         return list(self._socket_refs)
@@ -272,8 +274,8 @@ class RootResolutionBlueprint(Cleanable):
         """
         Replace the underlying DagIndex.
 
-        Normally not needed - Phase 5 can just add sockets via this blueprint;
-        provided for completeness / testing.
+        Phase 5 uses it to give each compiled blueprint a fresh index and
+        PathRegistry; tests may use it too.
 
         Contract:
             Swaps the index reference WITHOUT rebuilding sockets - the caller is

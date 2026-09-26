@@ -762,6 +762,34 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T19:13:01Z
+  TYPE: MEASURE
+  CLAIM: P4 re-validated on the device tree as of 19:06Z (0.2.66; melder_0's S2-S5 landed since 17:55Z). None of
+    P4's files or the doors changed. apply_p4.py applied cleanly and its diff body is byte-identical to the
+    validated p4_src.diff. Suites on CPython 3.14.7t -X gil=0 all passed: unit/component/integration spellbook
+    2245/790/586, conduit 268, multithreading 42, unit/component/integration aether 4146/1215/716, utilities
+    802/21, crystallizer 565/258/110, mutation_research 277/66/40, live_sim 1. The only failures are the 3
+    pre-existing build-asset and version-stamp cases, identical on the base copy. -X gil=1 and the 3.14.7 GIL
+    build (spellbook x3, component aether, conduit, multithreading, unit aether) all passed. Speed:
+    - Cached space meld on a worker thread: 252-263 -> 208-237 ns, close to calling the door directly (~197 ns).
+    - Gauntlet shape (3 new threads per iteration, per-thread CPU, 6 pairs): request -2.4%, worker_a -2.6%,
+      worker_b -2.7%.
+    - Fresh-thread probe: bimodal (thread-id reuse decides shell ownership), so plain medians mislead. Within
+      each mode it gives -2% to -5%, except worker_a in the fast mode (~0%).
+    probe_deferred.py and probe_cached_meld.py in the artifacts were refreshed to the versions these runs used
+    (MELDER_ROOT tree selection; one extra research scope, visible in git diff).
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/p4_suites_1906.txt:1-41
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/p4_cached_meld_1913.txt:1-36
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/p4_gauntlet_shape_1911.txt:1-12
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/p4_ab_fresh_thread_1910.txt:1-16
+  - artifacts/gauntlet_runtime_speed_20260926/probes/probe_cached_meld.py:1-45
+  IMPACT: P4 holds on today's tree: about -17% per cached space meld and -2.5% per gauntlet cycle. Only
+    bookkeeping remains before the apply.
+  NEXT: Open the P4 task and board rows, send the NOTICE to melder_0, then apply with --check first.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Opened 2026-09-26 on the owner's request to run the benchmarks and speed up the library. Baseline filed (owner
 runs, same-run ratios); no runs by melder_2 yet. Waiting on D1-D3; next is the 3.14t VM copy and a reduced-

@@ -224,17 +224,17 @@ def test_component_phase5_includes_contracted_dependency_in_index_and_blueprint(
             owner.cleanup()
 
 
-def test_component_phase5_contract_dependencies_generate_nested_socket_paths() -> None:
+def test_component_phase5_contract_dependencies_span_borrower_blueprint() -> None:
     """
     Purpose:
-        Validate nested socket paths span contracted dependency graphs.
+        Validate a borrower's root blueprint spans the contracted dependency graph.
     Contract:
-        - Contracted dependency graphs populate deep socket paths.
         - Root blueprints include the contracted dependency DAG.
+        - No SocketRef is recorded (Phase 8 mints the deep paths).
     Returns:
         None.
     Raises:
-        AssertionError: If nested socket paths or DAG nodes are missing.
+        AssertionError: If DAG nodes are missing or socket refs appear.
     """
     configuration = _make_dynamic_configuration()
     owner_book = Spellbook(configuration=configuration)
@@ -304,16 +304,8 @@ def test_component_phase5_contract_dependencies_generate_nested_socket_paths() -
             leaf_a_id,
             leaf_b_id,
         }
-        path_registry = blueprint.path_registry
-        assert {path_registry.materialize_path(ref.param_path_id) for ref in blueprint.socket_refs} == {
-            ("root",),
-            ("root", "left"),
-            ("root", "right"),
-            ("root", "left", "left"),
-            ("root", "left", "right"),
-            ("root", "right", "left"),
-            ("root", "right", "right"),
-        }
+        assert blueprint.socket_refs == []
+        assert blueprint.path_registry.resolve_path_id(("root",)) is None
     finally:
         if borrower is not None:
             borrower.cleanup()

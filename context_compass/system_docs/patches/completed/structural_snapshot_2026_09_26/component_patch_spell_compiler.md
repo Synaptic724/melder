@@ -8,7 +8,7 @@
 - Status: draft
 - Owner: fable_0 (cowork)
 - Created: 2026-09-26T15:49:37Z
-- Updated: 2026-09-26T18:12:10Z
+- Updated: 2026-09-26T18:31:16Z
 
 ## Component Purpose and Boundary
 - Current boundary: `SpellbookCreationSystem.conjure` freezes the configuration, runs phases 1-4 over
@@ -121,7 +121,8 @@
   structural scheduler pass and yields registry state equal to the cold pass field by field; a changed
   world, the warning report, caching off and a replay failure run the phases live. Partial hit (phases 1-2
   and 4 for all, phase 3 for the misses only; identical verdicts): with the path, if the owner lands it.
-- Test/validation item 4: D5 parity list and restore parity (component).
+- Test/validation item 4 (LANDED): D5 parity list (bind after conjure, notch, remove, transfer, contract grant),
+  two-process rows and restore parity (component); the restore case needed the frame caching-posture copy fix.
 - Evidence target: owner-run compiler and component suites; breakdown harness before/after. "Not run."
 
 ## Unknowns and Open Decisions

@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-capture-structural-payloads-at-conjure-end
 - Story: STORY-2026-09-26-structural-snapshot
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T16:47:56Z
-- Updated: 2026-09-26T17:29:25Z
+- Updated: 2026-09-26T18:18:08Z
 
 ## Objective
 The capture half of I-1 (architecture patch deltas 1-4 and 6; code description step 8): a stateless snapshot
@@ -53,6 +53,10 @@ the executor payloads through the existing emit. Nothing reads the payloads yet 
 - to_state: review
 - transition_reason: Seam, envelope generation 15, conjure-end capture and 33 tests landed on the device tree after green
   worktree runs; patch docs aligned (2026-09-26T17:27:47Z). Owner-run suites (C6) and acceptance remain.
+- from_state: review
+- to_state: done
+- transition_reason: Owner ran the suites and accepted ("yeah runs good", 2026-09-26T18:18:08Z); closure sync run; the hydrate task closes
+  in the same pass and the parity task is the successor.
 
 ## Steps / Checklist
 - [x] C1: read `caching_system.py` whole, the creation system's conjure-end staging and cache classification, the
@@ -64,7 +68,7 @@ the executor payloads through the existing emit. Nothing reads the payloads yet 
       conjure-end capture.
 - [x] C4: tests (unit first; one component test); worktree run; apply to the device tree.
 - [x] C5: align the patch docs with the landed shape; note the emitted envelope size delta.
-- [ ] C6: owner-run suites; "Not run." until then.
+- [x] C6: owner-run suites; "Not run." until then.
 - [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
@@ -85,7 +89,7 @@ the executor payloads through the existing emit. Nothing reads the payloads yet 
 - system_docs/patches/active/structural_snapshot_2026_09_26/ (three docs aligned at C5)
 
 ## Validation
-- Owner-run suites: Not run.
+- Owner-run suites: green (owner, 2026-09-26T18:18:08Z: "yeah runs good"; the recommended command below).
 - Worktree (VM, CPython 3.14.7t, copy of src/tests): unit spellbook+utilities 3019 passed, 2 skipped, 7 xfailed;
   component+integration spellbook 1361 passed, 2 skipped, 2 xfailed, 2 xpassed; unit aether+crystallizer,
   component aether+utilities, integration aether+conduit 6919 passed, 43 skipped, 1 xfailed. The two failures in
@@ -102,12 +106,12 @@ the executor payloads through the existing emit. Nothing reads the payloads yet 
 ## Applicable Anti-Patterns
 - [x] No status transition without evidence-backed transition reason.
 - [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No closure without acceptance confirmation and board-sync completion.
 - [x] No src edit before the owner confirms the file/symbol list and the shared files are free.
 - [x] No row that carries an index ULID, an object or a repr of an object.
 
 ## Done Checklist
-- [x] Steps complete and checked off (C6 owner-run pending)
+- [x] Steps complete and checked off
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
@@ -115,8 +119,8 @@ the executor payloads through the existing emit. Nothing reads the payloads yet 
 - [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [x] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -295,6 +299,8 @@ STATE 2026-09-26T17:23:47Z: IN_PROGRESS. C3+C4 done: seam, generation 15, conjur
 (worktree green). Next: C5 patch-doc alignment, then review and the owner-run command.
 STATE 2026-09-26T17:27:47Z: REVIEW. C1-C5 done; patch docs aligned. Waiting on the owner-run suites (C6) and acceptance; the hydrate
 task is the successor.
+STATE 2026-09-26T18:18:08Z: DONE. Owner-run suites green and accepted; moved to completed/. Successors: hydrate (closed in the same
+pass), then the parity task.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

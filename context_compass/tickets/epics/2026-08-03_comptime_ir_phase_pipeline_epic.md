@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T18:13:08Z
+- Updated: 2026-09-26T18:43:15Z
 - Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
@@ -1236,6 +1236,12 @@ UPDATE 2026-09-26T17:28:54Z (fable_0): task 3 (capture) landed on the device tre
 conjure-end capture, 33 tests; worktree green; owner-run pending); patch docs aligned. Next: the hydrate task under the same story.
 UPDATE 2026-09-26T18:13:08Z (fable_0): task 4 (hydrate v1) landed and in REVIEW - a full structural hit replays phase 3-4 rows and skips
 phases 1-4 (VM: warm conjure -27% at 29 spells); partial path is an owner decision. Next: the parity task.
+UPDATE 2026-09-26T18:18:50Z (fable_0): tasks 3-4 (capture, hydrate v1) accepted by the owner and closed; v1 stands (no partial path).
+Next: the parity task under tickets/stories/2026-09-26_structural_snapshot_story.md.
+UPDATE 2026-09-26T18:36:32Z (fable_0): task 5 (parity: D5 events, two processes, crystallizer restore; frame caching-posture fix) and
+task 6 (promotion into the canonical maps, indexes regenerated) landed and in REVIEW; measurement stays owner-run.
+UPDATE 2026-09-26T18:43:15Z (fable_0): tasks 5-6 accepted and closed; I-1 story in REVIEW with every implementation task done and the
+patch folder retired; only the owner-run measurement pass is open.
 
 IMPLEMENTATION ENTRY - after S11 and the owner's explicit go, in this order:
 - I-0 signature-determinism test plus one serializer (small, compiler-side, protects today's cache;

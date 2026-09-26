@@ -92,9 +92,10 @@ class Meld(Cleanable, ABC):
       since the existing-creation door returns the same slot. The flag keeps
       the check off every other spell's warm path, and it is a bool rather
       than the object so a stale entry never keeps a removed object alive.
-      Three readers apply one guard ladder and both arms and must stay
-      identical: `ConduitMeld.meld`, `SpellSpaceMeld.meld` and
-      `Conduit.meld` (automatic id melds). Cardinality is bounded by
+      Four readers apply one guard ladder and both arms and must stay
+      identical: `ConduitMeld.meld`, `SpellSpaceMeld.meld`,
+      `Conduit.meld` (automatic id melds) and `SpellSpace.meld` (id melds,
+      2026-09-26). Cardinality is bounded by
       construction because entries are inserted only after a successful
       full-lane meld (no-override or override branch, never for a spell
       holding a mutation override), so the keyspace is the bound-spell

@@ -373,6 +373,34 @@ Release-bound creation cache (2026-09-24):
   manifest references unknown spell_id"), and ids no longer live stayed in the bundle forever. Full-hit
   conjures are unchanged and do not rewrite the file; the bump cold-resets bundles that may hold such plans.
   EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._stage_spell_payloads_at_conjure_end`.
+- Generation 15 (2026-09-26, `structural_snapshot_rows`): the envelope gains a second per-spell map,
+  `structural_payloads` {spell_id: nested-marshal bytes}, beside `spell_payloads`. Each payload is value-only
+  (`StructuralSnapshot.PAYLOAD_FORMAT` 1): a key {format, spell_id, sorted (module, qualname) refs of the
+  types the spell's sockets match on}, a world stamp (sha256 over the sorted pool ids, the frame posture name
+  and the sorted borrowed spell ids), a pool-wide `replayable` verdict (`CompilerPhase3._eq_safe_object` over
+  every pool object and spellframe), phase-3 rows (`Spell.dependencies`, the registered topology's socket
+  descriptors as tuples) and the phase-4 verdict (lineage validity name, `contract_unvalidated`). Store
+  methods: `has/get/upsert(-> changed)/remove_structural_payload`, `structural_payloads`,
+  `cached_structural_spell_ids`; `transfer_spell_payload_to` drops the source's structural payload. Structural
+  bytes use marshal format 2 (`STRUCTURAL_MARSHAL_VERSION`): no back-references, so equal values give equal
+  bytes across a cold pass, a replay and two processes; the executor tier keeps the default format.
+- Capture (2026-09-26): `_activate_conjured_conduit` calls `_capture_structural_payloads_at_conjure_end` on
+  every cache path after the executor staging; `StructuralSnapshot.capture_at_conjure_end` builds one payload
+  per owned spell from DURABLE state (the phase artifacts are already reset), removes stale ids, and flags
+  the conjure-end emit only when bytes changed, so an unchanged world never rewrites the bundle file.
+- Hydrate (2026-09-26): `conjure` resolves the conduit name first and passes it to
+  `_prepare_spellbook_for_conjure`, which calls `_build_structural_cache_state` before the structural run:
+  `disabled` without a conduit name (the existing-conduit route), with `validation_warnings=True` (it needs
+  live Phase-4 results) or with caching off; otherwise `StructuralSnapshot.classify` over the memoized cache
+  utility. A spell hits when its payload is well-formed, carries the live key and world stamp and is
+  replayable. Only a FULL hit replays (`_hydrate_structural_tier_for_conjure` ->
+  `StructuralSnapshot.hydrate_full_hit`: `update_dependencies`, `register_local_topology` from descriptors
+  rebuilt from the rows, `Spell._add_build_details`, Nexus publication, then `clear_dirty` + `set_validity`
+  exactly as Phase 4 writes them) and skips phases 1-4; a partial hit, a miss, or a replay failure (logged)
+  runs today's phases. Measured on the VM at 29 spells: warm conjure -27%, structural preparation -70%.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot`,
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._prepare_spellbook_for_conjure` and
+  `src/melder/utilities/caching_system/caching_system.py:CachingSystem.upsert_structural_payload`.
 EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem`,
 `src/melder/aether/spellbook/spellbook.py:Spellbook._emit_cache_file_if_required` and
 `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`.
@@ -3199,6 +3227,28 @@ Spec vs implementation notes:
 Purpose:
 - Compile per-spell artifacts and validate correctness before resolution.
 
+Phase 3 emits id rows, no graph object (2026-09-26): `_build_local_frame_dag` returns
+`(ordered_node_ids, dependency_spell_ids)` - the ordered frame is the sorted distinct dependency ids then the
+spell itself (the retired star DAG's topological law) - and registers the `SpellLocalTopology`; the per-spell
+`DirectedAcyclicWorkGraph` (lock, node objects, sort) is gone, `Spell.dependency_graph` is a documented `None`
+tombstone and `Spell._add_build_details(dependencies)` takes the ids only. Edge rows were a projection of the
+topology sockets (`target_spell_ids` x `param_name`). A self-resolution is recorded like any other dependency
+and Phase 4 reports it as SELF_DEPENDENCY. The resolution-frame presence strategy checks the frame only
+(MISSING_DEPENDENCY_GRAPH retired). Phase 3 was about a third faster per conjure on the 29-spell benchmark.
+EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
+and `src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py`.
+
+Structural snapshot seam (2026-09-26): `spell_compiler/structural_snapshot/structural_snapshot.py`
+(`StructuralSnapshot`, slot-only static helper) owns the capture of phase 3-4 results as value rows at conjure
+end and their classification and replay before the next conjure's structural run (details under Spellbook
+Core, generation 15). It contains no matching, validation or graph logic: replay calls the registry helpers
+phases 3-4 call. A spell without live bind-time requirements, a non-replayable pool (an object or spellframe
+with a custom `__eq__`), a changed world stamp or a malformed payload is a structural miss and regenerates
+through the unchanged phases. Parity contracts (bind after conjure, notch, remove, transfer, contract grant,
+two processes, crystallizer restore) compare cold and hydrated worlds field by field.
+EVIDENCE: `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot`
+and `tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py`.
+
 Conjure validation report (2026-09-26):
 - `SpellbookValidationError(broken_spells, *, system_diagnostics=None)` renders once, at construction. First
   line "Spellbook validation failed. Broken spells: A, B." (names only; the two substrings of earlier releases
@@ -3523,7 +3573,7 @@ Text is preserved as authored; only its location changed.
 Phases 1-4 are structural and run before Conduit creation:
 - Phase 1: Requirements extraction.
 - Phase 2: Symbolic graph build.
-- Phase 3: Local frame creation and dependency graph assembly.
+- Phase 3: Local frame (id rows) and constructor topology; no graph object since 2026-09-26.
 - Phase 4: Validation via SpellValidationSystem strategies.
 
 Dirty terminology guardrail for this pipeline:
@@ -6224,8 +6274,9 @@ These flows describe concrete method sequences for core behaviors.
 1. `Spellbook.conjure(...)`:
    - Validates and freezes `SpellbookConfiguration`.
    - Binds `SpellbookConfiguration` to Aether frame.
-   - Runs phases 1-4 via PhaseScheduler (`_prepare_spellbook_for_conjure` ->
-     `run_structural_phases`), on every conjure.
+   - Classifies the structural tier of the conduit bundle (`_prepare_spellbook_for_conjure` ->
+     `_build_structural_cache_state`); on a full hit replays the phase 3-4 rows for every spell, otherwise
+     runs phases 1-4 via PhaseScheduler (`run_structural_phases`) as before (2026-09-26).
    - Only when `validation_warnings=True`: `_report_validation_warnings` logs the Phase-4 warnings once,
      grouped by code, before the phase artifacts are released.
    - Classifies the creation cache (`_build_conjure_cache_state`): live
@@ -7900,6 +7951,8 @@ Module count: 574 (excluding `__init__.py`), measured 2026-08-01.
   Live compiler phase-11 wrapper over `CodegenCreationSystem`
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py` - Compiler phase 2 surface
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py` - Compiler phase 3 surface
+- `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py` - Structural
+  snapshot seam: capture, classify and replay of phase 3-4 rows (2026-09-26)
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py` - Compiler phase 4 surface
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py` - Compiler phase 5 surface
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py` - Compiler phase 6 surface
@@ -8058,7 +8111,7 @@ Module count: 574 (excluding `__init__.py`), measured 2026-08-01.
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py`
   Surface any **required holes** discovered in Phase 1
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py`
-  Ensure Phase 3 has actually produced a resolution frame and DAG
+  Ensure Phase 3 has actually produced a resolution frame
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py`
   Detect trivial self-dependencies (a spell depending on itself)
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/spell_validation_strategy.py`
@@ -8784,6 +8837,12 @@ completed epics/stories of 2026-07-11/12).
   pre-lock); joins never gate. NOTE: CCM.transaction_mediator is an
   accessor METHOD, not a property. The loader wraps both load verbs in
   authority spans ("the loading thread has all control").
+- Caching posture travels with the rest (2026-09-26): bind_frame_configuration's
+  copy branch now carries system_caching_enabled and system_cache_root_path
+  into the frame-owned posture; before, a restored frame (or any first posture
+  bind) silently fell back to the default cache root and never found the
+  conjure cache it had written.
+  EVIDENCE: `src/melder/aether/aetheric_frame/aetheric_frame.py:AethericFrame.bind_frame_configuration`.
 - Posture propagation: bind_frame_configuration's two LANDING branches
   call AethericFrame._propagate_transaction_wait_posture, routing the
   canonical posture's max_transaction_wait_time_in_seconds through
@@ -9319,6 +9378,14 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 structural snapshot: Phase 3 emits id rows without a per-spell graph object (Spell.dependency_graph is
+a None tombstone); the conduit cache bundle (generation 15) records each spell's phase 3-4 results as value rows
+at conjure end, and a conjure whose owned spells all still match replays them and skips phases 1-4 (VM: warm
+conjure -27% at 29 spells). bind_frame_configuration now carries the caching posture, so restored worlds find
+their conjure cache. Promoted into Spellbook Core (generation 15 bullets), the SpellCompiler entry, the conjure
+flow, AethericFrame Services and the code map. Open, outside the lane: a dependent melded for the first time
+after a provider notch fails with "generalized manifest references unknown spell_id".
 
 2026-09-26 cycle consumers: a spell that only needs a dependency cycle was told it "is part of" the cycle; it now
 reads "cannot be built: it needs 'Y', which is part of (or depends on) a dependency cycle ... 'X' itself is not

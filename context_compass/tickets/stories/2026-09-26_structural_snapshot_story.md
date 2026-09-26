@@ -3,12 +3,12 @@
 ## Metadata
 - Story ID: STORY-2026-09-26-structural-snapshot
 - Epic: EPIC-2026-08-03-comptime-ir-phase-pipeline
-- Status: in_progress
+- Status: review
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T15:03:58Z
-- Updated: 2026-09-26T18:13:08Z
+- Updated: 2026-09-26T18:43:15Z
 
 ## User Narrative
 As the Melder owner, I want a conjure whose creation cache fully hits to skip the structural and resolution
@@ -88,21 +88,29 @@ rows - measured on the gauntlet before it is trusted.
   tickets/tasks/completed/2026-09-26_author_structural_snapshot_patch_docs_task.md (done 2026-09-26T16:12:08Z)
 - [x] Task: TASK-2026-09-26-drop-phase3-dag-object-for-id-rows (C-C) - phase-3 DAG object to id rows;
   presence strategy repointed. tickets/tasks/completed/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md (done 2026-09-26T16:59:15Z)
-- [ ] Task: TASK-2026-09-26-capture-structural-payloads-at-conjure-end - per-spell phase 3-4 rows beside the
-  executor payload; replayability verdicts; world stamp; key; generation 15. tickets/tasks/2026-09-26_capture_structural_payloads_at_conjure_end_task.md
-  (opened 2026-09-26T16:47:56Z; in REVIEW 2026-09-26T17:28:31Z: landed on the device tree, worktree suites green,
-  owner-run pending). Original line: capture on miss - per-spell phase 1-4 rows beside the executor payload;
-  replayability verdicts; world stamp; key extension; generation bump
-- [ ] Task: TASK-2026-09-26-hydrate-structural-tier-at-conjure - hydrate on hit: registry replay through the
-  helpers, Spell flags, phase-4 verdict replay; v1 full hit or today's run (partial path = owner decision).
-  tickets/tasks/2026-09-26_hydrate_structural_tier_at_conjure_task.md (opened 2026-09-26T17:36:35Z; in REVIEW
-  2026-09-26T18:13:08Z: landed, worktree green, owner-run pending). Original line: hydrate on
+- [x] Task: TASK-2026-09-26-capture-structural-payloads-at-conjure-end - per-spell phase 3-4 rows beside the
+  executor payload; replayability verdicts; world stamp; key; generation 15.
+  tickets/tasks/completed/2026-09-26_capture_structural_payloads_at_conjure_end_task.md (done 2026-09-26T18:18:50Z; opened
+  2026-09-26T16:47:56Z, review 17:28:31Z). Original line: capture on miss - per-spell phase 1-4 rows beside the
+  executor payload; replayability verdicts; world stamp; key extension; generation bump
+- [x] Task: TASK-2026-09-26-hydrate-structural-tier-at-conjure - hydrate on hit: registry replay through the
+  helpers, Spell flags, phase-4 verdict replay; v1 full hit or today's run (partial path: owner kept v1).
+  tickets/tasks/completed/2026-09-26_hydrate_structural_tier_at_conjure_task.md (done 2026-09-26T18:18:50Z; opened
+  2026-09-26T17:36:35Z, review 18:13:08Z). Original line: hydrate on
   hit - registry replay through the helpers, Spell flags, structural run only for the regenerating set, phase-4
   rerun rule; 5-7 and the 8-11 load unchanged
-- [ ] Task: invalidation parity - the D5 table as a test list (cold vs hydrated verdicts)
-- [ ] Task: restore parity and measurement - fresh index ULIDs, gauntlet parity, warm conjure before/after
-- [ ] Enforce Ticket Microcycle across all linked tasks.
-- [ ] Require meaningful-finding note updates during discovery.
+- [x] Task: TASK-2026-09-26-structural-snapshot-parity - invalidation parity (D5 events cold vs hydrated), the
+  two-process contract and restore parity (with the frame caching-posture fix).
+  tickets/tasks/completed/2026-09-26_structural_snapshot_parity_task.md (done 2026-09-26T18:43:15Z; opened 18:30:35Z, review
+  18:31:52Z).
+  Original line: invalidation parity - the D5 table as a test list (cold vs hydrated verdicts)
+- [ ] Task: measurement (owner-run) - breakdown harness with a caching-enabled cycle, gauntlet parity, warm
+  conjure before/after. Restore parity moved into task 5. Original line: restore parity and measurement -
+  fresh index ULIDs, gauntlet parity, warm conjure before/after
+- [x] Task: TASK-2026-09-26-promote-structural-snapshot-docs - canonical maps + indexes; patch folder retired.
+  tickets/tasks/completed/2026-09-26_promote_structural_snapshot_docs_task.md (done 2026-09-26T18:43:15Z; opened 18:36:32Z).
+- [x] Enforce Ticket Microcycle across all linked tasks.
+- [x] Require meaningful-finding note updates during discovery.
 
 ## Acceptance Criteria
 - A full cache hit runs no phase 1-7 work and the first meld behaves as after a cold conjure.
@@ -150,6 +158,9 @@ rows - measured on the gauntlet before it is trusted.
   good"); capture landed the same day (task 3 in review, owner-run pending).
 - 2026-09-26 (fable_0, DECISION_REQUEST): partial structural path (b) - land it (subset/phase-selective structural run)
   or keep v1 (full hit replays; anything else runs today's phases). Pending the owner.
+- 2026-09-26 (owner): tasks 3-4 accepted ("yeah runs good"); partial path not requested - v1 stands.
+- 2026-09-26 (owner): tasks 5-6 accepted ("running good ... it's faster for sure"); frame caching-posture fix kept;
+  patch folder retired; story to review pending the owner-run measurement decision.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -335,10 +346,53 @@ rows - measured on the gauntlet before it is trusted.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T18:18:50Z
+  TYPE: DECISION
+  CLAIM: Owner ran the suites and accepted tasks 3 (capture) and 4 (hydrate v1) ("yeah runs good"); the partial path
+    was offered with a recommendation to leave it out and was not requested - v1 stands. Both tickets closed and
+    moved to completed/; board anchors updated; the parity task is the successor.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-26_capture_structural_payloads_at_conjure_end_task.md
+  - tickets/tasks/completed/2026-09-26_hydrate_structural_tier_at_conjure_task.md
+  IMPACT: The structural snapshot ships end to end in 0.2.59 (generation 15); remaining lane work is parity,
+    owner-run measurement and promotion into the canonical maps.
+  NEXT: open the parity task (D5 events after a hydrated conjure vs a cold one; restore parity; two-process key).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T18:31:52Z
+  TYPE: FACT
+  CLAIM: Task 5 (parity) landed and in review: 7 component contracts (D5 events cold vs hydrated, gated contract
+    verdict, two-process rows, crystallizer restore) plus a source-evidenced fix outside the lane's file list -
+    `AethericFrame.bind_frame_configuration` now copies the caching posture (it dropped the recorded cache flag
+    and root, so restored worlds never found their conjure cache). A notch runtime defect (first meld of a
+    dependent after a provider notch) was found and reported, not fixed (other lane). Worktree green.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_structural_snapshot_parity_task.md (notes 2026-09-26T18:31:52Z)
+  IMPACT: Lane status: capture, hydrate, parity landed; measurement (owner-run) and promotion remain.
+  NEXT: owner-run suites for task 5; then promotion into src_components.md / src_architecture.md.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T18:43:15Z
+  TYPE: DECISION
+  CLAIM: Owner ran the recommended suites for tasks 5-6 and accepted ("running good ... it's faster for sure").
+    Parity and promotion closed; the patch folder retired to system_docs/patches/completed/; the frame
+    caching-posture fix stays. Every implementation task of the story is done; the only open line is the
+    owner-run measurement pass, which needs no agent work unless the owner asks for the benchmarks/ edit.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-26_structural_snapshot_parity_task.md
+  - tickets/tasks/completed/2026-09-26_promote_structural_snapshot_docs_task.md
+  - system_docs/patches/completed/structural_snapshot_2026_09_26/architecture_patch.md
+  IMPACT: I-1 ships in 0.2.59: cache generation 15, warm conjure skips phases 1-4 on an unchanged book.
+  NEXT: story to review; owner decides on the measurement pass and story closure.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user (per-task reports 2026-09-26)
+- [x] Acceptance criteria confirmed by user (tasks 1-6 accepted on owner-run suites)
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -359,6 +413,15 @@ STATE 2026-09-26T17:28:31Z: task 3 (capture) in REVIEW - landed on the device tr
 aligned; owner-run suites pending. Next: the hydrate task (task 4).
 STATE 2026-09-26T18:13:08Z: task 4 (hydrate v1) in REVIEW - landed, worktree green, -27% warm conjure at 29 spells;
 partial path is an open owner decision. Tasks 3-4 await owner-run suites. Next: the parity task.
+STATE 2026-09-26T18:18:50Z: tasks 3-4 DONE (owner-run suites green, accepted; v1 stands). Next: the parity task (task 5)
+opens under the story on the owner's standing go.
+STATE 2026-09-26T18:31:52Z: task 5 (parity) in REVIEW - landed with the frame caching-posture fix; owner-run suites
+pending. Next: measurement (owner-run) and promotion.
+STATE 2026-09-26T18:36:32Z: task 6 (promotion) in REVIEW - both canonical maps carry the landed shape, indexes
+regenerated, system-document tests green on the device tree. Open: owner acceptance of tasks 5-6; measurement is
+owner-run.
+STATE 2026-09-26T18:43:15Z: REVIEW. Tasks 1-6 DONE and accepted; patch folder retired. Only the owner-run measurement
+line is open; the story closes on the owner's word.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

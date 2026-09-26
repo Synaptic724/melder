@@ -57,12 +57,14 @@ hot path.
    children, then the site itself. The raise is `_raise_unresolved_input(spells[i], names)`, which raises
    `UnresolvedInputError.for_unsupplied(spell, names)`: today's message and fields, no TypeError cause. Stored
    sites never demand (the hit read skips the miss). OVERRIDE_REQUIRED sockets keep today's constructor error.
-   Solo roots keep the interim failure-path guard until the owner decides.
+   Solo roots decide the same way before calling (S4b): their call target raises `for_unsupplied` instead
+   of constructing, and the failure-path hook is gone.
 
 ## Edge/Error Semantics
 - Key validation errors: today's RuntimeError/ValueError texts, wrapped `MeldExecutionError("Failed to apply
   overrides.")` with the root spell id/name; not cached; retried on the next call.
-- P2 and root refusal messages unchanged; unresolved inputs keep the interim failure-path conversion (S4).
+- P2 and root refusal messages unchanged; unresolved inputs are decided before construction in every family
+  (S4a plans, S4b solo); a constructor failure is always `MeldExecutionError` chained from it.
 - Pinning keeps P2 exact: a shared site with a winning override is always visited, so a rule on a stored site
   still raises even when the site's consumer is itself stored, and an unstored one is still built and
   published with the value.

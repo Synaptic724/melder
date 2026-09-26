@@ -1634,7 +1634,8 @@ def test_spell_validation_phase6_reports_socket_ref_index_mismatch() -> None:
     Purpose:
         Validate socket-ref sanity checks catch index mismatches.
     Contract:
-        - socket_ref_missing_in_index is reported when the DagIndex is empty.
+        - A SocketRef added by hand (compiled blueprints record none) that is missing
+          from an empty built DagIndex reports socket_ref_missing_in_index.
         - socket_ref_missing_in_index_name is also reported for name buckets.
     Returns:
         None.
@@ -1703,6 +1704,13 @@ def test_spell_validation_phase6_reports_socket_ref_index_mismatch() -> None:
         root_blueprint = blueprints.get(consumer_id)
         assert root_blueprint is not None
         path_registry = root_blueprint.path_registry
+        socket = SocketRef(
+            node_id=consumer_id,
+            param_name="service",
+            param_path_id=path_registry.extend_path(path_registry.root_path_id, "service"),
+            socket_kind=SocketKind.NORMAL,
+        )
+        root_blueprint.add_socket_ref(socket)
         root_blueprint._dag_index = DagIndex(path_registry=path_registry)
         root_blueprint._dag_index.rebuild([])
 
@@ -1892,7 +1900,8 @@ def test_spell_validation_phase6_reports_socket_ref_duplicate() -> None:
     Purpose:
         Validate system validation detects duplicate socket refs.
     Contract:
-        - socket_ref_duplicate is reported when a socket ref is duplicated.
+        - socket_ref_duplicate is reported when a socket ref is duplicated (added by
+          hand: compiled blueprints record none).
     Returns:
         None.
     Raises:
@@ -1959,7 +1968,14 @@ def test_spell_validation_phase6_reports_socket_ref_duplicate() -> None:
         assert blueprints is not None
         root_blueprint = blueprints.get(consumer_id)
         assert root_blueprint is not None
-        socket = root_blueprint.socket_refs[0]
+        path_registry = root_blueprint.path_registry
+        socket = SocketRef(
+            node_id=consumer_id,
+            param_name="service",
+            param_path_id=path_registry.extend_path(path_registry.root_path_id, "service"),
+            socket_kind=SocketKind.NORMAL,
+        )
+        root_blueprint.add_socket_ref(socket)
         root_blueprint.add_socket_ref(socket)
 
         compiler_test_helpers.run_phase_system_validation(consumer_spell, "cid")

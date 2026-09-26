@@ -589,7 +589,8 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
    - Validates and freezes `SpellbookConfiguration`.
    - Binds `SpellbookConfiguration` into Aether for the frame.
    - Derives and binds `AethericFrameConfiguration` for narrow frame posture.
-   - Runs phases 1-4 (requirements, symbolic graph, local frame, validation).
+   - Classifies the structural tier of the conduit bundle; a full hit replays the phase 3-4 rows,
+     otherwise runs phases 1-4 (requirements, symbolic graph, local frame, validation).
    - Runs foundational conduit phases 5-7 (root blueprints, system validation, change control).
    - Runs conduit plan phases 8-11 (occurrence, injection, patch maps, execution plan) when foundational phases report no resolution errors.
    - Constructs a normal Conduit and registers it in Aether.
@@ -649,7 +650,11 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 ### Sequence: Conjure Conduit
 1. `Spellbook.conjure(...)`:
    - Validate/freeze `SpellbookConfiguration`, bind to Aether.
-   - Run structural phases 1-4 for every spell, on every conjure.
+   - Classify the structural tier of the conduit bundle BEFORE the structural run (2026-09-26): when every
+     owned spell's captured rows carry the live key, the live world stamp and a replayable verdict, replay
+     the phase 3-4 registry writes and skip phases 1-4; otherwise (miss, partial, caching off, the
+     existing-conduit route, `validation_warnings=True`, or a logged replay failure) run structural
+     phases 1-4 for every spell as before.
    - Only for `conjure(validation_warnings=True)`: log one WARNING event listing the Phase-4
      validation warnings grouped by code (unresolved inputs included), before the Phase 1-4 artifacts
      are released. The default logs nothing; internal conjure routes never pass True (2026-09-26).
@@ -783,6 +788,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
    - Copies dirty roots for the conduit and calls the registered revalidator outside the lock.
    - On success, clears dirty sets and resets monitor state for that conduit.
 2. `Meld._gated_validation_required(...)` checks `is_root_dirty(conduit_id, root_id)` and raises `MeldExecutionError` for dirty roots.
+3. Survey note (2026-09-26): no shipped path marks roots dirty through `notify_spell_changed`, so this loop is
+   mechanically live but unreached; the registry-side gating in `SpellSystemStates` (bind, notch, contract,
+   transfer, index destroy) is the live invalidation path.
 
 ### Sequence: SpellSpace Usage
 1. `conduit.enter_spellspace()` creates and activates SpellSpace.
@@ -884,6 +892,17 @@ each entry in `src_components.md`; this list is the set that crosses components.
   them through meld overrides.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:AnnotationShapeGuardStrategy`
   and `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy`.
+- Structural snapshot (2026-09-26): the conduit cache bundle (generation 15) carries, beside every executor
+  payload, a value-only record of the spell's phase 3-4 results (dependencies, topology sockets, verdict)
+  keyed by the spell id plus the (module, qualname) of the types its sockets match on, stamped with the
+  book's pool ids, posture and borrowed ids, and marked replayable only when no pool object or spellframe
+  overrides `__eq__`. A later conjure whose owned spells ALL hit replays those results through the same
+  registry helpers phases 3-4 use and skips phases 1-4; every other case runs the phases unchanged, and the
+  capture at conjure end refreshes the record from durable state without rewriting an unchanged file. Every
+  invalidation event writes through the registry, so bind, notch, removal, contract grant and transfer
+  behave identically after a replay; rows carry no index ULID, so a crystallizer restore still hits.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot`
+  and `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._prepare_spellbook_for_conjure`.
 - Process-stable spell ids and complete cache bundles (2026-09-26): bind fingerprint inputs contain no
   memory address - repr, parameter-default, signature and init_signature text are hashed address-free and
   untruncated - so every spell, callables and default-repr instances included, keeps one id across
@@ -2501,7 +2520,7 @@ graph TD
 [Spellbook.conjure]
   -> validate/freeze config
   -> bind config to Aether
-  -> phases 1-4 (structural)
+  -> structural tier: full hit -> replay phase 3-4 rows | else phases 1-4 (structural)
   -> phases 5-7 (foundational resolution)
   -> phases 8-11 (plan resolution, if no errors)
   -> Conduit() + hooks
@@ -2688,6 +2707,11 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 structural snapshot: a warm conjure over an unchanged book replays the phase 3-4 results recorded in
+the conduit cache bundle instead of running phases 1-4; the conjure sequence, the pipeline diagram and the
+operational invariants carry the rule, the change-control sequence carries the survey note that the CCM
+dirty-root loop has no shipped caller. The component map carries the detail.
 
 2026-09-26 cycle consumers: the conjure report tells a spell that only needs a dependency cycle which of its
 dependencies leads there and that it is not part of the cycle, instead of calling it a member. The component map

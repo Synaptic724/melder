@@ -694,6 +694,16 @@ class AethericFrame(Cleanable):
                     existing_frame_configuration.with_shared_framewide_spellbook_configuration(
                         frame_configuration.shared_framewide_spellbook_configuration
                     )
+                    # The caching posture travels with the rest (2026-09-26): a
+                    # recorded frame twin carries the cache flag and root, and a
+                    # restore that dropped them would silently conjure against
+                    # the default cache root instead of the recorded one.
+                    existing_frame_configuration.with_system_caching_enabled(
+                        frame_configuration.system_caching_enabled
+                    )
+                    existing_frame_configuration.with_system_cache_root_path(
+                        frame_configuration.system_cache_root_path
+                    )
                     existing_frame_configuration.with_disable_all_transactions_after_conjure(
                         frame_configuration.disable_all_transactions_after_conjure
                     )

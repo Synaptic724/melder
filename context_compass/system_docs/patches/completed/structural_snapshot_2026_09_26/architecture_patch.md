@@ -5,7 +5,7 @@
 - Status: draft
 - Owner: fable_0 (cowork)
 - Created: 2026-09-26T15:49:37Z
-- Updated: 2026-09-26T18:12:10Z
+- Updated: 2026-09-26T18:31:16Z
 
 ## Patch Scope and Non-Goals
 - Objective (epic I-1, owner-selected 2026-09-26; design settled the same day): a conjure whose creation
@@ -135,7 +135,9 @@
    v1 LANDED 2026-09-26 (full hit + today's run; the partial path awaits the owner's decision); VM medians at
    29 spells: warm conjure -27%, structural preparation -70%.
 4. Parity: the D5 table as a test list (cold vs hydrated verdicts); restore parity (fresh index ULIDs,
-   snapshot still hits); the two-process key test.
+   snapshot still hits); the two-process key test. LANDED 2026-09-26 (7 component contracts; restore parity
+   required `AethericFrame.bind_frame_configuration` to copy the caching posture - it dropped the recorded
+   cache flag and root, so a restored world never found its conjure cache; fixed with a unit test).
 5. Measurement: breakdown harness at workers=1 before/after (the 2026-09-26 baseline: 1-4 wall 3.885ms,
    5-7 2.273ms at 29 spells); gauntlet parity.
 6. Promotion into `src_components.md` (SpellCompiler entry, Spellbook Core conjure pipeline, Binding
@@ -161,7 +163,10 @@
   failure each run the phases live
   (tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_hydrate.py). Partial hit
   after one new bind (phases 1-2 for all, phase 3 for the new spell only, phase 4 for all): with the path.
-- Validation item 3 (parity): one test per D5 row comparing cold and hydrated verdicts; restore parity.
+- Validation item 3 (parity; LANDED): bind-after-conjure, notch, remove and transfer compared cold vs hydrated
+  (event outcome + registry snapshot), a gated SpellContract verdict replayed verbatim with the grant melding the
+  same objects, a child process's rows hydrating this process, and a crystallizer restore hydrating
+  (tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py).
 - Validation item 4 (measurement, owner-run): breakdown harness at workers=1 with a caching-enabled
   variant of the cycle (a benchmarks/ edit, owner-approved), gauntlet parity.
 - Evidence source: owner-run `python -m pytest -q tests/unit/melder/spellbook/spell_compiler

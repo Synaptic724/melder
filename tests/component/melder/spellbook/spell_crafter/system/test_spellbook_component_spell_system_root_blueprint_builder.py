@@ -34,17 +34,17 @@ def _register_index(states, spell_id: str) -> SpellIndex:
     return index
 
 
-def test_component_root_blueprint_builder_traverses_state_topologies() -> None:
+def test_component_root_blueprint_builder_mints_no_paths_from_state_topologies() -> None:
     """
     Purpose:
-        Validate root blueprint builder consumes state topologies.
+        Validate the root blueprint builder builds the DAG from state and walks no paths.
     Contract:
-        - Socket refs include nested param paths across dependencies.
-        - DagIndex resolves sockets by exact path.
+        - The DAG holds the full chain and the root is ordered last.
+        - No SocketRef is recorded and no path is minted (Phase 8 mints paths).
     Returns:
         None.
     Raises:
-        AssertionError: If socket traversal or indexing is incorrect.
+        AssertionError: If the DAG is incomplete or socket refs appear.
     """
     frame = AethericFrame(Aether(), "component-root-blueprints")
     states = frame._spell_system_states
@@ -93,33 +93,25 @@ def test_component_root_blueprint_builder_traverses_state_topologies() -> None:
         snapshot = SpellSystemAdjacencyBuilder.build(states)
         blueprints = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
         blueprint = blueprints[root_id]
-        blueprint.ensure_dag_index_built()
-        path_registry = blueprint.path_registry
-        assert {path_registry.materialize_path(ref.param_path_id) for ref in blueprint.socket_refs} == {
-            ("mid",),
-            ("mid", "leaf"),
-        }
-
-        root_socket = blueprint.dag_index.get_by_exact_path(("mid",))[0]
-        leaf_socket = blueprint.dag_index.get_by_exact_path(("mid", "leaf"))[0]
-        assert root_socket.node_id == root_id
-        assert leaf_socket.node_id == mid_id
+        assert set(blueprint.dag.nodes) == {root_id, mid_id, leaf_id}
+        assert blueprint.socket_refs == []
+        assert blueprint.path_registry.resolve_path_id(("mid",)) is None
         assert blueprint.ordered_node_ids[-1] == root_id
     finally:
         frame.cleanup()
 
 
-def test_component_root_blueprint_builder_skips_missing_topology() -> None:
+def test_component_root_blueprint_builder_keeps_spells_without_topology() -> None:
     """
     Purpose:
-        Validate missing topologies prune socket traversal.
+        Validate a missing topology does not shorten the DAG.
     Contract:
-        - Socket refs are only collected for spells with registered topologies.
+        - No SocketRef is recorded.
         - DAG still contains the full dependency chain.
     Returns:
         None.
     Raises:
-        AssertionError: If socket collection ignores missing topologies.
+        AssertionError: If the DAG drops a spell without a topology.
     """
     frame = AethericFrame(Aether(), "component-root-blueprints-missing")
     states = frame._spell_system_states
@@ -154,10 +146,7 @@ def test_component_root_blueprint_builder_skips_missing_topology() -> None:
         blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)[
             root_id
         ]
-        blueprint.ensure_dag_index_built()
-        path_registry = blueprint.path_registry
-        assert {path_registry.materialize_path(ref.param_path_id) for ref in blueprint.socket_refs} == {("mid",)}
-        assert blueprint.dag_index.get_by_exact_path(("mid", "leaf")) == []
+        assert blueprint.socket_refs == []
         assert set(blueprint.dag.nodes) == {root_id, mid_id, leaf_id}
     finally:
         frame.cleanup()
@@ -239,17 +228,17 @@ def test_component_root_blueprint_builder_handles_shared_dependency() -> None:
         frame.cleanup()
 
 
-def test_component_root_blueprint_builder_records_empty_target_sockets() -> None:
+def test_component_root_blueprint_builder_ignores_empty_target_sockets() -> None:
     """
     Purpose:
-        Validate sockets with empty target spell ids are still indexed.
+        Validate a socket with no target spell ids leaves a root-only blueprint.
     Contract:
-        - Socket refs are emitted even when target_spell_ids is empty.
-        - DagIndex resolves the socket path for the root spell.
+        - The DAG holds only the root.
+        - No SocketRef is recorded.
     Returns:
         None.
     Raises:
-        AssertionError: If socket refs are missing.
+        AssertionError: If socket refs are recorded or the DAG grows.
     """
     frame = AethericFrame(Aether(), "component-root-blueprints-empty-target")
     states = frame._spell_system_states
@@ -278,10 +267,8 @@ def test_component_root_blueprint_builder_records_empty_target_sockets() -> None
         blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)[
             root_id
         ]
-        blueprint.ensure_dag_index_built()
-        path_registry = blueprint.path_registry
-        assert {path_registry.materialize_path(ref.param_path_id) for ref in blueprint.socket_refs} == {("config",)}
-        assert blueprint.dag_index.get_by_exact_path(("config",)) != []
+        assert set(blueprint.dag.nodes) == {root_id}
+        assert blueprint.socket_refs == []
     finally:
         frame.cleanup()
 

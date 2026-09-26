@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any, Callable, Collection, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
     CodegenCreationSchemaHelpers,
@@ -13,7 +13,6 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generaliz
     SpellGeneralizedCodegenPlanTargetKind,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
-from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 _MISSING = object()
@@ -624,42 +623,23 @@ def _inlinable_common_shape(
     return tuple(params)
 
 
-def _raise_meld_construction_error(
-        spell: Any,
-        exc: BaseException,
-        supplied_names: Collection[str] = (),
-        supplied_positional_count: int = 0,
-) -> None:
+def _raise_meld_construction_error(spell: Any, exc: BaseException) -> None:
     """
     Raise the ``MeldExecutionError`` for a failed constructor call.
 
-    Shared by the inlined fast path, the generic ``_construct_spell_instance``
-    helper and the transient unrolled executor, so all three report
-    construction failures identically. Lives off the hot path: only the
-    failure branch calls it.
+    Shared by the site-plan lowering, the inlined fast path, the generic
+    ``_construct_spell_instance`` helper and the transient unrolled executor, so
+    all of them report construction failures identically.
+    Lives off the hot path: only the failure branch calls it.
 
     Contract:
-        - First asks ``UnresolvedInputError.from_failed_construction`` whether
-          an unresolved input (a typed parameter no registered spell provides)
-          was left out of the call; if so that error is raised, chained from
-          ``exc``. INTERIM until the build plan decides it (design S3/S4).
-        - Otherwise raises the existing ``MeldExecutionError`` unchanged.
-        - ``supplied_names`` / ``supplied_positional_count`` describe what the
-          call actually passed. Inlined calls pass only dependency keywords,
-          which never name an unresolved input, so they use the defaults.
+        - Always raises ``MeldExecutionError`` chained from ``exc``. Unresolved
+          inputs never reach it: every family decides them before the call
+          (``UnresolvedInputError.for_unsupplied``, design v2 S4).
 
     Raises:
-        UnresolvedInputError: An unresolved input was not supplied.
-        MeldExecutionError: Any other constructor failure.
+        MeldExecutionError: Always.
     """
-    unresolved = UnresolvedInputError.from_failed_construction(
-        spell,
-        exc,
-        supplied_names=supplied_names,
-        supplied_positional_count=supplied_positional_count,
-    )
-    if unresolved is not None:
-        raise unresolved from exc
     raise MeldExecutionError(
         spell_id=spell.spell_index.selected_spell_id,
         spell_name=spell.spell_name,
@@ -1363,7 +1343,7 @@ def _construct_spell_instance(
     try:
         return spell.spell(*args, **call_kwargs)
     except Exception as exc:
-        _raise_meld_construction_error(spell, exc, call_kwargs, len(args))
+        _raise_meld_construction_error(spell, exc)
 
 
 def _build_kwargs_no_overrides(
@@ -1752,10 +1732,8 @@ def _build_no_overrides_codegen_executor_source(
         lines.append("    try:")
         lines.append(f"        v{step_index} = {call_expression}")
         lines.append("    except Exception as exc:")
-        # Transient calls pass their CALLn dependencies positionally, so the
-        # failure helper is told how many positions the call supplied.
         lines.append(
-            f"        _raise_meld_construction_error(steps[{step_index}].spell, exc, (), {int(call_mode)})"
+            f"        _raise_meld_construction_error(steps[{step_index}].spell, exc)"
         )
 
     lines.append(f"    return v{transient_root_index}")

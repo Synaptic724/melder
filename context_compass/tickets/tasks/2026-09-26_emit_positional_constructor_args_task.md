@@ -179,6 +179,31 @@ CPython 3.14 (specialized allocate-and-init path) with identical binding.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T19:06:31Z
+  TYPE: FACT
+  CLAIM: Since melder_0's S2b-2 (on the device at 17:26Z), P1's emitter is no longer on the normal meld path.
+    Generalized normal hydration now uses the site-plan runtime's execute_normal as the inner no-overrides
+    executor. emit_step_plan_source, where P1 lives, is reached only through the opt-in singleton specializer
+    (generalized_singleton_specialization_enabled, default False) and the tests that pin the old emission. The
+    positional lever lives on in melder_0's lowering: SitePlanEmission._call_arguments passes operands
+    positionally in signature order until the first omitted parameter. So the owner's next gauntlet run measures
+    the lowering's positional calls, not P1's code. One difference: P1 kept keyword calls unless the class used
+    type.__call__, object.__new__ and a plain-function __init__, so a metaclass or __new__ that inspects argument
+    names saw the same call shape. The lowering has no such guard. Whether its parameter kinds make that case
+    safe is UNKNOWN (melder_0's lane; sent as an FYI).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:266-345
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:883-936
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:470-476
+  - tickets/tasks/2026-09-26_build_site_plan_lowering_task.md:1703-1720
+  - artifacts/gauntlet_runtime_speed_20260926/p1_positional_args/generalized_manifest_no_overrides_compiler.diff:212-273
+  IMPACT: P1's gain now reaches the gauntlet through the lowering, and P1's own code will leave with melder_0's
+    S2b-3 retirement of the old normal emitters (the owner's decision). P1 stays in review until then; closing
+    it is the owner's call.
+  NEXT: Tell the owner in the next report; send the guard FYI in the NOTICE to melder_0.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 P1 validated on the VM copy and applied to the device tree (16:16Z, byte-identical). Waiting on the owner's
 Windows gauntlet run (same-run ratios against owner_run_20260926.txt) and acceptance.

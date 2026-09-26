@@ -1,4 +1,4 @@
-# Melder 0.2.64
+# Melder 0.2.66
 
 **Unreleased**
 
@@ -109,6 +109,16 @@ O(spells^2) step on the cold conjure path. It now hashes them once per conjure. 
   `validation_warnings=True`. Melds after a replayed conjure behave exactly as after a cold one. On a
   29-spell book a warm conjure took about a quarter less time. The cache format is now generation 15;
   caches from earlier releases are rebuilt once on first use. Bundles grow by a few hundred bytes per spell.
+- **Restored worlds keep their recorded cache posture.** A frame rebuilt by a crystallizer restore (or any
+  first posture bind) now inherits the recorded `system_caching_enabled` flag and cache root; before, both
+  silently fell back to the defaults, so a restored world never found the conjure cache it had written.
+- **Shared dependencies no longer multiply conjure time.** Phase 5 used to walk every route from each
+  spell down through its dependencies and record every parameter along each one, so a dependency reached by
+  several routes was visited once per route, and on graphs with repeated sharing the work doubled with each
+  layer. Nothing needed those records, and the walk is gone. On a chain where every class takes the next
+  class twice, conjure of 15 classes took 117 ms before and 7 ms after (13 classes: 33 ms to 6 ms), and
+  layered many-to-many graphs conjured 2-4 times faster; books without repeated sharing see no change.
+  Meld results and construction order are unchanged.
 
 ## Creation-cache signatures are the same in every process
 
@@ -171,8 +181,9 @@ when Task is built as a dependency, or bind a provider for Package.
 - **`resolvable=False` registrations are unchanged.** They remain a separate, discoverable feature.
 - **The error comes before anything is built.** A meld's compiled plan already knows which unresolved
   inputs it leaves out, so it raises before constructing the object or any of its dependencies, and the
-  error no longer chains Python's `TypeError`. An object with no dependencies of its own, melded directly,
-  still gets the error from its failed constructor call. Successful melds do no extra work.
+  error no longer chains Python's `TypeError`. The same holds for an object with no dependencies of its
+  own, melded directly: its constructor is not called without the value. Objects without unresolved inputs
+  do no extra work; one that has them checks the supplied names once per construction.
 - **Creation caches rebuild once.** The creation-cache format advances to generation 11 so executors
   compiled before this change are not reused.
 - **Defaults and collections are unchanged.** A parameter with a default keeps using it, and a
@@ -482,4 +493,4 @@ could be silently omitted from the disposal list and never run during scope tear
   conjure validation report.
 - `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
   raised and caught, but it cannot be bound as a spell.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.64.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.66.

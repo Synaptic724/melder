@@ -2,15 +2,21 @@
 
 # Task: Report a spell that only consumes a dependency cycle as a consumer, not as "part of" the cycle
 
+- Completed: 2026-09-26T17:32:39Z
+- Summary: A spell that only needs a dependency cycle is named as its consumer ("cannot be built: it needs 'Y',
+  which is part of / depends on a dependency cycle ... 'X' itself is not part of that cycle"; self-loops read
+  "depends on itself" with "Fix '<loop spell>'"); members, codes and details unchanged. Five unit tests, one
+  integration test, docs, graph and release note; not committed (owner commits results/commit_files.txt).
+
 ## Metadata
 - Task ID: TASK-2026-09-26-word-cycle-consumers-in-circular-dependency-report
 - Story: none (follow-up recorded at closure of TASK-2026-09-26-report-self-referencing-constructor-as-validation-error)
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Priority: p3
 - Created: 2026-09-26T17:04:41Z
-- Updated: 2026-09-26T17:26:17Z
+- Updated: 2026-09-26T17:32:39Z
 
 ## Objective
 CircularDependencyStrategy reports every spell from which a cycle is reachable with "Spell 'Consumer' is part of a
@@ -41,17 +47,20 @@ cycle), with the self-loop case read as "depends on itself". Message text only.
 - from_state: in_progress
 - to_state: review
 - transition_reason: Code, tests, docs, graph and release note applied; VM suites match the baseline (2026-09-26T17:26:17Z).
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted ("ok great go ahead and turn in everything"); closure sync (2026-09-26T17:32:39Z).
 
 ## Steps / Checklist
 - [x] Re-read CircularDependencyStrategy on current source; find tests matching its text.
 - [x] Patch lane before any edit; mapping note.
 - [x] Implement on a VM copy with tests; before/after probes; suites.
 - [x] Apply to the worktree; docs, graph descriptor, release note.
-- [ ] Owner review.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Owner review.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Consumer wording in CircularDependencyStrategy with tests; docs, graph, release note.
@@ -77,17 +86,17 @@ cycle), with the self-loop case read as "depends on itself". Message text only.
 - [ ] No behavior claim cited only to a document or a one-line search hit.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Validation status recorded
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/cycle_consumer_wording_20260926/
-  - system_docs/patches/active/cycle_consumer_wording_2026_09_26/
+  - system_docs/patches/completed/cycle_consumer_wording_2026_09_26/
 - DISPOSITION: retain_as_reference (artifacts); promote_to_documentation (patch docs)
 - CLEANUP_TRIGGER: ticket closure
 
@@ -274,11 +283,23 @@ cycle), with the self-loop case read as "depends on itself". Message text only.
   NEXT: Owner reviews the wording (results/probe_after.txt) and accepts or redirects; then closure sync.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T17:32:39Z
+  TYPE: DECISION
+  CLAIM: Closure on owner acceptance ("ok great go ahead and turn in everything if your happy with it").
+    Ticket to tickets/tasks/completed/, patch lane to system_docs/patches/completed/ (deltas promoted into
+    src_components/src_architecture), artifacts retained, boards synced. Owner-side: commit, version notch,
+    asset/LLM bundle rebuild, owner-machine suites (Not run here). No open follow-up from this lane.
+  EVIDENCE:
+  - system_docs/patches/completed/cycle_consumer_wording_2026_09_26/architecture_patch.md:1-33
+  - artifacts/cycle_consumer_wording_20260926/scripts/close_lane.py:1-138
+  IMPACT: melder_1 is free for the next lane.
+  NEXT: none (closed).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
-Opened 2026-09-26T17:04:41Z on owner approval. In review since 2026-09-26T17:26:17Z: code, tests, docs, graph and release
-note are in the worktree (not committed; list in results/commit_files.txt). Next: owner review, then closure
-(patch lane to completed, artifact rows cleared, closed anchor). Resume from the latest Notes NEXT.
+CLOSED 2026-09-26T17:32:39Z: owner accepted and asked to turn it in; ticket, patch lane and boards synced. Files for the
+owner's commit: artifacts/cycle_consumer_wording_20260926/results/commit_files.txt.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

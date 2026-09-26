@@ -320,7 +320,6 @@ class SitePlanRuntimeHelpers:
         Raises:
             MeldExecutionError: When `__args__` is not a list or tuple, or the
                 constructor fails (through `_raise_meld_construction_error`).
-            UnresolvedInputError: When the failed call left out an unresolved input.
 
         Returns:
             Any: The constructed (or bound) instance.
@@ -346,7 +345,7 @@ class SitePlanRuntimeHelpers:
         try:
             return spell.spell(*args, **kwargs)
         except Exception as exc:
-            _raise_meld_construction_error(spell, exc, tuple(kwargs), len(args))
+            _raise_meld_construction_error(spell, exc)
 
     @staticmethod
     def raise_existing_override(spell: Spell, root_spell_id: str) -> None:
@@ -389,8 +388,8 @@ class SitePlanRuntimeHelpers:
 
         Contract:
             Emitted before anything under the site is constructed, so the
-            error has no TypeError cause; message and fields are the failure
-            path's (`UnresolvedInputError.for_unsupplied`).
+            error has no TypeError cause (`UnresolvedInputError.for_unsupplied`,
+            the same decision the solo lane's call target makes).
 
         Args:
             spell: The consumer whose unresolved inputs have no winning key.
@@ -1321,8 +1320,7 @@ class SitePlanEmission(Cleanable):
 
         Contract:
             Direct steps call the spell with operands and route failures through
-            `_raise_meld_construction_error` with this call's keyword names and
-            positional count. Generic steps call the no-overrides helper, or the
+            `_raise_meld_construction_error`. Generic steps call the no-overrides helper, or the
             supplied-values helper on a masked copy when the step has winners.
         """
         local = f"v{index}"
@@ -1361,12 +1359,7 @@ class SitePlanEmission(Cleanable):
             parts.append("*args")
         parts.extend(positional)
         parts.extend(f"{name}={expression}" for name, expression in keyword)
-        keyword_names = tuple(name for name, _ in keyword)
-        count_expression = "len(args)" if star_args else str(len(positional))
         lines.append(f"{indent}try:")
         lines.append(f"{indent}    {local} = {call_name}({', '.join(parts)})")
         lines.append(f"{indent}except Exception as exc:")
-        lines.append(
-            f"{indent}    _raise_meld_construction_error(spells[{index}], exc, "
-            f"{keyword_names!r}, {count_expression})"
-        )
+        lines.append(f"{indent}    _raise_meld_construction_error(spells[{index}], exc)")

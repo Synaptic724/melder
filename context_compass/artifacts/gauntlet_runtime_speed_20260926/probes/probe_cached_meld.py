@@ -7,7 +7,7 @@ lesser._meld.meld(X)         door, positional
 """
 import statistics, sys, threading, time
 from pathlib import Path
-ROOT = Path.home() / "work" / "copy"
+import os; ROOT = Path(os.environ.get("MELDER_ROOT", str(Path.home() / "work" / "copy")))
 for p in (ROOT, ROOT / "src"):
     sys.path.insert(0, str(p))
 import benchmarks.testing_other_di.test_real_world_gauntlet as g

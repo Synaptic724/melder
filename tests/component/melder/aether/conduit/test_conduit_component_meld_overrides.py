@@ -467,18 +467,17 @@ def test_component_meld_spell_override_conflicting_path_raises() -> None:
         conduit.cleanup()
 
 
-def test_component_meld_root_blueprint_paths_two_node_graph() -> None:
+def test_component_meld_root_blueprint_order_two_node_graph() -> None:
     """
     Purpose:
-        Validate root blueprint paths for a simple root->dependency graph.
+        Validate the root blueprint for a simple root->dependency graph.
     Contract:
-        - Socket refs include "repo" and "repo>name" paths.
-        - Each exact path maps to a single socket in the DagIndex.
         - Ordered nodes include the dependency before the root.
+        - No SocketRef is recorded (Phase 8 mints the paths).
     Returns:
         None.
     Raises:
-        AssertionError: If the deep path index is incomplete.
+        AssertionError: If the order is wrong or socket refs appear.
     """
     spellbook = _make_spellbook()
     repo_id = spellbook.bind(
@@ -498,32 +497,25 @@ def test_component_meld_root_blueprint_paths_two_node_graph() -> None:
     assert root_spell is not None
     blueprint = root_spell._compiler_artifact._root_blueprint_phase5
     assert blueprint is not None
-    blueprint.ensure_dag_index_built()
-
     ordered_ids = blueprint.ordered_node_ids
     assert repo_id in ordered_ids
     assert service_id in ordered_ids
     assert ordered_ids[-1] == service_id
 
-    path_registry = blueprint.path_registry
-    socket_paths = {path_registry.materialize_path(socket.param_path_id) for socket in blueprint.socket_refs}
-    assert socket_paths == {("repo",), ("repo", "name")}
-    assert len(blueprint.dag_index.get_by_exact_path(("repo",))) == 1
-    assert len(blueprint.dag_index.get_by_exact_path(("repo", "name"))) == 1
+    assert blueprint.socket_refs == []
 
 
-def test_component_meld_root_blueprint_paths_shared_dependency() -> None:
+def test_component_meld_root_blueprint_order_shared_dependency() -> None:
     """
     Purpose:
-        Validate root blueprint paths for a shared dependency graph.
+        Validate the root blueprint for a shared dependency graph.
     Contract:
-        - The DagIndex exposes distinct paths for each branch to the shared repo.
-        - The root blueprint captures all expected socket paths.
-        - Dependencies are ordered before the root in the execution order.
+        - The shared repo is one node, ordered before both services and the root.
+        - No SocketRef is recorded (Phase 8 mints one path per branch).
     Returns:
         None.
     Raises:
-        AssertionError: If shared dependency paths are missing or duplicated.
+        AssertionError: If the order is wrong or socket refs appear.
     """
     spellbook = _make_spellbook()
     repo_id = spellbook.bind(
@@ -553,8 +545,6 @@ def test_component_meld_root_blueprint_paths_shared_dependency() -> None:
     assert root_spell is not None
     blueprint = root_spell._compiler_artifact._root_blueprint_phase5
     assert blueprint is not None
-    blueprint.ensure_dag_index_built()
-
     ordered_ids = blueprint.ordered_node_ids
     assert ordered_ids[-1] == root_id
     assert repo_id in ordered_ids
@@ -565,16 +555,4 @@ def test_component_meld_root_blueprint_paths_shared_dependency() -> None:
     assert order_map[repo_id] < order_map[service_a_id]
     assert order_map[repo_id] < order_map[service_b_id]
 
-    expected_paths = {
-        ("service_a",),
-        ("service_b",),
-        ("service_a", "repo"),
-        ("service_b", "repo"),
-        ("service_a", "repo", "name"),
-        ("service_b", "repo", "name"),
-    }
-    path_registry = blueprint.path_registry
-    socket_paths = {path_registry.materialize_path(socket.param_path_id) for socket in blueprint.socket_refs}
-    assert socket_paths == expected_paths
-    for path in expected_paths:
-        assert len(blueprint.dag_index.get_by_exact_path(path)) == 1
+    assert blueprint.socket_refs == []

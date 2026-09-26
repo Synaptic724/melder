@@ -28,7 +28,8 @@ def compile_solo_overrides_codegen_creation_executor(
         - Binds the established Spell disposal list directly into each fresh
           executor namespace, including when its code object is reused.
         - Binds `call_target` through `_call_target_for`: the raw spell callable,
-          or an unresolved-input guard when the spell has UNRESOLVED_INPUT sockets.
+          or, when the spell has UNRESOLVED_INPUT sockets, a decided call target
+          that raises `UnresolvedInputError` for an unsupplied one before calling.
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType`.
     """

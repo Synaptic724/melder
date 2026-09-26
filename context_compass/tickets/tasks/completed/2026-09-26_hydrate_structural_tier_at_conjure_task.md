@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-hydrate-structural-tier-at-conjure
 - Story: STORY-2026-09-26-structural-snapshot
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T17:35:55Z
-- Updated: 2026-09-26T18:13:08Z
+- Updated: 2026-09-26T18:18:08Z
 
 ## Objective
 The hydrate half of I-1 (architecture patch delta 5; code description steps 1-4 and 6): before `run_structural_phases`,
@@ -55,6 +55,10 @@ because it saves only the misses' share of phase 3 while still running phases 1,
 - to_state: review
 - transition_reason: Classify/replay seam, conjure wiring, marshal-format-2 fix and 30 tests landed on the device tree
   after green worktree runs; patch docs aligned (2026-09-26T18:13:08Z). Owner-run suites (H6) and acceptance remain.
+- from_state: review
+- to_state: done
+- transition_reason: Owner ran the suites and accepted ("yeah runs good", 2026-09-26T18:18:08Z); the partial path was not requested, so
+  v1 stands (decision recorded); closure sync run; the parity task is the successor.
 
 ## Steps / Checklist
 - [x] H1: discovery reads - conjure sequence, `run_structural_phases`, phase 3/4 writes, registry helpers, every
@@ -64,7 +68,7 @@ because it saves only the misses' share of phase 3 while still running phases 1,
 - [x] H3: creation system - conduit name into `_prepare_spellbook_for_conjure`; structural state; skip or run.
 - [x] H4: tests (unit stubs; component full hit / miss / warnings / meld parity); worktree run; device tree.
 - [x] H5: align the patch docs (delta 5 landed shape; partial path recorded as a decision).
-- [ ] H6: owner-run suites; "Not run." until then.
+- [x] H6: owner-run suites; "Not run." until then.
 - [x] Run Ticket Microcycle during execution:
   - Note before the next tranche; `SCORE_0_TO_10` >= 7; evidence as `path:start-end`.
 - [x] Document each meaningful finding immediately in `## Notes` before further investigation.
@@ -84,7 +88,7 @@ because it saves only the misses' share of phase 3 while still running phases 1,
 - system_docs/patches/active/structural_snapshot_2026_09_26/ (three docs aligned at H5)
 
 ## Validation
-- Owner-run suites: Not run.
+- Owner-run suites: green (owner, 2026-09-26T18:18:08Z: "yeah runs good"; the recommended command below).
 - Worktree (VM, CPython 3.14.7t): unit spellbook+utilities 3044 passed, 2 skipped, 7 xfailed; component+integration
   spellbook 1366 passed, 2 skipped, 2 xfailed, 2 xpassed; unit aether+crystallizer, component aether+utilities,
   integration aether+conduit 6919 passed, 43 skipped, 1 xfailed; crystallizer/mutation_research/top-level unit
@@ -101,12 +105,12 @@ because it saves only the misses' share of phase 3 while still running phases 1,
 ## Applicable Anti-Patterns
 - [x] No status transition without evidence-backed transition reason.
 - [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No closure without acceptance confirmation and board-sync completion.
 - [x] No replay of a row set that failed a well-formedness check (a malformed payload is a miss).
 - [x] No phase logic in the seam (replay calls the registry helpers phases 3-4 call; no matching, no validation).
 
 ## Done Checklist
-- [x] Steps complete and checked off (H6 owner-run pending)
+- [x] Steps complete and checked off
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
@@ -114,8 +118,8 @@ because it saves only the misses' share of phase 3 while still running phases 1,
 - [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [x] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -256,6 +260,18 @@ because it saves only the misses' share of phase 3 while still running phases 1,
   REREAD: OPTIONAL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T18:18:08Z
+  TYPE: DECISION
+  CLAIM: Owner acceptance ("yeah runs good") after running the recommended suites on the device tree; the partial
+    path (b) was offered with a recommendation to leave it out and was not requested, so hydrate v1 (full hit
+    replays; anything else runs today's phases) is the landed shape. The patch docs keep (b) as DESIGN ONLY.
+  EVIDENCE:
+  - system_docs/patches/active/structural_snapshot_2026_09_26/architecture_patch.md:76-94
+  IMPACT: Tasks 3 and 4 close; the lane continues with parity, measurement (owner-run) and promotion.
+  NEXT: parity task.
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 STATE 2026-09-26T17:35:55Z: IN_PROGRESS. H1 done (FACT note); H2 seam work starts in the worktree. Partial path is a
 decision for the owner; v1 = full hit or today's run.
@@ -263,6 +279,8 @@ STATE 2026-09-26T18:10:41Z: IN_PROGRESS. H2-H4 done on the device tree (worktree
 spells). Next: H5 patch docs, review, owner report (partial-path decision).
 STATE 2026-09-26T18:13:08Z: REVIEW. H1-H5 done; owner-run suites pending; DECISION_REQUEST open on the partial path.
 Successor: the parity task under the story.
+STATE 2026-09-26T18:18:08Z: DONE. Owner-run suites green and accepted; v1 stands (partial path not requested); moved to completed/.
+Successor: the parity task.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

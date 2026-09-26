@@ -76,6 +76,17 @@ class Needy:
         self.work = work
 
 
+class CountedTask:
+    """A solo root with an unresolved input that counts its constructor calls."""
+
+    count = 0
+
+    def __init__(self, work: Package) -> None:
+        """Count one call and keep the supplied value."""
+        CountedTask.count += 1
+        self.work = work
+
+
 class Outer:
     """Build Needy as a dependency."""
 
@@ -162,11 +173,8 @@ def test_missing_value_raises_unresolved_input_error(
     assert isinstance(error, MeldExecutionError)
     assert (error.spell_name, error.param_name, error.expected_type) == ("Task", "work", "Package")
     assert error.unresolved_params == ("work",)
-    # Plans decide it before calling (B6, 2026-09-26); the solo lane still converts the TypeError.
-    if family == "solo":
-        assert isinstance(error.__cause__, TypeError)
-    else:
-        assert error.__cause__ is None
+    # Every family decides it before calling (B6, 2026-09-26), so no TypeError precedes it.
+    assert error.__cause__ is None
     message = str(error)
     assert "override={'work': ...}" in message
     assert "'>work'" in message and "'**work'" in message
@@ -264,3 +272,19 @@ def test_nothing_under_the_consumer_is_built_before_the_error(
     value = Package()
     assert conduit.meld(spell_id=root_id, override={"needy>work": value}).needy.work is value
     assert Counted.count == 1
+
+
+def test_solo_root_is_not_called_without_its_unresolved_input(runtime_book: Spellbook) -> None:
+    """B6 for the solo lane: a missing input fails before the constructor runs; a keyword or positional value calls it."""
+    root_id = runtime_book.bind(spell=CountedTask, existence="many")
+    conduit = runtime_book.conjure()
+    CountedTask.count = 0
+    for override in (None, {}, ()):
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell_id=root_id, override=override)
+        assert caught.value.spell_name == "CountedTask" and caught.value.__cause__ is None
+    assert CountedTask.count == 0
+    value = Package()
+    assert conduit.meld(spell_id=root_id, override={"work": value}).work is value
+    assert conduit.meld(spell_id=root_id, override=[value]).work is value
+    assert CountedTask.count == 2

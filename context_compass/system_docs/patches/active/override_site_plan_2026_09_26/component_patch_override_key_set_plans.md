@@ -129,3 +129,35 @@
 ### Rollback
 - Drop the emitted raises; the failure-path hook still converts constructor TypeErrors.
 
+## S4b: the solo lane decides too; the failure-path hook is gone (2026-09-26)
+
+### Before
+- A solo root (no dependencies) with an UNRESOLVED_INPUT socket bound a guard as its call target: the constructor
+  was called and a TypeError was converted by `UnresolvedInputError.from_failed_construction`, chained from it. The
+  families' `_raise_meld_construction_error(spell, exc, supplied_names, supplied_positional_count)` asked the same
+  hook first on every constructor failure.
+
+### After
+- The solo call target is decided: it checks the call's keyword names and positional count against the root's
+  UNRESOLVED_INPUT sockets before calling and raises `UnresolvedInputError.for_unsupplied(spell, missing)`
+  without constructing (no-overrides lane: always, for such a root; overrides lane: when the payload leaves one
+  out). Every family now raises before construction, with no TypeError cause.
+- `from_failed_construction` is deleted. `_raise_meld_construction_error(spell, exc)` always raises
+  `MeldExecutionError` chained from `exc`; its callers (lowering helper and emitted direct call, both families'
+  generic helper and transient emitter, the generalized manifest emitter) pass only those two arguments.
+
+### Interface / State Deltas
+- Removed: `UnresolvedInputError.from_failed_construction` (internal failure-path hook; not re-exported at the
+  package root). `UnresolvedInputError.inner` is None whenever Melder raises it. No cache change (executors are
+  built at hydration; emitted source of the old emitters loses the supplied-argument operands).
+
+### Behavior Deltas
+- B6 for solo roots: the constructor is not called without the input, and `__cause__` is None. A TypeError from a
+  constructor body with every input supplied keeps its existing error (unchanged).
+
+### Validation Expectations
+- Component: the unresolved-input suite (solo cause is None; a counted solo root is never called without its input
+  and is called with a keyword or positional value). All suites on 3.14t and GIL.
+
+### Rollback
+- Restore the solo guard and the hook; plans are unaffected.

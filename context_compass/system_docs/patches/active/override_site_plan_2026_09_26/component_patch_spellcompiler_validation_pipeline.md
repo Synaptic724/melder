@@ -104,7 +104,38 @@
   `DagIndex` socket maps, `SocketRefSanityStrategy`, the blueprint socket API, `resolve_path_registry`, the Phase-8
   key's socket rows and the phase2-5 socket rows (fable_0's seam, M0-37).
 
+## R1: Targeting Surface Retired
+- Owner decision 2026-09-26T18:22:40Z: one retirement pass for the code S2b and S5a left unused. R1 is its first
+  half (R2 retires the old normal emitters).
+- Before: after S5a nothing in production recorded or read a `SocketRef`. Still compiled and tested:
+  `SpellOverrider` (conduit/meld/overrides, imported by no src module), `DagTargetingEngine`, `DagIndexBuilder`,
+  `DagIndex` and `SocketRef` (dag_index.py), the blueprint socket API (`socket_refs`, `add_socket_ref`,
+  `replace_dag_index`, `ensure_dag_index_built`, `dag_index`) with its build lock, Phase-6
+  `SocketRefSanityStrategy` and its four internal codes, the Phase-8 reuse key's socket rows, the phase2-5
+  capture's socket rows (`build_phase5_socket_rows`, `phase5_socket_ref_count`, `phase5_socket_rows`) and
+  `resolve_path_registry` on both binding resolvers.
+- After: dag_index.py holds `PathRegistry` only. `RootResolutionBlueprint` owns a `PathRegistry`
+  (`path_registry=` constructor argument, fresh when omitted; `path_registry` property; cleaned with the
+  blueprint). The Phase-5 builder passes none, so each blueprint gets a fresh registry for Phase 8. Phase 6 runs
+  its other strategies unchanged. The Phase-8 fast reuse key is (root id, ordered node ids, registry identity, pool
+  digest). `socket_row_sort_key` stays (Phase-8 still sorts pool socket rows with it).
+- Interface deltas (internal; nothing here is exported at the package root): the modules
+  `conduit/meld/overrides/spell_overrider.py` and `system/validation/socket_ref_sanity_strategy.py` are deleted;
+  the blueprint constructor loses `socket_refs=`/`dag_index=` and gains `path_registry=`;
+  `SpellbookValidationError.INTERNAL_CODES` loses `dag_index_orphan_socket`, `socket_ref_duplicate`,
+  `socket_ref_missing_in_index` and `socket_ref_missing_in_index_name` (no strategy emits them).
+- State and failure deltas: none at run time. The Phase-8 key is artifact-local and never persisted, so no cache
+  generation.
+- Validation: tests whose only subject was the removed surface are deleted (SpellOverrider x3, the sanity strategy,
+  DagIndex targeting unit and component files, the DagIndex builder component file); tests inside mixed files that
+  targeted it are removed by name; the blueprint unit file is rewritten around the owned PathRegistry; TargetSpec
+  and PathRegistry tests stay. Full suites on 3.14t and GIL. The build assets still name the deleted classes until
+  the S6 rebuild.
+- Mapping: this section -> apply_r1_edits.py (source) and apply_r1_test_edits.py (tests) in
+  artifacts/melder_override_design_20260926/r1_staging -> the suites above.
+
 ## Context / Handoff Summary
-- What changed: S1 contracts for the new section and resolver.
+- What changed: S1 contracts for the new section and resolver; S5 (per-path overlay retired); R1 (targeting
+  surface retired).
 - Remaining risks: conjure cost of one more processor pass (expected linear; measured in S1 validation).
 - Next entrypoint: code_description_patch_override_key_resolver.md.

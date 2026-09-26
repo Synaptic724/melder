@@ -1,6 +1,6 @@
 # Architecture patch: a cycle's consumers read as consumers (2026-09-26)
 
-Ticket: tickets/tasks/2026-09-26_word_cycle_consumers_in_circular_dependency_report_task.md (owner approved).
+Ticket: tickets/tasks/completed/2026-09-26_word_cycle_consumers_in_circular_dependency_report_task.md (owner approved).
 
 ## Objective
 When conjure refuses a spell because a dependency cycle is reachable from it but the spell is not in the cycle, the

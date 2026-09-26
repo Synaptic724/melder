@@ -28,7 +28,8 @@ def compile_solo_no_overrides_codegen_creation_executor(
         - Binds the established Spell disposal list directly into each fresh
           executor namespace, including when its code object is reused.
         - Binds `call_target` through `_call_target_for`: the raw spell callable,
-          or an unresolved-input guard when the spell has UNRESOLVED_INPUT sockets.
+          or, when the spell has UNRESOLVED_INPUT sockets, a decided call target
+          that raises `UnresolvedInputError` for an unsupplied one before calling.
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType`.
     """
@@ -248,21 +249,25 @@ def _call_target_for(spell: Any) -> Callable[..., Any]:
     Return the callable a solo executor invokes for one spell.
 
     Purpose:
-        Solo executors call the target with no try block, so a missing input
-        propagates as a raw TypeError. A spell with an unresolved input (a typed
-        parameter no registered spell provides) instead needs the named
-        `UnresolvedInputError` when its caller did not supply that value.
+        A solo root with an unresolved input (a typed parameter no registered
+        spell provides) must name what the caller left out instead of letting its
+        constructor fail. The decision is made before the call, as the many_only
+        and generalized plans make it (design v2 S4, B6).
 
     Contract:
         - When the spell's Phase-3 topology has no UNRESOLVED_INPUT socket, returns
-          `spell.spell` itself: those executors keep the direct call and raw
-          exception propagation.
-        - Otherwise returns a guard that calls `spell.spell`; a TypeError that
-          leaves an unresolved input unsupplied raises `UnresolvedInputError`
-          chained from it, and every other exception re-raises unchanged.
-        - Decided when the executor is compiled or hydrated; the emitted source is
-          identical either way, so the code-object cache is unaffected.
-        - INTERIM until the build plan decides unresolved inputs (design S3/S4).
+          `spell.spell` itself: those executors keep the direct call.
+        - Otherwise returns a decided call target. It checks the call's keyword
+          names and positional count against those sockets (a positional-capable
+          socket counts as supplied when its position is below the count; a name
+          passed with None counts as supplied) and raises
+          `UnresolvedInputError.for_unsupplied(spell, missing)` without calling
+          the constructor when any is left out. Otherwise it calls `spell.spell`
+          and lets every exception propagate unchanged.
+        - The sockets are read once, when the executor is compiled or hydrated;
+          a topology change re-resolves the spell and rebuilds its executor. The
+          emitted source is identical either way, so the code-object cache is
+          unaffected.
 
     Args:
         spell: The root spell the solo executor constructs.
@@ -272,33 +277,40 @@ def _call_target_for(spell: Any) -> Callable[..., Any]:
     """
     call_target = spell.spell
     topology = spell._spell_system_states.get_local_topology(spell.spell_index)
-    if topology is None or not any(
-            socket.socket_kind is SocketKind.UNRESOLVED_INPUT
-            for socket in topology.sockets
-    ):
+    if topology is None:
+        return call_target
+    unresolved = tuple(
+        (
+            socket.param_name,
+            socket.position
+            if socket.parameter_kind in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")
+            else None,
+        )
+        for socket in topology.sockets
+        if socket.socket_kind is SocketKind.UNRESOLVED_INPUT
+    )
+    if not unresolved:
         return call_target
 
-    def guarded_call_target(*args: Any, **kwargs: Any) -> Any:
+    def decided_call_target(*args: Any, **kwargs: Any) -> Any:
         """
-        Call the spell and name an unsupplied unresolved input on failure.
+        Call the spell only when every unresolved input is supplied.
 
         Raises:
-            UnresolvedInputError: An unresolved input was not among `args`/`kwargs`.
+            UnresolvedInputError: An unresolved input is neither among `kwargs`
+                nor covered by a positional argument; nothing was constructed.
         """
-        try:
-            return call_target(*args, **kwargs)
-        except TypeError as exc:
-            unresolved = UnresolvedInputError.from_failed_construction(
-                spell,
-                exc,
-                supplied_names=kwargs,
-                supplied_positional_count=len(args),
-            )
-            if unresolved is not None:
-                raise unresolved from exc
-            raise
+        positional_count = len(args)
+        missing = [
+            name
+            for name, position in unresolved
+            if name not in kwargs and (position is None or position >= positional_count)
+        ]
+        if missing:
+            raise UnresolvedInputError.for_unsupplied(spell, missing)
+        return call_target(*args, **kwargs)
 
-    return guarded_call_target
+    return decided_call_target
 
 
 def _normalize_disposal_methods(

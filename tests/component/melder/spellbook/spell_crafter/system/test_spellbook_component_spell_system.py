@@ -236,11 +236,11 @@ def test_component_spell_system_builds_root_blueprint_from_snapshot() -> None:
         Validate root blueprints are compiled from live system snapshots.
     Contract:
         - Deep DAG includes both consumer and dependency nodes.
-        - Socket refs and DagIndex are populated from local topology.
+        - No SocketRef is recorded and no path is minted (Phase 8 mints paths).
     Returns:
         None.
     Raises:
-        AssertionError: If blueprint structure or socket indexing is missing.
+        AssertionError: If blueprint structure is wrong or socket refs appear.
     """
     spellbook = _make_spellbook()
 
@@ -292,22 +292,13 @@ def test_component_spell_system_builds_root_blueprint_from_snapshot() -> None:
 
         blueprints = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
         blueprint = blueprints[consumer_id]
-        blueprint.ensure_dag_index_built()
 
         assert set(blueprint.dag.nodes) == {consumer_id, service_id}
         ordered = blueprint.ordered_node_ids
         assert ordered[-1] == consumer_id
 
-        sockets = blueprint.socket_refs
-        assert len(sockets) == 1
-        socket = sockets[0]
-        assert socket.node_id == consumer_id
-        assert socket.param_name == "service"
-        path_registry = blueprint.path_registry
-        assert path_registry.materialize_path(socket.param_path_id) == ("service",)
-
-        by_path = blueprint.dag_index.get_by_exact_path(("service",))
-        assert by_path and by_path[0] == socket
+        assert blueprint.socket_refs == []
+        assert blueprint.path_registry.resolve_path_id(("service",)) is None
     finally:
         spellbook.cleanup()
 
@@ -389,7 +380,8 @@ def test_component_spell_system_validation_reports_socket_ref_duplicate() -> Non
     Purpose:
         Validate socket ref duplication is detected by system validation.
     Contract:
-        - socket_ref_duplicate is reported when a SocketRef is duplicated.
+        - socket_ref_duplicate is reported when a SocketRef is duplicated (added by
+          hand: compiled blueprints record none).
         - Conduit resolution validity is invalid when an error is present.
     Returns:
         None.
@@ -402,7 +394,14 @@ def test_component_spell_system_validation_reports_socket_ref_duplicate() -> Non
             spellbook
         )
         blueprint = blueprints[root_id]
-        socket = blueprint.socket_refs[0]
+        path_registry = blueprint.path_registry
+        socket = SocketRef(
+            node_id=root_id,
+            param_name="dependency",
+            param_path_id=path_registry.extend_path(path_registry.root_path_id, "dependency"),
+            socket_kind=SocketKind.NORMAL,
+        )
+        blueprint.add_socket_ref(socket)
         blueprint.add_socket_ref(socket)
 
         system = SpellSystemValidationSystem([SocketRefSanityStrategy()])

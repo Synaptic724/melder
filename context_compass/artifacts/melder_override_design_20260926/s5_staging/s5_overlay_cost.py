@@ -22,7 +22,10 @@ from melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_b
 )
 
 STATS: Dict[str, float] = {"overlay_ns": 0.0, "calls": 0.0, "socket_refs": 0.0}
-ORIGINAL = SpellSystemRootBlueprintBuilder._overlay_sockets_and_index
+try:
+    ORIGINAL = SpellSystemRootBlueprintBuilder._overlay_sockets_and_index
+except AttributeError:
+    ORIGINAL = None  # S5 tree: the overlay is gone, so only conjure time is measured
 
 
 def timed_overlay(self: Any, blueprint: Any, topologies: Any) -> None:
@@ -33,7 +36,8 @@ def timed_overlay(self: Any, blueprint: Any, topologies: Any) -> None:
     STATS["socket_refs"] += len(blueprint._socket_refs)
 
 
-SpellSystemRootBlueprintBuilder._overlay_sockets_and_index = timed_overlay
+if ORIGINAL is not None:
+    SpellSystemRootBlueprintBuilder._overlay_sockets_and_index = timed_overlay
 
 
 def lattice_module(width: int, layers: int, tag: str) -> Tuple[Any, List[str]]:
@@ -116,6 +120,12 @@ def chain_module(sites: int, tag: str) -> Tuple[Any, List[str]]:
 
 
 def main() -> None:
+    if "--gate" in sys.argv:
+        for sites in (13, 15, 13, 15):
+            run(0, sites, Existence.unique_per_conduit)
+        for width, layers in ((2, 12), (2, 12), (3, 7), (3, 7)):
+            run(width, layers, Existence.unique_per_conduit)
+        return
     shared = ((3, 3), (3, 5), (2, 8), (2, 10), (3, 7), (2, 12))
     many = ((2, 4), (2, 6), (2, 8))
     for width, layers in shared:
