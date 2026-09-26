@@ -338,6 +338,10 @@ class _SpellStub:
         self._lock = RLock()
         self._creation_context = creation_context
         self._creation_context_factory = None
+        # Mirror the real Spell fields: automatic ownership has no
+        # spell-index gate, and no build has failed.
+        self._creation_gate = None
+        self._creation_context_failure = None
         if creation_context is None:
             # fast_state mirrors the real CounterSwitch hot-path slot the
             # meld doors read instead of the `state` property.

@@ -5163,7 +5163,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/conduit_meld.py
 
-- source_sha256: `30a2617e717a762742e621aa2b6ada970309ae180e55c8898fbb872a5329bd2e`
+- source_sha256: `5c99d680c033b96577ba13f257b2b82938c0aea6d8f64db5256b323f5faed44c`
 - nodes: 2
 
 ### Nodes
@@ -5191,6 +5191,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - provides reuse-only and live-creation status probes over conduit-scoped storage
   - authorizes conduit-local, spell-owner, lineage-root and cluster-leader purge before delegating single or all retirement to Creations
   - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
+  - admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`, `purge`
 
@@ -5397,7 +5398,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/creation_context/creation_context_factory.py
 
-- source_sha256: `45bbb3c7d60756938bba3097f05617879593e04a9705a9e4e390a5c49bda7623`
+- source_sha256: `be275f0a16588b5c5560d1fe4cac422e875fdcd2409cbc0f64c89e1d6a00d232`
 - nodes: 2
 
 ### Nodes
@@ -5418,22 +5419,23 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `Cleanable`
 - role: Factory for spell-owned CreationContext instances.
 - responsibilities:
-  - builds or reuses spell-owned CreationContext objects
-  - resolves spell-lineage gates through the frame-owned CreationGateController
-- owns_state: `_builder`, `_creation_gate_controller`, `_created_spell_lineage_ids`
+  - returns a published spell-owned CreationContext without locking, or elects one cold builder per spell through the spell's CounterSwitch
+  - on a failed build records the cause on the spell and releases the pending claim so waiting callers raise instead of hanging
+  - resolves or creates the shared spell-index CreationGate through the frame-owned CreationGateController and hands it to Spell (resolve_spell_index_gate)
+- owns_state: `_dynamic_environment`, `_creation_gate_controller`, `_created_spell_index_ids`
 - phases: `runtime`, `cleanup`
-- public methods: `build_and_bind_for_spell`, `build_for_spell`, `cleanup`, `get_or_build_for_spell`, `rebuild_for_spell`
+- public methods: `build_and_bind_for_spell`, `build_for_spell`, `cleanup`, `get_or_build_for_spell`, `rebuild_for_spell`, `resolve_spell_index_gate`
 
 ### Edges out
 
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
-| `melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory` | owns_lifecycle_of | `melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder` | one_to_one | runtime,cleanup | authored |
+| `melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory` | uses | `melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder` | one_to_one | runtime | authored |
 | `melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory` | borrows | `melder.utilities.synchronization.creation_gate_controller.CreationGateController` | many_to_one | runtime | authored |
 
-- `melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory` -> `melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder`: CreationContextFactory owns the builder used to construct spell-shaped CreationContext instances.
-- `melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory` -> `melder.utilities.synchronization.creation_gate_controller.CreationGateController`: CreationContextFactory borrows the frame-owned CreationGateController to resolve or create spell-lineage gates.
+- `melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory` -> `melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder`: CreationContextFactory calls the stateless static CreationContextBuilder.build; it holds no builder instance (corrected 2026-09-26: an earlier edge claimed ownership of one).
+- `melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory` -> `melder.utilities.synchronization.creation_gate_controller.CreationGateController`: CreationContextFactory borrows the frame-owned CreationGateController to resolve or create the shared gate for a spell's stable index id.
 
 ### Edge candidates (2, unconfirmed)
 
@@ -5448,7 +5450,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py
 
-- source_sha256: `e3b8fbd0dbbe6f900f90f9a0bd403015cd1af04fab4a5ed9796025a3c853855c`
+- source_sha256: `32b4e1de55fd9275d805ff54485cad546bc942ac6a8dfa06c98c1a2072046444`
 - nodes: 2
 
 ### Nodes
@@ -5457,21 +5459,37 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.conduit.meld.creation_context.creation_context_rebuild`
 - defined at: `src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py:1`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+- role: Rare-path rebuild window for spells whose shared CreationContext is being replaced.
+- responsibilities:
+  - hosts CreationContextRebuild, the producer-side window Meld enters around rebuilds
+- phases: `runtime`
 
 #### `CreationContextRebuild` (class)
 
 - id: `melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild`
 - defined at: `src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py:14`
 - extends: `Cleanable`
+- role: Producer window that freezes and drains a spell's index gate while phases replace its plan and context, then publishes the rebuilt context before reopening.
+- responsibilities:
+  - takes each affected gate's transition lock in index-id order, records its posture, closes it and drains admitted tickets
+  - clears the spell's recorded context failure on entry
+  - on success publishes a context for spells whose phase-11 plan is present, leaving plan-less spells unpublished without touching resolution flags
+  - on failure records the cause on unpublished spells and idles their CounterSwitch; the error propagates
+  - restores gate posture and releases locks in reverse order; never cleans a gate
+- owns_state: `_spells`, `_held_gates`, `_finalize_contexts`
+- phases: `runtime`, `cleanup`
 - public methods: `cleanup`
-- **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 ### Edges out
 
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+| `melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild` | borrows | `melder.utilities.synchronization.creation_gate.CreationGate` | one_to_many | runtime | authored |
+| `melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild` | borrows | `melder.aether.spellbook.spell.Spell` | one_to_many | runtime | authored |
+
+- `melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild` -> `melder.utilities.synchronization.creation_gate.CreationGate`: Freezes, drains and reopens the spells' index gates and holds their transition locks for one operation; the frame's CreationGateController owns the gates.
+- `melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild` -> `melder.aether.spellbook.spell.Spell`: Reads each spell's gate and plan and writes its context, switch and failure fields during one rebuild; the Spellbook owns the spells.
 
 <!-- END FILE: src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py -->
 
@@ -5479,7 +5497,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `a4742f438f4820965b05b56fdce7c11b7d2e2d4b55500e16b1f3d4a5e21047d9`
+- source_sha256: `ff339d2fcbb1f1110cfe9ff6f55e174243f8969b16b36b49392e64928abd1e31`
 - nodes: 2
 
 ### Nodes
@@ -5500,7 +5518,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Meld` (abstract)
 
 - id: `melder.aether.conduit.meld.meld.Meld`
-- defined at: `src/melder/aether/conduit/meld/meld.py:44`
+- defined at: `src/melder/aether/conduit/meld/meld.py:49`
 - extends: `Cleanable`
 - markers: `ABC`
 - role: Resolution runtime orchestrator.
@@ -5515,6 +5533,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - provides the common non-resolvable-registration error without restricting observational lookup
   - validates local or root-shared hook updates separately from trusted reference installation
   - restores temporary map references at lease boundaries without adding work to ordinary concrete Meld execution
+  - runs a dynamic spell's structural, resolution and deferred rebuilds inside a CreationContextRebuild window entered before the spell lock (_rebuild_window)
+  - executes a dynamic meld under one spell-index ticket held from before the context read until the executor returns (_execute_admitted)
 - owns_state: `_input_resolution_cache`, `_change_control_manager_by_frame`, `_spell_compiler_system`, `_fast_meld_doors`, `_meld_hooks`, `_baseline_meld_hooks`, `_meld_hooks_modified`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `has_live_creation`, `hooks_modified`, `meld`, `meld_existing_spell`, `purge`, `register_meld_hooks`, `set_meld_hooks`
@@ -5529,20 +5549,23 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.conduit.meld.meld.Meld` | uses | `melder.aether.spellbook.existence.existence.Existence` | many_to_one | runtime | authored |
 | `melder.aether.conduit.meld.meld.Meld` | creates | `melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem` | one_to_many | runtime | authored |
 | `melder.aether.conduit.meld.meld.Meld` | borrows | `melder.aether.spellbook.spellbook.Spellbook` | one_to_one | runtime | authored |
+| `melder.aether.conduit.meld.meld.Meld` | uses | `melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild` | one_to_many | runtime | authored |
 
 - `melder.aether.conduit.meld.meld.Meld` -> `melder.aether.conduit.creations.creations.Creations`: Meld borrows the conduit-owned Creations manager to check reuse and register live instances.
 - `melder.aether.conduit.meld.meld.Meld` -> `melder.aether.conduit.meld.creation_context.creation_context.CreationContext`: Meld creates or retrieves per-spell CreationContext objects to execute spell resolution.
 - `melder.aether.conduit.meld.meld.Meld` -> `melder.aether.spellbook.existence.existence.Existence`: Meld interprets Existence to decide reuse versus construction routes.
 - `melder.aether.conduit.meld.meld.Meld` -> `melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem`: Meld instantiates SpellCompilerSystem when lazy validation or resolution-phase reruns are required at meld time.
 - `melder.aether.conduit.meld.meld.Meld` -> `melder.aether.spellbook.spellbook.Spellbook`: Meld borrows Spellbook lookup maps and spell metadata for resolution.
+- `melder.aether.conduit.meld.meld.Meld` -> `melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild`: Meld creates one short-lived CreationContextRebuild per conduit-local rebuild of a dynamic spell so admitted melds drain before phases replace the shared plan and context.
 
-### Edge candidates (10, unconfirmed)
+### Edge candidates (11, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.conduit.meld.meld.Meld` creates `RLock`
 - `melder.aether.conduit.meld.meld.Meld` creates `NotImplementedError`
 - `melder.aether.conduit.meld.meld.Meld` creates `MeldExecutionError`
+- `melder.aether.conduit.meld.meld.Meld` creates `CreationContextRebuild`
 - `melder.aether.conduit.meld.meld.Meld` creates `SpellbookValidationError`
 - `melder.aether.conduit.meld.meld.Meld` creates `TypeError`
 - `melder.aether.conduit.meld.meld.Meld` creates `KeyError`
@@ -5618,7 +5641,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/spellspace_meld.py
 
-- source_sha256: `9990fffb0678f64313939781ec005c957a5b7264281b706ddb6cf17b502f1e2a`
+- source_sha256: `1b70cbf5f81f7a91cb4283f3f071230920fd29f99ee6647f89ca20b9c2c20a53`
 - nodes: 2
 
 ### Nodes
@@ -5645,6 +5668,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - provides live-creation status over spellspace-local and owner-conduit storage
   - restricts purge to this space's many and unique_per_spell_space entries before delegating single or all retirement to Creations
   - refuses immutable non-resolvable registrations before normal resolution and reuse-only access
+  - admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo
 - owns_state: `_spellspace`, `_spellspace_id`, `_owner_conduit_id`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `meld`, `meld_existing_spell`, `purge`
@@ -6185,7 +6209,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `b6f2704ed6b7e97d073fca6a2d325c4ec866aa3b21055912cb4ffe113c5f7e4e`
+- source_sha256: `cfa62bc76221c2950fd0e131b10a3e7141e44d36fd8e3d50c85ecb5ecb3df59e`
 - nodes: 2
 
 ### Nodes
@@ -6199,7 +6223,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Spell` (class)
 
 - id: `melder.aether.spellbook.spell.Spell`
-- defined at: `src/melder/aether/spellbook/spell.py:60`
+- defined at: `src/melder/aether/spellbook/spell.py:61`
 - extends: `Cleanable`
 - role: Canonical bound spell runtime record.
 - responsibilities:
@@ -6209,7 +6233,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns spell-local hooks, build artifacts, and execution-plan metadata
   - lazily owns the SpellCompiler and spell-owned creation-context machinery
   - records conduit ownership changes and publishes structural changes into SpellSystemStates
-- owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`
+  - keeps a borrowed spell-index CreationGate under dynamic ownership and the cause of its last failed context build
+- owns_state: `_resolvable`, `_compiler_artifact`, `_creation_context`, `_creation_context_factory`, `_creation_context_switch`, `_spellbook`, `_spell_system_states`, `dependency_graph`, `dependencies`, `disposal_method_names`, `_creation_context_failure`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `apply_mutation_override`, `cleanup`, `clear_mutation_override`, `emit_cache`, `emit_cache_file`, `has_existing_object`, `has_mutation_override`, `invalidate_spell`, `is_broken`, `is_class_spell`, `is_existing_creation`, `is_lambda_spell` (+12 more)
 
@@ -6232,6 +6257,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.spell.Spell` | uses | `melder.utilities.helpers.ulid_factory` | many_to_one | init,runtime | authored |
 | `melder.aether.spellbook.spell.Spell` | owns_lifecycle_of | `melder.utilities.synchronization.counter_switch.CounterSwitch` | one_to_one | runtime,cleanup | authored |
 | `melder.aether.spellbook.spell.Spell` | borrows | `melder.utilities.synchronization.creation_gate_controller.CreationGateController` | many_to_one | runtime | authored |
+| `melder.aether.spellbook.spell.Spell` | borrows | `melder.utilities.synchronization.creation_gate.CreationGate` | many_to_one | runtime | authored |
 
 - `melder.aether.spellbook.spell.Spell` -> `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates`: Spell holds the frame-level SpellSystemStates service to mark structural changes and inspect lineage state.
 - `melder.aether.spellbook.spell.Spell` -> `melder.aether.conduit.conduit.Conduit`: Spell records owner-conduit identity and scoped creations when the spell is stamped into a live runtime conduit.
@@ -6247,6 +6273,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell.Spell` -> `melder.utilities.helpers.ulid_factory`: Spell uses the internal ulid_factory module when minting its internal runtime identifier.
 - `melder.aether.spellbook.spell.Spell` -> `melder.utilities.synchronization.counter_switch.CounterSwitch`: Spell owns the CounterSwitch used to coordinate one-leader publication of its creation context.
 - `melder.aether.spellbook.spell.Spell` -> `melder.utilities.synchronization.creation_gate_controller.CreationGateController`: Spell borrows the frame-owned CreationGateController when configuring its creation-context factory for a conduit owner.
+- `melder.aether.spellbook.spell.Spell` -> `melder.utilities.synchronization.creation_gate.CreationGate`: Spell keeps the frame controller's gate for its index (dynamic only) so meld doors admit before reading the context; it drops the reference with its factory and never cleans the gate.
 
 ### Edge candidates (7, unconfirmed)
 

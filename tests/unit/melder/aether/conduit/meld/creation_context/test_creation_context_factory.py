@@ -116,6 +116,9 @@ class _SpellStub:
         self._crafter = object()
         self._creation_context = creation_context
         self._creation_context_switch = CounterSwitch(state=switch_state)
+        # Mirror the real Spell fields added for rebuild windows.
+        self._creation_context_failure: Optional[BaseException] = None
+        self._creation_gate: Optional[Any] = None
         self._lock = RLock()
         self._caching_enabled = True
 
@@ -404,3 +407,138 @@ def test_index_id_for_spell_returns_spell_index_id() -> None:
         assert factory._index_id_for_spell(spell) == spell.spell_index.id
     finally:
         factory.cleanup()
+
+
+def _raise_build(
+        target: Any,
+        *,
+        dynamic_environment: bool = False,
+        creation_gate: Optional[Any] = None,
+        creation_gate_index_id: Optional[str] = None,
+) -> Any:
+    """Fail the way the builder does when the phase-11 plan is absent."""
+    _ = (target, dynamic_environment, creation_gate, creation_gate_index_id)
+    raise RuntimeError("Cannot build CreationContext before spell_codegen_creation exists.")
+
+
+def test_get_or_build_for_spell_failed_leader_records_cause_and_releases_claim(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed leader records its cause on the spell and returns the switch to idle."""
+    spell = _SpellStub(creation_context=None, switch_state=0)
+    monkeypatch.setattr(CreationContextBuilder, "build", _raise_build)
+    factory = CreationContextFactory(creation_gate_controller=CreationGateController())
+
+    with pytest.raises(RuntimeError, match="spell_codegen_creation") as raised:
+        factory.get_or_build_for_spell(spell)
+
+    assert spell._creation_context_failure is raised.value
+    assert spell._creation_context_switch.state == 0
+    assert spell._creation_context is None
+
+
+def test_get_or_build_for_spell_follower_woken_by_failed_leader_reports_cause(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A follower woken with nothing published raises chained from the leader's recorded cause."""
+    cause = RuntimeError("plan missing")
+    spell = _SpellStub(creation_context=None)
+    spell._creation_context_switch = _SwitchStub(state=1, selector_return=0)
+    spell._creation_context_failure = cause
+    builder = _BuilderStub()
+    _patch_creation_context_builder(monkeypatch, builder)
+    factory = CreationContextFactory(creation_gate_controller=CreationGateController())
+
+    with pytest.raises(RuntimeError, match="selected builder failed") as raised:
+        factory.get_or_build_for_spell(spell)
+
+    assert raised.value.__cause__ is cause
+    assert builder.build_calls == []
+
+
+def test_get_or_build_for_spell_waiting_follower_wakes_when_leader_fails(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A follower parked on the pending switch wakes and reports the failure instead of hanging."""
+    spell = _SpellStub(creation_context=None, switch_state=0)
+    leader_building = Event()
+    fail_leader = Event()
+
+    def _slow_failing_build(
+            target: Any,
+            *,
+            dynamic_environment: bool = False,
+            creation_gate: Optional[Any] = None,
+            creation_gate_index_id: Optional[str] = None,
+    ) -> Any:
+        """Hold the leader inside the build until the test lets it fail."""
+        _ = (target, dynamic_environment, creation_gate, creation_gate_index_id)
+        leader_building.set()
+        if not fail_leader.wait(timeout=5.0):
+            raise TimeoutError("test did not release the leader")
+        raise RuntimeError("leader build failed")
+
+    monkeypatch.setattr(CreationContextBuilder, "build", _slow_failing_build)
+    factory = CreationContextFactory(creation_gate_controller=CreationGateController())
+    errors: dict[str, BaseException] = {}
+
+    def _call(key: str) -> None:
+        """Resolve on a worker thread and keep the raised error."""
+        try:
+            factory.get_or_build_for_spell(spell)
+        except BaseException as error:
+            errors[key] = error
+
+    leader = Thread(target=_call, args=("leader",), name="leader")
+    leader.start()
+    assert leader_building.wait(timeout=5.0)
+    assert spell._creation_context_switch.state == 1
+    follower = Thread(target=_call, args=("follower",), name="follower")
+    follower.start()
+    fail_leader.set()
+    leader.join(timeout=5.0)
+    follower.join(timeout=5.0)
+    assert not leader.is_alive()
+    assert not follower.is_alive()
+    assert str(errors["leader"]) == "leader build failed"
+    assert isinstance(errors["follower"], RuntimeError)
+    assert spell._creation_context_switch.state == 0
+
+
+def test_get_or_build_for_spell_success_clears_recorded_failure(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A successful leader clears a failure recorded by an earlier build."""
+    built_context = _ContextStub()
+    spell = _SpellStub(creation_context=None, switch_state=0)
+    spell._creation_context_failure = RuntimeError("earlier failure")
+    _patch_creation_context_builder(monkeypatch, _BuilderStub(build_result=built_context))
+    factory = CreationContextFactory(creation_gate_controller=CreationGateController())
+
+    assert factory.get_or_build_for_spell(spell) is built_context
+    assert spell._creation_context_failure is None
+    assert spell._creation_context_switch.state == 2
+
+
+def test_resolve_spell_index_gate_is_none_in_automatic_mode() -> None:
+    """Automatic ownership has no spell-index gate."""
+    spell = _SpellStub()
+    factory = CreationContextFactory(creation_gate_controller=CreationGateController())
+
+    assert factory.resolve_spell_index_gate(spell) is None
+
+
+def test_resolve_spell_index_gate_returns_the_shared_gate_in_dynamic_mode() -> None:
+    """Dynamic ownership returns the controller's gate for the spell's index, creating it once."""
+    spell = _SpellStub()
+    controller = CreationGateController()
+    factory = CreationContextFactory(
+        dynamic_environment=True,
+        creation_gate_controller=controller,
+    )
+
+    gate = factory.resolve_spell_index_gate(spell)
+
+    assert gate is not None
+    assert gate is controller.get_spell_index_gate(spell.spell_index.id)
+    assert factory.resolve_spell_index_gate(spell) is gate

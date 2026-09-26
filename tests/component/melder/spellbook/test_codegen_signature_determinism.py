@@ -34,9 +34,6 @@ from melder.aether.spellbook.configuration.spellbook_configuration import (
     SpellbookConfiguration,
 )
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
-    build_package as build_legacy_package,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
     CodegenCreationSchemaHelpers,
 )
@@ -211,7 +208,6 @@ def _read_signatures(spell: Any, spell_id: str) -> Dict[str, Any]:
     return {
         "spell_id": spell_id,
         "no_overrides_executor_signature": metadata["_no_overrides_executor_signature"],
-        "override_steps_rows_signature": metadata.get("override_steps_rows_signature"),
     }
 
 
@@ -430,9 +426,9 @@ def _build_cache_package(spell: Any) -> Any:
             The package dict (every plan packages since 2026-09-26).
     """
     creation = spell._compiler_artifact._spell_codegen_creation
-    if creation.metadata.get(MANIFEST_METADATA_KEY) is not None:
-        return build_manifest_package(spell)
-    return build_legacy_package(spell)
+    if creation.metadata.get(MANIFEST_METADATA_KEY) is None:
+        raise RuntimeError("Every codegen family publishes a manifest; this spell has none.")
+    return build_manifest_package(spell)
 
 
 def _probe_source(probe_name: str) -> str:
@@ -584,7 +580,7 @@ def test_plain_fixture_signatures_are_stable_within_one_process() -> None:
 
 def _package_no_overrides_rows(package: Dict[str, Any]) -> Tuple[Dict[str, Any], ...]:
     """
-    Return the no-overrides step rows of a cache package, manifest-first or legacy.
+    Return the no-overrides step rows of a manifest cache package.
 
     Args:
         package:
@@ -594,9 +590,7 @@ def _package_no_overrides_rows(package: Dict[str, Any]) -> Tuple[Dict[str, Any],
         Tuple[Dict[str, Any], ...]:
             The rows the cache-load path hydrates the executor from.
     """
-    if "manifest" in package:
-        return tuple(package["manifest"]["no_overrides"]["steps_rows"])
-    return tuple(package["no_overrides"]["steps_rows"])
+    return tuple(package["manifest"]["no_overrides"]["steps_rows"])
 
 
 def _row_payload_value(rows: Tuple[Dict[str, Any], ...], param_name: str) -> Any:

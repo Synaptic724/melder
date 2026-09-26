@@ -44,6 +44,10 @@ hot path.
 
 ## Invariants and Idempotency
 - Operands depend on the key set only (P3). No new locks; hits are lock-free reads.
+- A plan is `def _site_plan_executor(meld, ov)` exec'd into its own namespace; its constants (spells, ids,
+  helpers) are globals of that namespace, never default arguments, so a call copies nothing per constant
+  (S2a, 2026-09-26: the empty-key-set plan runs at 98-102% of the inner no-overrides executor on 3.14t and
+  GIL). No namespace name is assigned in the plan body.
 - Concurrent first compiles of one key set produce equivalent plans; the dict write is a single store.
 
 ## Explicit Non-Goals

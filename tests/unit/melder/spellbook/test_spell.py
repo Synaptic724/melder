@@ -1388,6 +1388,38 @@ def test_configure_creation_context_factory_requires_gate_and_builds_factory() -
 
     assert spell._dynamic_environment is True
     assert spell._creation_context_factory is not None
+    assert spell._creation_gate is gate.get_spell_index_gate(spell.spell_index.id)
+    assert spell._creation_gate is not None
+
+
+def test_configure_creation_context_factory_leaves_gate_unset_in_automatic_mode() -> None:
+    """Automatic ownership has no spell-index gate, so meld doors keep the unticketed lane."""
+    spell = _make_spell()
+    spell._configure_creation_context_factory(
+        dynamic_environment=False,
+        creation_gate_controller=CreationGateController(),
+    )
+
+    assert spell._creation_gate is None
+    assert spell._creation_context_failure is None
+
+
+def test_cleanup_creation_context_factory_drops_borrowed_gate() -> None:
+    """Dropping the factory drops the borrowed gate reference with it; the gate stays usable."""
+    spell = _make_spell()
+    controller = CreationGateController()
+    spell._configure_creation_context_factory(
+        dynamic_environment=True,
+        creation_gate_controller=controller,
+    )
+    gate = spell._creation_gate
+
+    spell._cleanup_creation_context_factory()
+
+    assert spell._creation_gate is None
+    assert gate is controller.get_spell_index_gate(spell.spell_index.id)
+    gate.admit_ticket()
+    gate.unregister_ticket()
 
 
 def test_get_or_build_creation_context_uses_switch_fast_path_and_factory() -> None:

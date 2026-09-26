@@ -23,6 +23,22 @@ from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbo
 from tests.mocks.spellbook.core_classes import BasicService
 
 
+class _BlockingService:
+    """Service whose construction can be held open by a test (in-flight reader)."""
+
+    entered: Optional[Event] = None
+    release: Optional[Event] = None
+
+    def __init__(self) -> None:
+        """Block inside construction while the test holds `release`."""
+        entered = type(self).entered
+        release = type(self).release
+        if entered is not None and release is not None:
+            entered.set()
+            if not release.wait(10.0):
+                raise TimeoutError("Test did not release the blocked construction.")
+
+
 @pytest.fixture
 def shared_runtime() -> Iterator[tuple[Conduit, Conduit, Spell]]:
     """Yield two linked live conduits sharing one warmed class spell.
@@ -65,9 +81,6 @@ def shared_runtime() -> Iterator[tuple[Conduit, Conduit, Spell]]:
         Conduit._aether = aether
 
 
-@pytest.mark.skip(
-    reason="Deferred by project owner; shared-context rebuild investigation remains open."
-)
 def test_owner_meld_waits_for_peer_rebuild_before_using_context_inputs(
         monkeypatch: pytest.MonkeyPatch,
         shared_runtime: tuple[Conduit, Conduit, Spell],
@@ -160,3 +173,129 @@ def test_owner_meld_waits_for_peer_rebuild_before_using_context_inputs(
         writer.join(10.0)
         if reader_started:
             reader.join(10.0)
+
+
+@pytest.fixture
+def blocking_runtime() -> Iterator[tuple[Conduit, Conduit, Spell]]:
+    """Yield two linked dynamic conduits sharing one warmed Existence.many spell.
+
+    The owner has melded once; the peer has not, so the peer's first meld reruns
+    phases 5-11 for the shared spell.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    owner_book = Spellbook(configuration=configuration)
+    peer_book = Spellbook(configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=_BlockingService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    owner = owner_book.conjure(dynamic=True, name="blocking-owner")
+    peer = peer_book.conjure(dynamic=True, name="blocking-peer")
+    try:
+        owner.link(peer)
+        with peer.transaction("link", conduits=[peer, owner]):
+            peer.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
+        assert isinstance(owner.meld(spell_id=spell_id), _BlockingService)
+        yield owner, peer, owner_book._spells_by_id[spell_id]
+    finally:
+        _BlockingService.entered = None
+        _BlockingService.release = None
+        peer.cleanup()
+        owner.cleanup()
+        Aether._reset_singleton_for_tests()
+        aether = Aether()
+        Spellbook._aether = aether
+        Conduit._aether = aether
+
+
+def test_peer_rebuild_waits_for_owner_meld_already_executing(
+        monkeypatch: pytest.MonkeyPatch,
+        blocking_runtime: tuple[Conduit, Conduit, Spell],
+) -> None:
+    """A rebuild cannot replace the plan or clean the context while an admitted meld is executing.
+
+    The owner's meld is held inside construction (it holds the spell-index ticket).
+    The peer's first meld starts a rebuild window; the window must drain that ticket
+    before Phase 5 runs. Observation points are the real drain call and Phase 5
+    entry; nothing is timed.
+    """
+    owner, peer, spell = blocking_runtime
+    entered = Event()
+    release = Event()
+    drain_started = Event()
+    order: list[str] = []
+    results: dict[str, object] = {}
+    failures: list[BaseException] = []
+    original_drain = CreationGate.close_and_drain
+    original_phase5 = CompilerPhase5.run_local
+
+    def observe_drain(gate: CreationGate, timeout: float = 30.0, interval: float = 0.1) -> None:
+        """Report that the rebuild window started draining admitted melds."""
+        drain_started.set()
+        original_drain(gate, timeout=timeout, interval=interval)
+
+    def observe_phase5(
+            phase: CompilerPhase5,
+            target: Spell,
+            artifact: SpellCompilerArtifact,
+            spellbook: Spellbook,
+            spell_system_states: SpellSystemStates,
+            conduit_id: str,
+            cancel_event: Optional[CancellationEvent] = None,
+    ) -> None:
+        """Record when Phase 5 replaces the shared plan."""
+        if target is spell:
+            order.append("phase5")
+        original_phase5(
+            phase, target, artifact, spellbook, spell_system_states,
+            conduit_id, cancel_event,
+        )
+
+    def resolve(key: str, conduit: Conduit) -> None:
+        """Collect the result or the original failure from one real meld."""
+        try:
+            results[key] = conduit.meld(spell_id=spell.spell_id)
+            order.append(key)
+        except BaseException as error:
+            failures.append(error)
+
+    monkeypatch.setattr(CreationGate, "close_and_drain", observe_drain)
+    monkeypatch.setattr(CompilerPhase5, "run_local", observe_phase5)
+    _BlockingService.entered = entered
+    _BlockingService.release = release
+    reader = Thread(target=resolve, args=("owner", owner), name="in-flight-reader")
+    writer = Thread(target=resolve, args=("peer", peer), name="rebuilding-peer")
+    try:
+        reader.start()
+        assert entered.wait(10.0), "Owner meld did not reach construction."
+        # From here on only the owner's construction blocks; the peer's must not.
+        _BlockingService.entered = None
+        _BlockingService.release = None
+        writer.start()
+        assert drain_started.wait(10.0), "Peer rebuild did not start draining."
+        # The drain cannot finish while the owner holds its ticket.
+        assert order == []
+        release.set()
+        reader.join(10.0)
+        writer.join(10.0)
+        assert not reader.is_alive()
+        assert not writer.is_alive()
+        assert failures == []
+        assert isinstance(results["owner"], _BlockingService)
+        assert isinstance(results["peer"], _BlockingService)
+        assert order.index("owner") < order.index("phase5")
+    finally:
+        release.set()
+        reader.join(10.0)
+        writer.join(10.0)

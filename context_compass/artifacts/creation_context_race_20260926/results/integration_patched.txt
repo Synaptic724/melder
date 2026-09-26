@@ -1,0 +1,8 @@
+268 passed in 3.29s
+578 passed, 2 skipped, 3 xfailed, 1 xpassed in 4.73s
+716 passed in 16.48s
+FAILED tests/integration/melder/multithreading/test_multithreading_system_document_view.py::test_racing_every_lazy_load_at_once_is_consistent
+1 failed, 41 passed in 11.59s
+258 passed, 3 xfailed in 59.01s
+66 passed in 1.04s
+1 passed, 1 xfailed in 0.22s

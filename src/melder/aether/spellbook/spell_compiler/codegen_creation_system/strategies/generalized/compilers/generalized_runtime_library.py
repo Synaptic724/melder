@@ -13,14 +13,13 @@ What stays bridged and why:
     - TRANSIENT SOURCE BUILDER: a pure function of the transient schema
       (call-mode + dependency-index arrays). Identity-free by construction;
       owning it would mean transcribing arg-ref tables, not design.
-    - OVERRIDES SHAPE EMITTER + TARGET PREFILTER: row-driven public emission
-      seams plus the path-registry target prefilter they depend on.
+    - The override lane is no longer bridged: override melds run
+      `SitePlanOverrideRuntime` (shared_assets), which imports the
+      no-overrides helpers directly (2026-09-26).
 
 What the family owns outright (NOT bridged):
     - step-plan no-overrides source emission (row-driven, factory-direct)
     - executor bindings construction for both lanes
-    - the override runtime orchestration (shape dispatch, payload split,
-      socket grouping, process-wide shape caches)
     - runtime step rows (slotted) replacing SimpleNamespace hydration
 
 Promotion note:
@@ -52,66 +51,18 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     _register_spell_instance_prebound as register_spell_instance_prebound,
 )
 
-# --- overrides lane: runtime helpers + row-driven emission seams ------------
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
-    _EMPTY_OVERRIDE_VALUES as EMPTY_OVERRIDE_VALUES,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
-    _MISSING as MISSING,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
-    _build_kwargs_with_overrides as build_kwargs_with_overrides,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
-    _build_step_override_targets as build_step_override_targets,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
-    _build_step_override_values as build_step_override_values,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
-    _construct_spell_instance_with_overrides as construct_spell_instance_with_overrides,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
-    _invoke_spell_with_kwargs as invoke_spell_with_kwargs,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
-    _raise_override_on_existing_instance as raise_override_on_existing_instance,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
-    build_overrides_codegen_creation_step_target_counts_from_rows,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler import (
-    emit_overrides_codegen_creation_executor_shape_source,
-)
-
-# --- override targeting artifact (generalized lane shape) -------------------
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation import (
-    SpellOverrideTargetingCodegenCreation,
-)
-
 # --- shared planner data labels ---------------------------------------------
 from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan import (
     SpellGeneralizedCodegenPlanTargetKind,
 )
 
 __all__ = [
-    "EMPTY_OVERRIDE_VALUES",
-    "MISSING",
     "SpellGeneralizedCodegenPlanTargetKind",
-    "SpellOverrideTargetingCodegenCreation",
-    "build_kwargs_with_overrides",
-    "build_overrides_codegen_creation_step_target_counts_from_rows",
-    "build_step_override_targets",
-    "build_step_override_values",
     "build_transient_no_overrides_source",
     "construct_spell_instance",
-    "construct_spell_instance_with_overrides",
-    "emit_overrides_codegen_creation_executor_shape_source",
     "get_existing_creation",
-    "invoke_spell_with_kwargs",
     "normalize_transient_schema",
     "raise_meld_construction_error",
-    "raise_override_on_existing_instance",
     "register_spell_instance",
     "register_spell_instance_prebound",
 ]

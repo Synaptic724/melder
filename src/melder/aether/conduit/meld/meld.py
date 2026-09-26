@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from annotationlib import Format
+from contextlib import AbstractContextManager, nullcontext
 import inspect
 from threading import RLock
 from typing import (
@@ -29,6 +30,9 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change
     SpellStateChangeReason,
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.meld.creation_context.creation_context_rebuild import (
+    CreationContextRebuild,
+)
 from melder.aether.spellbook.existence.existence import Existence
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
@@ -40,6 +44,7 @@ if TYPE_CHECKING:
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
     from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
+    from melder.utilities.synchronization.creation_gate import CreationGate
 
 class Meld(Cleanable, ABC):
     """
@@ -79,10 +84,13 @@ class Meld(Cleanable, ABC):
       deliberately not part of the entry: it is read per hit through the
       captured context's `_no_overrides_executor` slot because phase-11
       hydration hot-swaps that slot in place (cold door -> hot door) on
-      first execution. Cardinality is bounded by construction because
-      entries are inserted only after a successful normal-lane meld, so the
-      keyspace is the bound-spell registry, not caller input. The registry
-      is deleted in `cleanup()`.
+      first execution. The override arm (2026-09-26) reads the same entry
+      for an id-string meld with a non-empty dict payload and calls the
+      live `_overrides_executor` slot instead. Cardinality is bounded by
+      construction because entries are inserted only after a successful
+      full-lane meld (no-override or override branch, never for a spell
+      holding a mutation override), so the keyspace is the bound-spell
+      registry, not caller input. The registry is deleted in `cleanup()`.
 
     High-level activation flow:
     1. Resolve the target spell from the requested identity inputs.
@@ -745,6 +753,99 @@ class Meld(Cleanable, ABC):
             ),
         )
 
+    @staticmethod
+    def _rebuild_window(spell: Spell) -> AbstractContextManager[object]:
+        """
+        Return the rebuild window a producer enters before taking `spell._lock`.
+
+        Contract:
+            - Dynamic ownership (`spell._creation_gate` set): a
+              CreationContextRebuild over this one spell. It freezes the
+              spell-index gate, drains admitted melds, and on exit publishes
+              the rebuilt context (when the plan is present) before reopening.
+            - Automatic ownership: a no-op context; automatic melds take no
+              index ticket and are unchanged.
+            - Phase 5 local resolution republishes only to its target
+              (2026-09-19), so the target is the whole affected set.
+
+        Args:
+            spell: Spell whose phases are about to be rerun.
+
+        Returns:
+            AbstractContextManager[object]:
+                The window to enter, outermost, before `spell._lock`.
+        """
+        if spell._creation_gate is None:
+            return nullcontext()
+        return CreationContextRebuild((spell,))
+
+    def _execute_admitted(
+            self,
+            spell: Spell,
+            creation_gate: CreationGate,
+            override_map: Optional[Dict[str, Any]],
+            with_created: bool,
+    ) -> Any:
+        """
+        Run one dynamic meld's context read and execution under one index ticket.
+
+        Purpose:
+            Dynamic spells share one CreationContext across conduits, and a
+            conduit-local rebuild replaces it. Holding the spell-index ticket
+            from before the context read until the executor returns means a
+            rebuild window either waits for this meld to finish or has finished
+            before it reads, so the meld never uses a cleaned context or builds
+            from a missing plan (2026-09-26).
+
+        Contract:
+            - Admits exactly one ticket and unregisters it exactly once, on
+              success or failure. The context's own `execute*` wrappers (which
+              admit again) are not used; their executor slots are called here.
+            - After admission, a spell that became `resolution_required` while
+              this meld was parked releases the ticket, runs the existing
+              deferred path, and admits again (input-generation recheck).
+            - `with_created` selects the hooks-lane result `(instance, created)`;
+              otherwise the instance alone is returned.
+
+        Args:
+            spell: Target spell, already validated for this conduit.
+            creation_gate: The spell's `_creation_gate`.
+            override_map: Normalized overrides, or None.
+            with_created: True for the hooks lane.
+
+        Returns:
+            Any:
+                `(instance, created)` when `with_created`, else the instance.
+
+        Raises:
+            RuntimeError:
+                When the gate is terminally closed, or when no context can be
+                built or published.
+            Exception:
+                Executor and deferred-resolution failures propagate unchanged.
+        """
+        creation_gate.admit_ticket()
+        while spell.resolution_required:
+            creation_gate.unregister_ticket()
+            self._ensure_runtime_resolution_ready(spell)
+            creation_gate.admit_ticket()
+        try:
+            # Warm read inlined (one lock-free state read and one slot read,
+            # as the doors do); the cold path elects a builder via the spell.
+            if spell._creation_context_switch.fast_state >= 2:
+                creation_context = spell._creation_context
+            else:
+                creation_context = spell._get_or_build_creation_context()
+            if with_created:
+                if override_map is None:
+                    return creation_context._no_overrides_executor(self)
+                return creation_context._overrides_executor(self, override_map)
+            if override_map is None:
+                return creation_context._no_overrides_instance_executor(self)
+            return creation_context._overrides_executor(self, override_map)[0]
+        finally:
+            creation_gate.unregister_ticket()
+
     def _ensure_lineage_resolvable(self, spell: Spell) -> None:
         """
         Ensure the spell is structurally valid enough to continue toward
@@ -763,7 +864,10 @@ class Meld(Cleanable, ABC):
 
         Threading:
             Structural reruns are serialized under `spell._lock` so concurrent
-            meld calls do not race duplicate validation work.
+            meld calls do not race duplicate validation work. Under dynamic
+            ownership the rerun first enters the spell's rebuild window (see
+            `_rebuild_window`): the index gate is frozen and drained before the
+            spell lock is taken, because Phase 3 resets the shared context.
 
         Raises:
             SpellbookValidationError: If structural or conduit-local validity
@@ -773,7 +877,7 @@ class Meld(Cleanable, ABC):
         """
         # Structural gating
         if self._gated_validation_required(spell):
-            with spell._lock:
+            with self._rebuild_window(spell), spell._lock:
                 if self._gated_validation_required(spell):
                     self._get_spell_compiler_system().run_structural_phases(
                         self._spellbook,
@@ -837,7 +941,9 @@ class Meld(Cleanable, ABC):
             RuntimeError: If no resolution conduit id is available.
             Exception: Re-raises deferred resolution failures.
         """
-        with spell._lock:
+        # Rebuild window first (dynamic only), then the spell lock: see
+        # `_rebuild_window`. Phase 11 resets the shared context.
+        with self._rebuild_window(spell), spell._lock:
             if not spell.resolution_required:
                 return
             if spell.resolution_complete:
@@ -1023,7 +1129,10 @@ class Meld(Cleanable, ABC):
             raise SpellbookValidationError([spell])
 
         if resolution_validity is SpellValidity.unknown or resolution_validity is SpellValidity.gated:
-            with spell._lock:
+            # Rebuild window first (dynamic only), then the spell lock: Phase 5
+            # clears the plan and resets the shared context that other
+            # conduits' admitted melds may be using. See `_rebuild_window`.
+            with self._rebuild_window(spell), spell._lock:
                 resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
                 resolution_validity = self._get_resolution_validity(spell, resolution_state)
                 if resolution_validity is SpellValidity.valid:

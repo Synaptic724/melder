@@ -1,0 +1,687 @@
+--- a/src/melder/aether/spellbook/spell.py
++++ b/src/melder/aether/spellbook/spell.py
+@@ -49,6 +49,7 @@
+         SpellValidationResult,
+     )
+     from melder.aether.spellbook.spellbook import Spellbook
++    from melder.utilities.synchronization.creation_gate import CreationGate
+     from melder.utilities.synchronization.creation_gate_controller import (
+         CreationGateController,
+     )
+@@ -287,6 +288,10 @@
+         "tags",
+         "timeout",
+         "user_created_object",
++        # Appended, not alphabetized: new slots go last so the offsets of the
++        # hot fast-door slots (`_door_epoch`, `_creation_context`) stay put.
++        "_creation_context_failure",
++        "_creation_gate",
+     ]
+     def __init__(
+             self,
+@@ -475,6 +480,15 @@
+         self._creation_context_factory: CreationContextFactory | None = None
+         # Spell-owned selector latch for one-leader CreationContext publication.
+         self._creation_context_switch: CounterSwitch = CounterSwitch(state=0)
++        # Cause of the last failed context build or rebuild window. Melds that
++        # waited on that build report it; a new rebuild window clears it.
++        self._creation_context_failure: Optional[BaseException] = None
++        # Borrowed spell-index CreationGate, set only under dynamic ownership.
++        # A dynamic meld holds one ticket on it from before it reads the
++        # context until its executor returns; a rebuild window freezes and
++        # drains it before phases replace the plan. The frame's
++        # CreationGateController owns the gate's lifecycle.
++        self._creation_gate: Optional[CreationGate] = None
+         # Runtime cache policy mirror. Defaults to enabled and may be overridden
+         # later by the owning Spellbook/Aether posture during conduit stamping.
+         self._caching_enabled: bool = True
+@@ -609,7 +623,9 @@
+             del self.spell
+             del self._creation_context
+             del self._creation_context_factory
++            del self._creation_context_failure
+             del self._creation_context_switch
++            del self._creation_gate
+             del self._caching_enabled
+             del self._compiler_artifact
+             del self.spell_index
+@@ -723,6 +739,9 @@
+             - Best-effort cleanup; exceptions are swallowed so ownership
+               transitions can continue.
+             - Leaves `_creation_context_factory` as `None`.
++            - Drops the borrowed spell-index gate reference with it (the
++              gate is resolved again when a factory is configured); the gate
++              itself is owned by the frame's CreationGateController.
+         """
+         if self._creation_context_factory is not None:
+             try:
+@@ -730,6 +749,7 @@
+             except Exception:
+                 pass
+             self._creation_context_factory = None
++        self._creation_gate = None
+ 
+     def _configure_creation_context_factory(
+             self,
+@@ -750,6 +770,10 @@
+             - Replaces any existing factory instance.
+             - Stores dynamic mode on the spell for runtime metadata.
+             - Requires a non-null CreationGateController.
++            - In dynamic mode, resolves (creating when absent) the stable
++              spell-index CreationGate and keeps it on `_creation_gate` so
++              meld doors can admit before reading the context; None in
++              automatic mode.
+ 
+         Args:
+             dynamic_environment:
+@@ -773,6 +797,9 @@
+             dynamic_environment=self._dynamic_environment,
+             creation_gate_controller=creation_gate_controller,
+         )
++        self._creation_gate = (
++            self._creation_context_factory.resolve_spell_index_gate(self)
++        )
+ 
+     def _get_or_build_creation_context(self) -> Any:
+         """
+@@ -787,19 +814,21 @@
+         Contract:
+             - Requires the spell to have an initialized factory.
+             - Returns a ready state-2 context without locking.
+-            - Serializes only the cold/rebuild path under the spell RLock and
+-              rechecks readiness after acquiring it. A conduit-local phase run
+-              owns the same lock while it clears and republishes phase-11
+-              state, so a competing conduit cannot build from the transient
+-              artifact gap.
+-            - Delegates build/get policy to CreationContextFactory.
++            - Delegates build/get policy to CreationContextFactory, whose cold
++              path elects one builder through `_creation_context_switch`.
+             - Returns a live CreationContext instance bound to this spell.
+ 
+         Threading:
+-            The normal ready-context path remains one lock-free state read and
+-            one context read. Only state 0/1 retrieval takes `_lock`; the lock
+-            is re-entrant because phase and ownership callers may already hold
+-            it while requesting a rebuild.
++            The ready path is one lock-free state read and one context read.
++            It takes no lock: in dynamic mode the caller already holds a
++            spell-index ticket on `_creation_gate`, and every conduit-local
++            rebuild (structural, resolution and deferred phases) runs inside
++            a CreationContextRebuild window that freezes that gate and drains
++            its tickets before phases replace the plan or reset this context,
++            so an admitted caller never sees the rebuild gap and never holds a
++            context that is cleaned under it (2026-09-26). Resets outside
++            those windows (ownership restamps, notch, teardown, transfer) are
++            not drained.
+ 
+         Returns:
+             Any:
+--- a/src/melder/aether/conduit/meld/creation_context/creation_context_factory.py
++++ b/src/melder/aether/conduit/meld/creation_context/creation_context_factory.py
+@@ -38,10 +38,14 @@
+         already provisioned a gate for).
+ 
+     Threading:
+-        Deliberately LOCK-FREE and race-tolerant. Two threads may build a
+-        context for the same spell concurrently; both builds are equivalent and
+-        the spell owns whichever lands, so the loser is simply discarded rather
+-        than being an error worth locking against.
++        LOCK-FREE on the ready path. The cold path elects exactly one builder
++        through the spell's CounterSwitch (followers park until it publishes).
++        A builder that fails records the cause on the spell and releases its
++        claim, so followers wake and report that cause instead of waiting for
++        a publication that will never come. Input stability comes from the
++        spell-index gate: dynamic melds build and execute while holding a
++        ticket, and rebuild windows drain those tickets before phases replace
++        the plan (see CreationContextRebuild).
+ 
+     Lifecycle / Cleanup:
+         Cleanable. It does NOT own the contexts it produces - `Spell` owns them
+@@ -59,13 +63,12 @@
+         in - the builder itself stays policy-free.
+ 
+     System Context:
+-        The lock-free choice is worth understanding rather than copying
+-        blindly. Context construction is IDEMPOTENT and side-effect-free with
+-        respect to shared state: two racing builds produce equivalent objects,
+-        and the spell's slot is the single point of truth for which one wins.
+-        Taking a lock here would serialize the cold path of every distinct
+-        spell for no correctness gain - and under free-threaded 3.14t that
+-        contention would be paid on every core.
++        The ready path stays lock-free because it runs on every meld; the
++        cold path is a per-spell election, never a global lock, so cold builds
++        of different spells never contend. The factory does not guard its
++        inputs: a build reads the spell's phase-11 plan, and keeping that plan
++        present during the build is the rebuild window's job, not the
++        factory's.
+         The gate injection is why this class is dynamic-aware at all. In
+         dynamic mode, execution admission is per-spell-index rather than
+         per-conduit, so the factory resolves or creates ONE gate per index and
+@@ -291,6 +294,25 @@
+         self._cleanup_creation_context(previous_creation_context)
+         return built_creation_context
+ 
++    def resolve_spell_index_gate(self, spell: "Spell") -> Optional[CreationGate]:
++        """
++        Return the shared spell-index CreationGate the spell's contexts use.
++
++        Contract:
++            - Automatic mode: returns None (no runtime admission gate).
++            - Dynamic mode: returns the controller's gate for the spell's
++              stable index id, creating it on first use exactly as
++              `build_for_spell` would.
++
++        Args:
++            spell: Spell whose index gate is resolved.
++
++        Returns:
++            Optional[CreationGate]:
++                The gate borrowed from the frame's controller, or None.
++        """
++        return self._resolve_runtime_gate_for_spell(spell)[0]
++
+     def get_or_build_for_spell(self, spell: "Spell") -> "CreationContext":
+         """
+         Resolve one spell-owned context via spell-level CounterSwitch election.
+@@ -298,17 +320,31 @@
+         Contract:
+             - Uses `spell._creation_context_switch.selector()` for one-leader
+               get-or-build election.
+-            - Leader builds/publishes context and opens latch to state `2`.
+-            - Followers block while pending (`state == 1`) and then read cache.
++            - Leader builds/publishes context and opens latch to state `2`,
++              then clears any recorded build failure.
++            - Leader failure records the exception on
++              `spell._creation_context_failure`, releases its claim (state
++              1 -> 0, which wakes followers) and re-raises the original.
++            - Followers block while pending (`state == 1`) and then read the
++              published context; a follower woken by a failed leader raises
++              RuntimeError chained from the recorded cause.
+             - Context ownership remains on Spell (`spell._creation_context`).
+             - Does not use `spell._lock` for hot-path access/publication.
+             - Does not inspect `CreationContext.is_cleaned`; switch state is
+               treated as the single source of truth for readiness.
+             - Single selector pass: no retry loops.
+ 
++        Args:
++            spell: Spell whose context is resolved.
++
+         Returns:
+             CreationContext:
+                 Spell-owned cached or newly built context.
++
++        Raises:
++            RuntimeError:
++                Propagated from `CreationContextBuilder.build` for the leader;
++                raised for a follower when no context was published.
+         """
+         creation_context_switch = spell._creation_context_switch
+         if creation_context_switch.state >= 2:
+@@ -321,18 +357,33 @@
+         switch_state = creation_context_switch.selector()
+         if switch_state == 1:
+             creation_gate, index_id = self._resolve_runtime_gate_for_spell(spell)
+-            built_creation_context = CreationContextBuilder.build(
+-                spell,
+-                dynamic_environment=self._dynamic_environment,
+-                creation_gate=creation_gate,
+-                creation_gate_index_id=index_id,
+-            )
++            try:
++                built_creation_context = CreationContextBuilder.build(
++                    spell,
++                    dynamic_environment=self._dynamic_environment,
++                    creation_gate=creation_gate,
++                    creation_gate_index_id=index_id,
++                )
++            except BaseException as error:
++                # Release the claim so parked followers wake and report this
++                # cause; a pending latch with no builder would park them forever.
++                spell._creation_context_failure = error
++                if creation_context_switch.state == 1:
++                    creation_context_switch.advance(-1)
++                raise
+             spell._creation_context = built_creation_context
+             creation_context_switch.advance(1)
++            spell._creation_context_failure = None
+             self._stage_cache_after_publish(spell, built_creation_context)
+             return built_creation_context
+         creation_context = spell._creation_context
+         if creation_context is None:
++            failure = spell._creation_context_failure
++            if failure is not None:
++                raise RuntimeError(
++                    "Spell creation context was not published: the selected "
++                    f"builder failed ({type(failure).__name__}: {failure})."
++                ) from failure
+             raise RuntimeError(
+                 "Spell creation context was not published by the selected builder."
+             )
+--- a/src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py
++++ b/src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py
+@@ -14,6 +14,16 @@
+ class CreationContextRebuild(Cleanable):
+     """Hold an affected set of index gates through rebuild or explicit abort.
+ 
++    Purpose:
++        A conduit-local rebuild (structural, resolution or deferred phases)
++        replaces a spell's phase-11 plan and resets its shared CreationContext
++        while other conduits may be melding the same spell. This window makes
++        that safe: no admitted meld is using the old context or plan when the
++        phases replace them, and no meld reads the gap between Phase 5 clearing
++        the plan and Phase 11 republishing it (2026-09-26 flake: "Cannot build
++        CreationContext before spell_codegen_creation exists" and use of a
++        cleaned context).
++
+     Contract:
+         Gate transition locks serialize only overlapping producers. They are
+         acquired by stable index id before any gate is frozen, then admission
+@@ -25,10 +35,19 @@
+         exactly the resources acquired by this operation, even when publication
+         changes live fields. They are not copies of runtime graph or policy data.
+ 
+-        Successful exit publishes contexts from completed inputs. Invalidated
+-        dependencies whose plans were not rebuilt become explicitly deferred.
+-        Failure preserves its cause for unpublished contexts and wakes pending
+-        selectors. The original exception is never suppressed.
++        Successful exit publishes contexts from completed inputs before the
++        gates reopen. A spell without a present plan is left unpublished for
++        its next meld's normal validation path. Failure preserves its cause for
++        unpublished contexts and wakes pending selectors. The original
++        exception is never suppressed.
++
++    Lock order:
++        Enter this window BEFORE taking `spell._lock`. A dynamic meld holds its
++        index ticket while an `Existence.unique` build takes the spell lock
++        (2026-09-25 slot guards), so draining tickets while holding the spell
++        lock would wait for a reader that waits for the producer. Callers must
++        not hold a ticket on an affected gate (they would drain themselves);
++        Meld runs every producer before it admits.
+ 
+     Ownership:
+         Borrows Spells and gates; owns only its one-operation resource ledger.
+@@ -86,7 +105,10 @@
+             for gate, _ in self._held_gates:
+                 gate.close()
+             for gate, _ in self._held_gates:
+-                gate.close_and_drain()
++                # 1 ms poll: this is the rare rebuild path, and the default
++                # 100 ms step made every contended rebuild wait a whole step
++                # (measured 2026-09-26: concurrency file 1.05 s -> 1.98 s).
++                gate.close_and_drain(interval=0.001)
+             for spell in self._spells:
+                 spell._creation_context_failure = None
+             return self
+@@ -116,7 +138,25 @@
+             self.cleanup()
+ 
+     def _publish_completed_contexts(self) -> None:
+-        """Publish usable replacements; leave unplanned dependencies explicitly deferred."""
++        """
++        Publish a context for each affected spell whose phase-11 plan is present.
++
++        Contract:
++            - Runs before the gates reopen, so the first meld admitted after the
++              window finds a ready context instead of electing a builder.
++            - Skips spells without a factory and spells that still hold a
++              context (the window did not reset them).
++            - A constructed spell without a phase-11 plan (only structural
++              phases ran, or resolution stopped on a validation error) is left
++              unpublished; its next meld runs the normal validation path. It is
++              NOT marked resolution_required: that routes the deferred 8-11
++              lane, which cannot compile a spell without a Phase-5 blueprint.
++            - Resolution flags stay with the producers that ran the phases.
++
++        Raises:
++            RuntimeError:
++                Propagated from the factory when a present plan cannot build.
++        """
+         for spell in self._spells:
+             factory = spell._creation_context_factory
+             if factory is None or spell._creation_context is not None:
+@@ -125,12 +165,8 @@
+                     not spell.is_existing_creation
+                     and spell._compiler_artifact._spell_codegen_creation is None
+             ):
+-                spell.resolution_required = True
+-                spell.resolution_complete = False
+                 continue
+             factory.get_or_build_for_spell(spell)
+-            spell.resolution_required = False
+-            spell.resolution_complete = True
+ 
+     def _abort(self, error: BaseException) -> None:
+         """Expose failure without leaving an unpublished Spell permanently pending."""
+--- a/src/melder/aether/conduit/meld/meld.py
++++ b/src/melder/aether/conduit/meld/meld.py
+@@ -1,5 +1,6 @@
+ from abc import ABC, abstractmethod
+ from annotationlib import Format
++from contextlib import AbstractContextManager, nullcontext
+ import inspect
+ from threading import RLock
+ from typing import (
+@@ -29,6 +30,9 @@
+     SpellStateChangeReason,
+ )
+ from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
++from melder.aether.conduit.meld.creation_context.creation_context_rebuild import (
++    CreationContextRebuild,
++)
+ from melder.aether.spellbook.existence.existence import Existence
+ if TYPE_CHECKING:
+     from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
+@@ -40,6 +44,7 @@
+     from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
+     from melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state import ConduitResolutionState
+     from melder.aether.conduit.meld.creation_context.creation_context import CreationContext
++    from melder.utilities.synchronization.creation_gate import CreationGate
+ 
+ class Meld(Cleanable, ABC):
+     """
+@@ -745,6 +750,99 @@
+             ),
+         )
+ 
++    @staticmethod
++    def _rebuild_window(spell: Spell) -> AbstractContextManager[object]:
++        """
++        Return the rebuild window a producer enters before taking `spell._lock`.
++
++        Contract:
++            - Dynamic ownership (`spell._creation_gate` set): a
++              CreationContextRebuild over this one spell. It freezes the
++              spell-index gate, drains admitted melds, and on exit publishes
++              the rebuilt context (when the plan is present) before reopening.
++            - Automatic ownership: a no-op context; automatic melds take no
++              index ticket and are unchanged.
++            - Phase 5 local resolution republishes only to its target
++              (2026-09-19), so the target is the whole affected set.
++
++        Args:
++            spell: Spell whose phases are about to be rerun.
++
++        Returns:
++            AbstractContextManager[object]:
++                The window to enter, outermost, before `spell._lock`.
++        """
++        if spell._creation_gate is None:
++            return nullcontext()
++        return CreationContextRebuild((spell,))
++
++    def _execute_admitted(
++            self,
++            spell: Spell,
++            creation_gate: CreationGate,
++            override_map: Optional[Dict[str, Any]],
++            with_created: bool,
++    ) -> Any:
++        """
++        Run one dynamic meld's context read and execution under one index ticket.
++
++        Purpose:
++            Dynamic spells share one CreationContext across conduits, and a
++            conduit-local rebuild replaces it. Holding the spell-index ticket
++            from before the context read until the executor returns means a
++            rebuild window either waits for this meld to finish or has finished
++            before it reads, so the meld never uses a cleaned context or builds
++            from a missing plan (2026-09-26).
++
++        Contract:
++            - Admits exactly one ticket and unregisters it exactly once, on
++              success or failure. The context's own `execute*` wrappers (which
++              admit again) are not used; their executor slots are called here.
++            - After admission, a spell that became `resolution_required` while
++              this meld was parked releases the ticket, runs the existing
++              deferred path, and admits again (input-generation recheck).
++            - `with_created` selects the hooks-lane result `(instance, created)`;
++              otherwise the instance alone is returned.
++
++        Args:
++            spell: Target spell, already validated for this conduit.
++            creation_gate: The spell's `_creation_gate`.
++            override_map: Normalized overrides, or None.
++            with_created: True for the hooks lane.
++
++        Returns:
++            Any:
++                `(instance, created)` when `with_created`, else the instance.
++
++        Raises:
++            RuntimeError:
++                When the gate is terminally closed, or when no context can be
++                built or published.
++            Exception:
++                Executor and deferred-resolution failures propagate unchanged.
++        """
++        creation_gate.admit_ticket()
++        while spell.resolution_required:
++            creation_gate.unregister_ticket()
++            self._ensure_runtime_resolution_ready(spell)
++            creation_gate.admit_ticket()
++        try:
++            # Warm read inlined (one lock-free state read and one slot read,
++            # as the doors do); the cold path elects a builder via the spell.
++            if spell._creation_context_switch.fast_state >= 2:
++                creation_context = spell._creation_context
++            else:
++                creation_context = spell._get_or_build_creation_context()
++            if with_created:
++                if override_map is None:
++                    return creation_context._no_overrides_executor(self)
++                return creation_context._overrides_executor(self, override_map)
++            if override_map is None:
++                return creation_context._no_overrides_instance_executor(self)
++            return creation_context._overrides_executor(self, override_map)[0]
++        finally:
++            creation_gate.unregister_ticket()
++
+     def _ensure_lineage_resolvable(self, spell: Spell) -> None:
+         """
+         Ensure the spell is structurally valid enough to continue toward
+@@ -763,7 +861,10 @@
+ 
+         Threading:
+             Structural reruns are serialized under `spell._lock` so concurrent
+-            meld calls do not race duplicate validation work.
++            meld calls do not race duplicate validation work. Under dynamic
++            ownership the rerun first enters the spell's rebuild window (see
++            `_rebuild_window`): the index gate is frozen and drained before the
++            spell lock is taken, because Phase 3 resets the shared context.
+ 
+         Raises:
+             SpellbookValidationError: If structural or conduit-local validity
+@@ -773,7 +874,7 @@
+         """
+         # Structural gating
+         if self._gated_validation_required(spell):
+-            with spell._lock:
++            with self._rebuild_window(spell), spell._lock:
+                 if self._gated_validation_required(spell):
+                     self._get_spell_compiler_system().run_structural_phases(
+                         self._spellbook,
+@@ -837,7 +938,9 @@
+             RuntimeError: If no resolution conduit id is available.
+             Exception: Re-raises deferred resolution failures.
+         """
+-        with spell._lock:
++        # Rebuild window first (dynamic only), then the spell lock: see
++        # `_rebuild_window`. Phase 11 resets the shared context.
++        with self._rebuild_window(spell), spell._lock:
+             if not spell.resolution_required:
+                 return
+             if spell.resolution_complete:
+@@ -1023,7 +1126,10 @@
+             raise SpellbookValidationError([spell])
+ 
+         if resolution_validity is SpellValidity.unknown or resolution_validity is SpellValidity.gated:
+-            with spell._lock:
++            # Rebuild window first (dynamic only), then the spell lock: Phase 5
++            # clears the plan and resets the shared context that other
++            # conduits' admitted melds may be using. See `_rebuild_window`.
++            with self._rebuild_window(spell), spell._lock:
+                 resolution_state = spell_system_states.get_conduit_resolution_state(conduit_id)
+                 resolution_validity = self._get_resolution_validity(spell, resolution_state)
+                 if resolution_validity is SpellValidity.valid:
+--- a/src/melder/aether/conduit/meld/conduit_meld.py
++++ b/src/melder/aether/conduit/meld/conduit_meld.py
+@@ -491,12 +491,19 @@
+         # rebuilds instead of trusting a stale posture.
+         door_epoch_at_entry = target_spell._door_epoch
+         if not (meld_hooks or spell_hooks_enabled):
+-            if target_spell._creation_context_switch.fast_state >= 2:
+-                creation_context = target_spell._creation_context
+-            else:
+-                creation_context = target_spell._get_or_build_creation_context()
+-            if creation_context is None:
+-                raise RuntimeError("Spell returned no live CreationContext.")
++            # Dynamic spells carry their spell-index gate. They admit the
++            # index ticket BEFORE reading the context and hold it through
++            # execution, so a rebuild window cannot clean or replace the
++            # context under this meld (2026-09-26). Automatic spells take the
++            # unchanged lock-free lane below.
++            creation_gate = target_spell._creation_gate
++            if creation_gate is None:
++                if target_spell._creation_context_switch.fast_state >= 2:
++                    creation_context = target_spell._creation_context
++                else:
++                    creation_context = target_spell._get_or_build_creation_context()
++                if creation_context is None:
++                    raise RuntimeError("Spell returned no live CreationContext.")
+             # Hot path: in non-dynamic mode dispatch the phase-11 runtime door
+             # directly so the no-hooks lane skips the `execute_no_hooks`
+             # wrapper frame. The executor reference is read through the live
+@@ -504,10 +511,12 @@
+             # is the guarded fast-door entry built below, whose per-call
+             # context-identity guard prevents a recompiled/cleaned context
+             # from ever serving a stale executor.
+-            if creation_context._dynamic_environment:
+-                instance = creation_context.execute_no_hooks(
+-                    self,
++            if creation_gate is not None:
++                instance = self._execute_admitted(
++                    target_spell,
++                    creation_gate,
+                     override_map,
++                    False,
+                 )
+             elif override_map is None:
+                 # Instance-only door: the no-hooks lane never builds the
+@@ -548,16 +557,27 @@
+             self._execute_hooks(target_spell._pre_hooks, "pre_cast")
+             self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
+ 
+-            if target_spell._creation_context_switch.fast_state >= 2:
+-                creation_context = target_spell._creation_context
++            creation_gate = target_spell._creation_gate
++            if creation_gate is not None:
++                # Dynamic: one index ticket from before the context read until
++                # the executor returns (see `Meld._execute_admitted`).
++                instance, created = self._execute_admitted(
++                    target_spell,
++                    creation_gate,
++                    override_map,
++                    True,
++                )
+             else:
+-                creation_context = target_spell._get_or_build_creation_context()
+-            if creation_context is None:
+-                raise RuntimeError("Spell returned no live CreationContext.")
+-            instance, created = creation_context.execute(
+-                self,
+-                override_map,
+-            )
++                if target_spell._creation_context_switch.fast_state >= 2:
++                    creation_context = target_spell._creation_context
++                else:
++                    creation_context = target_spell._get_or_build_creation_context()
++                if creation_context is None:
++                    raise RuntimeError("Spell returned no live CreationContext.")
++                instance, created = creation_context.execute(
++                    self,
++                    override_map,
++                )
+ 
+             if created:
+                 # Activation hooks fire only when the instance is newly created.
+--- a/src/melder/aether/conduit/meld/spellspace_meld.py
++++ b/src/melder/aether/conduit/meld/spellspace_meld.py
+@@ -455,12 +455,19 @@
+         # rebuilds instead of trusting a stale posture.
+         door_epoch_at_entry = target_spell._door_epoch
+         if not (meld_hooks or spell_hooks_enabled):
+-            if target_spell._creation_context_switch.fast_state >= 2:
+-                creation_context = target_spell._creation_context
+-            else:
+-                creation_context = target_spell._get_or_build_creation_context()
+-            if creation_context is None:
+-                raise RuntimeError("Spell returned no live CreationContext.")
++            # Dynamic spells carry their spell-index gate. They admit the
++            # index ticket BEFORE reading the context and hold it through
++            # execution, so a rebuild window cannot clean or replace the
++            # context under this meld (2026-09-26). Automatic spells take the
++            # unchanged lock-free lane below.
++            creation_gate = target_spell._creation_gate
++            if creation_gate is None:
++                if target_spell._creation_context_switch.fast_state >= 2:
++                    creation_context = target_spell._creation_context
++                else:
++                    creation_context = target_spell._get_or_build_creation_context()
++                if creation_context is None:
++                    raise RuntimeError("Spell returned no live CreationContext.")
+             # Hot path: in non-dynamic mode dispatch the phase-11 runtime door
+             # directly so the no-hooks lane skips the `execute_no_hooks`
+             # wrapper frame. The executor reference is read through the live
+@@ -468,10 +475,12 @@
+             # is the guarded fast-door entry built below, whose per-call
+             # context-identity guard prevents a recompiled/cleaned context
+             # from ever serving a stale executor.
+-            if creation_context._dynamic_environment:
+-                instance = creation_context.execute_no_hooks(
+-                    self,
++            if creation_gate is not None:
++                instance = self._execute_admitted(
++                    target_spell,
++                    creation_gate,
+                     override_map,
++                    False,
+                 )
+             elif override_map is None:
+                 instance = creation_context._no_overrides_instance_executor(
+@@ -510,16 +519,27 @@
+             self._execute_hooks(target_spell._pre_hooks, "pre_cast")
+             self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
+ 
+-            if target_spell._creation_context_switch.fast_state >= 2:
+-                creation_context = target_spell._creation_context
++            creation_gate = target_spell._creation_gate
++            if creation_gate is not None:
++                # Dynamic: one index ticket from before the context read until
++                # the executor returns (see `Meld._execute_admitted`).
++                instance, created = self._execute_admitted(
++                    target_spell,
++                    creation_gate,
++                    override_map,
++                    True,
++                )
+             else:
+-                creation_context = target_spell._get_or_build_creation_context()
+-            if creation_context is None:
+-                raise RuntimeError("Spell returned no live CreationContext.")
+-            instance, created = creation_context.execute(
+-                self,
+-                override_map,
+-            )
++                if target_spell._creation_context_switch.fast_state >= 2:
++                    creation_context = target_spell._creation_context
++                else:
++                    creation_context = target_spell._get_or_build_creation_context()
++                if creation_context is None:
++                    raise RuntimeError("Spell returned no live CreationContext.")
++                instance, created = creation_context.execute(
++                    self,
++                    override_map,
++                )
+ 
+             if created:
+                 # Activation hooks fire only when the instance is newly created.

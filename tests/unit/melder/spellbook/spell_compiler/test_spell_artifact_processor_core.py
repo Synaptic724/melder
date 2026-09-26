@@ -244,7 +244,6 @@ def test_spell_codegen_model_cleanup_cleans_owned_sections_only() -> None:
     instance_shape = _CleanupTracker()
     contract_shape = _CleanupTracker()
     injection_shape = _CleanupTracker()
-    override_targeting_shape = _CleanupTracker()
     site_graph_shape = _CleanupTracker()
     spell_runtime_shape = _CleanupTracker()
     model = SpellCodegenModel(
@@ -256,7 +255,6 @@ def test_spell_codegen_model_cleanup_cleans_owned_sections_only() -> None:
         instance_shape=instance_shape,
         contract_shape=contract_shape,
         injection_shape=injection_shape,
-        override_targeting_shape=override_targeting_shape,
         site_graph_shape=site_graph_shape,
         spell_runtime_shape=spell_runtime_shape,
     )
@@ -267,7 +265,6 @@ def test_spell_codegen_model_cleanup_cleans_owned_sections_only() -> None:
         "instance_shape",
         "contract_shape",
         "injection_shape",
-        "override_targeting_shape",
         "site_graph_shape",
         "spell_runtime_shape",
         "existence_occurrence_shape",
@@ -281,7 +278,6 @@ def test_spell_codegen_model_cleanup_cleans_owned_sections_only() -> None:
     assert instance_shape.cleanup_called is True
     assert contract_shape.cleanup_called is True
     assert injection_shape.cleanup_called is True
-    assert override_targeting_shape.cleanup_called is True
     assert site_graph_shape.cleanup_called is True
     assert spell_runtime_shape.cleanup_called is True
     assert not hasattr(model, "assessment")

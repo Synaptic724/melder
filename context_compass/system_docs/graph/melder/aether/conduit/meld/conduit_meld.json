@@ -1,134 +1,135 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/conduit/meld/conduit_meld.py",
- "source_sha256": "30a2617e717a762742e621aa2b6ada970309ae180e55c8898fbb872a5329bd2e",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.conduit.meld.conduit_meld": {
-   "id": "melder.aether.conduit.meld.conduit_meld",
-   "label": "conduit_meld",
-   "kind": "module",
-   "file": "src/melder/aether/conduit/meld/conduit_meld.py",
-   "lineno": 1,
-   "include": true,
-   "role": "Conduit-facing meld front door.",
-   "responsibilities": [
-    "route the caller-conduit creations store through the shared Meld surface",
-    "refuse spellspace-scoped lineages the conduit door cannot satisfy",
-    "refuses immutable non-resolvable registrations before normal resolution and reuse-only access"
-   ],
-   "phases": [
-    "runtime"
-   ],
-   "semantics_authored_against": "e075b62d775beece4180294dd94439f4bc85ebf05134712455ad54e8fb8bf399"
+  "schema_version": 1,
+  "source": "src/melder/aether/conduit/meld/conduit_meld.py",
+  "source_sha256": "5c99d680c033b96577ba13f257b2b82938c0aea6d8f64db5256b323f5faed44c",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.conduit.meld.conduit_meld": {
+      "id": "melder.aether.conduit.meld.conduit_meld",
+      "label": "conduit_meld",
+      "kind": "module",
+      "file": "src/melder/aether/conduit/meld/conduit_meld.py",
+      "lineno": 1,
+      "include": true,
+      "role": "Conduit-facing meld front door.",
+      "responsibilities": [
+        "route the caller-conduit creations store through the shared Meld surface",
+        "refuse spellspace-scoped lineages the conduit door cannot satisfy",
+        "refuses immutable non-resolvable registrations before normal resolution and reuse-only access"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "e075b62d775beece4180294dd94439f4bc85ebf05134712455ad54e8fb8bf399"
+    },
+    "melder.aether.conduit.meld.conduit_meld.ConduitMeld": {
+      "id": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
+      "label": "ConduitMeld",
+      "kind": "class",
+      "file": "src/melder/aether/conduit/meld/conduit_meld.py",
+      "lineno": 13,
+      "bases": [
+        "Meld"
+      ],
+      "markers": [],
+      "public_methods": [
+        "cleanup",
+        "describe_live_creation_status",
+        "meld",
+        "meld_existing_spell",
+        "purge"
+      ],
+      "shape": {
+        "method_count": 8,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "7cc691a882f47f798a0c5075094e13d414179624480d666d6cbe66a4a9952594",
+      "role": "Conduit-facing meld front door.",
+      "responsibilities": [
+        "routes conduit-local unique_per_conduit and many storage through ConduitCreations",
+        "rejects spellspace-request spells on the conduit entry path",
+        "provides reuse-only and live-creation status probes over conduit-scoped storage",
+        "authorizes conduit-local, spell-owner, lineage-root and cluster-leader purge before delegating single or all retirement to Creations",
+        "refuses immutable non-resolvable registrations before normal resolution and reuse-only access",
+        "admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo"
+      ],
+      "owns_state": [],
+      "phases": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "semantics_authored_against": "7cc691a882f47f798a0c5075094e13d414179624480d666d6cbe66a4a9952594"
+    }
   },
-  "melder.aether.conduit.meld.conduit_meld.ConduitMeld": {
-   "id": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
-   "label": "ConduitMeld",
-   "kind": "class",
-   "file": "src/melder/aether/conduit/meld/conduit_meld.py",
-   "lineno": 13,
-   "bases": [
-    "Meld"
-   ],
-   "markers": [],
-   "public_methods": [
-    "cleanup",
-    "describe_live_creation_status",
-    "meld",
-    "meld_existing_spell",
-    "purge"
-   ],
-   "shape": {
-    "method_count": 8,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "6f3fb0677c3c29d60eb5b0c34323b9563ef0ff2dd87c4f75d3281083b9d24591",
-   "role": "Conduit-facing meld front door.",
-   "responsibilities": [
-    "routes conduit-local unique_per_conduit and many storage through ConduitCreations",
-    "rejects spellspace-request spells on the conduit entry path",
-    "provides reuse-only and live-creation status probes over conduit-scoped storage",
-    "authorizes conduit-local, spell-owner, lineage-root and cluster-leader purge before delegating single or all retirement to Creations",
-    "refuses immutable non-resolvable registrations before normal resolution and reuse-only access"
-   ],
-   "owns_state": [],
-   "phases": [
-    "init",
-    "runtime",
-    "cleanup"
-   ],
-   "semantics_authored_against": "de30ad74e3ff43af2cfd1c219c5e382b3ba46382defbd291817d3b9a17604633"
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
-   "to_label": "Meld",
-   "relation": "specializes",
-   "to": "melder.aether.conduit.meld.meld.Meld"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
+      "to_label": "Meld",
+      "relation": "specializes",
+      "to": "melder.aether.conduit.meld.meld.Meld"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Optional": "typing.Optional",
+    "Dict": "typing.Dict",
+    "Any": "typing.Any",
+    "Callable": "typing.Callable",
+    "ClassVar": "typing.ClassVar",
+    "Union": "typing.Union",
+    "Meld": "melder.aether.conduit.meld.meld.Meld",
+    "Existence": "melder.aether.spellbook.existence.existence.Existence",
+    "ConduitCreations": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
+    "ClusterCreations": "melder.aether.conduit.creations.cluster_creations.ClusterCreations",
+    "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+    "Spell": "melder.aether.spellbook.spell.Spell"
   },
-  {
-   "from": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Optional": "typing.Optional",
-  "Dict": "typing.Dict",
-  "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "ClassVar": "typing.ClassVar",
-  "Union": "typing.Union",
-  "Meld": "melder.aether.conduit.meld.meld.Meld",
-  "Existence": "melder.aether.spellbook.existence.existence.Existence",
-  "ConduitCreations": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
-  "ClusterCreations": "melder.aether.conduit.creations.cluster_creations.ClusterCreations",
-  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
-  "Spell": "melder.aether.spellbook.spell.Spell"
- },
- "collapse_candidate": {
-  "module": "melder.aether.conduit.meld.conduit_meld",
-  "class": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
-  "label": "ConduitMeld"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
-   "to": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
-   "relation": "borrows",
-   "why": "ConduitMeld borrows the conduit-owned creation registry for caller-local lifetimes.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "borrowed"
+  "collapse_candidate": {
+    "module": "melder.aether.conduit.meld.conduit_meld",
+    "class": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
+    "label": "ConduitMeld"
   },
-  {
-   "from": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
-   "to": "melder.aether.conduit.meld.meld.Meld",
-   "relation": "specializes",
-   "why": "ConduitMeld specializes Meld with conduit-facing storage semantics.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "init",
-    "runtime",
-    "cleanup"
-   ],
-   "strength": "hard"
-  }
- ]
+  "edges_authored": [
+    {
+      "from": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
+      "to": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
+      "relation": "borrows",
+      "why": "ConduitMeld borrows the conduit-owned creation registry for caller-local lifetimes.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    {
+      "from": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
+      "to": "melder.aether.conduit.meld.meld.Meld",
+      "relation": "specializes",
+      "why": "ConduitMeld specializes Meld with conduit-facing storage semantics.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "init",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  ]
 }

@@ -1,6 +1,5 @@
 import threading
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
-from types import CodeType, FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -16,9 +15,6 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity imp
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.conduit.meld.creation_context.creation_context import (
-    CreationContext,
-)
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
@@ -678,199 +674,25 @@ class SpellbookCreationSystem(Cleanable):
             - Manifest-first family packages publish a lazy context with
               ZERO conjure-time hydration; the first meld hydrates once and
               swaps the hot doors into the published context.
-            - When the payload already carries live executors, it publishes
-              directly through `CreationContext.load_cached(...)`.
-            - When the payload carries a legacy phase-11 cache package, it
-              delegates to the cache-load seam that rebuilds executors after
-              phases 1-7.
+            - Every codegen family publishes a manifest package; the legacy
+              non-manifest codec and executor payloads are retired
+              (2026-09-26). Any other payload raises RuntimeError, which the
+              caller treats as a cache miss, so the spell compiles normally.
         """
         from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache import (
             is_manifest_package,
             load_creation_context_lazy,
         )
 
-        if is_manifest_package(spell_payload):
-            load_creation_context_lazy(
-                spell,
-                dict(spell_payload),
-                publish=True,
+        if not is_manifest_package(spell_payload):
+            raise RuntimeError(
+                "Cached spell payload is not a manifest package "
+                f"(spell_id={spell.spell_id}); the spell compiles normally."
             )
-            return
-        creation_context_factory = spell._creation_context_factory
-        if creation_context_factory is None:
-            raise RuntimeError("Spell has no CreationContextFactory.")
-        creation_gate, creation_gate_index_id = (
-            creation_context_factory._resolve_runtime_gate_for_spell(spell)
-        )
-        if not isinstance(spell_payload, Mapping):
-            from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
-                load_creation_context,
-            )
-
-            _ = creation_gate
-            _ = creation_gate_index_id
-            load_creation_context(
-                spell,
-                spell_payload,
-                publish=True,
-            )
-            return
-        no_overrides_executor = spell_payload.get("no_overrides_executor")
-        if isinstance(no_overrides_executor, CodeType):
-            no_overrides_executor, overrides_executor = (
-                SpellbookCreationSystem._rebuild_cached_creation_context_executors(
-                    spell=spell,
-                    spell_payload=spell_payload,
-                )
-            )
-            CreationContext.load_cached(
-                spell=spell,
-                dynamic_environment=spell._dynamic_environment,
-                creation_gate=creation_gate,
-                creation_gate_index_id=creation_gate_index_id,
-                no_overrides_executor=no_overrides_executor,
-                overrides_executor=overrides_executor,
-                publish=True,
-            )
-            return
-        from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
-            load_creation_context,
-        )
-
-        _ = creation_gate
-        _ = creation_gate_index_id
-        load_creation_context(
+        load_creation_context_lazy(
             spell,
             dict(spell_payload),
             publish=True,
-        )
-
-    @staticmethod
-    def _rebuild_cached_creation_context_executors(
-            *,
-            spell: Any,
-            spell_payload: Mapping[str, Any],
-    ) -> tuple[Callable[..., Any], Callable[..., Any]]:
-        """
-        Rebuild the final cached CreationContext executors from cached artifacts.
-        """
-        no_overrides_code_object = spell_payload["no_overrides_executor"]
-        overrides_code_object = spell_payload["overrides_executor"]
-        if spell_payload.get("existing_creation"):
-            no_overrides_executor = SpellbookCreationSystem._build_function_from_code_object(
-                code_object=no_overrides_code_object,
-                freevar_values={
-                    "spell": spell,
-                    "_spell": spell,
-                    "spell_id": spell.spell_id,
-                    "_spell_id": spell.spell_id,
-                },
-            )
-            overrides_executor = SpellbookCreationSystem._build_function_from_code_object(
-                code_object=overrides_code_object,
-                freevar_values={
-                    "spell": spell,
-                    "_spell": spell,
-                    "spell_id": spell.spell_id,
-                    "_spell_id": spell.spell_id,
-                    "MeldExecutionError": _load_meld_execution_error_type(),
-                    "_MeldExecutionError": _load_meld_execution_error_type(),
-                    "existing_override_message": _EXISTING_OVERRIDE_MESSAGE,
-                    "_existing_override_message": _EXISTING_OVERRIDE_MESSAGE,
-                },
-            )
-            return no_overrides_executor, overrides_executor
-
-        from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
-            _build_inner_no_overrides_executor,
-        )
-
-        base_no_overrides_executor = _build_inner_no_overrides_executor(
-            spell,
-            dict(spell_payload),
-        )
-        overrides_payload = spell_payload.get("overrides")
-        if overrides_payload is None:
-            def execute_with_overrides(
-                    caller_creations: Any,
-                    overrides: dict[str, Any] | None,
-                    caller_creations_lock_held: bool = False,
-            ) -> Any:
-                _ = caller_creations
-                _ = overrides
-                _ = caller_creations_lock_held
-                raise RuntimeError(
-                    "Cached spell has no override lane "
-                    f"(spell_id={spell.spell_id})."
-                )
-        else:
-            # Zero override work at cache load. The override runtime is built
-            # only on the first override-meld of this spell, never during load.
-            _override_runtime_cell: list = [None]
-
-            def execute_with_overrides(
-                    caller_creations: Any,
-                    overrides: dict[str, Any] | None,
-                    caller_creations_lock_held: bool = False,
-            ) -> Any:
-                override_runtime = _override_runtime_cell[0]
-                if override_runtime is None:
-                    from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
-                        _build_inner_overrides_runtime,
-                    )
-                    override_runtime = _build_inner_overrides_runtime(
-                        spell=spell,
-                        overrides_payload=overrides_payload,
-                        base_no_overrides_executor=base_no_overrides_executor,
-                    )
-                    _override_runtime_cell[0] = override_runtime
-                return override_runtime(
-                    caller_creations,
-                    overrides,
-                    caller_creations_lock_held,
-                )
-
-        no_overrides_executor = SpellbookCreationSystem._build_function_from_code_object(
-            code_object=no_overrides_code_object,
-            freevar_values={
-                "_no_overrides_executor": base_no_overrides_executor,
-                "_spell": spell,
-                "_spell_id": spell.spell_id,
-            },
-        )
-        overrides_executor = SpellbookCreationSystem._build_function_from_code_object(
-            code_object=overrides_code_object,
-            freevar_values={
-                "_MeldExecutionError": _load_meld_execution_error_type(),
-                "_execute_with_overrides": execute_with_overrides,
-                "_existing_override_message": _EXISTING_OVERRIDE_MESSAGE,
-                "_spell": spell,
-                "_spell_id": spell.spell_id,
-            },
-        )
-        return no_overrides_executor, overrides_executor
-
-    @staticmethod
-    def _build_function_from_code_object(
-            *,
-            code_object: Any,
-            freevar_values: Mapping[str, Any],
-    ) -> Callable[..., Any]:
-        """
-        Rebuild one cached executor function from its code object and closure.
-        """
-        if not isinstance(code_object, CodeType):
-            raise RuntimeError("Cached executor artifact is not a CodeType.")
-        closure = tuple(
-            _make_cell(freevar_values[freevar_name])
-            for freevar_name in code_object.co_freevars
-        )
-        return FunctionType(
-            code_object,
-            {"__builtins__": __builtins__},
-            code_object.co_name,
-            None,
-            closure,
         )
 
     @staticmethod
@@ -3364,28 +3186,3 @@ class SpellbookCreationSystem(Cleanable):
                 },
             )
         ]
-
-
-_EXISTING_OVERRIDE_MESSAGE = (
-    "Overrides were supplied for a spell instance that already exists. "
-    "Shared instances cannot be overridden after creation."
-)
-
-
-def _load_meld_execution_error_type() -> Any:
-    """Return the live MeldExecutionError type without a module-level import cycle."""
-    from melder.utilities.custom_exceptions.meld_execution_error import (
-        MeldExecutionError,
-    )
-    return MeldExecutionError
-
-
-def _make_cell(value: Any) -> Any:
-    """Build one closure cell for cached-function reconstruction."""
-    def inner() -> Any:
-        return value
-    return inner.__closure__[0]
-
-
-
-

@@ -1,128 +1,129 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/conduit/meld/creation_context/creation_context_factory.py",
- "source_sha256": "45bbb3c7d60756938bba3097f05617879593e04a9705a9e4e390a5c49bda7623",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.conduit.meld.creation_context.creation_context_factory": {
-   "id": "melder.aether.conduit.meld.creation_context.creation_context_factory",
-   "label": "creation_context_factory",
-   "kind": "module",
-   "file": "src/melder/aether/conduit/meld/creation_context/creation_context_factory.py",
-   "lineno": 1,
-   "include": true,
-   "role": "Centralizes context construction so front doors stay minimal.",
-   "responsibilities": [
-    "produce spell-shaped contexts behind one factory"
-   ],
-   "phases": [
-    "runtime"
-   ],
-   "semantics_authored_against": "7ad22d054b69bcda9442223c1c50578239c91b90111f62ce4d8cc0eaacd09535"
+  "schema_version": 1,
+  "source": "src/melder/aether/conduit/meld/creation_context/creation_context_factory.py",
+  "source_sha256": "be275f0a16588b5c5560d1fe4cac422e875fdcd2409cbc0f64c89e1d6a00d232",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.conduit.meld.creation_context.creation_context_factory": {
+      "id": "melder.aether.conduit.meld.creation_context.creation_context_factory",
+      "label": "creation_context_factory",
+      "kind": "module",
+      "file": "src/melder/aether/conduit/meld/creation_context/creation_context_factory.py",
+      "lineno": 1,
+      "include": true,
+      "role": "Centralizes context construction so front doors stay minimal.",
+      "responsibilities": [
+        "produce spell-shaped contexts behind one factory"
+      ],
+      "phases": [
+        "runtime"
+      ],
+      "semantics_authored_against": "7ad22d054b69bcda9442223c1c50578239c91b90111f62ce4d8cc0eaacd09535"
+    },
+    "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory": {
+      "id": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
+      "label": "CreationContextFactory",
+      "kind": "class",
+      "file": "src/melder/aether/conduit/meld/creation_context/creation_context_factory.py",
+      "lineno": 19,
+      "bases": [
+        "Cleanable"
+      ],
+      "markers": [],
+      "public_methods": [
+        "build_and_bind_for_spell",
+        "build_for_spell",
+        "cleanup",
+        "get_or_build_for_spell",
+        "rebuild_for_spell",
+        "resolve_spell_index_gate"
+      ],
+      "shape": {
+        "method_count": 12,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "7d6c88167dd8fda40af74aecf33892f442a5cd34409a15f5ea65b276ca8daff9",
+      "role": "Factory for spell-owned CreationContext instances.",
+      "responsibilities": [
+        "returns a published spell-owned CreationContext without locking, or elects one cold builder per spell through the spell's CounterSwitch",
+        "on a failed build records the cause on the spell and releases the pending claim so waiting callers raise instead of hanging",
+        "resolves or creates the shared spell-index CreationGate through the frame-owned CreationGateController and hands it to Spell (resolve_spell_index_gate)"
+      ],
+      "owns_state": [
+        "_dynamic_environment",
+        "_creation_gate_controller",
+        "_created_spell_index_ids"
+      ],
+      "phases": [
+        "runtime",
+        "cleanup"
+      ],
+      "semantics_authored_against": "7d6c88167dd8fda40af74aecf33892f442a5cd34409a15f5ea65b276ca8daff9"
+    }
   },
-  "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory": {
-   "id": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
-   "label": "CreationContextFactory",
-   "kind": "class",
-   "file": "src/melder/aether/conduit/meld/creation_context/creation_context_factory.py",
-   "lineno": 19,
-   "bases": [
-    "Cleanable"
-   ],
-   "markers": [],
-   "public_methods": [
-    "build_and_bind_for_spell",
-    "build_for_spell",
-    "cleanup",
-    "get_or_build_for_spell",
-    "rebuild_for_spell"
-   ],
-   "shape": {
-    "method_count": 11,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "ffb52227b5381f193849707014d577b04578f101d3d3378780ef60a45944ed6d",
-   "role": "Factory for spell-owned CreationContext instances.",
-   "responsibilities": [
-    "builds or reuses spell-owned CreationContext objects",
-    "resolves spell-lineage gates through the frame-owned CreationGateController"
-   ],
-   "owns_state": [
-    "_builder",
-    "_creation_gate_controller",
-    "_created_spell_lineage_ids"
-   ],
-   "phases": [
-    "runtime",
-    "cleanup"
-   ],
-   "semantics_authored_against": "ecbabfc823e747d35e7809615859dbb4370ba7701d6263ac7c2d10042a3f67c8"
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
+      "to_label": "Cleanable",
+      "relation": "specializes",
+      "to": "melder.utilities.general_base.cleanable.Cleanable"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
+      "to_label": "ValueError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Optional": "typing.Optional",
+    "Set": "typing.Set",
+    "ClassVar": "typing.ClassVar",
+    "CreationContextBuilder": "melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder",
+    "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "CreationContext": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
+    "CreationGate": "melder.utilities.synchronization.creation_gate.CreationGate",
+    "CreationGateController": "melder.utilities.synchronization.creation_gate_controller.CreationGateController"
   },
-  {
-   "from": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Optional": "typing.Optional",
-  "Set": "typing.Set",
-  "ClassVar": "typing.ClassVar",
-  "CreationContextBuilder": "melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "CreationContext": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
-  "CreationGate": "melder.utilities.synchronization.creation_gate.CreationGate",
-  "CreationGateController": "melder.utilities.synchronization.creation_gate_controller.CreationGateController"
- },
- "collapse_candidate": {
-  "module": "melder.aether.conduit.meld.creation_context.creation_context_factory",
-  "class": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
-  "label": "CreationContextFactory"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
-   "to": "melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder",
-   "relation": "owns_lifecycle_of",
-   "why": "CreationContextFactory owns the builder used to construct spell-shaped CreationContext instances.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "runtime",
-    "cleanup"
-   ],
-   "strength": "hard"
+  "collapse_candidate": {
+    "module": "melder.aether.conduit.meld.creation_context.creation_context_factory",
+    "class": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
+    "label": "CreationContextFactory"
   },
-  {
-   "from": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
-   "to": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
-   "relation": "borrows",
-   "why": "CreationContextFactory borrows the frame-owned CreationGateController to resolve or create spell-lineage gates.",
-   "cardinality": "many_to_one",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "borrowed"
-  }
- ]
+  "edges_authored": [
+    {
+      "from": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
+      "to": "melder.aether.conduit.meld.creation_context.creation_context_builder.CreationContextBuilder",
+      "relation": "uses",
+      "why": "CreationContextFactory calls the stateless static CreationContextBuilder.build; it holds no builder instance (corrected 2026-09-26: an earlier edge claimed ownership of one).",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "soft"
+    },
+    {
+      "from": "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
+      "to": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
+      "relation": "borrows",
+      "why": "CreationContextFactory borrows the frame-owned CreationGateController to resolve or create the shared gate for a spell's stable index id.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

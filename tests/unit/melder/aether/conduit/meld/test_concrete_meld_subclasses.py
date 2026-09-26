@@ -1,4 +1,4 @@
-from threading import RLock
+from threading import Event, RLock, Thread
 from types import SimpleNamespace
 from typing import Any, Callable, Dict
 
@@ -15,6 +15,10 @@ from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
     SpellCompilerArtifact,
 )
+from melder.aether.conduit.meld.creation_context.creation_context_rebuild import (
+    CreationContextRebuild,
+)
+from melder.utilities.synchronization.creation_gate import CreationGate
 
 
 class _SpellIndexStub:
@@ -191,6 +195,10 @@ class _SpellStub:
         self._post_hooks: list[Callable[..., Any]] = []
         self._creation_context = creation_context
         self._creation_context_factory = None
+        # Mirror the real Spell fields: automatic ownership has no
+        # spell-index gate, and no build has failed.
+        self._creation_gate = None
+        self._creation_context_failure = None
         # fast_state mirrors the real CounterSwitch hot-path slot the meld
         # doors read instead of the `state` property.
         self._creation_context_switch = SimpleNamespace(
@@ -887,3 +895,197 @@ def test_spellspace_meld_describe_live_creation_status_reports_existing_creation
         "active_spellspace_id": None,
         "creation_count": 1,
     }
+
+
+class _ObservedGate(CreationGate):
+    """CreationGate that reports when a caller starts admission."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.admitting = Event()
+
+    def admit_ticket(self) -> None:
+        """Signal entry, then run the real visibility-first admission."""
+        self.admitting.set()
+        super().admit_ticket()
+
+
+def _make_dynamic_spell(
+        creations: Any,
+        context: _CreationContextStub,
+        gate: CreationGate,
+        *,
+        hooks_enabled: bool = False,
+) -> _SpellStub:
+    """Build a spell stub under dynamic ownership (spell-index gate present)."""
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique_per_conduit,
+        owner_creations=creations,
+        creation_context=context,
+        hooks_enabled=hooks_enabled,
+    )
+    spell._creation_gate = gate
+    return spell
+
+
+def test_conduit_meld_dynamic_no_hooks_holds_one_index_ticket_through_execution() -> None:
+    """A dynamic meld holds exactly one index ticket while its executor runs, and none after."""
+    meld, creations, spellbook = _make_conduit_meld()
+    context = _CreationContextStub(no_hooks_no_overrides_result="instance")
+    gate = CreationGate()
+    spell = _make_dynamic_spell(creations, context, gate)
+    _seed_spell(spellbook, spell)
+    counts: list[int] = []
+    original = context.execute_no_hooks
+
+    def _recording(caller_creations: Any, overrides: Any = None, root_creations: Any = None) -> Any:
+        """Record the live ticket count seen by the executor."""
+        counts.append(gate.active_ticket_count())
+        return original(caller_creations, overrides, root_creations)
+
+    context.execute_no_hooks = _recording
+    assert meld.meld(spell="spell-1") == "instance"
+    assert counts == [1]
+    assert gate.active_ticket_count() == 0
+
+
+def test_conduit_meld_dynamic_door_parks_before_reading_context_while_gate_frozen() -> None:
+    """A frozen spell-index gate parks a dynamic meld before it touches the context."""
+    meld, creations, spellbook = _make_conduit_meld()
+    context = _CreationContextStub(no_hooks_no_overrides_result="instance")
+    gate = _ObservedGate()
+    spell = _make_dynamic_spell(creations, context, gate)
+    _seed_spell(spellbook, spell)
+    gate.close()
+    results: list[Any] = []
+
+    def _resolve() -> None:
+        """Run the meld on a worker thread."""
+        results.append(meld.meld(spell="spell-1"))
+
+    worker = Thread(target=_resolve, name="parked-meld")
+    worker.start()
+    try:
+        assert gate.admitting.wait(timeout=5.0)
+        # Admission cannot return while the gate is closed, so the context
+        # has not been read and its executor has not run.
+        assert context.calls == []
+    finally:
+        gate.open()
+        worker.join(timeout=5.0)
+    assert not worker.is_alive()
+    assert results == ["instance"]
+    assert context.calls == ["no_hooks_no_overrides"]
+
+
+def test_conduit_meld_dynamic_executor_failure_releases_ticket() -> None:
+    """An executor failure propagates and still releases the held index ticket."""
+    meld, creations, spellbook = _make_conduit_meld()
+    context = _CreationContextStub()
+    gate = CreationGate()
+    spell = _make_dynamic_spell(creations, context, gate)
+    _seed_spell(spellbook, spell)
+
+    def _failing(caller_creations: Any, overrides: Any = None, root_creations: Any = None) -> Any:
+        """Fail inside execution."""
+        raise ValueError("constructor failed")
+
+    context.execute_no_hooks = _failing
+    with pytest.raises(ValueError, match="constructor failed"):
+        meld.meld(spell="spell-1")
+    assert gate.active_ticket_count() == 0
+
+
+def test_conduit_meld_dynamic_hooks_lane_admits_once_and_reports_created() -> None:
+    """The dynamic hooks lane runs the executor slot under one ticket and fires activation on create."""
+    meld, creations, spellbook = _make_conduit_meld()
+    context = _CreationContextStub(no_hooks_no_overrides_result="instance")
+    gate = CreationGate()
+    spell = _make_dynamic_spell(creations, context, gate, hooks_enabled=True)
+    activations: list[Any] = []
+    spell._activation_hooks.append(lambda instance: activations.append(instance))
+    _seed_spell(spellbook, spell)
+    counts: list[int] = []
+    original = context.execute_no_hooks
+
+    def _recording(caller_creations: Any, overrides: Any = None, root_creations: Any = None) -> Any:
+        """Record the live ticket count seen by the executor."""
+        counts.append(gate.active_ticket_count())
+        return original(caller_creations, overrides, root_creations)
+
+    context.execute_no_hooks = _recording
+    assert meld.meld(spell="spell-1") == "instance"
+    assert counts == [1]
+    assert activations == ["instance"]
+    assert "hooks_no_overrides" not in context.calls
+    assert gate.active_ticket_count() == 0
+
+
+def test_spellspace_meld_dynamic_no_hooks_holds_one_index_ticket_through_execution() -> None:
+    """The SpellSpace door admits the spell-index ticket the same way as the conduit door."""
+    meld, spellspace_creations, owner_creations, spellbook = _make_spellspace_meld()
+    context = _CreationContextStub(no_hooks_no_overrides_result="instance")
+    gate = CreationGate()
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.many,
+        owner_creations=owner_creations,
+        creation_context=context,
+    )
+    spell._creation_gate = gate
+    _seed_spell(spellbook, spell)
+    counts: list[int] = []
+    original = context.execute_no_hooks
+
+    def _recording(caller_creations: Any, overrides: Any = None, root_creations: Any = None) -> Any:
+        """Record the live ticket count seen by the executor."""
+        counts.append(gate.active_ticket_count())
+        return original(caller_creations, overrides, root_creations)
+
+    context.execute_no_hooks = _recording
+    assert meld.meld(spell="spell-1") == "instance"
+    assert counts == [1]
+    assert gate.active_ticket_count() == 0
+
+
+def test_meld_execute_admitted_rechecks_deferred_resolution_without_holding_ticket(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A spell that became resolution_required while parked is resolved with no ticket held."""
+    meld, creations, spellbook = _make_conduit_meld()
+    context = _CreationContextStub(no_hooks_no_overrides_result="instance")
+    gate = CreationGate()
+    spell = _make_dynamic_spell(creations, context, gate)
+    spell.resolution_required = True
+    seen: list[int] = []
+
+    def _resolve_deferred(meld_self: Any, target: Any) -> None:
+        """Stand in for the deferred 8-11 path and record the ticket count it sees."""
+        _ = meld_self
+        seen.append(gate.active_ticket_count())
+        target.resolution_required = False
+
+    # Patched on the class: ConduitMeld uses slots.
+    monkeypatch.setattr(ConduitMeld, "_ensure_runtime_resolution_ready", _resolve_deferred)
+    assert meld._execute_admitted(spell, gate, None, False) == "instance"
+    assert seen == [0]
+    assert gate.active_ticket_count() == 0
+
+
+def test_meld_rebuild_window_is_noop_without_gate_and_freezes_dynamic_gate() -> None:
+    """Automatic spells get a no-op window; dynamic spells get a freeze/drain window over their gate."""
+    meld, creations, _spellbook = _make_conduit_meld()
+    automatic = _SpellStub(
+        spell_id="spell-a",
+        existence=Existence.unique_per_conduit,
+        owner_creations=creations,
+    )
+    assert not isinstance(meld._rebuild_window(automatic), CreationContextRebuild)
+    gate = CreationGate()
+    dynamic = _make_dynamic_spell(creations, _CreationContextStub(), gate)
+    window = meld._rebuild_window(dynamic)
+    assert isinstance(window, CreationContextRebuild)
+    with window:
+        assert gate.enabled is False
+    assert gate.enabled is True

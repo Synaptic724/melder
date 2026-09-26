@@ -331,6 +331,11 @@ class ConduitMeld(Meld):
               doors are always honored. Any guard miss falls back to this
               normal lane and rebuilds the entry on success, so fast-lane
               results are always identical to normal-lane results.
+            - An id-string meld with a non-empty dict override payload uses
+              the same entry and guards and calls the live override door
+              (2026-09-26); the full lane's override branch also builds the
+              entry when the spell holds no mutation override. List/tuple
+              payloads and empty dicts always take the full lane.
 
         Returns:
             Optional[Any]:
@@ -418,6 +423,40 @@ class ConduitMeld(Meld):
                         if self._spellbook._cache_emit_required:
                             self._spellbook._emit_cache_file_if_required()
                         return instance
+            elif type(spell_override) is dict and spell_override:
+                # Override fast lane (2026-09-26): a non-empty dict payload
+                # rides the same entry and guard ladder as the plain lane
+                # above and calls the live override door. The full lane's
+                # normalization returns such payloads as-is, and every gate
+                # it would run is immutable per version or covered by these
+                # guards (see `Meld._fast_meld_doors`). List/tuple payloads
+                # and empty dicts need normalization: full lane.
+                fast_entry = self._fast_meld_doors.get(spell)
+                if fast_entry is not None:
+                    (
+                        door_spell,
+                        captured_context,
+                        captured_epoch,
+                    ) = fast_entry
+                    fast_executor = None
+                    try:
+                        if (
+                            not self._meld_hooks
+                            and door_spell._door_epoch == captured_epoch
+                            and door_spell._creation_context is captured_context
+                            and not self._spellbook._spellbook_validation_required
+                        ):
+                            # Read per hit: hydration swaps the slot in place.
+                            fast_executor = captured_context._overrides_executor
+                    except AttributeError:
+                        # Cleaned spell/context: guard miss; the full lane
+                        # produces the canonical error or rebuilds.
+                        fast_executor = None
+                    if fast_executor is not None:
+                        instance = fast_executor(self, spell_override)[0]
+                        if self._spellbook._cache_emit_required:
+                            self._spellbook._emit_cache_file_if_required()
+                        return instance
             fast_door_key = spell
             # Hot path: inline the dominant spell-id-pool hit so warm id-string
             # melds resolve with one dict read instead of one helper frame.
@@ -491,12 +530,19 @@ class ConduitMeld(Meld):
         # rebuilds instead of trusting a stale posture.
         door_epoch_at_entry = target_spell._door_epoch
         if not (meld_hooks or spell_hooks_enabled):
-            if target_spell._creation_context_switch.fast_state >= 2:
-                creation_context = target_spell._creation_context
-            else:
-                creation_context = target_spell._get_or_build_creation_context()
-            if creation_context is None:
-                raise RuntimeError("Spell returned no live CreationContext.")
+            # Dynamic spells carry their spell-index gate. They admit the
+            # index ticket BEFORE reading the context and hold it through
+            # execution, so a rebuild window cannot clean or replace the
+            # context under this meld (2026-09-26). Automatic spells take the
+            # unchanged lock-free lane below.
+            creation_gate = target_spell._creation_gate
+            if creation_gate is None:
+                if target_spell._creation_context_switch.fast_state >= 2:
+                    creation_context = target_spell._creation_context
+                else:
+                    creation_context = target_spell._get_or_build_creation_context()
+                if creation_context is None:
+                    raise RuntimeError("Spell returned no live CreationContext.")
             # Hot path: in non-dynamic mode dispatch the phase-11 runtime door
             # directly so the no-hooks lane skips the `execute_no_hooks`
             # wrapper frame. The executor reference is read through the live
@@ -504,10 +550,12 @@ class ConduitMeld(Meld):
             # is the guarded fast-door entry built below, whose per-call
             # context-identity guard prevents a recompiled/cleaned context
             # from ever serving a stale executor.
-            if creation_context._dynamic_environment:
-                instance = creation_context.execute_no_hooks(
-                    self,
+            if creation_gate is not None:
+                instance = self._execute_admitted(
+                    target_spell,
+                    creation_gate,
                     override_map,
+                    False,
                 )
             elif override_map is None:
                 # Instance-only door: the no-hooks lane never builds the
@@ -536,6 +584,16 @@ class ConduitMeld(Meld):
                     self,
                     override_map,
                 )[0]
+                if fast_door_key is not None and target_spell._mutation_override is None:
+                    # Same posture as the no-override arm (non-dynamic, no
+                    # hooks, success), so one entry serves both fast arms. A
+                    # stored mutation override (dynamic spells only) never
+                    # gets an entry, so the plain fast lane cannot skip it.
+                    self._fast_meld_doors[fast_door_key] = (
+                        target_spell,
+                        creation_context,
+                        door_epoch_at_entry,
+                    )
             # Hot path: inline the staged-cache flag check; the emit helper is
             # only entered when an emit is actually pending.
             if self._spellbook._cache_emit_required:
@@ -548,16 +606,27 @@ class ConduitMeld(Meld):
             self._execute_hooks(target_spell._pre_hooks, "pre_cast")
             self._fire_meld_hooks("on_meld_pre_resolve", target_spell)
 
-            if target_spell._creation_context_switch.fast_state >= 2:
-                creation_context = target_spell._creation_context
+            creation_gate = target_spell._creation_gate
+            if creation_gate is not None:
+                # Dynamic: one index ticket from before the context read until
+                # the executor returns (see `Meld._execute_admitted`).
+                instance, created = self._execute_admitted(
+                    target_spell,
+                    creation_gate,
+                    override_map,
+                    True,
+                )
             else:
-                creation_context = target_spell._get_or_build_creation_context()
-            if creation_context is None:
-                raise RuntimeError("Spell returned no live CreationContext.")
-            instance, created = creation_context.execute(
-                self,
-                override_map,
-            )
+                if target_spell._creation_context_switch.fast_state >= 2:
+                    creation_context = target_spell._creation_context
+                else:
+                    creation_context = target_spell._get_or_build_creation_context()
+                if creation_context is None:
+                    raise RuntimeError("Spell returned no live CreationContext.")
+                instance, created = creation_context.execute(
+                    self,
+                    override_map,
+                )
 
             if created:
                 # Activation hooks fire only when the instance is newly created.

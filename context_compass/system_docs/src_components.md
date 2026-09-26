@@ -2905,6 +2905,39 @@ Unresolved inputs (2026-09-26):
   `__qualname__`. The socket's lowercased frame key is only the fallback.
 - INTERIM: the demand-driven build plan (override design S3/S4) is meant to decide this error before the
   call and retire these failure-path hooks. OVERRIDE_REQUIRED inputs keep their existing errors when omitted.
+
+Shared context rebuild windows (2026-09-26):
+- Scope: dynamic spells. `Spell._configure_creation_context_factory` resolves the spell-index CreationGate
+  through `CreationContextFactory.resolve_spell_index_gate` and keeps it on `Spell._creation_gate` (None in
+  automatic mode; dropped with the factory). The gate is the frame controller's; the spell only borrows it.
+- Readers: when `_creation_gate` is set, both lanes of ConduitMeld and SpellSpaceMeld call
+  `Meld._execute_admitted`: admit one ticket, then while `resolution_required` release, run
+  `_ensure_runtime_resolution_ready` and re-admit, then read the context (warm read inlined, cold path
+  through the spell's CounterSwitch election), call the executor slot directly and unregister in finally.
+  `CreationContext.execute*` keep their own ticketing for direct callers; the doors no longer route dynamic
+  melds through them, so there is exactly one ticket pair per meld. Automatic doors, including the fast-door
+  memo, are unchanged.
+- Producers: `_ensure_lineage_resolvable` (structural 1-4; Phase 3 resets the context),
+  `_ensure_resolution_resolvable` (5-11) and `_ensure_runtime_resolution_ready` (deferred 8-11) run inside
+  `Meld._rebuild_window(spell)` - a CreationContextRebuild over the spell, or a no-op without a gate -
+  entered BEFORE `spell._lock`. The window takes the gate's transition lock (index-id order when several),
+  closes it, drains admitted tickets with a 1 ms poll, and clears the spell's recorded failure. On exit it
+  publishes a context for a spell whose phase-11 plan is present (a plan-less spell stays unpublished for
+  its next meld's normal validation and is NOT marked resolution_required), or on failure records the cause
+  and idles the switch; then it restores the prior gate posture and releases the lock. The affected set is
+  the target spell because local Phase 5 publishes only to its target (2026-09-19).
+- Why the window precedes the spell lock: an `Existence.unique` build holds `Spell._lock` while its meld
+  holds a ticket (slot build guards, 2026-09-25); draining under the spell lock would wait on that reader.
+  Producers run before admission, so a producer never drains its own ticket.
+- Failed builds: the CounterSwitch leader records the exception on `Spell._creation_context_failure`,
+  releases its claim (1 -> 0) and re-raises; a follower woken with nothing published raises RuntimeError
+  chained from that cause; a successful build clears it.
+- Not covered: resets outside windows (ownership restamp, notch, teardown, transfer) do not drain; a
+  constructor that melds its own spell through a conduit that must rebuild it drains itself (30 s timeout).
+- EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._rebuild_window`, `Meld._execute_admitted`,
+  `src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py:CreationContextRebuild`,
+  `src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:CreationContextFactory.get_or_build_for_spell`,
+  `src/melder/aether/spellbook/spell.py:Spell._configure_creation_context_factory`.
 - EVIDENCE: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.from_failed_construction`,
   `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py:_raise_meld_construction_error`,
   `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py:_call_target_for`.
@@ -2969,12 +3002,13 @@ Concurrency/Threading:
   construct -> publish, and take the store lock only as a leaf. All locks involved
   are re-entrant, so same-thread nested melds of the same slot still work. See
   Component: Creations and SpellSpace, "Slot build guards".
-- Spell-owned CreationContext retrieval has a second, narrower boundary. A
-  ready state-2 context remains a lock-free read. A missing or invalidated
-  context takes `spell._lock`, rechecks readiness, and enters factory election
-  only if a build is still required. Conduit-local phase revalidation owns the
-  same RLock while Phase 5 clears and Phase 11 republishes context inputs, so a
-  competing conduit cannot build from that transient artifact gap.
+- CORRECTED 2026-09-26: spell-owned CreationContext retrieval never took
+  `spell._lock` (the August text here described a cold-path lock the code did
+  not have). A ready state-2 context is a lock-free read; a missing one is built
+  through the spell's CounterSwitch election. Input stability for dynamic spells
+  comes from the spell-index gate: melds hold a ticket across the context read
+  and execution, and rebuilds freeze and drain that gate before phases replace
+  the plan. See "Shared context rebuild windows (2026-09-26)" above.
 
 Invariants/Guarantees:
 - At least one of `spell`, `spell_id`, or `spellframe` is required at a public facade.
@@ -2993,13 +3027,14 @@ Invariants/Guarantees:
 - Spells must be validated and not broken before execution.
 - Change control may block dirty roots.
 - Change-control checks are best-effort; failures to access change control do not block.
-- Gated validity triggers Phase 1-4 and Phase 5-11 reruns under spell lock.
+- Gated validity triggers Phase 1-4 and Phase 5-11 reruns under spell lock; for dynamic spells each
+  rerun first enters the spell's rebuild window (freeze and drain the spell-index gate).
 - A successful structural rerun explicitly gates the previous conduit-local resolution verdict.
   Otherwise a new selected dependency could leave an old valid executor in place. The existing
   _force_resolution_revalidation helper accepts the reason; contract callers retain their default.
   EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._ensure_lineage_resolvable`.
-- A cold context build cannot interleave with a Phase 5-11 rebuild for the same
-  spell; the ready context/executor hot path remains outside the spell lock.
+- For dynamic spells, no context build or execution interleaves with a rebuild of the same spell (the
+  window drains the index gate first); the ready context/executor hot path takes no lock.
 
 Failure Modes:
 - ValueError when no identity inputs are provided.
@@ -3014,6 +3049,8 @@ Failure Modes:
 - UnresolvedInputError (a MeldExecutionError subclass, exported at the package root) when a constructed
   spell's unresolved input was not supplied. `param_name` is the first missing parameter,
   `expected_type` its display type and `unresolved_params` every missing one in signature order.
+- RuntimeError chained from the recorded cause when a meld waited on a context build that failed; the
+  building meld re-raises the original. RuntimeError from a rebuild window that cannot drain within 30 s.
 - HookExecutionError for hook failures.
 
 Observability:
@@ -3038,6 +3075,8 @@ Key Files (C1):
 - `src/melder/aether/conduit/meld/spellspace_meld.py`
 - `src/melder/aether/conduit/conduit.py`
 - `src/melder/aether/conduit/meld/creation_context/creation_context.py`
+- `src/melder/aether/conduit/meld/creation_context/creation_context_factory.py`
+- `src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py`
 - `src/melder/aether/spellbook/spell.py`
 - `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
 
@@ -9211,6 +9250,11 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 shared context rebuild windows: the September 5 freeze/drain design is finished and wired, adapted
+to the slot build guards (window before the spell lock) and to target-only Phase 5 (the window covers the
+target). Promoted into the Meld Resolution Runtime entry ("Shared context rebuild windows"), which also
+corrects the old claim of a cold-path spell lock that the code never had.
 
 2026-09-26 deterministic signatures and live contract override operands (tranche T1 of the IR epic): the
 codegen signature path is one stdlib-only leaf (`CodegenSignature`) with both facades delegating, and its

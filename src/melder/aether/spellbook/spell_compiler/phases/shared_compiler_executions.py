@@ -1375,7 +1375,6 @@ class SharedCompilerExecutions:
                 "route_family": spell_codegen_model.route_family,
                 "node_count": spell_codegen_model.node_count,
                 "max_dependency_count": spell_codegen_model.max_dependency_count,
-                "target_spec_count": spell_codegen_model.target_spec_count,
                 "applied_strategy_ids": tuple(spell_codegen_model.applied_strategy_ids),
             },
             "plan": None if spell_codegen_plan is None else {

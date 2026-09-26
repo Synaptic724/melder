@@ -683,6 +683,8 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 3. `CreationContext` compiled execution:
    - Select no-hooks/hooks and no-overrides/overrides lanes.
    - Execute codegen-creation-backed runtime lanes and return the resolved instance.
+   - Dynamic spells: the door takes the spell-index CreationGate ticket BEFORE it reads the context and
+     holds it until the executor returns, calling the executor slots itself (2026-09-26).
 4. Creations registration/reuse occurs inside compiled execution per Existence. Each slotted
    lifetime is built once under its slot's build lock (store `slot_guard`, or Spell lock for
    unique); the store lock is only taken as a leaf around publication (2026-09-25).
@@ -697,6 +699,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 3. If per-conduit resolution validity is UNKNOWN/GATED:
    - Run `spell._spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)`.
    - Raise SpellbookValidationError if validity stays invalid/gated.
+4. Under dynamic ownership every rerun above (and the deferred 8-11 run) first enters the spell's rebuild
+   window: freeze and drain the spell-index gate, then take `spell._lock`, run the phases, publish the
+   rebuilt context when its plan is present, reopen the gate (2026-09-26).
 
 ### Sequence: Create Lesser Conduit
 1. Parent Conduit fires pre-create hook.
@@ -846,6 +851,20 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Shared context rebuild windows (2026-09-26): a dynamic spell's CreationContext and phase-11 plan are shared
+  by every conduit that melds it, and a conduit-local rebuild (structural 1-4, resolution 5-11, deferred
+  8-11) replaces them. Each such rebuild runs inside a CreationContextRebuild window that freezes and drains
+  the spell-index gate BEFORE the phases touch the plan or context, and publishes the rebuilt context before
+  reopening; a dynamic meld holds one index ticket from before its context read until its executor returns.
+  So no meld builds from the gap between Phase 5 clearing the plan and Phase 11 republishing it, and none
+  uses a context that is cleaned under it. The window is entered before `spell._lock` because an
+  `Existence.unique` build holds the spell lock while its meld holds a ticket. Revalidation itself, the warm
+  read and automatic-mode doors are unchanged; the ticket pair moved, it was not added. Resets outside
+  windows (ownership restamp, notch, teardown, transfer) do not drain. A failed context build releases its
+  pending claim and records its cause, so waiting callers raise instead of hanging.
+  EVIDENCE: `src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py:CreationContextRebuild`,
+  `src/melder/aether/conduit/meld/meld.py:Meld._rebuild_window`, `Meld._execute_admitted` and
+  `src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:CreationContextFactory.get_or_build_for_spell`.
 - Deterministic codegen signatures and live contract override operands (2026-09-26): the compiler's
   signature serializer, hasher and freezer are one stdlib-only leaf (`CodegenSignature`) that both the
   phase-side and phase-11 facades delegate to; the freeze rule renders callables and default-`repr`
@@ -1159,6 +1178,12 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- A context build that raises records its cause on the spell and releases its pending claim; a meld that
+  waited on it raises RuntimeError chained from that cause. A rebuild window that cannot drain within 30 s
+  raises RuntimeError from the rebuilding meld and leaves the gate open. A constructor that melds its own
+  spell through a conduit that must rebuild it drains itself and hits that timeout (2026-09-26).
+  EVIDENCE: `src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:CreationContextFactory.get_or_build_for_spell`
+  and `src/melder/utilities/synchronization/creation_gate.py:CreationGate.close_and_drain`.
 - Reading Melder's own API with the default `inspect.signature` (VALUE format) or `typing.get_type_hints`
   raises NameError for any annotation naming a type imported only under `TYPE_CHECKING` (817 of 7,689
   callables, measured 2026-09-26). This follows from the typing policy and is not a defect to patch per
@@ -2649,6 +2674,13 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 shared context rebuild windows (the September 5 design, finished): concurrent first melds of a
+shared dynamic spell failed in two ways - building a context from the gap between Phase 5 and Phase 11
+("Cannot build CreationContext before spell_codegen_creation exists") and using a context cleaned under
+them. Rebuilds now freeze and drain the spell-index gate before replacing the plan, and dynamic melds hold
+their ticket across the context read and execution; the two tests skipped in September run again. Warm melds
+measured unchanged within noise. The component map carries the mechanics.
 
 2026-09-26 deterministic signatures and live contract operands (tranche T1 of the IR epic): one signature
 leaf with both facades delegating (bytes unchanged for previously deterministic inputs), phase 8's pool digest

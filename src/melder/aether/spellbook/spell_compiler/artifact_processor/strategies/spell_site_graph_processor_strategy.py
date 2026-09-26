@@ -59,8 +59,10 @@ class SpellSiteGraphProcessorStrategy(SpellArtifactProcessorStrategy):
         MELDER KERNEL - a built-in processor strategy; not bound as a spell.
 
     Subsystem Context:
-        One of the `artifact_processor/strategies` family, registered directly
-        after `SpellInjectionProcessorStrategy`.
+        One of the `artifact_processor/strategies` family. Not in the default
+        processor chain since 2026-09-26: `SitePlanOverrideRuntime` calls
+        `build_site_graph` at the first override meld; `process` remains for
+        callers that fit the section on a model.
 
     System Context:
         Phase 9 (artifact processor) of the conjure pipeline; design step S1 of

@@ -263,7 +263,7 @@ class SitePlanRuntimeHelpers:
     Out-of-line helpers called by emitted key-set plans.
 
     Purpose:
-        Hold the cold-path helpers a plan binds as default arguments: the
+        Hold the cold-path helpers a plan reads from its namespace: the
         generic construct with supplied values, the P2 refusal and the
         equal-rank conflict guard. None of them runs on a direct-call step.
 
@@ -573,7 +573,10 @@ class SitePlanLowering:
             arity: int,
     ) -> Tuple[str, Dict[str, Any], Tuple[SitePlanStep, ...]]:
         """
-        Emit one key-set plan: `def _site_plan_executor(meld, ov, <constants>) -> instance`.
+        Emit one key-set plan: `def _site_plan_executor(meld, ov) -> instance`.
+
+        The plan reads its constants (spells, ids, helpers) as globals of the
+        returned namespace, so the caller must exec the code into that namespace.
 
         Args:
             steps: The lane's no-overrides steps in providers-first order.
@@ -623,10 +626,12 @@ class SitePlanEmission(Cleanable):
 
     Contract:
         - Local `v{n}` holds kept step n's value; step constants and helpers are
-          bound as default arguments (fast locals) on the plan function. Spells
-          ride one `spells` tuple read only on cold paths (errors, shared-site
-          routing for `unique`, locks), keeping the default count low on deep
-          graphs.
+          globals of the plan's own namespace (the plan is exec'd into it), as
+          the inner no-overrides executor reads module globals. Default
+          arguments were used until 2026-09-26: they cost one fill per constant
+          on every call, hundreds on deep graphs. Spells ride one `spells`
+          tuple read only on cold paths (errors, shared-site routing for
+          `unique`, locks). No namespace name is assigned in the plan body.
         - Dict mode (`instance_results`) is emitted only when a generic step
           needs dependency values by instance key.
 
@@ -884,15 +889,15 @@ class SitePlanEmission(Cleanable):
                 "    if many_store is None:",
                 "        many_store = meld._conduit_creations",
             ]
-        defaults = "".join(f", {name}={name}" for name in self._namespace)
-        source_lines = [f"def {SitePlanLowering.PLAN_FUNCTION_NAME}(meld, ov{defaults}):"]
+        # Constants are read as globals of the plan's namespace; see the class contract.
+        source_lines = [f"def {SitePlanLowering.PLAN_FUNCTION_NAME}(meld, ov):"]
         source_lines.extend(prologue)
         source_lines.extend(body)
         return "\n".join(source_lines) + "\n", self._namespace, tuple(self._masked)
 
     def _bind(self, name: str, value: Any) -> str:
         """
-        Bind one plan constant into the namespace (and so as a default argument).
+        Bind one plan constant into the namespace, which is the plan's globals.
         """
         self._namespace[name] = value
         return name

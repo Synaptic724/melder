@@ -6,21 +6,19 @@ reference beside every payload entry; the phase-11 row builders of every codegen
 scalar entry as itself and any other entry as that reference; the no-overrides hydration sites
 resolve the reference back to the consumer's LIVE descriptor value, so the provider's constructor
 receives the object by identity, in-process and after a cache load alike. The former emission gate
-(owner option B) is retired: both package builders package every plan.
+(owner option B) is retired: the manifest package builder packages every plan (the legacy
+non-manifest codec is retired too, 2026-09-26).
 """
 
 import enum
 from types import SimpleNamespace
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import pytest
 
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation import (
-    spell_codegen_creation_cache,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets import (
     manifest_creation_cache,
 )
@@ -393,46 +391,3 @@ def test_manifest_package_still_raises_without_phase11_output() -> None:
     """The hard failures for missing phase-11 output are unchanged."""
     with pytest.raises(RuntimeError, match="compiler artifact"):
         manifest_creation_cache.build_package(SimpleNamespace(spell_id="x", _compiler_artifact=None))
-
-
-def test_legacy_package_builds_subpackages_for_an_object_payload_plan(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """An object-payload plan reaches both subpackage builders; nothing refuses it any more."""
-    seen: List[Tuple[str, Any]] = []
-
-    def _no_overrides(*, no_overrides_plan: Any) -> Dict[str, Any]:
-        """Record the no-overrides subpackage build."""
-        seen.append(("no_overrides", no_overrides_plan))
-        return {"lane": "no_overrides"}
-
-    def _overrides(*, spell_codegen_plan: Any, spell_codegen_model: Any) -> Optional[Dict[str, Any]]:
-        """Record the overrides subpackage build."""
-        seen.append(("overrides", spell_codegen_plan))
-        return None
-
-    monkeypatch.setattr(
-        spell_codegen_creation_cache, "_build_no_overrides_subpackage", _no_overrides, raising=True,
-    )
-    monkeypatch.setattr(
-        spell_codegen_creation_cache, "_build_overrides_subpackage", _overrides, raising=True,
-    )
-    plan = SimpleNamespace(
-        no_overrides_plan=SimpleNamespace(steps=(_step({"marker": _MARKER}, {"marker": _ref("cfg", "marker")}),)),
-        overrides_plan=None,
-    )
-    spell = SimpleNamespace(
-        spell_id="spell-1",
-        _compiler_artifact=SimpleNamespace(
-            _spell_codegen_creation=SimpleNamespace(metadata={}),
-            _spell_codegen_plan=plan,
-            _spell_codegen_model=SimpleNamespace(),
-        ),
-    )
-
-    package = spell_codegen_creation_cache.build_package(spell)
-
-    assert package["spell_id"] == "spell-1"
-    assert package["no_overrides"] == {"lane": "no_overrides"}
-    assert package["overrides"] is None
-    assert [label for label, _plan in seen] == ["no_overrides", "overrides"]

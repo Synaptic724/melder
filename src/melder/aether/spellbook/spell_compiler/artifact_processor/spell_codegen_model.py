@@ -16,9 +16,6 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis import (
         SpellOccurrenceOrderAnalysis,
     )
-    from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
-        SpellOverrideTargetingAnalysis,
-    )
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis import (
         SpellRuntimeAnalysis,
     )
@@ -47,9 +44,10 @@ class SpellCodegenModel(Cleanable):
         - `graph_shape` is analyzer-owned truth borrowed into the model shell.
         - `order_shape`, `instance_shape`, and `contract_shape` are processor-
           owned sections populated by processor strategies.
-        - `site_graph_shape` is the processor-owned physical site graph
-          (one site per instance key, full parameter tables, path counts)
-          that override key resolution walks instead of logical paths.
+        - `site_graph_shape` is the physical site graph (one site per
+          instance key, full parameter tables, path counts). The default
+          processor chain does not fit it (2026-09-26); override melds
+          build their own through `SpellSiteGraphProcessorStrategy`.
         - Top-level scalar fields are compatibility selectors only. They should
           be populated by the shell builder or the strategies that genuinely own
           the corresponding facts.
@@ -66,7 +64,6 @@ class SpellCodegenModel(Cleanable):
         "instance_shape",
         "contract_shape",
         "injection_shape",
-        "override_targeting_shape",
         "site_graph_shape",
         "spell_runtime_shape",
         "existence_occurrence_shape",
@@ -81,13 +78,7 @@ class SpellCodegenModel(Cleanable):
         "has_calln",
         "contract_payload_count",
         "call_shape_family",
-        "target_spec_count",
-        "targeted_socket_count",
-        "targeted_spell_count",
-        "max_targets_per_spec",
-        "max_target_path_depth",
         "root_positional_override_relevant",
-        "override_shape_family",
         "fast_transient_eligible",
         "assessment",
         "applied_strategy_ids",
@@ -104,7 +95,6 @@ class SpellCodegenModel(Cleanable):
             instance_shape: Optional[SpellOccurrenceInstanceAnalysis] = None,
             contract_shape: Optional[SpellOccurrenceContractAnalysis] = None,
             injection_shape: Optional[SpellInjectionAnalysis] = None,
-            override_targeting_shape: Optional[SpellOverrideTargetingAnalysis] = None,
             site_graph_shape: Optional[SpellSiteGraphAnalysis] = None,
             spell_runtime_shape: Optional[SpellRuntimeAnalysis] = None,
             existence_occurrence_shape: Optional["SpellExistenceOccurrenceAnalysis"] = None,
@@ -119,13 +109,7 @@ class SpellCodegenModel(Cleanable):
             has_calln: bool = False,
             contract_payload_count: int = 0,
             call_shape_family: str = "unclassified",
-            target_spec_count: int = 0,
-            targeted_socket_count: int = 0,
-            targeted_spell_count: int = 0,
-            max_targets_per_spec: int = 0,
-            max_target_path_depth: int = 0,
             root_positional_override_relevant: bool = False,
-            override_shape_family: str = "unclassified",
             fast_transient_eligible: bool = False,
     ) -> None:
         """
@@ -140,8 +124,8 @@ class SpellCodegenModel(Cleanable):
             - All 4 section homes are explicit on construction.
             - `graph_shape` may be borrowed from analyzer-owned artifact truth.
             - `order_shape`, `instance_shape`, `contract_shape`,
-              `injection_shape`, `override_targeting_shape`,
-              `site_graph_shape`, and `spell_runtime_shape` are
+              `injection_shape`, `site_graph_shape`, and
+              `spell_runtime_shape` are
               expected to be filled by processor strategies later in the same
               processor pass.
             - Mutable `assessment` and `applied_strategy_ids` are always
@@ -160,9 +144,6 @@ class SpellCodegenModel(Cleanable):
             contract_shape
         )
         self.injection_shape: Optional[SpellInjectionAnalysis] = injection_shape
-        self.override_targeting_shape: Optional[SpellOverrideTargetingAnalysis] = (
-            override_targeting_shape
-        )
         self.site_graph_shape: Optional[SpellSiteGraphAnalysis] = site_graph_shape
         self.spell_runtime_shape: Optional[SpellRuntimeAnalysis] = (
             spell_runtime_shape
@@ -183,15 +164,9 @@ class SpellCodegenModel(Cleanable):
         self.has_calln: bool = has_calln
         self.contract_payload_count: int = contract_payload_count
         self.call_shape_family: str = call_shape_family
-        self.target_spec_count: int = target_spec_count
-        self.targeted_socket_count: int = targeted_socket_count
-        self.targeted_spell_count: int = targeted_spell_count
-        self.max_targets_per_spec: int = max_targets_per_spec
-        self.max_target_path_depth: int = max_target_path_depth
         self.root_positional_override_relevant: bool = (
             root_positional_override_relevant
         )
-        self.override_shape_family: str = override_shape_family
         self.fast_transient_eligible: bool = fast_transient_eligible
         self.assessment: Dict[str, Any] = {}
         self.applied_strategy_ids: List[str] = []
@@ -205,8 +180,7 @@ class SpellCodegenModel(Cleanable):
             - Does not cleanup borrowed analyzer-owned `graph_shape`.
             - Best-effort cleans processor-owned `order_shape`,
               `instance_shape`, `contract_shape`, `injection_shape`,
-              `override_targeting_shape`, `site_graph_shape`, and
-              `spell_runtime_shape`.
+              `site_graph_shape`, and `spell_runtime_shape`.
             - Clears mutable assessment/provenance containers.
         """
         if self._cleaned:
@@ -233,11 +207,6 @@ class SpellCodegenModel(Cleanable):
                 self.injection_shape.cleanup()
             except Exception:
                 pass
-        if self.override_targeting_shape is not None:
-            try:
-                self.override_targeting_shape.cleanup()
-            except Exception:
-                pass
         if self.site_graph_shape is not None:
             try:
                 self.site_graph_shape.cleanup()
@@ -259,7 +228,6 @@ class SpellCodegenModel(Cleanable):
         del self.instance_shape
         del self.contract_shape
         del self.injection_shape
-        del self.override_targeting_shape
         del self.site_graph_shape
         del self.spell_runtime_shape
         del self.existence_occurrence_shape
@@ -274,13 +242,7 @@ class SpellCodegenModel(Cleanable):
         del self.has_calln
         del self.contract_payload_count
         del self.call_shape_family
-        del self.target_spec_count
-        del self.targeted_socket_count
-        del self.targeted_spell_count
-        del self.max_targets_per_spec
-        del self.max_target_path_depth
         del self.root_positional_override_relevant
-        del self.override_shape_family
         del self.fast_transient_eligible
         del self.assessment
         del self.applied_strategy_ids
@@ -309,7 +271,6 @@ class SpellCodegenModel(Cleanable):
             "instance_shape",
             "contract_shape",
             "injection_shape",
-            "override_targeting_shape",
             "site_graph_shape",
             "spell_runtime_shape",
             "existence_occurrence_shape",

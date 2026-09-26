@@ -49,6 +49,7 @@ if TYPE_CHECKING:
         SpellValidationResult,
     )
     from melder.aether.spellbook.spellbook import Spellbook
+    from melder.utilities.synchronization.creation_gate import CreationGate
     from melder.utilities.synchronization.creation_gate_controller import (
         CreationGateController,
     )
@@ -287,6 +288,10 @@ class Spell(Cleanable):
         "tags",
         "timeout",
         "user_created_object",
+        # Appended, not alphabetized: new slots go last so the offsets of the
+        # hot fast-door slots (`_door_epoch`, `_creation_context`) stay put.
+        "_creation_context_failure",
+        "_creation_gate",
     ]
     def __init__(
             self,
@@ -475,6 +480,15 @@ class Spell(Cleanable):
         self._creation_context_factory: CreationContextFactory | None = None
         # Spell-owned selector latch for one-leader CreationContext publication.
         self._creation_context_switch: CounterSwitch = CounterSwitch(state=0)
+        # Cause of the last failed context build or rebuild window. Melds that
+        # waited on that build report it; a new rebuild window clears it.
+        self._creation_context_failure: Optional[BaseException] = None
+        # Borrowed spell-index CreationGate, set only under dynamic ownership.
+        # A dynamic meld holds one ticket on it from before it reads the
+        # context until its executor returns; a rebuild window freezes and
+        # drains it before phases replace the plan. The frame's
+        # CreationGateController owns the gate's lifecycle.
+        self._creation_gate: Optional[CreationGate] = None
         # Runtime cache policy mirror. Defaults to enabled and may be overridden
         # later by the owning Spellbook/Aether posture during conduit stamping.
         self._caching_enabled: bool = True
@@ -609,7 +623,9 @@ class Spell(Cleanable):
             del self.spell
             del self._creation_context
             del self._creation_context_factory
+            del self._creation_context_failure
             del self._creation_context_switch
+            del self._creation_gate
             del self._caching_enabled
             del self._compiler_artifact
             del self.spell_index
@@ -723,6 +739,9 @@ class Spell(Cleanable):
             - Best-effort cleanup; exceptions are swallowed so ownership
               transitions can continue.
             - Leaves `_creation_context_factory` as `None`.
+            - Drops the borrowed spell-index gate reference with it (the
+              gate is resolved again when a factory is configured); the gate
+              itself is owned by the frame's CreationGateController.
         """
         if self._creation_context_factory is not None:
             try:
@@ -730,6 +749,7 @@ class Spell(Cleanable):
             except Exception:
                 pass
             self._creation_context_factory = None
+        self._creation_gate = None
 
     def _configure_creation_context_factory(
             self,
@@ -750,6 +770,10 @@ class Spell(Cleanable):
             - Replaces any existing factory instance.
             - Stores dynamic mode on the spell for runtime metadata.
             - Requires a non-null CreationGateController.
+            - In dynamic mode, resolves (creating when absent) the stable
+              spell-index CreationGate and keeps it on `_creation_gate` so
+              meld doors can admit before reading the context; None in
+              automatic mode.
 
         Args:
             dynamic_environment:
@@ -773,6 +797,9 @@ class Spell(Cleanable):
             dynamic_environment=self._dynamic_environment,
             creation_gate_controller=creation_gate_controller,
         )
+        self._creation_gate = (
+            self._creation_context_factory.resolve_spell_index_gate(self)
+        )
 
     def _get_or_build_creation_context(self) -> Any:
         """
@@ -787,19 +814,21 @@ class Spell(Cleanable):
         Contract:
             - Requires the spell to have an initialized factory.
             - Returns a ready state-2 context without locking.
-            - Serializes only the cold/rebuild path under the spell RLock and
-              rechecks readiness after acquiring it. A conduit-local phase run
-              owns the same lock while it clears and republishes phase-11
-              state, so a competing conduit cannot build from the transient
-              artifact gap.
-            - Delegates build/get policy to CreationContextFactory.
+            - Delegates build/get policy to CreationContextFactory, whose cold
+              path elects one builder through `_creation_context_switch`.
             - Returns a live CreationContext instance bound to this spell.
 
         Threading:
-            The normal ready-context path remains one lock-free state read and
-            one context read. Only state 0/1 retrieval takes `_lock`; the lock
-            is re-entrant because phase and ownership callers may already hold
-            it while requesting a rebuild.
+            The ready path is one lock-free state read and one context read.
+            It takes no lock: in dynamic mode the caller already holds a
+            spell-index ticket on `_creation_gate`, and every conduit-local
+            rebuild (structural, resolution and deferred phases) runs inside
+            a CreationContextRebuild window that freezes that gate and drains
+            its tickets before phases replace the plan or reset this context,
+            so an admitted caller never sees the rebuild gap and never holds a
+            context that is cleaned under it (2026-09-26). Resets outside
+            those windows (ownership restamps, notch, teardown, transfer) are
+            not drained.
 
         Returns:
             Any:

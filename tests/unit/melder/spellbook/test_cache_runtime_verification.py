@@ -4,7 +4,7 @@ from typing import Any, Dict, Iterable, Optional
 
 import pytest
 
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation import spell_codegen_creation_cache as creation_context_cache_codec
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets import manifest_creation_cache
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )
@@ -103,69 +103,11 @@ def _make_spellbook_stub(
     return spellbook
 
 
-@pytest.mark.parametrize(
-    ("is_existing_creation", "existence_name", "expected_route"),
-    [
-        (True, "unique", "existing_creation"),
-        (False, "unique_per_spell_space", "spellspace"),
-        (False, "unique_per_conduit", "unique_per_conduit"),
-        (False, "many", "many"),
-        (False, "unique", "unique"),
-        (False, "unique_per_conduit_cluster", "cluster"),
-        # unique routes to its own "unique" lane; unique_per_conduit_lineage and
-        # unique_per_conduit_cluster each route to their own dedicated lane (the
-        # door reads the resolver's lineage-root / elected-leader store).
-        (False, "unique_per_conduit_lineage", "lineage"),
-    ],
-)
-def test_resolve_route_key_for_spell_maps_supported_spell_routes(
-        is_existing_creation: bool,
-        existence_name: str,
-        expected_route: str,
-) -> None:
-    """Verify cache codec route selection matches spell existence truth."""
-    spell = SimpleNamespace(
-        is_existing_creation=is_existing_creation,
-        existence=SimpleNamespace(name=existence_name),
-    )
-    if not is_existing_creation:
-        from melder.aether.spellbook.existence.existence import Existence
-
-        spell.existence = Existence[existence_name]
-    assert (
-        creation_context_cache_codec._resolve_route_key_for_spell(spell)
-        == expected_route
-    )
-
-
-def test_resolve_route_key_for_spell_rejects_unknown_existence() -> None:
-    """Verify cache codec fails on unsupported existence values."""
-    spell = SimpleNamespace(
-        is_existing_creation=False,
-        existence=SimpleNamespace(name="unsupported"),
-    )
-    with pytest.raises(RuntimeError, match="not cacheable"):
-        creation_context_cache_codec._resolve_route_key_for_spell(spell)
-
-
-@pytest.mark.parametrize(
-    ("transient_schema", "expected"),
-    [
-        ({"step_count": 1}, True),
-        (None, False),
-    ],
-)
-def test_has_fast_transient_no_overrides_reflects_cached_schema(
-        transient_schema: Optional[Dict[str, Any]],
-        expected: bool,
-) -> None:
-    """Verify fast-transient detection matches package payload shape."""
-    package = {
-        "no_overrides": {
-            "transient_schema": transient_schema,
-        }
-    }
-    assert creation_context_cache_codec._has_fast_transient_no_overrides(package) is expected
+def _give_manifest(spell: _RecordingSpell) -> None:
+    """Mark the stub's phase-11 creation as manifest-first, as every codegen family is."""
+    spell._compiler_artifact._spell_codegen_creation.metadata[
+        manifest_creation_cache.MANIFEST_METADATA_KEY
+    ] = {}
 
 
 @pytest.mark.parametrize(
@@ -421,6 +363,22 @@ def test_emit_spell_cache_returns_false_when_codegen_creation_is_missing() -> No
     assert Spellbook._emit_spell_cache(spellbook, spell) is False
 
 
+def test_emit_spell_cache_returns_false_without_a_manifest() -> None:
+    """A creation without a manifest has no cache payload (the legacy codec is retired)."""
+    caching_system = _StubCachingSystem()
+    spellbook = _make_spellbook_stub(
+        live_spell_ids=(),
+        caching_enabled=True,
+        caching_system=caching_system,
+    )
+    spell = _RecordingSpell()
+    spell._spellbook = spellbook
+
+    assert Spellbook._emit_spell_cache(spellbook, spell) is False
+    assert caching_system.has_spell_payload(spell.spell_id) is False
+    assert spellbook._cache_emit_required is False
+
+
 def test_emit_spell_cache_returns_false_when_package_build_fails(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -433,8 +391,9 @@ def test_emit_spell_cache_returns_false_when_package_build_fails(
     )
     spell = _RecordingSpell()
     spell._spellbook = spellbook
+    _give_manifest(spell)
     monkeypatch.setattr(
-        creation_context_cache_codec,
+        manifest_creation_cache,
         "build_package",
         lambda spell: (_ for _ in ()).throw(RuntimeError("boom")),
     )
@@ -456,8 +415,9 @@ def test_emit_spell_cache_stages_payload_and_sets_emit_required(
     )
     spell = _RecordingSpell()
     spell._spellbook = spellbook
+    _give_manifest(spell)
     monkeypatch.setattr(
-        creation_context_cache_codec,
+        manifest_creation_cache,
         "build_package",
         lambda spell: {"spell_id": spell.spell_id},
     )
@@ -479,8 +439,9 @@ def test_emit_spell_cache_second_call_returns_false_for_same_spell_id(
     )
     spell = _RecordingSpell()
     spell._spellbook = spellbook
+    _give_manifest(spell)
     monkeypatch.setattr(
-        creation_context_cache_codec,
+        manifest_creation_cache,
         "build_package",
         lambda spell: {"spell_id": spell.spell_id},
     )
@@ -597,9 +558,10 @@ def test_load_cached_creation_contexts_for_conjure_updates_runtime_flags(
             raise package
         return object()
 
+    monkeypatch.setattr(manifest_creation_cache, "is_manifest_package", lambda payload: True)
     monkeypatch.setattr(
-        creation_context_cache_codec,
-        "load_creation_context",
+        manifest_creation_cache,
+        "load_creation_context_lazy",
         _load_creation_context,
     )
 
@@ -628,9 +590,10 @@ def test_load_cached_creation_contexts_for_conjure_skips_missing_spell_objects(
     spellbook._spell_id_pool = {}
 
     load_calls = []
+    monkeypatch.setattr(manifest_creation_cache, "is_manifest_package", lambda payload: True)
     monkeypatch.setattr(
-        creation_context_cache_codec,
-        "load_creation_context",
+        manifest_creation_cache,
+        "load_creation_context_lazy",
         lambda spell, package, publish=True: load_calls.append((spell, package)),
     )
 

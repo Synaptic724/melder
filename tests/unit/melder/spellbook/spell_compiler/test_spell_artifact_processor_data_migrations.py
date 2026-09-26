@@ -16,10 +16,6 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurr
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis import (
     SpellOccurrenceOrderAnalysis,
 )
-from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
-    SpellOverrideTargetRef,
-    SpellOverrideTargetingAnalysis,
-)
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis import (
     SpellRuntimeAnalysis,
     SpellRuntimeRecord,
@@ -151,44 +147,6 @@ def test_injection_analysis_replaces_injection_plan_summary() -> None:
 
     assert not hasattr(analysis, "instance_specs_by_instance_key")
 
-
-def test_override_targeting_analysis_replaces_override_patch_map_summary() -> None:
-    """Override-targeting analysis should summarize target-spec fan-out and path depth."""
-    root_target = SpellOverrideTargetRef(
-        node_id="root",
-        param_path_id=1,
-        param_name="svc",
-        socket_kind_value=0,
-    )
-    dep_target = SpellOverrideTargetRef(
-        node_id="dep",
-        param_path_id=2,
-        param_name="svc",
-        socket_kind_value=0,
-    )
-    analysis = SpellOverrideTargetingAnalysis(
-        targets_by_spec={
-            "root>svc": (root_target,),
-            "**svc": (root_target, dep_target),
-        },
-        specificity_by_spec={
-            "root>svc": 3,
-            "**svc": 1,
-        },
-        path_depth_histogram=((1, 1), (2, 1)),
-    )
-
-    assert analysis.target_spec_count == 2
-    assert analysis.targeted_socket_count == 2
-    assert analysis.targeted_spell_count == 2
-    assert analysis.max_targets_per_spec == 2
-    assert analysis.single_target_spec_count == 1
-    assert analysis.multi_target_spec_count == 1
-    assert analysis.max_target_path_depth == 2
-
-    analysis.cleanup()
-
-    assert not hasattr(analysis, "targets_by_spec")
 
 def test_runtime_analysis_replaces_execution_plan_runtime_summary() -> None:
     """Runtime analysis should own the planner-facing per-spell static runtime rows."""

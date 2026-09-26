@@ -75,7 +75,8 @@ Message alert rules
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
 - NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T13:43:21Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T13:43:21Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T14:16:42Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T14:52:33Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -84,18 +85,19 @@ Message alert rules
 <!-- BEGIN USER-DEFINED: active_items -->
 | override_design_melder | review | handoff | claude | melder_0 | none | Owner confirms closure of the design task (design v2 approved). | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T11:30:45Z | REQUIRED |
 | override_many_collection_fix | review | handoff | claude | melder_0 | none | Owner reviews the collection-member fix (member paths, cache 13). | Each collection member builds its own many dependencies. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_fix_collection_member_many_sharing_task.md | 2026-09-26T12:29:50Z | REQUIRED |
-| override_site_plan_lowering | in_progress | implementation | claude | melder_0 | none | Map importers of the retired override modules and write the S3b-2 deletion list. | Key-set plans for overrides (S3) with the normal lane parity-gated (S2). | S3b-2 dead-module deletion qualified on 3.14t and GIL; then S2 parity gate. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T13:44:05Z | REQUIRED |
+| override_site_plan_lowering | in_progress | implementation | claude | melder_0 | none | Owner decides on the solo findings (harness warm import, gc.freeze option); then S2b normal-lane plan. | Key-set plans for overrides (S3, done in tree) with the normal lane parity-gated (S2). | S2 parity measured; normal lane switched only if it meets the gate. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T14:52:54Z | REQUIRED |
 | caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
-| class_binding_annotations | ready | handoff | claude | melder_1 | none | On resume: raise the DECISION_REQUEST (validated one-line fallback). | Evidence-backed fix proposal for dropped class annotations. | Owner approves a plan or redirects. | tickets/tasks/2026-09-26_keep_class_binding_annotations_with_type_checking_names_task.md | 2026-09-26T11:56:25Z | REQUIRED |
-| annotation_shape_guard | review | handoff | claude | melder_1 | none | Owner commits, runs suites, accepts or redirects. | Container parameters are caller inputs; conjure no longer refuses them. | Owner acceptance; closure sync and patch archive follow. | tickets/tasks/2026-09-26_align_annotation_shape_guard_with_phase1_caller_inputs_task.md | 2026-09-26T12:23:14Z | REQUIRED |
-| creation_context_race | in_progress | discovery | claude | melder_1 | none | Owner chooses: finish the September freeze/drain design, or the measured lock-plus-release change. | Root cause of the concurrent first-meld CreationContext flake with an approved fix. | Owner approves a direction or redirects. | tickets/tasks/2026-09-26_investigate_concurrent_first_meld_creation_context_race_task.md | 2026-09-26T13:17:29Z | REQUIRED |
 | shared_boards_cleanup | review | handoff | claude | fable_0 | none | Owner closes this task (13 dormant rows turned in; boards, mailbox and archive done). | Mailbox, alerts, roster, cleared history and active rows clean; verbatim archive kept. | Owner acceptance; closure sync. | tickets/tasks/2026-09-26_cleanup_shared_boards_and_mailbox_task.md | 2026-09-26T13:45:56Z | HELPFUL |
+| validation_error_reporting | blocked | handoff | claude | melder_1 | owner decision | Owner picks the report shape (DECISION_REQUEST in Notes). | Evidence-based assessment of conjure's broken-spell report with options. | Owner picks a direction or closes. | tickets/tasks/2026-09-26_review_conjure_validation_error_reporting_task.md | 2026-09-26T14:51:33Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| annotation_shape_guard | done | melder_1 | tickets/tasks/completed/2026-09-26_align_annotation_shape_guard_with_phase1_caller_inputs_task.md | Container params and typing.Any no longer break conjure; in HEAD a67cd3b49; patch lane archived; turned in. | 2026-09-26T14:47:09Z |
+| class_binding_annotations | done | melder_1 | tickets/tasks/completed/2026-09-26_keep_class_binding_annotations_with_type_checking_names_task.md | Turned in UNFIXED: class annotations with TYPE_CHECKING-only names still empty the binding profile; fix prototyped in artifacts. | 2026-09-26T14:47:09Z |
+| creation_context_race | done | melder_1 | tickets/tasks/completed/2026-09-26_investigate_concurrent_first_meld_creation_context_race_task.md | Concurrent first-meld race fixed (September freeze/drain design); 40/40; patch lane archived; owner accepted. | 2026-09-26T14:24:40Z |
 | dormant_rows_turn_in | done | fable_0 | tickets/tasks/2026-09-26_cleanup_shared_boards_and_mailbox_task.md | 13 dormant rows turned in by the owner (codex_1, workflows_0, updater_0, updater_1, muse, one unassigned epic); per-ticket record in artifacts/shared_boards_cleanup_20260926/. | 2026-09-26T13:45:56Z |
 | release_note_t1 | done | fable_0 | tickets/tasks/completed/2026-09-26_update_release_note_for_tranche_t1_task.md | Release note 0.2.56 with the four tranche-T1 sections; owner accepted. | 2026-09-26T13:38:26Z |
 | ir_phase_survey_story | done | fable_0 | tickets/stories/completed/2026-09-25_ir_phase_pipeline_survey_story.md | Milestone 1: drivers, phases 1-7 and the seam recorded (summary.md D1-D6); 8-11 deferred. | 2026-09-26T13:27:19Z |
@@ -105,9 +107,6 @@ Message alert rules
 | ir_phase_survey_1_4 | done | fable_0 | tickets/tasks/completed/2026-09-25_survey_compiler_phases_1_to_4_task.md | driver.md, phase_01-04.md, structural_driver.md with classified holds. | 2026-09-26T13:27:19Z |
 | ir_phase_improvement_plan | done | fable_0 | tickets/tasks/completed/2026-09-26_rank_phase_improvement_candidates_task.md | candidates.md: 13 candidates, ranking, T1 recommendation (owner chose T1). | 2026-09-26T13:27:19Z |
 | ir_phase_cost_model | done | fable_0 | tickets/tasks/completed/2026-09-26_model_phase_pipeline_costs_task.md | cost_model.md: counted plus measured per-stage rows. | 2026-09-26T13:27:19Z |
-| sig_determinism_phase8_story | done | fable_0 | tickets/stories/completed/2026-09-26_signature_determinism_and_phase8_digest_story.md | Tranche T1 (one signature leaf, phase-8 digest, live contract operands); docs promoted; owner accepted. | 2026-09-26T13:14:31Z |
-| contract_override_operands | done | fable_0 | tickets/tasks/completed/2026-09-26_live_contract_override_operands_task.md | override rename; refs in rows; live hydration; identity across a cache hit (owner-run); gate retired. | 2026-09-26T13:14:31Z |
-| sig_determinism_phase8 | done | fable_0 | tickets/tasks/completed/2026-09-26_hoist_phase8_pool_digest_task.md | Pool digest once per pass; None-first skip; M7 -34% at N=300 (owner-run). | 2026-09-26T13:14:31Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -127,14 +126,10 @@ Message alert rules
   system_docs/patches/active/override_site_plan_2026_09_26/.
 - caller_input_strictness: SWITCH_TRIGGER is the responsible commit plus before/after runs.
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md.
-- class_binding_annotations: SWITCH_TRIGGER is an owner decision on the fix proposal.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_keep_class_binding_annotations_with_type_checking_names_task.md.
-- annotation_shape_guard: SWITCH_TRIGGER is owner acceptance (suites on the owner machine) or a redirect.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_align_annotation_shape_guard_with_phase1_caller_inputs_task.md.
-- creation_context_race: SWITCH_TRIGGER is an evidenced root cause plus an owner decision on the fix.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_investigate_concurrent_first_meld_creation_context_race_task.md.
 - shared_boards_cleanup: SWITCH_TRIGGER is the owner's acceptance of the cleanup (13 dormant rows already turned in).
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_cleanup_shared_boards_and_mailbox_task.md.
+- validation_error_reporting: SWITCH_TRIGGER is the assessment plus an owner decision on the report's shape.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-26_review_conjure_validation_error_reporting_task.md.
 ### Agent Message-Pass Protocol (melder_0 <-> melder_1; owner-set 2026-09-25)
 - Channel: `mailbox_board.md` `## Messages` plus one alert line under `## Message Alerts` here,
   per `agent_onboarding/default/general/skills/mailbox_protocol.md`. No harness-native messaging.

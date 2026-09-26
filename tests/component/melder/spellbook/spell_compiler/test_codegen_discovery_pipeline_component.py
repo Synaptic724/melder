@@ -2,6 +2,8 @@
 
 from typing import Any, Tuple
 
+import pytest
+
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery import (
     CodegenCreationDiscovery,
 )
@@ -151,23 +153,19 @@ def test_component_codegen_creation_discovery_system_uses_generalized_chain_for_
     )
 
 
-def test_component_codegen_creation_discovery_system_uses_fallback_chain_for_non_generalized_plan() -> None:
-    """The real phase-11 discovery system should still fall back to the no-overrides chain for non-generalized planner output."""
-    discovery = CodegenCreationDiscoverySystem().discover(
-        object(),
-        SpellCodegenPlan(
-            processor_strategy_ids=(),
-            plan_strategy_ids=(),
-            no_overrides_plan=None,
-            overrides_plan=None,
-            metadata={"selected_strategy_id": "other_plan"},
-        ),
-    )
-
-    assert discovery.selected_strategy_ids == (
-        "generalized_no_overrides_codegen_creation",
-    )
-    assert discovery.discovery_reason == "fallback_no_overrides_creation_strategy"
+def test_component_codegen_creation_discovery_system_rejects_a_plan_no_family_claims() -> None:
+    """The real phase-11 discovery system has no fallback family: an unclaimed plan fails (2026-09-26)."""
+    with pytest.raises(RuntimeError, match="could not select a creation discovery result"):
+        CodegenCreationDiscoverySystem().discover(
+            object(),
+            SpellCodegenPlan(
+                processor_strategy_ids=(),
+                plan_strategy_ids=(),
+                no_overrides_plan=None,
+                overrides_plan=None,
+                metadata={"selected_strategy_id": "other_plan"},
+            ),
+        )
 
 
 def test_component_spell_codegen_planner_uses_real_discovery_and_selected_strategy_id() -> None:
@@ -220,7 +218,7 @@ def test_component_codegen_creation_system_uses_real_discovery_and_selected_stra
                 plan_strategy_ids=(),
                 no_overrides_plan=None,
                 overrides_plan=None,
-                metadata={"selected_strategy_id": "other_plan"},
+                metadata={"selected_strategy_id": "generalized_codegen_plan"},
             ),
             "_spell_codegen_creation": None,
         },
@@ -229,8 +227,8 @@ def test_component_codegen_creation_system_uses_real_discovery_and_selected_stra
     system.build(artifact)
 
     assert artifact._spell_codegen_creation.selected_strategy_ids == (
-        "generalized_no_overrides_codegen_creation",
+        "generalized_codegen_creation",
     )
     assert artifact._spell_codegen_creation.metadata["component_creation_applied"] == (
-        "generalized_no_overrides_codegen_creation"
+        "generalized_codegen_creation"
     )

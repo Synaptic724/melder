@@ -16,9 +16,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_crea
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_system import (
     CodegenCreationDiscoverySystem,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy import (
-    FallbackNoOverridesCodegenCreationDiscoveryStrategy,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy import (
     GeneralizedCodegenCreationDiscoveryStrategy,
 )
@@ -159,29 +156,14 @@ def test_many_only_codegen_creation_discovery_strategy_claims_many_only_plan() -
     assert discovery.selected_codegen_style_id == "many_only"
 
 
-def test_fallback_no_overrides_codegen_creation_discovery_strategy_returns_fallback_result() -> None:
-    """The fallback phase-11 strategy should always return the no-overrides creation chain."""
-    discovery = FallbackNoOverridesCodegenCreationDiscoveryStrategy().discover(
-        _ModelProbe("model"),
-        _make_plan("other_plan"),
-    )
-
-    assert discovery is not None
-    assert discovery.selected_strategy_ids == (
-        "generalized_no_overrides_codegen_creation",
-    )
-    assert discovery.discovery_reason == "fallback_no_overrides_creation_strategy"
-
-
 def test_codegen_creation_discovery_strategy_builder_registers_default_strategies() -> None:
-    """The phase-11 discovery builder should register the solo, many-only, generalized, and fallback strategies in order."""
+    """The phase-11 discovery builder should register the solo, many-only and generalized strategies in order."""
     builder = CodegenCreationDiscoveryStrategyBuilder()
 
     assert builder.registered_strategy_names() == (
         "solo_codegen_creation_discovery",
         "many_only_codegen_creation_discovery",
         "generalized_codegen_creation_discovery",
-        "fallback_no_overrides_codegen_creation_discovery",
     )
     assert isinstance(
         builder.get_strategy("solo_codegen_creation_discovery"),
@@ -194,10 +176,6 @@ def test_codegen_creation_discovery_strategy_builder_registers_default_strategie
     assert isinstance(
         builder.get_strategy("generalized_codegen_creation_discovery"),
         GeneralizedCodegenCreationDiscoveryStrategy,
-    )
-    assert isinstance(
-        builder.get_strategy("fallback_no_overrides_codegen_creation_discovery"),
-        FallbackNoOverridesCodegenCreationDiscoveryStrategy,
     )
     with pytest.raises(RuntimeError, match="missing strategy 'missing_creation_discovery'"):
         builder.get_strategy("missing_creation_discovery")

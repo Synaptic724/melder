@@ -1,0 +1,55 @@
+# Files changed by the creation_context_race lane (2026-09-26), for the owner's commit.
+# Source
+src/melder/aether/spellbook/spell.py
+src/melder/aether/conduit/meld/creation_context/creation_context_factory.py
+src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py
+src/melder/aether/conduit/meld/meld.py
+src/melder/aether/conduit/meld/conduit_meld.py
+src/melder/aether/conduit/meld/spellspace_meld.py
+# Tests
+tests/unit/melder/aether/conduit/meld/test_concrete_meld_subclasses.py
+tests/unit/melder/aether/conduit/meld/test_meld.py
+tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context_factory.py
+tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context_rebuild.py   (new)
+tests/unit/melder/spellbook/test_spell.py
+tests/component/melder/aether/conduit/test_shared_context_rebuild_publication.py
+tests/integration/melder/conduit/test_conduit_integration_concurrency.py
+# Docs, graph, release note (these files also carry other agents' same-day changes)
+release_docs/next_version_release.md
+context_compass/system_docs/src_architecture.md
+context_compass/system_docs/src_architecture_index.md
+context_compass/system_docs/src_components.md
+context_compass/system_docs/src_components_index.md
+context_compass/system_docs/src_graph.md
+context_compass/system_docs/src_graph_index.md
+context_compass/system_docs/graph/melder/aether/spellbook/spell.json
+context_compass/system_docs/graph/melder/aether/conduit/meld/creation_context/creation_context_factory.json
+context_compass/system_docs/graph/melder/aether/conduit/meld/creation_context/creation_context_rebuild.json
+context_compass/system_docs/graph/melder/aether/conduit/meld/meld.json
+context_compass/system_docs/graph/melder/aether/conduit/meld/conduit_meld.json
+context_compass/system_docs/graph/melder/aether/conduit/meld/spellspace_meld.json
+# Patch lane and ContextCompass records
+context_compass/system_docs/patches/completed/shared_context_rebuild_2026_09_26/   (4 files, new; archived at closure)
+context_compass/artifacts/creation_context_race_20260926/                      (probes, results, scripts)
+context_compass/tickets/tasks/completed/2026-09-26_investigate_concurrent_first_meld_creation_context_race_task.md   (moved at closure)
+context_compass/attention_board.md
+context_compass/artifact_board.md
+context_compass/mailbox_board.md
+
+# Verified 2026-09-26T14:22:42Z (after re-onboarding; this list was first written from memory):
+# - every path above exists;
+# - `git diff --ignore-cr-at-eol --numstat` for the six source files and the six changed test files equals this
+#   lane's diff exactly (source +341/-79, tests +519/-7), and the new test file (226 lines) is untracked, so these
+#   files carry no other agent's uncommitted change;
+# - the docs, graph and release-note files DO carry other agents' same-day changes; review before committing.
+# Leave out of a folder-level `git add`: these files in the same folders show as modified by line endings only
+# (no content change; cause not investigated):
+#   src/melder/aether/conduit/meld/creation_context/creation_context.py
+#   src/melder/aether/conduit/meld/creation_context/creation_context_builder.py
+#   src/melder/aether/conduit/meld/contracts/spell_contract.py
+#   src/melder/aether/conduit/meld/contracts/spell_map.py
+#   src/melder/aether/conduit/meld/overrides/spell_overrider.py
+#   tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py
+#   tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context_builder.py
+#   tests/unit/melder/aether/conduit/meld/test_meld_gate.py
+#   tests/unit/melder/aether/conduit/meld/test_meld_gate_controller.py

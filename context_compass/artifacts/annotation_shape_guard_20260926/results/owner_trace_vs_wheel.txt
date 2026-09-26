@@ -1,0 +1,14 @@
+Owner-pasted CommandOps failure (2026-09-26, test_area_bootstraps.py AgentsBootstrap root-generation) checked at 2026-09-26T14:46:16Z.
+
+Every Melder frame in the trace matches dist/melder-0.2.54-py3-none-any.whl line for line:
+  spellbook.py:6650                   return self._conjure_within_transaction_window(
+  spellbook.py:6998                   return spellbook_creation_system.conjure()
+  spellbook_creation_system.py:231    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+  spellbook_creation_system.py:330    SpellbookCreationSystem.run_structural_phases(
+  spellbook_creation_system.py:1511   SpellbookCreationSystem._raise_structural_validation_error(
+  spellbook_creation_system.py:2109   raise SpellbookValidationError(broken_spells)
+The 0.2.54 wheel's annotation_shape_guard_strategy.py contains "unsupported collection annotation" (the removed
+container branch). HEAD (a67cd3b49, 2026-09-26T12:24:16Z) and the worktree do not: the branch is gone and
+typing.Any is excluded (annotation_shape_guard_strategy.py:180-190). The CommandOps venv runs an installed melder
+0.2.54 that predates the fix; with a build from current source CodecPacket and ClassProfile carry warnings only.
+Not run: CommandOps suite against a current build (owner machine).

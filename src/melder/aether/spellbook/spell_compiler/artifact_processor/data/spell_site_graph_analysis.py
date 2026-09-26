@@ -254,12 +254,13 @@ class SpellSiteGraphAnalysis(Cleanable):
         user-instantiated.
 
     Subsystem Context:
-        A processor-owned section beside `injection_shape` and
-        `override_targeting_shape` in `SpellCodegenModel`.
+        A section beside `injection_shape` in `SpellCodegenModel`, fitted only
+        when a caller runs `SpellSiteGraphProcessorStrategy` on the model.
 
     System Context:
-        Phase 9 (artifact processor) of the conjure pipeline. Design step S1 of
-        the override site-plan lowering: nothing at run time reads it yet.
+        Built at the first override meld of a root by `SitePlanOverrideRuntime`
+        (design v2 S3), which resolves override keys against it; conjure does
+        not build it (2026-09-26).
 
     AGENT_ACCESS: internal
 

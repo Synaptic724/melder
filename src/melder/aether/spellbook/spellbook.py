@@ -1004,17 +1004,15 @@ class Spellbook(Cleanable):
                     artifact._spell_codegen_creation.metadata.get(
                         MANIFEST_METADATA_KEY
                     )
-                    is not None
+                    is None
             ):
-                # Manifest-first family output (generalized, solo, ...): the
-                # manifest already IS the cache payload, so export is a
-                # metadata read instead of a full both-lane recompile.
-                spell_payload = build_manifest_package(spell)
-            else:
-                from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
-                    build_package,
-                )
-                spell_payload = build_package(spell)
+                # Every codegen family publishes a manifest; the legacy
+                # non-manifest codec is retired (2026-09-26), so a creation
+                # without one has no cache payload.
+                return False
+            # The manifest already IS the cache payload, so export is a
+            # metadata read instead of a full both-lane recompile.
+            spell_payload = build_manifest_package(spell)
         except Exception as exc:
             if self._logger is not None:
                 self._logger.error(
