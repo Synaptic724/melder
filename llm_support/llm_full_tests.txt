@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: b87767b9b669fd986c885ada101c9d4d00124a4c92ca42a31a3cf7f6ae585c91
-FILE COUNT: 1016
+SOURCE FINGERPRINT: b705e2b4cb62d6a2344b7449333d9e98b0410ee6f44677c5b859135d82f8f35b
+FILE COUNT: 1018
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -102626,6 +102626,338 @@ def test_conduit_integration_many_bucket_disposes_newest_instance_first() -> Non
     assert third.closed is True
 ================================================================================
 END FILE: tests/integration/melder/conduit/test_conduit_integration_disposal_ordering.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py
+CONTENT SHA256: a98512a23fe3830a3be9ef2b3cef2f8b3bfa2315d90b50479c24af50cae0df2b
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration contracts for door-held first builds (0.2.73).
+
+WHAT IS BEING CLAIMED
+---------------------
+Since 0.2.73 the normal site plan of a `unique_per_conduit` or
+`unique_per_spell_space` root no longer re-takes the root's slot guard: the route
+door holds that guard from its recheck until the plan returns. Nothing observable
+may change. Through the public meld surface, with real doors and real stores:
+
+    - concurrent first melds of one root on one conduit, or in one shared manual
+      SpellSpace, construct the root and its dependency exactly once and hand
+      every caller the same instance;
+    - with an activation hook bound on the root (the hooks lane, whose door
+      reports whether the call created the instance), the hook fires exactly once
+      for that instance;
+    - a same-thread nested override meld of the root, made from a dependency's
+      constructor while the outer build is in flight, publishes the root, and the
+      outer meld returns that instance instead of constructing a second one.
+
+Timing is only used to widen race windows; every assertion is about identity and
+counts, so a slow machine can make a test less sharp but never flaky.
+"""
+
+import threading
+import time
+from threading import Barrier, Thread
+from typing import Any, Callable, Dict, List, Optional
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.spell_space.spell_space import SpellSpace
+from melder.aether.spellbook.spellbook import Spellbook
+
+pytestmark = pytest.mark.integration
+
+
+class ConstructionLog:
+    """
+    Thread-safe construction counter, bound as a `unique` class spell and injected into the test spells.
+
+    Contract:
+        - `record(name)` counts one construction of `name` under an internal lock.
+        - `count(name)` reads the current count.
+    """
+
+    def __init__(self) -> None:
+        """Start with no constructions recorded."""
+        self._lock: threading.Lock = threading.Lock()
+        self._counts: Dict[str, int] = {}
+
+    def record(self, name: str) -> None:
+        """
+        Count one construction.
+
+        Args:
+            name: Class name of the constructed object.
+        """
+        with self._lock:
+            self._counts[name] = self._counts.get(name, 0) + 1
+
+    def count(self, name: str) -> int:
+        """
+        Return how many times `name` was constructed.
+
+        Args:
+            name: Class name to read.
+
+        Returns:
+            int: The construction count (0 when never constructed).
+        """
+        with self._lock:
+            return self._counts.get(name, 0)
+
+
+class ScopeDependency:
+    """Shared dependency of the root; its Existence matches the root's scope in each test."""
+
+    def __init__(self, log: ConstructionLog) -> None:
+        """
+        Record the construction.
+
+        Args:
+            log: The injected construction log.
+        """
+        log.record("ScopeDependency")
+        self.log: ConstructionLog = log
+
+
+class SlowScopeRoot:
+    """Root whose constructor sleeps, so racing first melds overlap its build."""
+
+    BUILD_SECONDS: float = 0.05
+
+    def __init__(self, log: ConstructionLog, dependency: ScopeDependency) -> None:
+        """
+        Record the construction, then hold the build open for a moment.
+
+        Args:
+            log: The injected construction log.
+            dependency: The shared scope dependency.
+        """
+        log.record("SlowScopeRoot")
+        time.sleep(SlowScopeRoot.BUILD_SECONDS)
+        self.dependency: ScopeDependency = dependency
+
+
+class NestedDoorHolder:
+    """`unique` singleton that arms `NestedMeldDependency` with the conduit to meld through."""
+
+    def __init__(self) -> None:
+        """Start unarmed."""
+        self.conduit: Optional[Conduit] = None
+
+
+class NestedMeldDependency:
+    """
+    `many` dependency of `NestedRoot` that, when armed, melds its own consumer with an override.
+
+    Contract:
+        - Unarmed (the default) it only records its construction.
+        - Armed, it melds `NestedRoot` on the armed door with `{"marker": "nested"}` from inside its constructor,
+          on the same thread as the outer meld whose build is in flight, and keeps what that meld returned.
+    """
+
+    def __init__(self, log: ConstructionLog, door: NestedDoorHolder) -> None:
+        """
+        Record the construction and run the nested meld when armed.
+
+        Args:
+            log: The injected construction log.
+            door: The holder whose conduit, when set, arms the nested meld (None when unarmed).
+        """
+        log.record("NestedMeldDependency")
+        self.nested_root: Optional[Any] = None
+        conduit = door.conduit
+        if conduit is not None:
+            door.conduit = None
+            self.nested_root = conduit.meld(spell=NestedRoot, override={"marker": "nested"})
+
+
+class NestedRoot:
+    """`unique_per_conduit` root with a `many` dependency and a plain parameter the nested meld overrides."""
+
+    def __init__(self, log: ConstructionLog, dependency: NestedMeldDependency, marker: str = "outer") -> None:
+        """
+        Record the construction and keep the marker.
+
+        Args:
+            log: The injected construction log.
+            dependency: The (possibly nested-melding) dependency.
+            marker: "outer" by default; the nested override meld passes "nested".
+        """
+        log.record("NestedRoot")
+        self.dependency: NestedMeldDependency = dependency
+        self.marker: str = marker
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_integration() -> Any:
+    """
+    Give every test a fresh Aether singleton and restore a fresh one afterwards.
+
+    Returns:
+        Generator yielding once; rebinds `Spellbook._aether` and `Conduit._aether`.
+    """
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _conjure_scope_world(
+        existence: str,
+        frame: str,
+        activation_hook: Optional[Callable[..., None]] = None,
+) -> Any:
+    """
+    Bind the log, the dependency and the slow root with one scope Existence and conjure a root conduit.
+
+    Args:
+        existence: "unique_per_conduit" or "unique_per_spell_space" for the dependency and the root.
+        frame: Aetheric frame name for this world.
+        activation_hook: Optional activation hook bound on the root; any spell hook routes its melds
+            through the hooks lane, where the door reports whether it created the instance.
+
+    Returns:
+        Tuple[Conduit, ConstructionLog]: The conjured root conduit and the one ConstructionLog instance.
+    """
+    book = Spellbook(aetheric_frame=frame)
+    book.bind(spell=ConstructionLog, existence="unique")
+    book.bind(spell=ScopeDependency, existence=existence)
+    if activation_hook is None:
+        book.bind(spell=SlowScopeRoot, existence=existence)
+    else:
+        book.bind(spell=SlowScopeRoot, existence=existence, activation_hooks=[activation_hook])
+    conduit = book.conjure(name=frame)
+    return conduit, conduit.meld(spell=ConstructionLog)
+
+
+def _race(meld_once: Callable[[], Any], threads: int) -> List[Any]:
+    """
+    Run `meld_once` on `threads` threads released together; return every result or raise the first error.
+
+    Args:
+        meld_once: The meld call each thread makes.
+        threads: Number of racing threads.
+
+    Returns:
+        List[Any]: One result per thread.
+
+    Raises:
+        AssertionError: When a thread failed or did not finish within the timeout.
+    """
+    barrier = Barrier(threads)
+    results: List[Any] = []
+    errors: List[BaseException] = []
+    guard = threading.Lock()
+
+    def worker() -> None:
+        try:
+            barrier.wait(timeout=10)
+            result = meld_once()
+            with guard:
+                results.append(result)
+        except BaseException as exc:  # recorded and re-raised by the test thread
+            with guard:
+                errors.append(exc)
+
+    workers = [Thread(target=worker, name=f"first-meld-{index}") for index in range(threads)]
+    for worker_thread in workers:
+        worker_thread.start()
+    for worker_thread in workers:
+        worker_thread.join(timeout=30)
+    assert not any(worker_thread.is_alive() for worker_thread in workers), "a racing meld did not finish"
+    assert errors == [], errors
+    return results
+
+
+def test_racing_first_melds_on_one_conduit_build_the_per_conduit_root_once() -> None:
+    """Eight threads first-meld one unique_per_conduit root on one conduit: one construction, one instance."""
+    conduit, log = _conjure_scope_world("unique_per_conduit", "door-held-conduit")
+    try:
+        results = _race(lambda: conduit.meld(spell=SlowScopeRoot), threads=8)
+        assert len({id(result) for result in results}) == 1
+        assert log.count("SlowScopeRoot") == 1
+        assert log.count("ScopeDependency") == 1
+        assert conduit.meld(spell=SlowScopeRoot) is results[0]
+    finally:
+        conduit.cleanup()
+
+
+def test_racing_first_melds_in_one_shared_spellspace_build_the_space_root_once() -> None:
+    """Eight threads first-meld one unique_per_spell_space root in one manual space: one construction."""
+    conduit, log = _conjure_scope_world("unique_per_spell_space", "door-held-space")
+    space: SpellSpace = conduit.create_spellspace()
+    try:
+        results = _race(lambda: space.meld(spell=SlowScopeRoot), threads=8)
+        assert len({id(result) for result in results}) == 1
+        assert log.count("SlowScopeRoot") == 1
+        assert log.count("ScopeDependency") == 1
+        assert space.meld(spell=SlowScopeRoot) is results[0]
+    finally:
+        conduit.cleanup()
+
+
+@pytest.mark.parametrize(
+    ("existence", "door"),
+    [
+        pytest.param("unique_per_conduit", "conduit", id="per_conduit-conduit"),
+        pytest.param("unique_per_spell_space", "space", id="spellspace-space"),
+    ],
+)
+def test_activation_hook_fires_once_when_first_melds_race(existence: str, door: str) -> None:
+    """With an activation hook on the root (hooks lane), racing first melds fire it exactly once, for the root."""
+    activated: List[Any] = []
+    activated_lock = threading.Lock()
+
+    def on_activation(instance: Any, *args: Any) -> None:
+        with activated_lock:
+            activated.append(instance)
+
+    conduit, log = _conjure_scope_world(existence, f"door-held-hook-{door}", on_activation)
+    target: Any = conduit if door == "conduit" else conduit.create_spellspace()
+    try:
+        results = _race(lambda: target.meld(spell=SlowScopeRoot), threads=8)
+        assert len({id(result) for result in results}) == 1
+        assert log.count("SlowScopeRoot") == 1
+        assert len(activated) == 1
+        assert activated[0] is results[0]
+    finally:
+        conduit.cleanup()
+
+
+def test_nested_same_thread_override_meld_of_the_root_is_returned_by_the_outer_meld() -> None:
+    """
+    A dependency's constructor melds its own consumer with an override while the consumer's first build is in
+    flight on the same thread: the nested meld publishes the root, and the outer meld returns that instance.
+    """
+    book = Spellbook(aetheric_frame="door-held-nested")
+    book.bind(spell=ConstructionLog, existence="unique")
+    book.bind(spell=NestedDoorHolder, existence="unique")
+    book.bind(spell=NestedMeldDependency, existence="many")
+    book.bind(spell=NestedRoot, existence="unique_per_conduit")
+    conduit = book.conjure(name="door-held-nested")
+    try:
+        log = conduit.meld(spell=ConstructionLog)
+        conduit.meld(spell=NestedDoorHolder).conduit = conduit
+        outer = conduit.meld(spell=NestedRoot)
+        assert outer.marker == "nested"
+        assert log.count("NestedRoot") == 1
+        # The outer build's dependency ran the nested meld; the nested root built its own (unarmed) dependency.
+        assert log.count("NestedMeldDependency") == 2
+        assert outer.dependency.nested_root is None
+        assert conduit.meld(spell=NestedRoot) is outer
+    finally:
+        conduit.cleanup()
+================================================================================
+END FILE: tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/conduit/test_conduit_integration_existence.py
@@ -270487,6 +270819,371 @@ def test_manifest_package_still_raises_without_phase11_output() -> None:
         manifest_creation_cache.build_package(SimpleNamespace(spell_id="x", _compiler_artifact=None))
 ================================================================================
 END FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_contract_override_refs.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py
+CONTENT SHA256: 7392c4f784d15a53f5de505a2a63631f8f2e7d8339c559df177afea0c18e7035
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit contracts for the door-held root of the normal site plan (0.2.73).
+
+WHAT IS BEING CLAIMED
+---------------------
+A CreationContext route door holds its root's slot guard from its recheck until
+the normal plan returns. For the "unique_per_conduit" and "spellspace" routes the
+normal plan therefore builds the root without taking that guard a second time,
+while every other site, every other root, every override key-set plan and every
+plan emitted without a door route keep their guard. The root still rechecks its
+store after its children are built.
+
+These tests drive `SitePlanLowering.emit` and `SitePlanOverrideRuntime` with
+recording stand-in stores, so the lock discipline of the emitted code is observed
+directly. The real doors and real stores are covered by
+tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py.
+"""
+
+import threading
+from collections import Counter
+from types import SimpleNamespace
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import pytest
+
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver import (
+    OverrideKeyResolver,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering import (
+    SitePlanLowering,
+    SitePlanStep,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime import (
+    SitePlanOverrideRuntime,
+)
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
+)
+
+Event = Tuple[str, str]
+Key = Tuple[str, Optional[int]]
+
+
+class RecordingLock:
+    """A build-lock stand-in that records every acquire and release in a shared event list."""
+
+    def __init__(self, name: str, events: List[Event]) -> None:
+        """
+        Keep the slot name and the event list.
+
+        Args:
+            name: Spell id of the slot this lock guards.
+            events: Shared, ordered event log.
+        """
+        self._name: str = name
+        self._events: List[Event] = events
+
+    def __enter__(self) -> "RecordingLock":
+        """Record the acquire."""
+        self._events.append(("acquire", self._name))
+        return self
+
+    def __exit__(self, *exc_info: Any) -> None:
+        """Record the release; exceptions propagate."""
+        self._events.append(("release", self._name))
+
+
+class RecordingStore:
+    """A creations store with the attributes emitted plans read and write, and recording slot guards."""
+
+    def __init__(self, events: List[Event]) -> None:
+        """
+        Start empty.
+
+        Args:
+            events: Shared, ordered event log for guard and disposal activity.
+        """
+        self._events: List[Event] = events
+        self._creations: Dict[str, Any] = {}
+        self._slot_guards: Dict[str, RecordingLock] = {}
+
+    def slot_guard(self, spell_id: str) -> RecordingLock:
+        """Return one recording lock per slot, created on first use."""
+        return self._slot_guards.setdefault(spell_id, RecordingLock(spell_id, self._events))
+
+    def add_creation(self, key: str, item: Any, *, has_disposal_methods: bool = False,
+                     disposal_methods: Optional[List[str]] = None) -> None:
+        """Publish one singleton and record the disposal-bearing registration."""
+        self._creations[key] = item
+        self._events.append(("add_creation", key))
+
+
+class ClusterFacade:
+    """The `_cluster_creations` stand-in: resolves to one fixed leader store."""
+
+    def __init__(self, store: RecordingStore) -> None:
+        """
+        Keep the leader store.
+
+        Args:
+            store: The store every resolution returns.
+        """
+        self._store: RecordingStore = store
+
+    def resolved_store(self) -> RecordingStore:
+        """Return the leader store."""
+        return self._store
+
+
+def logging_spell(spell_id: str, events: List[Event], existence: Existence,
+                  owner_store: Optional[RecordingStore] = None,
+                  disposal: Tuple[str, ...] = ()) -> SimpleNamespace:
+    """
+    Build a fake spell whose constructor records its build in `events`.
+
+    Args:
+        spell_id: Id, name and selected id of the spell.
+        events: Shared, ordered event log.
+        existence: The spell's Existence.
+        owner_store: The `unique` owner store, when the test routes one.
+        disposal: Declared disposal method names.
+
+    Returns:
+        SimpleNamespace: The fake spell.
+    """
+
+    def construct(*args: Any, **kwargs: Any) -> SimpleNamespace:
+        events.append(("build", spell_id))
+        return SimpleNamespace(name=spell_id, args=args, kwargs=kwargs)
+
+    return SimpleNamespace(
+        spell=construct,
+        spell_id=spell_id,
+        spell_index=SimpleNamespace(selected_spell_id=spell_id),
+        spell_name=spell_id,
+        is_class_spell=True,
+        is_method_spell=False,
+        is_lambda_spell=False,
+        is_existing_creation=False,
+        has_disposal_methods=bool(disposal),
+        disposal_method_names=list(disposal),
+        existence=existence,
+        _lock=threading.RLock(),
+        _owner_creations=owner_store,
+    )
+
+
+def plan_step(key: Key, spell: SimpleNamespace, *deps: Tuple[str, Tuple[Key, ...]]) -> SitePlanStep:
+    """Build one step view (no collections, contract payload or lock hint)."""
+    return SitePlanStep(
+        instance_key=key,
+        spell=spell,
+        existence=spell.existence,
+        dependency_resolution_order=tuple(deps),
+        collection_param_names=frozenset(),
+        uses_positional_override=False,
+        contract_positional_override=None,
+        has_contract_payload=False,
+        contract_payload=None,
+        use_spell_lock_hint=False,
+    )
+
+
+def socket(spell_id: str, name: str, position: int, optional: bool = False) -> SpellSocketDescriptor:
+    """Build one Phase-3 socket descriptor."""
+    return SpellSocketDescriptor(
+        spell_id=spell_id, param_name=name, position=position, socket_kind=SocketKind.NORMAL,
+        is_collection=False, is_optional=optional, target_spell_ids=(), parameter_kind="POSITIONAL_OR_KEYWORD",
+    )
+
+
+class World:
+    """Root(s: S, limit=3) where S is a unique_per_conduit child; the root's Existence varies per test."""
+
+    def __init__(self, root_existence: Existence, root_disposal: Tuple[str, ...] = ()) -> None:
+        """
+        Build stores, spells, steps and topologies.
+
+        Args:
+            root_existence: Existence of the root spell.
+            root_disposal: Disposal method names declared by the root.
+        """
+        self.events: List[Event] = []
+        self.conduit_store = RecordingStore(self.events)
+        self.space_store = RecordingStore(self.events)
+        self.lineage_store = RecordingStore(self.events)
+        self.cluster_store = RecordingStore(self.events)
+        self.owner_store = RecordingStore(self.events)
+        self.child = logging_spell("s", self.events, Existence.unique_per_conduit)
+        self.root = logging_spell("root", self.events, root_existence, self.owner_store, root_disposal)
+        self.steps = (
+            plan_step(("s", None), self.child),
+            plan_step(("root", None), self.root, ("s", (("s", None),))),
+        )
+        self.topologies = {
+            "root": SpellLocalTopology("root", (socket("root", "s", 0), socket("root", "limit", 1, optional=True))),
+            "s": SpellLocalTopology("s", ()),
+        }
+        self.root._spellbook = SimpleNamespace(
+            _spell_system_states=SimpleNamespace(get_local_topology_by_id=self.topologies.get)
+        )
+
+    def meld(self) -> SimpleNamespace:
+        """Return a meld stand-in exposing every store route the lowering reads."""
+        return SimpleNamespace(
+            _conduit_creations=self.conduit_store,
+            _spellspace_creations=self.space_store,
+            _root_creations=self.lineage_store,
+            _cluster_creations=ClusterFacade(self.cluster_store),
+        )
+
+    def normal_plan(self, door_route_key: Optional[str]) -> Callable[[Any], Any]:
+        """Emit and compile the normal plan for one door route key."""
+        graph = SitePlanLowering.build_site_graph(
+            root_spell_id="root", root_instance_key=("root", None), steps=self.steps,
+            topology_for=self.topologies.get,
+        )
+        source, namespace, _ = SitePlanLowering.emit(
+            steps=self.steps, site_graph=graph, resolution=OverrideKeyResolver.resolve(graph, ()),
+            root_instance_key=("root", None), root_spell_id="root", root_spell_name="root", arity=0,
+            normal_mode=True, door_route_key=door_route_key,
+        )
+        graph.cleanup()
+        exec(compile(source, "<test>", "exec"), namespace)
+        plan: Callable[[Any], Any] = namespace[SitePlanLowering.PLAN_FUNCTION_NAME]
+        return plan
+
+
+CHILD_EVENTS: List[Event] = [("acquire", "s"), ("build", "s"), ("release", "s")]
+
+
+@pytest.mark.parametrize(
+    ("door_route_key", "root_existence", "store_name"),
+    [
+        pytest.param("unique_per_conduit", Existence.unique_per_conduit, "conduit_store", id="unique_per_conduit"),
+        pytest.param("spellspace", Existence.unique_per_spell_space, "space_store", id="spellspace"),
+    ],
+)
+def test_door_held_root_is_built_without_its_own_guard(
+        door_route_key: str, root_existence: Existence, store_name: str) -> None:
+    """The eligible root builds and publishes with no acquire of its own; its child still takes its guard once."""
+    world = World(root_existence)
+    plan = world.normal_plan(door_route_key)
+    result = plan(world.meld())
+    assert world.events == CHILD_EVENTS + [("build", "root")]
+    assert getattr(world, store_name)._creations["root"] is result
+    world.events.clear()
+    assert plan(world.meld()) is result
+    assert world.events == []
+
+
+@pytest.mark.parametrize(
+    ("door_route_key", "root_existence"),
+    [
+        pytest.param(None, Existence.unique_per_conduit, id="no_route-per_conduit"),
+        pytest.param(None, Existence.unique_per_spell_space, id="no_route-spellspace"),
+        pytest.param("unique_per_conduit", Existence.unique_per_spell_space, id="route_mismatch-spellspace_root"),
+        pytest.param("spellspace", Existence.unique_per_conduit, id="route_mismatch-per_conduit_root"),
+        pytest.param("lineage", Existence.unique_per_conduit_lineage, id="lineage"),
+        pytest.param("cluster", Existence.unique_per_conduit_cluster, id="cluster"),
+        pytest.param("unique", Existence.unique, id="unique"),
+    ],
+)
+def test_root_guard_is_kept_unless_route_and_existence_match(
+        door_route_key: Optional[str], root_existence: Existence) -> None:
+    """Without a matching eligible door route the root takes its own guard around its build, as before."""
+    world = World(root_existence)
+    world.normal_plan(door_route_key)(world.meld())
+    assert world.events == CHILD_EVENTS + [("acquire", "root"), ("build", "root"), ("release", "root")]
+
+
+def test_door_route_key_outside_normal_mode_is_refused() -> None:
+    """A door route key only describes the normal plan; an override plan request carrying one is refused."""
+    world = World(Existence.unique_per_conduit)
+    graph = SitePlanLowering.build_site_graph(
+        root_spell_id="root", root_instance_key=("root", None), steps=world.steps,
+        topology_for=world.topologies.get,
+    )
+    with pytest.raises(RuntimeError, match="normal-mode plan"):
+        SitePlanLowering.emit(
+            steps=world.steps, site_graph=graph, resolution=OverrideKeyResolver.resolve(graph, ("limit",)),
+            root_instance_key=("root", None), root_spell_id="root", root_spell_name="root", arity=0,
+            door_route_key="unique_per_conduit",
+        )
+    graph.cleanup()
+
+
+def test_runtime_applies_the_door_route_to_the_normal_plan_only() -> None:
+    """With a door route the normal plan skips the root guard; an override key-set plan still takes it."""
+    world = World(Existence.unique_per_conduit)
+    runtime = SitePlanOverrideRuntime(
+        steps=world.steps, root_spell=world.root, root_instance_key=("root", None),
+        door_route_key="unique_per_conduit",
+    )
+    runtime.execute_normal(world.meld())
+    assert world.events == CHILD_EVENTS + [("build", "root")]
+    world.events.clear()
+    del world.conduit_store._creations["root"]
+    overridden = runtime.execute_with_overrides(world.meld(), {"limit": 5})
+    assert overridden.kwargs["limit"] == 5
+    assert world.events == [("acquire", "root"), ("build", "root"), ("release", "root")]
+    runtime.cleanup()
+
+
+def test_runtime_without_a_door_route_keeps_the_root_guard() -> None:
+    """The default (no door route) keeps today's re-entrant root guard in the normal plan."""
+    world = World(Existence.unique_per_conduit)
+    runtime = SitePlanOverrideRuntime(steps=world.steps, root_spell=world.root, root_instance_key=("root", None))
+    runtime.execute_normal(world.meld())
+    assert world.events == CHILD_EVENTS + [("acquire", "root"), ("build", "root"), ("release", "root")]
+    runtime.cleanup()
+
+
+def test_door_held_root_returns_an_instance_published_while_its_children_were_built() -> None:
+    """
+    The root still rechecks after its children: an instance published meanwhile (as a same-thread nested meld
+    would) is returned and the root is not constructed a second time.
+    """
+    world = World(Existence.unique_per_spell_space)
+    published = SimpleNamespace(name="published-by-nested-meld")
+
+    def child_that_publishes_the_root(*args: Any, **kwargs: Any) -> SimpleNamespace:
+        world.events.append(("build", "s"))
+        world.space_store._creations["root"] = published
+        return SimpleNamespace(name="s")
+
+    world.child.spell = child_that_publishes_the_root
+    result = world.normal_plan("spellspace")(world.meld())
+    assert result is published
+    assert world.events == CHILD_EVENTS
+    assert world.space_store._creations["root"] is published
+
+
+def test_door_held_disposal_bearing_root_still_registers_through_add_creation() -> None:
+    """A door-held root with disposal methods publishes through `add_creation` (cleaned-store refusal intact)."""
+    world = World(Existence.unique_per_conduit, root_disposal=("close",))
+    result = world.normal_plan("unique_per_conduit")(world.meld())
+    assert world.events == CHILD_EVENTS + [("build", "root"), ("add_creation", "root")]
+    assert world.conduit_store._creations["root"] is result
+
+
+def test_eligible_routes_are_exactly_the_per_scope_ones() -> None:
+    """Only the two per-scope routes, each with its own existence, are door-held; the map is the whole rule."""
+    from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering import (
+        SitePlanEmission,
+    )
+
+    assert SitePlanEmission.DOOR_HELD_ROOT_EXISTENCE == {
+        "unique_per_conduit": Existence.unique_per_conduit,
+        "spellspace": Existence.unique_per_spell_space,
+    }
+    assert Counter(SitePlanEmission.DOOR_HELD_ROOT_EXISTENCE.values()) == Counter(
+        {Existence.unique_per_conduit: 1, Existence.unique_per_spell_space: 1}
+    )
+================================================================================
+END FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py

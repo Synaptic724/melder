@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-remove-nested-slot-guard-take
 - Story: STORY-2026-09-26-gauntlet-runtime-speed
-- Status: in_progress
+- Status: review
 - Owner: user
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T21:38:23Z
-- Updated: 2026-09-26T22:15:30Z
+- Updated: 2026-09-26T22:41:40Z
 
 ## Objective
 When a creation-context door builds a slotted object for the first time, it holds the slot's build lock (the
@@ -46,6 +46,10 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
 - from_state: draft
 - to_state: in_progress
 - transition_reason: The owner approved implementation and asked for a safe shape; the door keeps its guard.
+- from_state: in_progress
+- to_state: review
+- transition_reason: (2026-09-26T22:41:40Z) The notch pipeline is complete (Notes 22:15:30Z to 22:41:30Z);
+  the owner's Windows gauntlet run and acceptance remain.
 
 ## Steps / Checklist
 - [x] Read the code being changed in full (site-plan lowering, site-plan runtime, family hydrators, door routes,
@@ -57,12 +61,13 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
       hook lanes' created flag, the same-thread recheck, and purge against a first build.
 - [x] Suites on 3.14t (PYTHON_GIL=0 and 1) and the GIL build; 30k soak; VM A/B with probe_steps3.
 - [x] NOTICE melder_0; byte-identical device apply; version notch and release note.
-- [ ] Promote docs (src_architecture, src_components, indexes); refresh graph descriptors; artifact disposition.
+- [x] Promote docs (src_architecture, src_components, indexes); refresh graph descriptors; artifact disposition
+      (applied at turn-in: the patch lane moves to patches/completed, the artifacts are retained).
 - [ ] Owner Windows run and acceptance.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - A door-held normal site plan without the nested root-site guard, bound only where the door holds that guard.
@@ -79,6 +84,8 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
 ## Validation
 - VM copy, 3.14t (PYTHON_GIL=0 and 1) and the GIL build: suites green, new tests included; 30k soak flat;
   probe_steps3 A/B -3.3% (1 thread) and -3.6% (2 threads) per worker cycle (Notes 22:03:17Z, 22:07:25Z).
+- Device tree at 0.2.74 (checksum-equal copy with the rebuilt assets): 42 suite runs green on 3.14t (gil 0 full
+  set, gil 1 subset) and the GIL build (subset); build assets --check and LLM bundles --check OK (Note 22:41:30Z).
 - Not run: the owner's Windows gauntlet.
 
 ## Risks / Rollback Notes
@@ -211,7 +218,7 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
     - Tests are new files only: a unit test of the emitted lock discipline (door-held root, kept guards, the recheck)
       and an integration test of concurrent first melds (conduit and shared spellspace) with build-once and exact
       created-hook counts.
-  EVIDENCE: tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md:161-197
+  EVIDENCE: tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md:168-204
   IMPACT: Three production files, all melder_0's lane; NOTICE M2-8 before any device write.
   NEXT: Patch docs under system_docs/patches/active/nested_slot_guard_2026_09_26/.
   REREAD: REQUIRED
@@ -337,9 +344,141 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T22:24:10Z
+  TYPE: FACT
+  CLAIM: Canonical docs promoted, then re-read against the source (door routes, SitePlanEmission, the runtime and
+    the hydrator, Meld.__init__ store attributes, Creations.cleanup/add_creation, the specializer's deopt).
+    - src_architecture: a new operational invariant "Door-held first builds (2026-09-26, 0.2.73)", one added
+      sentence each in Meld Resolution step 4 and the "Override key-set plans" invariant, C1 re-measured
+      (site_plan_lowering 1435 -> 1501, site_plan_override_runtime 384 -> 405, verified 22:18:53Z), the generalized
+      hydrator added to Information Sources, and a handoff entry.
+    - src_components: "Door-held roots" under Slot build guards (Creations and SpellSpace), a Meld Resolution
+      concurrency bullet, the SpellCompiler "Door-held root" bullet, the same C1 re-measure, and a handoff entry.
+      generalized_hydrator.py is in no Key Files list, so it has no core C1 entry; it was already a source.
+    - Both indexes regenerated; --check OK (3044 and 9841 lines). Content preservation: the only baseline lines
+      missing afterwards are the six re-measured C1 fields (end_line, loc, verified_at of the two entries).
+      Package-path hits are 9 and 11 before and after (pre-existing, same lines), with no absolute paths. Citation
+      bounds recipe: 0 problems. The rubric was not re-scored for this additive promotion.
+  EVIDENCE:
+  - system_docs/src_architecture.md:699-703
+  - system_docs/src_architecture.md:875-890
+  - system_docs/src_architecture.md:968-981
+  - system_docs/src_architecture.md:2800-2802
+  - system_docs/src_components.md:2724-2729
+  - system_docs/src_components.md:3061-3064
+  - system_docs/src_components.md:3558-3568
+  - system_docs/src_components.md:9552-9555
+  IMPACT: Docs describe 0.2.73. The graph still has the pre-change line numbers for the three files, and the build
+    assets embed the docs, so both must be rebuilt next.
+  NEXT: extract_graph.py --strict; re-read and accept the changed nodes; assemble; --check.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T22:27:30Z
+  TYPE: FACT
+  CLAIM: Graph refreshed for 0.2.73. extract_graph.py --strict (3.14.7) rc 0 with no skipped files. The node changes
+    in this lane's files: SitePlanEmission (moved 715 -> 731, new span), SitePlanLowering and SitePlanOverrideRuntime
+    (new spans), GeneralizedHydratedExecutors (line only). The three stale class nodes were re-read against the
+    source, each got one responsibility for the door route key (SitePlanEmission also owns
+    _root_guard_held_by_door), and they were accepted. Census stale 199 -> 196; assemble and --check are clean (27517
+    lines, 584 sections). Other descriptor changes: source hashes of __version__ and the nine build-asset modules
+    (changed by the 0.2.72 asset rebuild after that graph pass; they lag again after this one). Seven melder_0
+    descriptors that the extractor only re-serialized (indent 2 -> 1, JSON-equal) were restored byte for byte.
+  EVIDENCE:
+  - system_docs/src_graph.md:7856-7961
+  - system_docs/src_graph.md:7963-8023
+  - system_docs/src_graph.md:8468-8530
+  - system_docs/src_graph_index.md:201-214
+  IMPACT: The graph describes 0.2.73. The build assets embed src_architecture, src_components and the graph, so they
+    are rebuilt from these documents next.
+  NEXT: Asset runner on a fresh work copy with context_compass/system_docs, then on the device (byte-equal, CRLF kept).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T22:31:00Z
+  TYPE: FACT
+  CLAIM: M0-51 and M0-54 consumed (melder_0, 22:15:35Z and 22:18:01Z). tests_architecture and tests_components
+    already list the two new test files (the Spellbook Compiler Unit Cluster and the Conduit Integration Cluster),
+    so no tests-doc edit is needed in this lane. Since 22:18Z __version__ is 0.2.74 (test maps and the
+    order-independent guard test, no src change). The release header and asset line say 0.2.74, and the 0.2.73
+    section stays. Owner, via melder_0's closure note: "I'll regen the assets with the other agent". So this lane
+    rebuilds the build assets and LLM bundles once, stamped 0.2.74, covering both notches.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-26_refresh_tests_system_docs_task.md:250-264
+  - tickets/tasks/completed/2026-09-26_refresh_tests_system_docs_task.md:266-272
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:583-589
+  IMPACT: The asset runner stamps v0.2.74; its --check expects 0.2.74.
+  NEXT: Asset runner on the w73 work copy (device src at 0.2.74 plus system_docs), then the build-asset tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T22:31:00Z
+  TYPE: RISK
+  CLAIM: An empty .git/index.lock (0 bytes, 22:21:52Z) sits on the device beside an index rewritten at 22:21:50Z,
+    four minutes after the owner's 22:17Z commit. This lane ran no git command in that window, and neither the
+    graph nor the index tools call git. The VM cannot remove it (the connected folder refuses deletes). If no git
+    process owns it, the owner's next git write fails until it is deleted on Windows.
+  EVIDENCE: attention_board.md:146-149
+  IMPACT: Could block the owner's commits; nothing in this lane depends on git.
+  NEXT: Report it to the owner in the hand-over; keep running git only read-only with GIT_OPTIONAL_LOCKS=0.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T22:34:30Z
+  TYPE: MEASURE
+  CLAIM: Build assets rebuilt at v0.2.74. The runner ran on w73 (device src at 0.2.74 plus system_docs, checksum
+    compared): agent documentation 460 entries, bind guard 619 (unchanged), system documents 4 entries. Outputs were
+    converted to CRLF like the committed files, and --check is OK. On w73 these pass on 3.14t (gil 0) and the GIL
+    build: tests/unit/melder/build_assets 116, test_package_version_metadata 4, test_system_documents 25,
+    test_system_document_view 84. On the device the runner wrote the first two manifests and the section index,
+    then failed in the system-documents builder: write_payloads unlinks the old payloads first, and the connected
+    folder refuses deletes (PermissionError; nothing was deleted and no temporary file remained). The remaining five
+    outputs were copied from w73 by overwrite. All eight device files are byte-equal to w73 and CRLF, and --check
+    is OK (v0.2.74, schema 2.0.0, key match). A backup of the previous device files is in the VM. Content moved:
+    the version stamp and source keys, the architecture and components payloads, their section index, and the
+    adjacency rows for SitePlanEmission and GeneralizedHydratedExecutors.
+  EVIDENCE:
+  - src/melder/_build_assets/_build_asset_runner.py:246-362
+  - src/melder/_build_assets/_system_documents/_builder.py:542-626
+  - src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py:1-60
+  IMPACT: Assets carry the 0.2.73 docs and graph at 0.2.74. As after 0.2.72, the graph descriptors of the nine
+    asset modules and __version__ lag one rebuild (their hashes are embedded in the graph payload).
+  NEXT: LLM bundles with --include-untracked, then --check.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T22:41:30Z
+  TYPE: MEASURE
+  CLAIM: LLM bundles and the final suites at 0.2.74.
+    - LLM bundles: llm_support/_builder.py --include-untracked with GIT_OPTIONAL_LOCKS=0 wrote src (576 files),
+      tests (1018) and other (370) plus manifest.json. --check is OK both with and without --include-untracked:
+      no untracked file exists outside context_compass, and the owner's 22:17Z commit already tracks the new tests.
+    - Final suites on w73, a checksum-equal copy of the device tree at 0.2.74 with the rebuilt assets: 42 suite runs,
+      all rc 0. On 3.14t PYTHON_GIL=0, the full set: spellbook unit, component and integration; conduit
+      integration; multithreading; aether unit, component and integration; utilities; crystallizer; mutation
+      research; live_sim; the top-level unit tests; build assets. On PYTHON_GIL=1 and the GIL build, the
+      concurrency subset plus the top-level unit tests and build assets. The three build-asset tests that failed on
+      the stale 0.2.72 copies now pass (260 passed, 1 skipped).
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/nested_slot_guard/suites_final_0274_vm.txt:1-51
+  - llm_support/manifest.json:1-20
+  IMPACT: The notch pipeline is complete: code, tests, soak, A/B, device apply, 0.2.73 docs, graph, assets and LLM
+    bundles (stamped 0.2.74 with melder_0's notch). Only the owner's Windows gauntlet run and acceptance remain.
+  NEXT: Hand over to the owner: summary, VM numbers, the index.lock RISK, and a request for the Windows run.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Opened on the owner's go-ahead (~21:37Z). Safe shape only: the door keeps its guard, and the plan it calls stops
-taking that guard a second time. First step: read the code being changed and its callers.
+In review. Done: a CreationContext door keeps its root's build lock, and for unique_per_conduit and
+unique_per_spell_space roots the normal site plan it calls no longer takes that lock a second time. Other
+lifetimes, child sites and override plans are unchanged. Code and tests are applied byte-identically and
+committed by the owner (22:17Z). __version__ went 0.2.72 -> 0.2.73, and melder_0's notch took it to 0.2.74. The
+release note has its own section. src_architecture and src_components are promoted with indexes, the graph is
+accepted and assembled, and the build assets and LLM bundles are rebuilt at 0.2.74. VM: -3.3% (1 thread) and
+-3.6% (2 threads) per worker cycle, soak flat, suites green. Open: the owner's Windows gauntlet run and acceptance;
+at turn-in the patch lane moves to patches/completed. RISK: an empty .git/index.lock (22:21:52Z) not made by this
+lane.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -10,7 +10,7 @@
 - Original Agent: updater_0
 - Priority: p2
 - Created: 2026-09-19T15:07:35Z
-- Updated: 2026-09-26T22:14:29Z
+- Updated: 2026-09-26T22:17:12Z
 
 ## Objective
 Build a high-level but source-grounded understanding of Nexus, Crystallizer, and Spellbook,
@@ -494,6 +494,17 @@ Read-unit note (component contracts):
   NEXT: Continue through the successor task's registration ownership and target-selection trace.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-26T22:17:12Z
+  TYPE: DECISION
+  CLAIM: The owner requested updater_0's checkout. Release the current executor assignment while
+    retaining original authorship and this ticket's review state. No source findings were revalidated.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-26_checkout_updater_0_task.md
+  IMPACT: This historical discovery no longer assigns work to the departed agent.
+  NEXT: Owner assigns an executor only if further work is requested.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Checkout update (2026-09-26): updater_0 has departed and released this assignment. The ticket remains

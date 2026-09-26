@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T21:38:55Z
+- Updated: 2026-09-26T22:41:45Z
 
 ## User Narrative
 As the Melder owner, I want Melder's per-scope-cycle runtime on the real-world gauntlet (free-threaded, three
@@ -208,12 +208,33 @@ weakens a cleanup or concurrency guarantee is out.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T22:41:45Z
+  TYPE: FACT
+  CLAIM: The nested slot-guard removal is done end to end and is in review. Door-called first builds of
+    unique_per_conduit and spellspace roots now take their build lock once. On the VM: -3.3% and -3.6% per worker
+    cycle (1 and 2 threads), soak flat, suites green. The code is applied and was committed by the owner at 22:17Z.
+    The 0.2.73 docs and graph are promoted; build assets and LLM bundles are stamped 0.2.74 after melder_0's notch.
+    Still open for the owner:
+    - the Windows gauntlet run on 0.2.74;
+    - turn-in of the build-locks discovery task and this implementation task;
+    - P1 closure and P4 acceptance;
+    - the SpellSpace active-scope RISK and the system_document_view race;
+    - the tail task's optional 200k run;
+    - a stray empty .git/index.lock (RISK in the task).
+  EVIDENCE: tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md:327-470
+  IMPACT: The story's next measured gain is in the tree; its acceptance waits on the owner's run.
+  NEXT: Owner's Windows gauntlet run on 0.2.74 and acceptance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Attribution is done (measure task). In the tree: P1 (off the normal path since S2b-2) and P4 (0.2.68), both in
-review. Dropped: P3, interning, conjure-time hydration. Lever 1's lifecycle is closed as measured. The next gain is
-removing the nested slot-guard take on first builds (about 0.3 us per worker cycle on the VM). It is in the build-locks
-task's DECISION_REQUEST and waits on the owner's pick of who implements it (melder_0's code). Owner decisions are
-listed in the last note.
+Attribution is done (measure task). In the tree, all in review:
+- P1: off the normal path since S2b-2.
+- P4: 0.2.68.
+- The nested slot-guard removal: code at 0.2.73, docs, graph, assets and LLM bundles at 0.2.74. Door-called
+  first builds take their build lock once, -3.3% to -3.6% per worker cycle on the VM.
+Dropped: P3, interning, conjure-time hydration. Lever 1's lifecycle is closed as measured. Next: the owner's Windows
+gauntlet run on 0.2.74, then turn-ins. The open owner decisions are listed in the last note.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

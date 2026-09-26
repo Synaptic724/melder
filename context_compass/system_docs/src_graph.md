@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `559f5686564f94479f87d356046f5e4cbb3c985bfa0991e2313374666e894fb4`
+- source_sha256: `1939ec53caa031da4cb858f82e3383e857ded18cffe6cd4b9b6d33fec1f13fe8`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `b23c825b0df5b6485dcf5d97b1c3d32db6656b1d521e289c1b6924eb0eeb7256`
+- source_sha256: `ed0c6baccd78952221187b20ee5a5be1e819f4ffa06de2afbf4de4ef4eff90eb`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `e9def2a7cbca525f9f374d534fc380b92527850e4c20e3582c06e376f2eadf35`
+- source_sha256: `5e3fe2aba288eeb246704e8f6b138f94cdc16d3146e230f4b5217546e427e1c7`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `d3caf1ade71cda2934eaa92a1ea486cd9204b44a0e462a32c50009902573a6e3`
+- source_sha256: `c8acf6681131b8659880223d7a30daacf7872e113e2c2435cc33d3001cc57262`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `ceb44c255350cffa5c5c75cff34dc081c7e60adee930eca94719029015571f82`
+- source_sha256: `c6e6e74e1c22d8c70b54ed1ff4c3f0cc6903232a39c57ae2fe009b880cc50372`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `8d1742f4f87c141ee128f63bf10d185cc356cee2364a97719d3e955b92152656`
+- source_sha256: `b5b33ff96931813e12f0226e47ab8be9b8758f72ab695ec0903aeb97c82ca747`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `efea77da0fddf01838d268baf2a3bb7f511f9a35e221a9601cf8c9c5afaedea3`
+- source_sha256: `840cb2e9dbdcf4d146464c9835e8c46ae8ae911dfc2ebc6077582e24cdee272c`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `39e4713f6eb1319f3dcbb3bc703ca5a6651fd497001adc1d2f91ad088b110df6`
+- source_sha256: `540928202dd3da9e09b97af6b4ed09c215c5273b9de3104320eea3499464e788`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `5e817dd236011e6700701a3623548c01d68e144f72c7cf9df3948504a8d8a82b`
+- source_sha256: `9b9f4e33e93327422f969a3af92536cc3e1ff514ce9ac9b111f2d5deb4ede4bf`
 - nodes: 1
 
 ### Nodes
@@ -7857,7 +7857,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
 
-- source_sha256: `373792a187e6e91562b824d2d467ea798326127e824e587a7e0d56b0a0a48c44`
+- source_sha256: `b3bc6588ce783cec33d8d1821bfc150b8018b300b5076d70b2a725d8eb533be8`
 - nodes: 5
 
 ### Nodes
@@ -7908,13 +7908,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - walks demand from the root, skipping parameters with a winning key
   - emits the normal (meld) plan for the empty key set and (meld, ov) plans otherwise
   - decides where operands may go positionally (positional_run)
+  - passes a door route key to normal-mode emission only and refuses one for key-set plans
 - phases: `runtime`
 - public methods: `build_site_graph`, `demanded_instance_keys`, `emit`, `positional_run`
 
 #### `SitePlanEmission` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:715`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:731`
 - extends: `Cleanable`
 - role: Per-plan emission state: places steps at top level or inside shared-site misses and renders the plan source.
 - responsibilities:
@@ -7922,7 +7923,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - emits hit reads with out-of-line misses that build children before taking the build guard
   - chooses a direct call or generic construction per step and builds call arguments
   - emits conflict guards and unresolved-input refusals at context tops
-- owns_state: `_lines`, `_miss_lines`, `_masked`, `_direct`, `_dict_mode`, `_shared`, `_home`, `_children`, `_miss_value_params`, `_root_index`, `_context_params`
+  - leaves out the root miss's guard in a normal plan whose calling route door already holds it (unique_per_conduit and spellspace roots, 0.2.73)
+- owns_state: `_lines`, `_miss_lines`, `_masked`, `_direct`, `_dict_mode`, `_shared`, `_home`, `_children`, `_miss_value_params`, `_root_index`, `_context_params`, `_root_guard_held_by_door`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `render`
 
@@ -7962,7 +7964,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py
 
-- source_sha256: `8933de0f73418eb5009cf946e506cbef9778c6668ca8babe69726498f1eac4d5`
+- source_sha256: `151d88891b66dd8b244d7559d8b1166afd96af3acab20a5a07078965ce87ac68`
 - nodes: 2
 
 ### Nodes
@@ -7988,6 +7990,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - compiles a missing key set under _compile_lock, evicting the oldest at MAX_PLANS
   - dispatches __args__ key sets by arity and wraps key errors as 'Failed to apply overrides.'
   - cleans its plans, the site graph and every owned step
+  - hands the hydrator's door route key to the normal plan only; override key-set plans keep their root guard
 - owns_state: `execute_with_overrides`, `execute_normal`, `_steps`, `_plans`, `_compile_lock`, `_site_graph`, `_owned_masked_steps`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`
@@ -8466,7 +8469,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py
 
-- source_sha256: `4af262e74891ba8cde14af5cc2bfd40d0bf654957834dc813e28f1b25e689616`
+- source_sha256: `c7cce38ac21f461fab54ab0f072a7325dbfdfbad9ab9469b5b9272fadcf00a76`
 - nodes: 2
 
 ### Nodes
@@ -8486,7 +8489,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `GeneralizedHydratedExecutors` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.GeneralizedHydratedExecutors`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:60`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:62`
 - extends: `Cleanable`
 - role: Hydration result container for generalized family runtime doors.
 - responsibilities:

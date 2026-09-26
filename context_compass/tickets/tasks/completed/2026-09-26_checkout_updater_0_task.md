@@ -1,14 +1,18 @@
 # Task: Check updater_0 out of repository coordination
 
+- Completed: 2026-09-26T22:17:12Z
+- Summary: Owner-requested checkout. Roster marked departed, obsolete coordination note retired,
+  and the leftover review assignment released. Code and historical work retained.
+
 ## Metadata
 - Task ID: TASK-2026-09-26-checkout-updater-0
 - Story: none
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p2
 - Created: 2026-09-26T22:14:29Z
-- Updated: 2026-09-26T22:14:29Z
+- Updated: 2026-09-26T22:17:12Z
 
 ## Objective
 Complete the owner's explicit checkout request and remove updater_0's current execution claims.
@@ -26,15 +30,15 @@ Complete the owner's explicit checkout request and remove updater_0's current ex
 - Out of scope: Source, tests, retained artifacts, version/assets, other agents and feature acceptance.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: Owner explicitly requested checkout and removal of current repo coordination presence.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Explicit checkout request fulfilled; roster/assignment checks passed and route retired.
 
 ## Steps / Checklist
 - [x] Inspect current roster, active routes, messages and unclosed task assignments.
-- [ ] Mark updater_0 departed and retire its obsolete standing coordination note.
-- [ ] Release the leftover orientation assignment without declaring its review accepted.
-- [ ] Verify absence of active ownership and close this checkout record.
+- [x] Mark updater_0 departed and retire its obsolete standing coordination note.
+- [x] Release the leftover orientation assignment without declaring its review accepted.
+- [x] Verify absence of active ownership and close this checkout record.
 
 ## Deliverables
 - Departed roster entry and no remaining live updater_0 coordination claims.
@@ -47,7 +51,9 @@ Complete the owner's explicit checkout request and remove updater_0's current ex
 - This checkout task, moved to completed when verified.
 
 ## Validation
-Pending metadata/routing checks. Runtime tests are not applicable to this administrative change.
+Roster and assignment checks passed: departed status, no updater_0 messages, no obsolete lead note,
+no context assignment and no other unclosed/non-backlog ticket assigned to updater_0. Runtime tests
+are not applicable. Closure removes the temporary route and caps closed anchors at twelve.
 
 ## Risks / Rollback Notes
 Other agents are editing shared boards. Apply anchored edits and preserve unrelated regions.
@@ -56,11 +62,11 @@ The older orientation ticket stays in review with no assigned executor; checkout
 ## Applicable Anti-Patterns
 - [x] No source or retained-evidence deletion.
 - [x] No closure or reassignment of another agent's work.
-- [ ] No stale active checkout route after completion.
+- [x] No stale active checkout route after completion.
 
 ## Done Checklist
-- [ ] Checkout applied and verified.
-- [ ] Explicit owner request fulfilled; administrative record closed and routing synchronized.
+- [x] Checkout applied and verified.
+- [x] Explicit owner request fulfilled; administrative record closed and routing synchronized.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -105,5 +111,6 @@ The following former mailbox note is retained here as history, not an active rou
   Lead task: tickets/tasks/2026-09-24_coordinate_override_execution_investigation_task.md.
 
 ## Context / Handoff Summary
-Owner-authorized checkout only. No new feature work is opened. Release the old orientation assignment,
-mark the roster departed, retire obsolete coordination instructions, verify and close this record.
+Checkout complete. updater_0 has no current execution assignment or active route. The older orientation
+record remains unassigned in review. Historical contributions, artifacts and other agents' active work
+are retained. Only ContextCompass coordination records changed.

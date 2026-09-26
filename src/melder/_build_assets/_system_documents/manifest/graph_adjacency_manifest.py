@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.72"
+BUILT_FOR_VERSION = "0.2.74"
 NODE_COUNT = 1211
 EDGE_COUNT = 1393
 WHY_COUNT = 938
@@ -378,7 +378,7 @@ NODES = {
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolution': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py', 'OverrideKeyResolution', 'class', 16, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolver': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py', 'OverrideKeyResolver', 'class', 96, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py', 'site_plan_lowering', 'module', 1, False),
-    'melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py', 'SitePlanEmission', 'class', 715, False),
+    'melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py', 'SitePlanEmission', 'class', 731, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py', 'SitePlanLowering', 'class', 449, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py', 'SitePlanRuntimeHelpers', 'class', 265, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py', 'SitePlanStep', 'class', 40, False),
@@ -403,7 +403,7 @@ NODES = {
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.PlanBindingResolver': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py', 'PlanBindingResolver', 'class', 25, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py', 'SpellbookBindingResolver', 'class', 131, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py', 'generalized_hydrator', 'module', 1, False),
-    'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.GeneralizedHydratedExecutors': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py', 'GeneralizedHydratedExecutors', 'class', 60, False),
+    'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.GeneralizedHydratedExecutors': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py', 'GeneralizedHydratedExecutors', 'class', 62, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py', 'generalized_manifest', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_lazy_door_step.py', 'generalized_lazy_door_step', 'module', 1, False),
     'melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps.generalized_lazy_door_step.GeneralizedLazyDoorStep': ('src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_lazy_door_step.py', 'GeneralizedLazyDoorStep', 'class', 15, False),

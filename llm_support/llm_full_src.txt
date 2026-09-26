@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 3b875cf1a39a30185fe9fd74af2705f2e4a830423116232edadf69d75c811d8e
+SOURCE FINGERPRINT: 41612bfa8af84a90cf0b0bca782c80ad9f5d166b7e5c1a34398ac0633c270d68
 FILE COUNT: 576
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: b1532a01c7d4850f443dd600f3dd9257906ed7484dbc0af86078e6fcfd178774
+CONTENT SHA256: e7e60f42d7f17d12ed6e4f25d05ae83a976448203ea5d931ff6c7002dcecf918
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.72"
+__version__ = "0.2.74"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -80130,7 +80130,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
-CONTENT SHA256: 373792a187e6e91562b824d2d467ea798326127e824e587a7e0d56b0a0a48c44
+CONTENT SHA256: b3bc6588ce783cec33d8d1821bfc150b8018b300b5076d70b2a725d8eb533be8
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import FunctionType, MethodType
@@ -80615,7 +80615,12 @@ class SitePlanLowering:
           no identities, so equal shapes share one code object.
 
     Threading:
-        Compile-time only; emitted plans take the same locks as the normal lane.
+        Compile-time only; emitted plans take the same locks as the normal lane,
+        with one exception (2026-09-26, 0.2.73): the normal plan emitted for a
+        `door_route_key` of "unique_per_conduit" or "spellspace" whose root has
+        that route's existence builds its root without taking the root's slot
+        guard, because the route door that calls it already holds that same
+        guard across the call. See `SitePlanEmission`.
 
     Registration:
         MELDER KERNEL - internal; never bound as a spell.
@@ -80793,6 +80798,7 @@ class SitePlanLowering:
             root_spell_name: str,
             arity: int,
             normal_mode: bool = False,
+            door_route_key: Optional[str] = None,
     ) -> Tuple[str, Dict[str, Any], Tuple[SitePlanStep, ...]]:
         """
         Emit one key-set plan: `def _site_plan_executor(meld, ov) -> instance`.
@@ -80813,10 +80819,17 @@ class SitePlanLowering:
             arity: Length of `__args__` for this plan (0 when absent).
             normal_mode: Emit the `(meld)` normal-lane form; requires a
                 resolution with no winners and no conflicts, and arity 0.
+            door_route_key: Normal mode only. The route key of the
+                CreationContext doors that call this plan (they hold that
+                route's build lock across the call), or None when a caller may
+                not hold it. For "unique_per_conduit" and "spellspace" with a
+                root of the matching existence, the root site takes no guard of
+                its own (see `SitePlanEmission`); anything else keeps it.
 
         Raises:
-            RuntimeError: When the root step is missing from `steps`, or
-                `normal_mode` is asked for a key set that supplies anything.
+            RuntimeError: When the root step is missing from `steps`,
+                `normal_mode` is asked for a key set that supplies anything, or
+                `door_route_key` is given outside normal mode.
 
         Returns:
             Tuple[str, Dict[str, Any], Tuple[SitePlanStep, ...]]:
@@ -80825,6 +80838,8 @@ class SitePlanLowering:
         """
         if normal_mode and (resolution.winners or resolution.conflicts or arity):
             raise RuntimeError("A normal-mode plan is only emitted for a key set that supplies nothing.")
+        if door_route_key is not None and not normal_mode:
+            raise RuntimeError("A door route key applies only to the normal-mode plan.")
         demanded = cls.demanded_instance_keys(site_graph, resolution)
         kept = tuple(step for step in steps if step.instance_key in demanded)
         if not any(step.instance_key == root_instance_key for step in kept):
@@ -80840,6 +80855,7 @@ class SitePlanLowering:
             root_spell_name=root_spell_name,
             arity=arity,
             normal_mode=normal_mode,
+            door_route_key=door_route_key,
         )
         try:
             return emission.render()
@@ -80888,6 +80904,18 @@ class SitePlanEmission(Cleanable):
           constructor runs (today's locking; design risk R2 retired
           2026-09-26); a cold race may build and drop the loser's children, as
           the straight-line lowering does.
+        - Door-held root (2026-09-26, 0.2.73): in normal mode with a
+          `door_route_key` from `DOOR_HELD_ROOT_EXISTENCE` and a root of that
+          existence, the root's miss takes no guard. The route door that calls
+          the plan holds the root's slot guard from its recheck until the plan
+          returns; the plan's root store read (`meld._conduit_creations` or
+          `meld._spellspace_creations`, each assigned once per Meld) yields the
+          same store and so the same guard, and a second take would only
+          re-enter it. The root miss still rechecks after building its
+          children, so a same-thread nested meld that published the root
+          meanwhile is returned. The children's constructors run under the
+          door's root guard, as they did when the plan re-entered it. Every
+          other site, root and key-set plan keeps its guard.
 
     Lifecycle / Cleanup:
         Created and cleaned inside one `emit` call. The namespace and masked
@@ -80911,6 +80939,16 @@ class SitePlanEmission(Cleanable):
         routing and generic construct fallbacks.
     """
 
+    # Door route key -> the root existence whose normal-plan root miss relies on
+    # the calling door's slot guard. Both routes read their store from a Meld
+    # attribute assigned once in `Meld.__init__`; lineage (repointed at link and
+    # upgrade), cluster (store re-resolved per call) and unique (Spell lock in
+    # the door) are deliberately absent.
+    DOOR_HELD_ROOT_EXISTENCE: ClassVar[Dict[str, Existence]] = {
+        "unique_per_conduit": Existence.unique_per_conduit,
+        "spellspace": Existence.unique_per_spell_space,
+    }
+
     __slots__ = Cleanable.__slots__ + [
         "_steps",
         "_site_graph",
@@ -80932,6 +80970,7 @@ class SitePlanEmission(Cleanable):
         "_root_index",
         "_miss_lines",
         "_context_params",
+        "_root_guard_held_by_door",
     ]
 
     def __init__(
@@ -80945,6 +80984,7 @@ class SitePlanEmission(Cleanable):
             root_spell_name: str,
             arity: int,
             normal_mode: bool = False,
+            door_route_key: Optional[str] = None,
     ) -> None:
         """
         Prepare emission state; nothing is emitted until `render`.
@@ -80959,6 +80999,9 @@ class SitePlanEmission(Cleanable):
             arity: Length of `__args__` for this plan (0 when absent).
             normal_mode: Emit `(meld)` signatures without `ov` (the caller has
                 checked that the key set supplies nothing).
+            door_route_key: Normal mode only: the route key of the doors that
+                call this plan, or None. Decides whether the root's miss relies
+                on the door's guard (see the class contract).
 
         Returns:
             None.
@@ -80998,6 +81041,17 @@ class SitePlanEmission(Cleanable):
         self._miss_lines: List[str] = []
         # Leading parameters of the plan and of every miss.
         self._context_params: Tuple[str, ...] = ("meld",) if normal_mode else ("meld", "ov")
+        # True when the calling door holds the root's slot guard across the plan
+        # call (normal mode, eligible route, matching root existence).
+        held_existence: Optional[Existence] = None
+        if normal_mode and door_route_key is not None:
+            held_existence = self.DOOR_HELD_ROOT_EXISTENCE.get(door_route_key)
+        root_existence = next(
+            step.existence for step in steps if step.instance_key == root_instance_key
+        )
+        self._root_guard_held_by_door: bool = (
+            held_existence is not None and root_existence is held_existence
+        )
 
     def cleanup(self) -> None:
         """
@@ -81031,6 +81085,7 @@ class SitePlanEmission(Cleanable):
         del self._root_index
         del self._miss_lines
         del self._context_params
+        del self._root_guard_held_by_door
 
     def _site_index(self, step: SitePlanStep) -> int:
         """
@@ -81433,23 +81488,33 @@ class SitePlanEmission(Cleanable):
             The sites placed inside the miss are built before the guard is taken,
             so the guard covers only this site's recheck, construction and
             publication, as every build lock does in the straight-line lowering.
-            A user constructor never runs under another site's build lock.
+            Within the plan, a user constructor never runs under another site's
+            build lock.
+            Door-held root (0.2.73): when this is the root's miss and
+            `_root_guard_held_by_door` is set, the `with` line is omitted and the
+            recheck, construction and publication run at the miss's top level.
+            The calling door holds this same slot guard for the whole call (see
+            the class contract), so nothing else changes: the recheck still
+            follows the children, and publication is the same statement.
         """
         spell_name = f"spells[{index}]"
         store = f"c{index}"
         supplied = self._supplied_names(step)
         children: List[str] = []
         uses_many_store = self._emit_context(index, "    ", children)
+        guarded = not (index == self._root_index and self._root_guard_held_by_door)
+        body_indent = "        " if guarded else "    "
+        inner_indent = body_indent + "    "
         inner: List[str] = []
-        self._emit_construct(index, step, self._direct[index], supplied, "            ", inner)
+        self._emit_construct(index, step, self._direct[index], supplied, inner_indent, inner)
         if step.spell.has_disposal_methods:
             disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
             inner.append(
-                f"            {store}.add_creation({sid_name}, v{index}, "
+                f"{inner_indent}{store}.add_creation({sid_name}, v{index}, "
                 f"has_disposal_methods=True, disposal_methods={disposal_name})"
             )
         else:
-            inner.append(f"            {store}._creations[{sid_name}] = v{index}")
+            inner.append(f"{inner_indent}{store}._creations[{sid_name}] = v{index}")
         parameters = ", ".join(list(self._context_params) + [store] + self._miss_arguments(index))
         lines = self._miss_lines
         lines.append(f"def _miss{index}({parameters}):")
@@ -81457,14 +81522,15 @@ class SitePlanEmission(Cleanable):
         if uses_many_store:
             lines.extend(self._many_store_prologue("    "))
         lines.extend(children)
-        lines.append(f"    with {self._guard(step, store, sid_name, spell_name)}:")
-        lines.append(f"        v{index} = {store}._creations.get({sid_name})")
+        if guarded:
+            lines.append(f"    with {self._guard(step, store, sid_name, spell_name)}:")
+        lines.append(f"{body_indent}v{index} = {store}._creations.get({sid_name})")
         if supplied:
-            lines.append(f"        if v{index} is not None:")
-            lines.append(f"            _raise_existing_override({spell_name}, root_spell_id)")
-        lines.append(f"        if v{index} is None:")
+            lines.append(f"{body_indent}if v{index} is not None:")
+            lines.append(f"{body_indent}    _raise_existing_override({spell_name}, root_spell_id)")
+        lines.append(f"{body_indent}if v{index} is None:")
         lines.extend(inner)
-        lines.append(f"        return v{index}")
+        lines.append(f"{body_indent}return v{index}")
 
     @staticmethod
     def _many_store_prologue(indent: str) -> List[str]:
@@ -81573,7 +81639,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py
-CONTENT SHA256: 8933de0f73418eb5009cf946e506cbef9778c6668ca8babe69726498f1eac4d5
+CONTENT SHA256: 151d88891b66dd8b244d7559d8b1166afd96af3acab20a5a07078965ce87ac68
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -81620,6 +81686,14 @@ class SitePlanOverrideRuntime(Cleanable):
           Phase-3 topologies and compiles the normal plan, exposed as
           `execute_normal(meld) -> instance`; the family hydrators install it as
           the inner no-overrides executor. Site-graph errors raise unwrapped.
+        - `door_route_key` names the route of the CreationContext doors that
+          call the normal plan. For "unique_per_conduit" and "spellspace" roots
+          of that existence, the normal plan's root build relies on the door's
+          slot guard instead of re-taking it (2026-09-26, 0.2.73): every caller
+          of `execute_normal` must then hold the root's slot guard of the
+          meld's route store, as the no-overrides doors, the override door
+          (whose dispatcher falls back to the normal plan) and the specializer's
+          deopt do. None (the default) keeps the root guard in the plan.
         - `execute_with_overrides(meld, overrides) -> instance` keeps the
           signature the CreationContext override doors call. `overrides` None
           runs the normal plan.
@@ -81640,7 +81714,9 @@ class SitePlanOverrideRuntime(Cleanable):
     Threading:
         Plan lookups are lock-free dict reads. Compiles and evictions hold
         `_compile_lock`; a thread that finds a plan compiled while it waited
-        uses it. Emitted plans take the normal lane's build locks.
+        uses it. Emitted plans take the normal lane's build locks; the normal
+        plan of a door-held root (see Contract) takes every build lock except
+        the root's, which its calling door already holds.
 
     Lifecycle / Cleanup:
         Built by the family hydrator at first meld and kept alive by the
@@ -81690,6 +81766,7 @@ class SitePlanOverrideRuntime(Cleanable):
             steps: Tuple[SitePlanStep, ...],
             root_spell: Spell,
             root_instance_key: SiteInstanceKey,
+            door_route_key: Optional[str] = None,
     ) -> None:
         """
         Build the runtime: the site graph and the normal plan; override plans compile per key set later.
@@ -81699,6 +81776,10 @@ class SitePlanOverrideRuntime(Cleanable):
             root_spell: The melded root spell (borrowed); its Spellbook's live
                 Phase-3 topologies are read here.
             root_instance_key: Instance key of the root step.
+            door_route_key: Route key of the doors that call the normal plan,
+                which hold that route's build lock across the call; None when a
+                caller may not hold it. Read once, for the normal plan only;
+                override key-set plans keep their root guard.
 
         Raises:
             RuntimeError: When no step carries `root_instance_key`, or the site
@@ -81720,7 +81801,7 @@ class SitePlanOverrideRuntime(Cleanable):
         self._compile_lock: threading.Lock = threading.Lock()
         self._site_graph: Optional[SpellSiteGraphAnalysis] = None
         self._owned_masked_steps: List[SitePlanStep] = []
-        self.execute_normal: Callable[[Any], Any] = self._compile_normal_plan()
+        self.execute_normal: Callable[[Any], Any] = self._compile_normal_plan(door_route_key)
         self.execute_with_overrides: Callable[[Any, Optional[Dict[str, Any]]], Any] = (
             self._build_dispatcher()
         )
@@ -81929,7 +82010,7 @@ class SitePlanOverrideRuntime(Cleanable):
         plan: PlanCallable = namespace[SitePlanLowering.PLAN_FUNCTION_NAME]
         return plan
 
-    def _compile_normal_plan(self) -> Callable[[Any], Any]:
+    def _compile_normal_plan(self, door_route_key: Optional[str]) -> Callable[[Any], Any]:
         """
         Build the site graph and compile the empty key set in normal mode (S2b-2).
 
@@ -81939,7 +82020,12 @@ class SitePlanOverrideRuntime(Cleanable):
               override key errors.
             - The plan is `(meld) -> instance`: every demanded step, shared sites
               as hit reads with out-of-line misses (B2), the family's store
-              routing, build guards and registration.
+              routing, build guards and registration. With an eligible
+              `door_route_key` the root's miss relies on the calling door's
+              slot guard (`SitePlanEmission`, 0.2.73).
+
+        Args:
+            door_route_key: Route key of the doors that call this plan, or None.
 
         Returns:
             Callable[[Any], Any]: The normal-lane executor.
@@ -81954,6 +82040,7 @@ class SitePlanOverrideRuntime(Cleanable):
             root_spell_name=self._root_spell.spell_name,
             arity=0,
             normal_mode=True,
+            door_route_key=door_route_key,
         )
         self._owned_masked_steps.extend(masked)
         code = get_or_compile_executor_code(source=source, source_name=SitePlanLowering.PLAN_SOURCE_NAME)
@@ -85110,7 +85197,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py
-CONTENT SHA256: 4da98031eb5580206b2445783cc421517ffa538501c2aed8e82274b891bfe814
+CONTENT SHA256: 00841206ffaef26e831ecb9496bdd2b3baf879fadc98eb8b5caf3da5dba89d0c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -85126,7 +85213,9 @@ Hydration shape:
     2. Hydrate the manifest's no-overrides rows into site-plan steps.
     3. Build `SitePlanOverrideRuntime` over them (2026-09-26, S2b-2): its
        normal plan (the empty key set) is the inner no-overrides executor, and
-       it compiles one plan per override key set at first use.
+       it compiles one plan per override key set at first use. The runtime is
+       told the manifest's route key, because every door built in step 4
+       holds that route's build lock when it calls the normal plan (0.2.73).
     4. Wrap both lanes in the shared route-keyed CreationContext doors (the
        override door is compiled at the first override meld).
     5. Optionally (configuration flag) install the singleton warm-tail
@@ -85407,6 +85496,7 @@ def hydrate_creation_executors(
         no_overrides_payload=no_overrides_payload,
         spell_lookup=no_overrides_spell_lookup,
         root_spell=root_spell,
+        route_key=route_key,
     )
     inner_no_overrides_executor = site_plan_runtime.execute_normal
     fast_transient_no_overrides = (
@@ -85478,6 +85568,7 @@ def _build_site_plan_runtime(
         no_overrides_payload: Dict[str, Any],
         spell_lookup: Dict[str, Any],
         root_spell: Any,
+        route_key: str,
 ) -> SitePlanOverrideRuntime:
     """
     Build the root's site-plan runtime: the normal plan now, override plans per key set later.
@@ -85491,6 +85582,12 @@ def _build_site_plan_runtime(
         - The runtime builds its site graph and normal plan at construction
           (first meld); requires phases 1-7 live, which meld's structural gates
           guarantee on every path that reaches hydration.
+        - `route_key` is passed as the runtime's `door_route_key`: this family
+          calls the normal plan only from its route-keyed doors (no-overrides
+          hooks and instance doors, the override door's normal fallback, the
+          specializer's deopt), and each holds that route's build lock across
+          the call. For "unique_per_conduit" and "spellspace" roots the normal
+          plan therefore skips the re-entrant root guard (0.2.73).
 
     Args:
         no_overrides_payload:
@@ -85499,6 +85596,8 @@ def _build_site_plan_runtime(
             Live spell per step spell id.
         root_spell:
             Live root spell.
+        route_key:
+            The manifest's route key, shared by every door of this root.
 
     Raises:
         RuntimeError:
@@ -85523,6 +85622,7 @@ def _build_site_plan_runtime(
         steps=tuple(SitePlanStep.from_generalized_row(row) for row in rows),
         root_spell=root_spell,
         root_instance_key=root_instance_key,
+        door_route_key=route_key,
     )
 
 

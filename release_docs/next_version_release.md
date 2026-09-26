@@ -1,4 +1,4 @@
-# Melder 0.2.73
+# Melder 0.2.74
 
 **Unreleased**
 
@@ -580,4 +580,10 @@ stay valid.
   family hydrators now say the site graph is built when a root is hydrated and serves normal melds as well
   as override melds. Those of the site-plan lowering, its runtime and the generalized hydrator also state
   when a root's build lock is held by the calling door.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.73.
+- The repository's test maps, which are not packaged, are refreshed: the tests architecture and tests
+  components documents describe the suite as it now stands, including the in-repository CI run (one
+  free-threaded pytest process per OS and Python version over the unit, component and integration tiers),
+  what each group of tests protects, and the rule that a test fixture resetting Melder's singletons must boot
+  a fresh `Aether` afterwards. The registration-guard test and the system-document view tests no longer
+  depend on the order the suite runs them in.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.74.

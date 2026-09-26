@@ -2721,6 +2721,13 @@ EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.slot_guard
 `Creations.purge` and
 `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:_build_no_overrides_lines`.
 
+Door-held roots (2026-09-26, 0.2.73): a first build takes each slot guard once. For a unique_per_conduit or
+unique_per_spell_space root, the route door takes the guard for its recheck and holds it across the executor
+call; the normal site plan it calls builds that root without re-entering the guard, while the root's
+dependency sites still take theirs. Build-once, purge waiting for the build, the cleaned-store refusal and the
+lock order are unchanged. See Component: SpellCompiler and Validation Pipeline, "Door-held root".
+EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_miss`.
+
 Responsibilities:
 - Track live objects in `_creations`.
 - Track cleanup-only disposal metadata in `_disposable_creations`.
@@ -3051,6 +3058,10 @@ Concurrency/Threading:
   construct -> publish, and take the store lock only as a leaf. All locks involved
   are re-entrant, so same-thread nested melds of the same slot still work. See
   Component: Creations and SpellSpace, "Slot build guards".
+- Since 0.2.73 a unique_per_conduit or unique_per_spell_space root takes its slot guard once per first
+  build, in the door; the normal site plan the door calls builds the root without re-entering it. Other
+  lifetimes, child sites and override plans are unchanged. See Component: SpellCompiler and Validation
+  Pipeline, "Door-held root".
 - CORRECTED 2026-09-26: spell-owned CreationContext retrieval never took
   `spell._lock` (the August text here described a cold-path lock the code did
   not have). A ready state-2 context is a lock-free read; a missing one is built
@@ -3544,6 +3555,17 @@ Site-plan runtime for normal and override melds (2026-09-26, override design v2)
   another site's constructor. A shared site with a winning key is pinned to the top level, so a key that targets
   a stored instance keeps today's "already exists" refusal (P2). Disposal-bearing many sites register in the
   innermost scope store, and every registration passes the Spell's live `disposal_method_names` list.
+- Door-held root (2026-09-26, 0.2.73): the runtime passes `door_route_key` to its normal plan only; the
+  generalized hydrator passes the manifest's route key and the many_only hydrator none (its roots are `many`).
+  For "unique_per_conduit" or "spellspace" with a root of that existence
+  (`SitePlanEmission.DOOR_HELD_ROOT_EXISTENCE`), the root's `_miss` has no `with` line. Every caller of the
+  normal plan is a route door that holds the root's slot guard from its recheck until the plan returns
+  (no-overrides hooks and instance doors, the override door's fallback to the normal plan, the specializer's
+  deopt), and plan and door read the root's store from the same Meld attribute, assigned once per Meld. The
+  miss still builds its children first and rechecks before constructing, so a root published by a
+  same-thread nested meld is returned. Lineage, cluster and unique roots, every child site and every
+  override key-set plan keep their guard; a door route key outside normal mode raises RuntimeError. Emitted
+  plans are cached in process only and manifests do not encode the lock shape, so no cache generation moves.
 - Call shape (P5): operands go positionally only while the receiving code binds that position to that name
   (`SitePlanLowering.positional_run`: a class keeping `type.__call__`, `object.__new__` and a plain `__init__`, a
   plain function, or a bound method of one) or while they are a caller's root `__args__` values; the rest go by
@@ -7638,14 +7660,14 @@ future expansion of a `Key Files (C1)` list must land here in the same pass.
   verified_at: 2026-08-02T16:29:16Z
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
-  end_line: 1435
-  loc: 1435
-  verified_at: 2026-09-26T20:40:10Z
+  end_line: 1501
+  loc: 1501
+  verified_at: 2026-09-26T22:18:53Z
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
   start_line: 1
-  end_line: 384
-  loc: 384
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 405
+  loc: 405
+  verified_at: 2026-09-26T22:18:53Z
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py`
   start_line: 1
   end_line: 334
@@ -9526,6 +9548,11 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 door-held first builds (0.2.73): the normal site plan of a unique_per_conduit or
+unique_per_spell_space root no longer re-takes the root's slot guard that its route door already holds, so a
+first build takes that guard once. Promoted into Creations and SpellSpace ("Door-held roots"), the Meld
+Resolution Runtime concurrency notes and the SpellCompiler site-plan runtime ("Door-held root").
 
 2026-09-26 compiler pool reads (0.2.72): the open item recorded by the override site-plan lane below is
 closed. Compiler passes on the meld-time path iterate a copy of the spell pool, Phase 5 admits only ids with a

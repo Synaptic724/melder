@@ -699,6 +699,8 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3695-3833.
 4. Creations registration/reuse occurs inside compiled execution per Existence. Each slotted
    lifetime is built once under its slot's build lock (store `slot_guard`, or Spell lock for
    unique); the store lock is only taken as a leaf around publication (2026-09-25).
+   The door takes that lock once: for a per-conduit or SpellSpace root, the normal site plan it calls
+   does not take the root's lock again (0.2.73).
 5. A meld that would construct a spell without one of its unresolved inputs raises `UnresolvedInputError`
    naming the consumer, parameter, expected type and override keys, before anything under it is built
    (2026-09-26).
@@ -882,6 +884,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   constructor and a stored shared site's children are not rebuilt. Operands depend on the key set only; supplied
   values are never inspected beyond the equal-rank conflict guard. Operands go positionally only where the
   receiving code binds that position to that name. Key errors keep their texts and are not cached.
+  The normal plan's per-conduit or SpellSpace root is built under its door's guard instead (Door-held first
+  builds, 0.2.73).
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:SitePlanOverrideRuntime`
   and `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission`.
 - Shared context rebuild windows (2026-09-26): a dynamic spell's CreationContext and phase-11 plan are shared
@@ -961,6 +965,20 @@ each entry in `src_components.md`; this list is the set that crosses components.
   EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.slot_guard`,
   `Creations.add_creation`, `Creations.purge` and
   `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:_build_no_overrides_lines`.
+- Door-held first builds (2026-09-26, 0.2.73): a CreationContext door holds its root's build lock from its
+  recheck until the executor returns. For a unique_per_conduit or unique_per_spell_space root the normal
+  site plan it calls takes no guard of its own for the root: the plan reads the root's store from the Meld
+  attribute the door read (`_conduit_creations` or `_spellspace_creations`, each assigned once per Meld),
+  so the guard is the door's, and a second take only re-entered it. The root still rechecks after its
+  children are built, so a same-thread nested meld that published it meanwhile is returned. Other roots
+  keep their guard because the plan cannot prove it names the door's lock: lineage stores are repointed
+  at link and upgrade, cluster stores are re-resolved per call, and unique doors hold the Spell lock.
+  Child sites, override key-set plans and a runtime built without a door route keep their guards too.
+  Build-once, purge waiting for an in-flight build, the cleaned-store refusal, lock order and the hook
+  lanes' created flag are unchanged; a first build takes each build lock once.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_miss`,
+  `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:SitePlanOverrideRuntime._compile_normal_plan`
+  and `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:_build_site_plan_runtime`.
 - Creation-cache release compatibility (2026-09-24): generation 9 stores the canonical Melder
   release in each conduit .melc envelope. Admission requires exact release, format-generation and
   Python cache-tag agreement. A missing, malformed or different release produces the existing cold
@@ -1719,15 +1737,15 @@ SpellCompiler and validation:
   note: DI shape classification.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
-  end_line: 1435
-  loc: 1435
-  verified_at: 2026-09-26T20:40:10Z
+  end_line: 1501
+  loc: 1501
+  verified_at: 2026-09-26T22:18:53Z
   note: key-set plan lowering: site graph from steps, placement, emission, call shape.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
   start_line: 1
-  end_line: 384
-  loc: 384
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 405
+  loc: 405
+  verified_at: 2026-09-26T22:18:53Z
   note: per-root site-plan runtime: normal plan and one plan per override key set.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py`
   start_line: 1
@@ -2660,6 +2678,7 @@ without rewriting the original record or existing live IDs.
 - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
 - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
 - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py`
 - `src/melder/utilities/helpers/signature_reflection.py`
 - `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
@@ -2777,6 +2796,10 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 door-held first builds (0.2.73): the normal site plan of a per-conduit or SpellSpace root no longer
+re-takes the root's build lock that its door already holds, so each first build takes that lock once; the meld
+sequence and the operational invariants carry the rule, and the component map carries the emission detail.
 
 2026-09-26 compiler pool reads (0.2.72): compiler passes iterate a copy of the spell pool instead of the live
 dict, so a concurrent bind no longer aborts meld-time revalidation; the operational invariants carry the rule.

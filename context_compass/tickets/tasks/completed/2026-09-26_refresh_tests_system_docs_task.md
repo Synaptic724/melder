@@ -3,14 +3,21 @@
 # Task: tests_architecture and tests_components describe the current suite
 
 ## Metadata
+- Completed: 2026-09-26T22:18:52Z
+- Closure Basis: owner turn-in in chat (2026-09-26T22:17Z): "if your done everything go ahead and turn in your
+  tickets and notch the version and finish adding your note to the release".
+- Summary: tests_architecture (895 lines, rubric 91) and tests_components (2,503 lines, rubric 85, was 74)
+  describe the current suite: CI driver, Protects lines, new clusters, corrected reset flow and counts,
+  C1 core 183 remeasured, indexes current; 0.2.74 notch and release bullet. Raised, not changed: tracked
+  bundle.json and experimentation case packages, the root conftest comment, inert Conduit._aether lines.
 - Task ID: TASK-2026-09-26-refresh-tests-system-docs
 - Story: none
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p2
 - Created: 2026-09-26T21:12:25Z
-- Updated: 2026-09-26T22:14:00Z
+- Updated: 2026-09-26T22:18:52Z
 
 ## Objective
 `tests_architecture.md` was last updated 2026-06-13 and `tests_components.md` scored 74 (C): most cluster entries do
@@ -35,12 +42,15 @@ directories, new suites since June) and deepen the component entries, then regen
 - from_state: in_progress
 - to_state: review
 - transition_reason: Both docs refreshed, indexed and scored >= 80 (notes 22:14:00Z).
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T22:18:52Z; see the Closure Basis.
 
 ## Steps / Checklist
 - [x] Read tests_architecture_instructions.md and tests_components_instructions.md.
 - [x] Inventory the suite from disk; record drift against both docs.
 - [x] Author, index, verify citations, score.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
 - [x] Document each meaningful finding immediately in `## Notes` before further investigation.
@@ -62,21 +72,21 @@ directories, new suites since June) and deepen the component entries, then regen
 - The docs are authored; nothing may be generated or asserted without reading the tests.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -254,11 +264,53 @@ directories, new suites since June) and deepen the component entries, then regen
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-09-26T22:17:52Z
+  TYPE: DECISION
+  CLAIM: Owner, after the tests-docs report: "if your done everything go ahead and turn in your tickets and notch the
+    version and finish adding your note to the release and then let me know I'll regen the assets with the other
+    agent". Scope added to this task before closure: __version__ 0.2.73 -> 0.2.74 (owner's 0.01-per-change rule),
+    release header, one Packaging and documentation bullet for the test maps and the guard-test order fix, and the
+    asset line at 0.2.74 (the owner regenerates build assets and LLM bundles with melder_2). NOTICEs to fable_0,
+    melder_1 and melder_2 before the notch.
+    FILES:
+    - src/melder/__version__.py (CRLF kept)
+    - release_docs/next_version_release.md
+  EVIDENCE: release_docs/next_version_release.md:560-583
+  IMPACT: Owner-approved; no asset rebuild in this lane.
+  NEXT: Send the NOTICEs, notch, edit the release note, then close.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T22:18:52Z
+  TYPE: MEASURE
+  CLAIM: Notched and noted: src/melder/__version__.py 0.2.73 -> 0.2.74 (CRLF kept); release header
+    `# Melder 0.2.74`; a Packaging and documentation bullet for the refreshed test maps and the
+    order-independent registration-guard and view tests; the asset line reads 0.2.74. NOTICEs M0-52 to
+    M0-54 sent first. Build assets and LLM bundles are NOT rebuilt here (owner with melder_2), so the
+    asset --check and the version-stamp unit test fail until that rebuild.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:583-589
+  IMPACT: The change carries its own notch per the owner's versioning rule.
+  NEXT: Close on the owner's turn-in.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T22:18:52Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis).
+  EVIDENCE: tickets/tasks/completed/2026-09-26_refresh_tests_system_docs_task.md
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Review. tests_architecture.md (895 lines, rubric 91) and tests_components.md (2,503 lines, rubric 85) describe the
 current suite; both indexes --check clean. Edit scripts, preservation diffs and probes are in
 artifacts/tests_system_docs_refresh_20260926/. Raised, not changed: tracked bundle.json and experimentation case
 packages, the root conftest comment and future import, inert Conduit._aether assignments.
+Closed 2026-09-26T22:18:52Z on the owner's turn-in; artifacts retained.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py",
- "source_sha256": "4af262e74891ba8cde14af5cc2bfd40d0bf654957834dc813e28f1b25e689616",
+ "source_sha256": "c7cce38ac21f461fab54ab0f072a7325dbfdfbad9ab9469b5b9272fadcf00a76",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator": {
@@ -27,7 +27,7 @@
    "label": "GeneralizedHydratedExecutors",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py",
-   "lineno": 60,
+   "lineno": 62,
    "bases": [
     "Cleanable"
    ],
