@@ -79,59 +79,55 @@ Message alert rules
 - NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T20:00:17Z)
 - NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T20:47:28Z)
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T20:47:28Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T21:19:43Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T21:36:14Z)
+- NEW MESSAGE for melder_0 (from melder_2, 2026-09-26T21:47:18Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| override_design_melder | review | handoff | claude | melder_0 | none | Owner confirms closure of the design task (design v2 approved). | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T11:30:45Z | REQUIRED |
-| override_many_collection_fix | review | handoff | claude | melder_0 | none | Owner reviews the collection-member fix (member paths, cache 13). | Each collection member builds its own many dependencies. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_fix_collection_member_many_sharing_task.md | 2026-09-26T12:29:50Z | REQUIRED |
-| override_site_plan_lowering | in_progress | implementation | claude | melder_0 | none | S6: read the authoring instructions, map patch sections to canonical docs, promote; graph, assets. | Key-set plans for overrides and normal melds on one lowering; unresolved inputs decided before construction; conjure linear; targeting surface and old normal emitters retired (R1, R2; 0.2.70). | S6 done and the story walked through with the owner. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T20:02:19Z | REQUIRED |
-| caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
-| gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner: Windows run of probe_steps3.py (melder and dishka, worker_a, 1 and 3 threads); then pick a structural lever for concurrency (sharded root pool, single-lock link/detach). | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T20:57:04Z | REQUIRED |
+| gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Implement the owner-approved nested slot-guard removal (own task), then the owner's Windows run. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T21:38:55Z | REQUIRED |
 | gauntlet_p1_positional_args | review | validation | claude | melder_2 | none | Owner closes P1: R2 retired its emitter (0.2.70) and its rule lives on in the lowering (P5). | Generated plans pass dependency values positionally (-11% to -21% per scope cycle on the VM). | Owner accepts or retires P1; closure sync. | tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md | 2026-09-26T20:29:32Z | REQUIRED |
 | gauntlet_p4_spellspace_warm_lane | review | validation | claude | melder_2 | none | Owner accepts P4: Windows runs on 0.2.68-0.2.70 show the SpellSpace window at parity on request and worker_b. | SpellSpace.meld serves warm id melds from the door's fast-door entry (about -17% per cached space meld, -2% to -3% per gauntlet cycle on the VM). | Owner accepts; closure sync. | tickets/tasks/2026-09-26_spellspace_meld_warm_id_lane_task.md | 2026-09-26T20:29:32Z | REQUIRED |
 | gauntlet_tail_spikes | review | handoff | claude | melder_2 | none | Owner accepts the attribution (turn-0 first use, no GC); optional 200k run with GAUNTLET_TREND_WINDOWS=20. | The rare Melder-only multi-ms cycle spikes attributed with evidence and ranked fix candidates. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md | 2026-09-26T20:35:11Z | REQUIRED |
+| phase5_pool_snapshot | review | handoff | claude | melder_0 | none | Owner turns in (patch lane moves to completed at closure). | Compiler passes iterate a copy of the spell pool; concurrent binds cannot abort revalidation (0.2.72). | Owner accepts; closure sync. | tickets/tasks/2026-09-26_snapshot_phase5_live_spell_pool_task.md | 2026-09-26T21:45:09Z | REQUIRED |
+| registration_guard_test_order | review | handoff | claude | melder_0 | none | Owner turns in. | The registration-guard test passes in any order. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_fix_registration_guard_test_order_task.md | 2026-09-26T21:45:09Z | HELPFUL |
+| tests_system_docs_refresh | in_progress | discovery | claude | melder_0 | none | Capture the preservation baseline, read the examples, inventory the suite. | tests_architecture/tests_components describe the current suite (rubric >= 80). | Both docs current with indexes; owner accepts. | tickets/tasks/2026-09-26_refresh_tests_system_docs_task.md | 2026-09-26T21:45:09Z | HELPFUL |
+| gauntlet_spellspace_build_locks | review | handoff | claude | melder_2 | none | Owner turns in the discovery task; the owner-approved implementation continues in its own task. | Evidence on whether spellspace-scoped first builds can skip their build locks, with a measured prototype. | Owner turn-in; closure sync. | tickets/tasks/2026-09-26_spellspace_build_locks_task.md | 2026-09-26T21:38:55Z | HELPFUL |
+| gauntlet_nested_slot_guard | in_progress | discovery | claude | melder_2 | none | Read site_plan_lowering.py in full, then every caller of the normal plan. | Door-called first builds take their build lock once; about -0.3 us per worker cycle, nothing observable changes. | Suites, soak and A/B green; byte-identical apply; docs promoted; owner accepts. | tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md | 2026-09-26T21:38:55Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| override_site_plan_lowering | done | melder_0 | tickets/tasks/completed/2026-09-26_build_site_plan_lowering_task.md | S2-S6: key-set plans, normal melds on the lowering, unresolved inputs before construction, retirements; 0.2.71 docs, graph, assets, LLM bundles; owner turn-in. | 2026-09-26T21:09:12Z |
+| override_site_plan_story | done | melder_0 | tickets/stories/completed/2026-09-26_implement_override_site_plan_lowering_story.md | S1-S6 done; patch lane archived to system_docs/patches/completed/override_site_plan_2026_09_26/; owner turn-in. | 2026-09-26T21:09:12Z |
+| override_execution_epic | done | melder_0 | tickets/epics/completed/2026-09-24_override_execution_performance_epic.md | Every story and task done: override melds build only what the call does not supply; owner turn-in. | 2026-09-26T21:09:12Z |
+| override_many_collection_fix | done | melder_0 | tickets/tasks/completed/2026-09-26_fix_collection_member_many_sharing_task.md | Collection members build their own many dependencies (cache 13); owner turn-in. | 2026-09-26T21:09:12Z |
+| override_design_melder | done | melder_0 | tickets/tasks/completed/2026-09-26_design_override_and_caller_input_execution_task.md | Design v2 approved and shipped as the site-plan story; artifacts retained. | 2026-09-26T21:09:12Z |
+| caller_input_strictness | done | melder_0 | tickets/tasks/completed/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | Cause timeline recorded; fixed by unresolved-input sockets (0.2.54) and S4 of the site-plan story. | 2026-09-26T21:09:12Z |
 | ir_structural_snapshot_promotion | done | fable_0 | tickets/tasks/completed/2026-09-26_promote_structural_snapshot_docs_task.md | Structural snapshot promoted into src_components/src_architecture, indexes regenerated, patch folder retired; owner accepted. | 2026-09-26T18:43:15Z |
 | ir_structural_snapshot_parity | done | fable_0 | tickets/tasks/completed/2026-09-26_structural_snapshot_parity_task.md | Cold and hydrated worlds agree on D5 events, across processes and after a crystallizer restore; frame caching-posture fix; owner-run suites green. | 2026-09-26T18:43:15Z |
 | ir_structural_snapshot_hydrate | done | fable_0 | tickets/tasks/completed/2026-09-26_hydrate_structural_tier_at_conjure_task.md | A full structural hit replays phase 3-4 rows and skips phases 1-4 (VM -27% warm conjure at 29 spells); owner-run suites green; turned in. | 2026-09-26T18:18:50Z |
 | ir_structural_snapshot_capture | done | fable_0 | tickets/tasks/completed/2026-09-26_capture_structural_payloads_at_conjure_end_task.md | Per-spell structural payloads (phase 3-4 rows, key, stamp, verdict) beside the executor payloads at generation 15; owner-run suites green; turned in. | 2026-09-26T18:18:50Z |
 | version_notch_melder_1 | done | melder_1 | tickets/tasks/completed/2026-09-26_notch_version_for_self_dependency_and_cycle_consumer_changes_task.md | __version__ 0.2.59 -> 0.2.61 (self-dependency, cycle consumers); release note at 0.2.61; M1-17 to melder_0; turned in. | 2026-09-26T17:44:13Z |
 | unguarded_base_docstrings | done | melder_1 | tickets/tasks/completed/2026-07-25_unguarded_base_docstring_correction_task.md | Registration docstrings agree with the manifest (in 53c9b82c6, July); exit gate re-verified on current source; turned in. | 2026-09-26T17:36:52Z |
-| cycle_consumer_wording | done | melder_1 | tickets/tasks/completed/2026-09-26_word_cycle_consumers_in_circular_dependency_report_task.md | A cycle's consumers are named as consumers (members unchanged); tests, docs, graph, release note; patch lane archived; owner accepted. | 2026-09-26T17:32:39Z |
-| self_dependency_report | done | melder_1 | tickets/tasks/completed/2026-09-26_report_self_referencing_constructor_as_validation_error_task.md | Self-referencing constructors refused via SELF_DEPENDENCY naming the parameter (Phase-3 half in fable_0's C-C); in afded5ce6; turned in. | 2026-09-26T17:00:32Z |
-| ir_structural_snapshot_cc | done | fable_0 | tickets/tasks/completed/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md | Phase 3 emits id rows without a DAG object; dependency_graph tombstoned; owner-run suites green; turned in. | 2026-09-26T16:59:15Z |
-| class_binding_annotations_fix | done | melder_1 | tickets/tasks/completed/2026-09-26_fix_class_binding_profile_annotations_for_type_checking_names_task.md | Class binding profiles keep TYPE_CHECKING-named annotations as source text; fields count in the id; patch lane archived; owner accepted. | 2026-09-26T16:32:21Z |
-| ir_snapshot_patch_docs | done | fable_0 | tickets/tasks/completed/2026-09-26_author_structural_snapshot_patch_docs_task.md | Three I-1 patch docs (architecture, component, hydrator) written, mapped and owner-approved; C-C opened. | 2026-09-26T16:13:09Z |
-| version_notch_validation_report | done | melder_1 | tickets/tasks/completed/2026-09-26_notch_version_and_release_note_for_validation_report_task.md | Version 0.2.58 (literal already notched); release note headed 0.2.58 with the validation-report details; owner accepted. | 2026-09-26T16:09:42Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- override_design_melder: SWITCH_TRIGGER is the design artifact plus owner decision requests.
-  RESUME_HIERARCHY: tickets/epics/2026-09-24_override_execution_performance_epic.md ->
-  tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md.
-- override_many_collection_fix: SWITCH_TRIGGER is owner acceptance of the fix (task in review). RESUME_HIERARCHY: tickets/epics/2026-09-24_override_execution_performance_epic.md ->
-  tickets/stories/2026-09-26_implement_override_site_plan_lowering_story.md ->
-  tickets/tasks/2026-09-26_fix_collection_member_many_sharing_task.md. Patch docs:
-  system_docs/patches/active/override_site_plan_2026_09_26/.
-- override_site_plan_lowering: SWITCH_TRIGGER is a production lowering plan with patch docs and file list, then
-  implementation. RESUME_HIERARCHY: tickets/epics/2026-09-24_override_execution_performance_epic.md ->
-  tickets/stories/2026-09-26_implement_override_site_plan_lowering_story.md ->
-  tickets/tasks/2026-09-26_build_site_plan_lowering_task.md. Patch docs:
-  system_docs/patches/active/override_site_plan_2026_09_26/.
-- caller_input_strictness: SWITCH_TRIGGER is the responsible commit plus before/after runs.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md.
-- gauntlet_runtime_speed: SWITCH_TRIGGER is the next lever's validation (lifecycle call chain, or thread-affine pools
-  after a design) or the owner's answer on the SpellSpace scope RISK. RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
+- phase5_pool_snapshot: SWITCH_TRIGGER is the fix with its regression test, then the 0.2.72 notch and assets.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-26_snapshot_phase5_live_spell_pool_task.md.
+- registration_guard_test_order: SWITCH_TRIGGER is the leaking test found and fixed.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-26_fix_registration_guard_test_order_task.md.
+- tests_system_docs_refresh: SWITCH_TRIGGER is the Phase-5 task done (its test is documented too).
+  RESUME_HIERARCHY: tickets/tasks/2026-09-26_refresh_tests_system_docs_task.md.
+- gauntlet_runtime_speed: SWITCH_TRIGGER is the nested slot-guard implementation landing, or the owner's answer on
+  the SpellSpace scope RISK. The lever-1 lifecycle is closed as measured (21:15Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md.
 - gauntlet_p1_positional_args: SWITCH_TRIGGER is the owner's decision on P1 alongside melder_0's S2b-3 (P1's emitter
   is off the normal path since S2b-2) and the owner's Windows gauntlet run.
@@ -141,6 +137,12 @@ Message alert rules
   conjure-time hydration withdrawn by owner direction (optimize code, not the benchmark). RESUME_HIERARCHY:
   tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md.
+- gauntlet_spellspace_build_locks: SWITCH_TRIGGER is the owner's turn-in (implementation approved ~21:37Z, own task).
+  RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
+  tickets/tasks/2026-09-26_spellspace_build_locks_task.md.
+- gauntlet_nested_slot_guard: SWITCH_TRIGGER is the emission-shape DECISION after the read, then patch docs, then code.
+  RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
+  tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md.
 - gauntlet_p4_spellspace_warm_lane: SWITCH_TRIGGER is the byte-identical device apply, then the owner's Windows
   gauntlet run and acceptance.
   RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->

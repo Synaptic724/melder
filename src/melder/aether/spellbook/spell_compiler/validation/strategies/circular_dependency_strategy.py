@@ -105,7 +105,8 @@ class CircularDependencyStrategy(SpellValidationStrategy):
             adjacency = pass_cache.get("circular_dependency_adjacency")
         if adjacency is None:
             adjacency = {}
-            for spell_id, spell in spellbook._spell_id_pool.items():
+            # A copy: concurrent binds change the live pool under the Spellbook lock, not held here.
+            for spell_id, spell in spellbook._spell_id_pool.copy().items():
                 if cancel_event is not None and cancel_event.is_set:
                     cancel_event.throw_if_set()
 

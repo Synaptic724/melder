@@ -3,14 +3,24 @@
 # Task: S2/S3 - one site-plan lowering; override key-set plans and the normal lane
 
 ## Metadata
+- Completed: 2026-09-26T21:09:12Z
+- Closure Basis: owner turn-in (DECISION 2026-09-26T20:55:47Z in the lane task):
+  "I trust your work its fine ... close your tickets"; walkthrough waived by the owner.
+- Summary: S2-S6 delivered (0.2.59-0.2.71). Override melds run one plan per key set and never build a supplied
+  dependency; normal melds of the many_only and generalized families run the same runtime's normal plan;
+  every family raises UnresolvedInputError before construction; the Phase-5 per-path overlay, the
+  override-targeting surface and the old normal emitters are retired; docs, graph, build assets, LLM bundles
+  and release note are current at 0.2.71. Validation: per-step suites on 3.14t and GIL in Notes, not rerun
+  at closure. Owner follow-ups: the Phase-5 live-pool iteration RISK (19:32:26Z note) and the two unroll
+  benchmarks deleted in R2.
 - Task ID: TASK-2026-09-26-build-site-plan-lowering
 - Story: STORY-2026-09-26-implement-override-site-plan-lowering
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T12:29:50Z
-- Updated: 2026-09-26T20:02:19Z
+- Updated: 2026-09-26T21:09:12Z
 
 ## Objective
 Overrides run through per-key-set plans compiled from the site graph: supplied dependencies and everything
@@ -39,6 +49,9 @@ the empty key set; the normal lane switches to it only when it meets the parity 
 - from_state: draft
 - to_state: in_progress
 - transition_reason: Owner instruction to keep working after S1 acceptance, 2026-09-26T12:13:26Z.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T21:09:12Z; see the Closure Basis.
 
 ## Steps / Checklist
 - [x] Read the family pipelines (Phase 10 plans, Phase 11 finalize/override runtimes, CreationContext slots,
@@ -46,11 +59,11 @@ the empty key set; the normal lane switches to it only when it meets the parity 
 - [x] Decide the lowering's inputs on both paths (fresh conjure and full cache hit) and write patch docs.
 - [x] Implement the dispatcher and plan emission; tests.
 - [x] Parity gate for the normal lane; switch only if met (met and switched, S2b-2, 2026-09-26).
-- [ ] Validate on 3.14t and GIL; measure.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Validate on 3.14t and GIL; measure (per step, in Notes).
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Lowering module, dispatcher wiring, tests, measurements.
@@ -69,7 +82,8 @@ the empty key set; the normal lane switches to it only when it meets the parity 
 - nine test files listed in the S5a PLAN note, 2026-09-26T18:05:33Z (S5a contract)
 
 ## Validation
-- Not run.
+- Per-step suites on 3.14t and GIL are in Notes; asset and document tests 2026-09-26T20:58:58Z and
+  21:04:25Z; nothing was rerun at closure.
 
 ## Risks / Rollback Notes
 - Concurrent edits by fable_0 in the no-overrides family files; B2 constructor order if the normal lane
@@ -81,21 +95,21 @@ the empty key set; the normal lane switches to it only when it meets the parity 
 - [ ] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
 - [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/override_site_plan_2026_09_26/
+  - system_docs/patches/completed/override_site_plan_2026_09_26/
   - artifacts/melder_override_design_20260926/design_v2.md
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: Story closure.
@@ -2967,6 +2981,15 @@ the empty key set; the normal lane switches to it only when it meets the parity 
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T21:09:12Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis): acceptance given, walkthrough waived.
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Committed: S3a/S3b, S2a, the override fast door, the id-lane trim, the existing-object fast path (0.2.59 in
 86993dce8) and S2b-1/S2b-2 (1c3dc8580). Uncommitted in the device tree: S4a, S5a (conjure linear in sites), S4b
@@ -2979,6 +3002,8 @@ Open for the owner: the Phase-5 live-pool iteration RISK (19:32:26Z), the two de
 Known unrelated failures: crystallizer file_backed_morph x4; asset-stamp test until the rebuild;
 test_system_documents_builder x2 in VM copies only. VM trees: ~/work/melder_s2b = device state (R2 included),
 ~/work/melder_s2bbase = device state before R2 (P5 tests missing).
+Closed 2026-09-26T21:09:12Z on the owner's turn-in. Patch lane archived to
+system_docs/patches/completed/override_site_plan_2026_09_26/ (retired_graph_descriptors/ inside).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

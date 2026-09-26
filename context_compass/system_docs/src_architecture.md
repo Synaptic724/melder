@@ -866,6 +866,12 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Compiler pool reads (2026-09-26): a compiler pass never iterates the live `Spellbook._spell_id_pool`; it
+  iterates a copy taken in one call (Phases 3, 4, 5, 6 frame-wide and the Phase-8 walk). Pool writers hold the
+  Spellbook lock and passes run without it at meld time, so a concurrent bind used to abort revalidation. Phase 5
+  sees only ids with a registered SpellSystemState, which leaves a half-registered bind to its own
+  revalidation. No lock was added.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:CompilerPhase5`.
 - Override key-set plans and the site-plan runtime (2026-09-26): each hydrated root of the many_only and
   generalized families owns one `SitePlanOverrideRuntime`. Its normal plan (the empty key set) is the family's
   inner no-overrides executor; an override meld runs the plan compiled for its payload's key tuple, which
@@ -1683,9 +1689,9 @@ SpellCompiler and validation:
 
 - path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
   start_line: 1
-  end_line: 713
-  loc: 713
-  verified_at: 2026-09-19T21:23:18Z
+  end_line: 729
+  loc: 729
+  verified_at: 2026-09-26T21:40:00Z
   note: visible dependency blueprints with publication restricted to the current compilation targets.
 - path: `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
   start_line: 1
@@ -2771,6 +2777,9 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 compiler pool reads (0.2.72): compiler passes iterate a copy of the spell pool instead of the live
+dict, so a concurrent bind no longer aborts meld-time revalidation; the operational invariants carry the rule.
 
 2026-09-26 override site-plan lane: override melds of the many_only and generalized families run one compiled
 plan per override key set that never builds a supplied dependency; normal melds of those families run the same

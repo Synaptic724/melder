@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T20:35:11Z
+- Updated: 2026-09-26T21:38:55Z
 
 ## User Narrative
 As the Melder owner, I want Melder's per-scope-cycle runtime on the real-world gauntlet (free-threaded, three
@@ -65,6 +65,8 @@ weakens a cleanup or concurrency guarantee is out.
 - [ ] Task: TASK-2026-09-26-emit-positional-constructor-args - P1, positional constructor arguments.
 - [ ] Task: TASK-2026-09-26-spellspace-meld-warm-id-lane - P4, SpellSpace.meld warm id lane.
 - [ ] Task: TASK-2026-09-26-attribute-gauntlet-tail-spikes - Melder-only multi-millisecond cycle spikes.
+- [ ] Task: TASK-2026-09-26-spellspace-build-locks - can spellspace-scoped first builds skip their locks.
+- [ ] Task: TASK-2026-09-26-remove-nested-slot-guard-take - door-called first builds take their build lock once.
 - [ ] Task: one task per candidate the owner picks, each behind patch docs and a gauntlet gate.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
@@ -102,6 +104,8 @@ weakens a cleanup or concurrency guarantee is out.
 - 2026-09-26T17:32:38Z: owner go-ahead for clean levers, each gated by VM A/B, suites on 3.14t (gil 0/1) and
   the GIL build, a 30k soak, a NOTICE to the file owner and a byte-identical apply.
 - 2026-09-26T20:35:11Z: owner direction: optimize code, not the benchmark; pools and their shells are created when they are today (no prewarming). Conjure-time hydration withdrawn; levers must remove work.
+- 2026-09-26T21:16:14Z: owner closed lever 1's lifecycle as measured and asked to look at the spellspace build locks (own discovery task).
+- 2026-09-26T21:38:55Z: owner go-ahead to implement the nested slot-guard removal, safe shape only ("just do it ... make it safe"); melder_2 implements.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -186,9 +190,30 @@ weakens a cleanup or concurrency guarantee is out.
 - Reference child-task notes for evidence instead of duplicating tactical detail.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
+- DATETIME: 2026-09-26T21:32:12Z
+  TYPE: FACT
+  CLAIM: Where the levers stand after the owner closed lever 1's lifecycle (21:15Z).
+    - Spellspace build locks (own task, in review): every slotted first build takes the same slot guard twice
+      (door, then the site plan's root-site miss). Removing the nested take saves about 0.3 us per worker cycle
+      on the VM (-4%) and changes nothing observable if the door keeps its guard. Dropping the door's guard
+      instead is safe only in the no-hooks lanes. The code is melder_0's, and the owner picks who implements.
+    - Dropping the last guard for spellspace builds needs a new thread rule for spellspaces. Not recommended now.
+    - Still open for the owner: P1 closure, P4 acceptance, the SpellSpace active-scope RISK, the
+      system_document_view race, and the tail task's optional 200k trend run.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_spellspace_build_locks_task.md:235-302
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:1137-1149
+  IMPACT: No implementation task opens until the owner picks. The story's next measurable gain is that removal.
+  NEXT: Owner decision on the build-locks DECISION_REQUEST.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Opened 2026-09-26 on the owner's request. First task measures and attributes; no code changes until the owner
-picks candidates.
+Attribution is done (measure task). In the tree: P1 (off the normal path since S2b-2) and P4 (0.2.68), both in
+review. Dropped: P3, interning, conjure-time hydration. Lever 1's lifecycle is closed as measured. The next gain is
+removing the nested slot-guard take on first builds (about 0.3 us per worker cycle on the VM). It is in the build-locks
+task's DECISION_REQUEST and waits on the owner's pick of who implements it (melder_0's code). Owner decisions are
+listed in the last note.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

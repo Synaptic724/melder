@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `b233163fea01366c04764d0a161dbb61ac71635186963927738bd809c150db6c`
+- source_sha256: `559f5686564f94479f87d356046f5e4cbb3c985bfa0991e2313374666e894fb4`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `66b85bd63320cab05c44a50d15da2b3c137e7583135b043fb2fd4beddbc0930c`
+- source_sha256: `b23c825b0df5b6485dcf5d97b1c3d32db6656b1d521e289c1b6924eb0eeb7256`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `4b2ee30023b5ff32cd3e369781fb8bb655a68f84182ec05130795dce7da678e0`
+- source_sha256: `e9def2a7cbca525f9f374d534fc380b92527850e4c20e3582c06e376f2eadf35`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `55c154222d3d7f38a534f8555caa1a326e5e069ae8b78c7ce3e269161dcbc5ec`
+- source_sha256: `d3caf1ade71cda2934eaa92a1ea486cd9204b44a0e462a32c50009902573a6e3`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `f1f6523ebed79caddc180edc594d3b4efce6069affb024f154f837fbbf896aa8`
+- source_sha256: `ceb44c255350cffa5c5c75cff34dc081c7e60adee930eca94719029015571f82`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `c057f83c0a4811faf2da5ac13a03b0f04e356a5873fc48a01cee209ee5454a46`
+- source_sha256: `8d1742f4f87c141ee128f63bf10d185cc356cee2364a97719d3e955b92152656`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `e328ef1b5ad805e0663ba38d2c9cafff175592967c6d5c0330e22964bb1d88af`
+- source_sha256: `efea77da0fddf01838d268baf2a3bb7f511f9a35e221a9601cf8c9c5afaedea3`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `17b12c85b23628994731c0be85dabd8ce86eacd86b18bb1c5bb972b479ef44dc`
+- source_sha256: `39e4713f6eb1319f3dcbb3bc703ca5a6651fd497001adc1d2f91ad088b110df6`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `c26beeecdf0d3666206f6b8f4759894b38da94b7ff2624b2764863b441af8333`
+- source_sha256: `5e817dd236011e6700701a3623548c01d68e144f72c7cf9df3948504a8d8a82b`
 - nodes: 1
 
 ### Nodes
@@ -11009,7 +11009,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `1b9717f35b552cd08dde3090af3fdb189b404af3e608b953493d3a43a65eeb8e`
+- source_sha256: `0f74333e023f731fea4f8e38d311c8ebb7044fb1cf91409a13ccb09cbb8f062e`
 - nodes: 2
 
 ### Nodes
@@ -11029,11 +11029,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: Compiler-owned phase-3 local-frame and DAG build surface.
 - responsibilities:
   - resolves symbolic constructor sockets into concrete dependency spell ids
-  - builds the local constructor DAG and SpellResolutionFrame for one spell
+  - computes the local frame as dependency id rows (distinct dependency ids ascending, then the spell) and the SpellResolutionFrame for one spell
   - publishes direct dependency ids and SpellLocalTopology into SpellSystemStates
   - selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology
   - republishes enabled late-compiled Nexus records after local topology is available
   - records an UNRESOLVED_INPUT socket, keeping its frame key, when a single typed parameter has no registered provider; ambiguity still raises
+  - scans candidate providers over a copy of the Spellbook spell pool taken in one call, so a concurrent bind cannot change it mid-scan
 - phases: `validation`, `runtime`
 - public methods: `run`
 
@@ -11042,7 +11043,6 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | uses | `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates` | one_to_one | validation,runtime | authored |
-| `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | creates | `melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph` | one_to_one | validation | authored |
 | `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | uses | `melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility` | one_to_one | validation | authored |
 | `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | creates | `melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame` | one_to_one | validation | authored |
 | `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | uses | `melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements` | one_to_one | validation | authored |
@@ -11051,7 +11051,6 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` | uses | `melder.utilities.helpers.general_helpers.SpellInputUtils` | one_to_one | validation | authored |
 
 - `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` -> `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates`: CompilerPhase3 publishes direct dependencies and local topology into SpellSystemStates.
-- `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` -> `melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph`: CompilerPhase3 builds the local constructor DAG for one spell.
 - `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` -> `melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility`: CompilerPhase3 uses CompilerPhaseUtility for shared cancellation handling.
 - `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` -> `melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame`: CompilerPhase3 publishes SpellResolutionFrame as the ordered local frame summary for one spell.
 - `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3` -> `melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements`: CompilerPhase3 consumes phase-1 requirements when resolving local constructor sockets.
@@ -11122,7 +11121,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
 
-- source_sha256: `887f82480fc8a556ff6a589b755ad900e3d0b729d75aeac6b3620e81460e00cd`
+- source_sha256: `0a518f752ebddb2a463f434ca239ce6ab0ac8e4ec915f4e8703d1ef2aa2da9b4`
 - nodes: 2
 
 ### Nodes
@@ -11144,6 +11143,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - publishes canonical artifacts only to owned spells in conduit-wide passes or the selected local target, preserving dependency executors
   - rebuilds change-control component-of mappings and conduit revalidators from owned root blueprints
   - limits executable snapshots and blueprints to resolvable registrations while local descriptive topology stays owned by state
+  - reads one copy of the Spellbook spell pool per pass for the visible set and every lookup, admitting only ids with a registered SpellSystemState
 - phases: `validation`, `runtime`
 - public methods: `run_frame_wide`, `run_local`
 
@@ -11184,7 +11184,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py
 
-- source_sha256: `906530842108a77c77ef8baa5a602f43b917aecabc06ec8fc9030b1f95947c18`
+- source_sha256: `31fb87d6c7ec53858d47584994870affa933ca426031e4e3aebc1587f8b3ae99`
 - nodes: 2
 
 ### Nodes
@@ -11204,6 +11204,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - builds the canonical system-validation strategy pipeline
   - runs system validation over phase-5 artifacts and phase-4 results
   - publishes SpellSystemValidationState and conduit-scoped validity back through SpellSystemStates
+  - reads one copy of the Spellbook spell pool per frame-wide pass and hands it to every stage and strategy
 - phases: `validation`, `runtime`
 - public methods: `run_frame_wide`, `run_local`
 
@@ -11842,7 +11843,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
 
-- source_sha256: `c13674064dbca9f40ff98022dee507670df38e9d82835514628bfc1f28f29a5e`
+- source_sha256: `c78d1d9f42159d1fcbbd643a669149da1e4b008ce8fa163e125f6dfdf8b33b9b`
 - nodes: 2
 
 ### Nodes
@@ -11865,6 +11866,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns shared-occurrence collapse decisions, topology fallback expansion, and SpellContract edge insertion
   - retains existing providers as consumer dependency leaves without inspecting constructor contracts
   - signs complete required-input topology and refuses non-resolvable providers during late contract expansion
+  - walks a copy of the spell pool once per pass, so a concurrent bind cannot drop the existence-occurrence analysis
 - phases: `runtime`
 - public methods: `analyze`, `strategy_id`
 
@@ -14560,7 +14562,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py
 
-- source_sha256: `a313d00c687b06593f530ce2e66192b604fdb7ee4ec3386a4811d47634d62463`
+- source_sha256: `1bbc46a692d5322c6f4dd923145793d7f4428a9371566faf350157c8aa3ade8d`
 - nodes: 2
 
 ### Nodes
@@ -14586,6 +14588,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - mutate nothing - spells, spellbooks and requirements are read only
   - omits non-resolvable constructors and OVERRIDE_REQUIRED sockets from construction-cycle reconstruction
   - omits UNRESOLVED_INPUT sockets from construction-cycle reconstruction, as it omits OVERRIDE_REQUIRED
+  - sweeps a copy of the Spellbook spell pool taken in one call, because concurrent binds change the live dict
 - phases: `compile`
 - public methods: `validate`
 
@@ -14651,7 +14654,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
 
-- source_sha256: `c41f8024c6a65769b822558b5419d8ad513da042ba42a47550d3bb33ebd66e20`
+- source_sha256: `895bcc08335ac53c0e295b53e2caac31e3e93c60fe6cf4b1f0e272ab27ce841e`
 - nodes: 2
 
 ### Nodes
@@ -14676,6 +14679,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - report only cycles reachable from the spell under validation
   - leave dangling ids to DanglingDependenciesStrategy and never try to break cycles automatically
   - names the cycle's members (the loop closed once) and says how to break it; a spell outside the cycle is told which of its dependencies leads there and that it is not part of that cycle (_cycle_message)
+  - builds its adjacency from a copy of the Spellbook spell pool taken in one call, because concurrent binds change the live dict
 - phases: `compile`
 - public methods: `validate`
 
@@ -14789,7 +14793,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py
 
-- source_sha256: `efb2f26d284c70943ee3a5384b2850e213ad2e6b392a6f3629dfd262efa6772a`
+- source_sha256: `179c1bb75465da9919598436a0b1cb95fc68ff3a52e1d2dbc3f3d4b234c69442`
 - nodes: 2
 
 ### Nodes
@@ -14812,6 +14816,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - use the visible spellbook spell pool as the source of truth
   - emit issues only - never rename or partition spells
+  - collects names from a copy of the spell pool taken in one call, because concurrent binds change the live dict
 - phases: `compile`
 - public methods: `validate`
 

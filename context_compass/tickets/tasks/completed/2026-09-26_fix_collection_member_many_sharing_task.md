@@ -3,14 +3,20 @@
 # Task: Each collection member gets its own many-existence dependencies
 
 ## Metadata
+- Completed: 2026-09-26T21:09:12Z
+- Closure Basis: owner turn-in (DECISION 2026-09-26T20:55:47Z in the lane task):
+  "I trust your work its fine ... close your tickets"; walkthrough waived by the owner.
+- Summary: Collection members get member-specific compiler paths in Phases 5 and 8, so each member builds its own
+  many dependencies (shared existences unchanged); cache generation 13; the site-plan lowering keeps member
+  sites apart. Patch doc archived with the story's lane.
 - Task ID: TASK-2026-09-26-fix-collection-member-many-sharing
 - Story: STORY-2026-09-26-implement-override-site-plan-lowering
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T12:13:26Z
-- Updated: 2026-09-26T12:27:37Z
+- Updated: 2026-09-26T21:09:12Z
 
 ## Objective
 A `many` dependency reached through two collection members is built once per member, as `Existence.many`
@@ -42,6 +48,9 @@ hands both members the same `Leaf` object.
 - from_state: in_progress
 - to_state: review
 - transition_reason: Regression red->green, suites unchanged on 3.14t and GIL, applied to the device tree, 2026-09-26T12:27:37Z.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T21:09:12Z; see the Closure Basis.
 
 ## Steps / Checklist
 - [x] Trace where occurrence paths and path ids are minted (Phase 8) and every consumer of them.
@@ -87,13 +96,13 @@ hands both members the same `Leaf` object.
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/override_site_plan_2026_09_26/component_patch_collection_member_paths.md
+  - system_docs/patches/completed/override_site_plan_2026_09_26/component_patch_collection_member_paths.md
   - artifacts/melder_override_design_20260926/collection_fix_staging/ (apply script, regression test copy)
 - DISPOSITION: promote_to_documentation (patch doc); retain_as_reference (staging)
 - CLEANUP_TRIGGER: Story closure.
@@ -193,7 +202,7 @@ hands both members the same `Leaf` object.
     edit. Owner's standing instruction ("keep working ... don't stop until your done") is the confirmation
     for this file list; melder_1 gets a notice before caching_system.py changes.
   EVIDENCE:
-  - system_docs/patches/active/override_site_plan_2026_09_26/component_patch_collection_member_paths.md
+  - system_docs/patches/completed/override_site_plan_2026_09_26/component_patch_collection_member_paths.md
   - artifacts/melder_override_design_20260926/collection_fix_staging/apply_cfix_edits.py
   IMPACT: Every patch bullet has an edit and a check before code.
   NEXT: Apply to the VM trees and run the regression test.
@@ -236,10 +245,20 @@ hands both members the same `Leaf` object.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T21:09:12Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis): acceptance given, walkthrough waived.
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Review. Collection members now get member-specific compiler paths in Phases 5 and 8, so every member builds
 its own many dependencies (shared existences unchanged); cache generation 13. Regression and unit tests added;
 suites unchanged otherwise. In the device working tree, uncommitted.
+Closed 2026-09-26T21:09:12Z on the owner's turn-in.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

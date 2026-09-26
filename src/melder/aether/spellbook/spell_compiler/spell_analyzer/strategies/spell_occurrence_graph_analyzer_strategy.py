@@ -644,6 +644,9 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
               to share across all per-spell analyses in one pass; concurrent
               builders may race benignly (identical values, last write wins).
             - Returns `None` on any walk failure.
+            - Iterates a copy of `spell_lookup` (the live pool at every call site)
+              taken in one call; a concurrent bind used to fail the walk here and
+              drop the existence-occurrence analysis for the pass.
         """
         try:
             spell_rows_list: List[Tuple[Any, ...]] = []
@@ -653,7 +656,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             existence_by_spell_id: Dict[str, Existence] = {}
             disposal_enabled_spell_count = 0
 
-            for spell_id, candidate_spell in sorted(spell_lookup.items()):
+            for spell_id, candidate_spell in sorted(spell_lookup.copy().items()):
                 current_spell_id = candidate_spell.spell_index.selected_spell_id
                 existence = candidate_spell.existence
                 has_disposal_methods = bool(candidate_spell.has_disposal_methods)

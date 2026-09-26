@@ -3,15 +3,21 @@
 # Task: Trace the change that made conjure reject caller-supplied constructor inputs
 
 ## Metadata
+- Completed: 2026-09-26T21:09:12Z
+- Closure Basis: owner turn-in (DECISION 2026-09-26T20:55:47Z in the lane task):
+  "I trust your work its fine ... close your tickets"; walkthrough waived by the owner.
+- Summary: Cause timeline recorded: the Phase-3 no-candidate failure predates 2026-06-15 and the internal-registration
+  guard (2026-07-15..08-01) blocked registering Package. Fixed by the unresolved-input sockets story (0.2.54)
+  and S4 of the site-plan lowering story. Artifacts retained as reference.
 - Task ID: TASK-2026-09-26-trace-caller-input-conjure-strictness-regression
 - Epic: EPIC-2026-09-24-override-execution-performance
 - Story: none
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T00:25:27Z
-- Updated: 2026-09-26T00:42:21Z
+- Updated: 2026-09-26T21:09:12Z
 
 ## Objective
 Find the commit(s) that turned a missing provider for a caller-supplied parameter (Task.work_callable:
@@ -39,6 +45,9 @@ running both versions, and state what reverting the strictness would change.
 - from_state: in_progress
 - to_state: review
 - transition_reason: Cause and timeline established across Melder and CommandOps, 2026-09-26T00:42:21Z.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T21:09:12Z; see the Closure Basis.
 
 ## Steps / Checklist
 - [x] Find where Phase-3 errors abort conjure and when that started (runs on dated extracts).
@@ -209,9 +218,19 @@ running both versions, and state what reverting the strictness would change.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-26T21:09:12Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis): acceptance given, walkthrough waived.
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Phase-3 no-candidate failure predates 2026-06-15; the internal-registration guard (07-15..08-01) blocked
 registering Package. Owner's target contract is recorded (ALIGNMENT_CHECK). Resume from the latest NEXT.
+Closed 2026-09-26T21:09:12Z on the owner's turn-in; the fix shipped in 0.2.54 and 0.2.66-0.2.71.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

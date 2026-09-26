@@ -3,14 +3,20 @@
 # Story: Supplied overrides skip construction through one site-plan lowering (design v2)
 
 ## Metadata
+- Completed: 2026-09-26T21:09:12Z
+- Closure Basis: owner turn-in (DECISION 2026-09-26T20:55:47Z in the lane task):
+  "I trust your work its fine ... close your tickets"; walkthrough waived by the owner.
+- Summary: S1-S6 done (0.2.59-0.2.71): supplied overrides and their subtrees are never built; normal melds share the
+  lowering; unresolved inputs are decided before construction; conjure is linear in sites; the old emitters
+  and the targeting surface are retired; docs, graph, assets, LLM bundles and release note are current.
 - Story ID: STORY-2026-09-26-implement-override-site-plan-lowering
 - Epic: EPIC-2026-09-24-override-execution-performance
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T11:28:08Z
-- Updated: 2026-09-26T18:21:24Z
+- Updated: 2026-09-26T21:09:12Z
 
 ## User Narrative
 As a Melder user, I want `meld(Root, override={"a": obj})` to use `obj` without building A or anything only
@@ -56,6 +62,9 @@ parallel path; the prototype showed the behavior and speed on 3.14t and GIL befo
 - to_state: in_progress
 - transition_reason: Owner approved design v2 after the E1-E4 prototype ("fucken send it"),
   2026-09-26T11:26Z.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T21:09:12Z; see the Closure Basis.
 
 ## Dependencies / Related Work
 - tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md (design record)
@@ -65,14 +74,14 @@ parallel path; the prototype showed the behavior and speed on 3.14t and GIL befo
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-09-26-build-site-graph-and-override-key-resolver - S1 site graph, resolver, oracle (done;
   tickets/tasks/completed/2026-09-26_build_site_graph_and_override_key_resolver_task.md)
-- [ ] Task: TASK-2026-09-26-fix-collection-member-many-sharing - defect: collection members share many deps
-- [ ] Task: S2 shared lowering for normal melds (opens after S1)
-- [ ] Task: S3 key-set plans and dispatcher; retire override emitters and targeting runtime
-- [ ] Task: S4 unresolved inputs decided in the plan
-- [ ] Task: S5 retire the Phase-5 per-path overlay
-- [ ] Task: S6 qualification: docs, graph, assets, release note
-- [ ] Enforce Ticket Microcycle across all linked tasks.
-- [ ] Require meaningful-finding note updates during discovery/implementation.
+- [x] Task: TASK-2026-09-26-fix-collection-member-many-sharing - defect: collection members share many deps
+- [x] Task: S2 shared lowering for normal melds (opens after S1)
+- [x] Task: S3 key-set plans and dispatcher; retire override emitters and targeting runtime
+- [x] Task: S4 unresolved inputs decided in the plan
+- [x] Task: S5 retire the Phase-5 per-path overlay
+- [x] Task: S6 qualification: docs, graph, assets, release note
+- [x] Enforce Ticket Microcycle across all linked tasks.
+- [x] Require meaningful-finding note updates during discovery/implementation.
 
 ## Acceptance Criteria
 - Epic examples: 3 of 5 supplied builds 3 objects; deep graph with both branches supplied builds only the
@@ -109,7 +118,7 @@ parallel path; the prototype showed the behavior and speed on 3.14t and GIL befo
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/override_site_plan_2026_09_26/
+  - system_docs/patches/completed/override_site_plan_2026_09_26/
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: Story closure after durable deltas merge into the canonical docs.
 
@@ -179,9 +188,18 @@ parallel path; the prototype showed the behavior and speed on 3.14t and GIL befo
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T21:09:12Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis): acceptance given, walkthrough waived.
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
+- [x] Work walkthrough shared with user (waived by the owner at turn-in)
+- [x] Acceptance criteria confirmed by user
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
@@ -193,6 +211,8 @@ parallel path; the prototype showed the behavior and speed on 3.14t and GIL befo
 ## Context / Handoff Summary
 Opened 2026-09-26T11:28Z after owner approval of design v2. S1 (site graph + resolver + oracle, no
 runtime change) is the active task; its patch docs are in the patch lane. Later steps open one at a time.
+Closed 2026-09-26T21:09:12Z on the owner's turn-in. S2-S6 ran inside TASK-2026-09-26-build-site-plan-lowering; the patch
+lane is archived to system_docs/patches/completed/override_site_plan_2026_09_26/.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

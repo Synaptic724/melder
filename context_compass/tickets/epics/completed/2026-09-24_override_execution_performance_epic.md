@@ -1,14 +1,21 @@
 # Epic: Plan override-supplied dependencies before object creation
 
 ## Metadata
+- Completed: 2026-09-26T21:09:12Z
+- Closure Basis: owner turn-in (DECISION 2026-09-26T20:55:47Z in the lane task):
+  "I trust your work its fine ... close your tickets"; walkthrough waived by the owner.
+- Summary: Diagnosis, design v2 and the site-plan lowering are delivered: override melds build only what the call does
+  not supply (3-of-5 supplied builds the other two plus the consumer, a component test) and ran 22-44% faster
+  on three benchmark graphs and 4.6x on the deep 511-site graph; normal melds share the lowering. All stories
+  and tasks done.
 - Epic ID: EPIC-2026-09-24-override-execution-performance
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: updater_0, updater_1, melder_0, melder_1
 - Lead Agent: updater_0
 - Priority: p1
 - Created: 2026-09-24T09:27:42Z
-- Updated: 2026-09-26T11:30:45Z
+- Updated: 2026-09-26T21:09:12Z
 - Target Window: Investigation first; implementation after owner review.
 - Related Program/Initiative: Melder runtime performance.
 
@@ -65,6 +72,9 @@ parallel inconsistent resolution semantics or slowing ordinary creation.
 - from_state: ready
 - to_state: in_progress
 - transition_reason: Owner explicitly requested an epic and a first unified performance experiment.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T21:09:12Z; see the Closure Basis.
 
 ## Success Metrics
 - Reproducible command, Python/GIL/version/source provenance and repeated timing samples.
@@ -98,7 +108,7 @@ parallel inconsistent resolution semantics or slowing ordinary creation.
 - [x] Measure an artifact-only same-constructor prototype and independently qualify selected regressions.
 - [x] Investigate occurrence-aware pruning, validation/admission ordering and shared lifecycle semantics.
 - [x] Agree the runtime/API design and patch contracts with the owner (design v2, 2026-09-26).
-- [ ] Implement and qualify the chosen optimization.
+- [x] Implement and qualify the chosen optimization.
 
 ## Stories (Required to Complete)
 - Investigation determines implementation story boundaries; none is activated before baseline evidence.
@@ -106,22 +116,22 @@ parallel inconsistent resolution semantics or slowing ordinary creation.
   tickets/stories/completed/2026-09-25_verify_override_writer_and_contract_story.md
 - STORY-2026-09-26-unresolved-input-sockets (melder_0; done 2026-09-26, shipped in 0.2.54):
   tickets/stories/completed/2026-09-26_unresolved_input_sockets_story.md
-- STORY-2026-09-26-implement-override-site-plan-lowering (melder_0; in progress, S1 ready):
-  tickets/stories/2026-09-26_implement_override_site_plan_lowering_story.md
+- STORY-2026-09-26-implement-override-site-plan-lowering (melder_0; done 2026-09-26):
+  tickets/stories/completed/2026-09-26_implement_override_site_plan_lowering_story.md
 
 ## Tasks (Cross-Cutting or Epic-Level)
-- [ ] TASK-2026-09-24-discover-override-execution-semantics:
-  tickets/tasks/2026-09-24_discover_override_execution_semantics_task.md
-- [ ] TASK-2026-09-24-discover-override-occurrence-slicing:
-  tickets/tasks/2026-09-24_discover_override_occurrence_slicing_task.md
-- [ ] TASK-2026-09-24-experiment-static-many-override-execution:
-  tickets/tasks/2026-09-24_experiment_static_many_override_execution_task.md
-- [ ] TASK-2026-09-24-coordinate-override-execution-investigation:
-  tickets/tasks/2026-09-24_coordinate_override_execution_investigation_task.md
-- [ ] TASK-2026-09-24-investigate-override-compiler-planning:
-  tickets/tasks/2026-09-24_investigate_override_compiler_planning_task.md
-- [ ] TASK-2026-09-24-measure-melder-creation-and-overrides:
-  tickets/tasks/2026-09-24_measure_melder_creation_and_overrides_task.md
+- [x] TASK-2026-09-24-discover-override-execution-semantics:
+  tickets/tasks/completed/2026-09-24_discover_override_execution_semantics_task.md
+- [x] TASK-2026-09-24-discover-override-occurrence-slicing:
+  tickets/tasks/completed/2026-09-24_discover_override_occurrence_slicing_task.md
+- [x] TASK-2026-09-24-experiment-static-many-override-execution:
+  tickets/tasks/completed/2026-09-24_experiment_static_many_override_execution_task.md
+- [x] TASK-2026-09-24-coordinate-override-execution-investigation:
+  tickets/tasks/completed/2026-09-24_coordinate_override_execution_investigation_task.md
+- [x] TASK-2026-09-24-investigate-override-compiler-planning:
+  tickets/tasks/completed/2026-09-24_investigate_override_compiler_planning_task.md
+- [x] TASK-2026-09-24-measure-melder-creation-and-overrides:
+  tickets/tasks/completed/2026-09-24_measure_melder_creation_and_overrides_task.md
 
 ## Acceptance Criteria (Epic Done)
 - The reported gap is reproduced or corrected with explicit workload/runtime evidence.
@@ -322,6 +332,15 @@ Superseded 2026-09-26 by the owner-approved design v2 (artifacts/melder_override
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T21:09:12Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis): acceptance given, walkthrough waived.
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user.
 - [ ] Acceptance criteria confirmed by user.
@@ -352,3 +371,4 @@ admission controls. A direct variant demonstrates 511 -> 1 construction without 
 The recommendation must change shared writer coordination across all paths, not just overrides.
 Production adoption, complete API semantics and timing remain. Earlier prototypes and measurements
 are preserved; no production patch, version bump or asset generation occurred. The epic stays open.
+Closed 2026-09-26T21:09:12Z on the owner's turn-in; every story and task of the epic is in a completed folder.

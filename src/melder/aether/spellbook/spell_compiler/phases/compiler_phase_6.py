@@ -362,7 +362,9 @@ class CompilerPhase6:
         phase4_results: Dict[str, Any] = {}
         broken_spell_ids: Set[str] = set()
 
-        spell_lookup: Dict[str, Spell] = spellbook._spell_id_pool
+        # One copy of the pool serves every stage and strategy of this pass: concurrent binds
+        # change the live dict under the Spellbook lock, which this pass does not hold.
+        spell_lookup: Dict[str, Spell] = spellbook._spell_id_pool.copy()
         for spell_id, spell_instance in spell_lookup.items():
             phase4_results[spell_id] = spell_instance._compiler_artifact._validation_result_phase4
             if spell_instance._compiler_artifact._is_broken:

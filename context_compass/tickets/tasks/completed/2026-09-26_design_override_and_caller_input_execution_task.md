@@ -3,15 +3,20 @@
 # Task: Design override execution and caller-supplied inputs as one contract (alternative to joint alpha)
 
 ## Metadata
+- Completed: 2026-09-26T21:09:12Z
+- Closure Basis: owner turn-in (DECISION 2026-09-26T20:55:47Z in the lane task):
+  "I trust your work its fine ... close your tickets"; walkthrough waived by the owner.
+- Summary: design_v2.md with the E1-E4 prototype results was approved 2026-09-26T11:26Z with Q1-Q5 as recommended
+  and built as STORY-2026-09-26-implement-override-site-plan-lowering (done). Artifacts retained as reference.
 - Task ID: TASK-2026-09-26-design-override-and-caller-input-execution
 - Epic: EPIC-2026-09-24-override-execution-performance
 - Story: none (epic-level design task)
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T00:14:30Z
-- Updated: 2026-09-26T11:30:45Z
+- Updated: 2026-09-26T21:09:12Z
 
 ## Objective
 Produce a source-grounded design that (1) lets a constructor declare parameters the caller always
@@ -56,6 +61,9 @@ Compare it against joint_alpha_proposal.md and recommend one path with tradeoffs
 - from_state: in_progress
 - to_state: review
 - transition_reason: E1-E4 prototype results written (prototype_results.md); Q1-Q5 still open, 2026-09-26T11:23:09Z.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T21:09:12Z; see the Closure Basis.
 
 ## Steps / Checklist
 - [x] Read joint_alpha_proposal.md, structural_plan.md, compact_structure_proposal.md,
@@ -817,6 +825,15 @@ Compare it against joint_alpha_proposal.md and recommend one path with tradeoffs
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T21:09:12Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis): acceptance given, walkthrough waived.
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 State (2026-09-26T11:23:09Z): in review. design_v2.md is the current proposal (design.md superseded from "The design"
 onward); prototype_results.md holds the E1-E4 measurements of an artifact-only prototype
@@ -826,6 +843,7 @@ deep supplied subtrees faster than normal; normal melds equal or faster except d
 threading failures in 200x8 rounds. Remaining small-graph gap is door/dispatch cost (follow-ups).
 Open: Q1-Q5 (last DECISION_REQUEST). Next on approval: open the S1 patch lane.
 Validation: probes and prototype only; no production code changed.
+Closed 2026-09-26T21:09:12Z on the owner's turn-in; the design shipped as the site-plan lowering story.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

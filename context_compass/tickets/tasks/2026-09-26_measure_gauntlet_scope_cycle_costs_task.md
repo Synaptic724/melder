@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T20:57:04Z
+- Updated: 2026-09-26T21:32:12Z
 
 ## Objective
 A per-scope-cycle cost map for Melder on the real-world gauntlet - where the time and the calls go in outer and
@@ -1082,6 +1082,72 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T21:12:27Z
+  TYPE: MEASURE
+  CLAIM: Owner Windows runs of probe_parts2.py (~21:10Z, tree 0.2.71): no piece of the lifecycle has a Windows-only
+    slow path.
+    - Run 1: every piece had a similar tail (p90 about 2x p50, e.g. create 1,200/2,700, cleanup 1,300/2,800),
+      which is machine-wide noise, not one piece.
+    - Run 2, warm cache: tight (p90/p50 about 1.1). Means: create 1,006, enter 257, exit 423, cleanup 1,103 ns.
+      Pieces, timer included: link under lock 641, detach 344, creations reset 251, spaces-for-pool 178,
+      pop_expected 170, pool return 166, push 148, store reset 140, pool pop 136, state/hooks 133, state sets
+      128, lock pair 125, acquire 120, release 118, check_cleaned 81.
+    - Windows runs about 1.2-1.3x the VM, uniformly. The heavy tails in the 21:05Z means were noise.
+    - The lifecycle is about 2.8 us per cycle against dishka's 1.5 us, so about +1.3 us. It is spread over
+      roughly 15 pieces of 80-640 ns, each doing contract work: two root locks and the children-dict insert on
+      link, three lesser locks on cleanup, pool reuse, per-thread stack push/pop and drain, state flags.
+    - Each first build takes two lock pairs: 9 RLock pairs per cycle with two builds against 5 for the lifecycle
+      alone. A gauntlet cycle has three first builds (session, marker, root), so about six pairs, roughly 0.5 us
+      on Windows. (Corrected 21:32Z: the two pairs are the same slot guard taken twice, by the door and then the
+      site plan, not the slot guard plus the store lock. Objects without disposal methods publish without the
+      store lock. See tickets/tasks/2026-09-26_spellspace_build_locks_task.md:235-281.)
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/owner_windows_parts2_20260926_2110.txt:1-46
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/lifecycle_cprofile_vm.txt:6-7
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:346-378
+  IMPACT: Lever 1 holds no contract-preserving big win. Trims that change nothing (redundant root checks, the
+    duplicate root lookup on link) save about 0.1 us per cycle. The larger pieces each need a guarantee or protocol
+    redesign:
+    - skip build locks for spellspace-scoped builds in a thread-confined managed spellspace (about 0.3 us per
+      cycle; melder_0's emission lane and a concurrency-contract question);
+    - one lock for anonymous link (about 0.1 us);
+    - a cheaper fast-door check (about 0.1-0.2 us per cycle; melder_0's guard ladder, four readers).
+  NEXT: DECISION_REQUEST to the owner: close lever 1 as measured, or pursue one of the redesigns.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T21:12:27Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Lever 1 outcome for the owner.
+    (1) Recommended: close lever 1 as measured. Melder builds objects faster than dishka. Its extra ~1.3 us per
+        scope pays for guarantees dishka's scopes do not carry: thread-safe shared scopes, cascade cleanup through
+        the children registry, pooled shells, per-thread spellspace stacks. No single piece is waste.
+    (2) Pursue the largest redesign: skip the two build locks for spellspace-scoped objects when the spellspace is
+        a thread-confined managed one. About 0.3 us per cycle on Windows. It needs the owner to confirm the
+        confinement contract covers melds, a design with melder_0 (emission and Creations slot_guard), and patch
+        docs.
+    (3) Smaller redesigns: one lock for anonymous link (~0.1 us); a single-check fast door (~0.1-0.2 us, melder_0).
+    (4) Contract-free trims (~0.1 us): only if bundled with another change to conduit.py.
+  EVIDENCE: tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:1085-1117
+  IMPACT: The owner decides whether lever 1 closes or one redesign opens as its own task.
+  NEXT: Report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T21:15:35Z
+  TYPE: DECISION
+  CLAIM: Owner (~21:15Z), answering the lever-1 DECISION_REQUEST: "ok cool so lets move on then and look at those".
+    - The lifecycle part of lever 1 closes as measured: no contract-free win beyond about 0.1 us, and no redesign
+      of scope linking now.
+    - The spellspace build locks move to their own discovery task: whether first builds of spellspace-scoped
+      objects can skip the slot guard and store lock when the spellspace is thread-confined.
+    - Discovery only: read, VM prototype, then a DECISION_REQUEST with a design and the file owners. No tree edit.
+  EVIDENCE: tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:1085-1135
+  IMPACT: The measure task keeps the cost map. The lock question gets its own ticket and board row.
+  NEXT: Open TASK-2026-09-26-spellspace-build-locks (ticket, board row, story line, artifact row).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Attribution is done: the cost map is in Notes, from 15:50Z to 16:43Z. Levers, in order:
 - P1, positional constructor calls: in the tree since 16:16Z. melder_0's S2b-2 lowering took over the normal
@@ -1093,9 +1159,10 @@ Attribution is done: the cost map is in Notes, from 15:50Z to 16:43Z. Levers, in
 Open owner decisions:
 - The SpellSpace active-scope RISK: enforce the check, or correct the documents.
 - The system_document_view lazy-index race (RISK in the P4 task): which lane fixes it.
-Next lever candidates (owner, 2026-09-26: levers must remove work; pools and shells are created when they are
-today): worker_a's in-cycle mix and the scope create/cleanup call chain. Thread-affine pools need the owner's
-view under that rule. Conjure-time hydration is withdrawn (tail task).
+Levers must remove work, and pools and shells are created when they are today (owner, 2026-09-26). Lever 1's
+lifecycle is closed as measured (owner, 21:15Z; about 15 contract-bearing pieces, trims worth about 0.1 us). The
+spellspace build locks moved to their own task, now in review. Thread-affine pools need the owner's view under the
+rule. Conjure-time hydration is withdrawn (tail task).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

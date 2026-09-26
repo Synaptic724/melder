@@ -63,6 +63,9 @@ class CompilerPhase5:
           publish only for spells included in the pass's own compilation scope.
         - Executable snapshots exclude non-resolvable definitions; their registration
           and local topology remain available through their original owners.
+        - Each pass reads one copy of the Spellbook's spell pool and admits only
+          ids with a registered SpellSystemState; it never takes the Spellbook
+          lock, and a concurrent bind cannot change the pool under it.
     """
 
     __slots__ = ()
@@ -514,8 +517,16 @@ class CompilerPhase5:
         snapshot = adjacency_builder.build(required_spell_system_states)
 
         # --- 2. Filter to spellbook-visible spells -------------------------
+        # One copy of the pool serves the whole pass: binds, notches, contract grants and
+        # transfers change the live dict under the Spellbook lock, which this pass does not
+        # hold. Only ids in the adjacency snapshot (registered SpellSystemState) are visible:
+        # bind publishes its pool entry before registering the state, and such a spell is
+        # left to the revalidation its bind schedules.
+        spell_lookup = spellbook._spell_id_pool.copy()
         visible_spell_ids = {
-            spell_id for spell_id, candidate in spellbook._spell_id_pool.items() if candidate.resolvable
+            spell_id
+            for spell_id, candidate in spell_lookup.items()
+            if candidate.resolvable and spell_id in snapshot.all_spell_ids
         }
         filtered_snapshot = self._filter_snapshot_to_visible_spells(
             snapshot=snapshot,
@@ -526,7 +537,7 @@ class CompilerPhase5:
         root_builder = SpellSystemRootBlueprintBuilder()
         system_index, spellspace_scoped_spell_ids = self._build_system_index_for_snapshot(
             snapshot=filtered_snapshot,
-            spell_lookup=spellbook._spell_id_pool,
+            spell_lookup=spell_lookup,
             spell_system_states=required_spell_system_states,
         )
         root_blueprints = root_builder.build_root_blueprints(
@@ -538,7 +549,7 @@ class CompilerPhase5:
             snapshot=filtered_snapshot,
             root_blueprints=root_blueprints,
             system_index=system_index,
-            spell_lookup=spellbook._spell_id_pool,
+            spell_lookup=spell_lookup,
             root_builder=root_builder,
             publication_spell_ids=spellbook._spells_by_id.keys(),
         )
@@ -666,8 +677,13 @@ class CompilerPhase5:
         )
         snapshot = adjacency_builder.build(required_spell_system_states)
 
-        spell_lookup = spellbook._spell_id_pool
-        visible_spell_ids = {spell_id for spell_id, candidate in spell_lookup.items() if candidate.resolvable}
+        # One copy of the pool serves the whole pass; see run_frame_wide.
+        spell_lookup = spellbook._spell_id_pool.copy()
+        visible_spell_ids = {
+            spell_id
+            for spell_id, candidate in spell_lookup.items()
+            if candidate.resolvable and spell_id in snapshot.all_spell_ids
+        }
         visible_snapshot = self._filter_snapshot_to_visible_spells(
             snapshot=snapshot,
             visible_spell_ids=visible_spell_ids,

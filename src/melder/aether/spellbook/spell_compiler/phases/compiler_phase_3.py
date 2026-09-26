@@ -117,7 +117,7 @@ class CompilerPhase3:
             spellbook: Spellbook,
     ) -> Generator[tuple[Any, Any], Any, None]:
         """
-            Iterate all visible spells via the Spellbook's live spell_id_pool.
+            Iterate all visible spells via a copy of the Spellbook's spell_id_pool.
             
             Purpose:
                 Provide a single internal iterator that Phase 3 can use for
@@ -125,12 +125,16 @@ class CompilerPhase3:
             Contract:
                 - Yields "(spell_index, spell)" in the insertion order of
                   "_spell_id_pool".
-                - Uses the Spellbook's live "_spell_id_pool" directly; no copies
-                  or snapshots are created.
+                - Iterates a copy of "_spell_id_pool" taken in one call when the
+                  iteration starts. A concurrent bind, notch, contract grant or
+                  transfer changes the live dict under the Spellbook lock, which
+                  this pass does not hold (meld-time reruns run outside any
+                  transaction); iterating it live raised "dictionary changed size
+                  during iteration".
             Returns:
-                Iterator[Tuple[SpellIndex, Spell]]: Live iteration stream.
+                Iterator[Tuple[SpellIndex, Spell]]: Stream over the copy.
         """
-        for spell_instance in spellbook._spell_id_pool.values():
+        for spell_instance in spellbook._spell_id_pool.copy().values():
             yield spell_instance.spell_index, spell_instance
 
     def _normalize_annotation_for_matching(self, annotation: Any) -> Any:

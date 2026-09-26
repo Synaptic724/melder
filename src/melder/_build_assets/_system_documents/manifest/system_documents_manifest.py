@@ -19,8 +19,8 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.71"
-SOURCE_SHA256 = "d2fbbeb11f138cb388a26c9e82fe4e14cf69074fdd3d383c16dd92ba70445abc"
+BUILT_FOR_VERSION = "0.2.72"
+SOURCE_SHA256 = "4c1b41b4aa7ad07d36af42fa2036a5cf7c32db1080096a92cd6c3358d96513c4"
 DOCUMENT_COUNT = 4
 
 READ_ORDER = (
@@ -40,8 +40,8 @@ DOCUMENTS = {
         'addressing': 'section',
         'document_file': 'src_architecture.md',
         'payload_module': 'src_architecture_payload',
-        'line_count': 3012,
-        'content_sha256': '96e2a1e29c442353be60e8ea7fc432996158af1e607f2befb7108499651c9102',
+        'line_count': 3021,
+        'content_sha256': 'bf8c2ccd82855fd16113e3c781055ea82c3ddb9424dd8ee892aef957344abe0c',
     },
     '__components__': {
         'name': '__components__',
@@ -52,8 +52,8 @@ DOCUMENTS = {
         'addressing': 'section',
         'document_file': 'src_components.md',
         'payload_module': 'src_components_payload',
-        'line_count': 9789,
-        'content_sha256': 'cdfddd28744067e684601db78b5482b74bf3b5f63345024bc88a5d6d20c60d2e',
+        'line_count': 9814,
+        'content_sha256': 'a7dd45fdeb4bd20d91e60f83b457057c1ca015245bf0853c042e60d6a93e5d70',
     },
     '__graph_network__': {
         'name': '__graph_network__',
@@ -64,8 +64,8 @@ DOCUMENTS = {
         'addressing': 'source_path',
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
-        'line_count': 27509,
-        'content_sha256': '91093e91863f74f7d53e84533dbbdb0d81115e576e29d4dfc1d324804cf8fd8c',
+        'line_count': 27514,
+        'content_sha256': 'f2a1022b75eb5eb48d4c5b805a6d77d8adb8a6585d26f6afa670d3eac88b214d',
     },
     '__graph_details__': {
         'name': '__graph_details__',
@@ -76,7 +76,7 @@ DOCUMENTS = {
         'addressing': 'source_path',
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
-        'line_count': 27509,
-        'content_sha256': '91093e91863f74f7d53e84533dbbdb0d81115e576e29d4dfc1d324804cf8fd8c',
+        'line_count': 27514,
+        'content_sha256': 'f2a1022b75eb5eb48d4c5b805a6d77d8adb8a6585d26f6afa670d3eac88b214d',
     },
 }

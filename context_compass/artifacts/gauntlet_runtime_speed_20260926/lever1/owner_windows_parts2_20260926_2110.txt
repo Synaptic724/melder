@@ -1,0 +1,46 @@
+# Owner-run on Windows, pasted verbatim by the owner on 2026-09-26 (~21:10Z), tree 0.2.71, .venv_new (3.14t),
+# PowerShell, same $env:MELDER_ROOT and $d as before. probe_parts2.py 20000, run twice (the second with a warm cache).
+
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .venv_new\Scripts\python.exe -X gil=0 "$d\probe_parts2.py" 20000
+melder parts2 cycles=20000 (worker thread; p50 / p90 / 95% trimmed mean, ns)
+  FULL_create        p50=  1200 p90=  2700 mean=   1675
+  FULL_enter         p50=   400 p90=   800 mean=    440
+  FULL_exit          p50=   600 p90=  1300 mean=    737
+  FULL_cleanup       p50=  1300 p90=  2800 mean=   1756
+  c_check_cleaned    p50=   100 p90=   200 mean=    112
+  c_pool_pop         p50=   200 p90=   400 mean=    222
+  c_state_sets       p50=   200 p90=   300 mean=    176
+  c_link_under_lock  p50=   900 p90=  1700 mean=   1046
+  s_acquire          p50=   200 p90=   300 mean=    197
+  s_push             p50=   200 p90=   400 mean=    253
+  s_pop_expected     p50=   200 p90=   500 mean=    284
+  s_reset_unlocked   p50=   200 p90=   400 mean=    231
+  s_release          p50=   200 p90=   300 mean=    193
+  k_lock_pair        p50=   200 p90=   300 mean=    207
+  k_spaces_for_pool  p50=   300 p90=   600 mean=    315
+  k_creations_reset  p50=   300 p90=   600 mean=    389
+  k_detach           p50=   500 p90=   900 mean=    554
+  k_state_hooks      p50=   200 p90=   300 mean=    179
+  k_pool_return      p50=   200 p90=   400 mean=    267
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .venv_new\Scripts\python.exe -X gil=0 "$d\probe_parts2.py" 20000
+melder parts2 cycles=20000 (worker thread; p50 / p90 / 95% trimmed mean, ns)
+  FULL_create        p50=  1000 p90=  1100 mean=   1006
+  FULL_enter         p50=   300 p90=   300 mean=    257
+  FULL_exit          p50=   400 p90=   500 mean=    423
+  FULL_cleanup       p50=  1100 p90=  1200 mean=   1103
+  c_check_cleaned    p50=   100 p90=   100 mean=     81
+  c_pool_pop         p50=   100 p90=   200 mean=    136
+  c_state_sets       p50=   100 p90=   200 mean=    128
+  c_link_under_lock  p50=   600 p90=   700 mean=    641
+  s_acquire          p50=   100 p90=   200 mean=    120
+  s_push             p50=   200 p90=   200 mean=    148
+  s_pop_expected     p50=   200 p90=   200 mean=    170
+  s_reset_unlocked   p50=   100 p90=   200 mean=    140
+  s_release          p50=   100 p90=   200 mean=    118
+  k_lock_pair        p50=   100 p90=   200 mean=    125
+  k_spaces_for_pool  p50=   200 p90=   200 mean=    178
+  k_creations_reset  p50=   300 p90=   300 mean=    251
+  k_detach           p50=   300 p90=   400 mean=    344
+  k_state_hooks      p50=   100 p90=   200 mean=    133
+  k_pool_return      p50=   200 p90=   200 mean=    166
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private>

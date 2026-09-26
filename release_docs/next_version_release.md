@@ -1,4 +1,4 @@
-# Melder 0.2.71
+# Melder 0.2.72
 
 **Unreleased**
 
@@ -373,6 +373,22 @@ rebuilds, and then lets them continue with the new plan. Melds of other spells a
 - **Limitation:** a constructor that melds its own spell through a conduit that must first rebuild
   that spell waits on itself and fails after 30 seconds.
 
+## A bind during a meld's revalidation no longer fails it
+
+When a meld has to recompile a spell (after a bind, notch, contract change or ownership transfer in a dynamic
+world), Melder's compiler reads the book's spell registry while other threads may be changing it. A bind landing
+at that moment could fail the meld with `RuntimeError: dictionary changed size during iteration` (seen on
+free-threaded Python), or make one compiler step silently drop the analysis it uses to choose how a spell's
+creation code is built.
+
+- **Each compiler step now reads a copy of the registry**, taken in one step, so a concurrent bind, notch,
+  contract grant or transfer can no longer change it underneath. No lock was added and melds take no new lock.
+- **A spell whose bind is still finishing is left for the next revalidation.** A compiler step that saw it
+  half-registered used to fail with "requires a live SpellSystemState"; the bind already marks the affected spells
+  for recompilation, so the next meld picks it up.
+- **Nothing else changes.** Results, errors, creation caches and conjure output are the same whenever no bind
+  lands during a compile.
+
 ## Clearer errors when conjure refuses spells
 
 When `conjure` refused spells, `SpellbookValidationError` printed every check that had run on them -
@@ -536,9 +552,10 @@ stay valid.
   codegen-signature implementation, melding a shared spell while another conduit revalidates it, and the
   conjure validation report. They also cover override key-set plans and the site plans normal melds now
   share with them, unresolved inputs decided before construction, the structural snapshot that lets a warm
-  conjure skip phases 1-4, self-referencing constructors and cycle consumers in the conjure report, and
-  class binding-profile annotations. The retired override-targeting internals and normal-meld emitters no
-  longer appear, and the graph documents drop the modules this release deletes.
+  conjure skip phases 1-4, self-referencing constructors and cycle consumers in the conjure report,
+  class binding-profile annotations, and compiler steps that read a copy of the spell registry. The retired
+  override-targeting internals and normal-meld emitters no longer appear, and the graph documents drop the
+  modules this release deletes.
 - `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
   raised and caught, but it cannot be bound as a spell.
 - The internal-registration guard drops the 27 internal classes this release removes (among them
@@ -547,4 +564,4 @@ stay valid.
 - Docstrings of the site-plan lowering and runtime, the site-graph analysis and its processor, and both
   family hydrators now say the site graph is built when a root is hydrated and serves normal melds as well
   as override melds.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.71.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.72.

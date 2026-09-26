@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: fe0d68ac9571277e837daf996125c4e1c350a8cef0df267ccbb558aa7759a020
+SOURCE FINGERPRINT: 3b875cf1a39a30185fe9fd74af2705f2e4a830423116232edadf69d75c811d8e
 FILE COUNT: 576
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: ad919c5d574f94ffb925af2b99900fbadf514fabea814f6ae6864b3e402b5ca8
+CONTENT SHA256: b1532a01c7d4850f443dd600f3dd9257906ed7484dbc0af86078e6fcfd178774
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.71"
+__version__ = "0.2.72"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -98022,7 +98022,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
-CONTENT SHA256: 7518a93f37a986283696543bcdb40011f46d8ee20bdef6b65fdc48f0d8400ede
+CONTENT SHA256: b0561737488b809948c992c85d05c1e3ac7ece659d622fb6255ae4958e434392
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -98144,7 +98144,7 @@ class CompilerPhase3:
             spellbook: Spellbook,
     ) -> Generator[tuple[Any, Any], Any, None]:
         """
-            Iterate all visible spells via the Spellbook's live spell_id_pool.
+            Iterate all visible spells via a copy of the Spellbook's spell_id_pool.
             
             Purpose:
                 Provide a single internal iterator that Phase 3 can use for
@@ -98152,12 +98152,16 @@ class CompilerPhase3:
             Contract:
                 - Yields "(spell_index, spell)" in the insertion order of
                   "_spell_id_pool".
-                - Uses the Spellbook's live "_spell_id_pool" directly; no copies
-                  or snapshots are created.
+                - Iterates a copy of "_spell_id_pool" taken in one call when the
+                  iteration starts. A concurrent bind, notch, contract grant or
+                  transfer changes the live dict under the Spellbook lock, which
+                  this pass does not hold (meld-time reruns run outside any
+                  transaction); iterating it live raised "dictionary changed size
+                  during iteration".
             Returns:
-                Iterator[Tuple[SpellIndex, Spell]]: Live iteration stream.
+                Iterator[Tuple[SpellIndex, Spell]]: Stream over the copy.
         """
-        for spell_instance in spellbook._spell_id_pool.values():
+        for spell_instance in spellbook._spell_id_pool.copy().values():
             yield spell_instance.spell_index, spell_instance
 
     def _normalize_annotation_for_matching(self, annotation: Any) -> Any:
@@ -99276,7 +99280,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
-CONTENT SHA256: d65235dd852a1f2afd6ae9c1777e001167c5b4354aedfa34ba19d4c9de0d6136
+CONTENT SHA256: 61e1af7c85920986da23f2355c1491e6a0e356bde0b99c676cf225f4f0349ff3
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Collection, Dict, List, Mapping, Optional, Set
@@ -99344,6 +99348,9 @@ class CompilerPhase5:
           publish only for spells included in the pass's own compilation scope.
         - Executable snapshots exclude non-resolvable definitions; their registration
           and local topology remain available through their original owners.
+        - Each pass reads one copy of the Spellbook's spell pool and admits only
+          ids with a registered SpellSystemState; it never takes the Spellbook
+          lock, and a concurrent bind cannot change the pool under it.
     """
 
     __slots__ = ()
@@ -99795,8 +99802,16 @@ class CompilerPhase5:
         snapshot = adjacency_builder.build(required_spell_system_states)
 
         # --- 2. Filter to spellbook-visible spells -------------------------
+        # One copy of the pool serves the whole pass: binds, notches, contract grants and
+        # transfers change the live dict under the Spellbook lock, which this pass does not
+        # hold. Only ids in the adjacency snapshot (registered SpellSystemState) are visible:
+        # bind publishes its pool entry before registering the state, and such a spell is
+        # left to the revalidation its bind schedules.
+        spell_lookup = spellbook._spell_id_pool.copy()
         visible_spell_ids = {
-            spell_id for spell_id, candidate in spellbook._spell_id_pool.items() if candidate.resolvable
+            spell_id
+            for spell_id, candidate in spell_lookup.items()
+            if candidate.resolvable and spell_id in snapshot.all_spell_ids
         }
         filtered_snapshot = self._filter_snapshot_to_visible_spells(
             snapshot=snapshot,
@@ -99807,7 +99822,7 @@ class CompilerPhase5:
         root_builder = SpellSystemRootBlueprintBuilder()
         system_index, spellspace_scoped_spell_ids = self._build_system_index_for_snapshot(
             snapshot=filtered_snapshot,
-            spell_lookup=spellbook._spell_id_pool,
+            spell_lookup=spell_lookup,
             spell_system_states=required_spell_system_states,
         )
         root_blueprints = root_builder.build_root_blueprints(
@@ -99819,7 +99834,7 @@ class CompilerPhase5:
             snapshot=filtered_snapshot,
             root_blueprints=root_blueprints,
             system_index=system_index,
-            spell_lookup=spellbook._spell_id_pool,
+            spell_lookup=spell_lookup,
             root_builder=root_builder,
             publication_spell_ids=spellbook._spells_by_id.keys(),
         )
@@ -99947,8 +99962,13 @@ class CompilerPhase5:
         )
         snapshot = adjacency_builder.build(required_spell_system_states)
 
-        spell_lookup = spellbook._spell_id_pool
-        visible_spell_ids = {spell_id for spell_id, candidate in spell_lookup.items() if candidate.resolvable}
+        # One copy of the pool serves the whole pass; see run_frame_wide.
+        spell_lookup = spellbook._spell_id_pool.copy()
+        visible_spell_ids = {
+            spell_id
+            for spell_id, candidate in spell_lookup.items()
+            if candidate.resolvable and spell_id in snapshot.all_spell_ids
+        }
         visible_snapshot = self._filter_snapshot_to_visible_spells(
             snapshot=snapshot,
             visible_spell_ids=visible_spell_ids,
@@ -99997,7 +100017,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py
-CONTENT SHA256: 18e0a283d7a2dfc3966f130204e932cbdd1c3ad9c520fa9a6e41917c06a021c6
+CONTENT SHA256: a5586d37138a1452c966ff93044accf644e811fbb19e0c1d35f05c5c7d48df46
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Set, Tuple
@@ -100364,7 +100384,9 @@ class CompilerPhase6:
         phase4_results: Dict[str, Any] = {}
         broken_spell_ids: Set[str] = set()
 
-        spell_lookup: Dict[str, Spell] = spellbook._spell_id_pool
+        # One copy of the pool serves every stage and strategy of this pass: concurrent binds
+        # change the live dict under the Spellbook lock, which this pass does not hold.
+        spell_lookup: Dict[str, Spell] = spellbook._spell_id_pool.copy()
         for spell_id, spell_instance in spell_lookup.items():
             phase4_results[spell_id] = spell_instance._compiler_artifact._validation_result_phase4
             if spell_instance._compiler_artifact._is_broken:
@@ -104172,7 +104194,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyz
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
-CONTENT SHA256: bc9a43ecd2f72b52123bf6f05c2a7ffbf267a0e188d7f451e0042e4a6a92b5be
+CONTENT SHA256: f31d91050b8319a13538231d96dc129624b182a5884989eb0fb4627a5f34f2e5
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -104821,6 +104843,9 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
               to share across all per-spell analyses in one pass; concurrent
               builders may race benignly (identical values, last write wins).
             - Returns `None` on any walk failure.
+            - Iterates a copy of `spell_lookup` (the live pool at every call site)
+              taken in one call; a concurrent bind used to fail the walk here and
+              drop the existence-occurrence analysis for the pass.
         """
         try:
             spell_rows_list: List[Tuple[Any, ...]] = []
@@ -104830,7 +104855,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             existence_by_spell_id: Dict[str, Existence] = {}
             disposal_enabled_spell_count = 0
 
-            for spell_id, candidate_spell in sorted(spell_lookup.items()):
+            for spell_id, candidate_spell in sorted(spell_lookup.copy().items()):
                 current_spell_id = candidate_spell.spell_index.selected_spell_id
                 existence = candidate_spell.existence
                 has_disposal_methods = bool(candidate_spell.has_disposal_methods)
@@ -120149,7 +120174,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/annot
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py
-CONTENT SHA256: 4cee88eb36a2b5224818356c5324b659183fc66dfe1e47c1961310d548312d57
+CONTENT SHA256: 253dcd8b96f3a26758d74a98d355f773f576f4ac91b321f5e6a8abf35370a741
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
@@ -120293,7 +120318,8 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             cycle_key_set.update(cycle)
 
         binding_to_spells: Dict[Tuple[str, str], List[str]] = {}
-        for spell_id, spell_instance in spellbook._spell_id_pool.items():
+        # A copy: concurrent binds change the live pool under the Spellbook lock, not held here.
+        for spell_id, spell_instance in spellbook._spell_id_pool.copy().items():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
             spell_key = spell_instance.key
@@ -120340,7 +120366,8 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             Model every spell's DI requirements as binding-key edges so cycle
             traversal can run per spell against one shared structure.
         Contract:
-            - Pure read over `spellbook._spell_id_pool` and each spell's
+            - Pure read over a copy of `spellbook._spell_id_pool` (concurrent binds
+              change the live dict under the Spellbook lock) and each spell's
               phase-1 requirements; mutates nothing on spells or spellbook.
             - Spell node keys come from `Spell.key`, the bind-time normalized
               canonical key, so no per-build re-normalization happens here.
@@ -120361,7 +120388,8 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         """
         binding_graph: Dict[Tuple[str, str], Set[Tuple[str, str]]] = {}
 
-        for spell_id, spell_instance in spellbook._spell_id_pool.items():
+        # A copy: concurrent binds change the live pool under the Spellbook lock, not held here.
+        for spell_id, spell_instance in spellbook._spell_id_pool.copy().items():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
@@ -120753,7 +120781,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/calla
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
-CONTENT SHA256: e56bd87becc20860fe81c3290513b44b34bc19c61be83f41107363332b93a705
+CONTENT SHA256: 24fbed3a61e7be54850e9c73c52585ab658741a2537639ca09704dea2aa9b1c3
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Dict, List, Optional
@@ -120863,7 +120891,8 @@ class CircularDependencyStrategy(SpellValidationStrategy):
             adjacency = pass_cache.get("circular_dependency_adjacency")
         if adjacency is None:
             adjacency = {}
-            for spell_id, spell in spellbook._spell_id_pool.items():
+            # A copy: concurrent binds change the live pool under the Spellbook lock, not held here.
+            for spell_id, spell in spellbook._spell_id_pool.copy().items():
                 if cancel_event is not None and cancel_event.is_set:
                     cancel_event.throw_if_set()
 
@@ -121397,7 +121426,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/dangl
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py
-CONTENT SHA256: 758057871c7db8799b29fcd707147a2fb59c750a87729eec60f5441b0a750f5e
+CONTENT SHA256: 04e6c930f6d7a0a17cfea0dea77f75bf11db64e911f8052f2804ef370460e8f4
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Any, Optional
@@ -121508,7 +121537,8 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
             name_collisions = pass_cache.get("duplicate_name_collisions")
         if name_collisions is None:
             name_collisions = {}
-            for spell_id, other_spell in spellbook._spell_id_pool.items():
+            # A copy: concurrent binds change the live pool under the Spellbook lock, not held here.
+            for spell_id, other_spell in spellbook._spell_id_pool.copy().items():
                 other_name = other_spell.spell_name
                 if not other_name:
                     continue

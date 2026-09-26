@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 9789
-CONTENT_SHA256 = 'cdfddd28744067e684601db78b5482b74bf3b5f63345024bc88a5d6d20c60d2e'
+LINE_COUNT = 9814
+CONTENT_SHA256 = 'a7dd45fdeb4bd20d91e60f83b457057c1ca015245bf0853c042e60d6a93e5d70'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -3414,6 +3414,26 @@ Phase-5 publication authority (2026-09-19):
   providers in the same book during target-local compilation. Selected targets still invalidate normally.
 - EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:CompilerPhase5`.
 
+Compiler pool reads (2026-09-26):
+- Compiler passes that run outside a transaction (meld-time structural reruns, conduit-local resolution,
+  deferred 8-11) iterate a copy of `Spellbook._spell_id_pool` taken in one call, never the live dict. Binds,
+  notches, contract grants and transfers change the pool under the Spellbook lock, which no pass takes;
+  iterating it live raised "dictionary changed size during iteration" on free-threaded builds. The copy is
+  atomic there (the dict's own lock) and under the GIL.
+- Sites: Phase 3 `_iter_all_spells` (every candidate scan), the binding-resolution-cycle, circular-dependency
+  and duplicate-name Phase-4 strategies, Phase 5 frame-wide and local, Phase 6 frame-wide (one copy for all its
+  stages and the two Phase-6 system strategies it passes the pool to) and the Phase-8 pool walk, which used to
+  swallow the error and return None, dropping the existence-occurrence analysis family discovery reads.
+- Phase 5 uses its copy for the visible set and every lookup in the pass, and admits only ids present in its
+  adjacency snapshot (a registered SpellSystemState). Bind publishes the pool entry before registering the
+  state; a pass in that gap used to raise "requires a live SpellSystemState" and now leaves the spell to the
+  revalidation its bind schedules. With no write during a pass the visible set is unchanged.
+- Not changed: lookups (`get`, `[]`, `in`) on the live pool; the conjure-time sweeps in the creation system and
+  structural snapshot (inside the CONJURE transaction); the Nexus relationship publisher.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:CompilerPhase5.run_local`,
+  `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._iter_all_spells` and
+  `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`.
+
 Constructor default precedence (2026-09-13):
 - Phase 1 preserves ordinary explicit defaults by classifying them as PLAIN before annotation
   inference. This includes None, falsey scalars, selected instances and collection defaults.
@@ -3637,7 +3657,7 @@ Invariants/Guarantees:
   providers annotate `TYPE_CHECKING`-only types; before 2026-09-26 this read raised NameError
   (PhaseExecutionError in `occurrence_plan_local`).
   EVIDENCE:
-  - src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:1082-1124
+  - src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:1085-1127
   - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:219-258
 
 Failure Modes:
@@ -7041,9 +7061,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-26T08:27:59Z
 - path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
   start_line: 1
-  end_line: 713
-  loc: 713
-  verified_at: 2026-09-19T21:23:18Z
+  end_line: 729
+  loc: 729
+  verified_at: 2026-09-26T21:40:00Z
 - path: `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
   start_line: 1
   end_line: 693
@@ -9525,6 +9545,11 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 compiler pool reads (0.2.72): the open item recorded by the override site-plan lane below is
+closed. Compiler passes on the meld-time path iterate a copy of the spell pool, Phase 5 admits only ids with a
+registered state, and the Phase-8 walk no longer drops its analysis under a concurrent bind. Promoted into the
+SpellCompiler entry ("Compiler pool reads").
 
 2026-09-26 override site-plan lane (override design v2, S1-S6): override melds of the many_only and generalized
 families run one plan per override key set that builds only what the payload does not supply (B1), accepts
