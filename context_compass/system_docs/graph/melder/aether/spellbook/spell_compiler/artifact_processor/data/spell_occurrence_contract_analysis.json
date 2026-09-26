@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_contract_analysis.py",
- "source_sha256": "e4e58059ce4d9b63f35d001af47c798fc5e188a35ad293e34be7dc69ff75e936",
+ "source_sha256": "d3dccbb4db6ebab3e78db261b46f5f3127883de627538aa18948663efe74d74a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis": {
@@ -32,7 +32,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5b9c383823f50994a3d904eb1cb1af247b563816d7072c53f51a22a3261990d8",
+   "span_sha256": "5a478e830b60290a330ec5f8cfb0477aab1dcae30be3d78a0ac954a3c144110d",
    "role": "Processor-owned occurrence contract-routing section for one spell model.",
    "responsibilities": [
     "stores SpellContract-derived payload routing by occurrence and by spell id",

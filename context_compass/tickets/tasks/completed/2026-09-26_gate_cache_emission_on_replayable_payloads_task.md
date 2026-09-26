@@ -1,14 +1,19 @@
 # Task: Refuse creation-cache emission for spells whose rows cannot replay their contract payload
 
+- Completed: 2026-09-26T13:14:31Z
+- Summary: Option-B emission gate implemented, then retired the same day by task 5 (rows carry value-only refs,
+  so every plan packages); the scalar classifier survives on the leaf. Closed with the story as the decision
+  record; owner accepted 2026-09-26T13:14:31Z.
+
 ## Metadata
 - Task ID: TASK-2026-09-26-gate-cache-emission-on-replayable-payloads
 - Story: STORY-2026-09-26-signature-determinism-phase8-digest
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T10:19:43Z
-- Updated: 2026-09-26T11:35:29Z
+- Updated: 2026-09-26T13:14:31Z
 
 ## Objective
 Owner option B (2026-09-26): a spell whose phase-11 step rows carry a contract payload value that the
@@ -49,6 +54,10 @@ generation bump.
 - from_state: in_progress
 - to_state: review
 - transition_reason: G1-G5 complete on the extended boundary; nothing executed here ("Not run.").
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted tasks 1-5 and the story after the third owner-run green suite report
+  ("yeah sure looks good", 2026-09-26T13:14:31Z); canonical docs promoted, patch folder archived, boards synced.
 
 ## Steps / Checklist
 - [x] G1: patch-doc delta (component + architecture) and story boundary extension.
@@ -92,7 +101,7 @@ generation bump.
 ## Applicable Anti-Patterns
 - [x] No status transition without evidence-backed transition reason.
 - [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No closure without acceptance confirmation and board-sync completion.
 - [x] No edit under `src/` before the owner confirms the file/symbol proposal.
 
 ## Done Checklist
@@ -104,8 +113,8 @@ generation bump.
 - [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [x] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -383,6 +392,22 @@ generation bump.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-09-26T12:45:19Z
+  TYPE: FACT
+  CLAIM: The gate is retired by task 5: both `build_package`s return `Dict` again, `_emit_spell_cache` binds
+    the payload unconditionally, `plan_contract_payloads_are_replayable` and `spell_codegen_plan_is_replayable`
+    are removed, and the unit gate file is replaced by `test_contract_override_refs.py`. What survives:
+    `is_replayable_contract_payload_value` (now on the leaf `CodegenSignature`, facade delegating) as the
+    row builders' scalar classifier, and the component fixtures. This task stays in review as the record of
+    option B; its acceptance is the story's.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_live_contract_override_operands_task.md
+  - src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py:127-170
+  IMPACT: No emission gate exists; every plan packages because rows are replayable by construction.
+  NEXT: None here; closure with the story.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 STATE 2026-09-26T10:19:43Z: opened on owner option B; investigation note recorded; G1 next.
 STATE 2026-09-26T10:28:51Z: REVIEW. Owner-run suites pending; NOTICE to melder_0 about the spellbook.py hunk.
@@ -394,6 +419,8 @@ STATE 2026-09-26T11:26:15Z: REVIEW. Owner: override values may be anything, same
 `override`; task-5 investigation (read-only) opens on the overrides path, SpellMap and the peer lanes' designs.
 STATE 2026-09-26T11:35:29Z: REVIEW. Investigation read (descriptors, phase-9 producers, meld path, design v2, bind.py);
 next: create task 5 with the live-operand design and the Propose -> Confirm; NOTICEs to melder_0 and melder_1.
+STATE 2026-09-26T12:45:19Z: REVIEW. Gate retired by task 5 (rows carry refs; every plan packages); this ticket is the option-B
+record only. Closure with the story.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

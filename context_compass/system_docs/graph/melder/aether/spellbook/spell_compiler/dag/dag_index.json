@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/dag/dag_index.py",
- "source_sha256": "585794c001eec41f7a14d976c1a60df479eec7d1efee7adf8855f9f4f78de6df",
+ "source_sha256": "fad5147aa84998eb98641583624d0a511c0ea13213cbe2e62d2d0aca944798d4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.dag.dag_index": {
@@ -40,7 +40,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "bc6de21e9bc33f8e5d35b9525b803e67fe5a04873221323629020b15ec2d9b1a",
+   "span_sha256": "f97d7f794a12c91098bafaf498fefd2fe1cd0338ca11f644d3b2fdfb3f616d39",
    "role": "Registry interning parameter paths into stable path ids.",
    "responsibilities": [
     "interns and resolves root-relative parameter paths for override targeting"
@@ -64,7 +64,7 @@
    "label": "SocketRef",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/dag/dag_index.py",
-   "lineno": 279,
+   "lineno": 298,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -95,7 +95,7 @@
    "label": "DagIndex",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/dag/dag_index.py",
-   "lineno": 335,
+   "lineno": 354,
    "bases": [
     "Cleanable"
    ],
@@ -138,7 +138,7 @@
    "label": "DagTargetingEngine",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/dag/dag_index.py",
-   "lineno": 521,
+   "lineno": 540,
    "bases": [
     "Cleanable"
    ],
@@ -171,7 +171,7 @@
    "label": "DagIndexBuilder",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/dag/dag_index.py",
-   "lineno": 699,
+   "lineno": 718,
    "bases": [],
    "markers": [],
    "public_methods": [

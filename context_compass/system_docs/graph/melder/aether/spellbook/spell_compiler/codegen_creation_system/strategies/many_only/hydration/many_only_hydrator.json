@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py",
- "source_sha256": "f4298b9dbd6ae9c0cd6e35b966611feb4aec9d0ffe590b4d1e94f6d91be46ec8",
+ "source_sha256": "9878d7cfed1c6e5543c611b2d059707ab057edbf18576c144389ef1e6d10d3b9",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator": {
@@ -25,7 +25,7 @@
    "label": "ManyOnlyHydratedExecutors",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py",
-   "lineno": 57,
+   "lineno": 65,
    "bases": [
     "Cleanable"
    ],
@@ -81,7 +81,11 @@
   "compile_creation_context_instance_no_overrides_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler.compile_creation_context_instance_no_overrides_executor",
   "SpellOverrideTargetRef": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetRef",
   "SpellOverrideTargetingCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+  "_hydrate_steps_from_rows": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler._hydrate_steps_from_rows",
+  "_resolve_root_instance_key": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler._resolve_root_instance_key",
   "compile_no_overrides_codegen_creation_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.compile_no_overrides_codegen_creation_executor",
+  "SitePlanStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep",
+  "SitePlanOverrideRuntime": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime",
   "compile_overrides_codegen_creation_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler.compile_overrides_codegen_creation_executor",
   "coerce_manifest_sequences": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.manifest.many_only_manifest.coerce_manifest_sequences",
   "validate_many_only_manifest": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.manifest.many_only_manifest.validate_many_only_manifest",

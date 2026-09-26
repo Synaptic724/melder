@@ -75,12 +75,13 @@ def source(deps=(), override_key=None, contract_key=None):
         contract_key=contract_key)
 
 def spec(param_sources=None, allow_list=False, uses_pos=False, payload=None,
-         collections=()):
+         collections=(), payload_refs=None):
     return SimpleNamespace(
         param_sources=dict(param_sources or {}),
         allow_list_aggregation=allow_list,
         uses_positional_override=uses_pos,
         contract_payload=payload,
+        contract_payload_refs=payload_refs,
         required_override_params=(),
         collection_param_names=frozenset(collections))
 

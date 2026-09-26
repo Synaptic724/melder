@@ -25,6 +25,9 @@ Row requirements beyond the shared phase-11 row schema:
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
+    CodegenCreationSchemaHelpers,
+)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library import (
     SpellGeneralizedCodegenPlanTargetKind,
     build_transient_no_overrides_source,
@@ -116,6 +119,10 @@ def hydrate_no_overrides_executor(
     Hydrate the inner no-overrides executor from manifest rows.
 
     Contract:
+        - Contract override payload references in the rows are resolved to the
+          consumer's LIVE descriptor values first (`resolve_contract_payload_rows`),
+          so every binding and runtime row below carries the object itself, by
+          identity, in-process and after a cache load alike (2026-09-26).
         - Emission is a pure function of rows/schema; live spells are touched
           only by bindings construction.
         - Transient unrolled emission is used exactly under the legacy rule:
@@ -128,6 +135,7 @@ def hydrate_no_overrides_executor(
         RuntimeError:
             When rows are invalid or the root instance key is unresolvable.
     """
+    rows = resolve_contract_payload_rows(rows=rows, spell_lookup=spell_lookup)
     runtime_rows = build_runtime_rows(
         rows=rows,
         spell_lookup=spell_lookup,
@@ -810,6 +818,10 @@ def _row_contract_call_extras(
         - Payload VALUES never appear in emitted source (identity-free
           emission); they ride the `step_contract_values` /
           `step_positional_args` bindings.
+        - A row straight from a manifest may carry phase-9 REFERENCES in place
+          of object values (2026-09-26); this helper reads only names and the
+          positional container's shape, so it is correct on raw and on resolved
+          rows alike. `_build_step_bindings` resolves the values before binding.
 
     Args:
         row: One manifest step row.
@@ -948,7 +960,7 @@ def _step_alias_hoist_lines(
 
 def _row_contract_value_binding(row: Dict[str, Any]) -> Tuple[Any, ...]:
     """
-    Build one row's frozen contract-payload value tuple for bindings.
+    Build one row's contract-payload value tuple for bindings.
 
     Contract:
         - Values are ordered exactly like the emission-order payload names
@@ -956,6 +968,9 @@ def _row_contract_value_binding(row: Dict[str, Any]) -> Tuple[Any, ...]:
           position, last value; `__args__` excluded), so
           `contract_values_N[j]` pairs with the j-th emitted payload keyword.
         - Rows without an inlinable payload contribute an empty tuple.
+        - Expects a RESOLVED row (`_build_step_bindings` replaces phase-9
+          references with live values first); on a raw manifest row the tuple
+          would carry the references themselves.
     """
     extras = _row_contract_call_extras(row)
     if extras is None:
@@ -965,6 +980,53 @@ def _row_contract_value_binding(row: Dict[str, Any]) -> Tuple[Any, ...]:
         return ()
     payload_map: Dict[str, Any] = dict(row["contract_payload_items"])
     return tuple(payload_map[name] for name in payload_names)
+
+
+def resolve_contract_payload_rows(
+        *,
+        rows: Sequence[Dict[str, Any]],
+        spell_lookup: Dict[str, Any],
+) -> Tuple[Dict[str, Any], ...]:
+    """
+    Replace the phase-9 references in manifest rows with the consumer's live values.
+
+    Purpose:
+        The single resolution point of the manifest-first no-overrides lane
+        (2026-09-26): rows persist a contract override payload entry as a
+        scalar or as a reference to the consumer's descriptor, and this turns
+        every reference back into the object the descriptor holds right now,
+        before runtime rows, bindings or specialization read the rows.
+
+    Contract:
+        - Rows without a payload and without a positional override are returned
+          as they are (same object); every other row is a shallow copy with
+          `contract_payload_items` and `contract_positional_override` resolved
+          through `CodegenCreationSchemaHelpers.resolve_contract_payload_row_values`.
+        - `spell_lookup` must contain the consumer named by each reference; it
+          always does for a lane's own step spells, because the consumer is a
+          step of the same lane.
+        - Descriptor reads are memoized per call; the input rows are never
+          mutated.
+
+    Raises:
+        RuntimeError:
+            When a reference cannot be resolved (consumer missing from
+            `spell_lookup`, descriptor without a payload, key absent).
+    """
+    descriptor_cache: Dict[Tuple[str, str], Any] = {}
+    resolved_rows = []
+    for row in rows:
+        if not row["has_contract_payload"] and row["contract_positional_override"] is None:
+            resolved_rows.append(row)
+            continue
+        items, positional = CodegenCreationSchemaHelpers.resolve_contract_payload_row_values(
+            row, spell_lookup, descriptor_cache,
+        )
+        resolved_row = dict(row)
+        resolved_row["contract_payload_items"] = items
+        resolved_row["contract_positional_override"] = positional
+        resolved_rows.append(resolved_row)
+    return tuple(resolved_rows)
 
 
 # ---------------------------------------------------------------------------
@@ -979,6 +1041,12 @@ def _build_step_bindings(
 ) -> Dict[str, Any]:
     """
     Build flat step-lane bindings from manifest rows plus runtime rows.
+
+    Contract:
+        - Expects RESOLVED rows (`resolve_contract_payload_rows`): the
+          `step_contract_values` and `step_positional_args` bindings are read
+          straight off the rows, so a raw manifest row would bind its phase-9
+          references instead of the live values.
     """
     return {
         "steps": runtime_rows,
@@ -1438,6 +1506,7 @@ def build_specialized_no_overrides_executor(
             When rows are invalid or the root instance key is unresolvable
             (mirrors the generic hydration contract).
     """
+    rows = resolve_contract_payload_rows(rows=rows, spell_lookup=spell_lookup)
     captured_step_indexes = select_specializable_step_indexes(rows)
     if not captured_step_indexes:
         return None

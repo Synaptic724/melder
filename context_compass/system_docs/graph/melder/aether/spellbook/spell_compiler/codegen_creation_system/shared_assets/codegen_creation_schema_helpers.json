@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py",
- "source_sha256": "87ffb37ee0f25049acda9141b85d6f2349c998a08aa7e15604812a9fe48898ef",
+ "source_sha256": "b4272534c52ce6f1640c51c2f9446d08a076060153d40ff5b686538c3041c21e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers": {
@@ -19,7 +19,7 @@
    "label": "CodegenCreationSchemaHelpers",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py",
-   "lineno": 6,
+   "lineno": 12,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -27,18 +27,23 @@
     "build_fast_transient_signature",
     "build_no_overrides_codegen_creation_step_signature_row",
     "build_phase11_step_ir_row",
+    "contract_payload_refs_from_row",
     "freeze_phase11_schema_value",
     "get_phase11_step_ir_rows",
     "hash_codegen_signature",
+    "is_replayable_contract_payload_value",
     "normalize_instance_key",
+    "project_contract_payload_entry",
+    "resolve_contract_override_ref",
+    "resolve_contract_payload_row_values",
     "serialize_codegen_signature_part"
    ],
    "shape": {
-    "method_count": 9,
+    "method_count": 14,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "66ab3028ffd7a6400a8e8c0f225fb4c07f2a8e57ed65abb05891ec6f888368bb",
+   "span_sha256": "0393f21c7ec2f08bd9d10c2702875d8f4e75ce57eb5d6481a17a19643f8e54ab",
    "role": "Shared phase-11 helper surface for codegen-creation families.",
    "responsibilities": [
     "serializes deterministic signature parts and hashes phase-11 schema payloads",
@@ -52,14 +57,26 @@
   }
  },
  "edges_out": [],
- "edge_candidates": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
  "published_aliases": [],
  "imports": {
+  "Format": "annotationlib.Format",
   "Any": "typing.Any",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "Sequence": "typing.Sequence",
-  "Tuple": "typing.Tuple"
+  "Tuple": "typing.Tuple",
+  "Union": "typing.Union",
+  "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
+  "SpellMap": "melder.aether.conduit.meld.contracts.spell_map.SpellMap",
+  "CodegenSignature": "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature.CodegenSignature"
  },
  "collapse_candidate": {
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers",

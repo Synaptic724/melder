@@ -1,0 +1,49 @@
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_instance
+1 failed, 17 passed, 1 skipped in 1.12s
+18 passed, 1 skipped in 0.93s
+18 passed, 1 skipped in 1.10s
+18 passed, 1 skipped in 0.95s
+18 passed, 1 skipped in 0.94s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_concurrent_meld_across_linked_conduits_isolated_per_conduit
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_instance
+2 failed, 16 passed, 1 skipped in 1.06s
+18 passed, 1 skipped in 0.96s
+18 passed, 1 skipped in 1.00s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_instance
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_concurrent_meld_unique_across_multiple_borrowers_shared_instance
+2 failed, 16 passed, 1 skipped in 1.07s
+18 passed, 1 skipped in 0.94s
+18 passed, 1 skipped in 0.93s
+18 passed, 1 skipped in 0.91s
+18 passed, 1 skipped in 0.94s
+18 passed, 1 skipped in 0.91s
+18 passed, 1 skipped in 0.93s
+18 passed, 1 skipped in 0.92s
+18 passed, 1 skipped in 0.95s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_concurrent_meld_unique_across_multiple_borrowers_shared_instance
+1 failed, 17 passed, 1 skipped in 0.96s
+18 passed, 1 skipped in 0.95s
+18 passed, 1 skipped in 0.96s
+18 passed, 1 skipped in 0.92s
+18 passed, 1 skipped in 0.93s
+18 passed, 1 skipped in 0.92s
+18 passed, 1 skipped in 0.96s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_instance
+1 failed, 17 passed, 1 skipped in 1.00s
+18 passed, 1 skipped in 0.97s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_concurrent_meld_many_across_borrowers_distinct_instances
+1 failed, 17 passed, 1 skipped in 1.13s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_concurrent_meld_many_across_borrowers_distinct_instances
+1 failed, 17 passed, 1 skipped in 1.03s
+18 passed, 1 skipped in 1.00s
+18 passed, 1 skipped in 0.96s
+18 passed, 1 skipped in 1.03s
+18 passed, 1 skipped in 0.95s
+18 passed, 1 skipped in 0.95s
+18 passed, 1 skipped in 0.99s
+18 passed, 1 skipped in 0.95s
+18 passed, 1 skipped in 0.97s
+18 passed, 1 skipped in 0.95s
+18 passed, 1 skipped in 0.95s
+18 passed, 1 skipped in 0.94s
+18 passed, 1 skipped in 0.95s

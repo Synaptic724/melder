@@ -964,12 +964,11 @@ class Spellbook(Cleanable):
             - Requires the spell to belong to this Spellbook.
             - Stages the current phase-11 artifact cache payload.
             - Hands the payload to the Spellbook-owned `CachingSystem`.
-            - Stages nothing and returns False when the package builder returns
-              `None`: the spell's plan carries a contract payload value that
-              cannot replay from the persisted rows (owner option B,
-              2026-09-26), so the spell stays on the in-process compile path
-              and the conduit classifies `mixed` on the next process. One info
-              log per skipped spell per conjure.
+            - Every constructed spell's payload is replayable (2026-09-26): rows
+              carry contract override payload entries as scalars or as phase-9
+              references resolved against the live descriptor at hydration, so
+              no emission gate refuses a plan here any more (the option-B gate
+              of task 4 is retired).
 
         Args:
             spell:
@@ -1022,18 +1021,6 @@ class Spellbook(Cleanable):
                     f"Failed to stage cache payload for spell_id={spell.spell_id}: {exc}",
                     "_emit_spell_cache",
                     exc_info=True,
-                )
-            return False
-        if spell_payload is None:
-            # Not an error: the builder refused a plan whose contract payload
-            # values cannot replay from the frozen rows (owner option B,
-            # 2026-09-26). The spell recompiles phases 8-11 in-process on every
-            # conjure instead of full-hitting from a lossy persisted row.
-            if self._logger is not None:
-                self._logger.info(
-                    f"Cache emission skipped for spell_id={spell.spell_id}: a contract "
-                    "payload value is not replayable from the persisted rows.",
-                    "_emit_spell_cache",
                 )
             return False
         caching_system.upsert_spell_payload(spell.spell_id, spell_payload)

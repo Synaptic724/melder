@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py",
- "source_sha256": "1909c50695f84e2589ee1ae184741124142ceff02e11f89eb0e180618d601de3",
+ "source_sha256": "3be8ea79e7e6a03d34f2ed75a403ae740f3a932511382c68484ab8e99a8101a3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model": {
@@ -19,7 +19,7 @@
    "label": "SpellCodegenModel",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py",
-   "lineno": 33,
+   "lineno": 36,
    "bases": [
     "Cleanable"
    ],
@@ -34,7 +34,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "584155eb3502e844aa6301ce4e726ec9b0148b6f3d7d7e754cc314e5356f143d",
+   "span_sha256": "d4211c6291571ca3ad19828c4e6b2cbb0ca9a5af3ec3a47284cb49ea22edeb08",
    "role": "Processor-owned codegen model for one spell.",
    "responsibilities": [
     "stores the fitted processor output that later planner strategies consume",
@@ -88,6 +88,7 @@
   "SpellOccurrenceOrderAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_order_analysis.SpellOccurrenceOrderAnalysis",
   "SpellOverrideTargetingAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetingAnalysis",
   "SpellRuntimeAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis.SpellRuntimeAnalysis",
+  "SpellSiteGraphAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
   "SpellExistenceOccurrenceAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis.SpellExistenceOccurrenceAnalysis",
   "SpellOccurrenceGraphAnalysis": "melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis.SpellOccurrenceGraphAnalysis"
  },

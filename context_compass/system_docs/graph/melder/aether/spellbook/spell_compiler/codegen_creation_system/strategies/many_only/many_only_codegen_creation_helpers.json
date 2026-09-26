@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py",
- "source_sha256": "1349bbde1996f5c0c639760636e61525da74b578b4dce80d2bef846f11ac695a",
+ "source_sha256": "c9092ee3f249e910e767b8315094a22c7c6795fa1db90d517e482e8c7c8fd220",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers": {
@@ -19,7 +19,7 @@
    "label": "ManyOnlyCodegenCreationHelpers",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py",
-   "lineno": 6,
+   "lineno": 10,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -35,7 +35,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "f25065cd720908456a0ef68618719c3ac3d83506ae13325fcb37d6193fbe072a",
+   "span_sha256": "1ddd2fe7f23c9a896ae0e43525a06b1307f6f1dabdf917a8976a218615380caf",
    "role": "Many-only-local phase-11 helper surface.",
    "responsibilities": [
     "provides deterministic hashing and signature serialization for the many-only family",
@@ -55,7 +55,8 @@
   "Any": "typing.Any",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple"
+  "Tuple": "typing.Tuple",
+  "CodegenSignature": "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature.CodegenSignature"
  },
  "collapse_candidate": {
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers",

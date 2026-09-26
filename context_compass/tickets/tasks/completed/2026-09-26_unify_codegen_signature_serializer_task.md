@@ -1,14 +1,19 @@
 # Task: Unify the codegen signature serializer into one leaf implementation with a determinism test
 
+- Completed: 2026-09-26T13:14:31Z
+- Summary: One stdlib-only leaf (`CodegenSignature`) implements the signature serializer, hasher and freezer;
+  both facades delegate; freeze is address-free and byte-compatible (reference oracle); two-process determinism
+  test green owner-run. Owner accepted 2026-09-26T13:14:31Z; promoted into src_components/src_architecture.
+
 ## Metadata
 - Task ID: TASK-2026-09-26-unify-codegen-signature-serializer
 - Story: STORY-2026-09-26-signature-determinism-phase8-digest
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T09:05:00Z
-- Updated: 2026-09-26T10:48:48Z
+- Updated: 2026-09-26T13:14:31Z
 
 ## Objective
 One implementation of `serialize_codegen_signature_part`, `hash_codegen_signature` and
@@ -51,6 +56,10 @@ determinism test plus a byte-compatibility corpus test on the gauntlet book (C-H
 - transition_reason: U1-U4 complete on the task boundary (leaf, delegations, oracle, 11 unit + 4 component
   tests, patch docs amended, docstring ritual done); nothing executed here ("Not run."); one owner ruling
   (cache-path payloads) is open and recorded as a RISK note, outside this task's boundary.
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted tasks 1-5 and the story after the third owner-run green suite report
+  ("yeah sure looks good", 2026-09-26T13:14:31Z); canonical docs promoted, patch folder archived, boards synced.
 
 ## Steps / Checklist
 - [x] U1: Propose -> Confirm (files/symbols, the freeze rule, the set rule) and owner confirmation.
@@ -95,7 +104,7 @@ determinism test plus a byte-compatibility corpus test on the gauntlet book (C-H
 ## Applicable Anti-Patterns
 - [x] No status transition without evidence-backed transition reason.
 - [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No closure without acceptance confirmation and board-sync completion.
 - [x] No edit under `src/` before the owner confirms the file/symbol proposal.
 
 ## Done Checklist
@@ -107,8 +116,8 @@ determinism test plus a byte-compatibility corpus test on the gauntlet book (C-H
 - [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [x] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true

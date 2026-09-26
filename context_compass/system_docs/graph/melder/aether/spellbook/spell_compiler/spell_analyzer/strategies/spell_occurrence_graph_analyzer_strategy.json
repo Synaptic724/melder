@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
- "source_sha256": "b323ca387780212ff71f6f2ebea31f75998b91473c1c14637189734814de2353",
+ "source_sha256": "72e5d6f07f20cc0b12a1a2e83f08db9c22cbd4e091cae2e785d362df632354db",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy": {
@@ -29,11 +29,11 @@
     "strategy_id"
    ],
    "shape": {
-    "method_count": 28,
+    "method_count": 29,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "1ec2ad9029700b8788d2739b4503be9b643e03fa7dcc7cae3f253600fbd89519",
+   "span_sha256": "6c44841a6a0b6aaaf876786d144bd383dd5c31a2058c66b5f9d5fdf640e8c47d",
    "role": "Occurrence-graph analyzer strategy for phase-8 analysis.",
    "responsibilities": [
     "expands rooted blueprint truth plus topology and contract context into an occurrence graph",

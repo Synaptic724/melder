@@ -22,6 +22,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     10: "creation_slot_build_guards",
     11: "unresolved_input_sockets",
     12: "complete_bundle_restage",
+    13: "collection_member_paths",
 }
 
 

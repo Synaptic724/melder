@@ -27,11 +27,7 @@ Contract:
       conjure orchestration's best-effort loop.
 """
 
-from typing import Any, Dict, Optional
-
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
-    CodegenCreationSchemaHelpers,
-)
+from typing import Any, Dict
 
 MANIFEST_METADATA_KEY = "codegen_creation_manifest"
 PACKAGE_VERSION = 2
@@ -41,22 +37,17 @@ SOLO_FAMILY_ID = "solo_codegen_creation"
 MANY_ONLY_FAMILY_ID = "many_only_codegen_creation"
 
 
-def build_package(spell: Any) -> Optional[Dict[str, Any]]:
+def build_package(spell: Any) -> Dict[str, Any]:
     """
     Build the marshal-safe cache package for one manifest-first spell.
 
     Contract:
-        - Returns `None` - nothing to persist - when
-          `CodegenCreationSchemaHelpers.spell_codegen_plan_is_replayable` rejects
-          the spell's phase-10 plan: a contract payload value that is not
-          `None`/`bool`/`int`/`float`/`str` (or a tuple of those) hydrates from
-          its frozen row projection into something other than the value the
-          contract carried, so such a spell is never persisted (the in-process
-          projection of the same value is an open owner decision).
-          The plan must be live for the verdict; a spell without a published
-          plan is refused rather than packaged blind.
-        - Otherwise exports the family manifest exactly as the producing family
-          stored it.
+        - Exports the family manifest exactly as the producing family stored it.
+        - Every manifest is replayable by construction (2026-09-26): a contract
+          override payload entry is either a scalar written as itself or the
+          phase-9 reference to the consumer's live descriptor, resolved at
+          hydration; the emission gate that refused object payloads (owner
+          option B, task 4) is retired with it.
 
     Raises:
         RuntimeError:
@@ -79,10 +70,6 @@ def build_package(spell: Any) -> Optional[Dict[str, Any]]:
     family_id = manifest.get("family_id")
     if not isinstance(family_id, str) or not family_id:
         raise RuntimeError("manifest is missing a family_id.")
-    if not CodegenCreationSchemaHelpers.spell_codegen_plan_is_replayable(
-            artifact._spell_codegen_plan
-    ):
-        return None
     return {
         "package_version": PACKAGE_VERSION,
         "family_id": family_id,

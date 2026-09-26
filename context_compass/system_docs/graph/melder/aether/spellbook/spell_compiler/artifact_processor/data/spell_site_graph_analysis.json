@@ -1,0 +1,97 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py",
+ "source_sha256": "66aa471f903cd41613a45a11fc10ad459e2e2a3376e3d32fcbb01c8786d46428",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis",
+   "label": "spell_site_graph_analysis",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteParam": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteParam",
+   "label": "SpellSiteParam",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py",
+   "lineno": 9,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "as_row"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "eb5bb7d454d2108f121ea931581c4cdb18422fcb4a6f0507812d23ab9409a327"
+  },
+  "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSite": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSite",
+   "label": "SpellSite",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py",
+   "lineno": 135,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "as_row"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "f099f3b6be80869570ef3b11a72389df6afd28cdbb9da248f38b9a7c9686a784"
+  },
+  "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
+   "label": "SpellSiteGraphAnalysis",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py",
+   "lineno": 226,
+   "bases": [
+    "Cleanable"
+   ],
+   "markers": [],
+   "public_methods": [
+    "cleanup",
+    "param"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "5657e6fad3f9d894b800a213e8f5b9a0da937f350e22f3cf4837f01a7831a85f"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": null
+}

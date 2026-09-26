@@ -1,69 +1,69 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/utilities/helpers/signature_reflection.py",
-  "source_sha256": "3f9e094408109ca7f8d1e531fc346de30eb6b8d4745bc9e13d7234b60780079c",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.utilities.helpers.signature_reflection": {
-      "id": "melder.utilities.helpers.signature_reflection",
-      "label": "signature_reflection",
-      "kind": "module",
-      "file": "src/melder/utilities/helpers/signature_reflection.py",
-      "lineno": 1,
-      "include": true,
-      "role": "Reads and renders signatures and annotations whose names are unbound at runtime.",
-      "semantics_authored_against": ""
-    },
-    "melder.utilities.helpers.signature_reflection.SignatureReflection": {
-      "id": "melder.utilities.helpers.signature_reflection.SignatureReflection",
-      "label": "SignatureReflection",
-      "kind": "class",
-      "file": "src/melder/utilities/helpers/signature_reflection.py",
-      "lineno": 9,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "class_annotations",
-        "contains_unresolved_name",
-        "display_signature",
-        "stabilize_signature"
-      ],
-      "shape": {
-        "method_count": 6,
-        "has_bases": false,
-        "trivial": false
-      },
-      "span_sha256": "987cd81f6354ec8fe228579ac9ebb06c62899b9db90b8e115937b54f12fc6c48",
-      "role": "Stateless reader/renderer for signatures and annotations that name types unbound at runtime.",
-      "responsibilities": [
-        "returns the default VALUE-format signature when it evaluates, otherwise a FORWARDREF signature whose owner-bearing ForwardRefs are replaced by source text",
-        "stabilizes an existing FORWARDREF signature for fingerprint text: no ForwardRef owner or memory address, unchanged when nothing is unresolved",
-        "reads class annotations in FORWARDREF, rendering unresolved names as their source text",
-        "recognizes owner-bearing ForwardRefs inside nested typing constructs"
-      ],
-      "owns_state": [],
-      "phases": [
-        "validation",
-        "runtime"
-      ],
-      "semantics_authored_against": "987cd81f6354ec8fe228579ac9ebb06c62899b9db90b8e115937b54f12fc6c48"
-    }
+ "schema_version": 1,
+ "source": "src/melder/utilities/helpers/signature_reflection.py",
+ "source_sha256": "3f9e094408109ca7f8d1e531fc346de30eb6b8d4745bc9e13d7234b60780079c",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.helpers.signature_reflection": {
+   "id": "melder.utilities.helpers.signature_reflection",
+   "label": "signature_reflection",
+   "kind": "module",
+   "file": "src/melder/utilities/helpers/signature_reflection.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Reads and renders signatures and annotations whose names are unbound at runtime.",
+   "semantics_authored_against": ""
   },
-  "edges_out": [],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "ForwardRef": "annotationlib.ForwardRef",
-    "Format": "annotationlib.Format",
-    "get_annotations": "annotationlib.get_annotations",
-    "Any": "typing.Any",
-    "Callable": "typing.Callable",
-    "Dict": "typing.Dict",
-    "get_args": "typing.get_args"
-  },
-  "collapse_candidate": {
-    "module": "melder.utilities.helpers.signature_reflection",
-    "class": "melder.utilities.helpers.signature_reflection.SignatureReflection",
-    "label": "SignatureReflection"
+  "melder.utilities.helpers.signature_reflection.SignatureReflection": {
+   "id": "melder.utilities.helpers.signature_reflection.SignatureReflection",
+   "label": "SignatureReflection",
+   "kind": "class",
+   "file": "src/melder/utilities/helpers/signature_reflection.py",
+   "lineno": 9,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "class_annotations",
+    "contains_unresolved_name",
+    "display_signature",
+    "stabilize_signature"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "987cd81f6354ec8fe228579ac9ebb06c62899b9db90b8e115937b54f12fc6c48",
+   "role": "Stateless reader/renderer for signatures and annotations that name types unbound at runtime.",
+   "responsibilities": [
+    "returns the default VALUE-format signature when it evaluates, otherwise a FORWARDREF signature whose owner-bearing ForwardRefs are replaced by source text",
+    "stabilizes an existing FORWARDREF signature for fingerprint text: no ForwardRef owner or memory address, unchanged when nothing is unresolved",
+    "reads class annotations in FORWARDREF, rendering unresolved names as their source text",
+    "recognizes owner-bearing ForwardRefs inside nested typing constructs"
+   ],
+   "owns_state": [],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": "987cd81f6354ec8fe228579ac9ebb06c62899b9db90b8e115937b54f12fc6c48"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "ForwardRef": "annotationlib.ForwardRef",
+  "Format": "annotationlib.Format",
+  "get_annotations": "annotationlib.get_annotations",
+  "Any": "typing.Any",
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "get_args": "typing.get_args"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.helpers.signature_reflection",
+  "class": "melder.utilities.helpers.signature_reflection.SignatureReflection",
+  "label": "SignatureReflection"
+ }
 }

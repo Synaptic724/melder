@@ -5,10 +5,10 @@
 - Component: DI Descriptors and Contract Sockets; SpellCompiler and Validation Pipeline (phase 3,
   phase 9, planner data, phase-11 rows); Codegen creation system (no-overrides hydration); creation
   cache emission seam
-- Status: draft
+- Status: implemented (owner-run suites pending)
 - Owner: fable_0 (cowork)
 - Created: 2026-09-26T11:57:20Z
-- Updated: 2026-09-26T11:57:20Z
+- Updated: 2026-09-26T12:42:22Z
 
 ## Component Purpose and Boundary
 - Descriptors: `SpellContract` (late-bound cross-conduit socket) and `SpellMap` (in-graph DI socket) each
@@ -30,13 +30,18 @@
 - Before (rows): `contract_payload_items` = sorted `(param, freeze(value))`; `contract_positional_override`
   = `freeze(tuple)`; a dict, list, enum, callable or object value is mangled (sorted pairs, tuple, repr
   text, marker tuple) and executed in that form by every manifest-first lane and after a cache hit.
-- After (rows): a non-scalar value is emitted as its REF; scalars unchanged; both row builders and both
-  signature-row builders of the two families apply the same classifier.
+- After (rows): a non-scalar value is emitted as its REF; scalars unchanged (written as themselves, which
+  is what every freeze returned for them); the generalized row and signature builders, the many_only
+  helpers' two row builders and the many_only manifest row builder all call
+  `CodegenSignature.project_contract_payload_entry`.
 - Before (hydration): `_row_contract_value_binding`, `_hydrate_steps_from_rows` (generalized :309,
   many_only :425) copy row values verbatim into bindings / step adapters.
 - After (hydration): the three sites resolve refs to live values through the consumer's descriptor (one
-  FORWARDREF signature read per (consumer, parameter), memoized per hydration); the override lanes' copies
-  are untouched and keep today's behaviour until v2 S3.
+  FORWARDREF signature read per (consumer, parameter), memoized per hydration): the generalized manifest
+  compiler resolves the ROWS once at its two entry points (`resolve_contract_payload_rows`), so runtime
+  rows, bindings and the generic constructor path agree; the two legacy `_hydrate_steps_from_rows`
+  resolve per row and give the adapter `contract_payload_refs` rebuilt from the raw row. The override
+  lanes' copies are untouched and keep today's behaviour until v2 S3.
 - Before (emission): both package builders return `None` for a non-replayable plan; `_emit_spell_cache`
   skips such spells (task 4).
 - After (emission): the gate is removed; rows are replayable by construction.
@@ -76,5 +81,5 @@
   (expected: only task 4's tests, which are replaced).
 
 ## Context / Handoff Summary
-- What changed: contract only; no code yet.
-- Next entrypoint: task 5 P3.
+- What changed (2026-09-26T12:42:22Z): implemented as described above; tests written; "Not run.".
+- Next entrypoint: owner-run suites; promotion at story closure.

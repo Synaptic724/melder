@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
- "source_sha256": "561ccdf10639f3a12b9f2426e90e87d9b49fcad272d39acdaeb034e353875e68",
+ "source_sha256": "6b23c994190899bc89635b3dac506c442ae220a1beae32d0ddb83ab55a3f5340",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan": {
@@ -91,6 +91,7 @@
    "public_methods": [
     "collection_param_names",
     "contract_payload",
+    "contract_payload_refs",
     "contract_positional_override",
     "creations_target_kind",
     "dependency_resolution_order",
@@ -105,11 +106,11 @@
     "uses_positional_override"
    ],
    "shape": {
-    "method_count": 14,
+    "method_count": 15,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "20833f91d4c3128c69793a4f93c50cc8a497fd175c2b91c35a4ff12d7ff02520",
+   "span_sha256": "457f4bb75486b36e739d293b6da03f7f5b58c0a3177083e53e06377103dec588",
    "role": "Reusable planner step object for one many-only execution occurrence.",
    "responsibilities": [
     "stores spell-static instance and occurrence identity for one many-only step",
@@ -141,7 +142,7 @@
    "label": "ManyOnlyNoOverridesPlan",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-   "lineno": 244,
+   "lineno": 258,
    "bases": [
     "Cleanable"
    ],
@@ -230,7 +231,7 @@
    "label": "ManyOnlyOverridesPlan",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-   "lineno": 796,
+   "lineno": 810,
    "bases": [
     "Cleanable"
    ],
@@ -273,7 +274,7 @@
    "label": "ManyOnlyCodegenPlanBuilder",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py",
-   "lineno": 894,
+   "lineno": 908,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -284,7 +285,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "e6454367846191c4f0bce6bcc8cdb7d82db866ac8347dd77244c242dc6d9a331",
+   "span_sha256": "b12b66b65b0e66974033c23c0bb5311ee395a0fde026413e072289cfe4d3e36f",
    "role": "Standalone builder for many-only planner payloads from SpellCodegenModel.",
    "responsibilities": [
     "builds ordered many-only planner steps from graph, order, instance, injection, and runtime model sections",

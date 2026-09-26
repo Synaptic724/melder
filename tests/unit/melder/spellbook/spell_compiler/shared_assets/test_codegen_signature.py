@@ -208,10 +208,17 @@ def test_both_facades_delegate_to_the_single_implementation() -> None:
 
 
 def test_no_overrides_signature_row_ignores_payload_object_identity() -> None:
-    """Two plan steps whose contract payloads hold distinct default-repr objects sign identically."""
+    """
+    Two plan steps whose contract payloads hold distinct default-repr objects sign identically:
+    the row carries the phase-9 references (2026-09-26), never the objects.
+    """
+    refs = {
+        "marker": CodegenSignature.build_contract_override_ref("consumer-id", "service", "marker"),
+        "hook": CodegenSignature.build_contract_override_ref("consumer-id", "service", "hook"),
+    }
 
     def _step(payload_object: Any) -> SimpleNamespace:
-        """Build one plan-step double carrying an object-valued contract payload."""
+        """Build one plan-step double carrying an object-valued contract payload and its refs."""
         return SimpleNamespace(
             instance_key=("consumer", None),
             spell=SimpleNamespace(spell_index=SimpleNamespace(selected_spell_id="consumer-id")),
@@ -223,6 +230,7 @@ def test_no_overrides_signature_row_ignores_payload_object_identity() -> None:
             contract_positional_override=None,
             has_contract_payload=True,
             contract_payload={"marker": payload_object, "hook": _payload_function},
+            contract_payload_refs=refs,
             use_spell_lock_hint=False,
             must_register=True,
         )
@@ -235,6 +243,7 @@ def test_no_overrides_signature_row_ignores_payload_object_identity() -> None:
     )
 
     assert row_a == row_b
+    assert row_a[9] == (("hook", refs["hook"]), ("marker", refs["marker"]))
     assert CodegenSignature.hash_codegen_signature(row_a) == (
         CodegenSignature.hash_codegen_signature(row_b)
     )

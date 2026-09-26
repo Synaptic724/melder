@@ -1,14 +1,19 @@
 # Task: Make SpellContract/SpellMap override values live meld operands and rename `spell_override` to `override`
 
+- Completed: 2026-09-26T13:14:31Z
+- Summary: `spell_override` -> `override` on SpellContract/SpellMap; phase 9 records value-only refs; rows carry
+  scalars or refs; the no-overrides hydration of every family binds the live object (identity proven in-process
+  and across a cache full hit, owner-run); task-4 gate retired. Accepted 2026-09-26T13:14:31Z; promoted.
+
 ## Metadata
 - Task ID: TASK-2026-09-26-live-contract-override-operands
 - Story: STORY-2026-09-26-signature-determinism-phase8-digest
-- Status: in_progress
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T11:38:58Z
-- Updated: 2026-09-26T12:22:59Z
+- Updated: 2026-09-26T13:14:31Z
 
 ## Objective
 Owner ruling (2026-09-26): the values inside a `SpellContract(override=...)` payload may be anything and must
@@ -59,6 +64,14 @@ v2 (S3 retires those emitters); (6) optionally routes `SpellMap.override` (dead 
 - from_state: ready
 - to_state: in_progress
 - transition_reason: Owner confirmed P1 (2026-09-26); NOTICEs and patch docs precede any src edit.
+- from_state: in_progress
+- to_state: review
+- transition_reason: P1-P8 complete on the task boundary (rename, refs, projection, three hydration sites,
+  gate retired, tests, patch docs amended); nothing executed here ("Not run."); owner-run suites pending.
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted tasks 1-5 and the story after the third owner-run green suite report
+  ("yeah sure looks good", 2026-09-26T13:14:31Z); canonical docs promoted, patch folder archived, boards synced.
 
 ## Steps / Checklist
 - [x] P1: Propose -> Confirm (files/symbols above; ref shape; lane split; SpellMap opt-in) and owner
@@ -70,19 +83,19 @@ v2 (S3 retires those emitters); (6) optionally routes `SpellMap.override` (dead 
       docs, `src_components.md` mentions).
 - [x] P4: phase 9 records `contract_payload_refs` (`("__contract_override__", consumer_spell_id, param_name,
       key_or_index)`) beside the raw payload; shared-provider distinctness still compares values.
-- [ ] P5: row builder emits `contract_payload_items` from refs; gate helpers, both `build_package` gates,
+- [x] P5: row builder emits `contract_payload_items` from refs; gate helpers, both `build_package` gates,
       the `_emit_spell_cache` hunk and their tests removed; replayability asserted on the row builder.
-- [ ] P6: resolver helper on `CodegenCreationSchemaHelpers` (`resolve_contract_override_ref(ref, spell_id_pool)`)
+- [x] P6: resolver helper on `CodegenCreationSchemaHelpers` (`resolve_contract_override_ref(ref, spell_id_pool)`)
       reading the consumer's live descriptor (FORWARDREF signature default); no-overrides-lane binding sites
       of the three families call it at hydration.
 - [x] P7 (owner opt-in): SpellMap defaults with an `override` payload recorded through the same refs against
       the phase-3 dependency occurrence.
-- [ ] P8: tests (unit: refs, resolver, row builder; component: object payload by identity in-process and
+- [x] P8: tests (unit: refs, resolver, row builder; component: object payload by identity in-process and
       across a cache hit; xfail removed); docstring ritual; notes; task -> review with "Not run.".
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - The rename; phase-9 refs; ref-only rows; the resolver and its no-overrides-lane bindings; gate removal;
@@ -105,7 +118,14 @@ v2 (S3 retires those emitters); (6) optionally routes `SpellMap.override` (dead 
 
 ## Validation
 - Not run. (VM interpreter is 3.10 against a 3.14 floor.)
+- Owner-run 2026-09-26 (3.14.7t): refs unit file 49 passed; component trio 24 passed + cross-process probe failed
+  (probe fixed); compiler unit suites 439 passed + 23 test-double drift failures (fixed); broad run 1412 passed,
+  1 skipped, 1 failed (same probe). Second run (after the fixes): 49 passed; 24 passed + 1 failed (the probe,
+  `full_hit` False / identity True); 462 passed; 1412 passed, 1 skipped, 1 failed (same probe). Probe rewritten
+  (two subprocess probes, 13:06Z). Third run: all four commands passed (owner report 13:08Z, counts not supplied).
 - Recommended commands (owner-run, 3.14t):
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_compiler/shared_assets/test_contract_override_refs.py`
+  - `python -m pytest -q tests/component/melder/spellbook/test_spellbook_component_contract_override_operands.py tests/component/melder/spellbook/test_codegen_signature_determinism.py tests/component/melder/spellbook/test_spellbook_component_caching_system.py`
   - `python -m pytest -q tests/unit/melder/aether/conduit/meld/contracts tests/unit/melder/spellbook/spell_compiler`
   - `python -m pytest -q tests/component/melder/spellbook tests/component/melder/aether/conduit tests/integration/melder/conduit/test_conduit_integration_links_contracts.py`
 
@@ -117,23 +137,24 @@ v2 (S3 retires those emitters); (6) optionally routes `SpellMap.override` (dead 
   overrides is still mangled there (documented; same as today; no regression).
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
-- [ ] No edit under `src/` before the owner confirms the file/symbol proposal and the patch docs exist.
-- [ ] No compatibility alias for the renamed keyword unless the owner asks (overlay 5.15).
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
+- [x] No edit under `src/` before the owner confirms the file/symbol proposal and the patch docs exist
+      (one P5 hunk was written after a compaction and before re-onboarding; disclosed to the owner).
+- [x] No compatibility alias for the renamed keyword unless the owner asks (overlay 5.15).
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed) - patch docs amended; `src_components.md` promotion at closure
+- [x] Validation status recorded ("Not run.")
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -303,12 +324,201 @@ v2 (S3 retires those emitters); (6) optionally routes `SpellMap.override` (dead 
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T12:44:45Z
+  TYPE: FACT
+  CLAIM: P5, P6 and P8 landed on the device tree (not run). Design refinement while implementing: the
+    scalar classifier and the row projection rule moved into the stdlib-only leaf
+    (`CodegenSignature.is_replayable_contract_payload_value` :127, `project_contract_payload_entry` :171)
+    because the many_only family must not import the generalized helper surface; a replayable value is
+    written AS ITSELF (every freeze returns it unchanged, so scalar rows keep their bytes) and the facade
+    delegates (:108, :129). Row builders using it: generalized `build_phase11_step_ir_row` :524 and the
+    signature row :622; many_only helpers :202/:215/:260/:275; many_only manifest row :169/:192. Gate
+    removed: both `build_package`s return `Dict` (manifest :40, legacy :101); `_emit_spell_cache` binds
+    the payload unconditionally (:1026); `plan_contract_payloads_are_replayable` and
+    `spell_codegen_plan_is_replayable` are gone. Resolver surface on the facade: `resolve_contract_override_ref`
+    :151, `resolve_contract_payload_row_values` :238, `contract_payload_refs_from_row` :278. Hydration
+    sites: the generalized manifest compiler resolves the ROWS once at both entry points
+    (`resolve_contract_payload_rows` :985, called :138 and :1509) so runtime rows, bindings and the generic
+    `_construct_spell_instance` path all see live values (resolving only the bindings would have left the
+    generic path, taken for a non-sequence positional payload, with refs); the generalized legacy
+    `_hydrate_steps_from_rows` :312 (:390, :414) and the many_only one :428 (:495, :518) resolve per row
+    and give the adapter `contract_payload_refs`. Solo carries no payload field (grep of `strategies/solo/`)
+    and is not a site. Unchanged by design: the four override-lane row copies, `build_runtime_rows`, and
+    the phase-side twin `shared_compiler_executions.build_phase11_step_ir_row` (digest-only input of the
+    artifact-local `_codegen_ir`). No generation bump: gen-12 bundles were written after task 4's gate, so
+    none carries an object-payload row; scalar rows are byte-identical. Tests: unit
+    `test_contract_override_refs.py` (renamed from the gate file; classifier, projection, resolver
+    failures, refs-from-row, both families' row builders, both package builders); component
+    `test_codegen_signature_determinism.py` fixture now asserts `instance.service.marker is PAYLOAD_MARKER`
+    and `test_cache_package_carries_a_reference_for_an_object_payload` (:621) checks the packaged row
+    carries the ref and marshals; `test_spellbook_component_caching_system.py` :639 stages an object-payload
+    SpellMap spell as a reference and melds by identity; new
+    `test_spellbook_component_contract_override_operands.py` (227 lines): in-process identity and a
+    cross-process creation-cache full hit (subprocess proves phases 8-11 skipped, bundle untouched,
+    provider holds that process's payload object). Two analysis constructors in unit tests gained the
+    required kwarg. Patch docs amended to the implemented shape (status implemented).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py:127-258
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:108-330
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:524-680
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py:180-285
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py:145-200
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.py:40-80
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.py:101-140
+  - src/melder/aether/spellbook/spellbook.py:949-1028
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:107-185
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:985-1110
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py:312-420
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:428-525
+  - tests/unit/melder/spellbook/spell_compiler/shared_assets/test_contract_override_refs.py:1-438
+  - tests/component/melder/spellbook/test_spellbook_component_contract_override_operands.py:1-227
+  - tests/component/melder/spellbook/test_codegen_signature_determinism.py:274-365
+  - tests/component/melder/spellbook/test_codegen_signature_determinism.py:590-655
+  - tests/component/melder/spellbook/test_spellbook_component_caching_system.py:600-675
+  - system_docs/patches/active/live_contract_override_operands_2026_09_26/architecture_patch.md
+  IMPACT: Object payloads reach the provider by identity on every no-overrides lane, in-process and from
+    the cache; every plan packages; scalar books keep their bytes; the task-4 gate is retired.
+  NEXT: Task -> review; owner runs the suites under Validation; promotion into `src_components.md` (DI
+    descriptors block incl. the rename, IR seams block) at story closure.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T12:47:03Z
+  TYPE: FACT
+  CLAIM: Mailbox M0-24 (melder_0, 12:36:41Z) consumed: S3a replaces `execute_with_overrides` at four sites and
+    will touch only `generalized_hydrator._hydrate_overrides_runtime` (anchored, after a re-read); it reads
+    the no-overrides steps through each family's own row hydration and asks whether
+    `_hydrate_steps_from_rows` or `_build_kwargs_no_overrides` are about to change shape. Answer (F0-12):
+    both legacy `_hydrate_steps_from_rows` changed today and are done - same signature, same adapter
+    attributes plus `contract_payload_refs`, payload values resolved live; `_build_kwargs_no_overrides` is
+    untouched; the manifest compiler resolves rows before `build_runtime_rows`, so any reader of hydrated
+    steps or runtime rows sees live values. No further shape change planned in this lane.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py:312-420
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:428-525
+  - tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  IMPACT: S3a can build on the hydrated adapters as they are now; no collision with this lane's files.
+  NEXT: None here; task stays in review.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T12:53:41Z
+  TYPE: MEASURE
+  CLAIM: Owner-run (3.14.7t, `.venv_new`): unit refs file 49 passed; component trio 24 passed + 1 failed
+    (the cross-process probe: it called `_get_or_create_caching_system()` before conjure, which reads
+    `self._conduit._name` on the not-yet-conjured book); compiler unit suites 439 passed + 23 failed, all
+    test-double drift from this task's shape changes (17 via the shared `spec()` injection-spec double
+    without `contract_payload_refs`, 1 signature-row double without refs, 4 direct calls of the private
+    shared-payload resolver expecting the old return/message, 1 direct call of the phase-9 per-occurrence
+    compiler missing the two new keyword-only args); the broad component/integration run 1412 passed,
+    1 skipped, 1 failed (the same probe). The in-process identity test, the caching staging test and the
+    linked-contract fixture (provider identity) passed, so the live-operand path is proven in-process.
+    Fixes (tests only, no src change): probe reads the bundle path from the cache root before conjure and
+    cross-checks the caching system after; `spec()` gained `payload_refs`; the signature-row double carries
+    refs and asserts the row holds them; the four resolver regressions expect `(payload, occurrence)` /
+    `(None, None)` and the "distinct descriptor override payloads" message; the two per-occurrence calls
+    pass `occurrence_graph` and `refs_by_occurrence`.
+  EVIDENCE:
+  - tests/component/melder/spellbook/test_spellbook_component_contract_override_operands.py:120-200
+  - tests/unit/melder/spellbook/spell_compiler/codegen_planner/test_generalized_dual_build_differential.py:77-88
+  - tests/unit/melder/spellbook/spell_compiler/shared_assets/test_codegen_signature.py:210-250
+  - tests/unit/melder/spellbook/spell_compiler/test_root_visible_family_selection_regressions.py:162-230
+  - tests/unit/melder/spellbook/spell_compiler/test_spell_strategy_migrations.py:395-430
+  IMPACT: One re-run decides the cross-process claim; the unit drift is closed. Not run here.
+  NEXT: Owner re-runs the four commands; fable_0 files the result.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T13:06:46Z
+  TYPE: FACT
+  CLAIM: Owner's second run: every command green except the cross-process probe (`{'full_hit': False,
+    'identity': True, 'marker_type': '_PayloadObject'}`). Root cause, from source: no `__init__.py` exists on
+    `tests/`, `tests/component/`, `tests/component/melder/` or `tests/component/melder/spellbook/`, and
+    `pyproject.toml` sets no `importmode`, so pytest (prepend mode) imports the test file as the top-level
+    module `test_spellbook_component_contract_override_operands`, while the child imports the dotted
+    `tests.component.melder.spellbook.<file>` path (namespace packages). `MapPayloadConsumer.__module__`
+    therefore differs, `Bind.sha256_profile` hashes `profile.module` into the class fingerprint, and the
+    consumer's spell id differs between parent and child. The child's `_build_conjure_cache_state` finds
+    `BasicService` cached (same dotted import in both) and the consumer missing -> `mixed` -> phases 8-11
+    run -> the plan is published -> `full_hit` False; identity True came from that in-process compile, not
+    from the cache. Fix (tests only, no src change; this file edit was made after the compaction and BEFORE
+    re-onboarding, disclosed in the attestation): the bundle WRITER is now a subprocess probe too
+    (`probe_write_bundle`), both probes import the module by the same dotted name, `_make_book` returns the
+    consumer id from `bind`, the reader reports `bundle_existed`/`plan_skipped`/`bundle_untouched`
+    separately, and the test asserts equal consumer ids across the two children before the full-hit flags
+    and identity. The pytest process only prepares the cache root and orchestrates (`_run_probe`). The file
+    ast-parses; CRLF kept; no `getattr`/`hasattr`/PEP 604 introduced.
+  EVIDENCE:
+  - tests/component/melder/spellbook/test_spellbook_component_contract_override_operands.py:1-15
+  - tests/component/melder/spellbook/test_spellbook_component_contract_override_operands.py:124-131
+  - tests/component/melder/spellbook/test_spellbook_component_contract_override_operands.py:157-297
+  - tests/conftest.py:1-22
+  - pyproject.toml:209-213
+  - src/melder/aether/spellbook/bind/bind.py:892-1003
+  - src/melder/aether/spellbook/spellbook_creation_system.py:504-612
+  IMPACT: The cross-process claim is testable as designed; the src under test is unchanged. The same
+    module-name trap applies to any future subprocess probe defined in a test file under `tests/`.
+  NEXT: Owner re-runs commands 2 and 4 (commands 1 and 3 are unaffected: no unit file changed).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T13:08:41Z
+  TYPE: MEASURE
+  CLAIM: Owner-run, third run (3.14.7t, `.venv_new`): all four Validation commands passed, the rewritten
+    cross-process probe included ("yeah they all passed"; per-command counts not supplied this time - the
+    second run's counts stand as the last itemized figures). Method: the two-subprocess probe; the reader
+    asserts equal consumer ids, `bundle_existed`, `plan_skipped`, `bundle_untouched` and provider identity in
+    that order, so a pass means the cache full hit skipped phases 8-11 and still handed the provider the
+    reader process's own payload object. Every exit-gate item except owner acceptance is now met.
+  EVIDENCE:
+  - tests/component/melder/spellbook/test_spellbook_component_contract_override_operands.py:278-297
+  - tickets/tasks/2026-09-26_live_contract_override_operands_task.md
+  IMPACT: The live-operand path is proven in-process and across a cache hit on the owner's machine; the
+    story's remaining gate is acceptance, then promotion into `src_components.md` and closure sync.
+  NEXT: Owner accepts tasks 2-5 (with task 1) or redirects; on acceptance, fable_0 promotes the two patch
+    folders into `src_components.md`, regenerates the index, archives the patches and syncs the boards.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T13:14:31Z
+  TYPE: FACT
+  CLAIM: Owner accepted ("yeah sure looks good"). Closure: the two patch folders were promoted - src_components.md
+    gained the "Live override operands (2026-09-26)" block on the DI descriptors entry, the `override`
+    constructor lines on both descriptor subcomponents, a corrected IR-seams signature bullet plus the
+    "Deterministic signatures, phase-8 pool digest and live contract operands (2026-09-26)" block, a hydration
+    failure mode, the leaf in Key Files, step 5 of the SpellMap flow and a handoff paragraph; src_architecture.md
+    gained one Operational Invariants bullet and a handoff paragraph; both indexes regenerated and verified
+    (`--check` OK: 143 sections over 9443 lines; 54 over 2854). Patch folders archived under
+    system_docs/patches/completed/. Owed to the owner: `src_graph.md` regeneration on 3.14 for the new leaf
+    module `shared_assets/codegen_signature.py` (absent from src_graph_index.md; the VM interpreter is 3.10).
+  EVIDENCE:
+  - system_docs/src_components.md:762-790
+  - system_docs/src_components.md:3293-3330
+  - system_docs/src_architecture.md:848-861
+  - system_docs/src_components_index.md:1-25
+  - system_docs/src_architecture_index.md:1-25
+  IMPACT: Canonical maps carry the tranche; the task closes with the story.
+  NEXT: None; ticket moves to completed.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 STATE 2026-09-26T11:38:58Z: ready; waiting on the owner's P1 confirmation. No edit under src/ yet.
 STATE 2026-09-26T11:49:59Z: IN_PROGRESS. P1 confirmed; next: NOTICEs (melder_0, melder_1, updater_0, updater_1), then P2 patch docs.
 STATE 2026-09-26T11:57:47Z: IN_PROGRESS. P1, P2 done (patch docs linked, artifact row added). Resume at P3 (rename).
 STATE 2026-09-26T12:22:59Z: IN_PROGRESS. P3, P4 done; P5 helpers/row builders done (pre-REONBOARD edit disclosed). Resume at P5
 tail: many_only row builders, both build_package gates, _emit_spell_cache; then P6.
+STATE 2026-09-26T12:44:45Z: REVIEW. P1-P8 done on the device tree (not run); patch docs amended. Owner runs the four commands under
+Validation; on acceptance, promotion into `src_components.md` at story closure.
+STATE 2026-09-26T12:53:41Z: REVIEW. Owner's first run: src proven in-process; 24 test-double/probe fixes applied (tests only).
+Re-run of the four commands pending; the cross-process probe is the open claim.
+STATE 2026-09-26T13:06:46Z: REVIEW. Owner's second run: all green but the cross-process probe (module-name trap:
+pytest basename import vs the child's dotted import -> different consumer id -> `mixed`). Test rewritten to two
+subprocess probes (writer + reader, same dotted module; consumer ids asserted equal). Owner re-runs commands 2 and 4.
+STATE 2026-09-26T13:08:41Z: REVIEW. Owner's third run: all four commands passed (cross-process probe included).
+Exit gate met except acceptance. Waiting on owner acceptance; then promotion into src_components.md and closure.
+STATE 2026-09-26T13:14:31Z: DONE. Owner accepted; canonical maps promoted, indexes regenerated, patch folders archived;
+ticket closed with the story. Owed: src_graph.md regeneration for the new leaf (owner-run, 3.14).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py",
- "source_sha256": "bdd41be627465f383c236f5f2c7b52e8cf4a0ea504cb966c1b263b2f00e12aa1",
+ "source_sha256": "5f9bec5e0eaf6b5ed69a92084a06a8a5e4211e29d8aeb997c499ecc1158d7f1f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.manifest.many_only_manifest": {
@@ -39,7 +39,8 @@
   "build_many_only_unrolled_schema_from_plan": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler._build_many_only_unrolled_schema_from_plan",
   "ManyOnlyCodegenCreationHelpers": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers.ManyOnlyCodegenCreationHelpers",
   "ManyOnlyFinalizeCreationContextStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step.ManyOnlyFinalizeCreationContextStep",
-  "ManyOnlyNoOverridesCodegenCreationStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step.ManyOnlyNoOverridesCodegenCreationStep"
+  "ManyOnlyNoOverridesCodegenCreationStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step.ManyOnlyNoOverridesCodegenCreationStep",
+  "CodegenSignature": "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature.CodegenSignature"
  },
  "collapse_candidate": null,
  "edges_authored": [

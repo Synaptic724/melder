@@ -2,6 +2,10 @@ import hashlib
 import pickle
 from typing import Any, Dict, Optional, Tuple
 
+from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
+    CodegenSignature,
+)
+
 
 class ManyOnlyCodegenCreationHelpers:
     """
@@ -11,6 +15,8 @@ class ManyOnlyCodegenCreationHelpers:
         Provide deterministic hashing and step-row building for the many-only
         family without reaching through the old shared transient/generalized
         helper surface.
+        Contract override payload entries follow the compiler-wide projection rule
+        owned by the stdlib-only leaf `CodegenSignature` (2026-09-26).
     """
 
     __slots__ = ()
@@ -166,9 +172,10 @@ class ManyOnlyCodegenCreationHelpers:
         Contract:
             Returns a fixed-order tuple of the caching-relevant step facts:
             instance key, selected spell id, dependency-resolution order, sorted
-            collection params, positional-override flag + frozen value,
-            contract-payload presence + frozen sorted items, and disposal-method
-            presence + names. Override-lane fields are excluded - this row is the
+            collection params, positional-override flag + projected value,
+            contract-payload presence + projected sorted items (a scalar entry as
+            itself, any other entry as its phase-9 reference, 2026-09-26), and
+            disposal-method presence + names. Override-lane fields are excluded - this row is the
             no-overrides cache key.
 
         Args:
@@ -187,11 +194,14 @@ class ManyOnlyCodegenCreationHelpers:
         )
         contract_payload_items: Tuple[Any, ...] = ()
         if step.contract_payload:
+            payload_refs = step.contract_payload_refs
             contract_payload_items = tuple(
                 sorted(
                     (
                         param_name,
-                        ManyOnlyCodegenCreationHelpers.freeze_value(value),
+                        CodegenSignature.project_contract_payload_entry(
+                            param_name, value, payload_refs,
+                        ),
                     )
                     for param_name, value in step.contract_payload.items()
                 )
@@ -202,8 +212,8 @@ class ManyOnlyCodegenCreationHelpers:
             dependency_resolution_order,
             tuple(sorted(step.collection_param_names)),
             bool(step.uses_positional_override),
-            ManyOnlyCodegenCreationHelpers.freeze_value(
-                step.contract_positional_override
+            CodegenSignature.project_contract_payload_entry(
+                "__args__", step.contract_positional_override, step.contract_payload_refs,
             ),
             bool(step.has_contract_payload),
             contract_payload_items,
@@ -222,7 +232,9 @@ class ManyOnlyCodegenCreationHelpers:
             Projects the step into a schema-only dict including the override-lane
             fields (shared_instance, override_match_prefix + length) that the
             no-overrides signature row omits. Payload and positional-override
-            values are frozen via `freeze_value` for determinism.
+            entries are projected by `CodegenSignature.project_contract_payload_entry`
+            (scalars as themselves, anything else as its phase-9 reference), so the
+            row is deterministic and never carries an object (2026-09-26).
 
         Args:
             step:
@@ -240,11 +252,14 @@ class ManyOnlyCodegenCreationHelpers:
         )
         contract_payload_items: Tuple[Any, ...] = ()
         if step.contract_payload:
+            payload_refs = step.contract_payload_refs
             contract_payload_items = tuple(
                 sorted(
                     (
                         param_name,
-                        ManyOnlyCodegenCreationHelpers.freeze_value(value),
+                        CodegenSignature.project_contract_payload_entry(
+                            param_name, value, payload_refs,
+                        ),
                     )
                     for param_name, value in step.contract_payload.items()
                 )
@@ -257,8 +272,8 @@ class ManyOnlyCodegenCreationHelpers:
             "collection_param_names": tuple(sorted(step.collection_param_names)),
             "uses_positional_override": step.uses_positional_override,
             "contract_positional_override": (
-                ManyOnlyCodegenCreationHelpers.freeze_value(
-                    step.contract_positional_override
+                CodegenSignature.project_contract_payload_entry(
+                    "__args__", step.contract_positional_override, step.contract_payload_refs,
                 )
             ),
             "has_contract_payload": step.has_contract_payload,

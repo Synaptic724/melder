@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.py",
- "source_sha256": "a802674822570f82dd6cde5521db1269a4b182445824b479707064a14405d9a1",
+ "source_sha256": "d0bb53c852e236f2379aa15222ac07d8bee06694d456f40da318765b85141ddd",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache": {

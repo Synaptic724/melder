@@ -96,6 +96,10 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 13: each member of a collection parameter gets its own compiler
+    # path, so many-existence dependencies below different members are built
+    # once per member instead of once per collection (2026-09-26). Version-12
+    # bundles carry plans that hand one such object to every member.
     # Version 12: a non-full-hit conjure rebuilds the whole bundle from its own
     # compile and drops ids that are no longer live (2026-09-26). Earlier
     # bundles can hold a consumer plan naming a provider spell id from an older
@@ -152,6 +156,7 @@ class CachingSystem(Cleanable):
         10: "creation_slot_build_guards",
         11: "unresolved_input_sockets",
         12: "complete_bundle_restage",
+        13: "collection_member_paths",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"

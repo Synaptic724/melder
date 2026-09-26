@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py",
- "source_sha256": "2a2c6f2ddca1d3c47f71f424ec49288e07c882fee61ada7abdc59e3e7bf2e8fa",
+ "source_sha256": "0c7bc3811b25ae8d90d2459b2434ae3b5738716b1157b58dbe550aa5f2306cf5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler": {
@@ -38,6 +38,7 @@
   "Sequence": "typing.Sequence",
   "Tuple": "typing.Tuple",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "CodegenCreationSchemaHelpers": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
   "SpellGeneralizedCodegenPlanTargetKind": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.SpellGeneralizedCodegenPlanTargetKind",
   "build_transient_no_overrides_source": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.build_transient_no_overrides_source",
   "construct_spell_instance": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.construct_spell_instance",

@@ -977,6 +977,16 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
     ) -> bool:
         """
         Append dependencies discovered from SpellSystemStates local topology.
+
+        Contract:
+            - Each target of a socket becomes one child occurrence
+              `(target_id, child_path_id)` under the socket's parameter name.
+            - A collection socket gives every member its own child path
+              (`extend_path(..., member=target_id)`), so dependencies below
+              different members are separate occurrences and each member gets its
+              own `Existence.many` objects. Phase 5 mints the same ids.
+            - Returns False when the spell has no local topology (the caller then
+              falls back to DAG metadata).
         """
         topology = spell_system_states._local_topologies.get(spell_id)
         if topology is None:
@@ -994,7 +1004,14 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                     dependencies.setdefault(socket.param_name, [])
                 continue
             for target_id in socket.target_spell_ids:
-                child_path_id = path_registry.extend_path(path_id, socket.param_name)
+                if socket.is_collection:
+                    child_path_id = path_registry.extend_path(
+                        path_id,
+                        socket.param_name,
+                        member=target_id,
+                    )
+                else:
+                    child_path_id = path_registry.extend_path(path_id, socket.param_name)
                 dependencies.setdefault(socket.param_name, []).append(
                     (target_id, child_path_id)
                 )
@@ -1011,6 +1028,12 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
     ) -> None:
         """
         Append dependencies discovered from the DAG metadata.
+
+        Contract:
+            - Used only when the spell has no local topology, so collection-ness
+              is not known: a parameter fed by two or more nodes is treated as a
+              collection and each node gets its own member path, matching the
+              topology rule.
         """
         if dag is None:
             return
@@ -1023,8 +1046,18 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             if incoming_name is None:
                 continue
             parent_entries.append((incoming_name, parent_node.id, parent_node))
-        for param_name, _, parent_node in sorted(parent_entries):
-            child_path_id = path_registry.extend_path(path_id, param_name)
+        entry_counts: Dict[str, int] = {}
+        for param_name, _, _ in parent_entries:
+            entry_counts[param_name] = entry_counts.get(param_name, 0) + 1
+        for param_name, parent_id, parent_node in sorted(parent_entries):
+            if entry_counts[param_name] > 1:
+                child_path_id = path_registry.extend_path(
+                    path_id,
+                    param_name,
+                    member=parent_id,
+                )
+            else:
+                child_path_id = path_registry.extend_path(path_id, param_name)
             child_occurrence = (parent_node.id, child_path_id)
 
             dependencies.setdefault(param_name, []).append(child_occurrence)

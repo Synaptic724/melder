@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py",
- "source_sha256": "8b1f65dda75768ce5f7c899d67d6a27845abd5c8ea721594ee058e583a8e27af",
+ "source_sha256": "a731f44c2fd13bb928a476ee954cbea00b28cc15a65f7a664a12c527fb60edc1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator": {
@@ -25,7 +25,7 @@
    "label": "GeneralizedHydratedExecutors",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py",
-   "lineno": 61,
+   "lineno": 70,
    "bases": [
     "Cleanable"
    ],
@@ -89,6 +89,9 @@
   "build_overrides_execute_runtime": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime.build_overrides_execute_runtime",
   "build_runtime_rows": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.build_runtime_rows",
   "SpellbookBindingResolver": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver",
+  "_hydrate_steps_from_rows": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler._hydrate_steps_from_rows",
+  "SitePlanStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep",
+  "SitePlanOverrideRuntime": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime",
   "coerce_manifest_sequences": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest.coerce_manifest_sequences",
   "validate_generalized_manifest": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest.validate_generalized_manifest",
   "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",

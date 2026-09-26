@@ -1,0 +1,100 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py",
+ "source_sha256": "dd9c420f057caedc3c87afdf972ba3fd21c3edbe57fb46578a3c513614adeeba",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy",
+   "label": "spell_site_graph_processor_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "label": "SpellSiteGraphProcessorStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py",
+   "lineno": 33,
+   "bases": [
+    "SpellArtifactProcessorStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "build_site_graph",
+    "process",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 10,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "34ee96c5c645bedb00b2a57bef9d2d5438cd254e681b3e0f78aaffea642fb178"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to_label": "SpellArtifactProcessorStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to_label": "SpellSiteGraphAnalysis",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to_label": "SpellSiteParam",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to_label": "SpellSite",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "SiteInstanceKey": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SiteInstanceKey",
+  "SpellSite": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSite",
+  "SpellSiteGraphAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
+  "SpellSiteParam": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteParam",
+  "SpellArtifactProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellInjectionAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis",
+  "SpellInjectionInstanceSpec": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec",
+  "SpellInjectionParamSource": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionParamSource",
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+  "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
+  "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+  "label": "SpellSiteGraphProcessorStrategy"
+ }
+}

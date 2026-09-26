@@ -278,6 +278,7 @@ def test_injection_processor_strategy_ports_injection_plan_intent() -> None:
             "root": [(("root", 0), {"__args__": ("x",), "cfg": "payload"})]
         },
         contract_dependencies_complete=True,
+        contract_override_refs_by_occurrence={},
     )
     # The injection processor reads collection-socket truth from the durable
     # phase-3 topology registry on the owning spellbook; a None topology is the
@@ -396,8 +397,10 @@ def test_occurrence_contract_processor_strategy_allows_missing_providers_only_in
 
     complete = strategy._compile_contract_overrides_for_occurrence(
         occurrence=("consumer", 0),
+        occurrence_graph={("consumer", 0): {}},
         overrides_by_occurrence=overrides_by_occurrence,
         overrides_by_spell_id=overrides_by_spell_id,
+        refs_by_occurrence={},
         spell_lookup=dynamic_spellbook._spell_id_pool,
         spellbook=dynamic_spellbook,
         path_registry=_PathRegistryProbe({0: 0}),
@@ -418,8 +421,10 @@ def test_occurrence_contract_processor_strategy_allows_missing_providers_only_in
     with pytest.raises(Exception, match="could not be resolved"):
         strategy._compile_contract_overrides_for_occurrence(
             occurrence=("consumer", 0),
+            occurrence_graph={("consumer", 0): {}},
             overrides_by_occurrence={},
             overrides_by_spell_id={},
+            refs_by_occurrence={},
             spell_lookup=automatic_spellbook._spell_id_pool,
             spellbook=automatic_spellbook,
             path_registry=_PathRegistryProbe({0: 0}),

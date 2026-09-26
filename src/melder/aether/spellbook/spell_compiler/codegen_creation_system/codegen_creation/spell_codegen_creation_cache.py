@@ -14,10 +14,10 @@ Purpose:
     per-conduit runtime object is ever frozen into the cache.
 
 Contract:
-    - `build_package(spell)` returns `None` for a plan whose contract payload
-      values cannot replay from the frozen rows (owner option B, 2026-09-26);
-      otherwise it returns a marshal-safe dict (primitives, tuples,
-      dicts, and one `CodeType`) covering both lanes.
+    - `build_package(spell)` returns a marshal-safe dict (primitives, tuples,
+      dicts, and one `CodeType`) covering both lanes. Contract override payload
+      entries ride the rows as scalars or as phase-9 references to the
+      consumer's live descriptor, never as frozen objects (2026-09-26).
     - `load_creation_context(spell, package, publish=...)` rebuilds both inner
       executors against the live Spellbook + live phase-5 path registry, wraps
       each with the final hook-aware doors phase 11 would emit for the live
@@ -98,21 +98,18 @@ _NO_OVERRIDES_STEP_SOURCE_NAME = (
 # Build (emit)
 # ---------------------------------------------------------------------------
 
-def build_package(spell: Any) -> Optional[Dict[str, Any]]:
+def build_package(spell: Any) -> Dict[str, Any]:
     """
     Build the marshal-safe both-lane cache package for one constructed spell.
 
     Contract:
         - Requires constructed-spell phase-11 output (creation + plan + model).
-        - Returns `None` - nothing to persist - when
-          `CodegenCreationSchemaHelpers.spell_codegen_plan_is_replayable` rejects
-          the plan: a contract payload value that is not `None`/`bool`/`int`/
-          `float`/`str` (or a tuple of those) would hydrate from its frozen row
-          into something other than the value the contract carried (owner
-          option B, 2026-09-26).
-        - Otherwise returns a dict of primitives/tuples/dicts plus the inner
-          no_overrides `CodeType`. The override lane is row-only (no code
-          object).
+        - Returns a dict of primitives/tuples/dicts plus the inner no_overrides
+          `CodeType`. The override lane is row-only (no code object).
+        - Every package is replayable by construction (2026-09-26): a contract
+          override payload entry is a scalar or the phase-9 reference resolved
+          at hydration, so the emission gate of owner option B (task 4) is
+          retired.
 
     Raises:
         RuntimeError:
@@ -128,9 +125,6 @@ def build_package(spell: Any) -> Optional[Dict[str, Any]]:
     spell_codegen_model = artifact._spell_codegen_model
     if spell_codegen_model is None:
         raise RuntimeError("cache export requires a spell_codegen_model.")
-    if not SharedCompilerExecutions.spell_codegen_plan_is_replayable(spell_codegen_plan):
-        return None
-
     package = {
         "package_version": PACKAGE_VERSION,
         "spell_id": spell.spell_id,

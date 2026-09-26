@@ -442,6 +442,10 @@ class SpellSystemRootBlueprintBuilder:
 
         Contract:
             - PathIds are extended via the blueprint PathRegistry.
+            - A socket keeps its member-less path; each member of a collection
+              socket is queued on its own member path
+              (`extend_path(..., member=target_id)`), exactly as Phase 8 mints
+              occurrences, so socket parent ids still equal occurrence paths.
             - DagIndex maps are built lazily when overrides are requested.
         """
         queue: Deque[Tuple[str, int]] = deque()
@@ -483,7 +487,18 @@ class SpellSystemRootBlueprintBuilder:
                 socket_refs.append(socket_ref)
 
                 for target_id in socket_desc.target_spell_ids:
-                    target_key = (target_id, socket_path_id)
+                    # Each collection member gets its own child path so the
+                    # many-existence dependencies below different members stay
+                    # distinct (Phase 8 mints the same ids).
+                    if socket_desc.is_collection:
+                        target_path_id = path_registry.extend_path(
+                            path_id,
+                            param_name,
+                            member=target_id,
+                        )
+                    else:
+                        target_path_id = socket_path_id
+                    target_key = (target_id, target_path_id)
                     if target_key in visited:
                         continue
                     visited.add(target_key)

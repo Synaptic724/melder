@@ -40,6 +40,9 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.m
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step import (
     ManyOnlyNoOverridesCodegenCreationStep,
 )
+from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
+    CodegenSignature,
+)
 
 MANIFEST_VERSION = 3
 FAMILY_ID = MANY_ONLY_FAMILY_ID
@@ -151,14 +154,21 @@ def _build_many_only_no_overrides_row(step: Any) -> Dict[str, Any]:
           non-reusing steps (`use_spell_lock_hint` is False).
         - The shared generalized row builder is NOT usable here: it reads
           `step.existence`, which many_only steps do not expose.
+        - Contract payload entries are projected by
+          `CodegenSignature.project_contract_payload_entry`: a scalar as itself, any
+          other value as its phase-9 reference, resolved live at hydration
+          (2026-09-26).
     """
     contract_payload_items: Tuple[Any, ...] = ()
     if step.contract_payload:
+        payload_refs = step.contract_payload_refs
         contract_payload_items = tuple(
             sorted(
                 (
                     param_name,
-                    ManyOnlyCodegenCreationHelpers.freeze_value(value),
+                    CodegenSignature.project_contract_payload_entry(
+                        param_name, value, payload_refs,
+                    ),
                 )
                 for param_name, value in step.contract_payload.items()
             )
@@ -179,8 +189,8 @@ def _build_many_only_no_overrides_row(step: Any) -> Dict[str, Any]:
         "collection_param_names": tuple(sorted(step.collection_param_names)),
         "uses_positional_override": bool(step.uses_positional_override),
         "contract_positional_override": (
-            ManyOnlyCodegenCreationHelpers.freeze_value(
-                step.contract_positional_override
+            CodegenSignature.project_contract_payload_entry(
+                "__args__", step.contract_positional_override, step.contract_payload_refs,
             )
         ),
         "has_contract_payload": bool(step.has_contract_payload),

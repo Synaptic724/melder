@@ -109,27 +109,12 @@ class CodegenCreationSchemaHelpers:
         """
         Return whether one contract payload value survives a phase-11 row unchanged.
 
-        Purpose:
-            The row builders' classifier (2026-09-26): a value that passes is
-            frozen into the row exactly as before; any other value is replaced
-            by its reference (`CodegenSignature.build_contract_override_ref`) and
-            read back live at hydration, so the row never carries a value the
-            marshal envelope or the freeze projection would mangle.
-
         Contract:
-            - True for `None` and for values whose EXACT type is `bool`, `int`,
-              `float` or `str`, and for an exact `tuple` whose items are all
-              replayable: these are the values `freeze_phase11_schema_value`
-              returns unchanged, the row hydration passes through as-is, and
-              `marshal` persists.
-            - False for everything else. `list` and `set` thaw as tuples, `dict`
-              as a sorted tuple of pairs, plain enum members and classes as
-              `repr` text, callables and default-`repr` instances as marker
-              tuples - none of them is the value the descriptor carried;
-              subclasses of the scalar types (an `IntEnum` member, a `str`
-              subclass) pass through freeze but are not marshallable, so they
-              are refused as well.
-            - Pure; never raises.
+            Delegates to `CodegenSignature.is_replayable_contract_payload_value`,
+            the one classifier every codegen family's row builder applies: `None`,
+            exact `bool`/`int`/`float`/`str`, and exact tuples of those are row
+            fixed points; everything else is written to a row only as its
+            reference. Pure; never raises.
 
         Args:
             value:
@@ -138,68 +123,29 @@ class CodegenCreationSchemaHelpers:
         Returns:
             bool: True when a row reproduces `value` exactly.
         """
-        if value is None:
-            return True
-        value_type = type(value)
-        if value_type is bool or value_type is int or value_type is float or value_type is str:
-            return True
-        if value_type is tuple:
-            for item in value:
-                if not CodegenCreationSchemaHelpers.is_replayable_contract_payload_value(item):
-                    return False
-            return True
-        return False
+        return CodegenSignature.is_replayable_contract_payload_value(value)
 
     @staticmethod
-    def freeze_contract_payload_entry(
+    def project_contract_payload_entry(
             param_name: str,
             value: Any,
             payload_refs: Optional[Dict[str, Any]],
     ) -> Any:
         """
-        Project one contract payload entry into its row form: frozen scalar or reference.
+        Project one contract payload entry into its row form: the value or its reference.
 
         Contract:
-            - A replayable value (`is_replayable_contract_payload_value`) is frozen with
-              `freeze_phase11_schema_value`, byte-identical to the previous rows.
-            - Any other value is replaced by its reference from `payload_refs`
-              (`__args__` is projected per positional index against the tuple of
-              references under that key); the value itself never enters a row.
-            - A positional `__args__` tuple is projected element by element, so a
-              scalar element stays frozen while an object element becomes a reference.
+            Delegates to `CodegenSignature.project_contract_payload_entry`: a
+            replayable value is written as it is (byte-identical to the frozen
+            rows it replaces), any other value as the reference recorded by
+            phase 9; `"__args__"` projects a positional payload element by
+            element. Pure.
 
         Raises:
-            RuntimeError: When a non-scalar value has no reference to stand in for it
-                (a plan step built without `contract_payload_refs`); rows must never
-                fall back to freezing such a value.
+            RuntimeError: When a non-replayable value has no reference to stand in
+                for it (a step built without `contract_payload_refs`).
         """
-        if param_name == "__args__":
-            if not isinstance(value, (list, tuple)):
-                return CodegenSignature.freeze_phase11_schema_value(value)
-            positional_refs = None
-            if payload_refs is not None:
-                positional_refs = payload_refs.get("__args__")
-            projected = []
-            for index, item in enumerate(value):
-                if CodegenCreationSchemaHelpers.is_replayable_contract_payload_value(item):
-                    projected.append(CodegenSignature.freeze_phase11_schema_value(item))
-                    continue
-                if positional_refs is None or index >= len(positional_refs):
-                    raise RuntimeError(
-                        "Phase-11 row build: positional contract payload item "
-                        f"{index} is not a scalar and carries no reference."
-                    )
-                projected.append(positional_refs[index])
-            return tuple(projected)
-        if CodegenCreationSchemaHelpers.is_replayable_contract_payload_value(value):
-            return CodegenSignature.freeze_phase11_schema_value(value)
-        ref = None if payload_refs is None else payload_refs.get(param_name)
-        if ref is None:
-            raise RuntimeError(
-                "Phase-11 row build: contract payload value for parameter "
-                f"{param_name!r} is not a scalar and carries no reference."
-            )
-        return ref
+        return CodegenSignature.project_contract_payload_entry(param_name, value, payload_refs)
 
     @staticmethod
     def resolve_contract_override_ref(
@@ -327,6 +273,54 @@ class CodegenCreationSchemaHelpers:
             for param_name, value in row["contract_payload_items"]
         )
         return items, _resolve(row["contract_positional_override"])
+
+    @staticmethod
+    def contract_payload_refs_from_row(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Rebuild a step's `contract_payload_refs` map from the references a raw row carries.
+
+        Purpose:
+            A hydrated step adapter holds LIVE payload values after
+            `resolve_contract_payload_row_values`; if such an adapter is ever
+            projected back into a row, the references must still be at hand.
+            This reads them off the raw row, so the adapter mirrors a plan step
+            (`contract_payload` + `contract_payload_refs`) exactly.
+
+        Contract:
+            - Keyword entries whose row value is a reference map to that reference.
+            - The `__args__` entry (or the row's `contract_positional_override`)
+              maps to a tuple with the reference at each referenced index and
+              `None` where the element is a scalar, matching what
+              `project_contract_payload_entry` reads.
+            - Returns None when the row carries no reference at all.
+            - Pure; the row is not mutated.
+
+        Args:
+            row: One phase-11 step row as persisted or emitted.
+
+        Returns:
+            Optional[Dict[str, Any]]: The references map, or None.
+        """
+        refs: Dict[str, Any] = {}
+        positional_source = None
+        for param_name, value in row["contract_payload_items"]:
+            if param_name == "__args__":
+                positional_source = value
+                continue
+            if CodegenSignature.is_contract_override_ref(value):
+                refs[param_name] = value
+        if positional_source is None:
+            positional_source = row["contract_positional_override"]
+        if isinstance(positional_source, (list, tuple)):
+            positional_refs = tuple(
+                item if CodegenSignature.is_contract_override_ref(item) else None
+                for item in positional_source
+            )
+            if any(item is not None for item in positional_refs):
+                refs["__args__"] = positional_refs
+        if not refs:
+            return None
+        return refs
 
     @staticmethod
     def normalize_instance_key(
@@ -543,10 +537,10 @@ class CodegenCreationSchemaHelpers:
             is False, every override-lane field (override_match_prefix and its
             length, override_keys, expects_overrides, contract_keys) is emitted
             empty/false, so the no-overrides lane's rows stay byte-identical even
-            when the step object physically carries override data. Scalar payload
-            values are frozen via `freeze_phase11_schema_value`; any other payload
-            value is emitted as its reference (`freeze_contract_payload_entry`), so
-            rows are deterministic and replayable by construction (2026-09-26).
+            when the step object physically carries override data. A scalar payload
+            value is written as it is; any other payload value is emitted as its
+            reference (`project_contract_payload_entry`), so rows are deterministic
+            and replayable by construction (2026-09-26).
 
         Args:
             step:
@@ -572,7 +566,7 @@ class CodegenCreationSchemaHelpers:
                 sorted(
                     (
                         param_name,
-                        CodegenCreationSchemaHelpers.freeze_contract_payload_entry(
+                        CodegenCreationSchemaHelpers.project_contract_payload_entry(
                             param_name, value, payload_refs,
                         ),
                     )
@@ -610,7 +604,7 @@ class CodegenCreationSchemaHelpers:
             "allow_list_aggregation": step.allow_list_aggregation,
             "uses_positional_override": step.uses_positional_override,
             "contract_positional_override": (
-                CodegenCreationSchemaHelpers.freeze_contract_payload_entry(
+                CodegenCreationSchemaHelpers.project_contract_payload_entry(
                     "__args__", step.contract_positional_override, step.contract_payload_refs,
                 )
             ),
@@ -635,8 +629,10 @@ class CodegenCreationSchemaHelpers:
             Returns a fixed-order tuple of the caching-relevant step facts:
             instance key, selected spell id, existence NAME, target kind,
             dependency-resolution order, sorted collection params, the
-            positional-override flag and frozen value, contract-payload presence
-            and frozen sorted items, and the lock-hint and must-register flags.
+            positional-override flag and projected value, contract-payload
+            presence and projected sorted items (a scalar entry as itself, any
+            other entry as its phase-9 reference, 2026-09-26), and the lock-hint
+            and must-register flags.
             Override-lane fields are intentionally excluded - this row is the
             no-overrides cache key, so it stays stable across override churn.
 
@@ -661,7 +657,7 @@ class CodegenCreationSchemaHelpers:
                 sorted(
                     (
                         param_name,
-                        CodegenCreationSchemaHelpers.freeze_contract_payload_entry(
+                        CodegenCreationSchemaHelpers.project_contract_payload_entry(
                             param_name, value, payload_refs,
                         ),
                     )
@@ -676,7 +672,7 @@ class CodegenCreationSchemaHelpers:
             dependency_resolution_order,
             tuple(sorted(step.collection_param_names)),
             bool(step.uses_positional_override),
-            CodegenCreationSchemaHelpers.freeze_contract_payload_entry(
+            CodegenCreationSchemaHelpers.project_contract_payload_entry(
                 "__args__", step.contract_positional_override, step.contract_payload_refs,
             ),
             bool(step.has_contract_payload),

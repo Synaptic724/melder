@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-fix-collection-member-many-sharing
 - Story: STORY-2026-09-26-implement-override-site-plan-lowering
-- Status: in_progress
+- Status: review
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T12:13:26Z
-- Updated: 2026-09-26T12:21:23Z
+- Updated: 2026-09-26T12:27:37Z
 
 ## Objective
 A `many` dependency reached through two collection members is built once per member, as `Existence.many`
@@ -39,16 +39,19 @@ hands both members the same `Leaf` object.
 - from_state: draft
 - to_state: in_progress
 - transition_reason: Owner ruled the sharing a defect and asked to keep working, 2026-09-26T12:13:26Z.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Regression red->green, suites unchanged on 3.14t and GIL, applied to the device tree, 2026-09-26T12:27:37Z.
 
 ## Steps / Checklist
 - [x] Trace where occurrence paths and path ids are minted (Phase 8) and every consumer of them.
 - [x] Write a failing regression test (component) for the probe case.
 - [x] Patch doc + file list in Notes.
-- [ ] Implement; re-run the regression test, the S1 oracle and the suites on 3.14t and GIL.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Implement; re-run the regression test, the S1 oracle and the suites on 3.14t and GIL.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Fix, regression test, notes with before/after evidence.
@@ -61,9 +64,11 @@ hands both members the same `Leaf` object.
 - src/melder/utilities/caching_system/caching_system.py (generation 13)
 - tests/integration/melder/spellbook/test_cache_schema_version_integration.py (expected history)
 - tests/component/melder/spellbook/test_spellbook_component_collection_many_instances.py (new regression)
+- tests/unit/melder/spellbook/spell_crafter/dag/test_path_registry_collection_members.py (new unit test, added in scope)
 
 ## Validation
-- Not run.
+- Run 2026-09-26: see MEASURE note (3.14t full unit/component/integration A/B, GIL spellbook suites,
+  device-state A/B with cache generation 13). Coverage: not run.
 
 ## Risks / Rollback Notes
 - Changing path ids can move override-targeting rows and cached executors; cache generation 13 may land here.
@@ -195,8 +200,46 @@ hands both members the same `Leaf` object.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T12:27:37Z
+  TYPE: MEASURE
+  CLAIM: Fix validated. Consistent VM tree (S1 + path edits vs no S1/no fix), 3.14t: regression 5 passed
+    (was 4 failed), S1 oracle 4 passed, unit spellbook 2137, aether 4124, crystallizer 565, mutation_research
+    277, utilities 785+2s+7xf, build_assets 116, root files 145; component spellbook 735+1xf (730 + the 5 new),
+    aether 1186+1s+1xf, mutation_research 40, utilities 41+23s, crystallizer 106 + the same 4 environmental
+    file_backed_morph failures as the base; integration spellbook 574, conduit 267, aether 716,
+    mutation_research 66, crystallizer 258, multithreading 42. GIL: regression 5, unit spellbook 2137, component
+    spellbook 735+1xf, integration spellbook 574 (after clearing stale __conjure_cache__ dirs left by the old
+    tree's per-process method-spell ids; base and fix then identical). Device state + S1, with vs without the
+    full fix (paths + cache 13), 3.14t: failure sets identical except the 4 regression tests, which fail only
+    without the fix; integration spellbook +1 pass (the version-13 schema case). New unit file
+    test_path_registry_collection_members.py: 5 passed on 3.14t and GIL.
+  EVIDENCE:
+  - tests/component/melder/spellbook/test_spellbook_component_collection_many_instances.py:1-159
+  - tests/unit/melder/spellbook/spell_crafter/dag/test_path_registry_collection_members.py:1-67
+  IMPACT: Every collection member now builds its own many dependencies; nothing else changes.
+  NEXT: Record the device-tree application, move to review, open S2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T12:27:37Z
+  TYPE: FACT
+  CLAIM: Applied to the device tree with apply_cfix_edits.py after checking the five target files were
+    unchanged since the sync (anchors matched once; CRLF and the LF runs in caching_system.py and the schema
+    test preserved); the regression test and a new PathRegistry unit test (not in the first file list; same
+    scope, test only) copied with cp -n. All seven device files are byte-identical to the validated copies.
+    Cache generation is now 13 "collection_member_paths"; S2/S3 take 14 (notice M0-23 to melder_1).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:119-195
+  - src/melder/utilities/caching_system/caching_system.py:99-160
+  IMPACT: The fix is in the working tree (uncommitted) alongside S1.
+  NEXT: Owner review; continue with S2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Opened after the owner ruled the sharing a defect. Next: trace Phase-8 path minting and its consumers.
+Review. Collection members now get member-specific compiler paths in Phases 5 and 8, so every member builds
+its own many dependencies (shared existences unchanged); cache generation 13. Regression and unit tests added;
+suites unchanged otherwise. In the device working tree, uncommitted.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

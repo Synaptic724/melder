@@ -2,10 +2,10 @@
 
 ## Metadata
 - Patch ID: live_contract_override_operands_2026_09_26
-- Status: draft
+- Status: implemented (owner-run suites pending)
 - Owner: fable_0 (cowork)
 - Created: 2026-09-26T11:57:20Z
-- Updated: 2026-09-26T11:57:20Z
+- Updated: 2026-09-26T12:42:22Z
 
 ## Patch Scope and Non-Goals
 - Objective (owner ruling 2026-09-26): the values inside a `SpellContract(override=...)` payload may be
@@ -30,7 +30,11 @@
 ## Interface and Boundary Deltas
 - Boundary delta 1: the phase-11 subsystem (`codegen_creation_schema_helpers.py`) imports the two
   descriptor classes from `conduit/meld/contracts/` to read a payload live; the descriptors import only
-  utilities, so no cycle is introduced and the phase helper surface is not reached back into.
+  utilities, so no cycle is introduced and the phase helper surface is not reached back into. The
+  stdlib-only leaf `CodegenSignature` owns the ref shape, the scalar classifier and the row projection
+  rule, so the many_only family (which must not reach the generalized helper surface) applies the same
+  rule through the leaf; the generalized manifest and legacy compilers and the many_only compiler import
+  the resolver from `shared_assets/codegen_creation_schema_helpers.py`.
 - Interface delta 1: `SpellContract.__init__(spell=None, *, spellframe=None, binding_name=None,
   override=None)` and `SpellMap.__init__(...)` likewise; attribute `override`; `__repr__` renders
   `override=...`. No compatibility alias (owner-requested rename; overlay rule 5.15).
@@ -40,18 +44,28 @@
   `contract_override_refs_by_occurrence`; `SpellInjectionInstanceSpec` and both planner step classes
   gain `contract_payload_refs` (same keys as `contract_payload`; `__args__` maps to a tuple of refs).
 - Interface delta 3 (rows): `contract_payload_items` and `contract_positional_override` keep their field
-  names; a value that is not `None`/`bool`/`int`/`float`/`str` (or an exact tuple of those) is emitted as
-  its REF; scalar values keep today's frozen bytes. Signature rows apply the same rule, so payload-free
-  and scalar-payload books keep byte-identical signatures.
+  names; `CodegenSignature.project_contract_payload_entry(param, value, refs)` writes a value that is
+  `None`/`bool`/`int`/`float`/`str` (or an exact tuple of those) as itself - a fixed point of every freeze
+  in the compiler, so the bytes equal today's frozen bytes - and any other value as its REF; a positional
+  payload projects element by element into a tuple. The generalized row/signature builders, the many_only
+  helpers and the many_only manifest row builder all apply it; payload-free and scalar-payload books keep
+  byte-identical rows and signatures. The phase-side legacy twin
+  (`shared_compiler_executions.build_phase11_step_ir_row`, digest-only input of the artifact-local
+  `_codegen_ir` export) is unchanged.
 - Interface delta 4 (hydration): `CodegenCreationSchemaHelpers.resolve_contract_override_ref(ref,
-  spell_lookup, descriptor_cache)` and `resolve_contract_payload_row_values(row, spell_lookup,
-  descriptor_cache)` return live values; the generalized manifest bindings (`step_contract_values`,
-  `step_positional_args`), the generalized legacy `_hydrate_steps_from_rows` and the many_only
-  `_hydrate_steps_from_rows` call them. The override lanes' row hydration is unchanged (v2 S3).
+  spell_lookup, descriptor_cache)`, `resolve_contract_payload_row_values(row, spell_lookup,
+  descriptor_cache)` and `contract_payload_refs_from_row(row)` are the resolver surface. Three sites
+  call it: `generalized_manifest_no_overrides_compiler.resolve_contract_payload_rows(rows, spell_lookup)`
+  at the top of `hydrate_no_overrides_executor` and `build_specialized_no_overrides_executor` (so runtime
+  rows, bindings and the generic constructor path all see live values), the generalized legacy
+  `_hydrate_steps_from_rows` and the many_only `_hydrate_steps_from_rows` (adapters gain
+  `contract_payload_refs`). The solo family carries no contract payloads (verified: no payload field in
+  `strategies/solo/`), so it is not a site. The override lanes' row hydration is unchanged (v2 S3).
 - Interface delta 5 (emission): `manifest_creation_cache.build_package` and
-  `spell_codegen_creation_cache.build_package` return `Dict` again (never `None`); the three gate
-  predicates on `CodegenCreationSchemaHelpers` are removed except `is_replayable_contract_payload_value`,
-  which becomes the row builders' scalar classifier; `Spellbook._emit_spell_cache` loses the `None` branch.
+  `spell_codegen_creation_cache.build_package` return `Dict` again (never `None`);
+  `plan_contract_payloads_are_replayable` and `spell_codegen_plan_is_replayable` are removed;
+  `is_replayable_contract_payload_value` moves to the leaf (`CodegenSignature`) with the facade
+  delegating; `Spellbook._emit_spell_cache` loses the `None` branch.
 
 ## Cross-Component Invariants
 - Invariant 1 (identity): a non-scalar override value reaches the provider's constructor as the same
@@ -84,9 +98,12 @@
   (kwarg, positional, missing consumer, missing parameter); row builder emits refs for objects and
   frozen bytes for scalars.
 - Validation item 2: component - object payload delivered by identity through the linked-contract
-  fixture (generalized family), in-process; the same after a cross-process cache hit (subprocess).
-- Validation item 3: the strict xfail in `test_codegen_signature_determinism.py` removed (spell ids are
-  process-stable on the device tree); gate tests removed with the gate.
+  fixture (`test_codegen_signature_determinism.py`, in-process, package rows carry the ref and marshal)
+  and through a single-book `SpellMap` fixture (`test_spellbook_component_contract_override_operands.py`:
+  in-process, and after a cross-process creation-cache full hit in a subprocess);
+  `test_spellbook_component_caching_system.py` proves the object-payload spell is staged as a reference.
+- Validation item 3: the strict xfail in `test_codegen_signature_determinism.py` was already removed by
+  melder_1's spell-id task; the gate tests are replaced by `test_contract_override_refs.py`.
 - Evidence source: owner-run `python -m pytest -q tests/unit/melder/aether/conduit/meld/contracts
   tests/unit/melder/spellbook/spell_compiler tests/component/melder/spellbook
   tests/component/melder/aether/conduit tests/integration/melder/conduit/test_conduit_integration_links_contracts.py`.
@@ -102,6 +119,9 @@
 - DECISION: P7 (SpellMap) taken as approved on the owner's "spellmap might be similar?" plus the go-ahead.
 
 ## Context / Handoff Summary
-- What changed: contract only; no code yet.
-- Remaining risks: hydration sites sit in files other lanes propose changes to (NOTICEs sent).
-- Next entrypoint: task 5 P3 (rename).
+- What changed (2026-09-26T12:42:22Z): implemented on the device tree - rename, phase-9 refs, leaf projection rule,
+  three hydration sites, gate removed, tests. "Not run." until the owner reports.
+- Remaining risks: hydration sites sit in files other lanes propose changes to (NOTICEs sent); the
+  override lanes literalize a ref tuple where they literalized a marker tuple (objects still unusable there
+  until v2 S3, scalars unchanged).
+- Next entrypoint: owner-run suites; promotion into `src_components.md` at story closure.

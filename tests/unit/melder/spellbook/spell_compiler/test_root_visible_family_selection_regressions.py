@@ -171,7 +171,7 @@ def test_shared_provider_single_payload_applies_regardless_of_canonical_edge() -
         canonical_occurrence=("provider", 3),
         contract_shape=shape,
     )
-    assert resolved == payload
+    assert resolved == (payload, ("provider", 7))
 
 
 def test_shared_provider_identical_payloads_dedupe_across_edges() -> None:
@@ -190,7 +190,8 @@ def test_shared_provider_identical_payloads_dedupe_across_edges() -> None:
         canonical_occurrence=("provider", 3),
         contract_shape=shape,
     )
-    assert resolved == {"mode": "tuned"}
+    # The first edge carrying the payload is the one whose reference map applies.
+    assert resolved == ({"mode": "tuned"}, ("provider", 3))
 
 
 def test_shared_provider_conflicting_payloads_raise_meld_execution_error() -> None:
@@ -210,7 +211,7 @@ def test_shared_provider_conflicting_payloads_raise_meld_execution_error() -> No
             canonical_occurrence=("provider", 3),
             contract_shape=shape,
         )
-    assert "distinct SpellContract override" in str(exc_info.value)
+    assert "distinct descriptor override payloads" in str(exc_info.value)
 
 
 def test_shared_provider_without_recorded_payloads_reads_canonical_fallback() -> None:
@@ -221,4 +222,4 @@ def test_shared_provider_without_recorded_payloads_reads_canonical_fallback() ->
         canonical_occurrence=("provider", 3),
         contract_shape=shape,
     )
-    assert resolved is None
+    assert resolved == (None, None)

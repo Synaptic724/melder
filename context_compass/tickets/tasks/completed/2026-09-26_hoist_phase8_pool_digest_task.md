@@ -1,14 +1,19 @@
 # Task: Hoist the phase-8 pool digest into the pass cache and test the analysis slot first
 
+- Completed: 2026-09-26T13:14:31Z
+- Summary: Phase 8 hashes the pool-invariant rows once per pass (`phase8_pool_digest`), tests the analysis slot
+  first and builds root rows once; owner-run M7 -34% conjure at N=300, M5 inside noise at 29. Owner accepted
+  2026-09-26T13:14:31Z; promoted into the SpellCompiler component entry.
+
 ## Metadata
 - Task ID: TASK-2026-09-26-hoist-phase8-pool-digest
 - Story: STORY-2026-09-26-signature-determinism-phase8-digest
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T09:05:00Z
-- Updated: 2026-09-26T10:48:48Z
+- Updated: 2026-09-26T13:14:31Z
 
 ## Objective
 In `SpellOccurrenceGraphAnalyzerStrategy.analyze`: test `artifact._occurrence_graph_analysis is None`
@@ -47,6 +52,10 @@ proportional to the root's own blueprint (C-A).
 - to_state: review
 - transition_reason: H1-H4 complete on the task boundary (one strategy file, one test file); nothing
   executed here ("Not run."); breakdown harness before/after is owner-run.
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted tasks 1-5 and the story after the third owner-run green suite report
+  ("yeah sure looks good", 2026-09-26T13:14:31Z); canonical docs promoted, patch folder archived, boards synced.
 
 ## Steps / Checklist
 - [x] H1: Propose -> Confirm (file, symbols, the digest cache key, the None-first rule) and owner
@@ -89,7 +98,7 @@ proportional to the root's own blueprint (C-A).
 ## Applicable Anti-Patterns
 - [x] No status transition without evidence-backed transition reason.
 - [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No closure without acceptance confirmation and board-sync completion.
 - [x] No edit under `src/` before the owner confirms the file/symbol proposal.
 
 ## Done Checklist
@@ -101,8 +110,8 @@ proportional to the root's own blueprint (C-A).
 - [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [x] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true

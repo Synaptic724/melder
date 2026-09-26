@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy_builder.py",
- "source_sha256": "0d4c442ac374f57723eaa4aa1245f67411d8669540de7dcc353a6237198d8916",
+ "source_sha256": "198555d90129cc9b3112f5df1efe0e50f77922a5e0d72f00ddb08c34b9faab6d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder": {
@@ -19,7 +19,7 @@
    "label": "SpellArtifactProcessorStrategyBuilder",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy_builder.py",
-   "lineno": 31,
+   "lineno": 34,
    "bases": [
     "Cleanable"
    ],
@@ -35,7 +35,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "aa22cbeeab9596f698e72523cd4d9424ba19f176626d903180d830329e24dc48",
+   "span_sha256": "be3f8b6f1cbae4c979582caee381f5585f15b51b7be671020456d447782b6221",
    "role": "Registry holder for built-in artifact-processor strategies.",
    "responsibilities": [
     "owns the named processor strategy registry",
@@ -99,6 +99,12 @@
   },
   {
    "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder",
+   "to_label": "SpellSiteGraphProcessorStrategy",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder",
    "to_label": "SpellOverrideTargetingProcessorStrategy",
    "relation": "creates",
    "confidence": "candidate"
@@ -122,7 +128,8 @@
   "SpellOccurrenceInstanceProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy.SpellOccurrenceInstanceProcessorStrategy",
   "SpellOccurrenceOrderProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy.SpellOccurrenceOrderProcessorStrategy",
   "SpellOverrideTargetingProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
-  "SpellRuntimeProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy"
+  "SpellRuntimeProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy",
+  "SpellSiteGraphProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy"
  },
  "collapse_candidate": {
   "module": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder",

@@ -1,6 +1,9 @@
 from types import SimpleNamespace
 from typing import Any, Callable, Collection, Dict, Optional, Sequence, Tuple, Union
 
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
+    CodegenCreationSchemaHelpers,
+)
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
@@ -319,12 +322,24 @@ def _hydrate_steps_from_rows(
         - Validates required row fields and existence enum names.
         - Returns adapters exposing the same attributes consumed by the no-
           overrides compiler/runtime helpers in this module.
+        - Contract payload entries are resolved to LIVE values here (2026-09-26):
+          a phase-9 reference in a row is read back from the consumer's
+          descriptor through `spell_lookup` (the consumer is always a step of
+          the same lane), scalars pass through, and the adapter also carries
+          the references (`contract_payload_refs`) so it mirrors a plan step.
+
+    Raises:
+        RuntimeError:
+            When a row is invalid, a spell id is unknown, or a reference cannot
+            be resolved (consumer missing, descriptor without a payload, key
+            absent).
     """
     if spell_lookup is None:
         raise RuntimeError(
             "No-overrides codegen schema rows require spell_lookup for step hydration."
         )
 
+    descriptor_cache: Dict[Tuple[str, str], Any] = {}
     hydrated_steps = []
     for row_index, row in enumerate(steps_rows):
         required_fields = (
@@ -371,11 +386,16 @@ def _hydrate_steps_from_rows(
             )
             for param_name, dependency_keys in row["dependency_resolution_order"]
         )
+        contract_payload_items, contract_positional_override = (
+            CodegenCreationSchemaHelpers.resolve_contract_payload_row_values(
+                row, spell_lookup, descriptor_cache,
+            )
+        )
         contract_payload = None
         if row["has_contract_payload"]:
             contract_payload = {
                 param_name: value
-                for param_name, value in row["contract_payload_items"]
+                for param_name, value in contract_payload_items
             }
 
         hydrated_steps.append(
@@ -387,9 +407,12 @@ def _hydrate_steps_from_rows(
                 dependency_resolution_order=dependency_resolution_order,
                 collection_param_names=frozenset(row["collection_param_names"]),
                 uses_positional_override=row["uses_positional_override"],
-                contract_positional_override=row["contract_positional_override"],
+                contract_positional_override=contract_positional_override,
                 has_contract_payload=row["has_contract_payload"],
                 contract_payload=contract_payload,
+                contract_payload_refs=(
+                    CodegenCreationSchemaHelpers.contract_payload_refs_from_row(row)
+                ),
                 use_spell_lock_hint=row["use_spell_lock_hint"],
                 must_register=row["must_register"],
             )

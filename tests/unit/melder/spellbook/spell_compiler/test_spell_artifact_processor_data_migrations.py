@@ -78,6 +78,7 @@ def test_occurrence_contract_analysis_replaces_contract_payload_summary() -> Non
             "leaf": [(("leaf", 2), {"gamma": 3})],
         },
         contract_dependencies_complete=True,
+        contract_override_refs_by_occurrence={},
     )
 
     assert analysis.contract_override_occurrence_count == 2

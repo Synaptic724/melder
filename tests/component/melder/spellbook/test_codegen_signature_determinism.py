@@ -9,17 +9,17 @@ Two fixtures feed the cross-process check:
   across processes before and after the change (regression guard);
 - the CONTRACT-PAYLOAD book, whose consumer carries a `SpellContract` override payload holding
   an object with the default `object.__repr__`. Before the change that payload froze to a
-  `repr` carrying a memory address, so its executor signature differed in every process; after
-  the change it freezes to `("__object__", module, qualname)` and the signatures agree.
-  (The same frozen projection is what the manifest-first executor binds in-process, so the
-  fixture proves the payload reached the plan and the signature, not that the constructor
-  received the object - see task 4's notes.)
+  `repr` carrying a memory address, so its executor signature differed in every process; since
+  2026-09-26 the rows carry a value-only reference to the consumer's descriptor instead of the
+  object, the signatures agree, and the hydrated executor hands the provider the object itself
+  (the fixture asserts identity).
 
 The subprocess pattern follows `test_ordered_disposal_binding.py`: each probe runs in a fresh
 interpreter with its own `PYTHONHASHSEED`, imports this module and prints one JSON document.
 """
 
 import json
+import marshal
 import os
 import subprocess
 import sys
@@ -89,9 +89,9 @@ class PayloadMarker:
     Contract:
         - Deliberately defines no `__repr__`, so its textual form carries a memory
           address and differs between instances and between interpreter processes.
-        - Picklable by reference to this module-level class; the signature path never
-          pickles it directly because `freeze_phase11_schema_value` canonicalizes it
-          first.
+        - Picklable by reference to this module-level class; neither the signature path
+          nor a step row ever holds it: the row carries the phase-9 reference and the
+          hydration hands the provider the object itself.
     """
 
     def __init__(self, label: str) -> None:
@@ -103,6 +103,10 @@ class PayloadMarker:
                 Free text; never enters the signature.
         """
         self.label = label
+
+
+PAYLOAD_MARKER = PayloadMarker("payload")
+"""The object the contract fixture's payload carries; the provider must receive THIS object."""
 
 
 class PlainConsumer:
@@ -130,8 +134,9 @@ class ContractConsumer:
         - The contract is satisfied by a contracted `IService` provider named `primary`
           linked in from another conduit; the payload is applied to that provider's
           constructor (`BasicService(marker=PayloadMarker(...))`).
-        - The payload object is what makes the no-overrides executor signature
-          process-local under the previous `repr` rendering.
+        - The payload object is what made the no-overrides executor signature
+          process-local under the previous `repr` rendering; rows now carry a
+          reference and the constructor receives `PAYLOAD_MARKER` by identity.
     """
 
     def __init__(
@@ -139,7 +144,7 @@ class ContractConsumer:
             service: IService = SpellContract(
                 spellframe=IService,
                 binding_name="primary",
-                override={"marker": PayloadMarker("payload")},
+                override={"marker": PAYLOAD_MARKER},
             ),
     ) -> None:
         """
@@ -157,7 +162,7 @@ class StringPayloadContractConsumer:
     Same contract shape as `ContractConsumer` with a replayable (string) payload value.
 
     Contract:
-        - Its plan is cacheable under the replayability gate; the object-payload sibling is not.
+        - Its row carries the string itself; the object-payload sibling's row carries a reference.
     """
 
     def __init__(
@@ -343,12 +348,13 @@ def _compile_contract_payload_book(consumer_class: type) -> Tuple[Any, Any, Any,
                 raise RuntimeError("The string payload did not reach the consumer's plan.")
             if instance.service.marker != "override":
                 raise RuntimeError("The string payload did not reach the provider constructor.")
-        elif not isinstance(payload_value, PayloadMarker):
+        elif payload_value is not PAYLOAD_MARKER:
             raise RuntimeError("The object payload did not reach the consumer's plan.")
-        # The constructed `instance.service.marker` is deliberately NOT asserted for the
-        # object payload: manifest-first families hydrate their executors from the frozen
-        # step rows in-process as well, so the constructor receives the frozen projection
-        # of the object, not the object (owner decision pending; task 4 notes, 2026-09-26).
+        elif instance.service.marker is not PAYLOAD_MARKER:
+            # The manifest-first executor hydrates from the step rows in-process too; the
+            # row carries a reference to the descriptor and the hydration resolves it to
+            # the live object, so the provider must hold the very same object.
+            raise RuntimeError("The object payload did not reach the provider by identity.")
     except BaseException:
         borrower.cleanup()
         owner.cleanup()
@@ -421,7 +427,7 @@ def _build_cache_package(spell: Any) -> Any:
 
     Returns:
         Any:
-            The package dict, or `None` when the builder refuses the plan.
+            The package dict (every plan packages since 2026-09-26).
     """
     creation = spell._compiler_artifact._spell_codegen_creation
     if creation.metadata.get(MANIFEST_METADATA_KEY) is not None:
@@ -576,34 +582,74 @@ def test_plain_fixture_signatures_are_stable_within_one_process() -> None:
     )
 
 
+def _package_no_overrides_rows(package: Dict[str, Any]) -> Tuple[Dict[str, Any], ...]:
+    """
+    Return the no-overrides step rows of a cache package, manifest-first or legacy.
+
+    Args:
+        package:
+            A package from `_build_cache_package`.
+
+    Returns:
+        Tuple[Dict[str, Any], ...]:
+            The rows the cache-load path hydrates the executor from.
+    """
+    if "manifest" in package:
+        return tuple(package["manifest"]["no_overrides"]["steps_rows"])
+    return tuple(package["no_overrides"]["steps_rows"])
+
+
+def _row_payload_value(rows: Tuple[Dict[str, Any], ...], param_name: str) -> Any:
+    """
+    Return the row entry for `param_name` on the first row whose payload carries it.
+
+    Raises:
+        AssertionError:
+            When no row carries the payload keyword.
+    """
+    for row in rows:
+        for name, value in row["contract_payload_items"]:
+            if name == param_name:
+                return value
+    raise AssertionError("no row carries the contract payload {0!r}".format(param_name))
+
+
 @pytest.mark.parametrize(
-    ("consumer_class", "expect_package"),
-    [(ContractConsumer, False), (StringPayloadContractConsumer, True)],
+    ("consumer_class", "expect_reference"),
+    [(ContractConsumer, True), (StringPayloadContractConsumer, False)],
 )
-def test_cache_package_follows_contract_payload_replayability(
+def test_cache_package_carries_a_reference_for_an_object_payload(
         consumer_class: type,
-        expect_package: bool,
+        expect_reference: bool,
 ) -> None:
     """
-    The creation-cache package builder refuses the consumer whose contract payload is an
-    object (its frozen row would hydrate a marker tuple, not the object) and packages the
-    consumer whose payload is a string (owner option B, 2026-09-26).
+    Both consumers package (the emission gate is retired, 2026-09-26). The object-payload
+    consumer's row carries the phase-9 reference naming the consumer, its parameter and the
+    payload key - never the object - and the whole package marshals; the string-payload
+    consumer's row carries the string itself, exactly as before.
     """
     owner, borrower, borrower_book, consumer_id = _compile_contract_payload_book(consumer_class)
     try:
         consumer_spell = get_spell_by_version_id(borrower_book, consumer_id)
         assert consumer_spell is not None
-        plan = consumer_spell._compiler_artifact._spell_codegen_plan
-        assert plan is not None
-        assert CodegenCreationSchemaHelpers.spell_codegen_plan_is_replayable(plan) is expect_package
 
         package = _build_cache_package(consumer_spell)
 
-        if expect_package:
-            assert package is not None
-            assert package["spell_id"] == consumer_id
+        assert package["spell_id"] == consumer_id
+        rows = _package_no_overrides_rows(package)
+        row_value = _row_payload_value(rows, "marker")
+        if expect_reference:
+            assert CodegenSignature.is_contract_override_ref(row_value)
+            assert row_value == CodegenSignature.build_contract_override_ref(
+                consumer_id, "service", "marker",
+            )
         else:
-            assert package is None
+            assert row_value == "override"
+        assert not any(
+            isinstance(value, PayloadMarker)
+            for row in rows for _name, value in row["contract_payload_items"]
+        )
+        marshal.dumps(rows)
     finally:
         borrower.cleanup()
         owner.cleanup()

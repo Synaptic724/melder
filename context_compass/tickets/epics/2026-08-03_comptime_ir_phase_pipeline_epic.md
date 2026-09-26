@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T11:26:43Z
+- Updated: 2026-09-26T13:19:04Z
 - Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
@@ -212,9 +212,10 @@ on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling
       improvements to phases 1-11 and recommend the first tranche (opened on owner
       direction 2026-09-26). tickets/stories/2026-09-26_phase_pipeline_improvement_plan_story.md
       (fable_0)
-- [ ] Story: STORY-2026-09-26-signature-determinism-phase8-digest - tranche T1 (C-H + C-A) as
-      approved 2026-09-26; patch docs first; three tasks.
-      tickets/stories/2026-09-26_signature_determinism_and_phase8_digest_story.md (fable_0)
+- [x] Story: STORY-2026-09-26-signature-determinism-phase8-digest - tranche T1 (C-H + C-A) as
+      approved 2026-09-26; patch docs first; five tasks (two added on owner rulings).
+      tickets/stories/completed/2026-09-26_signature_determinism_and_phase8_digest_story.md (fable_0;
+      done 2026-09-26T13:14:31Z, owner accepted; docs promoted)
 - [ ] Story: STORY-2026-08-03-ir-schema-design - define the node/edge schema,
       the symbolic id scheme, the version stamp, and the answer to the identity
       question. Owner ratification required.
@@ -379,6 +380,12 @@ on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling
   meld-overrides path, never a plan row or generated literal; `spell_override` renames to `override`.
   Task 5 under the T1 story designs it with the override lanes (melder_0 design v2); rows stay a hash
   surface. The structural snapshot inherits: contract override values are never row material.
+- 2026-09-26 (fable_0, implemented): rows carry value-only references to the consumer's descriptor and the
+  no-overrides hydration resolves them live; the option-B emission gate is retired; no cache generation
+  bump. T1 story tasks 2-5 are all in review pending owner-run suites.
+- 2026-09-26 (owner): tranche T1 accepted and closed (tasks 1-5 and the story); I-0 of the implementation
+  entry is delivered (one serializer, determinism test). Canonical maps carry the tranche; the structural
+  snapshot inherits the row rule (hash surface; contract override values are never row material).
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -1055,6 +1062,42 @@ on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T13:17:13Z
+  TYPE: FACT
+  CLAIM: Tranche T1 closed on owner acceptance: one signature leaf (I-0 delivered: byte-compatible,
+    two-process deterministic), phase-8 pool digest once per pass (-34% conjure at N=300 owner-run), and
+    SpellContract/SpellMap `override` values as live meld operands with rows as a pure hash surface. Program
+    consequence for the structural snapshot (I-1): its rows may carry value-only refs to descriptors exactly
+    as phase-11 rows now do, and the determinism test is the acceptance guard for every signature-based skip.
+    Open on the epic: owner acceptance of the survey story (S11, D1-D6) and the improvement-plan story (both
+    in review); `src_graph.md` regeneration for the new leaf module (owner-run on 3.14).
+  EVIDENCE:
+  - tickets/stories/completed/2026-09-26_signature_determinism_and_phase8_digest_story.md
+  - system_docs/src_components.md:3293-3330
+  - system_docs/src_architecture.md:848-861
+  IMPACT: The next lane is the owner's call: I-1 structural snapshot (patch docs first) or the deferred
+    phases 8-11 survey; nothing is routed for fable_0 after this closure.
+  NEXT: Owner selects the next lane; fable_0 opens it per the implementation entry order.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T13:19:04Z
+  TYPE: FACT
+  CLAIM: Mailbox M0-25 (melder_0, 13:16:41Z) consumed: S3a is applied to the device tree (uncommitted) - the
+    override runtime now reads the no-overrides rows through generalized `_hydrate_steps_from_rows` and the
+    many_only equivalent, i.e. through the live contract-value resolution T1 landed; their suites are green on
+    3.14t/GIL on a device-state copy. Program consequence: the "override lanes keep literalized rows until S3"
+    caveat written into the canonical maps at T1 closure is being retired by melder_0's lane; that lane owns the
+    doc update when S3 promotes. No action for fable_0.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  - system_docs/src_components.md:3293-3330
+  IMPACT: No collision: T1 is closed and its files are not being edited by fable_0; the caveat's retirement is
+    melder_0's promotion item.
+  NEXT: None; the next fable_0 lane waits on the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -1124,9 +1167,13 @@ RECOVERY PROTOCOL - after any compaction or handoff:
 6. Owner rulings that bound the work: hot paths belong to another agent (do not open the meld door);
    module/import cost is ignored; system-doc corrections are authorized when source-evidenced.
 
+UPDATE 2026-09-26T13:17:13Z (fable_0): tranche T1 (I-0 plus the phase-8 digest and the live contract operands) is DONE
+and accepted; its story and five tasks are in completed/. No fable_0 lane is routed on the board after this closure;
+the survey story (S11) and the improvement-plan story remain in review for the owner.
+
 IMPLEMENTATION ENTRY - after S11 and the owner's explicit go, in this order:
 - I-0 signature-determinism test plus one serializer (small, compiler-side, protects today's cache;
-  owner decides whether the serializer collapse needs patch docs).
+  owner decides whether the serializer collapse needs patch docs). DONE 2026-09-26 (T1 story, accepted).
 - I-1 structural snapshot: patch docs first (architecture_patch, component_patch for the
   SpellCompiler component, code_description_patch for the hydrator control flow), then a story with
   gauntlet-gated tasks (capture on miss, hydrate on hit, invalidation, restore parity).

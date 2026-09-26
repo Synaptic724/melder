@@ -1,14 +1,19 @@
 # Story: Deterministic codegen signatures and a pass-hoisted phase-8 pool digest (tranche T1)
 
 ## Metadata
+- Completed: 2026-09-26T13:14:31Z
+- Closure Basis: owner acceptance ("yeah sure looks good") after the third owner-run green suite report.
+- Summary: Tranche T1 shipped: one signature leaf with both facades delegating (byte-compatible, two-process
+  deterministic), phase-8 pool digest once per pass (-34% conjure at N=300), and SpellContract/SpellMap
+  `override` values as live meld operands (refs in rows; identity across a cache full hit). Docs promoted.
 - Story ID: STORY-2026-09-26-signature-determinism-phase8-digest
 - Epic: EPIC-2026-08-03-comptime-ir-phase-pipeline
-- Status: in_progress
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T09:05:00Z
-- Updated: 2026-09-26T11:39:16Z
+- Updated: 2026-09-26T13:14:31Z
 
 ## User Narrative
 As the Melder owner, I want the compiler's signature path to be one implementation that is deterministic
@@ -91,6 +96,10 @@ measurable with the existing breakdown harness.
 - to_state: in_progress
 - transition_reason: Owner approved items 1 and 2 of the improvement plan (2026-09-26); opened by fable_0
   with the patch-doc task routed first per `patch_framework_gating.md`.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner accepted tasks 1-5 and the story (2026-09-26T13:14:31Z); patch docs promoted into
+  src_components.md and src_architecture.md with both indexes regenerated; patch folders archived; boards synced.
 
 ## Dependencies / Related Work
 - tickets/stories/2026-09-26_phase_pipeline_improvement_plan_story.md (review; source of C-A, C-H)
@@ -100,22 +109,22 @@ measurable with the existing breakdown harness.
   in review)
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-09-26-author-signature-patch-docs - architecture and component patch docs, read-
-  order mapping, consumption note tickets/tasks/2026-09-26_author_signature_patch_docs_task.md (review 2026-09-26)
-- [ ] Task: TASK-2026-09-26-unify-codegen-signature-serializer - one leaf implementation, canonical
-  freeze, determinism test tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md
-  (review 2026-09-26; landed in commit 6fc9af345; owner-run suites pending)
-- [ ] Task: TASK-2026-09-26-hoist-phase8-pool-digest - None-first check and pass-hoisted digest in the
-  occurrence strategy, tests tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md
-  (review 2026-09-26; owner-run harness before/after pending)
-- [ ] Task: TASK-2026-09-26-gate-cache-emission-on-replayable-payloads - refuse creation-cache
+- [x] Task: TASK-2026-09-26-author-signature-patch-docs - architecture and component patch docs, read-
+  order mapping, consumption note tickets/tasks/completed/2026-09-26_author_signature_patch_docs_task.md (done 2026-09-26T13:14:31Z)
+- [x] Task: TASK-2026-09-26-unify-codegen-signature-serializer - one leaf implementation, canonical
+  freeze, determinism test tickets/tasks/completed/2026-09-26_unify_codegen_signature_serializer_task.md
+  (done 2026-09-26T13:14:31Z; landed in commit 6fc9af345; owner-run suites green)
+- [x] Task: TASK-2026-09-26-hoist-phase8-pool-digest - None-first check and pass-hoisted digest in the
+  occurrence strategy, tests tickets/tasks/completed/2026-09-26_hoist_phase8_pool_digest_task.md
+  (done 2026-09-26T13:14:31Z; harness before/after filed)
+- [x] Task: TASK-2026-09-26-gate-cache-emission-on-replayable-payloads - refuse creation-cache
   emission for spells whose rows cannot replay their contract payload (owner option B)
-  tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md (review 2026-09-26)
-- [ ] Task: TASK-2026-09-26-live-contract-override-operands - descriptor rename `spell_override` ->
+  tickets/tasks/completed/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md (done 2026-09-26T13:14:31Z; gate retired by task 5)
+- [x] Task: TASK-2026-09-26-live-contract-override-operands - descriptor rename `spell_override` ->
   `override`; phase-9 refs; ref-only rows; live resolution at hydration; gate retired (owner ruling)
-  tickets/tasks/2026-09-26_live_contract_override_operands_task.md (ready 2026-09-26; P1 with the owner)
-- [ ] Enforce Ticket Microcycle across all linked tasks.
-- [ ] Require meaningful-finding note updates during discovery.
+  tickets/tasks/completed/2026-09-26_live_contract_override_operands_task.md (done 2026-09-26T13:14:31Z)
+- [x] Enforce Ticket Microcycle across all linked tasks.
+- [x] Require meaningful-finding note updates during discovery.
 
 ## Acceptance Criteria
 - One implementation; both facades delegate; no behavioural change for inputs that were deterministic
@@ -148,10 +157,10 @@ measurable with the existing breakdown harness.
   confined to the key path and is trivially rebased.
 
 ## Applicable Anti-Patterns
-- [ ] No story-state transition without linked task-state evidence.
-- [ ] No closure while required tasks remain active or un-routed.
-- [ ] No implementation before the patch docs exist and are linked.
-- [ ] No signature change without the corpus test proving byte-compatibility.
+- [x] No story-state transition without linked task-state evidence.
+- [x] No closure while required tasks remain active or un-routed.
+- [x] No implementation before the patch docs exist and are linked.
+- [x] No signature change without the corpus test proving byte-compatibility.
 
 ## Open Questions
 - None blocking. Canonical rendering for non-primitive payload objects is decided in the component
@@ -175,8 +184,8 @@ measurable with the existing breakdown harness.
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/codegen_signature_determinism_2026_09_26/architecture_patch.md
-  - system_docs/patches/active/codegen_signature_determinism_2026_09_26/component_patch_spell_compiler.md
+  - system_docs/patches/completed/codegen_signature_determinism_2026_09_26/architecture_patch.md (archived at closure)
+  - system_docs/patches/completed/codegen_signature_determinism_2026_09_26/component_patch_spell_compiler.md
   - artifacts/codegen_signature_determinism_20260926/ (measurements and test receipts, created on use)
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: durable deltas merged into `src_components.md` at closure; patch folder archived to
@@ -289,10 +298,73 @@ measurable with the existing breakdown harness.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T12:45:19Z
+  TYPE: FACT
+  CLAIM: Task 5 is in review: the descriptor keyword is `override`, phase 9 records value-only refs (SpellMap
+    payloads included), every family's rows write scalars as themselves and objects as refs (rule owned by
+    the leaf), the three no-overrides hydration sites resolve refs to the live descriptor value, and the
+    task-4 emission gate is retired (both package builders return dicts again). All five tasks are now in
+    review; nothing executed in this lane. Cross-task: task 4's gate code and tests are gone, its
+    classifier survives on the leaf; task 2's determinism fixture now asserts provider identity for the
+    object payload; no cache generation bump (gen-12 bundles never carried an object-payload row).
+    Override lanes keep today's literalized rows until melder_0's v2 S3 (requirement filed, F0-6).
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_live_contract_override_operands_task.md
+  - tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md
+  - system_docs/patches/active/live_contract_override_operands_2026_09_26/architecture_patch.md
+  IMPACT: The story's exit gate waits on owner-run suites for tasks 2-5 and acceptance; promotion into
+    `src_components.md` (DI descriptors block incl. the rename, IR seams block) follows acceptance.
+  NEXT: Owner runs task 5's four commands; fable_0 files results and prepares the promotion text.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T13:08:41Z
+  TYPE: FACT
+  CLAIM: Owner-run suites are green for the whole tranche: task 5's four commands passed on the third run
+    (the cross-process probe was rewritten to two subprocess probes after a pytest module-name trap made the
+    consumer's spell id differ between parent and child; test-only fix). The determinism component file, the
+    caching component file, the compiler unit suites and the broad component/integration run are in those
+    commands, so tasks 2, 3 and 5 have owner-run green results and task 4 is retired by task 5. Exit gate
+    items met: single serializer with both facades delegating; determinism test green owner-run; phase-8
+    pool digest once per pass with the None-first skip (M7 -34% at N=300, M5 inside noise); existing
+    compiler suites green. Remaining: owner acceptance, promotion of the two patch folders into
+    `src_components.md` (IR seams block; DI descriptors block incl. the rename) with the index regenerated,
+    patch archive, closure sync.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_live_contract_override_operands_task.md
+  - tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md
+  - tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md
+  - artifacts/codegen_signature_determinism_20260926/results_2026_09_26.md
+  IMPACT: The story can close on acceptance; the epic's I-0 (today's cache) is protected by the determinism
+    test, and the structural snapshot inherits the row rule (contract override values are never row material).
+  NEXT: Owner accepts tasks 1-5 and the story, or redirects; fable_0 then runs the closure sequence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T13:14:31Z
+  TYPE: DECISION
+  CLAIM: Owner accepted tasks 1-5 and the story ("yeah sure looks good"). Closure executed: promotion into
+    src_components.md (DI descriptors entry and both descriptor subcomponents; SpellCompiler IR-seams bullet
+    corrected and a dated tranche block added; Key Files add the leaf; SpellMap flow step 5; handoff paragraph)
+    and src_architecture.md (one Operational Invariants bullet; handoff paragraph); both indexes regenerated
+    and `--check` verified; both patch folders archived to system_docs/patches/completed/; all six tickets
+    moved to completed; attention and artifact boards synced. Owed to the owner: `src_graph.md` regeneration
+    on 3.14 for the new leaf `spell_compiler/shared_assets/codegen_signature.py`.
+  EVIDENCE:
+  - system_docs/src_components.md:762-790
+  - system_docs/src_components.md:3293-3330
+  - system_docs/src_architecture.md:848-861
+  - tickets/tasks/completed/2026-09-26_live_contract_override_operands_task.md
+  IMPACT: Tranche T1 of the IR epic is closed; the epic's next lane is the owner's call (structural snapshot
+    discovery per the epic strategy, or acceptance of the survey/plan stories still in review).
+  NEXT: None here; the epic carries the follow-on.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -320,6 +392,12 @@ STATE 2026-09-26T11:26:43Z: owner rules override values may be anything and must
 `override`); tasks 2-4 stay in review; task-5 investigation (read-only) opens; design after the reads.
 STATE 2026-09-26T11:39:16Z: task 5 created (ready) with the live-operand design; waiting on the owner's P1 confirmation;
 tasks 2-4 in review. Task 4's gate is scheduled for retirement by task 5.
+STATE 2026-09-26T12:45:19Z: task 5 in REVIEW (P1-P8 done, not run); tasks 2-5 all in review; task 4's gate retired by task 5. Waiting
+on owner-run suites and acceptance; then promotion into src_components.md and closure sync.
+STATE 2026-09-26T13:08:41Z: owner-run suites green for tasks 2-5 (third run of task 5's commands). Waiting on owner
+acceptance of tasks 1-5 and the story; then promotion into src_components.md, index, patch archive, closure sync.
+STATE 2026-09-26T13:14:31Z: DONE. Owner accepted; docs promoted, indexes regenerated, patch folders archived, tickets
+closed, boards synced. Owed: src_graph.md regeneration for the new leaf (owner-run on 3.14).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -1,7 +1,7 @@
 import hashlib
 import pickle
 import types
-from typing import Any, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 
 class CodegenSignature:
@@ -45,6 +45,8 @@ class CodegenSignature:
         Consumed through the two facades by phase 8 (occurrence-analysis input
         signature), the phase-11 step-row builders, the generalized manifest and
         codegen-creation steps, and the phase 8-11 IR export digest.
+        Also owns the contract-override reference shape and the row projection rule
+        for override payload entries, used directly by every family's row builder.
 
     System Context:
         Every creation-cache key and every executor signature in the `.melc`
@@ -120,6 +122,126 @@ class CodegenSignature:
             and len(value) == 4
             and value[0] == "__contract_override__"
         )
+
+    @staticmethod
+    def is_replayable_contract_payload_value(value: Any) -> bool:
+        """
+        Return whether one contract payload value survives a phase-11 row unchanged.
+
+        Purpose:
+            The row builders' classifier shared by every codegen family (2026-09-26):
+            a value that passes is written into the row exactly as it is; any other
+            value is replaced by its reference (`build_contract_override_ref`) and
+            read back live at hydration, so no row ever carries a value the marshal
+            envelope or a freeze projection would mangle.
+
+        Contract:
+            - True for `None`, for values whose EXACT type is `bool`, `int`, `float`
+              or `str`, and for an exact `tuple` whose items are all replayable:
+              these are the values `freeze_phase11_schema_value` and the many-only
+              `freeze_value` return unchanged, the row hydration passes through
+              as-is, and `marshal` persists.
+            - False for everything else. `list` and `set` thaw as tuples, `dict` as
+              a sorted tuple of pairs, plain enum members and classes as `repr`
+              text, callables and default-`repr` instances as marker tuples - none
+              of them is the value the descriptor carried; subclasses of the scalar
+              types (an `IntEnum` member, a `str` subclass) pass through a freeze
+              but are not marshallable, so they are refused as well.
+            - Pure; never raises.
+
+        Args:
+            value: Raw payload value taken from a plan step.
+
+        Returns:
+            bool: True when a row reproduces `value` exactly.
+        """
+        if value is None:
+            return True
+        value_type = type(value)
+        if value_type is bool or value_type is int or value_type is float or value_type is str:
+            return True
+        if value_type is tuple:
+            for item in value:
+                if not CodegenSignature.is_replayable_contract_payload_value(item):
+                    return False
+            return True
+        return False
+
+    @staticmethod
+    def project_contract_payload_entry(
+            param_name: str,
+            value: Any,
+            payload_refs: Optional[Dict[str, Any]],
+    ) -> Any:
+        """
+        Project one contract payload entry into its row form: the value itself or its reference.
+
+        Purpose:
+            The one rule every family's row builder applies to `step.contract_payload`
+            and `step.contract_positional_override` (2026-09-26), so the generalized,
+            many-only and solo rows agree on what a payload entry looks like.
+
+        Contract:
+            - A replayable value (`is_replayable_contract_payload_value`) is returned
+              as it is; it is a fixed point of every freeze in the compiler, so the
+              row bytes equal the previous frozen bytes.
+            - Any other value is replaced by its reference from `payload_refs`; the
+              value itself never enters a row.
+            - `param_name == "__args__"` projects a positional list/tuple element by
+              element against the tuple of references stored under that key, so a
+              scalar element stays a value while an object element becomes a
+              reference; the result is always a `tuple`. A `None` positional
+              payload projects to `None`.
+            - Pure over its arguments.
+
+        Args:
+            param_name: Payload key, or `"__args__"` for the positional payload.
+            value: Raw payload value from the plan step.
+            payload_refs: The step's `contract_payload_refs` map, or None.
+
+        Returns:
+            Any: The value, its reference, or the projected positional tuple.
+
+        Raises:
+            RuntimeError: When a non-replayable value has no reference to stand in
+                for it (a plan step built without `contract_payload_refs`), or a
+                positional payload is neither a list/tuple nor replayable; rows must
+                never fall back to writing such a value.
+        """
+        if param_name == "__args__":
+            if value is None:
+                return None
+            if not isinstance(value, (list, tuple)):
+                if CodegenSignature.is_replayable_contract_payload_value(value):
+                    return value
+                raise RuntimeError(
+                    "Phase-11 row build: the positional contract payload is neither a "
+                    f"list/tuple nor a scalar ({type(value).__name__})."
+                )
+            positional_refs = None
+            if payload_refs is not None:
+                positional_refs = payload_refs.get("__args__")
+            projected = []
+            for index, item in enumerate(value):
+                if CodegenSignature.is_replayable_contract_payload_value(item):
+                    projected.append(item)
+                    continue
+                if positional_refs is None or index >= len(positional_refs):
+                    raise RuntimeError(
+                        "Phase-11 row build: positional contract payload item "
+                        f"{index} is not a scalar and carries no reference."
+                    )
+                projected.append(positional_refs[index])
+            return tuple(projected)
+        if CodegenSignature.is_replayable_contract_payload_value(value):
+            return value
+        ref = None if payload_refs is None else payload_refs.get(param_name)
+        if ref is None:
+            raise RuntimeError(
+                "Phase-11 row build: contract payload value for parameter "
+                f"{param_name!r} is not a scalar and carries no reference."
+            )
+        return ref
 
     @staticmethod
     def serialize_codegen_signature_part(part: Any) -> bytes:

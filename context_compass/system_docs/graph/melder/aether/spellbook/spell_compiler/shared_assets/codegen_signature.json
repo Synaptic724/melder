@@ -1,0 +1,61 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py",
+ "source_sha256": "571c21087ae641060f59642951956ae89d1e8d333b58d1dd0d699a51ce16107b",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature": {
+   "id": "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature",
+   "label": "codegen_signature",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature.CodegenSignature": {
+   "id": "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature.CodegenSignature",
+   "label": "CodegenSignature",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py",
+   "lineno": 7,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build_contract_override_ref",
+    "freeze_phase11_schema_value",
+    "hash_codegen_signature",
+    "is_contract_override_ref",
+    "is_replayable_contract_payload_value",
+    "project_contract_payload_entry",
+    "serialize_codegen_signature_part"
+   ],
+   "shape": {
+    "method_count": 9,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "974167482bb8591284430275b6a05a2996c4e6547a02b653081bc5fc3842d383"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature.CodegenSignature",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Any": "typing.Any",
+  "Dict": "typing.Dict",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "Union": "typing.Union"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature",
+  "class": "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature.CodegenSignature",
+  "label": "CodegenSignature"
+ }
+}

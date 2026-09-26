@@ -1,14 +1,19 @@
 # Task: Author the patch docs for the signature-determinism and phase-8 digest tranche
 
+- Completed: 2026-09-26T13:14:31Z
+- Summary: Architecture and component patch docs for tranche T1 written first (patch gate), amended twice to
+  the implemented shape, consumed by tasks 2-5 and promoted into the canonical maps at story closure;
+  patch folder archived under system_docs/patches/completed/.
+
 ## Metadata
 - Task ID: TASK-2026-09-26-author-signature-patch-docs
 - Story: STORY-2026-09-26-signature-determinism-phase8-digest
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T09:05:00Z
-- Updated: 2026-09-26T09:08:00Z
+- Updated: 2026-09-26T13:14:31Z
 
 ## Objective
 Satisfy the patch-framework entry gate for tranche T1: an `architecture_patch.md` and a
@@ -41,6 +46,10 @@ consumption mapping note (patch section -> implementation step -> validation ste
 - to_state: review
 - transition_reason: Both patch docs written and linked; consumption mapping recorded (2026-09-26); exit
   gate met; owner review alongside the task 2 proposal.
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted tasks 1-5 and the story after the third owner-run green suite report
+  ("yeah sure looks good", 2026-09-26T13:14:31Z); canonical docs promoted, patch folder archived, boards synced.
 
 ## Steps / Checklist
 - [x] P1: record the source facts the docs rest on (serializer, freeze, call-site argument types, the
@@ -74,7 +83,7 @@ consumption mapping note (patch section -> implementation step -> validation ste
 ## Applicable Anti-Patterns
 - [ ] No status transition without evidence-backed transition reason.
 - [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No closure without acceptance confirmation and board-sync completion.
 - [ ] No patch claim from a docstring or a grep hit; each before-line cites the code.
 
 ## Done Checklist
@@ -85,9 +94,9 @@ consumption mapping note (patch section -> implementation step -> validation ste
 - [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
