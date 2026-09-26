@@ -96,6 +96,11 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 11: a typed parameter with no registered provider compiles as an
+    # UNRESOLVED_INPUT socket instead of failing conjure, and every executor
+    # family routes constructor failures through the helper that raises
+    # UnresolvedInputError (2026-09-26). Version-10 bundles carry executors
+    # emitted with the old except blocks and must be rebuilt.
     # Version 10: creation executors hold a per-slot build guard instead of the
     # store lock across construction, and registration goes through the
     # self-locking store methods (deadlock fix, 2026-09-25). Version-9 bundles
@@ -141,6 +146,7 @@ class CachingSystem(Cleanable):
         8: "ordinary_defaults_are_plain",
         9: "exact_melder_release_compatibility",
         10: "creation_slot_build_guards",
+        11: "unresolved_input_sockets",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"

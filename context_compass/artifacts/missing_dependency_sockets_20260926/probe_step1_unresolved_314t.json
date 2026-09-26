@@ -1,0 +1,136 @@
+{
+ "many": {
+  "socket": [
+   "UNRESOLVED_INPUT",
+   [
+    "pkg",
+    "__default__"
+   ],
+   0,
+   "POSITIONAL_OR_KEYWORD",
+   []
+  ],
+  "phase4_after_conjure": null,
+  "root_supplied": true,
+  "root_missing": {
+   "error": "UnresolvedInputError",
+   "msg": "[MELD] Execution failed for spell 'Task' (610ad117f71ded84f6e0c640c9e6100809b591f420ae46d22a0e55778cfb78db) at node 610ad117f71ded84f6e0c640c9e6100809b591f420ae46d22a0e55778cfb78db (parameter 'work'): Task.work expects Pkg, but nothing registered provides it and this meld did not supply it. Supply it with override={'work': ...} when melding Task, a path key ending in '>work' (or '**work') when Tas",
+   "cause": "TypeError: Task.__init__() missing 1 required positional argument: 'work'",
+   "expected_type": "Pkg",
+   "unresolved_params": [
+    "work"
+   ],
+   "param_name": "work"
+  },
+  "nested_missing": {
+   "error": "UnresolvedInputError",
+   "msg": "[MELD] Execution failed for spell 'Task' (610ad117f71ded84f6e0c640c9e6100809b591f420ae46d22a0e55778cfb78db) at node 610ad117f71ded84f6e0c640c9e6100809b591f420ae46d22a0e55778cfb78db (parameter 'work'): Task.work expects Pkg, but nothing registered provides it and this meld did not supply it. Supply it with override={'work': ...} when melding Task, a path key ending in '>work' (or '**work') when Tas",
+   "cause": "TypeError: Task.__init__() missing 1 required positional argument: 'work'",
+   "expected_type": "Pkg",
+   "unresolved_params": [
+    "work"
+   ],
+   "param_name": "work"
+  },
+  "nested_supplied_path": true,
+  "nested_supplied_broadcast": true,
+  "none_by_presence": true,
+  "nested_missing_other_override": {
+   "error": "UnresolvedInputError",
+   "msg": "[MELD] Execution failed for spell 'Task' (610ad117f71ded84f6e0c640c9e6100809b591f420ae46d22a0e55778cfb78db) at node 610ad117f71ded84f6e0c640c9e6100809b591f420ae46d22a0e55778cfb78db (parameter 'work'): Task.work expects Pkg, but nothing registered provides it and this meld did not supply it. Supply it with override={'work': ...} when melding Task, a path key ending in '>work' (or '**work') when Tas",
+   "cause": "TypeError: Task.__init__() missing 1 required positional argument: 'work'",
+   "expected_type": "Pkg",
+   "unresolved_params": [
+    "work"
+   ],
+   "param_name": "work"
+  },
+  "unrelated_typeerror_root": {
+   "error": "TypeError",
+   "msg": "body failure unrelated to inputs",
+   "cause": null
+  },
+  "unrelated_typeerror_nested": {
+   "error": "MeldExecutionError",
+   "msg": "[MELD] Execution failed for spell 'Faulty' (a7fe06c61e214c3030b8df2da0e76b9b0c7684f3a87f4760a1fab47d3b2b87ed): Error invoking spell 'Faulty'. (inner: TypeError('body failure unrelated to inputs'))",
+   "cause": "TypeError: body failure unrelated to inputs",
+   "param_name": null
+  },
+  "positional_root_supplied": true
+ },
+ "unique_per_conduit": {
+  "socket": [
+   "UNRESOLVED_INPUT",
+   [
+    "pkg",
+    "__default__"
+   ],
+   0,
+   "POSITIONAL_OR_KEYWORD",
+   []
+  ],
+  "phase4_after_conjure": null,
+  "root_supplied": true,
+  "root_missing": {
+   "error": "UnresolvedInputError",
+   "msg": "[MELD] Execution failed for spell 'Task' (0d60d0683adf8da5034b97d8620545187bb1f61dfbb6a860dd214fd22d25de25) at node 0d60d0683adf8da5034b97d8620545187bb1f61dfbb6a860dd214fd22d25de25 (parameter 'work'): Task.work expects Pkg, but nothing registered provides it and this meld did not supply it. Supply it with override={'work': ...} when melding Task, a path key ending in '>work' (or '**work') when Tas",
+   "cause": "TypeError: Task.__init__() missing 1 required positional argument: 'work'",
+   "expected_type": "Pkg",
+   "unresolved_params": [
+    "work"
+   ],
+   "param_name": "work"
+  },
+  "nested_missing": {
+   "error": "UnresolvedInputError",
+   "msg": "[MELD] Execution failed for spell 'Task' (0d60d0683adf8da5034b97d8620545187bb1f61dfbb6a860dd214fd22d25de25) at node 0d60d0683adf8da5034b97d8620545187bb1f61dfbb6a860dd214fd22d25de25 (parameter 'work'): Task.work expects Pkg, but nothing registered provides it and this meld did not supply it. Supply it with override={'work': ...} when melding Task, a path key ending in '>work' (or '**work') when Tas",
+   "cause": "TypeError: Task.__init__() missing 1 required positional argument: 'work'",
+   "expected_type": "Pkg",
+   "unresolved_params": [
+    "work"
+   ],
+   "param_name": "work"
+  },
+  "nested_supplied_path": true,
+  "nested_supplied_broadcast": true,
+  "none_by_presence": true,
+  "nested_missing_other_override": {
+   "error": "UnresolvedInputError",
+   "msg": "[MELD] Execution failed for spell 'Task' (0d60d0683adf8da5034b97d8620545187bb1f61dfbb6a860dd214fd22d25de25) at node 0d60d0683adf8da5034b97d8620545187bb1f61dfbb6a860dd214fd22d25de25 (parameter 'work'): Task.work expects Pkg, but nothing registered provides it and this meld did not supply it. Supply it with override={'work': ...} when melding Task, a path key ending in '>work' (or '**work') when Tas",
+   "cause": "TypeError: Task.__init__() missing 1 required positional argument: 'work'",
+   "expected_type": "Pkg",
+   "unresolved_params": [
+    "work"
+   ],
+   "param_name": "work"
+  },
+  "unrelated_typeerror_root": {
+   "error": "TypeError",
+   "msg": "body failure unrelated to inputs",
+   "cause": null
+  },
+  "unrelated_typeerror_nested": {
+   "error": "MeldExecutionError",
+   "msg": "[MELD] Execution failed for spell 'Faulty' (f82131ef84b5b30fb564f22ae39730cbb6a8387a836f91c205d18553243dfc0c): Error invoking spell 'Faulty'. (inner: TypeError('body failure unrelated to inputs'))",
+   "cause": "TypeError: body failure unrelated to inputs",
+   "param_name": null
+  },
+  "positional_root_supplied": true
+ },
+ "late_provider_dynamic": {
+  "before": {
+   "error": "UnresolvedInputError",
+   "msg": "[MELD] Execution failed for spell 'Task' (610ad117f71ded84f6e0c640c9e6100809b591f420ae46d22a0e55778cfb78db) at node 610ad117f71ded84f6e0c640c9e6100809b591f420ae46d22a0e55778cfb78db (parameter 'work'): Task.work expects Pkg, but nothing registered provides it and this meld did not supply it. Supply it with override={'work': ...} when melding Task, a path key ending in '>work' (or '**work') when Tas",
+   "cause": "TypeError: Task.__init__() missing 1 required positional argument: 'work'",
+   "expected_type": "Pkg",
+   "unresolved_params": [
+    "work"
+   ],
+   "param_name": "work"
+  },
+  "after": "Pkg",
+  "socket_after": [
+   "NORMAL"
+  ]
+ }
+}

@@ -3,12 +3,12 @@
 ## Metadata
 - Story ID: STORY-2026-08-03-phase-pipeline-survey
 - Epic: EPIC-2026-08-03-comptime-ir-phase-pipeline
-- Status: in_progress
+- Status: review
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-25T21:23:55Z
-- Updated: 2026-09-26T00:08:30Z
+- Updated: 2026-09-26T07:34:07Z
 
 ## User Narrative
 As the Melder owner, I want every compiler phase's real inputs, outputs and live-object holds
@@ -34,8 +34,9 @@ entry gate says nothing else may start until it is accepted.
 - DEPENDENCIES: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md; `src_components.md`
   sliced at `Component: SpellCompiler and Validation Pipeline` and
   `Subcomponent: SpellCompiler Phase Artifacts` for navigation only.
-- EXIT_GATE: All three tranche tasks in review with per-phase records; `summary.md` lists every
-  object-bound point with `path:start-end`; owner accepts; epic Milestone 1 checked.
+- EXIT_GATE: All three tasks in review; records for the drivers and phases 1-7; `summary.md` carries
+  the epic's discovery done criteria D1-D6 (hydrate obligations, key composition, cache mechanics,
+  invalidation surface, full-hit consumption) with `path:start-end`; owner accepts; Milestone 1 checked.
 - FAILURE_ESCALATION: BLOCKER if a phase's behavior cannot be established from source;
   DECISION_REQUEST when a hold looks identity-bearing rather than nameable; CONFLICT when source
   contradicts `src_architecture.md` or the epic's phase description.
@@ -71,6 +72,10 @@ entry gate says nothing else may start until it is accepted.
 - to_state: in_progress
 - transition_reason: Task 1 moved to in_progress on the owner's go (2026-09-25); story follows its
   child-task state.
+- from_state: in_progress
+- to_state: review
+- transition_reason: All three tasks in review (2026-09-26); records for the drivers and phases 1-7 plus
+  summary.md with D1-D6 exist; owner acceptance and Milestone 1 pending.
 
 ## Dependencies / Related Work
 - tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md
@@ -80,20 +85,26 @@ entry gate says nothing else may start until it is accepted.
   (historical pipeline investigation; re-verify against current source before citing)
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-09-25-survey-compiler-phases-1-4 - driver plus phases 1-4
-  tickets/tasks/2026-09-25_survey_compiler_phases_1_to_4_task.md
-- [ ] Task: TASK-2026-09-25-survey-compiler-phases-5-7 - root blueprints, system validation,
-  change control (opened when tranche 1 reaches review)
-- [ ] Task: TASK-2026-09-25-survey-compiler-phases-8-11 - occurrence, injection, patch maps,
-  execution plan, phase-11 emit surface (opened when tranche 2 reaches review)
+- [ ] Task: TASK-2026-09-25-survey-compiler-phases-1-4 - driver, phases 1-4 and the structural
+  driver (steps S1-S5) tickets/tasks/2026-09-25_survey_compiler_phases_1_to_4_task.md
+- [ ] Task: TASK-2026-09-26-survey-compiler-phases-5-7 - phases 5-7 and the resolution driver's
+  full-hit load path (S6-S8) tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md
+- [ ] Task: TASK-2026-09-26-survey-structural-snapshot-seam - cache mechanics, key composition,
+  invalidation surface, summary.md (S9-S11)
+  tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md
+- [ ] DEFERRED (owner, 2026-09-26): the exhaustive phases 8-11 survey (occurrence, injection, patch
+  maps, execution plan, emit surface) opens for the schema story after the structural snapshot
+  lands; S8 covers 8-11 only as far as the full-hit load path reads phase 1-7 objects.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery.
 
 ## Acceptance Criteria
-- Eleven per-phase records plus a driver record exist under `artifacts/ir_phase_survey_20260925/`,
-  each with inputs, outputs, classified holds, runtime side effects, and evidence ranges.
-- `summary.md` tabulates every object-bound point across phases 1-10 and states, per point,
-  whether a symbolic id can replace it or an identity concept is required.
+- Seven per-phase records (1-7) plus driver records exist under `artifacts/ir_phase_survey_20260925/`,
+  each with inputs, outputs, classified holds, runtime writes, reflection points, Python-callback
+  points, world reads and evidence ranges; phases 8-11 are recorded only as the full-hit load path
+  (owner re-sequencing, 2026-09-26).
+- `summary.md` tabulates every object-bound point across phases 1-7 with the value/identity verdict
+  and carries the D2-D6 sections named in the epic's discovery strategy.
 - Every contradiction between source and `src_architecture.md` is a CONFLICT note.
 - Remaining UNKNOWNs are listed with the file:symbol to investigate.
 - Owner accepts; epic Milestone 1 checked.
@@ -131,6 +142,9 @@ entry gate says nothing else may start until it is accepted.
   weird things in the documentation feel free to update src_arch and src_comp").
 - 2026-09-25: Three tranche tasks mirror the epic's port tranches (1-4, 5-7, 8-10 plus 11) so each
   record hands directly to its port story.
+- 2026-09-26: Owner directed a discovery strategy aimed at implementation and durable across compactions.
+  Task 2 is now phases 5-7 plus the resolution driver; task 3 is the snapshot seam (cache, key,
+  invalidation, summary); the exhaustive 8-11 survey is deferred to the schema story.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -234,6 +248,18 @@ STATE 2026-09-25T22:51:29Z (fable_0), written ahead of a context compaction - re
   reorder proposal (structural snapshot before any phase port) recorded on the epic.
 STATE 2026-09-26T00:08:30Z (fable_0): re-onboarded after compaction; task 1 phase 1 is complete
 (phase_01.md, level-0 answer: extraction, not rename; no world reads in phase 1). Next: phase 2.
+STATE 2026-09-26T00:53:12Z (fable_0): strategy recorded on the epic (DISCOVERY STRATEGY AND RECOVERY); tasks
+2 and 3 created as `ready`; task 1 remains the active row at step S2 (phase 2).
+STATE 2026-09-26T01:07:48Z (fable_0): task 1 in review (five records); task 2 in progress at S6. Key
+cross-task fact: phase 1-4 artifacts are reset after every resolution pass, so the snapshot hydrates
+registry state for 1-4; phase 5 blueprints persist on the artifact.
+STATE 2026-09-26T07:23:03Z (fable_0): task 2 in review (phase_05-07.md, resolution_driver.md); task 3 in progress at
+S9. Cross-task facts: phases 5-7 run on every full hit (only 8-11 skip); hydration consumes the pool and
+the phase-5 path registry only; meld gating reads both registry validity tiers; the change-control dirty
+loop is armed only by `notify_spell_changed`, which no shipped path calls (CONFLICT candidate for summary.md).
+STATE 2026-09-26T07:34:07Z (fable_0): story in REVIEW. summary.md consolidates D1-D6, four conflicts, the unknowns and
+the I-0/I-1 hand-over; the owner's four decisions are listed in its last section. Resume: owner acceptance ->
+Milestone 1, closure sync for three tasks and this story, then I-0.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

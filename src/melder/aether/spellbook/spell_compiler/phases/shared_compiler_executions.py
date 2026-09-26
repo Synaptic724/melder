@@ -872,7 +872,8 @@ class SharedCompilerExecutions:
                 - Expects InjectionSpec/ParamSource contract fields to be present.
                 - Fails fast when malformed/cleaned artifacts violate contract.
                 - override_required rows append signature position/kind and descriptive IDs;
-                  ordinary source kinds retain their existing six-field row layout.
+                  unresolved_input rows append signature position/kind only (no provider,
+                  no references); ordinary source kinds retain their six-field row layout.
             Args:
                 instance_injections:
                     Mapping from instance key to InjectionSpec-like objects.
@@ -937,6 +938,11 @@ class SharedCompilerExecutions:
                             param_source.position,
                             param_source.parameter_kind,
                             tuple(param_source.referenced_spell_ids),
+                        )
+                    elif kind == "unresolved_input":
+                        param_row += (
+                            param_source.position,
+                            param_source.parameter_kind,
                         )
                     param_rows.append(param_row)
 
@@ -1219,6 +1225,7 @@ class SharedCompilerExecutions:
                 - Includes param source wiring, aggregation flags, and contract payload.
                 - Returns tuple-only deterministic structure.
                 - Required-input position/kind/reference fields survive either metadata mode.
+                - Unresolved-input position/kind fields survive either metadata mode.
             Args:
                 injection_spec:
                     Phase 9 InjectionSpec-like object.
@@ -1252,6 +1259,11 @@ class SharedCompilerExecutions:
                     param_source.position,
                     param_source.parameter_kind,
                     tuple(param_source.referenced_spell_ids),
+                )
+            elif param_source.kind == "unresolved_input":
+                param_row += (
+                    param_source.position,
+                    param_source.parameter_kind,
                 )
             param_rows.append(param_row)
 

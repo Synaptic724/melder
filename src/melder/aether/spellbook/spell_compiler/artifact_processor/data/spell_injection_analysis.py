@@ -23,6 +23,9 @@ class SpellInjectionParamSource:
           socket with exactly one wired provider still injects a list.
         - override_required sources retain signature position/kind and descriptive
           reference IDs without introducing dependency instance keys.
+        - unresolved_input sources (a typed parameter no registered spell
+          provides) retain signature position/kind with no dependency instance
+          keys and no reference IDs; the constructing call supplies the value.
     """
 
     __slots__ = [
@@ -52,14 +55,16 @@ class SpellInjectionParamSource:
         Build one injection parameter source descriptor.
 
         Args:
-            kind: Source kind ("dependency", "contract", or "override_required").
+            kind: Source kind ("dependency", "contract", "override_required", or
+                "unresolved_input").
             dependency_keys: Instance keys this parameter reads, in order.
             override_key: Root-override key this parameter answers to.
             contract_key: Contract payload key when contract-sourced.
             is_collection: True when the underlying constructor socket is a
                 collection DI shape (list[Frame]); the injected value must be
                 a list even when exactly one dependency key is present.
-            position: Original constructor position for required supplied inputs.
+            position: Original constructor position for required supplied and
+                unresolved inputs.
             parameter_kind: Original inspect.Parameter kind name for those inputs.
             referenced_spell_ids: Non-executable target identities for graph navigation.
         """
@@ -127,6 +132,9 @@ class SpellInjectionInstanceSpec:
     ) -> Tuple[RequiredOverrideParam, ...]:
         """
         Freeze required-input policy into plain values for either planner variant.
+
+        Only override_required sources participate. unresolved_input sources carry
+        no reference IDs and remain ordinary override targets.
 
         Args:
             param_sources: Fitted injection sources in deterministic parameter order.

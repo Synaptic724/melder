@@ -481,7 +481,13 @@ def test_resolve_single_by_annotation_returns_exact_match() -> None:
     ],
 )
 def test_resolve_single_by_annotation_no_candidates(method_only: bool) -> None:
-    """Phase 3 single-resolution should fail when no valid class candidate exists."""
+    """
+    No valid class candidate yields an empty mapping instead of an error.
+
+    The caller records the parameter as an UNRESOLVED_INPUT socket that the
+    constructing meld supplies (contract since 2026-09-26; ambiguity still raises).
+    A method spell registered under the frame is not a class candidate.
+    """
     phase = CompilerPhase3()
 
     class _ServiceFrame:
@@ -514,8 +520,7 @@ def test_resolve_single_by_annotation_no_candidates(method_only: bool) -> None:
         target_annotation=_ServiceFrame,
     )
 
-    with pytest.raises(RuntimeError, match="no DI candidate found"):
-        phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+    assert phase._resolve_single_by_annotation(root_spell, spellbook, dep) == {}
 
 
 def test_resolve_single_by_annotation_raises_on_multiple_matches() -> None:

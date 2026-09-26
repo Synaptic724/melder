@@ -8,6 +8,7 @@ from melder.aether.spellbook.spell_compiler.executor_code_cache import (
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler import (
     ManyOnlyCodegenPlanTargetKind,
+    _raise_meld_construction_error,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
@@ -459,6 +460,7 @@ def _build_overrides_codegen_creation_executor_namespace(
     """
     return {
         "MeldExecutionError": MeldExecutionError,
+        "_raise_meld_construction_error": _raise_meld_construction_error,
         "Sequence": Sequence,
         "Existence": Existence,
         "ManyOnlyCodegenPlanTargetKind": ManyOnlyCodegenPlanTargetKind,
@@ -1600,8 +1602,9 @@ def _append_overrides_invoke_source(
           creation, callable, and raw-value spell variants.
         - Supports `__args__` payload decoding only when the shape can carry
           positional overrides.
-        - Keeps error translation in generated source for invalid args and
-          invoke-time exceptions.
+        - Keeps error translation in generated source for invalid args; invoke-time
+          exceptions go to the family `_raise_meld_construction_error`, which names
+          an unsupplied unresolved input or raises the existing MeldExecutionError.
     """
     def _append_existing_creation_body(body_indent: str) -> None:
         """
@@ -1663,15 +1666,11 @@ def _append_overrides_invoke_source(
                     f"plan_step_{step_index}.spell.spell(*args_{step_index}, **call_kwargs_{step_index})"
                 ),
                 f"{body_indent}except Exception as exc:",
-                f"{body_indent}    raise MeldExecutionError(",
-                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
-                f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
                 (
-                    f"{body_indent}        message=(\"Error invoking spell '\" + "
-                    f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
+                    f"{body_indent}    _raise_meld_construction_error("
+                    f"plan_step_{step_index}.spell, exc, "
+                    f"call_kwargs_{step_index}, len(args_{step_index}))"
                 ),
-                f"{body_indent}        inner=exc,",
-                f"{body_indent}    ) from exc",
             ])
             return
         if kwargs_always_empty:
@@ -1682,15 +1681,7 @@ def _append_overrides_invoke_source(
                     f"plan_step_{step_index}.spell.spell()"
                 ),
                 f"{body_indent}except Exception as exc:",
-                f"{body_indent}    raise MeldExecutionError(",
-                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
-                f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
-                (
-                    f"{body_indent}        message=(\"Error invoking spell '\" + "
-                    f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
-                ),
-                f"{body_indent}        inner=exc,",
-                f"{body_indent}    ) from exc",
+                f"{body_indent}    _raise_meld_construction_error(plan_step_{step_index}.spell, exc)",
             ])
             return
         lines.extend([
@@ -1700,15 +1691,10 @@ def _append_overrides_invoke_source(
                 f"plan_step_{step_index}.spell.spell(**kwargs_{step_index})"
             ),
             f"{body_indent}except Exception as exc:",
-            f"{body_indent}    raise MeldExecutionError(",
-            f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
-            f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
             (
-                f"{body_indent}        message=(\"Error invoking spell '\" + "
-                f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
+                f"{body_indent}    _raise_meld_construction_error("
+                f"plan_step_{step_index}.spell, exc, kwargs_{step_index})"
             ),
-            f"{body_indent}        inner=exc,",
-            f"{body_indent}    ) from exc",
         ])
 
     def _append_raw_value_body(body_indent: str) -> None:
@@ -2694,6 +2680,9 @@ def _invoke_spell_with_kwargs(
         - ``"__args__"`` must be a list/tuple when supplied.
         - Avoids kwargs copy when positional override args are absent.
         - Preserves tuple positional payloads without rebuilding list objects.
+        - A constructor failure raises UnresolvedInputError when an unresolved
+          input was not among the passed names/positions, otherwise the existing
+          MeldExecutionError (see `_raise_meld_construction_error`).
     """
     if spell.existence is Existence.unique and spell.is_existing_creation:
         instance = spell.user_created_object
@@ -2735,12 +2724,7 @@ def _invoke_spell_with_kwargs(
     try:
         return spell.spell(*args, **call_kwargs)
     except Exception as exc:
-        raise MeldExecutionError(
-            spell_id=spell.spell_index.selected_spell_id,
-            spell_name=spell.spell_name,
-            message=f"Error invoking spell '{spell.spell_name}'.",
-            inner=exc,
-        ) from exc
+        _raise_meld_construction_error(spell, exc, call_kwargs, len(args))
 
 
 def _get_existing_creation(

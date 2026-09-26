@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
- "source_sha256": "7ca9959aecad1dcf8ed1c91c49fdad3ce94428201f5b0b74209ea8be05853c59",
+ "source_sha256": "955ddee7840dabe98c2fa63a8d041ec3497fef1a9246560227520b8c3567ef1a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3": {
@@ -33,14 +33,15 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "d92ddac0b76bca8bddeaa78babac2438d932ea952fd39ef20de1fa6d6214bdf4",
+   "span_sha256": "5448adf98c6edaacfe233f5e45c0480dce397fa6bd27c9275cafe1e71ca1b01e",
    "role": "Compiler-owned phase-3 local-frame and DAG build surface.",
    "responsibilities": [
     "resolves symbolic constructor sockets into concrete dependency spell ids",
     "builds the local constructor DAG and SpellResolutionFrame for one spell",
     "publishes direct dependency ids and SpellLocalTopology into SpellSystemStates",
     "selects resolvable providers or OVERRIDE_REQUIRED references while preserving declarations and False-root topology",
-    "republishes enabled late-compiled Nexus records after local topology is available"
+    "republishes enabled late-compiled Nexus records after local topology is available",
+    "records an UNRESOLVED_INPUT socket, keeping its frame key, when a single typed parameter has no registered provider; ambiguity still raises"
    ],
    "phases": [
     "validation",
@@ -96,6 +97,7 @@
   "Generator": "typing.Generator",
   "List": "typing.List",
   "Optional": "typing.Optional",
+  "Set": "typing.Set",
   "Tuple": "typing.Tuple",
   "Union": "typing.Union",
   "get_args": "typing.get_args",

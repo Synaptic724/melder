@@ -1,58 +1,59 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
- "source_sha256": "ca46babfc4b3dbf200b5f47a56ee2352f15f5024e01fad4ed52dc0d81bd93bed",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.dag.socket_kind": {
-   "id": "melder.aether.spellbook.spell_compiler.dag.socket_kind",
-   "label": "socket_kind",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
-   "lineno": 1,
-   "include": true,
-   "role": "The enum classifying what kind of socket a DAG edge represents.",
-   "semantics_authored_against": "63de1d5e8c58f6618aafd6e3b9d555a955a664857d9c008c245c5e6525ef7637"
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
+  "source_sha256": "d6d526045807a858d27272bd02352637b5f1c0e61f56271fbe1bfe3255eda5a1",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.dag.socket_kind": {
+      "id": "melder.aether.spellbook.spell_compiler.dag.socket_kind",
+      "label": "socket_kind",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
+      "lineno": 1,
+      "include": true,
+      "role": "The enum classifying what kind of socket a DAG edge represents.",
+      "semantics_authored_against": ""
+    },
+    "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind": {
+      "id": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+      "label": "SocketKind",
+      "kind": "enum",
+      "file": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
+      "lineno": 5,
+      "bases": [],
+      "markers": [
+        "Enum"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 0,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "e82961ca28e1b9358bf05bc6ec131eca1558fe38602dce34fdb9497329c98983",
+      "role": "Enum classifying the kind of socket represented by a DAG edge.",
+      "responsibilities": [
+        "labels the current NORMAL, SPELL_CONTRACT, OVERRIDE_REQUIRED and UNRESOLVED_INPUT categories",
+        "UNRESOLVED_INPUT marks a single typed dependency no registered spell provides: no target, no DAG edge, supplied by the constructing call"
+      ],
+      "owns_state": [
+        "NORMAL",
+        "SPELL_CONTRACT",
+        "OVERRIDE_REQUIRED"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ],
+      "semantics_authored_against": "e82961ca28e1b9358bf05bc6ec131eca1558fe38602dce34fdb9497329c98983"
+    }
   },
-  "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind": {
-   "id": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
-   "label": "SocketKind",
-   "kind": "enum",
-   "file": "src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py",
-   "lineno": 5,
-   "bases": [],
-   "markers": [
-    "Enum"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "b7104b0500e6d59e804881dfb1261d95db7bf03eb0b6347de210b3258df1a12c",
-   "role": "Enum classifying the kind of socket represented by a DAG edge.",
-   "responsibilities": [
-    "labels the current NORMAL, SPELL_CONTRACT, OVERRIDE_REQUIRED categories"
-   ],
-   "owns_state": [
-    "NORMAL",
-    "SPELL_CONTRACT",
-    "OVERRIDE_REQUIRED"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ],
-   "semantics_authored_against": "b33cd45ea8754579da29160e15701bc20cac1d62213425d823283d2df16b7d19"
-  }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "Enum": "enum.Enum",
-  "auto": "enum.auto"
- },
- "collapse_candidate": null
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "Enum": "enum.Enum",
+    "auto": "enum.auto"
+  },
+  "collapse_candidate": null
 }

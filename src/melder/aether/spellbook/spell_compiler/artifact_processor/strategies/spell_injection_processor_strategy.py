@@ -138,6 +138,11 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
               dependency count, so one-member collections stay collections.
             - OVERRIDE_REQUIRED sources are retained even without occurrence edges;
               signature/reference metadata comes from the same durable topology.
+            - UNRESOLVED_INPUT sockets (no registered provider) become
+              "unresolved_input" sources: no dependency keys, override_key set to
+              the parameter name, signature position/kind retained. Planners treat
+              them like any override target, so the constructing call supplies the
+              value or the argument is omitted and construction fails.
         """
         instance_specs_by_instance_key: Dict[InstanceKey, SpellInjectionInstanceSpec] = {}
         # Per-spell collection-socket sets, resolved lazily once per spell id.
@@ -237,6 +242,17 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                 topology = spell_system_states.get_local_topology_by_id(spell_id)
                 if topology is not None:
                     for socket in topology.sockets:
+                        if socket.socket_kind is SocketKind.UNRESOLVED_INPUT:
+                            # No provider and no occurrence edge: the value can
+                            # only come from the constructing call's overrides.
+                            param_sources[socket.param_name] = SpellInjectionParamSource(
+                                kind="unresolved_input",
+                                dependency_keys=(),
+                                override_key=socket.param_name,
+                                position=socket.position,
+                                parameter_kind=socket.parameter_kind,
+                            )
+                            continue
                         if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED:
                             continue
                         param_sources[socket.param_name] = SpellInjectionParamSource(

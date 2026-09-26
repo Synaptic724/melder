@@ -35,6 +35,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     emit_overrides_codegen_creation_executor_shape_source,
     get_existing_creation,
     invoke_spell_with_kwargs,
+    raise_meld_construction_error,
     raise_override_on_existing_instance,
     register_spell_instance_prebound,
 )
@@ -69,6 +70,9 @@ _OVERRIDES_STATIC_NAMESPACE = {
     "_get_existing_creation": get_existing_creation,
     "_register_spell_instance_prebound": register_spell_instance_prebound,
     "_raise_override_on_existing_instance": raise_override_on_existing_instance,
+    # Emitted override shapes route constructor failures through this helper,
+    # which names an unsupplied unresolved input before the generic error.
+    "_raise_meld_construction_error": raise_meld_construction_error,
 }
 
 # Process-wide emitted-source memo for override shapes. Sources are pure

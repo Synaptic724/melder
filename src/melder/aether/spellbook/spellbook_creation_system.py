@@ -298,6 +298,9 @@ class SpellbookCreationSystem(Cleanable):
         Contract:
             - Freezes and binds configuration when not already locked.
             - Executes structural phases before conduit construction.
+            - Reports unresolved inputs once, right after the structural phases,
+              while their Phase-4 results still exist (they are released after
+              resolution).
         Args:
             spellbook: Owning Spellbook instance.
             phase_scheduler_cls: Scheduler class used for phase execution.
@@ -313,6 +316,45 @@ class SpellbookCreationSystem(Cleanable):
         SpellbookCreationSystem.run_structural_phases(
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,
+        )
+        SpellbookCreationSystem._report_unresolved_inputs(spellbook=spellbook)
+
+    @staticmethod
+    def _report_unresolved_inputs(*, spellbook: Spellbook) -> None:
+        """
+        Purpose:
+            Make unresolved inputs visible at conjure. A typed parameter that no
+            registered spell provides no longer fails conjure; it must be supplied
+            by the meld that constructs its spell. Without this line a forgotten
+            binding would first surface as an UnresolvedInputError at meld.
+        Contract:
+            - Reads the UNRESOLVED_INPUT warnings Phase 4 stored on this book's
+              active spells; emits nothing when there are none.
+            - Emits one INFO line per conjure listing `Spell.param -> ExpectedType`.
+            - Reporting only; conjure continues either way.
+        Args:
+            spellbook: Owning Spellbook whose structural phases just ran.
+        Returns:
+            None.
+        """
+        entries: list[str] = []
+        for spell in spellbook._spells.values():
+            result = spell.validation_result_phase4
+            if result is None:
+                continue
+            for issue in result.issues:
+                if issue.code != "UNRESOLVED_INPUT":
+                    continue
+                entries.append(
+                    f"{spell.spell_name}.{issue.details['parameter_name']} -> "
+                    f"{issue.details['expected_type']}"
+                )
+        if not entries:
+            return
+        spellbook._logger.info(
+            f"Conjure: {len(entries)} unresolved input(s) have no registered provider and must be "
+            f"supplied by the meld that constructs them (or given a provider): {', '.join(entries)}.",
+            "_report_unresolved_inputs",
         )
 
     @staticmethod

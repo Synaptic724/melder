@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/__init__.py",
- "source_sha256": "89900a6077d9a924578e5596b8320a2468bb9b0d6608b0534aa40762bff40599",
+ "source_sha256": "7b3a95753a785e242f26ca0b2a61fffcdc44ca85b53ecb78e6cd4f47535d29b0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder": {
@@ -86,7 +86,8 @@
   "PhaseSchedulerError": "melder.utilities.custom_exceptions.phase_scheduler_error.PhaseSchedulerError",
   "PhaseTimeoutError": "melder.utilities.custom_exceptions.phase_timeout_error.PhaseTimeoutError",
   "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError",
-  "SpellbookValidationError": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError"
+  "SpellbookValidationError": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
+  "UnresolvedInputError": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError"
  },
  "collapse_candidate": null
 }

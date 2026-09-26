@@ -11,7 +11,8 @@ import sys
 import threading
 import time
 import typing
-from collections.abc import Callable
+from array import array
+from collections.abc import Callable, MutableSequence, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -448,7 +449,7 @@ class _GauntletConfig:
     @staticmethod
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
-            iterations=_env_int("DI_GAUNTLET_ITERS", 100_000),
+            iterations=_env_int("DI_GAUNTLET_ITERS", 50_000),
             threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
@@ -505,12 +506,32 @@ class _ScopeCycleMetrics:
 
 @dataclass
 class _LaneMetricSamples:
-    outer_create_ns: list[int]
-    outer_cleanup_ns: list[int]
-    outer_total_ns: list[int]
-    request_create_ns: list[int]
-    request_cleanup_ns: list[int]
-    request_total_ns: list[int]
+    """
+    Per-lane scope-cycle timings in nanoseconds, one entry per cycle.
+
+    Two storage kinds share this shape, and the split is deliberate:
+
+    - One iteration's samples are plain lists (`_new_lane_metric_samples`). The
+      short-lived worker threads append to them; list appends stay safe when
+      several workers share a lane, and the lists die with the iteration.
+    - The run-long accumulation is packed `array("q")` storage
+      (`_new_lane_metric_storage`), extended on the main thread. It holds values, not int
+      objects. Keeping the workers' int objects for the whole leg (the former
+      list storage) retained objects allocated by threads that had exited, and
+      on free-threaded CPython 3.14 that made every later scope cycle
+      progressively more expensive: 2-2.5x slower over 40k iterations for
+      Melder and dishka alike, with zero garbage collections. The attribution
+      test in test_melder_long_run_retention.py reproduces it.
+
+    Values, ordering and every summary computed from them are unchanged.
+    """
+
+    outer_create_ns: MutableSequence[int]
+    outer_cleanup_ns: MutableSequence[int]
+    outer_total_ns: MutableSequence[int]
+    request_create_ns: MutableSequence[int]
+    request_cleanup_ns: MutableSequence[int]
+    request_total_ns: MutableSequence[int]
 
 
 @dataclass(frozen=True)
@@ -943,6 +964,24 @@ def _build_runtime_dishka() -> _RuntimeOps:
 
 
 def _build_runtime_melder() -> _RuntimeOps:
+    """
+    Build the shared gauntlet's Melder lane over this module's class graph.
+
+    Contract:
+        - Uses the same classes as the dependency-injector and dishka lanes in
+          this module, so all three libraries resolve the identical graph.
+        - Setup MUST stay identical to the Melder-only gauntlet
+          (`test_melder_gauntlet._build_runtime_melder`): same frame and conduit
+          names, one phase-scheduler worker, no frame-posture overrides, the
+          same existence per class, `permissions="create"`, `dynamic=False`.
+          The two builders are separate code on purpose - tuning the
+          Melder-only benchmark cannot change this shared comparison - and
+          `test_gauntlet_melder_lane_parity.py` fails if their setup diverges.
+        - Resets the Aether singleton before building and again in cleanup.
+
+    Returns:
+        _RuntimeOps: The Melder lane callables for `_run_gauntlet_once`.
+    """
     from melder.aether.aether import Aether
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.existence.existence import Existence
@@ -959,13 +998,12 @@ def _build_runtime_melder() -> _RuntimeOps:
 
     spellbook = Spellbook(aetheric_frame="real-world-gauntlet")
     cfg = spellbook.get_configuration()
-    spellbook.configure_aether_frame(
-        system_state=None,
-        disposal=None,
-        disposal_method_names=None,
-        system_caching_enabled=True,
-    )
-    cfg.set_property("phase_scheduler_workers_per_spellbook", 3)
+    # Matches the Melder-only gauntlet exactly: one phase-scheduler worker and no
+    # frame-posture overrides (system caching is already on by frame default).
+    # This builder previously called configure_aether_frame(...) first, which
+    # freezes the configuration, so the set_property below raised and the shared
+    # gauntlet had been borrowing the Melder-only builder instead.
+    cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     spell_ids: dict[type, str] = {}
     for cls in _ALL_CLASSES:
@@ -1152,9 +1190,9 @@ def _build_ops(lib: str) -> _RuntimeOps:
     if lib == "dishka":
         return _build_runtime_dishka()
     if lib == "melder":
-        from benchmarks.testing_other_di import test_melder_gauntlet as melder_gauntlet
-
-        return melder_gauntlet._build_runtime_melder()
+        # This module's own Melder lane: isolated from the Melder-only gauntlet,
+        # kept equal to it by test_gauntlet_melder_lane_parity.py.
+        return _build_runtime_melder()
     raise AssertionError(f"Unknown lib: {lib}")
 
 
@@ -1176,6 +1214,26 @@ def _new_lane_metric_samples() -> _LaneMetricSamples:
         request_create_ns=[],
         request_cleanup_ns=[],
         request_total_ns=[],
+    )
+
+
+def _new_lane_metric_storage() -> _LaneMetricSamples:
+    """
+    Return empty run-long sample storage: six signed 64-bit `array("q")`.
+
+    Contract:
+        - Used only for accumulation across iterations on the main thread.
+        - `extend(...)` copies values out of an iteration's lists, so no int
+          object created on a worker thread outlives that iteration. See
+          `_LaneMetricSamples` for why this matters on free-threaded CPython.
+    """
+    return _LaneMetricSamples(
+        outer_create_ns=array("q"),
+        outer_cleanup_ns=array("q"),
+        outer_total_ns=array("q"),
+        request_create_ns=array("q"),
+        request_cleanup_ns=array("q"),
+        request_total_ns=array("q"),
     )
 
 
@@ -1285,7 +1343,7 @@ def _run_gauntlet_once(ops: _RuntimeOps, cfg: _GauntletConfig, iteration_ix: int
     )
 
 
-def _summarize(samples: list[int]) -> _Summary:
+def _summarize(samples: Sequence[int]) -> _Summary:
     ordered = sorted(samples)
     stdev_ns = statistics.pstdev(samples) if len(samples) > 1 else 0.0
     avg_ns = float(sum(samples)) / float(len(samples))
@@ -1550,9 +1608,9 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
         bootstrap_samples: list[int] = []
         threaded_samples: list[int] = []
         lane_metric_samples = {
-            "request": _new_lane_metric_samples(),
-            "worker_a": _new_lane_metric_samples(),
-            "worker_b": _new_lane_metric_samples(),
+            "request": _new_lane_metric_storage(),
+            "worker_a": _new_lane_metric_storage(),
+            "worker_b": _new_lane_metric_storage(),
         }
         lane_variant_counts = {
             "request": [0] * _VARIANT_COUNT,
@@ -1713,12 +1771,14 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
                 wall_total_ns=threaded_summary.total_ns,
             )
 
-        combined_outer_create = []
-        combined_outer_cleanup = []
-        combined_outer_total = []
-        combined_request_create = []
-        combined_request_cleanup = []
-        combined_request_total = []
+        # Packed like the run-long lane storage, so combining multi-million-entry
+        # lanes does not materialize an int object per sample before summarizing.
+        combined_outer_create: array[int] = array("q")
+        combined_outer_cleanup: array[int] = array("q")
+        combined_outer_total: array[int] = array("q")
+        combined_request_create: array[int] = array("q")
+        combined_request_cleanup: array[int] = array("q")
+        combined_request_total: array[int] = array("q")
         for metric_samples in lane_metric_samples.values():
             combined_outer_create.extend(metric_samples.outer_create_ns)
             combined_outer_cleanup.extend(metric_samples.outer_cleanup_ns)

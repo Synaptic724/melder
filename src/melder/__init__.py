@@ -30,7 +30,7 @@ Workflow map - every name below is importable from this root:
 - ERRORS (catchable from this root): SpellbookValidationError,
   MeldExecutionError, SpellSpaceScopeError, HookExecutionError,
   InternalRegistrationError, PhaseSchedulerError, PhaseExecutionError,
-  PhaseTimeoutError, DeadReferenceError.
+  PhaseTimeoutError, DeadReferenceError, UnresolvedInputError.
 - AGENT DOCS: __architecture__, __components__, __graph_network__, and
   __graph_details__ are live hardcopy objects carrying the system's own
   self-description - agents should read these before deep work.
@@ -159,6 +159,7 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
 from melder.utilities.custom_exceptions.spellbook_validation_error import (
     SpellbookValidationError,
 )
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 Aether()
 
@@ -251,6 +252,7 @@ __all__ = [
     "SpellbookValidationError",
     "SystemState",
     "ULID_Factory",
+    "UnresolvedInputError",
     "ViewConduit",
     "ViewFrame",
     "ViewMultiFrame",

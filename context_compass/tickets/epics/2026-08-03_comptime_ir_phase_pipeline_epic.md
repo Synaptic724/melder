@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T00:04:29Z
+- Updated: 2026-09-26T08:17:57Z
 - Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
@@ -196,6 +196,9 @@ Non-Functional
 
 Milestone status (2026-09-25): Milestone 1 in progress via STORY-1 tranche task 1 (driver plus
 phases 1-4); component-map slices done, no phase source read yet. Milestones 2-5 not started.
+Milestone status (2026-09-26): STORY-1 discovery steps S1-S11 executed; all three tasks and the story are in
+review with nine records plus summary.md under artifacts/ir_phase_survey_20260925/. Milestone 1 is checked
+on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling). Milestones 2-5 not started.
 
 ## Stories (Required to Complete)
 
@@ -205,6 +208,10 @@ phases 1-4); component-map slices done, no phase source read yet. Milestones 2-5
       a value. **Gate: no other story starts until this is accepted.**
       tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md (fable_0, opened
       2026-09-25)
+- [ ] Story: STORY-2026-09-26-phase-pipeline-improvement-plan - rank source-backed
+      improvements to phases 1-11 and recommend the first tranche (opened on owner
+      direction 2026-09-26). tickets/stories/2026-09-26_phase_pipeline_improvement_plan_story.md
+      (fable_0)
 - [ ] Story: STORY-2026-08-03-ir-schema-design - define the node/edge schema,
       the symbolic id scheme, the version stamp, and the answer to the identity
       question. Owner ratification required.
@@ -349,6 +356,15 @@ phases 1-4); component-map slices done, no phase source read yet. Milestones 2-5
 - 2026-09-25 (owner): hot-path call trimming is worth trying but NOT YET - another agent is
   working the hot paths now. The door-diet lane is not opened by fable_0; fable_0 stays on the
   compiler (survey, then the structural snapshot).
+
+- 2026-09-26 (owner): build a discovery strategy aimed at implementation, make it durable enough to
+  survive a compaction through this epic, then go into implementation. Discovery is re-sequenced
+  toward the structural snapshot (hash -> hydrate for phases 1-7); the exhaustive phases 8-11 survey
+  for the schema story is DEFERRED behind it. Strategy, done criteria and recovery protocol live in
+  this epic's Context / Handoff Summary ("DISCOVERY STRATEGY AND RECOVERY").
+- 2026-09-26 (owner): "your job is to figure out how we can improve the phases and all this stuff so keep
+  working on it." Improvement-plan story opened; STORY-1 stays in review; no design ratification asked
+  until the plan is presented once.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -843,6 +859,129 @@ phases 1-4); component-map slices done, no phase source read yet. Milestones 2-5
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T00:53:12Z
+  TYPE: DECISION
+  CLAIM: Owner directive (2026-09-26): build a discovery strategy, make it compaction-durable via this
+    epic so a recovering agent can resume, then move to implementation. fable_0 re-sequenced the
+    survey toward the structural snapshot: phases 1-7 plus the structural and resolution drivers, the
+    cache seam, and the invalidation surface are in scope; the exhaustive 8-11 survey is deferred to
+    the schema story. Story task list, exit gate and acceptance criteria amended; tasks 2 and 3
+    created from the template and linked.
+  EVIDENCE:
+  - tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md
+  - tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md
+  - tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md
+  IMPACT: Discovery now has a definition of done (D1-D6), eleven bounded steps, and a recovery
+    protocol, instead of an open-ended eleven-phase survey.
+  NEXT: Execute S2 (phase 2) on task 1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T00:53:12Z
+  TYPE: PLAN
+  CLAIM: Discovery strategy (full text in the handoff section). Goal: an implementation-ready basis
+    for the structural snapshot. Done criteria D1 phase records 1-7 plus driver; D2 hydrate
+    obligations (every runtime write of 1-7); D3 snapshot key composition; D4 `.melc` cache mechanics;
+    D5 invalidation surface; D6 what the full-hit load path consumes from phase 1-7 objects. Steps
+    S2-S5 (task 1: phases 2-4, structural driver and SpellSystemStates write API), S6-S8 (task 2:
+    phases 5-7, resolution driver, full-hit load path), S9-S11 (task 3: cache seam, invalidation,
+    summary.md). Roughly 7,600 lines of source in ~500-line chunks, so several compactions are
+    expected; the write order on every step is record file -> task note -> task STATE -> epic step
+    table, and a recovering agent resumes at the first step whose table status is not done.
+    Implementation entry after S11 and the owner's go: I-0 determinism test plus one serializer,
+    I-1 the snapshot behind patch docs and gauntlet-gated tasks.
+  EVIDENCE:
+  - tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md:722-747
+  - tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md:819-845
+  - artifacts/ir_phase_survey_20260925/phase_01.md:1-166
+  IMPACT: Bounds the reading to what the snapshot needs and makes progress measurable per step.
+  NEXT: S2: read compiler_phase_2.py (184) and symbolic_graph/ (409); write phase_02.md.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T07:34:29Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Discovery steps S1-S11 are executed; the three survey tasks and STORY-1 are in review with ten
+    files under artifacts/ir_phase_survey_20260925/ (summary.md consolidates D1-D6). Headline: phases 1-4
+    artifacts are transient and the registry rows are the durable form; phases 5-7 read registry only;
+    a full hit still runs 5-7 and its hydration reads only the pool and the phase-5 path registry; every
+    invalidation event already writes through the registry, so hydration by registry replay needs no
+    new hooks. Four rulings are needed before I-1 can be designed: (1) frames with a custom `__eq__`
+    (the one identity-bearing match) - accept name matching or define a canonical frame key; (2)
+    snapshot placement - a structural section inside the `.melc` envelope (generation bump, one cold
+    reset) or a sidecar with its own stamps; (3) whether the per-spell key adds a module fingerprint
+    (a type moving module while keeping its rendered name keeps the spell id today); (4) whether the
+    change-control dirty-root loop (`notify_spell_changed` -> meld gate -> revalidator) is public
+    DevOps API or dead wiring, which decides the CONFLICT correction to src_architecture.md.
+  EVIDENCE:
+  - artifacts/ir_phase_survey_20260925/summary.md:1-142
+  - tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md
+  IMPACT: Accepting summary.md closes Milestone 1 (phases 8-11 deferred by ruling) and opens I-0; the four
+    rulings bound the I-1 patch docs.
+  NEXT: Owner accepts or redirects; on acceptance fable_0 runs closure sync for the story and tasks,
+    checks Milestone 1, and opens the I-0 task (determinism test plus one serializer).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T07:38:41Z
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Owner challenge (2026-09-26): frames and snapshot placement are not the survey's scope. Correct.
+    STORY-1's contract is read-only fact-finding with "candidates for the identity question listed, not
+    chosen" and schema design out of scope; the identity ruling belongs to STORY-2 (schema design, owner
+    ratification), and snapshot placement is a design decision of the same kind. The DECISION_REQUEST
+    above is WITHDRAWN as an ask; its four items stay recorded in summary.md as candidates/UNKNOWNs for
+    STORY-2. Also corrected: the structural-snapshot-first sequencing was fable_0's proposal (note of
+    2026-09-25T22:19:13Z), not an owner ruling; the 2026-09-26 directive asked for a durable discovery
+    strategy and then implementation. The survey records stand on their own; the only owner action
+    pending in this lane is acceptance or redirect of the records.
+  EVIDENCE:
+  - tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md:54-58
+  - tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md:59-66
+  - tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md:208-210
+  - artifacts/ir_phase_survey_20260925/summary.md:1-142
+  IMPACT: Removes an out-of-lane decision ask; keeps the survey inside its contract; the sequencing
+    question (snapshot first vs the epic's story order) is the owner's to decide explicitly, later.
+  NEXT: Owner accepts or redirects the survey records; fable_0 makes no design proposals until then.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T08:17:57Z
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Improvement plan for phases 1-11 (STORY-2026-09-26; artifacts cost_model.md and candidates.md).
+    (1) Objective: make the conjure pipeline cheaper per regime without touching the hot path, in steps
+    that also build toward the IR. (2) Constraints: read-only survey, owner-run measurements, hot paths
+    and import cost out of scope, one decision ask, a Spellbook conjures once (so no memo below the
+    creation cache can hit on a warm conjure). (3) Known facts: cold conjure is ~70% phases 8-11 (June,
+    workers=1); warm conjure still runs 1-7 (~20ms of the 44ms profiled conjure) plus a one-time strategy
+    import; phase 8 hashes a pool-sized signature per root that is discarded every pass (O(spells^2));
+    the phase-3 DAG object has one production reader; phases 5-7 are three barriers and phase 7 repeats
+    phase 5's CCM rebuild; the signature path has two determinism hazards and a duplicated serializer.
+    (4) Unknowns: the unprofiled 1-7 share on the warm path; the signature share of plan_group; strategy
+    statelessness for 33 unread strategy files; the four STORY-2 rulings C-G needs. (5) Options:
+    T1 = C-H (determinism test + one serializer) + C-A (phase 8 hoist/None-first) + C-B (one foundation
+    unit 5-7, phase 7 reduced to its guard); T1' = C-G structural snapshot now; T1'' = C-J cost-aware
+    plan_group chunking (+ C-C, C-K). (6) Tradeoffs: T1 is small, measurable with the existing breakdown
+    harness, no hot-path reach, and lands C-G's prerequisites, but its measured gain is modest (~0.1ms of
+    barriers plus an unmeasured O(N^2) removal); T1' is the only large warm-path win but needs four
+    rulings, patch docs and parity suites first; T1'' pays only at workers>1 on the cold path. Lane
+    collisions: phase 8 files (updater_1, melder_0), shared_compiler_executions.py and possibly
+    spellbook_creation_system.py (melder_0), the cache generation number. (7) Recommendation: T1 as one
+    implementation story with three gauntlet-gated tasks, C-H first; T1'' next; C-G after the schema
+    story's rulings. (8) Decision ask (single): approve T1 as the next implementation story (patch docs
+    for C-B, NOTICEs to updater_1 and melder_0 before touching phase 8 and the shared module), or name
+    T1' or T1'' instead, or redirect.
+  EVIDENCE:
+  - artifacts/ir_phase_improvement_20260926/candidates.md:1-286
+  - artifacts/ir_phase_improvement_20260926/cost_model.md:1-121
+  - artifacts/ir_phase_survey_20260925/summary.md:1-142
+  - tickets/tasks/completed/2026-06-12_phase_scheduler_v2_persistent_pool_task.md:164-232
+  IMPACT: One decision opens implementation inside this epic's boundary; the survey rulings stay pending
+    and are not re-asked here.
+  NEXT: Owner picks T1, T1', T1'' or redirects; on T1 fable_0 opens the implementation story with patch
+    docs and three tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -855,6 +994,69 @@ phases 1-4); component-map slices done, no phase source read yet. Milestones 2-5
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
+
+### DISCOVERY STRATEGY AND RECOVERY (2026-09-26, owner-directed) - read this FIRST after a compaction
+
+GOAL - discovery is done when we hold an implementation-ready, source-backed basis for the
+STRUCTURAL SNAPSHOT: a full creation-cache hit skips phases 1-7 the way it already skips 8-11, by
+hydrating value rows keyed on the dormant phase 2-5 signature - plus the determinism-test task.
+Everything below serves that goal. The exhaustive phases 8-11 survey for the schema story is
+DEFERRED behind it (Decision Log 2026-09-26).
+
+DONE CRITERIA - each becomes a section of artifacts/ir_phase_survey_20260925/summary.md:
+- D1 phase records 1-7 plus the drivers: inputs, outputs, holds classified, runtime writes,
+  reflection points, Python-callback points, world reads (Record Shape in task 1).
+- D2 hydrate obligations: every runtime write of phases 1-7 - target object, writer `path:line`,
+  value shape, ordering constraint, replayable-from-rows yes / no / UNKNOWN.
+- D3 key composition: what a snapshot key must contain, from the cache-classification inputs and
+  the phase 2-5 signature inputs (spell-id set, frame posture, configuration flags, release,
+  Python tag), with evidence.
+- D4 cache mechanics: how `.melc` envelopes are written, admitted and rejected; whether the snapshot
+  shares the envelope or sits beside it.
+- D5 invalidation surface: every event that must drop a snapshot (bind families, index mutations,
+  link / sever / transfer, configuration freeze, release change) and the code that already marks
+  validity gated or dirty for each.
+- D6 full-hit consumption: what the cache-load path reads from phase 1-7 objects today, i.e. which
+  hydrated rows must become objects and which can stay rows.
+
+STEPS - one microcycle unit each. The status column is edited in place when a step closes.
+
+| step | ticket | reads | must answer | status |
+| --- | --- | --- | --- | --- |
+| S1 | task 1 | driver; phase 1 (finder trio) | closure; level 0 | done 2026-09-26 |
+| S2 | task 1 | compiler_phase_2.py (184); symbolic_graph/ (409) | identity vs name matching; phase-2 outputs and writes | done 2026-09-26 (no matching in phase 2; passes to S3) |
+| S3 | task 1 | compiler_phase_3.py (1035, 3 chunks); dag/ and resolution_frame to the crossing types | world-read list; runtime writes; PLAIN default passing; late-binding partial validation | done 2026-09-26 (identity: by name for str, by id() for objects; 3 registry writes + context invalidation) |
+| S4 | task 1 | compiler_phase_4.py (178); validation/validation_system.py (350); strategies by name | validity writes; what validation consumes | done 2026-09-26 (cross-spell; posture-dependent; one validity write) |
+| S5 | task 1 | spellbook_creation_system.py run_structural_phases and the per-spell unit path; the spell_system_states.py methods they call (whole methods) | the 1-4 write surface a hydrate must replay | done 2026-09-26 (1-4 artifacts reset after every pass; registry state is what survives) |
+| S6 | task 2 | compiler_phase_5.py (713, 2 chunks); blueprints/root_resolution_blueprint.py; system/ builders to the crossing types | publication onto spellbook._spells_by_id; socket and DAG rows vs the 2-5 export | done 2026-09-26 (reads registry only; value-shaped outputs; CCM closure is runtime-only) |
+| S7 | task 2 | compiler_phase_6.py (509); system/spell_system_validation_system.py (268); compiler_phase_7.py (265); change_control_manager.py methods it calls | system-validity writes; component-of index; revalidator registration | done 2026-09-26 (per-conduit registry rows; CCM map; revalidator no-op after phase 5; loop unarmed in src) |
+| S8 | task 2 | spellbook_creation_system.py _prepare_resolution_for_conjure and the full-hit branch; the codegen_creation_system cache-load entry | D6 | done 2026-09-26 (5-7 still run on a full hit; hydration reads only the pool and the phase-5 path registry; registry rows gate meld) |
+| S9 | task 3 | utilities/caching_system/caching_system.py (618); capture_phase2_5_codegen_ir and hash_codegen_signature inputs (re-verify) | D3, D4 | done 2026-09-26 (envelope = 4 exact stamps + per-spell bytes; key: id covers the pool projection; dormant signature is a digest, not a key) |
+| S10 | task 3 | transaction families; spell_system_states.py gated/dirty transitions (whole methods) | D5 | done 2026-09-26 (all writers via set_validity; per-event table; no new hooks needed; no raw index ULIDs in rows) |
+| S11 | task 3 | consolidate summary.md; close tasks; story exit; Milestone 1 | D1-D6 accepted by owner | review 2026-09-26 (summary.md written; owner acceptance and four decisions pending) |
+
+Task 1: tickets/tasks/2026-09-25_survey_compiler_phases_1_to_4_task.md
+Task 2: tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md
+Task 3: tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md
+
+RECOVERY PROTOCOL - after any compaction or handoff:
+1. REONBOARD per policy (no shortcut).
+2. Open this section. The first step whose status is not `done` is the resume point.
+3. Open that step's task; its LAST `STATE` line names the file and chunk to resume at.
+4. The record files under artifacts/ir_phase_survey_20260925/ are the durable knowledge; ticket
+   notes are pointers. Write order on every step: record file -> task note -> task STATE line ->
+   this table. A compaction mid-step therefore loses at most one file read.
+5. Never re-read a file whose record is COMPLETE; cite the record. Large files are chunked at 500
+   lines and each finished chunk is named in the task STATE line before the next is opened.
+6. Owner rulings that bound the work: hot paths belong to another agent (do not open the meld door);
+   module/import cost is ignored; system-doc corrections are authorized when source-evidenced.
+
+IMPLEMENTATION ENTRY - after S11 and the owner's explicit go, in this order:
+- I-0 signature-determinism test plus one serializer (small, compiler-side, protects today's cache;
+  owner decides whether the serializer collapse needs patch docs).
+- I-1 structural snapshot: patch docs first (architecture_patch, component_patch for the
+  SpellCompiler component, code_description_patch for the hydrator control flow), then a story with
+  gauntlet-gated tasks (capture on miss, hydrate on hit, invalidation, restore parity).
 
 ### State of knowledge as of 2026-09-25 (fable_0) - read this before anything below it
 

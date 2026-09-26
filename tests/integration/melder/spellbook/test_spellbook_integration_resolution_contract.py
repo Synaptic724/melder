@@ -7,6 +7,7 @@ from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
 @pytest.fixture(autouse=True)
@@ -519,13 +520,14 @@ def test_collection_di_forward_ref_list_injects_all() -> None:
         conduit.cleanup()
 
 
-def test_type_hint_di_unresolved_forward_ref_raises() -> None:
+def test_type_hint_di_unresolved_forward_ref_is_a_required_meld_input() -> None:
     """
     Purpose:
-        Validate unresolved forward-ref annotations fail with a clear error.
+        Validate an unresolvable forward-ref annotation becomes a required meld input.
     Contract:
-        - Unresolvable DI annotations raise during Phase 1.
-        - The error message points at the missing type.
+        - Conjure succeeds; no registered spell provides the type.
+        - Melding without the value raises UnresolvedInputError naming the missing
+          type; supplying it by override constructs the spell.
     Returns:
         None.
     Raises:
@@ -562,13 +564,14 @@ def test_type_hint_di_unresolved_forward_ref_raises() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError) as exc_info:
-        spellbook.conjure(name="root")
-
-    assert any(
-        "no DI candidate found" in str(error) and "MissingDependency" in str(error)
-        for error in exc_info.value.errors
-    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        with pytest.raises(UnresolvedInputError, match="expects MissingDependency"):
+            conduit.meld(_BrokenService)
+        supplied = object()
+        assert conduit.meld(_BrokenService, override={"dep": supplied}).dep is supplied
+    finally:
+        conduit.cleanup()
 
 
 def test_type_hint_di_forward_ref_optional_resolves_dependency() -> None:

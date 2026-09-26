@@ -285,7 +285,7 @@
    "id": "src.melder.utilities.custom_exceptions",
    "kind": "package",
    "file": "src/melder/utilities/custom_exceptions/",
-   "member_count": 11,
+   "member_count": 12,
    "shared_suffix": "error",
    "cohesion": 1.0
   }

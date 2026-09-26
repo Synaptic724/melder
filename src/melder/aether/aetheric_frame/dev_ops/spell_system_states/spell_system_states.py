@@ -1367,11 +1367,17 @@ class SpellSystemStates(Cleanable):
         Extract selector-sensitive frame keys from a local topology.
 
         These frame keys feed the spellbook-scoped collection-dependent index
-        used for targeted invalidation of list[Frame] and OVERRIDE_REQUIRED consumers.
+        used for targeted invalidation of list[Frame], OVERRIDE_REQUIRED and
+        UNRESOLVED_INPUT consumers.
 
         Contract:
-            - NORMAL collection sockets and OVERRIDE_REQUIRED inputs participate.
-            - Required inputs are watched without creating construction dependency edges.
+            - NORMAL collection sockets, OVERRIDE_REQUIRED inputs and
+              UNRESOLVED_INPUT inputs participate.
+            - Required and unresolved inputs are watched without creating
+              construction dependency edges.
+            - An UNRESOLVED_INPUT socket is watched under its expected type's frame
+              key, so binding a matching provider later marks this consumer
+              dependency-changed and its next meld re-resolves it into a NORMAL edge.
             - False-root declarations carry no dependency_key and therefore add no watcher.
             - The frame key is taken from `socket.dependency_key[0]`.
             - Returns a detached set suitable for index replacement.
@@ -1380,8 +1386,10 @@ class SpellSystemStates(Cleanable):
         if topology is None:
             return frames
         for socket in topology.iter_sockets():
-            if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED and not (
-                    socket.socket_kind is SocketKind.NORMAL and socket.is_collection
+            if (
+                    socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED
+                    and socket.socket_kind is not SocketKind.UNRESOLVED_INPUT
+                    and not (socket.socket_kind is SocketKind.NORMAL and socket.is_collection)
             ):
                 continue
             if socket.dependency_key is None:

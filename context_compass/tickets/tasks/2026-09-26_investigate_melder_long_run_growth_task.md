@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-investigate-melder-long-run-growth
 - Epic: EPIC-2026-09-26-melder-long-run-throughput-truth
-- Status: in_progress
+- Status: review
 - Owner: user
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-09-26T00:24:13Z
-- Updated: 2026-09-26T00:35:00Z
+- Updated: 2026-09-26T08:04:59Z
 
 ## Objective
 Find out why Melder's gauntlet throughput held from 5k to 50k iterations but fell 12.5% at 100k,
@@ -41,13 +41,17 @@ and add diagnostic tests under benchmarks/testing_other_di that detect the mecha
 - from_state: draft
 - to_state: in_progress
 - transition_reason: Owner directed the investigation and test additions on 2026-09-26.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Retained growth ruled out in source and by measurement; diagnostic tests added,
+  sandbox-validated with a negative control; owner acceptance pending.
 
 ## Steps / Checklist
-- [ ] Record the three gauntlet runs and the questions they raise.
-- [ ] Read the gauntlet's Melder lane code to know which Melder paths each cycle exercises.
-- [ ] Read Melder per-thread state, scope pooling and slot-guard code on those paths.
-- [ ] Decide retained growth: FACT or ruled out, with the growing structure named.
-- [ ] Add diagnostic tests under benchmarks/testing_other_di (thread churn vs retained state).
+- [x] Record the three gauntlet runs and the questions they raise.
+- [x] Read the gauntlet's Melder lane code to know which Melder paths each cycle exercises.
+- [x] Read Melder per-thread state, scope pooling and slot-guard code on those paths.
+- [x] Decide retained growth: FACT or ruled out, with the growing structure named (ruled out).
+- [x] Add diagnostic tests under benchmarks/testing_other_di (thread churn vs retained state).
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
@@ -56,14 +60,19 @@ and add diagnostic tests under benchmarks/testing_other_di that detect the mecha
 ## Deliverables
 - Source-backed verdict in Notes.
 - New diagnostic test file(s) in benchmarks/testing_other_di/.
+- Delivered: benchmarks/testing_other_di/test_melder_long_run_retention.py (new file, 704 lines).
 
 ## Files / Paths Impacted
 - benchmarks/testing_other_di/ (new test files only)
 
 ## Validation
-- Not run.
-- Recommended commands:
-  - Owner-run with CPython 3.14 free-threaded (-X gil=0), from PyCharm or the repo venv.
+- Sandbox (CPython 3.14.0rc2 free-threaded, -X gil=0): 2 passed, 1 skipped (opt-in attribution);
+  attribution test run separately at 2,000 iterations: passed. Negative control: an injected leak of
+  one object per request cycle failed the growth assertion (+9,683 objects, +20,003 blocks).
+- Owner machine (CPython 3.14, Windows, i9-13900K): Not run.
+- Recommended commands (repository root):
+  - python -X gil=0 -m pytest benchmarks/testing_other_di/test_melder_long_run_retention.py -q -s
+  - with MELDER_LONG_RUN_ATTRIBUTION=1 (and _ITERS / _LIB) add -k attribution for the 3-mode table.
 
 ## Risks / Rollback Notes
 - One run per length; a 12.5% change may include machine noise (hybrid P/E cores, Melder runs last).
@@ -88,11 +97,11 @@ and add diagnostic tests under benchmarks/testing_other_di that detect the mecha
 - [ ] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
-- ARTIFACTS_REQUIRED: false
+- ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - none
-- DISPOSITION: delete_on_close
-- CLEANUP_TRIGGER: none
+  - artifacts/melder_long_run_growth_20260926/
+- DISPOSITION: retain_as_reference
+- CLEANUP_TRIGGER: owner acceptance of the epic verdict
 
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
@@ -157,7 +166,7 @@ and add diagnostic tests under benchmarks/testing_other_di that detect the mecha
   NEXT: Read the Melder cycle path in source, starting at Conduit.create_lesser_conduit.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
-- DATETIME: 2026-09-26T01:05:00Z
+- DATETIME: 2026-09-26T01:00:00Z
   TYPE: FACT
   CLAIM: Every per-cycle structure on the gauntlet's Melder path is bounded or symmetric in source.
     (1) Lesser pool: create_object pops the root-owned deque; return appends and destroys the
@@ -189,9 +198,42 @@ and add diagnostic tests under benchmarks/testing_other_di that detect the mecha
     verdict (bounded growth under churn, per-window throughput).
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T08:04:59Z
+  TYPE: MEASURE
+  CLAIM: Added benchmarks/testing_other_di/test_melder_long_run_retention.py. Two always-on tests
+    run the gauntlet's exact Melder lane (fresh-thread churn via _run_gauntlet_once; persistent
+    threads) and assert that a second 1,000-iteration window (65k cycles) after warm-up adds at most
+    150 GC-tracked objects and 400 allocated blocks. One opt-in test (MELDER_LONG_RUN_ATTRIBUTION=1)
+    prints per-window cycles/s, CPU per cycle and GC activity for discard / retain / copy sample
+    handling. Sandbox: churn window-2 growth -315 objects / +4 blocks; persistent -318 / -6; an
+    injected 10-object-per-iteration leak failed at +9,683 / +20,003.
+  EVIDENCE:
+  - benchmarks/testing_other_di/test_melder_long_run_retention.py:95-120
+  - benchmarks/testing_other_di/test_melder_long_run_retention.py:306-405
+  - benchmarks/testing_other_di/test_melder_long_run_retention.py:537-704
+  IMPACT: The no-leak verdict is now a regression guard the owner can run on his machine, with teeth
+    demonstrated; the attribution test lets him confirm the harness effect on Windows/i9.
+  NEXT: Owner review; owner runs the tests on CPython 3.14 (-X gil=0).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T08:04:59Z
+  TYPE: DECISION
+  CLAIM: Verdict for this task: Melder does not retain state on the gauntlet path. Source shows every
+    per-cycle structure bounded or symmetric; measurement shows flat objects and allocator blocks over
+    650k cycles and 30k threads; Melder triggers zero collections. The long-run drop is attributed in
+    T2 to the harness keeping worker-thread-allocated ints (TASK-2026-09-26-measure-melder-long-run-
+    attribution).
+  EVIDENCE:
+  - context_compass/tickets/tasks/2026-09-26_measure_melder_long_run_attribution_task.md:105-288
+  - src/melder/aether/conduit/conduit.py:566-705
+  IMPACT: No Melder source change is indicated by this investigation.
+  NEXT: Owner accepts or redirects; closure only on explicit owner turn-in.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
-Opened 2026-09-26T00:24:13Z on owner direction. Resume from the latest Notes NEXT. Validation: Not run.
+Opened 2026-09-26T00:24:13Z; in review since 2026-09-26T08:04:59Z. No-leak verdict (source + measurement) and the new
+test file are delivered; owner-machine validation: Not run. Resume from the latest Notes NEXT.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

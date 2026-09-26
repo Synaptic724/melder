@@ -4,8 +4,9 @@ import statistics
 import sys
 import threading
 import time
+from array import array
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, MutableSequence, Sequence, Tuple, Union
 
 
 def env_int(name: str, default: int) -> int:
@@ -448,12 +449,32 @@ class ScopeCycleMetrics:
 
 @dataclass
 class LaneMetricSamples:
-    outer_create_ns: List[int]
-    outer_cleanup_ns: List[int]
-    outer_total_ns: List[int]
-    request_create_ns: List[int]
-    request_cleanup_ns: List[int]
-    request_total_ns: List[int]
+    """
+    Per-lane scope-cycle timings in nanoseconds, one entry per cycle.
+
+    Two storage kinds share this shape, and the split is deliberate:
+
+    - One iteration's samples are plain lists (`new_lane_metric_samples`). The
+      short-lived worker threads append to them; list appends stay safe when
+      several workers share a lane, and the lists die with the iteration.
+    - The run-long accumulation is packed `array("q")` storage
+      (`new_lane_metric_storage`), extended on the main thread. It holds values, not int
+      objects. Keeping the workers' int objects for the whole leg (the former
+      list storage) retained objects allocated by threads that had exited, and
+      on free-threaded CPython 3.14 that made every later scope cycle
+      progressively more expensive: 2-2.5x slower over 40k iterations for
+      Melder and dishka alike, with zero garbage collections. The attribution
+      test in test_melder_long_run_retention.py reproduces it.
+
+    Values, ordering and every summary computed from them are unchanged.
+    """
+
+    outer_create_ns: MutableSequence[int]
+    outer_cleanup_ns: MutableSequence[int]
+    outer_total_ns: MutableSequence[int]
+    request_create_ns: MutableSequence[int]
+    request_cleanup_ns: MutableSequence[int]
+    request_total_ns: MutableSequence[int]
 
 
 @dataclass(frozen=True)
@@ -519,6 +540,26 @@ def new_lane_metric_samples() -> LaneMetricSamples:
     )
 
 
+def new_lane_metric_storage() -> LaneMetricSamples:
+    """
+    Return empty run-long sample storage: six signed 64-bit `array("q")`.
+
+    Contract:
+        - Used only for accumulation across iterations on the main thread.
+        - `extend(...)` copies values out of an iteration's lists, so no int
+          object created on a worker thread outlives that iteration. See
+          `LaneMetricSamples` for why this matters on free-threaded CPython.
+    """
+    return LaneMetricSamples(
+        outer_create_ns=array("q"),
+        outer_cleanup_ns=array("q"),
+        outer_total_ns=array("q"),
+        request_create_ns=array("q"),
+        request_cleanup_ns=array("q"),
+        request_total_ns=array("q"),
+    )
+
+
 def lane_objects_per_cycle(name: str) -> int:
     if name == "request":
         return REQUEST_OBJECTS_PER_ROOT
@@ -529,7 +570,7 @@ def lane_objects_per_cycle(name: str) -> int:
     raise AssertionError(f"Unknown lane: {name}")
 
 
-def summarize(samples: List[int]) -> Summary:
+def summarize(samples: Sequence[int]) -> Summary:
     ordered = sorted(samples)
     stdev_ns = statistics.pstdev(samples) if len(samples) > 1 else 0.0
     avg_ns = float(sum(samples)) / float(len(samples))
@@ -723,9 +764,9 @@ def run_gauntlet_benchmark(ops: RuntimeOps, cfg: GauntletConfig) -> BenchmarkRes
         bootstrap_samples: List[int] = []
         threaded_samples: List[int] = []
         lane_metric_samples = {
-            "request": new_lane_metric_samples(),
-            "worker_a": new_lane_metric_samples(),
-            "worker_b": new_lane_metric_samples(),
+            "request": new_lane_metric_storage(),
+            "worker_a": new_lane_metric_storage(),
+            "worker_b": new_lane_metric_storage(),
         }
         lane_variant_counts = {
             "request": [0] * VARIANT_COUNT,
@@ -763,12 +804,14 @@ def run_gauntlet_benchmark(ops: RuntimeOps, cfg: GauntletConfig) -> BenchmarkRes
                 wall_total_ns=threaded_summary.total_ns,
             )
 
-        combined_outer_create: List[int] = []
-        combined_outer_cleanup: List[int] = []
-        combined_outer_total: List[int] = []
-        combined_request_create: List[int] = []
-        combined_request_cleanup: List[int] = []
-        combined_request_total: List[int] = []
+        # Packed like the run-long lane storage, so combining lanes does not
+        # materialize an int object per sample before summarizing.
+        combined_outer_create: array[int] = array("q")
+        combined_outer_cleanup: array[int] = array("q")
+        combined_outer_total: array[int] = array("q")
+        combined_request_create: array[int] = array("q")
+        combined_request_cleanup: array[int] = array("q")
+        combined_request_total: array[int] = array("q")
         for metric_samples in lane_metric_samples.values():
             combined_outer_create.extend(metric_samples.outer_create_ns)
             combined_outer_cleanup.extend(metric_samples.outer_cleanup_ns)

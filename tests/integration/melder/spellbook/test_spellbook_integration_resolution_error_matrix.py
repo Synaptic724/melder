@@ -27,6 +27,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
 @pytest.fixture(autouse=True)
@@ -341,14 +342,19 @@ def test_conjure_with_cycle_raises() -> None:
         spellbook.cleanup()
 
 
-def test_conjure_with_unresolvable_dependency_raises() -> None:
-    """A consumer depending on an unbound type must fail to conjure."""
+def test_unbound_dependency_conjures_and_fails_at_meld() -> None:
+    """A consumer depending on an unbound type conjures; melding it without the value raises UnresolvedInputError."""
     spellbook = _make_spellbook()
+    conduit = None
     try:
         spellbook.bind(spell=UsesUnbound, existence=Existence.unique, permissions="create")
-        with pytest.raises(Exception):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell=UsesUnbound)
+        assert caught.value.expected_type == "UnboundThing"
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 

@@ -1,7 +1,7 @@
 import inspect
 import types
 import typing
-from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, Union, get_args, get_origin
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Set, Tuple, Union, get_args, get_origin
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -446,6 +446,8 @@ class CompilerPhase3:
         Prefer matching resolvable providers. Only when none exist may a single
         non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
         Matching and index grouping happen first; capability does not change them.
+        When nothing matches at all, the mapping is empty: the caller records an
+        UNRESOLVED_INPUT socket, which the constructing meld must supply.
 
         Args:
             spell:
@@ -457,11 +459,12 @@ class CompilerPhase3:
 
         Returns:
             Dict[Any, Spell]:
-                Mapping from matched `spell_index` to spell.
+                Mapping from matched `spell_index` to spell. Empty when no
+                registered spell matches the annotation.
 
         Raises:
-            RuntimeError: If zero candidates are found or multiple candidates
-                match the annotation constraints.
+            RuntimeError: If multiple candidates match the annotation
+                constraints (ambiguity is a configuration error, not an input).
         """
         annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
@@ -490,11 +493,11 @@ class CompilerPhase3:
             candidates = resolvable_candidates
 
         if not candidates:
-            raise RuntimeError(
-                f"SpellCrafter Phase 3: no DI candidate found for parameter "
-                f"{dep.param_name!r} on spell {spell.spell_name!r} "
-                f"(annotation={annotation!r})."
-            )
+            # Nothing registered provides this type. `_build_local_frame_dag`
+            # records an UNRESOLVED_INPUT socket instead of failing resolution;
+            # the constructing meld supplies the value or raises
+            # UnresolvedInputError when this object is built.
+            return {}
 
         if len(candidates) > 1:
             names = ", ".join(
@@ -698,6 +701,7 @@ class CompilerPhase3:
             *,
             requirements: SpellRequirements,
             socket_references: Dict[tuple[str, int], List[str]],
+            socket_unresolved: Optional[Set[tuple[str, int]]] = None,
     ) -> SpellLocalTopology:
         """
             Internal helper for Phase 3.
@@ -711,6 +715,9 @@ class CompilerPhase3:
             For each: class:`SpellSymbolicDependency`:
                 * Determine declaration kind, then mark selected descriptive targets
                   OVERRIDE_REQUIRED without altering Phase-1/2 declaration facts.
+                * Mark single typed sockets listed in "socket_unresolved" (no
+                  registered provider at all) UNRESOLVED_INPUT. They keep their
+                  dependency_key so a later matching bind re-resolves this spell.
                 * Copy "is_collection" and "is_optional" flags from the
                   symbolic graph.
                 * Look up any concrete targets via "socket_targets" using
@@ -742,8 +749,14 @@ class CompilerPhase3:
             referenced_spell_ids = tuple(socket_references.get((dep.param_name, dep.position), ()))
             if referenced_spell_ids:
                 socket_kind = SocketKind.OVERRIDE_REQUIRED
+            elif socket_unresolved and (dep.param_name, dep.position) in socket_unresolved:
+                socket_kind = SocketKind.UNRESOLVED_INPUT
             dependency_key = None
-            if spell.resolvable and socket_kind in (SocketKind.NORMAL, SocketKind.OVERRIDE_REQUIRED):
+            if spell.resolvable and socket_kind in (
+                    SocketKind.NORMAL,
+                    SocketKind.OVERRIDE_REQUIRED,
+                    SocketKind.UNRESOLVED_INPUT,
+            ):
                 dependency_key = self._dependency_key_for_dep(dep)
 
             descriptor = SpellSocketDescriptor(
@@ -812,6 +825,9 @@ class CompilerPhase3:
                 * Selected non-resolvable definitions produce reference-only
                   OVERRIDE_REQUIRED inputs. Non-resolvable roots retain their own
                   declarations/topology without resolving constructor requirements.
+                * A single typed dependency that no registered spell provides
+                  produces an UNRESOLVED_INPUT socket (no DAG edge, no dependency
+                  id) instead of failing: the constructing meld supplies it.
         """
         if requirements is None:
             raise ValueError("requirements must not be None.")
@@ -843,6 +859,8 @@ class CompilerPhase3:
         # keyed by (param_name, position) -> [spell_id, ...]
         socket_targets: Dict[tuple[str, int], List[str]] = {}
         socket_references: Dict[tuple[str, int], List[str]] = {}
+        # Single typed sockets with no registered provider: recorded, not refused.
+        socket_unresolved: Set[tuple[str, int]] = set()
 
         for dep in graph.dependencies if spell.resolvable else ():
             CompilerPhaseUtility.throw_if_cancelled(cancellation_event)
@@ -871,10 +889,13 @@ class CompilerPhase3:
                 # participate in the local topology below.
                 resolved = {}
 
-            if not resolved:
-                continue
-
             key = (dep.param_name, dep.position)
+            if not resolved:
+                if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
+                    # Nothing registered provides this typed parameter; keep it
+                    # as an unresolved input instead of failing resolution.
+                    socket_unresolved.add(key)
+                continue
 
             for spell_index, spell_obj in resolved.items():
                 dep_spell_id = spell_index.selected_spell_id
@@ -907,6 +928,7 @@ class CompilerPhase3:
             spell, graph, socket_targets,
             requirements=requirements,
             socket_references=socket_references,
+            socket_unresolved=socket_unresolved,
         )
 
         # Update spell-system state with dependency IDs and local topology.

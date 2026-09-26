@@ -13,6 +13,7 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_pr
     BindingProfileStrategy,
 )
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
     instance_book as instance_book,
 )
@@ -104,11 +105,21 @@ def test_typechecking_annotation_preserves_default(instance_book: Spellbook, sel
     assert not root.has_live_creation(spell=provider_id)
 
 
-def test_typechecking_dependency_without_provider_still_fails_validation(instance_book: Spellbook) -> None:
-    """An unresolved name remains required DI and cannot silently become an empty requirement."""
-    instance_book.bind(spell=DeferredConsumer, existence="many")
-    with pytest.raises(RuntimeError, match="no DI candidate found"):
-        instance_book.conjure(dynamic=True)
+def test_typechecking_dependency_without_provider_is_a_required_meld_input(instance_book: Spellbook) -> None:
+    """
+    An unresolved name without a provider stays a required input, never an empty requirement.
+
+    Conjure succeeds; the meld must supply the value. Omitting it raises
+    UnresolvedInputError naming the TYPE_CHECKING-only type by its written name.
+    """
+    target = instance_book.bind(spell=DeferredConsumer, existence="many")
+    root = instance_book.conjure(dynamic=True)
+    with pytest.raises(UnresolvedInputError) as caught:
+        root.meld(spell_id=target)
+    assert caught.value.expected_type == "BasicService"
+    assert caught.value.unresolved_params == ("service",)
+    supplied = RuntimeService("supplied")
+    assert root.meld(spell_id=target, override={"service": supplied}).service is supplied
 
 
 @pytest.mark.parametrize("late_bind", (False, True))

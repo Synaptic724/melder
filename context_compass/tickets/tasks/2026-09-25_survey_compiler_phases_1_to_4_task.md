@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-25-survey-compiler-phases-1-4
 - Story: STORY-2026-08-03-phase-pipeline-survey
-- Status: in_progress
+- Status: review
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-25T21:23:55Z
-- Updated: 2026-09-26T00:08:30Z
+- Updated: 2026-09-26T01:07:48Z
 
 ## Objective
 Produce source-backed records for the phase driver (`spell_compiler.py`, `spell_compiler_artifact.py`)
@@ -30,8 +30,10 @@ produces, where it holds a live object, and what runtime state it mutates.
   `compiler_phase_4.py`, `phases/utility.py`, the parts of `phases/shared_compiler_executions.py`
   these phases call, and delegates (`spell_requirements_finder/`, `symbolic_graph/`, `dag/`,
   `validation/`) to the depth needed to name the crossing type.
+  AMENDED 2026-09-26 (step S5): `spellbook_creation_system.py` `run_structural_phases` and the per-spell
+  unit path, plus the `spell_system_states.py` methods phases 1-4 and that driver call (whole methods).
 - Out of scope: phases 5-11 (later tasks), Spellbook internals beyond the conjure call into the
-  driver, any edit under `src/` or `tests/`.
+  driver and the S5 ranges, any edit under `src/` or `tests/`.
 
 ## State Transition Event
 - from_state: draft
@@ -40,6 +42,10 @@ produces, where it holds a live object, and what runtime state it mutates.
 - from_state: ready
 - to_state: in_progress
 - transition_reason: Owner said to go read the src_components details (2026-09-25); step 1 began.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Steps S1-S5 complete with records driver.md, phase_01.md to phase_04.md and
+  structural_driver.md (2026-09-26); exit gate met; awaiting owner acceptance.
 
 ## Steps / Checklist
 - [x] Verify `src_components_index.md` (line_count, content_sha256), then slice
@@ -49,10 +55,13 @@ produces, where it holds a live object, and what runtime state it mutates.
       phase sequencing, the artifact container, and what it stores.
 - [x] Read `compiler_phase_1.py` in full plus its delegations; write `phase_01.md`. (finder trio
       read whole 2026-09-26; phase_01.md COMPLETE)
-- [ ] Read `compiler_phase_2.py` in full plus its delegations; write `phase_02.md`.
-- [ ] Read `compiler_phase_3.py` in full (1035 lines, three sequential chunks) plus delegations;
-      write `phase_03.md`.
-- [ ] Read `compiler_phase_4.py` in full plus its delegations; write `phase_04.md`.
+- [x] Read `compiler_phase_2.py` in full plus its delegations; write `phase_02.md`. (2026-09-26, COMPLETE)
+- [x] Read `compiler_phase_3.py` in full (1035 lines, three sequential chunks) plus delegations;
+      write `phase_03.md`. (2026-09-26, COMPLETE)
+- [x] Read `compiler_phase_4.py` in full plus its delegations; write `phase_04.md`. (2026-09-26, COMPLETE)
+- [x] S5: read `run_structural_phases` and the per-spell unit path in `spellbook_creation_system.py`
+      (locate by grep, read the functions whole) and the `SpellSystemStates` methods they call;
+      write `structural_driver.md` (the write surface a 1-4 hydrate must replay). (2026-09-26, COMPLETE)
 - [x] Add the `artifact_board.md` row when the first record lands.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
@@ -391,6 +400,120 @@ produces, where it holds a live object, and what runtime state it mutates.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T00:55:07Z
+  TYPE: FACT
+  CLAIM: Phase 2 read whole (593 lines); phase_02.md COMPLETE. Phase 2 is a pure function of the
+    phase-1 rows plus `selected_spell_id`: no world reads, no user-object reflection, no runtime
+    mutation, output in signature order. It carries `target_annotation` through as a live type object
+    without matching it (the identity question moves to phase 3), already value-shapes contract
+    sockets as `(frame_key, binding_key)` from `SpellContract.canonical_key`, keeps PLAIN parameters
+    as edges "for override targeting", and DROPS the phase-1 exact default object for every
+    non-contract shape. Per conjure it reallocates the graph, one edge per parameter and one RLock
+    each, although its input is borrowed from bind.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py:91-178
+  - src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_dependency.py:96-138
+  - src/melder/aether/spellbook/spell_compiler/symbolic_graph/spell_symbolic_graph.py:66-89
+  - artifacts/ir_phase_survey_20260925/phase_02.md:1-95
+  IMPACT: Phase 2 belongs to the per-spell tier of the structural snapshot and can be hydrated or
+    recomputed from rows at will; the default-object identity question now depends on whether phase 3
+    or the emitters read `artifact._requirements` directly.
+  NEXT: S3: read compiler_phase_3.py 1-500, 501-1000, 1001-1035, then dag/ and resolution_frame to the
+    crossing types; write phase_03.md.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T00:58:07Z
+  TYPE: FACT
+  CLAIM: Phase 3 read whole with its DAG and topology delegates and the four methods it calls into
+    (phase_03.md COMPLETE). Matching is BOTH: string/ForwardRef annotations by NAME (spell_name, str
+    frame, class-frame `__name__`), object annotations by IDENTITY (`spell is annotation`,
+    `frame is/== annotation`); the pass-scoped candidate index keys on `id()` and is disabled when
+    any bound object or frame has a custom `__eq__`. The world read is one query over
+    `spellbook._spell_id_pool` (id, name, frame, object, type, binding name, resolvable, eq-safety).
+    Runtime writes on EVERY conjure: `SpellSystemStates.update_dependencies` (reverse edges, then
+    `mark_dependency_change` and `_dirty_indexes.add`), `register_local_topology` (live topology plus
+    collection/contract reverse indexes), `Spell._add_build_details` (stores the live DAG and the id
+    list and INVALIDATES the spell-owned CreationContext), Nexus publication when enabled. Outputs are
+    value rows already (frozen `SpellSocketDescriptor`, `SpellResolutionFrame`); the DAG is
+    expressible as id/edge rows with Spell payloads recoverable by id. Phase 3 never reads the
+    phase-1 default object.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:177-250
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:252-433
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:770-926
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:985-1032
+  - src/melder/aether/spellbook/spell.py:1443-1480
+  - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:470-527
+  - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:1262-1318
+  - src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:11-99
+  - artifacts/ir_phase_survey_20260925/phase_03.md:1-143
+  IMPACT: The snapshot's per-spell tier now has its hydrate list for phase 3 (three registry writes
+    plus the context invalidation) and its world-snapshot columns; the only identity-bearing case is
+    a frame with a custom `__eq__`, which needs an owner ruling in the design story.
+  NEXT: S4: read compiler_phase_4.py (178) and validation/validation_system.py (350); strategies by
+    name; write phase_04.md, then S5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T00:59:53Z
+  TYPE: FACT
+  CLAIM: Phase 4 read (phase, runner, context, issue, two strategies whole; eleven strategies by
+    name); phase_04.md COMPLETE. Phase 4 is CROSS-SPELL and posture-dependent: strategies read the
+    frame `system_state` (a contract socket is an error in automatic mode, a warning in dynamic),
+    `spellbook._contracted_spells`, and every pool spell's `key`, `resolvable`, phase-1 requirements
+    and phase-3 topology, memoized per pass as value graphs (`contract_provider_map`,
+    `binding_resolution_graph`). Its runtime write is the lineage validity: invalid on errors, else
+    `clear_dirty(time.time())` and valid, or gated with `contract_unvalidated` when a provider is
+    missing - the write that clears what phase 3 gated. Its skip rule never fires in a conjure for the
+    same reason. Results are value-expressible (codes, keys, ids) wrapped in Cleanable objects.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py:109-177
+  - src/melder/aether/spellbook/spell_compiler/validation/validation_system.py:158-191
+  - src/melder/aether/spellbook/spell_compiler/validation/validation_system.py:264-350
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py:90-243
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py:105-244
+  - artifacts/ir_phase_survey_20260925/phase_04.md:1-114
+  IMPACT: D3 gains a confirmed key input (frame posture) and D2 gains phase 4's single write; the
+    per-spell tier ends at phase 3 - phase 4 already needs the pool, so a structural snapshot must
+    hydrate 1-3 for every spell before validity can be replayed or re-run.
+  NEXT: S5: grep `run_structural_phases` and the per-spell unit path in spellbook_creation_system.py,
+    read those functions whole plus the SpellSystemStates methods they call; write
+    structural_driver.md.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T01:07:48Z
+  TYPE: FACT
+  CLAIM: Structural driver read by function (structural_driver.md COMPLETE; task 1 exit gate met).
+    Phases 1 and 2 are fused per spell; phase 3 runs between hard barriers; phase 4 behind the
+    phase-3 barrier; units are chunked per worker over `spellbook._spells`. DECISIVE: after every
+    conduit resolution pass `cleanup_phase_artifacts_after_resolution` resets the phase 1-4 and 6
+    artifact group on every spell (requirements unless borrowed, symbolic graph, resolution frame,
+    validation results, shape profile, and the phase 2-5 IR bucket) while phase 5 and 8-11 state
+    is preserved. The phase 1-4 objects are transient by design; what survives is the registry
+    state they wrote (SpellSystemStates dependencies/topology/validity, Spell.dependency_graph and
+    .dependencies, context invalidation) plus the phase-5 blueprint. A per-run
+    `SpellCompilerSystem` owns the validator (13 strategies), so src_architecture.md's "Spellbook
+    initializes SpellValidationSystem" is stale. Post-conjure binds run 1-4 sequentially for the new
+    spells only; meld-time local recompile paths reuse the same reset.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1359-1403
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1896-1937
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1476-1538
+  - src/melder/aether/spellbook/spellbook_creation_system.py:2390-2427
+  - src/melder/aether/spellbook/spellbook_creation_system.py:2550-2617
+  - src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py:44-57
+  - src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py:225-302
+  - artifacts/ir_phase_survey_20260925/structural_driver.md:1-104
+  IMPACT: The structural snapshot hydrates REGISTRY state for phases 1-4, not artifact objects,
+    unless S6/S7 show phases 5-7 reading the 1-4 artifacts inside the pass. Task 1 moves to review;
+    task 2 opens at S6.
+  NEXT: Owner reviews task 1 (driver.md, phase_01-04.md, structural_driver.md); fable_0 opens task
+    2 at S6 (compiler_phase_5.py 1-500).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Step 1 done 2026-09-25: components index verified and the SpellCompiler component plus phase
 subcomponents and conjure flows sliced. Three findings recorded above (existing 8-11 codegen IR
@@ -409,6 +532,19 @@ spell_requirements.py, then finish phase_01.md (Holds, Reflection points, World 
 STATE 2026-09-26T00:08:30Z: finder trio read whole; phase_01.md COMPLETE (166 lines). Resume at step 4:
 `wc -l` compiler_phase_2.py and the symbolic_graph package, read phase 2 whole plus delegates to the
 crossing types, write phase_02.md with the full Record Shape.
+STATE 2026-09-26T00:53:12Z: strategy steps S2-S5 belong to this task (epic handoff table). Resume at S2:
+`compiler_phase_2.py` whole, then `symbolic_graph/spell_symbolic_graph.py` and
+`spell_symbolic_dependency.py`; write phase_02.md.
+STATE 2026-09-26T00:55:07Z: S2 done (phase_02.md). Resume at S3: `compiler_phase_3.py` chunk 1-500 (then
+501-1000, 1001-1035), then `dag/` and `dag/resolution_frame/` to the crossing types; write phase_03.md.
+STATE 2026-09-26T00:58:07Z: S3 done (phase_03.md). Resume at S4: `compiler_phase_4.py` whole (178), then
+`validation/validation_system.py` (350); strategies by file name only unless one writes state;
+write phase_04.md. Then S5 (structural driver).
+STATE 2026-09-26T00:59:53Z: S4 done (phase_04.md). Resume at S5: grep `def run_structural_phases` and the
+per-spell unit functions in `spellbook_creation_system.py`, read each function whole (chunk at 500),
+then the SpellSystemStates methods they call; write structural_driver.md; then task 1 -> review.
+STATE 2026-09-26T01:07:48Z: S5 done; task 1 in REVIEW (all five records under
+artifacts/ir_phase_survey_20260925/). Nothing further to read here; task 2 carries the survey on.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

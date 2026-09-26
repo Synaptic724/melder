@@ -32,6 +32,7 @@ from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecut
 from melder.utilities.custom_exceptions.spellbook_validation_error import (
     SpellbookValidationError,
 )
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
 RESOLUTION_ERRORS = (
@@ -421,14 +422,20 @@ def test_a6_spell_name_with_wrong_binding_raises() -> None:
 # =========================================================================== #
 # B1 / B2 - constructor type-hint DI
 # =========================================================================== #
-def test_b1_concrete_dependency_unbound_fails_conjure() -> None:
-    """B1: a concrete dependency that is never bound must fail conjure."""
+def test_b1_concrete_dependency_unbound_defers_to_meld() -> None:
+    """B1: a never-bound concrete dependency conjures as an unresolved input and fails only at meld."""
     spellbook = _make_spellbook()
+    conduit = None
     try:
         spellbook.bind(spell=NeedsEngineConcrete, existence=Existence.unique, permissions="create")
-        with pytest.raises(RESOLUTION_ERRORS):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell=NeedsEngineConcrete)
+        assert caught.value.expected_type == "Engine"
+        assert caught.value.unresolved_params == ("engine",)
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 
@@ -447,8 +454,8 @@ def test_b1_dependency_only_under_binding_defers_and_conjures() -> None:
         spellbook.cleanup()
 
 
-def test_b1_deep_chain_missing_leaf_fails_conjure() -> None:
-    """B1: a 3-deep chain with an unbound leaf must fail conjure."""
+def test_b1_deep_chain_missing_leaf_defers_to_meld() -> None:
+    """B1: a 3-deep chain with an unbound leaf dependency conjures; melding the top names the leaf's input."""
     spellbook = _make_spellbook()
 
     class Leaf:
@@ -459,37 +466,57 @@ def test_b1_deep_chain_missing_leaf_fails_conjure() -> None:
         def __init__(self, leaf: Leaf) -> None:
             self.leaf = leaf
 
+    conduit = None
     try:
-        # Engine intentionally NOT bound -> the leaf can't resolve.
+        # Engine intentionally NOT bound -> the leaf's engine is an unresolved input.
         spellbook.bind(spell=Leaf, existence=Existence.unique, permissions="create")
         spellbook.bind(spell=Mid, existence=Existence.unique, permissions="create")
-        with pytest.raises(RESOLUTION_ERRORS):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell=Mid)
+        assert caught.value.spell_name == "Leaf"
+        assert caught.value.param_name == "engine"
+        supplied = Engine()
+        assert conduit.meld(spell=Mid, override={"leaf>engine": supplied}).leaf.engine is supplied
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 
-def test_b2_provider_under_different_frame_fails_conjure() -> None:
-    """B2: a provider registered under a different frame can't satisfy IEngine."""
+def test_b2_provider_under_different_frame_leaves_input_unresolved() -> None:
+    """B2: a provider registered under a different frame never satisfies IEngine; the meld must supply it."""
     spellbook = _make_spellbook()
+    conduit = None
     try:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create", spellframe=IPlugin)
         spellbook.bind(spell=NeedsEngineProtocol, existence=Existence.unique, permissions="create")
-        with pytest.raises(RESOLUTION_ERRORS):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell=NeedsEngineProtocol)
+        assert caught.value.expected_type == "IEngine"
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 
-def test_b2_provider_bound_under_own_class_only_fails_frame_hint() -> None:
-    """B2: a provider bound without the frame key can't satisfy the protocol hint."""
+def test_b2_provider_bound_under_own_class_only_leaves_frame_hint_unresolved() -> None:
+    """B2: a provider bound without the frame key never satisfies the protocol hint; the meld must supply it."""
     spellbook = _make_spellbook()
+    conduit = None
     try:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         spellbook.bind(spell=NeedsEngineProtocol, existence=Existence.unique, permissions="create")
-        with pytest.raises(RESOLUTION_ERRORS):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell=NeedsEngineProtocol)
+        assert caught.value.expected_type == "IEngine"
+        supplied = Engine()
+        assert conduit.meld(spell=NeedsEngineProtocol, override={"engine": supplied}).engine is supplied
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 

@@ -244,10 +244,16 @@ def test_overrides_compiler_code_object_entrypoint_requires_code_object() -> Non
 
 
 def _make_spell(spell_id: str) -> SimpleNamespace:
-    """Build a minimal callable spell stub for schema hydration tests."""
+    """
+    Build a minimal callable spell stub for schema hydration tests.
+
+    Like a real Spell it carries its frame's SpellSystemStates; this registry holds
+    no Phase-3 topology, so solo executors bind the raw call target.
+    """
     return SimpleNamespace(
         spell_id=spell_id,
         spell_index=SimpleNamespace(selected_spell_id=spell_id),
+        _spell_system_states=SimpleNamespace(get_local_topology=lambda spell_index: None),
         spell_name=spell_id,
         existence=Existence.many,
         is_existing_creation=False,

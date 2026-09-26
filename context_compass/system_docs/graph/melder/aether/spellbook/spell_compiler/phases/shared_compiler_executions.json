@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py",
- "source_sha256": "62917eb26d859ce1d378e510c98e9da4256879ca7e344711777c7ffb03f020a7",
+ "source_sha256": "f1485269ca5e5e8b7546375adc31a2c77a4dfe0e264ea0c189b80b09878bda96",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions": {
@@ -59,13 +59,14 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "30e83715ea6fcc470863f047b7cb2a6b8989a593f4efc99c36262afabb025b3f",
+   "span_sha256": "ff235eadde4496a7087f42deb2cd2e625b81ae7062b580dfe97109f2ddcdbb83",
    "role": "Shared static execution helper surface for compiler phases.",
    "responsibilities": [
     "owns deterministic schema-freezing and signature-hashing helpers reused across compiler phases",
     "captures and resets phase2_5 and phase8_11 codegen IR on SpellCompilerArtifact",
     "builds normalized schema rows for phase-5 DAG/socket, phase-8 occurrence, phase-9 injection, and phase-11 step payloads",
-    "exports required-input position, kind and reference IDs in override_required injection rows without changing ordinary row shapes"
+    "exports required-input position, kind and reference IDs in override_required injection rows without changing ordinary row shapes",
+    "exports position and parameter kind for unresolved_input injection rows"
    ],
    "phases": [
     "validation",

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_overrides_runtime.py",
- "source_sha256": "8f1bc3227dade24fb9142928df376cbc8310dba844b55214e21c6f8034cfbb5a",
+ "source_sha256": "a3c71873d1ee5d5fea8058a659b0000ffb507a567137ceb6c6adcdc3f72aa970",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime": {
@@ -48,6 +48,7 @@
   "emit_overrides_codegen_creation_executor_shape_source": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.emit_overrides_codegen_creation_executor_shape_source",
   "get_existing_creation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.get_existing_creation",
   "invoke_spell_with_kwargs": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.invoke_spell_with_kwargs",
+  "raise_meld_construction_error": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.raise_meld_construction_error",
   "raise_override_on_existing_instance": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.raise_override_on_existing_instance",
   "register_spell_instance_prebound": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.register_spell_instance_prebound",
   "CodegenStepRuntimeRow": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",

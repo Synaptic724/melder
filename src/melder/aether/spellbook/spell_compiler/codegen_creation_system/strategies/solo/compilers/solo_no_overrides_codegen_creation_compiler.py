@@ -1,8 +1,10 @@
 from typing import Any, Callable, Optional, Tuple, Union
 
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
 )
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 def compile_solo_no_overrides_codegen_creation_executor(
         *,
@@ -25,6 +27,8 @@ def compile_solo_no_overrides_codegen_creation_executor(
         - Uses the process-wide emitted-source code-object cache.
         - Binds the established Spell disposal list directly into each fresh
           executor namespace, including when its code object is reused.
+        - Binds `call_target` through `_call_target_for`: the raw spell callable,
+          or an unresolved-input guard when the spell has UNRESOLVED_INPUT sockets.
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType`.
     """
@@ -42,7 +46,7 @@ def compile_solo_no_overrides_codegen_creation_executor(
     )
     local_namespace: dict[str, Any] = {}
     namespace = {
-        "call_target": spell.spell,
+        "call_target": _call_target_for(spell),
         "spell": spell,
         "spell_id": spell.spell_id,
     }
@@ -237,6 +241,64 @@ def _build_source(
     raise RuntimeError(
         f"Unsupported solo no-overrides emit key: {solo_emit_key}"
     )
+
+
+def _call_target_for(spell: Any) -> Callable[..., Any]:
+    """
+    Return the callable a solo executor invokes for one spell.
+
+    Purpose:
+        Solo executors call the target with no try block, so a missing input
+        propagates as a raw TypeError. A spell with an unresolved input (a typed
+        parameter no registered spell provides) instead needs the named
+        `UnresolvedInputError` when its caller did not supply that value.
+
+    Contract:
+        - When the spell's Phase-3 topology has no UNRESOLVED_INPUT socket, returns
+          `spell.spell` itself: those executors keep the direct call and raw
+          exception propagation.
+        - Otherwise returns a guard that calls `spell.spell`; a TypeError that
+          leaves an unresolved input unsupplied raises `UnresolvedInputError`
+          chained from it, and every other exception re-raises unchanged.
+        - Decided when the executor is compiled or hydrated; the emitted source is
+          identical either way, so the code-object cache is unaffected.
+        - INTERIM until the build plan decides unresolved inputs (design S3/S4).
+
+    Args:
+        spell: The root spell the solo executor constructs.
+
+    Returns:
+        Callable[..., Any]: The callable bound as `call_target`.
+    """
+    call_target = spell.spell
+    topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+    if topology is None or not any(
+            socket.socket_kind is SocketKind.UNRESOLVED_INPUT
+            for socket in topology.sockets
+    ):
+        return call_target
+
+    def guarded_call_target(*args: Any, **kwargs: Any) -> Any:
+        """
+        Call the spell and name an unsupplied unresolved input on failure.
+
+        Raises:
+            UnresolvedInputError: An unresolved input was not among `args`/`kwargs`.
+        """
+        try:
+            return call_target(*args, **kwargs)
+        except TypeError as exc:
+            unresolved = UnresolvedInputError.from_failed_construction(
+                spell,
+                exc,
+                supplied_names=kwargs,
+                supplied_positional_count=len(args),
+            )
+            if unresolved is not None:
+                raise unresolved from exc
+            raise
+
+    return guarded_call_target
 
 
 def _normalize_disposal_methods(

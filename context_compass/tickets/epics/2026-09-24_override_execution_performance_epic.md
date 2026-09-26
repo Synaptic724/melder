@@ -104,6 +104,8 @@ parallel inconsistent resolution semantics or slowing ordinary creation.
 - Investigation determines implementation story boundaries; none is activated before baseline evidence.
 - STORY-2026-09-25-verify-override-writer-and-contract (melder_0 lead, melder_1; done 2026-09-26):
   tickets/stories/completed/2026-09-25_verify_override_writer_and_contract_story.md
+- STORY-2026-09-26-unresolved-input-sockets (melder_0):
+  tickets/stories/2026-09-26_unresolved_input_sockets_story.md
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [ ] TASK-2026-09-24-discover-override-execution-semantics:
@@ -172,6 +174,8 @@ No production override code, release version or build assets have changed during
   verifies the store/unique-Spell inversion; melder_1 verifies joint alpha contract items 1-8.
 - 2026-09-25: Meld store/Spell lock-order deadlock fixed by per-slot build guards (store locks are leaves;
   cache generation 10). Override emitters now hold slot guards; joint-alpha work builds on that.
+- 2026-09-26: Owner approves melder_0's UNRESOLVED_INPUT socket (typed parameter with no provider is
+  supplied at meld; UnresolvedInputError otherwise) as design step S1; resolvable=False stays separate.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false

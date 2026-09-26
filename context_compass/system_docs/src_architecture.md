@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-25
+- Updated: 2026-09-26
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -295,6 +295,9 @@ Dependencies include:
   `clear_mutation_override()`, emitting the `mutation_contract_set` /
   `mutation_contract_cleared` change reasons.
 - ParameterDIShape: Phase 1 classification of how a parameter should resolve.
+- Unresolved input: a single typed constructor parameter that no registered spell provides. It compiles as
+  an UNRESOLVED_INPUT socket; the constructing meld supplies it by override, and `UnresolvedInputError`
+  names it when a construction goes without it (2026-09-26).
 
 RE-ABSORBED 2026-08-02. This section was moved to the patch lane during the
 2026-08-01 recomposition on the reading that the Required Section Contract was a
@@ -647,6 +650,8 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 1. `Spellbook.conjure(...)`:
    - Validate/freeze `SpellbookConfiguration`, bind to Aether.
    - Run structural phases 1-4 for every spell, on every conjure.
+   - Log one INFO line listing unresolved inputs (typed parameters no registered spell provides) when
+     any exist, before the Phase 1-4 artifacts are released (2026-09-26).
    - Classify the creation cache BEFORE the conduit phases: the live set of
      resolvable, non-existing-creation spell ids is compared with the cached
      ids, giving `disabled`, `full_hit`, `mixed` or `full_miss`.
@@ -658,8 +663,8 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
      enforced when the bundle was built). No cache path skips phases 1-7.
      EVIDENCE:
      - src/melder/aether/spellbook/spellbook_creation_system.py:226-247
-     - src/melder/aether/spellbook/spellbook_creation_system.py:300-345
-     - src/melder/aether/spellbook/spellbook_creation_system.py:412-520
+     - src/melder/aether/spellbook/spellbook_creation_system.py:361-388
+     - src/melder/aether/spellbook/spellbook_creation_system.py:454-562
    - Live 8-11 mapping:
      - phase 8 analyzer
      - phase 9 processor
@@ -680,6 +685,8 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 4. Creations registration/reuse occurs inside compiled execution per Existence. Each slotted
    lifetime is built once under its slot's build lock (store `slot_guard`, or Spell lock for
    unique); the store lock is only taken as a leaf around publication (2026-09-25).
+5. A constructor call that lacks an unresolved input fails argument binding; the failure path raises
+   `UnresolvedInputError` naming the consumer, parameter, expected type and override keys (2026-09-26).
 
 ### Sequence: Meld-Time Validation Gate
 1. `Meld._ensure_lineage_resolvable(...)` checks SpellSystemState validity.
@@ -982,6 +989,16 @@ each entry in `src_components.md`; this list is the set that crosses components.
   stale executors after provider selection changes. No alternate cache lifecycle is introduced.
   EVIDENCE: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates._extract_collection_frame_keys`
   and `src/melder/aether/conduit/meld/meld.py:Meld._ensure_lineage_resolvable`.
+- Unresolved inputs (2026-09-26): only Phase 3 creates an UNRESOLVED_INPUT socket, and only for a
+  SINGLE_BY_ANNOTATION parameter of a resolvable spell with no matching registration at all; ambiguity
+  still fails. The socket adds no DAG edge, dependency id or construction step and keeps its frame key for
+  the existing watcher. The parameter is omitted unless the call supplies it, by identity, with None
+  counting as supplied. A later matching bind re-resolves it into a NORMAL edge. The named error comes only
+  from the constructor-failure path of the object that owns the socket; a stored object never demands the
+  input, including a consumer stored before its provider's spell was cleaned up (owner decision). Conjure
+  never refuses these parameters. Cache generation 11 retires executors emitted before this wiring.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
+  and `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.from_failed_construction`.
 - Phase-5 dependency visibility is broader than canonical artifact publication. Conduit-wide
   resolution publishes to the book's owned Spells; local resolution publishes only to its target.
   Borrowed and unselected dependency Spells retain their executable artifacts and creation contexts.
@@ -1068,7 +1085,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
     (`bind_frame_configuration` unfrozen branch: the twelve-value copy plus
     `frame_configuration.cleanup()` on the donor, then freeze with
     `origin_frame_name`)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1104-1150
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1182-1229
     (`SpellbookCreationSystem.check_system_state`: missing-posture refusal and
     the non-dynamic default-policy-only rule)
 - SpellSpace can only meld when it is the active spellspace for a Conduit.
@@ -1087,7 +1104,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
   ask.
   EVIDENCE:
   - src/melder/aether/spellbook/configuration/system_state.py:32-49
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1104-1150
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1182-1229
 - Method/lambda spells must use `Existence.unique`, because a method or lambda
   has no stable identity to share: two resolutions of a non-unique existence
   would have to return the same object, and there is no object to return until
@@ -1126,6 +1143,12 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Direct meld and reuse-only resolution of a non-resolvable registration raise MeldExecutionError
   with its selected name/id and caller-supply guidance. Observational lookup remains available.
   EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._raise_non_resolvable_registration`.
+- A meld that constructs a spell without one of its unresolved inputs raises `UnresolvedInputError`, a
+  `MeldExecutionError` exported at the package root, chained from the binding TypeError. It names the
+  consumer, parameter, expected type and override keys, and lists every missing input. A TypeError with
+  every unresolved input supplied keeps the existing error. Since 2026-09-26 conjure no longer raises for a
+  typed parameter with no provider; two or more providers still fail Phase 3.
+  EVIDENCE: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError`.
 - Duplicate binding keys or spell id collisions raise RuntimeError.
 - Conjure raises SpellbookValidationError when broken spells exist.
 - Meld raises SpellbookValidationError when spell validity is invalid/gated/disabled.
@@ -1365,9 +1388,9 @@ Package root:
 
 - path: `src/melder/__init__.py`
   start_line: 1
-  end_line: 260
-  loc: 260
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 271
+  loc: 271
+  verified_at: 2026-09-26T08:22:34Z
   note: runtime warnings, version metadata.
 - path: `src/melder/_build_assets/_bind_guard/bind_guard.py`
   start_line: 1
@@ -2153,9 +2176,9 @@ Control plane:
   note: frame-local topology and transaction mirror.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
   start_line: 1
-  end_line: 1514
-  loc: 1514
-  verified_at: 2026-09-19T21:23:18Z
+  end_line: 1522
+  loc: 1522
+  verified_at: 2026-09-26T08:22:34Z
   note: lineage registry.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
@@ -2192,9 +2215,9 @@ Utilities:
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 618
-  loc: 618
-  verified_at: 2026-09-25T23:40:00Z
+  end_line: 624
+  loc: 624
+  verified_at: 2026-09-26T08:22:34Z
   note: release-bound creation-cache admission and atomic envelope persistence.
 
 - path: `src/melder/utilities/general_base/cleanable.py`
@@ -2338,6 +2361,25 @@ This diagram describes the registration boundary. Compiler selection now preserv
 required inputs through both plan variants. Direct runtime admission refuses False; ordinary supplied
 inputs use existing execution, Nexus exposes references, and durable replay preserves the capability.
 
+### Unresolved Input Resolution
+```text
+conjure: typed parameter, no provider -> UNRESOLVED_INPUT socket -> INFO line (conjure succeeds)
+meld:    value supplied -> constructor receives it
+         value missing  -> TypeError at binding -> UnresolvedInputError (a MeldExecutionError)
+bind:    matching provider added later -> consumer re-resolves -> normal dependency edge
+```
+
+```mermaid
+flowchart LR
+  C[Conjure: no registered provider] --> U[UNRESOLVED_INPUT socket]
+  U --> I[One INFO line; conjure continues]
+  U --> M{Meld supplies the value?}
+  M -->|Yes| K[Constructor receives it]
+  M -->|No| E[UnresolvedInputError]
+  B[Later matching bind] --> R[Re-resolve to a normal edge]
+  U --> R
+```
+
 ### ASCII Context Diagram (C4)
 ```
 [User Code]
@@ -2447,6 +2489,8 @@ without rewriting the original record or existing live IDs.
 
 ## Information Sources
 - `src/melder/utilities/caching_system/caching_system.py`
+- `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
+- `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
 - `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
 - `src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py`
 - `README.md`
@@ -2561,6 +2605,13 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 unresolved inputs: a single typed constructor parameter that no registered spell provides no
+longer fails conjure. It compiles as an UNRESOLVED_INPUT socket, the constructing meld supplies it by
+override, and a missing value raises UnresolvedInputError (a MeldExecutionError exported at the package
+root) from that object's constructor-failure path only. A later matching bind re-resolves it; stored
+objects are unaffected. Cache generation 11 retires older executors. The component map carries the
+compiler, runtime and watcher detail; the failure-path wiring is interim until the override build plan.
 
 2026-09-25 creation build locks moved from the store lock to per-slot guards (unique keeps its Spell
 lock). The store lock is now a leaf, removing the store/Spell lock-order deadlock between concurrent

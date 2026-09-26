@@ -1,11 +1,14 @@
 """
 Integration tests -- invalidation / dependent rechecking (area B).
 
-Formalizes the proven experiment `test_cleanup_dependency_breaks_dependents_experiment`:
-cleaning up a shared dependency must BREAK its dependents. A spell that other spells
-depend on is disposed; the dependents must go gated on the SpellSystemStates plane and
-FAIL to resolve -- a dependent that still melds after its dependency was disposed is a
-correctness violation.
+Formalizes `test_cleanup_dependency_breaks_dependents_experiment`. Cleaning up a shared
+dependency's spell gates its dependents on the SpellSystemStates plane and re-resolves them.
+Since 2026-09-26 (owner decision) the removed provider leaves an unresolved input rather
+than a resolution failure:
+    - a dependent object built before the cleanup keeps being served with the dependency
+      object it already holds (Melder stops tracking that dependency, it does not close it);
+    - building a dependent after the cleanup needs the value supplied by the meld, or a new
+      provider; otherwise UnresolvedInputError is raised.
 
 Dependencies are expressed via constructor type-hints (the repo's DI convention).
 Transactions are OUT OF SCOPE. Runtime: Python 3.14t; the 3.10 sandbox cannot run
@@ -21,6 +24,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
@@ -121,27 +125,35 @@ def test_cleanup_dependency_gates_both_dependents():
         conduit.cleanup()
 
 
-def test_cleanup_dependency_breaks_dependent_meld():
+def test_cleanup_dependency_keeps_stored_dependent_with_its_dependency():
     book = _make_spellbook()
     conduit = book.conjure(dynamic=True, name="root")
     try:
         dep1, dep2, root, other = _bound_graph(book)
-        _resolves(conduit, root)
+        built = conduit.meld(spell_id=root)
+        held = built.dep1
         conduit.cleanup_spell(spell=_spell(book, dep1))
-        # The shared dependency is gone -> the dependent can no longer resolve.
-        assert _resolves(conduit, root) is False
+        # The stored dependent was built before the cleanup: it is served unchanged,
+        # still holding the dependency object it was constructed with.
+        again = conduit.meld(spell_id=root)
+        assert again is built
+        assert again.dep1 is held
     finally:
         conduit.cleanup()
 
 
-def test_cleanup_shared_dependency_breaks_the_other_root_too():
+def test_cleanup_shared_dependency_leaves_unbuilt_dependent_needing_the_input():
     book = _make_spellbook()
     conduit = book.conjure(dynamic=True, name="root")
     try:
         dep1, dep2, root, other = _bound_graph(book)
-        _resolves(conduit, other)
         conduit.cleanup_spell(spell=_spell(book, dep1))
-        assert _resolves(conduit, other) is False
+        # _OtherRoot was never built: constructing it now needs dep1 from the meld.
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell_id=other)
+        assert caught.value.unresolved_params == ("dep1",)
+        supplied = _Dep1()
+        assert conduit.meld(spell_id=other, override={"dep1": supplied}).dep1 is supplied
     finally:
         conduit.cleanup()
 

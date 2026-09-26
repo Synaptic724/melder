@@ -1,5 +1,8 @@
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler import (
+    _call_target_for,
+)
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
 )
@@ -24,6 +27,8 @@ def compile_solo_overrides_codegen_creation_executor(
         - Uses the process-wide emitted-source code-object cache.
         - Binds the established Spell disposal list directly into each fresh
           executor namespace, including when its code object is reused.
+        - Binds `call_target` through `_call_target_for`: the raw spell callable,
+          or an unresolved-input guard when the spell has UNRESOLVED_INPUT sockets.
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType`.
     """
@@ -39,7 +44,7 @@ def compile_solo_overrides_codegen_creation_executor(
     )
     local_namespace: dict[str, Any] = {}
     namespace = {
-        "call_target": spell.spell,
+        "call_target": _call_target_for(spell),
         "spell": spell,
         "spell_id": spell.spell_id,
         "_invoke_with_overrides": _invoke_with_overrides,

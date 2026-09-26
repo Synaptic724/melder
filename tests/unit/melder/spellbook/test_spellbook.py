@@ -116,6 +116,17 @@ class DummySpell:
         """
         return self._owner_conduit_id, self._owner_conduit_name
 
+    @property
+    def validation_result_phase4(self):
+        """
+        Purpose:
+            Mirror Spell's Phase-4 read-through; conjure reads it to report
+            unresolved inputs after the structural phases.
+        Returns:
+            Optional[SpellValidationResult]: The owned artifact's Phase-4 result.
+        """
+        return self._compiler_artifact._validation_result_phase4
+
     # Phase methods
     def run_phase_requirements(self, cancel_event):
         """

@@ -20,6 +20,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     8: "ordinary_defaults_are_plain",
     9: "exact_melder_release_compatibility",
     10: "creation_slot_build_guards",
+    11: "unresolved_input_sockets",
 }
 
 

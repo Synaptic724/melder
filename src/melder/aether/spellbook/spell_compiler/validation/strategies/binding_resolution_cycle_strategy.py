@@ -37,8 +37,10 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
 
     Contract:
         - Builds a binding-key graph from available requirements.
-        - Excludes non-resolvable constructors and resolved OVERRIDE_REQUIRED sockets.
-          Descriptive references are never reconstruction of a construction edge.
+        - Excludes non-resolvable constructors, resolved OVERRIDE_REQUIRED sockets
+          and UNRESOLVED_INPUT sockets. Descriptive references are never
+          reconstruction of a construction edge, and an unresolved input has no
+          provider to form one.
         - Reports cycles reachable from the spell under validation.
         - Does not mutate spells, spellbooks, or requirements.
 
@@ -191,7 +193,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             - The result is treated as immutable by all consumers; pass-cache
               reuse depends on that.
             - Consults durable Phase-3 topology when present to exclude required
-              supplied inputs. Before topology exists, declaration-only analysis
+              supplied and unresolved inputs. Before topology exists, declaration-only analysis
               remains available; non-resolvable constructors never contribute edges.
         Args:
             spellbook: Owning Spellbook whose local pool should be modeled.
@@ -228,6 +230,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             for param in parameters:
                 if topology is not None and any(
                         socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
+                        or socket.socket_kind is SocketKind.UNRESOLVED_INPUT
                         for socket in topology.get_sockets_for_param(param.name)
                 ):
                     continue

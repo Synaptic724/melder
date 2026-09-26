@@ -5,7 +5,9 @@ from typing import TYPE_CHECKING
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import SpellRequirements
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
 
@@ -26,6 +28,10 @@ class RequiredHolesStrategy(SpellValidationStrategy):
       provide these values at invocation time.
     - Also reports resolved OVERRIDE_REQUIRED sockets from durable local topology.
       Non-resolvable roots have no construction-input obligations.
+    - Also reports UNRESOLVED_INPUT sockets (a typed parameter no registered
+      spell provides) with the expected type, so a forgotten binding is visible
+      at conjure even though constructing the spell without the value only fails
+      at meld.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
@@ -43,7 +49,8 @@ class RequiredHolesStrategy(SpellValidationStrategy):
     AGENT_PURPOSE:
         access: internal. Phase-4 strategy: emits a REQUIRED_HOLE warning per PLAIN,
         default-less parameter - a hole Melder DI will never fill, so the caller must supply it
-        via overrides or manual composition. Reporting only.
+        via overrides or manual composition - plus OVERRIDE_REQUIRED and UNRESOLVED_INPUT
+        warnings for supplied-input sockets. Reporting only.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -73,6 +80,12 @@ class RequiredHolesStrategy(SpellValidationStrategy):
           or convert the hole into a DI target.
         - Reads reference-only required inputs from SpellSystemStates without
           taking ownership of their topology or changing declaration facts.
+        - Emits one `UNRESOLVED_INPUT` warning per unresolved-input socket,
+          naming the expected type from the Phase-1 annotation.
+
+        Raises:
+            RuntimeError: If an UNRESOLVED_INPUT socket has no matching Phase-1
+                parameter (topology and requirements out of step).
         """
         self.check_cleaned()
 
@@ -111,6 +124,31 @@ class RequiredHolesStrategy(SpellValidationStrategy):
         if topology is None:
             return
         for socket in topology.sockets:
+            if socket.socket_kind is SocketKind.UNRESOLVED_INPUT:
+                expected_type = self._expected_type_for(requirements, socket.param_name)
+                context.issues.append(
+                    SpellValidationIssue(
+                        severity="warning",
+                        code="UNRESOLVED_INPUT",
+                        message=(
+                            f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} expects "
+                            f"{expected_type}, but no registered spell provides it. Supply it through a "
+                            f"meld override (key {socket.param_name!r}, or a path key ending in "
+                            f"'>{socket.param_name}' when this spell is built as a dependency) or bind "
+                            f"a provider for {expected_type}. Constructing this spell without it raises "
+                            "UnresolvedInputError."
+                        ),
+                        details={
+                            "spell_id": spell.spell_id,
+                            "parameter_name": socket.param_name,
+                            "position": socket.position,
+                            "parameter_kind": socket.parameter_kind,
+                            "expected_type": expected_type,
+                            "dependency_key": socket.dependency_key,
+                        },
+                    )
+                )
+                continue
             if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED:
                 continue
             context.issues.append(
@@ -131,3 +169,31 @@ class RequiredHolesStrategy(SpellValidationStrategy):
                     },
                 )
             )
+
+    @staticmethod
+    def _expected_type_for(requirements: SpellRequirements, param_name: str) -> str:
+        """
+        Name the expected type of one unresolved-input parameter.
+
+        Contract:
+            - Reads the Phase-1 annotation of `param_name` and renders it with
+              `UnresolvedInputError.expected_type_name`, the rule the meld-time
+              error also uses.
+
+        Args:
+            requirements: Phase-1 requirements of the spell under validation.
+            param_name: Parameter carried by the UNRESOLVED_INPUT socket.
+
+        Returns:
+            str: Display name of the expected type.
+
+        Raises:
+            RuntimeError: If `param_name` is not a Phase-1 parameter.
+        """
+        for param in requirements.parameters:
+            if param.name == param_name:
+                return UnresolvedInputError.expected_type_name(param.annotation)
+        raise RuntimeError(
+            f"UNRESOLVED_INPUT socket {param_name!r} has no Phase-1 parameter. "
+            "Re-run the structural phases for this spell."
+        )

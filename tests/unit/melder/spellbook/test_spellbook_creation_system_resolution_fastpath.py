@@ -672,6 +672,7 @@ def test_prepare_spellbook_for_conjure_runs_structural_phases_without_disposal_r
             "a": types.SimpleNamespace(
                 disposal_method_names=frozenset({"cleanup"}),
                 has_disposal_methods=True,
+                validation_result_phase4=None,
             )
         },
     )

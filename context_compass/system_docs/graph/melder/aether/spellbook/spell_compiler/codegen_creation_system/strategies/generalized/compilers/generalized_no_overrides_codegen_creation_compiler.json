@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py",
- "source_sha256": "e7911b08c3bb1cdd58ff1834f23e072fba91c2e02ecb407f70caab2e41e3960e",
+ "source_sha256": "6d689d59ab96bd970faf9c535de79988d118e94b2d9fbf8830f95a8c9b09bf5c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler": {
@@ -14,7 +14,8 @@
    "responsibilities": [
     "compiles generalized no-overrides executors from lane plans or schema rows",
     "emits transient-unrolled and step-plan no-overrides source for generalized runtime lanes",
-    "reuses the process-wide emitted-executor code cache while preserving creations reuse and registration semantics"
+    "reuses the process-wide emitted-executor code cache while preserving creations reuse and registration semantics",
+    "routes constructor failures through one helper that raises UnresolvedInputError before the generic MeldExecutionError"
    ],
    "owns_state": [
     "_MISSING",
@@ -32,6 +33,7 @@
   "SimpleNamespace": "types.SimpleNamespace",
   "Any": "typing.Any",
   "Callable": "typing.Callable",
+  "Collection": "typing.Collection",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "Sequence": "typing.Sequence",
@@ -42,6 +44,7 @@
   "SpellGeneralizedCodegenPlanCallMode": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanCallMode",
   "SpellGeneralizedCodegenPlanTargetKind": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanTargetKind",
   "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+  "UnresolvedInputError": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
   "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError"
  },
  "collapse_candidate": null,
