@@ -552,3 +552,128 @@ def test_validate_names_each_cycle_member_and_closes_the_loop_once() -> None:
     assert "'Alpha' -> 'Beta' -> 'Alpha'." in message
     assert "-> 'Alpha' -> 'Alpha'" not in message
     assert "give that parameter a default" in message
+
+
+def test_validate_words_a_consumer_of_a_cycle_member_as_a_consumer() -> None:
+    """
+    Purpose:
+        A spell that only needs a cycle member is not reported as part of the cycle (2026-09-26).
+    Contract:
+        The message names the member it needs, the cycle, the fix, and that the spell is not
+        part of that cycle; code, severity and details are unchanged.
+    """
+    strategy = CircularDependencyStrategy()
+    issues: list[SpellValidationIssue] = []
+    spell_a = _SpellStub(spell_id="a", spell_name="Alpha", dependencies=["b"])
+    spell_b = _SpellStub(spell_id="b", spell_name="Beta", dependencies=["a"])
+    spell_c = _SpellStub(spell_id="c", spell_name="Gamma", dependencies=["a"])
+    spellbook = _SpellbookStub([spell_a, spell_b, spell_c])
+    context = _make_context(spell=spell_c, spellbook=spellbook, issues=issues)
+
+    strategy.validate(context)
+
+    assert len(issues) == 1
+    issue = issues[0]
+    assert issue.code == "CIRCULAR_DEPENDENCY"
+    assert issue.severity == "error"
+    assert issue.details == {"cycle": ["a", "b", "a"]}
+    assert issue.message == (
+        "Spell 'Gamma' cannot be built: it needs 'Alpha', which is part of a dependency cycle: "
+        "'Alpha' -> 'Beta' -> 'Alpha'. Break that cycle (remove one of those constructor "
+        "dependencies or give that parameter a default); 'Gamma' itself is not part of that cycle."
+    )
+
+
+def test_validate_names_the_intermediate_that_leads_a_consumer_to_a_cycle() -> None:
+    """
+    Purpose:
+        A spell that reaches a cycle through a non-member names that intermediate.
+    Contract:
+        "which depends on a dependency cycle" follows the intermediate; the cycle is unchanged.
+    """
+    strategy = CircularDependencyStrategy()
+    issues: list[SpellValidationIssue] = []
+    spell_a = _SpellStub(spell_id="a", spell_name="Alpha", dependencies=["b"])
+    spell_b = _SpellStub(spell_id="b", spell_name="Beta", dependencies=["a"])
+    spell_c = _SpellStub(spell_id="c", spell_name="Gamma", dependencies=["a"])
+    spell_d = _SpellStub(spell_id="d", spell_name="Delta", dependencies=["c"])
+    spellbook = _SpellbookStub([spell_a, spell_b, spell_c, spell_d])
+    context = _make_context(spell=spell_d, spellbook=spellbook, issues=issues)
+
+    strategy.validate(context)
+
+    message = issues[0].message
+    assert message.startswith(
+        "Spell 'Delta' cannot be built: it needs 'Gamma', which depends on a dependency cycle: "
+        "'Alpha' -> 'Beta' -> 'Alpha'. Break that cycle"
+    )
+    assert message.endswith("'Delta' itself is not part of that cycle.")
+    assert issues[0].details == {"cycle": ["a", "b", "a"]}
+
+
+def test_validate_words_a_consumer_of_a_self_loop() -> None:
+    """
+    Purpose:
+        A spell that needs a spell depending on itself is told so, and the fix names that spell.
+    Contract:
+        "which depends on itself" with the two-entry loop; the fix is "Fix 'Node' (...)".
+    """
+    strategy = CircularDependencyStrategy()
+    issues: list[SpellValidationIssue] = []
+    node = _SpellStub(spell_id="n", spell_name="Node", dependencies=["n"])
+    tree = _SpellStub(spell_id="t", spell_name="Tree", dependencies=["n"])
+    spellbook = _SpellbookStub([node, tree])
+    context = _make_context(spell=tree, spellbook=spellbook, issues=issues)
+
+    strategy.validate(context)
+
+    assert issues[0].message == (
+        "Spell 'Tree' cannot be built: it needs 'Node', which depends on itself ('Node' -> 'Node'). "
+        "Fix 'Node' (remove that constructor dependency or give that parameter a default); "
+        "'Tree' itself is not part of that cycle."
+    )
+    assert issues[0].details == {"cycle": ["n", "n"]}
+
+
+def test_validate_names_the_intermediate_before_a_self_loop() -> None:
+    """
+    Purpose:
+        A spell that reaches a self-loop through a non-member names the intermediate and fixes the loop spell.
+    Contract:
+        "which depends on a dependency cycle: 'Node' -> 'Node'" and "Fix 'Node' (...)".
+    """
+    strategy = CircularDependencyStrategy()
+    issues: list[SpellValidationIssue] = []
+    node = _SpellStub(spell_id="n", spell_name="Node", dependencies=["n"])
+    tree = _SpellStub(spell_id="t", spell_name="Tree", dependencies=["n"])
+    forest = _SpellStub(spell_id="f", spell_name="Forest", dependencies=["t"])
+    spellbook = _SpellbookStub([node, tree, forest])
+    context = _make_context(spell=forest, spellbook=spellbook, issues=issues)
+
+    strategy.validate(context)
+
+    message = issues[0].message
+    assert message.startswith(
+        "Spell 'Forest' cannot be built: it needs 'Tree', which depends on a dependency cycle: "
+        "'Node' -> 'Node'. Fix 'Node' (remove that constructor dependency"
+    )
+    assert message.endswith("'Forest' itself is not part of that cycle.")
+
+
+def test_validate_keeps_the_member_wording_for_a_self_loop_member() -> None:
+    """
+    Purpose:
+        The spell that depends on itself keeps the member wording.
+    Contract:
+        "Spell 'Node' is part of a dependency cycle: 'Node' -> 'Node'." with the member fix sentence.
+    """
+    strategy = CircularDependencyStrategy()
+    issues: list[SpellValidationIssue] = []
+    node = _SpellStub(spell_id="n", spell_name="Node", dependencies=["n"])
+    spellbook = _SpellbookStub([node])
+    context = _make_context(spell=node, spellbook=spellbook, issues=issues)
+
+    strategy.validate(context)
+
+    assert issues[0].message.startswith("Spell 'Node' is part of a dependency cycle: 'Node' -> 'Node'.")
+    assert "cannot be built" not in issues[0].message

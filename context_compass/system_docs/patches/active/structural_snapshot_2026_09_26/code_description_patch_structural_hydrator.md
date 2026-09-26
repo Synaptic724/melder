@@ -7,13 +7,14 @@
 - Status: draft
 - Owner: fable_0 (cowork)
 - Created: 2026-09-26T15:49:37Z
-- Updated: 2026-09-26T16:39:37Z
+- Updated: 2026-09-26T17:26:53Z
 
 ## Control Flow
 1. `conjure` (after configuration freeze, before any phase): `classify(spellbook, caching_system)` builds
-   `world_stamp = sha256(sorted pool ids + system_state + sorted contracted keys)` and, for every spell in
-   `spellbook._spells`, computes the live key `(spell_id, sorted annotation refs from
-   spell.profile.resolution_profile.requirements)`; a spell is HIT when
+   `world_stamp = StructuralSnapshot.world_stamp(spellbook)` (sha256 over sorted pool ids, the posture
+   name and the sorted borrowed spell ids) and, for every spell in `spellbook._spells`, the live key
+   `StructuralSnapshot.structural_key(spell)` (`{"format", "spell_id", "annotation_refs"}` from the
+   bind-time requirements); a spell is HIT when
    `caching_system.get_structural_payload(spell_id)` decodes, `payload["key"] == live key`,
    `payload["world_stamp"] == world_stamp` and `payload["replayable"]`; otherwise MISS. Result:
    `{"path": "full_hit" | "partial" | "miss" | "disabled", "hits": {spell_id: payload}, "misses": set}`.
@@ -26,7 +27,9 @@
       lineage state if missing, diffs, reverse edges, marks gated + dirty - the same call phase 3 makes);
    b. `spell_system_states.register_local_topology(spell.spell_index, SpellLocalTopology(spell_id,
       sockets))` with descriptors rebuilt from the socket rows (enum names -> members);
-   c. `artifact._resolution_frame = SpellResolutionFrame(spell_id, phase3.ordered_node_ids)`;
+   c. (path `partial` only, where phase 4 runs live and its presence strategy reads the frame)
+      `artifact._resolution_frame = SpellResolutionFrame(spell_id, ordered)` with
+      `ordered = sorted(set(phase3.dependency_ids) - {spell_id}) + [spell_id]` (derived, not stored);
    d. `spell._add_build_details(dependencies=phase3.dependency_ids)` (sets `Spell.dependencies`,
       invalidates the creation context - the cached context is loaded later at activation as today);
    e. Nexus publication when `spellbook._nexus_publish_enabled`.
@@ -41,16 +44,19 @@
    EVERY spell (live verdicts; no step 4); broken check as today.
 6. Path `miss`/`disabled`: `run_structural_phases` unchanged.
 7. Executor classification, phases 5-7, 8-11 (or the full-hit skip), conduit build and activation: unchanged.
-8. Capture at conjure end (inside `_activate_conjured_conduit`, before the conjure-end emit): for every
-   spell whose phase 3 ran live in this conjure (`misses`, or all spells on paths miss/disabled), build
-   `{"key", "world_stamp", "replayable", "phase3", "phase4"}` from the artifact (`_resolution_frame`,
-   the socket descriptors of the registered topology; no edge rows, they are a socket projection), the
-   lineage state (`validity`,
-   `contract_unvalidated` flag; `is_broken` is false by construction) and the pass verdict
-   (`replayable` false when the pass ran with the phase-3 candidate index disabled), and
-   `caching_system.upsert_structural_payload(spell_id, payload)`; remove structural payloads whose ids
-   are not in `_spells`; set `spellbook._cache_emit_required` when anything changed. The existing emit
-   writes the file.
+8. Capture at conjure end (LANDED 2026-09-26; `_activate_conjured_conduit` ->
+   `_capture_structural_payloads_at_conjure_end` ->
+   `StructuralSnapshot.capture_at_conjure_end(spellbook, caching_system)`, after the executor staging and
+   before the conjure-end emit, on every cache path): for EVERY owned spell (sorted id order) build
+   `{"key", "world_stamp", "replayable", "phase3", "phase4"}` from DURABLE state - `Spell.dependencies`,
+   the socket descriptors of the registered topology (no edge rows, they are a socket projection; no
+   ordered frame, it is derived), the lineage state (`validity` name, `contract_unvalidated` flag) and the
+   bind-time requirements (key) - never from the phase artifacts, which `cleanup_phase_artifacts_after_resolution`
+   has already reset; `replayable` is `pool_replayable(spellbook)` (one verdict per conjure). Then
+   `caching_system.upsert_structural_payload(spell_id, payload)` (False when the bytes are unchanged); a spell
+   with caching disabled or without a buildable payload (no key, no index, no state, no topology, or a
+   logged build failure) has its payload removed; ids not in `_spells` are removed;
+   `spellbook._cache_emit_required = True` only when anything changed. The existing emit writes the file.
 
 ## Edge / Error Semantics
 - A payload that fails to decode, lacks a key, or has a schema the reader does not recognize is a MISS for
@@ -60,7 +66,7 @@
 - Post-conjure binds are unaffected: `run_post_conjure_structural_phases` runs 1-4 for the new spells only,
   as today; their payloads are captured on the NEXT conjure of a process, never mid-run.
 - A spell with `replayable: false` is a MISS on every conjure until a later capture records true (the rule
-  is a property of the pass, so it flips only when the pool's `__eq__` situation changes).
+  is a property of the pool, so it flips only when the pool's `__eq__` situation changes).
 - `transfer_spell_ownership` drops the source's structural payload (its lineage is dirtied per conduit).
 - Restore: every book conjures through the public path; the snapshot keys on spell ids and rows carry no
   index ULID, so a restored world with fresh ULIDs still hits when the pool projection is unchanged.
@@ -68,8 +74,8 @@
 ## Invariants / Idempotency
 - Step 3 is idempotent under a following live phase 3 for the same spell (phase 3 rewrites every write),
   which is what makes a mid-hydrate fallback to the full run safe.
-- Capture is pure over (artifact, registry state, pass verdict); two captures of the same pass produce
-  byte-equal payloads.
+- Capture is pure over (`Spell.dependencies`, registry state, bind-time requirements, pool eq-safety, world
+  inputs); two captures of the same state produce byte-equal payloads, and the second rewrites nothing.
 - The executor tier never reads structural payloads and the structural tier never reads executor
   payloads; the only shared surface is the envelope file and its emit.
 

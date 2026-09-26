@@ -343,6 +343,7 @@ def test_caching_system_resident_store_holds_untracked_bytes() -> None:
         pytest.param("conduit_name", "other", id="wrong-conduit"),
         pytest.param("spell_payloads", [], id="wrong-payload-map"),
         pytest.param("spell_payloads", {"a" * 64: {}}, id="decoded-payload"),
+        pytest.param("structural_payloads", {"a" * 64: {}}, id="decoded-structural-payload"),
         pytest.param("melder_version", __version__ + ".other", id="different-release"),
         pytest.param("melder_version", "", id="empty-release"),
         pytest.param("melder_version", None, id="null-release"),
@@ -521,3 +522,141 @@ def test_caching_system_cleanup_is_idempotent() -> None:
     caching_system.cleanup()
 
     assert caching_system.cleaned is True
+
+
+def _make_structural_payload(label: str) -> dict[str, object]:
+    """
+    Build one marshal-safe structural payload shaped like the capture seam's rows.
+
+    Args:
+        label:
+            Stable label embedded into the payload.
+
+    Returns:
+        dict[str, object]:
+            Value-only structural payload.
+    """
+    return {
+        "key": {"format": 1, "spell_id": label, "annotation_refs": [("mod", "Type")]},
+        "world_stamp": "stamp-" + label,
+        "replayable": True,
+        "phase3": {"dependency_ids": ["d" * 64], "sockets": [("dep", 0, "NORMAL", False, False, ("d" * 64,), None, None, (), "POSITIONAL_OR_KEYWORD")]},
+        "phase4": {"validity": "valid", "contract_unvalidated": False},
+    }
+
+
+def test_caching_system_structural_tier_round_trips_through_emit_and_reload(tmp_path: Path) -> None:
+    """
+    Verify structural payloads persist beside executor payloads and reload independently.
+
+    Contract:
+        - upsert returns True on add, False on an identical re-upsert, True on a change.
+        - The structural tier survives emit/reload and does not touch the executor tier.
+        - remove reports presence; a missing id is a False no-op.
+    """
+    spell_id = "c" * 64
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.has_structural_payload(spell_id) is False
+        assert caching_system.get_structural_payload(spell_id) is None
+        payload = _make_structural_payload("one")
+        assert caching_system.upsert_structural_payload(spell_id, payload) is True
+        assert caching_system.upsert_structural_payload(spell_id, payload) is False
+        assert caching_system.upsert_structural_payload(spell_id, _make_structural_payload("two")) is True
+        assert tuple(caching_system.cached_structural_spell_ids) == (spell_id,)
+        assert tuple(caching_system.cached_spell_ids) == ()
+        caching_system.emit()
+    finally:
+        caching_system.cleanup()
+    reloaded = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert reloaded.get_structural_payload(spell_id) == _make_structural_payload("two")
+        assert reloaded.structural_payloads == {spell_id: _make_structural_payload("two")}
+        assert isinstance(reloaded.structural_payloads, MappingProxyType)
+        assert reloaded.has_spell_payload(spell_id) is False
+        assert reloaded.remove_structural_payload(spell_id) is True
+        assert reloaded.remove_structural_payload(spell_id) is False
+        assert reloaded.has_structural_payload(spell_id) is False
+    finally:
+        reloaded.cleanup()
+
+
+def test_caching_system_structural_store_holds_untracked_bytes(tmp_path: Path) -> None:
+    """The structural tier keeps nested-marshal bytes resident, like the executor tier."""
+    spell_id = "e" * 64
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        caching_system.upsert_structural_payload(spell_id, _make_structural_payload("bytes"))
+        stored = caching_system._cache_data["structural_payloads"][spell_id]
+        assert isinstance(stored, bytes)
+        assert marshal.loads(stored) == _make_structural_payload("bytes")
+    finally:
+        caching_system.cleanup()
+
+
+def test_caching_system_transfer_drops_source_structural_payload(tmp_path: Path) -> None:
+    """
+    Verify a transfer moves the executor bytes and drops the source's structural payload without copying it.
+
+    Contract:
+        - With both tiers present: executor moves, structural is removed at the source and absent at the target.
+        - With only a structural payload: transfer returns False (no executor payload) but still drops it.
+    """
+    spell_id = "f" * 64
+    source = _make_cache_utility(conduit_name="source", cache_root_path=tmp_path)
+    target = _make_cache_utility(conduit_name="target", cache_root_path=tmp_path)
+    try:
+        source.upsert_spell_payload(spell_id, _make_spell_payload("moving"))
+        source.upsert_structural_payload(spell_id, _make_structural_payload("moving"))
+        assert source.transfer_spell_payload_to(spell_id, target) is True
+        assert source.has_spell_payload(spell_id) is False
+        assert source.has_structural_payload(spell_id) is False
+        assert target.get_spell_payload(spell_id) == _make_spell_payload("moving")
+        assert target.has_structural_payload(spell_id) is False
+
+        only_structural = "g" * 64
+        source.upsert_structural_payload(only_structural, _make_structural_payload("lonely"))
+        assert source.transfer_spell_payload_to(only_structural, target) is False
+        assert source.has_structural_payload(only_structural) is False
+        assert target.has_structural_payload(only_structural) is False
+    finally:
+        source.cleanup()
+        target.cleanup()
+
+
+def test_caching_system_accepts_current_bundle_without_structural_tier(tmp_path: Path) -> None:
+    """A current-generation bundle written without the structural map is a valid executor bundle."""
+    bundle = _make_populated_cache_bundle()
+    assert "structural_payloads" not in bundle
+    bundle_path = _write_cache_bundle(tmp_path, marshal.dumps(bundle))
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        assert caching_system.get_spell_payload("a" * 64) == _make_spell_payload("cached")
+        assert tuple(caching_system.cached_structural_spell_ids) == ()
+        caching_system.upsert_structural_payload("a" * 64, _make_structural_payload("late"))
+        caching_system.emit()
+        persisted = marshal.loads(bundle_path.read_bytes())
+        assert set(persisted["structural_payloads"]) == {"a" * 64}
+        assert set(persisted["spell_payloads"]) == {"a" * 64}
+    finally:
+        caching_system.cleanup()
+
+
+def test_caching_system_emit_writes_structural_tier_in_envelope(tmp_path: Path) -> None:
+    """The persisted envelope carries both maps and the current generation."""
+    caching_system = _make_cache_utility(cache_root_path=tmp_path)
+    try:
+        caching_system.upsert_spell_payload("h" * 64, _make_spell_payload("exec"))
+        caching_system.upsert_structural_payload("i" * 64, _make_structural_payload("rows"))
+        caching_system.emit()
+        persisted = marshal.loads(caching_system.bundle_path.read_bytes())
+        assert persisted["version"] == CachingSystem.CURRENT_VERSION
+        assert set(persisted) == {
+            "version", "melder_version", "python", "frame_name", "conduit_name",
+            "spell_payloads", "structural_payloads",
+        }
+        assert isinstance(persisted["structural_payloads"]["i" * 64], bytes)
+        assert marshal.loads(persisted["structural_payloads"]["i" * 64]) == _make_structural_payload("rows")
+    finally:
+        caching_system.cleanup()
+

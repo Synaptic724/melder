@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T15:03:58Z
-- Updated: 2026-09-26T16:47:56Z
+- Updated: 2026-09-26T17:28:31Z
 
 ## User Narrative
 As the Melder owner, I want a conjure whose creation cache fully hits to skip the structural and resolution
@@ -86,11 +86,11 @@ rows - measured on the gauntlet before it is trusted.
 - [x] Task: TASK-2026-09-26-author-structural-snapshot-patch-docs - architecture, SpellCompiler component and
   hydrator code-description patches after the four rulings and a re-read of the S3b cache path
   tickets/tasks/completed/2026-09-26_author_structural_snapshot_patch_docs_task.md (done 2026-09-26T16:12:08Z)
-- [ ] Task: TASK-2026-09-26-drop-phase3-dag-object-for-id-rows (C-C) - phase-3 DAG object to id and edge rows;
-  presence strategy repointed. tickets/tasks/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md (opened 2026-09-26T16:12:08Z)
+- [x] Task: TASK-2026-09-26-drop-phase3-dag-object-for-id-rows (C-C) - phase-3 DAG object to id rows;
+  presence strategy repointed. tickets/tasks/completed/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md (done 2026-09-26T16:59:15Z)
 - [ ] Task: TASK-2026-09-26-capture-structural-payloads-at-conjure-end - per-spell phase 3-4 rows beside the
   executor payload; replayability verdicts; world stamp; key; generation 15. tickets/tasks/2026-09-26_capture_structural_payloads_at_conjure_end_task.md
-  (opened 2026-09-26T16:47:56Z). Original line: capture on miss - per-spell phase 1-4 rows beside the executor payload; replayability verdicts;
+  (opened 2026-09-26T16:47:56Z; in REVIEW 2026-09-26T17:28:31Z: landed on the device tree, worktree suites green, owner-run pending). Original line: capture on miss - per-spell phase 1-4 rows beside the executor payload; replayability verdicts;
   world stamp; key extension; generation bump
 - [ ] Task: hydrate on hit - registry replay through the helpers, Spell flags, structural run only for the
   regenerating set, phase-4 rerun rule; 5-7 and the 8-11 load unchanged
@@ -139,6 +139,10 @@ rows - measured on the gauntlet before it is trusted.
   non-replayable spells regenerate 3-4 through the normal phases (per-spell miss); (c) accepted; (d) moot.
 - 2026-09-26 (owner): patch docs approved ("yeah ok finish off what you gotta do"); the lane proceeds task by task
   (C-C first); the release note is updated when code lands; tickets are turned in on owner-run green suites.
+- 2026-09-26 (owner): C-C accepted and turned in (suites green; "it seems faster"); a self-referencing constructor
+  now records its self-dependency for Phase 4 (owner option A, melder_1's lane). Capture task open, go pending.
+- 2026-09-26 (owner): capture task and the rest of the lane approved ("continue go ahead and finish your work its all
+  good"); capture landed the same day (task 3 in review, owner-run pending).
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -277,6 +281,37 @@ rows - measured on the gauntlet before it is trusted.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T16:59:33Z
+  TYPE: FACT
+  CLAIM: Mailbox M1-16 (melder_1, 16:58:52Z) consumed: their half of the self-referencing-constructor change is
+    applied on top of C-C in the tree (self_validation_strategy.py names the parameter from the Phase-3 topology;
+    spellbook_validation_error.py hides CIRCULAR_DEPENDENCY behind SELF_DEPENDENCY; unit tests; a new integration
+    file tests/integration/melder/spellbook/test_spellbook_integration_self_dependency.py exercising the Phase-3
+    self-resolution end to end). compiler_phase_3.py, its test and descriptor untouched by them.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-26_report_self_referencing_constructor_as_validation_error_task.md
+  IMPACT: The C-C self branch has an end-to-end integration test from melder_1's lane; nothing for this story to do.
+  NEXT: Capture task awaits the owner's go and melder_0's answer (F0-17).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T17:28:31Z
+  TYPE: FACT
+  CLAIM: Task 3 (capture) landed on the device tree and is in review: `StructuralSnapshot` seam
+    (`spell_compiler/structural_snapshot/`), envelope generation 15 with `structural_payloads`, conjure-end
+    capture from durable state on every cache path with a change-gated emit, 33 new tests; worktree suites green
+    (unit spellbook+utilities 3019, component+integration spellbook 1361, wider aether/conduit/crystallizer 6919
+    passed). Patch docs aligned to the landed shape. Owner-run suites pending (C6).
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_capture_structural_payloads_at_conjure_end_task.md (Validation; notes 2026-09-26T17:28:31Z)
+  - src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:24-105
+  - src/melder/utilities/caching_system/caching_system.py:165-184
+  IMPACT: The hydrate task (task 4) has its input and its docs; the lane order (capture -> hydrate -> parity ->
+    measurement -> promotion) holds.
+  NEXT: owner-run suites for task 3; open the hydrate task on the owner's standing go.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -295,6 +330,10 @@ STATE 2026-09-26T16:07:21Z: task 1 in REVIEW (three patch docs, consumption mapp
 on owner approval. No src edit yet. Resume from task 1's latest STATE line.
 STATE 2026-09-26T16:12:08Z: task 1 DONE (owner approved); task 2 (C-C) opened and routed. Resume from task 2's latest STATE line.
 STATE 2026-09-26T16:40:10Z: task 2 (C-C) in REVIEW - landed on the device tree, worktree suites green; owner-run B6 pending.
+STATE 2026-09-26T16:59:15Z: task 2 (C-C) DONE and turned in; task 3 (capture) in discovery with its Propose->Confirm posted;
+waiting on the owner's go and on melder_0 (F0-17) for the two shared cache-path files.
+STATE 2026-09-26T17:28:31Z: task 3 (capture) in REVIEW - landed on the device tree, worktree suites green, patch docs aligned;
+owner-run suites pending. Next: the hydrate task (task 4).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

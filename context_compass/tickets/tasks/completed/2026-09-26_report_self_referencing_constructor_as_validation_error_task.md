@@ -2,15 +2,20 @@
 
 # Task: Report a constructor that takes its own class as a validation error, not a bare Phase-3 abort
 
+- Completed: 2026-09-26T17:00:32Z
+- Summary: A constructor that takes its own class is refused through the readable report (SELF_DEPENDENCY,
+  naming the parameter) instead of a Phase-3 PhaseExecutionError or a bare ValueError at a late dynamic bind.
+  Phase-3 half landed in fable_0's C-C on request; strategy/report/tests here, committed in afded5ce6.
+
 ## Metadata
 - Task ID: TASK-2026-09-26-report-self-referencing-constructor-as-validation-error
 - Story: none (open follow-up recorded at closure of TASK-2026-09-26-review-conjure-validation-error-reporting)
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-09-26T16:33:08Z
-- Updated: 2026-09-26T16:51:21Z
+- Updated: 2026-09-26T17:00:32Z
 
 ## Objective
 A spell whose constructor takes its own class (`def __init__(self, parent: Node)`) makes conjure abort in Phase 3
@@ -45,29 +50,38 @@ refusal goes through the readable SpellbookValidationError report (or another ow
 - transition_reason: Owner delegated the choice; option A chosen (2026-09-26T16:39:36Z).
 - from_state: in_progress
 - to_state: blocked
-- transition_reason: compiler_phase_3.py is fable_0's in-review file (C-C); CONFLICT recorded, M1-15 sent (2026-09-26T16:42:46Z).
+- transition_reason: compiler_phase_3.py is fable_0's in-review file (C-C); CONFLICT recorded, M1-15 sent
+  (2026-09-26T16:42:46Z).
 - from_state: blocked
 - to_state: in_progress
 - transition_reason: fable_0 included the Phase-3 change in C-C (F0-16); CONFLICT resolved (2026-09-26T16:51:21Z).
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner asked to turn it in once done ("turn it in and continue"); closure sync
+  (2026-09-26T17:00:32Z).
 
 ## Steps / Checklist
 - [x] Reproduce on current source; read the raise site, Phase 3's DAG build and Phase 4's self check in full.
 - [x] Record the cause; bring options and a recommendation (DECISION_REQUEST).
-- [ ] Implement the chosen option on a VM copy with tests; suites; worktree; docs, graph, release note.
-- [ ] Owner review.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Implement the chosen option on a VM copy with tests; suites; worktree; docs, graph, release note.
+- [x] Owner review.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Evidence and probes under artifacts/self_dependency_report_20260926/; assessment and options; the chosen fix.
 
 ## Files / Paths Impacted
-- UNKNOWN until the cause is traced.
+- src (this lane): validation/strategies/self_validation_strategy.py, custom_exceptions/spellbook_validation_error.py.
+- src (fable_0's C-C lane, on request): phases/compiler_phase_3.py and its unit test.
+- tests: test_self_validation_strategy.py (+3), test_spellbook_validation_error.py (+1), new
+  test_spellbook_integration_self_dependency.py (5). Exact list: results/commit_files.txt.
 
 ## Validation
-- Not run.
+- ~/sd3_fix (worktree with C-C + this lane), 3.14.7t: suites green, failures identical to base
+  (results/suite_results.txt). Owner machine: Not run.
 - Recommended commands:
   - `pytest tests/unit tests/component tests/integration` on 3.14t.
 
@@ -80,17 +94,18 @@ refusal goes through the readable SpellbookValidationError report (or another ow
 - [ ] No behavior claim cited only to a document or a one-line search hit.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Validation status recorded
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/self_dependency_report_20260926/
-- DISPOSITION: retain_as_reference
+  - system_docs/patches/completed/self_dependency_report_2026_09_26/
+- DISPOSITION: retain_as_reference (artifacts); promote_to_documentation (patch docs)
 - CLEANUP_TRIGGER: ticket closure
 
 ## Context Management
@@ -303,8 +318,48 @@ refusal goes through the readable SpellbookValidationError report (or another ow
   NEXT: Re-sync VM copies from the worktree, apply own files only, rerun targeted tests and the suites.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T16:58:52Z
+  TYPE: MEASURE
+  CLAIM: scripts/apply_own.py (apply_fix.py minus fable_0's two files) on a fresh sync with C-C landed: targeted 82
+    passed (fable_0's Phase-3 test included); suites on ~/sd3_fix: unit spellbook 2185, aether 4145, rest 1894 (4
+    failures identical to base), other dirs identical to base, component 2146, integration spellbook 584,
+    crystallizer 258, conduit 268, mutation_research + live_sim 67, aether 716, multithreading 42. Worktree: the four
+    targets byte-identical to the synced base first; after the apply all five files byte-identical to the validated
+    copy (measured with git apply --numstat: source +57/-10, unit tests +146 and +23, new integration file 158
+    lines); no .git/index.lock (git run with GIT_OPTIONAL_LOCKS=0). The owner committed the five code/test files
+    in afded5ce6 (2026-09-26T16:56:14Z); docs, graph and the latest release-note edit remain uncommitted.
+    Docs: patch lane written (after implementation - the patch gate was missed before the edits; recorded in the
+    architecture patch), promote_docs.py (made idempotent with full-line anchors after a partial-line anchor
+    failed mid-run), indexes regenerated (--check OK: 9566 / 2911 lines); graph: two descriptors re-extracted,
+    authored, accepted after reading source, copied back, assembled (--check OK, 28435 lines); release note
+    limitation bullet replaced by the fix.
+  EVIDENCE:
+  - context_compass/artifacts/self_dependency_report_20260926/results/suite_results.txt:1-29
+  - context_compass/artifacts/self_dependency_report_20260926/results/source_diff.patch:1-117
+  - context_compass/artifacts/self_dependency_report_20260926/results/test_diff.patch:1-346
+  - system_docs/src_components.md:3233-3238
+  - release_docs/next_version_release.md:392-397
+  IMPACT: Exit gate met; owner pre-authorized turn-in ("turn it in and continue").
+  NEXT: Closure sync.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:00:32Z
+  TYPE: DECISION
+  CLAIM: Closure on the owner's instruction ("ok cool turn it in and continue", given with the choice of the
+    best option). Ticket to tickets/tasks/completed/, patch lane to system_docs/patches/completed/ (deltas in
+    src_components/src_architecture), artifacts retained, boards synced. Open follow-up, not done: a spell that
+    only consumes a cycle is listed as "part of" it (all cycles). Owner-machine suites: Not run.
+  EVIDENCE:
+  - context_compass/system_docs/patches/completed/self_dependency_report_2026_09_26/architecture_patch.md:1-40
+  - context_compass/artifacts/self_dependency_report_20260926/scripts/close_lane.py:1-122
+  IMPACT: melder_1 is free for the next lane.
+  NEXT: none (closed).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
+CLOSED 2026-09-26T17:00:32Z: turned in on the owner's instruction; ticket, patch lane and boards synced.
 Opened 2026-09-26T16:33:08Z on owner direction. Resume from the latest Notes NEXT.
 
 ## Project-Specific Additions

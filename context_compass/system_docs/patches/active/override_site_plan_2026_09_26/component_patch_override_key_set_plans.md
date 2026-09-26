@@ -50,8 +50,9 @@
   generated at run time.
 
 ## Behavior Deltas
-- B1, B5, B7, B8 and B3 (design v2). Construction order of the remaining steps is unchanged (providers
-  first); B2 stays with the normal lane (S2).
+- B1, B5, B7, B8 and B3 (design v2). B2 (S2b-1, 2026-09-26): a stored shared site's children are not built;
+  they are built just before their shared site, inside its miss, only when it is missing (providers still
+  precede consumers). For normal melds see the S2b-2 section.
 
 ## Validation Expectations
 - Existing override suites (component meld_overrides, meld_overrides_deep, integration overrides,
@@ -61,3 +62,38 @@
 
 ## Rollback
 - Restore the two hydrator `_hydrate_overrides_runtime` functions; the new modules are then unused.
+
+## S2b-2: normal melds on the same runtime (2026-09-26)
+
+### Before
+- Normal melds run the family's inner executor from the old emitters: generalized `hydrate_no_overrides_executor`
+  (unrolled transient source for all-many non-registering graphs, else straight-line step source) and many_only
+  `compile_no_overrides_codegen_creation_executor`. Every warm meld builds every transient site, including the
+  children of stored shared sites. The generalized override runtime and its site graph are built at the first
+  override meld; many_only builds its runtime at hydration.
+
+### After
+- Both hydrators build `SitePlanOverrideRuntime` at hydration (first meld). The runtime builds the site graph and
+  compiles the empty-key-set plan in normal mode (`def _site_plan_executor(meld)`), exposed as `execute_normal`;
+  the hydrators install it as the inner no-overrides executor under the same route-keyed doors (the fast-transient
+  door flag is unchanged). `override=None` and payloads with no winning key run the same plan. The generalized
+  override door reuses that runtime (one site graph per root). The opt-in singleton specializer keeps its body
+  from the old emitter; its generic and deopt target is the plan. Solo-family roots are unchanged.
+
+### Interface / State Deltas
+- `SitePlanOverrideRuntime(steps, root_spell, root_instance_key)` takes no inner executor and exposes
+  `execute_normal`. `SitePlanLowering.emit(..., normal_mode=True)` requires an empty resolution and arity 0.
+- One site graph and step set per hydrated root, kept for override key sets. Manifests are unchanged, so there is
+  no cache generation.
+
+### Behavior Deltas
+- B2 on normal melds: a warm normal meld no longer builds the children of a stored shared site (R4: those children
+  are built just before their shared site, only when it is missing). Results are unchanged.
+- The first meld of a root also builds its site graph (about 2 ms on a 511-site graph).
+
+### Validation Expectations
+- Parity gate (design S2): s2b2_parity.py, normal throughput at or above today on 3.14t and GIL (met
+  2026-09-26T17:07:50Z); all suites on both builds; a normal-meld B2 component test, fresh and cached.
+
+### Rollback
+- Restore the hydrators' inner-executor construction; the old emitters stay in the tree until S2b-3.

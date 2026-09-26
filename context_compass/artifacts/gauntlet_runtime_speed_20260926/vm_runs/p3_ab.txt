@@ -1,0 +1,35 @@
+# melder_2 P3 prototype on the VM copy (device tree at ~17:10Z + apply_p3.py), CPython 3.14.7t, 2 vCPU
+## run_ab_p3.sh 8 1: interleaved processes, tree vs tree+P3, fresh worker thread per lane after warm-up on short-lived threads (medians)
+1 thread             tree  request= 15,551 (+0.0%) n=8  worker_a= 11,758 (+0.0%) n=8  worker_b= 10,762 (+0.0%) n=8
+1 thread             p3    request= 11,037 (-29.0%) n=8  worker_a=  8,544 (-27.3%) n=8  worker_b=  8,268 (-23.2%) n=8
+2 concurrent threads tree  worker_a= 15,233 (+0.0%) n=6  request= 18,530 (+0.0%) n=6
+2 concurrent threads p3    worker_a=  9,824 (-35.5%) n=6  request= 12,345 (-33.4%) n=6
+## raw
+tree threads=1 request=14,993ns  worker_a=11,647ns  worker_b=10,290ns
+p3 threads=1 request=10,937ns  worker_a=8,407ns  worker_b=8,545ns
+tree threads=1 request=15,773ns  worker_a=11,945ns  worker_b=10,892ns
+p3 threads=1 request=11,011ns  worker_a=8,239ns  worker_b=8,317ns
+tree threads=1 request=16,527ns  worker_a=12,363ns  worker_b=11,594ns
+p3 threads=1 request=11,371ns  worker_a=8,721ns  worker_b=8,225ns
+tree threads=1 request=15,610ns  worker_a=11,728ns  worker_b=10,806ns
+p3 threads=1 request=11,063ns  worker_a=8,748ns  worker_b=8,116ns
+tree threads=1 request=15,646ns  worker_a=11,787ns  worker_b=10,788ns
+p3 threads=1 request=11,071ns  worker_a=8,681ns  worker_b=8,233ns
+tree threads=1 request=13,754ns  worker_a=10,569ns  worker_b=9,400ns
+p3 threads=1 request=13,256ns  worker_a=10,838ns  worker_b=9,049ns
+tree threads=1 request=15,492ns  worker_a=11,918ns  worker_b=10,737ns
+p3 threads=1 request=10,784ns  worker_a=8,379ns  worker_b=8,220ns
+tree threads=1 request=13,706ns  worker_a=9,952ns  worker_b=9,007ns
+p3 threads=1 request=10,843ns  worker_a=8,263ns  worker_b=8,303ns
+tree threads=2 worker_a=18,171ns  request=28,495ns
+p3 threads=2 worker_a=11,372ns  request=12,594ns
+tree threads=2 request=21,003ns  worker_a=18,456ns
+p3 threads=2 request=19,083ns  worker_a=19,554ns
+tree threads=2 worker_a=13,903ns  request=18,429ns
+p3 threads=2 worker_a=9,334ns  request=11,603ns
+tree threads=2 request=18,632ns  worker_a=13,916ns
+p3 threads=2 worker_a=9,930ns  request=12,789ns
+tree threads=2 worker_a=10,667ns  request=15,991ns
+p3 threads=2 worker_a=9,200ns  request=11,696ns
+tree threads=2 request=16,624ns  worker_a=16,550ns
+p3 threads=2 request=12,096ns  worker_a=9,718ns

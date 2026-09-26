@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T16:50:28Z
+- Updated: 2026-09-26T17:29:58Z
 
 ## Objective
 A per-scope-cycle cost map for Melder on the real-world gauntlet - where the time and the calls go in outer and
@@ -457,6 +457,141 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
     VM copy.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:11:10Z
+  TYPE: MEASURE
+  CLAIM: P3 prototype, library form, VM copy only (device tree at ~17:10Z plus apply_p3.py): the new
+    RefcountDeferral utility, called at conjure end, hydrator publication, new lesser and spellspace shells, and
+    fast-door entries. A/B against the unmodified tree in interleaved processes, fresh worker thread per lane:
+    request 15.55 -> 11.04 us (-29%), worker_a 11.76 -> 8.54 (-27%), worker_b 10.76 -> 8.27 (-23%). Two concurrent
+    threads: -33% / -36%. A thread that warmed its own shell: 9.8-9.9 -> 8.6-8.7 us (-11%). Main thread (owns
+    everything): -2 to -9%, no regression. Costs: gauntlet setup (bind and conjure, warm cache) 122-128 ->
+    137-146 ms (+~17 ms from the conjure walk, ~35 ms on a cold cache). During a whole 3-thread gauntlet run
+    defer_graph runs 84 times; everything after conjure totals ~12 ms, all in the first cycles, and there are no
+    steady-state walks. With GC disabled, application objects are still released at scope exit and cleanup
+    (weakref probe, same on both trees). Suites green on 3.14t -X gil=0 (unit/component/integration spellbook,
+    conduit, multithreading, unit/component/integration aether, unit utilities, crystallizer, mutation_research,
+    live_sim) and -X gil=1. A standard 3.14 GIL build gives a no-op and ctypes is not loaded. Two known failures
+    are unchanged on both trees (build-assets builder x2, asset version stamp). New tests: 13 unit + 4 component.
+  EVIDENCE:
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/vm_runs/p3_ab.txt:1-35
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/vm_runs/p3_costs_and_census.txt:1-38
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/p3_deferred_refcount/p3_src.diff:1-273
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/p3_deferred_refcount/refcount_deferral.py:1-372
+  IMPACT: Largest validated gain so far and it compounds with P1. What remains is the owner's decision (ctypes
+    call into an unstable 3.14 C API; deferred Melder objects reclaimed by the GC; +17 ms conjure; edits in
+    melder_0's meld and conduit files), then patch docs and NOTICEs before a tree edit.
+  NEXT: DECISION_REQUEST to the owner with the options and the file list.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-26T17:11:21Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Owner decision on P3 (deferred refcounting of Melder's runtime graph on free-threaded CPython). (A)
+    Ship it (recommended): open a P3 task and write patch docs (architecture plus Meld/Conduit/Spellbook
+    component patches: memory lifecycle of kernel objects, chokepoints, no-op builds), NOTICE melder_0 before
+    touching conduit.py, conduit_meld.py and spellspace_meld.py, apply with --check first, then the owner's
+    Windows gauntlet run decides. Files: new melder/utilities/helpers/refcount_deferral.py; spellbook.py (conjure
+    and _conjure_existing_conduit tails); conduit.py (new lesser shell); spell_space_pool.py (new spellspace
+    shell); conduit_meld.py and spellspace_meld.py (fast-door entries); the generalized, solo and many_only
+    hydrators (hot-door publication); plus 2 new test files. (B) Ship it without the fast-door entry sites
+    (leaves melder_0's meld doors untouched; that share of the gain is unmeasured). (C) Do not ship: it calls an
+    unstable C API through ctypes and GC-reclaims Melder objects. Known costs of A: +~17 ms warm conjure in the
+    gauntlet world; Melder objects (not application objects) freed at the next GC collection instead of at
+    their last reference; must be re-checked on each CPython minor release (the symbol is PyUnstable).
+  EVIDENCE:
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/vm_runs/p3_ab.txt:1-35
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/vm_runs/p3_costs_and_census.txt:1-38
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/p3_deferred_refcount/apply_p3.py:1-218
+  IMPACT: Tree edits wait for this answer; A or B opens the P3 task and patch lane.
+  NEXT: Ask the owner (A/B/C); record the answer as a DECISION note.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:12:06Z
+  TYPE: FACT
+  CLAIM: Consumed M0-35 (melder_0, 16:31:17Z; owner decision "yeah continue 1"). S2b moves normal melds onto
+    melder_0's site-plan lowering, so melder_0 owns code emission for both normal and override melds: the
+    generalized and many_only compilers, the hydrators and site_plan_*. P1 will be folded into the lowering and
+    kept for the normal lane. melder_2 keeps to meld entry and SpellSpace costs and sends emission levers to
+    melder_0 instead of editing those files. generalized_manifest_no_overrides_compiler.py stays as it is until
+    S2b lands. For P3, the hydrator chokepoints (the generalized, solo and many_only _hydrate_once and the
+    specializer) become a handoff to melder_0. melder_2's own chokepoints stay: the utility, conjure end, new
+    lesser and spellspace shells, and fast-door entries in the meld doors (NOTICE first).
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md:1336-1370
+  IMPACT: P3 splits by file owner: melder_2 applies the lifecycle and entry sites, melder_0 adds deferral at
+    hot-door publication in its emission lane. Walking from each fast-door entry with its context as a root
+    still reaches the hydrated executor, so most of the executor share is covered without the hydrators.
+  NEXT: ACK M0-35; ask the owner for the P3 decision (A/B/C).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:13:19Z
+  TYPE: DECISION
+  CLAIM: Owner answer (AskUserQuestion, ~17:13Z): "Ship it (Recommended)", i.e. option A. melder_2 opens the P3
+    task and patch lane. Per M0-35, melder_2 applies the utility, the conjure-end walk, new lesser and spellspace
+    shells, and the fast-door entry sites (walk roots: the entry and its context, which reaches the hydrated
+    executor), after NOTICEs. The hydrator and specializer publication lines go to melder_0 as a HANDOFF, not an
+    edit. Before any tree edit, re-validate this exact shape (without the hydrator sites) on the VM copy.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:488-509
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:511-527
+  IMPACT: P3 moves from prototype to a patch-gated implementation task.
+  NEXT: Open the P3 task (ticket, story checklist, board and artifact rows), then write the patch docs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:18:03Z
+  TYPE: DECISION
+  CLAIM: The owner paused P3 right after answering "Ship it" (~17:15Z): "its not a fix"; the concern is getting
+    faster now but slower over time (a pattern the owner has seen with dishka and dependency-injector), plus using
+    "frankenstein tech" (ctypes into an unstable C API) to win. P3 is ON HOLD: no P3 task, patch docs or tree
+    edits until the discussion ends with a new owner decision. That decision replaces the 17:13:19Z answer.
+  EVIDENCE: tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:529-542
+  IMPACT: Prevents a post-compaction resume from shipping P3 on the superseded answer. The long-run question (soak
+    and churn behavior) is UNKNOWN: every P3 number so far comes from short runs.
+  NEXT: Discuss mechanism, long-run risk and clean alternatives with the owner; record the outcome.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:22:58Z
+  TYPE: FACT
+  CLAIM: Owner proposal under discussion: offer P3 as an opt-in SpellbookConfiguration flag "momentum_mode",
+    documented as strictly for short-lived applications and used for benchmarks. Plumbing facts: boolean
+    configuration properties already follow one pattern (enforce_priority_disposal_methods: typed schema entry,
+    default False, required-property defaults, with_<name>() fluent setter via set_property, freeze at conjure,
+    and a restore-compatibility rule for crystallizer records that predate the key). No class in src/melder
+    defines __del__, so no Melder teardown depends on deallocation timing. Deferral cannot be undone per object,
+    which fits a conjure-frozen setting. The only crash vector is ctypes calling a changed signature on a
+    future CPython, fenced by allowing only tested minors (3.14) and falling back to a no-op plus one warning
+    elsewhere.
+  EVIDENCE:
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:145-149
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:685-695
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:1312-1340
+  IMPACT: The flag is a small, patterned change on top of the validated utility; the owner still decides.
+  NEXT: Owner answers whether to build momentum_mode (default off, 3.14t-only allowlist, labeled gauntlet lane).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:29:58Z
+  TYPE: DECISION
+  CLAIM: P3 is DROPPED in every form, including the opt-in "momentum_mode"/"haste_mode" flag. Owner (~17:30Z):
+    it's clever, but a tactic built on an API that may disappear in future versions "is not really a play", and
+    shipping it would look like gaming the benchmark. Nothing goes into src/ or benchmarks/; the prototype and
+    measurements stay in artifacts as research (retain_as_reference). The finding stands and drives the plan:
+    cross-thread ownership of hot objects dominates the worker-thread cycle on 3.14t. It is to be attacked with
+    plain-Python design changes, each gated by a long-run check (30k+ iterations: per-window throughput, RSS,
+    GC stats).
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:544-575
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/p3_deferred_refcount/apply_p3.py:1-218
+  IMPACT: This supersedes the 17:13:19Z "Ship it" answer and the 17:18:03Z hold. The next candidates are the
+    clean levers (spell-id interning, thread-affine shell pools, fewer shared hops per meld, SpellSpace.meld entry,
+    lifecycle flattening), plus handoffs to melder_0 (module-level executors; P2 via the S2b nested-miss form).
+  NEXT: Owner picks the first clean lever; open its task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Opened 2026-09-26 on the owner's request to run the benchmarks and speed up the library. Baseline filed (owner

@@ -74,8 +74,6 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-26T16:31:17Z)
-- NEW MESSAGE for melder_0 (from fable_0, 2026-09-26T16:47:56Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -84,19 +82,20 @@ Message alert rules
 <!-- BEGIN USER-DEFINED: active_items -->
 | override_design_melder | review | handoff | claude | melder_0 | none | Owner confirms closure of the design task (design v2 approved). | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T11:30:45Z | REQUIRED |
 | override_many_collection_fix | review | handoff | claude | melder_0 | none | Owner reviews the collection-member fix (member paths, cache 13). | Each collection member builds its own many dependencies. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_fix_collection_member_many_sharing_task.md | 2026-09-26T12:29:50Z | REQUIRED |
-| override_site_plan_lowering | in_progress | implementation | claude | melder_0 | none | S2b discovery: normal lane through the site-plan lowering behind the parity gate (plan, patch docs, file list first). | Key-set plans for overrides (S3, done in tree) with the normal lane parity-gated (S2). | S2 parity measured; normal lane switched only if it meets the gate. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T16:28:28Z | REQUIRED |
+| override_site_plan_lowering | in_progress | implementation | claude | melder_0 | none | Owner decision on S2b-3 (retire old normal emitters); meanwhile S4 discovery (unresolved inputs decided in the plan). | Key-set plans for overrides and normal melds on one lowering (S3, S2b-1, S2b-2 done in tree). | S4-S6 done or owner redirects. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T17:26:20Z | REQUIRED |
 | caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
-| ir_structural_snapshot | review | validation | claude | fable_0 | none | Owner reruns the spellbook suites (self-dependency follow-up landed on top of C-C); accepts; then the capture task opens. | Phase 3 emits id rows without a DAG object (landed; worktree green; local_frame -31..-34% in the VM). | Owner-run suites green and acceptance; then the capture task opens. | tickets/tasks/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md | 2026-09-26T16:46:41Z | REQUIRED |
-| gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Refresh the VM copy, read the scope-lifecycle path in full, then prototype and A/B lifecycle trims. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Lifecycle cost map and measured trims filed; owner picks; implementation tasks open. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T16:30:24Z | REQUIRED |
+| gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | P3 dropped; owner picks the first clean lever (interning, thread-affine pools, fewer shared hops, SpellSpace.meld entry, lifecycle). | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Owner picks; that lever's task opens. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T17:29:58Z | REQUIRED |
 | gauntlet_p1_positional_args | review | validation | claude | melder_2 | none | Owner runs the Windows gauntlet with P1 applied; compare same-run ratios with owner_run_20260926.txt. | Generated plans pass dependency values positionally (-11% to -21% per scope cycle on the VM). | Owner-run gauntlet filed; owner accepts; closure sync. | tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md | 2026-09-26T16:30:24Z | REQUIRED |
-| self_dependency_report | in_progress | implementation | claude | melder_1 | none | Apply own files (strategy, report, tests) on top of C-C; suites; docs. | A self-referencing constructor is refused with a readable validation error. | Fix applied with tests and docs; turned in. | tickets/tasks/2026-09-26_report_self_referencing_constructor_as_validation_error_task.md | 2026-09-26T16:51:21Z | REQUIRED |
-| ir_structural_snapshot_capture | in_progress | discovery | claude | fable_0 | melder_0 answer on the shared cache-path files (F0-17) before any edit there | C2: owner confirms the capture Propose->Confirm; melder_0 clears the two shared files; then C3 edits. | Per-spell structural payloads (phase 3-4 rows, key, stamp, verdict) emitted beside the executor payloads at generation 15. | Owner confirms the file list and melder_0 clears the shared files; edits land; owner-run suites green. | tickets/tasks/2026-09-26_capture_structural_payloads_at_conjure_end_task.md | 2026-09-26T16:51:47Z | REQUIRED |
+| ir_structural_snapshot_capture | review | validation | claude | fable_0 | none | C6: owner-run suites on the landed capture (seam, generation 15, conjure-end capture, 33 tests); then the hydrate task opens under the story. | Per-spell structural payloads (phase 3-4 rows, key, stamp, verdict) emitted beside the executor payloads at generation 15. | Owner-run suites green and acceptance; then the hydrate task is routed. | tickets/tasks/2026-09-26_capture_structural_payloads_at_conjure_end_task.md | 2026-09-26T17:28:54Z | REQUIRED |
+| cycle_consumer_wording | review | handoff | claude | melder_1 | none | Owner reviews the consumer wording (probe_after.txt) and commits results/commit_files.txt. | A cycle's consumers read as consumers, members as members. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_word_cycle_consumers_in_circular_dependency_report_task.md | 2026-09-26T17:26:17Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| self_dependency_report | done | melder_1 | tickets/tasks/completed/2026-09-26_report_self_referencing_constructor_as_validation_error_task.md | Self-referencing constructors refused via SELF_DEPENDENCY naming the parameter (Phase-3 half in fable_0's C-C); in afded5ce6; turned in. | 2026-09-26T17:00:32Z |
+| ir_structural_snapshot_cc | done | fable_0 | tickets/tasks/completed/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md | Phase 3 emits id rows without a DAG object; dependency_graph tombstoned; owner-run suites green; turned in. | 2026-09-26T16:59:15Z |
 | class_binding_annotations_fix | done | melder_1 | tickets/tasks/completed/2026-09-26_fix_class_binding_profile_annotations_for_type_checking_names_task.md | Class binding profiles keep TYPE_CHECKING-named annotations as source text; fields count in the id; patch lane archived; owner accepted. | 2026-09-26T16:32:21Z |
 | ir_snapshot_patch_docs | done | fable_0 | tickets/tasks/completed/2026-09-26_author_structural_snapshot_patch_docs_task.md | Three I-1 patch docs (architecture, component, hydrator) written, mapped and owner-approved; C-C opened. | 2026-09-26T16:13:09Z |
 | version_notch_validation_report | done | melder_1 | tickets/tasks/completed/2026-09-26_notch_version_and_release_note_for_validation_report_task.md | Version 0.2.58 (literal already notched); release note headed 0.2.58 with the validation-report details; owner accepted. | 2026-09-26T16:09:42Z |
@@ -107,8 +106,6 @@ Message alert rules
 | creation_context_race | done | melder_1 | tickets/tasks/completed/2026-09-26_investigate_concurrent_first_meld_creation_context_race_task.md | Concurrent first-meld race fixed (September freeze/drain design); 40/40; patch lane archived; owner accepted. | 2026-09-26T14:24:40Z |
 | dormant_rows_turn_in | done | fable_0 | tickets/tasks/completed/2026-09-26_cleanup_shared_boards_and_mailbox_task.md | 13 dormant rows turned in by the owner (codex_1, workflows_0, updater_0, updater_1, muse, one unassigned epic); per-ticket record in artifacts/shared_boards_cleanup_20260926/. | 2026-09-26T13:45:56Z |
 | release_note_t1 | done | fable_0 | tickets/tasks/completed/2026-09-26_update_release_note_for_tranche_t1_task.md | Release note 0.2.56 with the four tranche-T1 sections; owner accepted. | 2026-09-26T13:38:26Z |
-| ir_phase_survey_story | done | fable_0 | tickets/stories/completed/2026-09-25_ir_phase_pipeline_survey_story.md | Milestone 1: drivers, phases 1-7 and the seam recorded (summary.md D1-D6); 8-11 deferred. | 2026-09-26T13:27:19Z |
-| ir_phase_improvement_plan_story | done | fable_0 | tickets/stories/completed/2026-09-26_phase_pipeline_improvement_plan_story.md | Cost model and 13 ranked candidates; T1 chosen and shipped. | 2026-09-26T13:27:19Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -128,15 +125,8 @@ Message alert rules
   system_docs/patches/active/override_site_plan_2026_09_26/.
 - caller_input_strictness: SWITCH_TRIGGER is the responsible commit plus before/after runs.
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md.
-- ir_structural_snapshot: SWITCH_TRIGGER is the owner's confirmation of the C-C Propose->Confirm, then owner-run
-  suites (task to review). Patch docs approved 2026-09-26. RESUME_HIERARCHY:
-  tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
-  tickets/stories/2026-09-26_structural_snapshot_story.md ->
-  tickets/tasks/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md. Patch docs:
-  system_docs/patches/active/structural_snapshot_2026_09_26/. Fact base:
-  artifacts/ir_phase_survey_20260925/summary.md (D1-D6) and artifacts/ir_phase_improvement_20260926/candidates.md (C-G).
-- ir_structural_snapshot_capture: SWITCH_TRIGGER is melder_0's answer on the shared files plus the owner's go on the
-  Propose->Confirm. RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
+- ir_structural_snapshot_capture: SWITCH_TRIGGER is the owner-run suite result on the landed capture (task in review);
+  the hydrate task opens next under the story. RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
   tickets/stories/2026-09-26_structural_snapshot_story.md -> tickets/tasks/2026-09-26_capture_structural_payloads_at_conjure_end_task.md.
 - gauntlet_runtime_speed: SWITCH_TRIGGER is the filed lifecycle cost map with measured trims (owner picks;
   D1-D3 answered 15:45:57Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
@@ -145,8 +135,8 @@ Message alert rules
   acceptance.
   RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md.
-- self_dependency_report: SWITCH_TRIGGER is the owner's choice among the options.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_report_self_referencing_constructor_as_validation_error_task.md.
+- cycle_consumer_wording: SWITCH_TRIGGER is owner review of the applied wording.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-26_word_cycle_consumers_in_circular_dependency_report_task.md.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.

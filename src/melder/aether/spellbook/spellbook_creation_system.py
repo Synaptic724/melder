@@ -15,6 +15,9 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity imp
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot import (
+    StructuralSnapshot,
+)
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
@@ -924,6 +927,11 @@ class SpellbookCreationSystem(Cleanable):
                 spellbook=spellbook,
                 cache_state=cache_state,
             )
+        if cache_state is not None:
+            SpellbookCreationSystem._capture_structural_payloads_at_conjure_end(
+                spellbook=spellbook,
+                cache_state=cache_state,
+            )
         SpellbookCreationSystem._emit_conduit_cache_file_at_conjure_end(
             spellbook=spellbook,
         )
@@ -1042,6 +1050,60 @@ class SpellbookCreationSystem(Cleanable):
         for spell_id in sorted(cache_state["live_spell_ids"]):
             spellbook._emit_spell_cache(spellbook._spell_id_pool[spell_id])
         if removed_any:
+            spellbook._cache_emit_required = True
+
+    @staticmethod
+    def _capture_structural_payloads_at_conjure_end(
+            *,
+            spellbook: Spellbook,
+            cache_state: dict[str, Any],
+    ) -> None:
+        """
+        Store the structural snapshot rows of every owned spell in the bundle.
+
+        Purpose:
+            The structural phases (1-4) ran live for every owned spell on this
+            conjure, so their phase 3-4 results are current: capture them as
+            value rows beside the executor payloads so a later conjure can
+            replay them (the hydrate half of the structural snapshot).
+
+        Contract:
+            - Runs on EVERY cache path (full hit, mixed, full miss) - unlike the
+              executor staging, which a full hit skips - because phases 1-4
+              are not skipped by the executor tier.
+            - Delegates to `StructuralSnapshot.capture_at_conjure_end`, which
+              is best-effort per spell; flags the conjure-end emit only when
+              the store's bytes changed.
+            - No-op when caching is disabled (no cache utility in the state).
+            - Never propagates a capture failure into the conjure path.
+
+        Args:
+            spellbook:
+                Owning Spellbook whose spells are snapshotted.
+            cache_state:
+                Conjure cache-state summary built by
+                `_build_conjure_cache_state`.
+
+        Returns:
+            None.
+        """
+        caching_system = cache_state["caching_system"]
+        if caching_system is None:
+            return
+        try:
+            changed = StructuralSnapshot.capture_at_conjure_end(
+                spellbook,
+                caching_system,
+            )
+        except Exception as exc:
+            if spellbook._logger is not None:
+                spellbook._logger.error(
+                    f"Failed to capture structural payloads at conjure end: {exc}",
+                    "_capture_structural_payloads_at_conjure_end",
+                    exc_info=True,
+                )
+            return
+        if changed:
             spellbook._cache_emit_required = True
 
     @staticmethod

@@ -8,7 +8,7 @@
 - Status: draft
 - Owner: fable_0 (cowork)
 - Created: 2026-09-26T15:49:37Z
-- Updated: 2026-09-26T16:39:37Z
+- Updated: 2026-09-26T17:26:53Z
 
 ## Component Purpose and Boundary
 - Current boundary: `SpellbookCreationSystem.conjure` freezes the configuration, runs phases 1-4 over
@@ -32,7 +32,7 @@
   same information (candidates.md C-C; phase_03.md:38-80).
 - After (phase 3, C-C; LANDED 2026-09-26): `_build_local_frame_dag` returns `(ordered_node_ids,
   dependency_spell_ids)` without DagNodes - the order is the sorted distinct dependency ids then the root
-  (the star DAG's topological law), a self-dependency raises ValueError before any registry write, and the
+  (the star DAG's topological law), a self-resolution is recorded and Phase 4 reports SELF_DEPENDENCY, and the
   edge rows are not stored because they are a projection of the topology sockets; `Spell.dependency_graph`
   is a documented `None` tombstone (cleanup cascade removed, slot kept for shape);
   `Spell._add_build_details(dependencies)` has no `dag` parameter; the presence strategy checks the frame
@@ -48,14 +48,16 @@
   caching disabled: today's run. Everything from the executor classification onward is unchanged.
 - Before (envelope): `spell_payloads` only; a non-full executor hit removes and re-stages every executor
   payload (`_stage_spell_payloads_at_conjure_end`).
-- After (envelope): `structural_payloads` beside it; at conjure end every spell whose phase 3 ran live is
-  re-captured, hit spells keep their payload, dead ids are removed, and the same conjure-end emit writes
-  both maps; generation 15.
+- After (envelope; LANDED 2026-09-26): `structural_payloads` beside it; at conjure end every owned spell is
+  captured from durable state (`Spell.dependencies`, the registered topology, the lineage verdict, the
+  bind-time requirements - the phase artifacts are reset before conjure end), unchanged bytes are not
+  rewritten, dead ids are removed, and the same conjure-end emit writes both maps; generation 15.
 - Before (replay surface): none.
 - After (replay surface): the snapshot module's hydrate performs, per hit spell and in this order,
   `spell_system_states.update_dependencies(spell.spell_index, dependency_ids)`,
   `register_local_topology(spell.spell_index, SpellLocalTopology(spell_id, sockets))`,
-  `artifact._resolution_frame = SpellResolutionFrame(spell_id, ordered_node_ids)`,
+  `artifact._resolution_frame = SpellResolutionFrame(spell_id, ordered)` on path (b) only (phase 4's
+  presence strategy reads it; `ordered = sorted(set(dependency_ids) - {spell_id}) + [spell_id]`),
   `spell._add_build_details(dependencies=dependency_ids)` (invalidates the creation context, as
   today), Nexus publication when enabled; on path (a) additionally `state.clear_dirty(time.time())` and
   `state.set_validity(...)` with the recorded verdict and flags, and `artifact._is_broken = False`. On path
@@ -64,10 +66,11 @@
 ## Interface Deltas
 - Inputs: `SpellbookCreationSystem.conjure` unchanged for callers; `run_structural_phases` gains an
   optional spell subset and a phase selection (1-2 only / 3 only / 4 only) used by the partial path;
-  `CachingSystem` gains the four structural methods; the snapshot module exposes
-  `build_structural_payload(spell, artifact, registry, world_stamp, replayable)`,
-  `structural_key(spell)`, `world_stamp(spellbook)`, `classify(spellbook, caching_system)` and
-  `hydrate(spellbook, payloads, replay_verdicts: bool)`.
+  `CachingSystem` gains the structural store methods (LANDED); the snapshot module `StructuralSnapshot`
+  exposes (LANDED) `type_refs`, `annotation_refs`, `bind_time_requirements`, `structural_key(spell)`,
+  `world_stamp(spellbook)`, `pool_replayable(spellbook)`, `build_payload(spell, spell_system_states, *,
+  world_stamp, replayable)` and `capture_at_conjure_end(spellbook, caching_system) -> bool`; and (hydrate
+  task) `classify(spellbook, caching_system)` and `hydrate(spellbook, payloads, replay_verdicts: bool)`.
 - Outputs: unchanged public API; the envelope gains one key; `Spell.dependency_graph` returns `None`.
 - Error semantics: a structural payload that fails to decode or validate is a MISS for that spell (the
   spell regenerates; the payload is rewritten at conjure end); a corrupt envelope is a cold cache as today.
@@ -85,7 +88,7 @@
 ## Failure Mode Deltas
 - New failure mode: a stale structural payload replayed because the world stamp missed a relevant input.
   Guard: the stamp covers every input the survey found phases 3-4 read from the world (pool ids, posture,
-  contracted keys) plus the per-spell annotation refs; the D5 parity suite is the detector.
+  borrowed spell ids) plus the per-spell annotation refs; the D5 parity suite is the detector.
 - Removed failure mode: none on the cold path.
 - Changed failure mode: a spell that regenerates on a partial hit costs phases 1-4 as today; a full hit
   that fails mid-hydrate falls back to path (c) for the whole book (the registry writes of a completed
@@ -97,13 +100,14 @@
 2. The envelope change and generation 15 are sequenced after melder_0's generation 14 commit; NOTICE before
    touching `caching_system.py`, `spellbook_creation_system.py` or `spellbook.py` (melder_0's S3 lane
    edits the cache path).
-3. Capture before hydrate; hydrate before parity; measurement last.
+3. Capture before hydrate; hydrate before parity; measurement last. Capture LANDED 2026-09-26.
 4. The breakdown harness gains a caching-enabled cycle (benchmarks/ edit) only with owner approval.
 
 ## Validation Expectations
-- Test/validation item 1: row builders (unit) - deterministic bytes for the same pass, values only.
-- Test/validation item 2: envelope (unit) - round trip, generation gate, transfer drops the structural
-  payload.
+- Test/validation item 1 (LANDED): row builders (unit) - deterministic bytes for the same state, values only.
+- Test/validation item 2 (LANDED): envelope (unit) - round trip, generation gate, transfer drops the
+  structural payload; (component) cold conjure captures every owned spell, a repeat world leaves the
+  bundle untouched, an eq-risky pool marks every payload non-replayable.
 - Test/validation item 3: conjure paths (component) - full hit runs no structural phase unit and yields
   registry state equal to the cold pass; partial hit runs phases 1-2 and 4 for all and phase 3 for the
   misses only; identical verdicts.
@@ -112,8 +116,10 @@
 
 ## Unknowns and Open Decisions
 - Profile requirements presence per spell kind (hit-rate question, not correctness).
-- Whether `SpellResolutionFrame` and `SpellLocalTopology` constructors accept the row tuples directly or
-  need a small builder (read at the capture task).
+- RESOLVED (capture task): `SpellLocalTopology(spell_id, sockets)` takes `SpellSocketDescriptor` objects
+  (a frozen dataclass), so socket rows rebuild into descriptors field by field; `SpellResolutionFrame`
+  takes the ordered ids (derived, not stored).
 
 ## Context / Handoff Summary
-- What changed: design only. Next entrypoint: C-C task after owner review.
+- What changed: C-C and capture landed (see LANDED markers); classification/hydrate remain design.
+  Next entrypoint: the hydrate task.

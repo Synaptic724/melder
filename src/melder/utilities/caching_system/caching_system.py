@@ -66,10 +66,21 @@ class CachingSystem(Cleanable):
           only the in-memory dict.
         - `emit()` writes the current in-memory dict to disk.
         - The persisted cache format is one `marshal`-serialized top-level
-          dict: `version`, `melder_version`, `python`, `frame_name`, `conduit_name`, and
-          `spell_payloads` (spell_id -> nested payload bytes). Payloads may
-          contain `CodeType` objects, which is why the encoding is `marshal`
-          rather than JSON.
+          dict: `version`, `melder_version`, `python`, `frame_name`, `conduit_name`,
+          `spell_payloads` (spell_id -> nested payload bytes) and, since
+          generation 15, `structural_payloads` (spell_id -> nested payload
+          bytes of the structural snapshot rows: phase 3-4 results, key,
+          world stamp and replayability, one per owned spell). Executor
+          payloads may contain `CodeType` objects, which is why the encoding
+          is `marshal` rather than JSON.
+        - The two maps are independent tiers keyed by spell id: an executor
+          payload exists only for payload-eligible spells, a structural
+          payload for every owned spell that could be snapshotted, and
+          neither tier reads the other. `upsert_structural_payload` reports
+          whether the stored bytes changed so an unchanged world does not
+          force a file rewrite; `transfer_spell_payload_to` moves executor
+          bytes and DROPS the source's structural payload (the receiving
+          Book captures its own on its next conjure).
         - Integrity is regeneration-based: a corrupt or version-mismatched
           bundle is treated as a cold cache, not repaired.
         - Persisted plans require the exact installed Melder release as well as
@@ -96,6 +107,11 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 15: the envelope gains a top-level `structural_payloads` map
+    # (spell_id -> nested-marshal bytes of the structural snapshot rows:
+    # phase 3-4 results, per-spell key, world stamp, replayability) beside
+    # `spell_payloads` (2026-09-26, structural snapshot capture). Version-14
+    # bundles carry no structural tier and cold-reset once.
     # Version 14: many_only and generalized manifests (version 4) carry no
     # override section and conjure no longer fits the Phase-9 override
     # targeting or site-graph sections; override melds compile one plan per key
@@ -163,6 +179,7 @@ class CachingSystem(Cleanable):
         12: "complete_bundle_restage",
         13: "collection_member_paths",
         14: "override_site_plan_lanes",
+        15: "structural_snapshot_rows",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"
@@ -297,6 +314,41 @@ class CachingSystem(Cleanable):
                 Live `dict.keys()` view over cached spell ids.
         """
         return self._cache_data["spell_payloads"].keys()
+
+    @property
+    def structural_payloads(self) -> Mapping[str, Any]:
+        """
+        Return a decoded snapshot of every cached structural payload.
+
+        Contract:
+            - O(n) decode per access, a FRESH decoded dict each call; for
+              diagnostics and tests, not hot paths.
+            - Mutating the snapshot never affects the stored cache.
+
+        Returns:
+            Mapping[str, Any]:
+                Spell-id keyed decoded structural payload snapshot.
+        """
+        return MappingProxyType({
+            spell_id: marshal.loads(payload_bytes)
+            for spell_id, payload_bytes
+            in self._cache_data["structural_payloads"].items()
+        })
+
+    @property
+    def cached_structural_spell_ids(self) -> KeysView[str]:
+        """
+        Return the live spell-id key view of the structural tier.
+
+        Contract:
+            - The LIVE `dict.keys()` view over the structural payload map,
+              with the same iteration caveat as `cached_spell_ids`.
+
+        Returns:
+            KeysView[str]:
+                Live `dict.keys()` view over spell ids with a structural payload.
+        """
+        return self._cache_data["structural_payloads"].keys()
 
     def cleanup(self) -> None:
         """
@@ -433,6 +485,90 @@ class CachingSystem(Cleanable):
             spell_payloads.pop(spell_id)
             return True
 
+    def has_structural_payload(self, spell_id: str) -> bool:
+        """
+        Return whether one structural payload exists for `spell_id`.
+
+        Args:
+            spell_id:
+                Spell id to check.
+
+        Returns:
+            bool:
+                True when the structural tier currently holds `spell_id`.
+        """
+        return spell_id in self._cache_data["structural_payloads"]
+
+    def get_structural_payload(self, spell_id: str) -> Optional[Any]:
+        """
+        Return one structural payload by spell id.
+
+        Contract:
+            - A FRESH decode of the stored bytes per call; mutating the
+              returned object never affects the stored cache.
+
+        Args:
+            spell_id:
+                Spell id to resolve.
+
+        Returns:
+            Optional[Any]:
+                Freshly decoded structural payload when present, otherwise `None`.
+        """
+        payload_bytes = self._cache_data["structural_payloads"].get(spell_id)
+        if payload_bytes is None:
+            return None
+        return marshal.loads(payload_bytes)
+
+    def upsert_structural_payload(self, spell_id: str, structural_payload: Any) -> bool:
+        """
+        Add or replace one structural payload in memory.
+
+        Contract:
+            - Serializes the payload to nested-marshal bytes IMMEDIATELY, like
+              `upsert_spell_payload`, so the resident store never holds
+              decoded containers.
+            - Reports whether the stored bytes CHANGED: an identical payload
+              for an id already stored is a no-op that returns False, which
+              lets an unchanged world skip the conjure-end file rewrite.
+
+        Args:
+            spell_id:
+                Spell id to add or replace.
+            structural_payload:
+                Marshal-safe decoded structural payload for this spell id.
+
+        Returns:
+            bool:
+                True when the payload was added or its bytes replaced.
+        """
+        payload_bytes = marshal.dumps(structural_payload)
+        with self._lock:
+            structural_payloads = self._cache_data["structural_payloads"]
+            if structural_payloads.get(spell_id) == payload_bytes:
+                return False
+            structural_payloads[spell_id] = payload_bytes
+            return True
+
+    def remove_structural_payload(self, spell_id: str) -> bool:
+        """
+        Remove one structural payload from memory.
+
+        Args:
+            spell_id:
+                Spell id to remove.
+
+        Returns:
+            bool:
+                True when a structural payload existed and was removed.
+        """
+        with self._lock:
+            structural_payloads = self._cache_data["structural_payloads"]
+            if spell_id not in structural_payloads:
+                return False
+            structural_payloads.pop(spell_id)
+            return True
+
     def transfer_spell_payload_to(
             self,
             spell_id: str,
@@ -450,6 +586,10 @@ class CachingSystem(Cleanable):
             - Favors no data loss over perfect atomicity.
             - Writes into the target in memory first.
             - Removes the source payload only after the target update succeeds.
+            - Drops the source's STRUCTURAL payload for `spell_id` whether or
+              not an executor payload existed: the rows describe the world
+              the spell is leaving, and the receiving Book captures its own
+              rows at its next conjure. Nothing structural is copied.
 
         Args:
             spell_id:
@@ -459,10 +599,11 @@ class CachingSystem(Cleanable):
 
         Returns:
             bool:
-                True when a payload existed and moved, otherwise False.
+                True when an executor payload existed and moved, otherwise False.
         """
         if target_caching_system is self:
             return False
+        self.remove_structural_payload(spell_id)
         # Move the stored BYTES directly: no decode/re-encode round-trip and
         # no decoded containers created during the transfer.
         payload_bytes = self._cache_data["spell_payloads"].get(spell_id)
@@ -508,6 +649,7 @@ class CachingSystem(Cleanable):
             "frame_name": self._frame_name,
             "conduit_name": self._conduit_name,
             "spell_payloads": {},
+            "structural_payloads": {},
         }
 
     def _load_or_initialize_from_disk(self) -> None:
@@ -597,6 +739,17 @@ class CachingSystem(Cleanable):
                     f"Cache payload for '{spell_id}' is not nested-marshal "
                     "bytes."
                 )
+        # The structural tier is optional in the envelope (a current-format
+        # bundle written without it is still a valid executor bundle) but,
+        # when present, holds nested-marshal bytes per spell like the
+        # executor tier.
+        structural_payloads = loaded_cache_data.get("structural_payloads", {})
+        for spell_id, payload_bytes in structural_payloads.items():
+            if not isinstance(payload_bytes, bytes):
+                raise ValueError(
+                    f"Structural payload for '{spell_id}' is not nested-marshal "
+                    "bytes."
+                )
         return {
             "version": version,
             "melder_version": melder_version,
@@ -604,6 +757,7 @@ class CachingSystem(Cleanable):
             "frame_name": loaded_cache_data.get("frame_name", self._frame_name),
             "conduit_name": conduit_name,
             "spell_payloads": dict(spell_payloads),
+            "structural_payloads": dict(structural_payloads),
         }
 
     def _write_current_cache_to_disk_locked(self) -> None:
@@ -628,6 +782,7 @@ class CachingSystem(Cleanable):
             "frame_name": self._cache_data.get("frame_name", self._frame_name),
             "conduit_name": self._cache_data["conduit_name"],
             "spell_payloads": self._cache_data["spell_payloads"],
+            "structural_payloads": self._cache_data["structural_payloads"],
         }
         serialized_cache_data = marshal.dumps(cache_data)
         bundle_path = self._bundle_path

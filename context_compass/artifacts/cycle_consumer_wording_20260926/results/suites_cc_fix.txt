@@ -1,0 +1,11 @@
+cc_fix_component.log: 2148 passed, 43 skipped, 1 xfailed in 30.66s
+cc_fix_int_aether.log: 716 passed in 20.75s
+cc_fix_int_conduit.log: 268 passed in 5.10s
+cc_fix_int_crystallizer.log: 258 passed, 3 xfailed in 68.24s (0:01:08)
+cc_fix_int_mr_live.log: 67 passed, 1 xfailed in 0.63s
+cc_fix_int_mt.log: 42 passed in 12.93s
+cc_fix_int_spellbook.log: 585 passed, 2 skipped, 2 xfailed, 2 xpassed in 9.07s
+cc_fix_unit_aether.log: 4145 passed in 14.64s
+cc_fix_unit_other.log: 44 failed, 388 errors in 1.84s
+cc_fix_unit_rest.log: 4 failed, 1894 passed, 3 skipped, 7 xfailed in 16.47s
+cc_fix_unit_spellbook.log: 2197 passed in 3.35s

@@ -173,6 +173,16 @@ class Pair:
         self.right = right
 
 
+class Keeper:
+    """Root over one shared store and a plain parameter."""
+
+    def __init__(self, store: Store, limit: int = 3) -> None:
+        """Count the build and keep the operands."""
+        BUILT["Keeper"] += 1
+        self.store = store
+        self.limit = limit
+
+
 @pytest.fixture
 def book() -> Iterator[Spellbook]:
     """Own one isolated world with disk caching disabled."""
@@ -366,6 +376,32 @@ def test_equal_rank_keys_accept_one_object_and_refuse_different_ones(book: Spell
     with pytest.raises(MeldExecutionError, match="Failed to apply overrides") as caught:
         conduit.meld(Pair, override={"left>store>leaf": object(), "right>store>leaf": object()})
     assert "Conflicting overrides" in str(caught.value.__cause__)
+
+
+@CACHED
+def test_warm_override_meld_skips_the_children_of_a_stored_shared_site(book: Spellbook, cached: bool) -> None:
+    """With Store stored, an override meld builds only the root: Leaf, which only Store needs, is skipped (B2)."""
+    conduit = _conjure(
+        book, [(Leaf, Existence.many), (Store, Existence.unique_per_conduit), (Keeper, Existence.many)], Keeper, cached,
+    )
+    BUILT.clear()
+    first = conduit.meld(Keeper, override={"limit": 1})
+    second = conduit.meld(Keeper, override={"limit": 2})
+    assert second.store is first.store and (first.limit, second.limit) == (1, 2)
+    assert BUILT == Counter({"Leaf": 1, "Store": 1, "Keeper": 2})
+
+
+@CACHED
+def test_warm_normal_meld_skips_the_children_of_a_stored_shared_site(book: Spellbook, cached: bool) -> None:
+    """With Store stored, a normal meld builds only the root: Leaf, which only Store needs, is skipped (S2b-2)."""
+    conduit = _conjure(
+        book, [(Leaf, Existence.many), (Store, Existence.unique_per_conduit), (Keeper, Existence.many)], Keeper, cached,
+    )
+    BUILT.clear()
+    first = conduit.meld(Keeper)
+    second = conduit.meld(Keeper)
+    assert second is not first and second.store is first.store
+    assert BUILT == Counter({"Leaf": 1, "Store": 1, "Keeper": 2})
 
 
 @FAMILIES

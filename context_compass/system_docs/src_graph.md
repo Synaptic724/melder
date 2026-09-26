@@ -15586,7 +15586,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
 
-- source_sha256: `595c0e306e0aea044d12dd1f56b554b4a96d1cd0be68a87ff89e5408cd172b03`
+- source_sha256: `c41f8024c6a65769b822558b5419d8ad513da042ba42a47550d3bb33ebd66e20`
 - nodes: 2
 
 ### Nodes
@@ -15610,7 +15610,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - traverse the spellbook-wide dependency graph by spell/version id
   - report only cycles reachable from the spell under validation
   - leave dangling ids to DanglingDependenciesStrategy and never try to break cycles automatically
-  - names the cycle's members (the loop closed once) and says how to break it
+  - names the cycle's members (the loop closed once) and says how to break it; a spell outside the cycle is told which of its dependencies leads there and that it is not part of that cycle (_cycle_message)
 - phases: `compile`
 - public methods: `validate`
 
@@ -15950,7 +15950,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py
 
-- source_sha256: `646a002d196d7551dea5542d2c20d56fc20293e2059bdd2e2bf6b39b318e5193`
+- source_sha256: `d9d45bcbbb7517372213482ba393bf3d49d0aabe1df5046470e0d6d825fa3e56`
 - nodes: 2
 
 ### Nodes
@@ -15973,6 +15973,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - check only for direct self-dependency
   - emit issues into the context; never mutate the dependency graph
+  - names the constructor parameter(s) that resolve to the spell itself from its Phase-3 local topology (details parameter_names); the message stays generic without a topology; since 2026-09-26 Phase 3 records a self-resolution instead of aborting, so this check is what refuses such a spell
 - phases: `compile`
 - public methods: `validate`
 
@@ -26782,7 +26783,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/custom_exceptions/spellbook_validation_error.py
 
-- source_sha256: `9871616762ad3fecfe554a69c482606389916c77053e546d3ce1869b9462cc3a`
+- source_sha256: `66896e938884d2ce03a79c9dbdf6db0772f33472428c93deff8b261f65f47572`
 - nodes: 2
 
 ### Nodes
@@ -26806,7 +26807,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - render the message once at construction from the spells' Phase 4/6 results and the conduit diagnostics handed in through system_diagnostics
   - show errors only: warnings are counted; strategy sources, details payloads and spell ids are never printed
-  - drop exact repeats, a binding-key cycle already reported as CIRCULAR_DEPENDENCY, and restating codes (root_not_viable, broken_spell_in_dag) when another error is shown
+  - drop exact repeats, a binding-key cycle already reported as CIRCULAR_DEPENDENCY, a CIRCULAR_DEPENDENCY on a spell that reports SELF_DEPENDENCY, and restating codes (root_not_viable, broken_spell_in_dag) when another error is shown
   - mark INTERNAL_CODES (Melder bookkeeping checks) as internal errors to report
   - never raise while rendering; keep broken_spells exactly as supplied
 - owns_state: `broken_spells`

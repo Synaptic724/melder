@@ -3206,8 +3206,9 @@ Conjure validation report (2026-09-26):
   "  - <message> [CODE]"; errors that belong to no supplied spell under "Whole-graph errors:". Warnings,
   strategy sources, details payloads and spell ids are never printed; a footer counts Phase-4 warnings and
   points at `conjure(validation_warnings=True)`.
-- Rules: exact (code, message) repeats drop; BINDING_RESOLUTION_CYCLE hides when CIRCULAR_DEPENDENCY is shown
-  for the same spell; root_not_viable and broken_spell_in_dag hide when any other error is shown. Codes in
+- Rules: exact (code, message) repeats drop; BINDING_RESOLUTION_CYCLE hides when CIRCULAR_DEPENDENCY is reported
+  for the same spell, and CIRCULAR_DEPENDENCY when SELF_DEPENDENCY is (the spell's result keeps both codes);
+  root_not_viable and broken_spell_in_dag hide when any other error is shown. Codes in
   `INTERNAL_CODES` (index, blueprint, socket-reference, bind-metadata and Phase-1-consistency checks) render as
   "  - [internal] ..." with one footer asking to report them. With diagnostics handed in, spells without an
   error are not listed; without them (meld paths) such a spell is named with "No validation error was recorded".
@@ -3221,6 +3222,14 @@ Conjure validation report (2026-09-26):
   scope_ordering_violation, cycle_detected (members or dependents, capped at ten names), visibility gaps (four
   producers), collection_socket_no_providers and broken_spell_in_dag use names; each user-fixable error ends
   with what to change. Codes, severities and `details` payloads are unchanged.
+- Cycle consumers (2026-09-26): every spell from which a cycle is reachable is refused, but only members read
+  "is part of a dependency cycle". A spell outside the cycle reads "cannot be built: it needs 'Y', which is part
+  of a dependency cycle: ..." (Y a member), "which depends on a dependency cycle: ..." (Y an intermediate) or
+  "which depends on itself ('Y' -> 'Y')" (Y a self-loop), then the fix ("Break that cycle (...)", or
+  "Fix '<loop spell>' (...)" for a self-loop) and "'X' itself is not part of that cycle." Y is the spell's direct
+  dependency on the route; the DFS keeps the path before the cycle and `_cycle_message` words it. Code and
+  `details["cycle"]` are unchanged.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py:CircularDependencyStrategy._cycle_message`.
 - Misfires fixed with it: ParameterPolicyStrategy treated `typing.Any` as injectable, so `*args: Any` /
   `**kwargs: Any` broke the spell (VARIADIC_DI_UNSUPPORTED); it now matches Phase 1. LIST_ELEMENT_NOT_DI_TARGET
   fires only when a user class sits inside the element (`list[Optional[Plugin]]`), never for `list[str]` or
@@ -3229,6 +3238,12 @@ Conjure validation report (2026-09-26):
   `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._enforce_conduit_resolution_valid`,
   `src/melder/utilities/helpers/general_helpers.py:SpellInputUtils.describe_spell_id`,
   `src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py:ParameterPolicyStrategy._looks_like_di_target`.
+- Self-referencing constructors (2026-09-26): Phase 3 records a parameter that resolves to its own spell as a
+  dependency outside the frame order, so Phase 4's SELF_DEPENDENCY refuses the spell through this report instead
+  of a PhaseExecutionError at conjure or a bare ValueError at a late dynamic bind. The message names the
+  parameter(s) from the Phase-3 topology (`details["parameter_names"]`) and stays generic without one.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py:SelfDependencyStrategy`
+  and `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`.
 
 Caller-supplied container parameters (2026-09-26):
 - Phase 1 is the single decider of injection: it injects only a single class-like annotation
@@ -3476,8 +3491,9 @@ Failure Modes:
 - Until 2026-09-26 `*args: Any` / `**kwargs: Any` broke a spell (VARIADIC_DI_UNSUPPORTED), and a conduit-verdict
   refusal at conjure (scope ordering, visibility, cycles) carried no reason in its message. Both are fixed; the
   report layout is under "Conjure validation report".
-- A constructor parameter that resolves to its own class still fails in Phase 3 with PhaseExecutionError
-  "DagNode cannot depend on itself" before SELF_DEPENDENCY can report it (open, 2026-09-26).
+- Until 2026-09-26 a constructor parameter that resolved to its own class aborted Phase 3 with PhaseExecutionError
+  "DagNode cannot depend on itself" (a bare ValueError at a late dynamic bind); SELF_DEPENDENCY now refuses it
+  through the report. A spell that only consumes a cycle is still listed as "part of" it (all cycles; open).
 
 Observability:
 - Errors surfaced via exceptions and logger in Spellbook.
@@ -9303,6 +9319,17 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 cycle consumers: a spell that only needs a dependency cycle was told it "is part of" the cycle; it now
+reads "cannot be built: it needs 'Y', which is part of (or depends on) a dependency cycle ... 'X' itself is not
+part of that cycle", naming its direct dependency on the route. Members' messages, codes and details are
+unchanged. Promoted into the SpellCompiler and Validation Pipeline entry ("Conjure validation report"); this
+closes the open item recorded with the self-referencing constructors below.
+
+2026-09-26 self-referencing constructors: a constructor taking its own class now reaches Phase 4 (Phase 3 records
+the self id instead of raising) and is refused as SELF_DEPENDENCY naming the parameter; the report hides the
+CIRCULAR_DEPENDENCY the same spell also carries. Promoted into the SpellCompiler and Validation Pipeline entry
+("Conjure validation report" and Failure Modes). Open: a cycle's consumers read as "part of" the cycle.
 
 2026-09-26 class binding-profile annotations: a class whose field annotations name a `TYPE_CHECKING`-only type
 kept none of them in its binding profile, so its spell id ignored those fields and Nexus showed none. The

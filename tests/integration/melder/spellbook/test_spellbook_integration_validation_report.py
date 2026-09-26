@@ -3,7 +3,8 @@
 What a user reads when a real conjure refuses spells (2026-09-26): each broken spell by name with
 the reason and a fix, reasons from the conduit verdict included, no 64-character ids, warnings only
 counted. Also pins the two misfires fixed with it: `*args: Any, **kwargs: Any` and plain data lists
-and dicts no longer produce errors.
+and dicts no longer produce errors. A spell that only uses a cycle is named as its consumer, not as a
+member of the cycle (2026-09-26).
 """
 import re
 from typing import Any, Iterator
@@ -64,6 +65,14 @@ class CycleB:
 
     def __init__(self, a: CycleA) -> None:
         """Keep the first half."""
+        self.a = a
+
+
+class CycleUser:
+    """Needs one half of the cycle without being part of it."""
+
+    def __init__(self, a: CycleA) -> None:
+        """Keep the half it needs."""
         self.a = a
 
 
@@ -132,6 +141,26 @@ def test_cycle_report_uses_names_and_counts_warnings() -> None:
     assert "BINDING_RESOLUTION_CYCLE" not in message
     assert "1 warning not shown" in message
     assert "label" not in message
+
+
+def test_cycle_consumer_is_reported_as_a_consumer() -> None:
+    """A spell that only needs a cycle member is told which dependency leads there, not that it is in the cycle."""
+    book = _book("consumer")
+    book.bind(spell=CycleA, existence=Existence.many, permissions="create")
+    book.bind(spell=CycleB, existence=Existence.many, permissions="create")
+    book.bind(spell=CycleUser, existence=Existence.many, permissions="create")
+    try:
+        message = _conjure_error(book)
+    finally:
+        book.cleanup()
+
+    assert (
+        "Spell 'CycleUser' cannot be built: it needs 'CycleA', which is part of a dependency cycle: "
+        "'CycleA' -> 'CycleB' -> 'CycleA'."
+    ) in message
+    assert "'CycleUser' itself is not part of that cycle." in message
+    assert "Spell 'CycleUser' is part of a dependency cycle" not in message
+    assert "Spell 'CycleA' is part of a dependency cycle: 'CycleA' -> 'CycleB' -> 'CycleA'." in message
 
 
 def test_variadic_any_and_plain_data_containers_conjure() -> None:

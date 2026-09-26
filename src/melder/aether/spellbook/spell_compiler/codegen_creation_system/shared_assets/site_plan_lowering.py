@@ -428,9 +428,12 @@ class SitePlanLowering:
 
     Purpose:
         The shared lowering of design v2 for the override lane: given the
-        lane's no-overrides steps and one resolved key set, emit straight-line
-        Python that builds only the demanded steps and reads supplied values by
-        literal key (`ov["a"]`, `args[0]`).
+        lane's no-overrides steps and one resolved key set, emit Python that
+        builds only the demanded steps and reads supplied values by literal key
+        (`ov["a"]`, `args[0]`). A shared site is an inline hit read plus an
+        out-of-line miss function, and the sites only it needs are built inside
+        that miss, so a stored shared site's children are never built (S2b-1,
+        design L1/L3, B2).
 
     Contract:
         - Steps keep the family's providers-first order; a step is emitted only
@@ -571,12 +574,16 @@ class SitePlanLowering:
             root_spell_id: str,
             root_spell_name: str,
             arity: int,
+            normal_mode: bool = False,
     ) -> Tuple[str, Dict[str, Any], Tuple[SitePlanStep, ...]]:
         """
         Emit one key-set plan: `def _site_plan_executor(meld, ov) -> instance`.
 
         The plan reads its constants (spells, ids, helpers) as globals of the
         returned namespace, so the caller must exec the code into that namespace.
+        In normal mode (S2b-2, 2026-09-26) the empty key set is emitted as
+        `def _site_plan_executor(meld)`: the normal-lane executor, whose misses
+        take no `ov` either, since nothing reads it without winners.
 
         Args:
             steps: The lane's no-overrides steps in providers-first order.
@@ -586,15 +593,20 @@ class SitePlanLowering:
             root_spell_id: Selected root spell id (P2 root message, error ids).
             root_spell_name: Root spell name for wrapped conflict errors.
             arity: Length of `__args__` for this plan (0 when absent).
+            normal_mode: Emit the `(meld)` normal-lane form; requires a
+                resolution with no winners and no conflicts, and arity 0.
 
         Raises:
-            RuntimeError: When the root step is missing from `steps`.
+            RuntimeError: When the root step is missing from `steps`, or
+                `normal_mode` is asked for a key set that supplies anything.
 
         Returns:
             Tuple[str, Dict[str, Any], Tuple[SitePlanStep, ...]]:
                 Identity-free source, its namespace, and the masked steps the
                 namespace references (owned by the caller).
         """
+        if normal_mode and (resolution.winners or resolution.conflicts or arity):
+            raise RuntimeError("A normal-mode plan is only emitted for a key set that supplies nothing.")
         demanded = cls.demanded_instance_keys(site_graph, resolution)
         kept = tuple(step for step in steps if step.instance_key in demanded)
         if not any(step.instance_key == root_instance_key for step in kept):
@@ -609,6 +621,7 @@ class SitePlanLowering:
             root_spell_id=root_spell_id,
             root_spell_name=root_spell_name,
             arity=arity,
+            normal_mode=normal_mode,
         )
         try:
             return emission.render()
@@ -633,7 +646,25 @@ class SitePlanEmission(Cleanable):
           tuple read only on cold paths (errors, shared-site routing for
           `unique`, locks). No namespace name is assigned in the plan body.
         - Dict mode (`instance_results`) is emitted only when a generic step
-          needs dependency values by instance key.
+          needs dependency values by instance key; misses then receive the dict
+          and record their sites in it.
+        - Placement (2026-09-26): every kept step lives at top level or inside
+          exactly one shared site's `_miss{i}`. The root is top level; a many
+          site lives where its one consumer is built (inside the consumer's miss
+          when the consumer is shared); a shared site lives at the lowest context
+          common to all its consumers; a shared site with a winning override is
+          pinned to top level so its P2 refusal and build are exactly today's.
+          Within a context steps keep the family's providers-first order.
+        - Normal mode (S2b-2, 2026-09-26) drops `ov` from the plan and from
+          every miss signature and call; nothing else changes.
+        - A miss function takes `(meld, ov, c{i}, [instance_results], [args],
+          v...)`: the outer values its sites read, in step order. It builds the
+          sites placed inside it first, then takes the site's build guard for
+          recheck, construction and publication only, and returns the site's
+          value. So a plan never holds a build lock while another site's
+          constructor runs (today's locking; design risk R2 retired
+          2026-09-26); a cold race may build and drop the loser's children, as
+          the straight-line lowering does.
 
     Lifecycle / Cleanup:
         Created and cleaned inside one `emit` call. The namespace and masked
@@ -668,7 +699,15 @@ class SitePlanEmission(Cleanable):
         "_namespace",
         "_lines",
         "_masked",
-        "_uses_many_store",
+        "_direct",
+        "_dict_mode",
+        "_shared",
+        "_home",
+        "_children",
+        "_miss_value_params",
+        "_root_index",
+        "_miss_lines",
+        "_context_params",
     ]
 
     def __init__(
@@ -681,6 +720,7 @@ class SitePlanEmission(Cleanable):
             root_spell_id: str,
             root_spell_name: str,
             arity: int,
+            normal_mode: bool = False,
     ) -> None:
         """
         Prepare emission state; nothing is emitted until `render`.
@@ -693,6 +733,8 @@ class SitePlanEmission(Cleanable):
             root_spell_id: Selected root spell id.
             root_spell_name: Root spell name.
             arity: Length of `__args__` for this plan (0 when absent).
+            normal_mode: Emit `(meld)` signatures without `ov` (the caller has
+                checked that the key set supplies nothing).
 
         Returns:
             None.
@@ -720,7 +762,17 @@ class SitePlanEmission(Cleanable):
         }
         self._lines: List[str] = []
         self._masked: List[SitePlanStep] = []
-        self._uses_many_store: bool = False
+        # Placement state; filled by `render` (`_place`).
+        self._direct: List[bool] = []
+        self._dict_mode: bool = False
+        self._shared: List[bool] = [step.existence is not Existence.many for step in steps]
+        self._home: Dict[int, Optional[int]] = {}
+        self._children: Dict[Optional[int], List[int]] = {}
+        self._miss_value_params: Dict[int, Tuple[int, ...]] = {}
+        self._root_index: int = -1
+        self._miss_lines: List[str] = []
+        # Leading parameters of the plan and of every miss.
+        self._context_params: Tuple[str, ...] = ("meld",) if normal_mode else ("meld", "ov")
 
     def cleanup(self) -> None:
         """
@@ -744,7 +796,16 @@ class SitePlanEmission(Cleanable):
         del self._namespace
         del self._lines
         del self._masked
-        del self._uses_many_store
+        self._miss_lines.clear()
+        del self._direct
+        del self._dict_mode
+        del self._shared
+        del self._home
+        del self._children
+        del self._miss_value_params
+        del self._root_index
+        del self._miss_lines
+        del self._context_params
 
     def _site_index(self, step: SitePlanStep) -> int:
         """
@@ -862,11 +923,18 @@ class SitePlanEmission(Cleanable):
         """
         Emit the plan and return `(source, namespace, masked steps)`.
 
+        Contract:
+            The source defines one `_miss{i}` per kept shared site, then the plan
+            `def _site_plan_executor(meld, ov)` (`(meld)` in normal mode); all
+            of it is exec'd into the returned namespace. Placement is computed
+            first (see `_place`).
+
         Returns:
             Tuple[str, Dict[str, Any], Tuple[SitePlanStep, ...]]: See `SitePlanLowering.emit`.
         """
-        direct = [self._is_direct(step) for step in self._steps]
-        dict_mode = not all(direct)
+        self._direct = [self._is_direct(step) for step in self._steps]
+        self._dict_mode = not all(self._direct)
+        self._place()
         body = self._lines
         if self._arity > 0:
             body.append('    args = ov["__args__"]')
@@ -877,21 +945,16 @@ class SitePlanEmission(Cleanable):
                 f"    _conflict_guard(ov[{winner!r}], ov[{other!r}], {target_name}, "
                 "root_spell_id, root_spell_name)"
             )
-        if dict_mode:
+        if self._dict_mode:
             body.append("    instance_results = {}")
-        for index, step in enumerate(self._steps):
-            self._emit_step(index, step, direct[index], dict_mode)
+        uses_many_store = self._emit_context(None, "    ", body)
         body.append(f"    return {self._local_by_key[self._root_instance_key]}")
-        prologue: List[str] = []
-        if self._uses_many_store:
-            prologue = [
-                "    many_store = meld._spellspace_creations",
-                "    if many_store is None:",
-                "        many_store = meld._conduit_creations",
-            ]
         # Constants are read as globals of the plan's namespace; see the class contract.
-        source_lines = [f"def {SitePlanLowering.PLAN_FUNCTION_NAME}(meld, ov):"]
-        source_lines.extend(prologue)
+        source_lines = list(self._miss_lines)
+        signature = ", ".join(self._context_params)
+        source_lines.append(f"def {SitePlanLowering.PLAN_FUNCTION_NAME}({signature}):")
+        if uses_many_store:
+            source_lines.extend(self._many_store_prologue("    "))
         source_lines.extend(body)
         return "\n".join(source_lines) + "\n", self._namespace, tuple(self._masked)
 
@@ -902,68 +965,247 @@ class SitePlanEmission(Cleanable):
         self._namespace[name] = value
         return name
 
-    def _emit_step(self, index: int, step: SitePlanStep, direct: bool, dict_mode: bool) -> None:
+    def _place(self) -> None:
         """
-        Emit one step: construction for `many`, routed reuse/build for shared existences.
-        """
-        spell = step.spell
-        local = f"v{index}"
-        spell_name = f"spells[{index}]"
-        supplied = self._supplied_names(step)
-        has_disposal = bool(spell.has_disposal_methods)
-        if step.existence is Existence.many:
-            self._emit_construct(index, step, direct, supplied, "    ")
-            if has_disposal:
-                self._uses_many_store = True
-                sid_name = self._bind(f"sid{index}", spell.spell_id)
-                disposal_name = self._bind(f"dm{index}", spell.disposal_method_names)
-                self._lines.append(
-                    f"    many_store.add_many_creations({sid_name}, {local}, "
-                    f"has_disposal_methods=True, disposal_methods={disposal_name})"
-                )
-        else:
-            self._emit_shared_step(index, step, direct, supplied, spell_name, has_disposal)
-        if dict_mode:
-            key_name = self._bind(f"key{index}", step.instance_key)
-            self._lines.append(f"    instance_results[{key_name}] = {local}")
+        Place every kept step at top level (None) or inside one shared site's miss.
 
-    def _emit_shared_step(
-            self,
-            index: int,
-            step: SitePlanStep,
-            direct: bool,
-            supplied: FrozenSet[str],
-            spell_name: str,
-            has_disposal: bool,
-    ) -> None:
+        Contract:
+            - Steps are visited consumers before providers (reverse step order).
+              The root and every shared site with a winning override are top
+              level. Any other step lives at the lowest context common to its
+              consumers, where a shared consumer's context is its own miss and a
+              many consumer's context is where that consumer lives.
+            - A consumer reads a provider through each non-supplied parameter's
+              dependency keys, exactly the operands `_operand` emits.
+            - Then each shared site's outer values are computed bottom-up: the
+              direct operands of the steps built inside its miss (and of its own
+              construction) that live outside it, plus what its nested misses need.
+
+        Raises:
+            RuntimeError: When a dependency key has no kept step, or a provider
+                does not precede its consumer (the family order is providers-first).
+
+        Returns:
+            None.
         """
-        Emit one shared-existence step: store read, P2 when supplied, guarded build, publication.
+        steps = self._steps
+        index_by_key = {step.instance_key: index for index, step in enumerate(steps)}
+        providers_by_consumer: List[List[int]] = []
+        consumers: List[List[int]] = [[] for _ in steps]
+        for consumer, step in enumerate(steps):
+            providers = self._direct_providers(step, index_by_key)
+            for provider in providers:
+                if provider >= consumer:
+                    raise RuntimeError(
+                        f"Key-set plan step {provider} does not precede its consumer {consumer}."
+                    )
+                consumers[provider].append(consumer)
+            providers_by_consumer.append(providers)
+        root_index = index_by_key[self._root_instance_key]
+        home: Dict[int, Optional[int]] = {}
+        for index in range(len(steps) - 1, -1, -1):
+            if index == root_index or (self._shared[index] and self._supplied_names(steps[index])):
+                home[index] = None
+                continue
+            contexts = [
+                consumer if self._shared[consumer] else home[consumer] for consumer in consumers[index]
+            ]
+            home[index] = self._common_context(contexts, home)
+        children: Dict[Optional[int], List[int]] = {}
+        for index in range(len(steps)):
+            children.setdefault(home[index], []).append(index)
+        value_params: Dict[int, Tuple[int, ...]] = {}
+        for index in range(len(steps)):
+            if not self._shared[index]:
+                continue
+            inside = children.get(index, [])
+            needed = set()
+            for member in inside:
+                # A nested shared site builds inside its own miss: only what that
+                # miss needs from outside passes through here.
+                if self._shared[member]:
+                    needed.update(value_params[member])
+                elif self._direct[member]:
+                    needed.update(providers_by_consumer[member])
+            if self._direct[index]:
+                needed.update(providers_by_consumer[index])
+            needed.difference_update(inside)
+            needed.discard(index)
+            value_params[index] = tuple(sorted(needed))
+        self._home = home
+        self._children = children
+        self._miss_value_params = value_params
+        self._root_index = root_index
+
+    def _direct_providers(self, step: SitePlanStep, index_by_key: Dict[SiteInstanceKey, int]) -> List[int]:
         """
-        lines = self._lines
-        local = f"v{index}"
+        Return the kept step indexes one step reads through its non-supplied parameters.
+
+        Raises:
+            RuntimeError: When a dependency key has no kept step.
+        """
+        supplied = self._supplied_names(step)
+        providers: List[int] = []
+        for param_name, dependency_keys in step.dependency_resolution_order:
+            if param_name in supplied:
+                continue
+            for key in dependency_keys:
+                provider = index_by_key.get(key)
+                if provider is None:
+                    raise RuntimeError(
+                        f"Key-set plan dependency {key!r} of {step.instance_key!r} has no kept step."
+                    )
+                providers.append(provider)
+        return providers
+
+    @staticmethod
+    def _common_context(
+            contexts: List[Optional[int]],
+            home: Dict[int, Optional[int]],
+    ) -> Optional[int]:
+        """
+        Return the lowest context common to `contexts` (None is top level).
+
+        Contract:
+            A miss context's parent is its site's home. Top level wins as soon as
+            one context is top level; no contexts at all is top level too.
+        """
+        if not contexts or None in contexts:
+            return None
+        chains: List[List[int]] = []
+        for context in contexts:
+            chain: List[int] = []
+            current: Optional[int] = context
+            while current is not None:
+                chain.append(current)
+                current = home[current]
+            chains.append(chain)
+        others = [set(chain) for chain in chains[1:]]
+        for candidate in chains[0]:
+            if all(candidate in other for other in others):
+                return candidate
+        return None
+
+    def _miss_arguments(self, index: int) -> List[str]:
+        """
+        Return the parameter/argument names after `(meld, ov, c{i})` for one miss.
+
+        Contract:
+            `instance_results` in dict mode, `args` for the root when `__args__` is
+            supplied, then the outer values in step order.
+        """
+        names: List[str] = []
+        if self._dict_mode:
+            names.append("instance_results")
+        if self._arity > 0 and index == self._root_index:
+            names.append("args")
+        names.extend(f"v{value}" for value in self._miss_value_params[index])
+        return names
+
+    def _emit_context(self, context: Optional[int], indent: str, lines: List[str]) -> bool:
+        """
+        Emit the steps placed in one context (top level or one miss body) into `lines`.
+
+        Returns:
+            bool: True when a disposal-bearing many step here reads `many_store`.
+        """
+        uses_many_store = False
+        for index in self._children.get(context, []):
+            step = self._steps[index]
+            if self._shared[index]:
+                self._emit_shared_hit(index, step, indent, lines)
+            elif self._emit_many(index, step, indent, lines):
+                uses_many_store = True
+            if self._dict_mode:
+                key_name = self._bind(f"key{index}", step.instance_key)
+                lines.append(f"{indent}instance_results[{key_name}] = v{index}")
+        return uses_many_store
+
+    def _emit_many(self, index: int, step: SitePlanStep, indent: str, lines: List[str]) -> bool:
+        """
+        Emit one many step: construction, then disposal registration in the innermost scope.
+
+        Returns:
+            bool: True when the step registers through `many_store`.
+        """
+        self._emit_construct(index, step, self._direct[index], self._supplied_names(step), indent, lines)
+        if not step.spell.has_disposal_methods:
+            return False
+        sid_name = self._bind(f"sid{index}", step.spell.spell_id)
+        disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
+        lines.append(
+            f"{indent}many_store.add_many_creations({sid_name}, v{index}, "
+            f"has_disposal_methods=True, disposal_methods={disposal_name})"
+        )
+        return True
+
+    def _emit_shared_hit(self, index: int, step: SitePlanStep, indent: str, lines: List[str]) -> None:
+        """
+        Emit one shared site where it lives: store read, P2 when pinned, miss call; then its miss.
+        """
+        spell_name = f"spells[{index}]"
         store = f"c{index}"
         sid_name = self._bind(f"sid{index}", step.spell.spell_id)
-        lines.append(f"    {store} = {self._route(step.existence, spell_name)}")
-        lines.append(f"    {local} = {store}._creations.get({sid_name})")
-        if supplied:
-            lines.append(f"    if {local} is not None:")
-            lines.append(f"        _raise_existing_override({spell_name}, root_spell_id)")
-        lines.append(f"    if {local} is None:")
-        lines.append(f"        with {self._guard(step, store, sid_name, spell_name)}:")
-        lines.append(f"            {local} = {store}._creations.get({sid_name})")
-        if supplied:
-            lines.append(f"            if {local} is not None:")
-            lines.append(f"                _raise_existing_override({spell_name}, root_spell_id)")
-        lines.append(f"            if {local} is None:")
-        self._emit_construct(index, step, direct, supplied, "                ")
-        if has_disposal:
+        lines.append(f"{indent}{store} = {self._route(step.existence, spell_name)}")
+        lines.append(f"{indent}v{index} = {store}._creations.get({sid_name})")
+        if self._supplied_names(step):
+            lines.append(f"{indent}if v{index} is not None:")
+            lines.append(f"{indent}    _raise_existing_override({spell_name}, root_spell_id)")
+        arguments = ", ".join(list(self._context_params) + [store] + self._miss_arguments(index))
+        lines.append(f"{indent}if v{index} is None:")
+        lines.append(f"{indent}    v{index} = _miss{index}({arguments})")
+        self._emit_miss(index, step, sid_name)
+
+    def _emit_miss(self, index: int, step: SitePlanStep, sid_name: str) -> None:
+        """
+        Emit `_miss{index}`: children, then guard, recheck (P2 when pinned), construction, publication.
+
+        Contract:
+            The sites placed inside the miss are built before the guard is taken,
+            so the guard covers only this site's recheck, construction and
+            publication, as every build lock does in the straight-line lowering.
+            A user constructor never runs under another site's build lock.
+        """
+        spell_name = f"spells[{index}]"
+        store = f"c{index}"
+        supplied = self._supplied_names(step)
+        children: List[str] = []
+        uses_many_store = self._emit_context(index, "    ", children)
+        inner: List[str] = []
+        self._emit_construct(index, step, self._direct[index], supplied, "            ", inner)
+        if step.spell.has_disposal_methods:
             disposal_name = self._bind(f"dm{index}", step.spell.disposal_method_names)
-            lines.append(
-                f"                {store}.add_creation({sid_name}, {local}, "
+            inner.append(
+                f"            {store}.add_creation({sid_name}, v{index}, "
                 f"has_disposal_methods=True, disposal_methods={disposal_name})"
             )
         else:
-            lines.append(f"                {store}._creations[{sid_name}] = {local}")
+            inner.append(f"            {store}._creations[{sid_name}] = v{index}")
+        parameters = ", ".join(list(self._context_params) + [store] + self._miss_arguments(index))
+        lines = self._miss_lines
+        lines.append(f"def _miss{index}({parameters}):")
+        if uses_many_store:
+            lines.extend(self._many_store_prologue("    "))
+        lines.extend(children)
+        lines.append(f"    with {self._guard(step, store, sid_name, spell_name)}:")
+        lines.append(f"        v{index} = {store}._creations.get({sid_name})")
+        if supplied:
+            lines.append(f"        if v{index} is not None:")
+            lines.append(f"            _raise_existing_override({spell_name}, root_spell_id)")
+        lines.append(f"        if v{index} is None:")
+        lines.extend(inner)
+        lines.append(f"        return v{index}")
+
+    @staticmethod
+    def _many_store_prologue(indent: str) -> List[str]:
+        """
+        Return the innermost-scope store selection for disposal-bearing many steps.
+        """
+        return [
+            f"{indent}many_store = meld._spellspace_creations",
+            f"{indent}if many_store is None:",
+            f"{indent}    many_store = meld._conduit_creations",
+        ]
 
     @staticmethod
     def _route(existence: Existence, spell_name: str) -> str:
@@ -1006,9 +1248,10 @@ class SitePlanEmission(Cleanable):
             direct: bool,
             supplied: FrozenSet[str],
             indent: str,
+            lines: List[str],
     ) -> None:
         """
-        Emit the construction of kept step `index` into `v{index}`.
+        Emit the construction of kept step `index` into `v{index}`, appending to `lines`.
 
         Contract:
             Direct steps call the spell with operands and route failures through
@@ -1016,7 +1259,6 @@ class SitePlanEmission(Cleanable):
             positional count. Generic steps call the no-overrides helper, or the
             supplied-values helper on a masked copy when the step has winners.
         """
-        lines = self._lines
         local = f"v{index}"
         if not direct:
             is_root_args = step.instance_key == self._root_instance_key and self._arity > 0

@@ -1,80 +1,80 @@
 {
- "schema_version": 1,
- "source": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
- "source_sha256": "9871616762ad3fecfe554a69c482606389916c77053e546d3ce1869b9462cc3a",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.utilities.custom_exceptions.spellbook_validation_error": {
-   "id": "melder.utilities.custom_exceptions.spellbook_validation_error",
-   "label": "spellbook_validation_error",
-   "kind": "module",
-   "file": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
-   "lineno": 1,
-   "include": true,
-   "role": "The build-time 'your graph is broken' error: names each refused spell with its errors and what to change.",
-   "responsibilities": [
-    "surface conjure and meld validation failures with their reasons, by spell name",
-    "keep the refused spell objects attached for tooling"
-   ],
-   "phases": [
-    "validation"
-   ],
-   "semantics_authored_against": ""
+  "schema_version": 1,
+  "source": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
+  "source_sha256": "66896e938884d2ce03a79c9dbdf6db0772f33472428c93deff8b261f65f47572",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.utilities.custom_exceptions.spellbook_validation_error": {
+      "id": "melder.utilities.custom_exceptions.spellbook_validation_error",
+      "label": "spellbook_validation_error",
+      "kind": "module",
+      "file": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
+      "lineno": 1,
+      "include": true,
+      "role": "The build-time 'your graph is broken' error: names each refused spell with its errors and what to change.",
+      "responsibilities": [
+        "surface conjure and meld validation failures with their reasons, by spell name",
+        "keep the refused spell objects attached for tooling"
+      ],
+      "phases": [
+        "validation"
+      ],
+      "semantics_authored_against": ""
+    },
+    "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError": {
+      "id": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
+      "label": "SpellbookValidationError",
+      "kind": "class",
+      "file": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
+      "lineno": 9,
+      "bases": [],
+      "markers": [
+        "RuntimeError"
+      ],
+      "public_methods": [],
+      "shape": {
+        "method_count": 11,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "88ac0a24bf5aaefb598331898ddadbb036c086d38c758a6f66cacd2950535eeb",
+      "role": "Exception for refused spells whose message lists each broken spell's errors by name, whole-graph errors, a warning count and internal-error marking.",
+      "responsibilities": [
+        "render the message once at construction from the spells' Phase 4/6 results and the conduit diagnostics handed in through system_diagnostics",
+        "show errors only: warnings are counted; strategy sources, details payloads and spell ids are never printed",
+        "drop exact repeats, a binding-key cycle already reported as CIRCULAR_DEPENDENCY, a CIRCULAR_DEPENDENCY on a spell that reports SELF_DEPENDENCY, and restating codes (root_not_viable, broken_spell_in_dag) when another error is shown",
+        "mark INTERNAL_CODES (Melder bookkeeping checks) as internal errors to report",
+        "never raise while rendering; keep broken_spells exactly as supplied"
+      ],
+      "owns_state": [
+        "broken_spells"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ],
+      "semantics_authored_against": "88ac0a24bf5aaefb598331898ddadbb036c086d38c758a6f66cacd2950535eeb"
+    }
   },
-  "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError": {
-   "id": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
-   "label": "SpellbookValidationError",
-   "kind": "class",
-   "file": "src/melder/utilities/custom_exceptions/spellbook_validation_error.py",
-   "lineno": 9,
-   "bases": [],
-   "markers": [
-    "RuntimeError"
-   ],
-   "public_methods": [],
-   "shape": {
-    "method_count": 11,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "c1a58321c6eb4d43284a44b7a88132fdd035769595020d2e1495de319e667d32",
-   "role": "Exception for refused spells whose message lists each broken spell's errors by name, whole-graph errors, a warning count and internal-error marking.",
-   "responsibilities": [
-    "render the message once at construction from the spells' Phase 4/6 results and the conduit diagnostics handed in through system_diagnostics",
-    "show errors only: warnings are counted; strategy sources, details payloads and spell ids are never printed",
-    "drop exact repeats, a binding-key cycle already reported as CIRCULAR_DEPENDENCY, and restating codes (root_not_viable, broken_spell_in_dag) when another error is shown",
-    "mark INTERNAL_CODES (Melder bookkeeping checks) as internal errors to report",
-    "never raise while rendering; keep broken_spells exactly as supplied"
-   ],
-   "owns_state": [
-    "broken_spells"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ],
-   "semantics_authored_against": "c1a58321c6eb4d43284a44b7a88132fdd035769595020d2e1495de319e667d32"
+  "edges_out": [],
+  "edge_candidates": [],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "ClassVar": "typing.ClassVar",
+    "Dict": "typing.Dict",
+    "FrozenSet": "typing.FrozenSet",
+    "List": "typing.List",
+    "Optional": "typing.Optional",
+    "Sequence": "typing.Sequence",
+    "Tuple": "typing.Tuple",
+    "Spell": "melder.aether.spellbook.spell.Spell",
+    "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic"
+  },
+  "collapse_candidate": {
+    "module": "melder.utilities.custom_exceptions.spellbook_validation_error",
+    "class": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
+    "label": "SpellbookValidationError"
   }
- },
- "edges_out": [],
- "edge_candidates": [],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Any": "typing.Any",
-  "ClassVar": "typing.ClassVar",
-  "Dict": "typing.Dict",
-  "FrozenSet": "typing.FrozenSet",
-  "List": "typing.List",
-  "Optional": "typing.Optional",
-  "Sequence": "typing.Sequence",
-  "Tuple": "typing.Tuple",
-  "Spell": "melder.aether.spellbook.spell.Spell",
-  "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic"
- },
- "collapse_candidate": {
-  "module": "melder.utilities.custom_exceptions.spellbook_validation_error",
-  "class": "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
-  "label": "SpellbookValidationError"
- }
 }

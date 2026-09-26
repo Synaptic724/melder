@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T16:12:08Z
+- Updated: 2026-09-26T17:28:54Z
 - Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
@@ -399,6 +399,8 @@ and tranche T1 are also closed. Milestones 2-5 not started; I-1 (structural snap
   CCM dirty-root loop).
 - 2026-09-26 (owner): I-1 design settled (1-4 per spell, no refusal, normal regeneration) and the patch docs
   approved; C-C is the first implementation task; release note and turn-in follow owner-run green suites.
+- 2026-09-26 (owner): C-C landed and turned in (phase 3 without the per-spell DAG object; -31..-34% on phase 3 in the
+  VM harness); the I-1 capture task is open behind a Propose->Confirm and melder_0's answer on the cache-path files.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -1229,6 +1231,9 @@ UPDATE 2026-09-26T15:03:58Z (fable_0): I-1 opened - tickets/stories/2026-09-26_s
 ir_structural_snapshot routing to the patch-doc task; waiting on the owner's four rulings. Resume from the task's STATE line.
 UPDATE 2026-09-26T16:12:08Z (fable_0): I-1 patch docs approved and task 1 completed; task 2 (C-C) is routed:
 tickets/tasks/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md. Resume from its STATE line.
+UPDATE 2026-09-26T16:59:15Z (fable_0): C-C done and turned in (tickets/tasks/completed/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md); task 3 (capture) is routed: tickets/tasks/2026-09-26_capture_structural_payloads_at_conjure_end_task.md.
+UPDATE 2026-09-26T17:28:54Z (fable_0): task 3 (capture) landed on the device tree and is in REVIEW (seam module, envelope generation 15,
+conjure-end capture, 33 tests; worktree green; owner-run pending); patch docs aligned. Next: the hydrate task under the same story.
 
 IMPLEMENTATION ENTRY - after S11 and the owner's explicit go, in this order:
 - I-0 signature-determinism test plus one serializer (small, compiler-side, protects today's cache;

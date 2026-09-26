@@ -6,10 +6,10 @@ program for this family. The live phase-11 step publishes lazy doors over it;
 the cache codec publishes lazy doors over it. Both produce identical hot
 doors at first meld.
 
-The no-overrides lane hydrates through the many_only compiler's public
-Codegen IR entrypoint (the manifest stores that IR verbatim). The override
-runtime is `SitePlanOverrideRuntime` over those same rows: one compiled plan
-per override key set, built at first use (2026-09-26), as in the generalized
+Both lanes run on `SitePlanOverrideRuntime` over the manifest's no-overrides
+rows (the Codegen IR the manifest stores verbatim): its normal plan (the empty
+key set) is the inner no-overrides executor since S2b-2 (2026-09-26), and it
+compiles one plan per override key set at first use, as in the generalized
 family.
 """
 
@@ -24,7 +24,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler import (
     _hydrate_steps_from_rows,
     _resolve_root_instance_key,
-    compile_no_overrides_codegen_creation_executor,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering import (
     SitePlanStep,
@@ -219,25 +218,15 @@ def hydrate_many_only_creation_executors(
         spell=spell,
         step_spell_ids=no_overrides_payload["step_spell_ids"],
     )
-    inner_no_overrides_executor = compile_no_overrides_codegen_creation_executor(
-        codegen_ir={
-            "steps_rows": no_overrides_payload["steps_rows"],
-            "root_spell_id": no_overrides_payload["root_spell_id"],
-            "transient_schema": no_overrides_payload["transient_schema"],
-        },
-        spell_lookup=spell_lookup,
-    )
-    if inner_no_overrides_executor is None:
-        raise RuntimeError(
-            "many_only manifest hydration produced no no-overrides executor."
-        )
-
-    execute_with_overrides = _hydrate_overrides_runtime(
+    # One runtime serves both lanes (S2b-2, 2026-09-26): its normal plan is the
+    # inner no-overrides executor; override key sets compile on it.
+    site_plan_runtime = _build_site_plan_runtime(
         no_overrides_payload=no_overrides_payload,
         spell=spell,
         spell_lookup=spell_lookup,
-        inner_no_overrides_executor=inner_no_overrides_executor,
     )
+    inner_no_overrides_executor = site_plan_runtime.execute_normal
+    execute_with_overrides = site_plan_runtime.execute_with_overrides
 
     no_overrides_door = compile_creation_context_hooks_no_overrides_executor(
         resolve_route_key=route_key,
@@ -278,23 +267,21 @@ def hydrate_many_only_creation_executors(
     )
 
 
-def _hydrate_overrides_runtime(
+def _build_site_plan_runtime(
         *,
         no_overrides_payload: Dict[str, Any],
         spell: Any,
         spell_lookup: Dict[str, Any],
-        inner_no_overrides_executor: Callable[..., Any],
-) -> Callable[..., Any]:
+) -> SitePlanOverrideRuntime:
     """
-    Build the many_only override runtime: one compiled plan per override key set.
+    Build the many_only site-plan runtime: the normal plan now, override plans per key set later.
 
     Contract:
         - Reads the manifest's no-overrides step rows through the family's own
-          row hydration, so override plans and the normal lane see the same
-          steps (design v2 S3a). The manifest's overrides payload is not read.
-        - Returns `SitePlanOverrideRuntime.execute_with_overrides`; plans
-          compile lazily per key set at meld time, and the runtime lives as
-          long as the returned callable (the lazy override door holds it).
+          row hydration, so normal and override plans see the same steps
+          (design v2 S3a, S2b-2). The manifest's overrides payload is not read.
+        - The runtime builds its site graph and normal plan at construction
+          (first meld); it lives as long as the executors it hands out.
 
     Args:
         no_overrides_payload:
@@ -302,18 +289,15 @@ def _hydrate_overrides_runtime(
         spell:
             Live root spell.
         spell_lookup:
-            Live spell per step spell id (already resolved for the no-overrides
-            lane).
-        inner_no_overrides_executor:
-            The lane's inner `(meld) -> instance` executor.
+            Live spell per step spell id.
 
     Raises:
         RuntimeError:
-            When no step carries the root instance key.
+            When no step carries the root instance key, or the site graph
+            cannot be built.
 
     Returns:
-        Callable[..., Any]:
-            `(meld, overrides) -> instance`.
+        SitePlanOverrideRuntime: The runtime.
     """
     rows = _hydrate_steps_from_rows(
         steps_rows=no_overrides_payload["steps_rows"],
@@ -327,13 +311,11 @@ def _hydrate_overrides_runtime(
         raise RuntimeError(
             "many_only override runtime could not resolve the root instance key."
         )
-    runtime = SitePlanOverrideRuntime(
+    return SitePlanOverrideRuntime(
         steps=tuple(SitePlanStep.from_many_only_row(row) for row in rows),
         root_spell=spell,
         root_instance_key=root_instance_key,
-        inner_no_overrides_executor=inner_no_overrides_executor,
     )
-    return runtime.execute_with_overrides
 
 
 def _resolve_spell_lookup(

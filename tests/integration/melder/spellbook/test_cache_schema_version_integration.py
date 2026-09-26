@@ -24,6 +24,7 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     12: "complete_bundle_restage",
     13: "collection_member_paths",
     14: "override_site_plan_lanes",
+    15: "structural_snapshot_rows",
 }
 
 

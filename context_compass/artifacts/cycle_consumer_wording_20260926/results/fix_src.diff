@@ -1,0 +1,143 @@
+diff -ru --strip-trailing-cr -x __pycache__ mnt/melder_private/src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py cc_fix/src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
+--- mnt/melder_private/src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py	2026-09-26 15:39:24.508178400 +0000
++++ cc_fix/src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py	2026-09-26 17:15:21.042059960 +0000
+@@ -27,6 +27,10 @@
+     - Reports only cycles reachable from the spell currently under validation.
+     - Emits validation issues into the supplied context; it does not mutate the
+       graph or try to break cycles automatically.
++    - Words the issue for what the spell is (2026-09-26): a cycle member is told
++      it is part of the cycle; a spell that only reaches a cycle is told which of
++      its dependencies leads there and that it is not part of that cycle. Either
++      way the spell is refused and `details["cycle"]` holds the cycle ids.
+ 
+     Registration:
+         MELDER KERNEL. A built-in strategy; registered, never bound.
+@@ -73,7 +77,9 @@
+         - Uses the spellbook-wide adjacency map as the source of dependency
+           truth for this strategy.
+         - Emits one `CIRCULAR_DEPENDENCY` issue when a reachable cycle is
+-          found.
++          found. The message names the cycle; for a spell outside the cycle it
++          also names the spell's direct dependency on the route to it (see
++          `_cycle_message`). `details` carries the cycle ids in both cases.
+         - Ignores dangling dependency ids here so the dedicated dangling
+           dependency strategy can report them separately.
+         """
+@@ -115,6 +121,9 @@
+         visited: set[str] = set()
+         stack: set[str] = set()
+         cycle_path: List[str] = []
++        # Path nodes before the cycle starts: empty when the spell is in the
++        # cycle, otherwise the spell followed by any intermediates.
++        route: List[str] = []
+ 
+         def dfs(node_id: str, path: List[str]) -> None:
+             if node_id in stack:
+@@ -125,6 +134,7 @@
+                     # Should not happen, but be defensive.
+                     start_idx = 0
+                 cycle_path.extend(path[start_idx:])
++                route.extend(path[:start_idx])
+                 return
+ 
+             if node_id in visited:
+@@ -155,18 +165,93 @@
+             # closes it was appended before the recursion that found it. Name
+             # every member; an id appears only for a spell the book cannot name.
+             pool = spellbook._spell_id_pool
+-            pretty = " -> ".join(
++            cycle_names = [
+                 SpellInputUtils.describe_spell_id(spell_id, pool) for spell_id in cycle_path
+-            )
++            ]
++            lead_name: Optional[str] = None
++            lead_in_cycle = False
++            if route:
++                # The spell is outside the cycle and reaches it through its direct
++                # dependency on the route: the cycle's first node when the route is
++                # only the spell, otherwise the first intermediate.
++                lead_in_cycle = len(route) == 1
++                lead_id = cycle_path[0] if lead_in_cycle else route[1]
++                lead_name = SpellInputUtils.describe_spell_id(lead_id, pool)
+             context.issues.append(
+                 SpellValidationIssue(
+                     severity="error",
+                     code="CIRCULAR_DEPENDENCY",
+-                    message=(
+-                        f"Spell {context.spell.spell_name!r} is part of a dependency cycle: "
+-                        f"{pretty}. Melder cannot build any spell in the cycle; remove one of "
+-                        "these constructor dependencies or give that parameter a default."
++                    message=self._cycle_message(
++                        context.spell.spell_name, cycle_names, lead_name, lead_in_cycle
+                     ),
+                     details={"cycle": list(cycle_path)},
+                 )
+             )
++
++    @staticmethod
++    def _cycle_message(
++        spell_name: str,
++        cycle_names: List[str],
++        lead_name: Optional[str],
++        lead_in_cycle: bool,
++    ) -> str:
++        """
++        Word the CIRCULAR_DEPENDENCY message for a cycle member or a cycle consumer.
++
++        Purpose:
++            Every spell from which a cycle is reachable is refused, whether or not
++            it is in the cycle. The message says which case applies so the user
++            fixes the cycle rather than a spell that only uses it.
++
++        Contract:
++            - Pure; formats text only.
++            - `lead_name` None: the spell is a cycle member and gets the member
++              wording ("is part of a dependency cycle").
++            - Otherwise the spell is a consumer: the message names its direct
++              dependency on the route ("which is part of a dependency cycle" when
++              that dependency is a member, "which depends on itself" when it is a
++              self-loop, "which depends on a dependency cycle" when it is an
++              intermediate), says how to break the cycle, and states that the
++              spell itself is not part of that cycle.
++            - A self-loop is a two-entry cycle ("'Node' -> 'Node'"); its fix names
++              the loop spell.
++
++        Args:
++            spell_name: Name of the spell under validation (quoted here).
++            cycle_names: Display names of the cycle path, already quoted by
++                `SpellInputUtils.describe_spell_id`, first node repeated last.
++            lead_name: Quoted display name of the spell's direct dependency on the
++                route to the cycle, or None when the spell is in the cycle.
++            lead_in_cycle: True when `lead_name` is itself a cycle member.
++
++        Returns:
++            str: The user-facing issue message.
++        """
++        pretty = " -> ".join(cycle_names)
++        if lead_name is None:
++            return (
++                f"Spell {spell_name!r} is part of a dependency cycle: {pretty}. Melder cannot "
++                "build any spell in the cycle; remove one of these constructor dependencies "
++                "or give that parameter a default."
++            )
++        self_loop = len(cycle_names) == 2
++        if lead_in_cycle and self_loop:
++            needs = f"it needs {lead_name}, which depends on itself ({pretty})"
++        elif lead_in_cycle:
++            needs = f"it needs {lead_name}, which is part of a dependency cycle: {pretty}"
++        else:
++            needs = f"it needs {lead_name}, which depends on a dependency cycle: {pretty}"
++        if self_loop:
++            fix = (
++                f"Fix {cycle_names[0]} (remove that constructor dependency or give that "
++                "parameter a default)"
++            )
++        else:
++            fix = (
++                "Break that cycle (remove one of those constructor dependencies or give that "
++                "parameter a default)"
++            )
++        return (
++            f"Spell {spell_name!r} cannot be built: {needs}. {fix}; "
++            f"{spell_name!r} itself is not part of that cycle."
++        )

@@ -10,7 +10,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T12:29:50Z
-- Updated: 2026-09-26T16:54:01Z
+- Updated: 2026-09-26T17:31:14Z
 
 ## Objective
 Overrides run through per-key-set plans compiled from the site graph: supplied dependencies and everything
@@ -45,7 +45,7 @@ the empty key set; the normal lane switches to it only when it meets the parity 
       manifests and hydrators on the cache-hit path) and record the seams.
 - [x] Decide the lowering's inputs on both paths (fresh conjure and full cache hit) and write patch docs.
 - [x] Implement the dispatcher and plan emission; tests.
-- [ ] Parity gate for the normal lane; switch only if met.
+- [x] Parity gate for the normal lane; switch only if met (met and switched, S2b-2, 2026-09-26).
 - [ ] Validate on 3.14t and GIL; measure.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
@@ -62,6 +62,8 @@ the empty key set; the normal lane switches to it only when it meets the parity 
 - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py
 - tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py (new)
 - tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py (new)
+- tests/experimentation/test_melder_creation_overrides_performance.py (solo matrix inputs, 2026-09-26)
+- tests/experimentation/test_generalized_cache_strategy_experiment.py (code-cache assertion, S2b-2)
 
 ## Validation
 - Not run.
@@ -1493,16 +1495,316 @@ the empty key set; the normal lane switches to it only when it meets the parity 
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T16:58:50Z
+  TYPE: MEASURE
+  CLAIM: S2b-1 with the guard fix, its tests and the solo matrix fix, on a fresh ~/work/melder_s2b (reset from the
+    melder_s2bbase twin; apply_s2b1_edits.py, apply_s2b1_test_edits.py, apply_solo_matrix_test_edits.py, each --check
+    first). 3.14t and GIL identical: unit spellbook 2189, component spellbook 773, integration spellbook
+    579+2s+2xf+2xp, experimentation 250+4s, component aether 1204+1xf, conduit 268, multithreading 42 (all 12
+    lock-order deadlock cases), unit aether 4145, integration aether 716. Remaining 3.14t dirs: utilities 795+2s+7xf,
+    mutation_research 277/40/66, component utilities 21+43s, unit crystallizer 565, integration crystallizer 258+3xf,
+    live_sim 1+1xf, root unit files 144 passed. Failures, none from this change: the asset-stamp test (assets 0.2.56),
+    crystallizer file_backed_morph x4 (known), and test_system_documents_builder x2, which fail on the baseline twin
+    too because VM work copies carry no context_compass/system_docs for the builder to ingest (environment).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s2b1_edits.py:1-440
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s2b1_test_edits.py:1-377
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_solo_matrix_test_edits.py:1-56
+  IMPACT: S2b-1 is ready for the device; the matrix regression from this lane is fixed with it.
+  NEXT: Check the mailbox, confirm the device files still equal the twin, --check and apply the three scripts,
+    verify byte-identity, update the code-description patch for the guard rule.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:59:40Z
+  TYPE: FACT
+  CLAIM: Mailbox F0-17 (fable_0, 16:47:56Z) asks whether cache generation 14 is committed and whether
+    caching_system.py and spellbook_creation_system.py are free for the I-1 capture task. Read-only git
+    (GIT_OPTIONAL_LOCKS=0): generation 14 is in HEAD (caching_system.py:165 at HEAD); `git diff --ignore-cr-at-eol HEAD`
+    on both files is empty, so this lane has no uncommitted content in them (the whole-file stat is CRLF in the working
+    tree vs LF in HEAD). S2b-1 does not touch them and S2b-2 is planned without a cache generation. Answer: both free;
+    melder_0 will message before touching either again (M0-36). A 0-byte .git/index.lock seen at 16:58:52Z was gone at
+    16:59Z (another writer's git operation; melder_0 ran no git that wrote).
+  EVIDENCE:
+  - src/melder/utilities/caching_system/caching_system.py:160-170
+  - context_compass/mailbox_board.md:109-122
+  IMPACT: fable_0's capture task can proceed without a file conflict with this lane.
+  NEXT: Consume F0-17, send M0-36 (ACK), then apply S2b-1 to the device.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T17:01:04Z
+  TYPE: FACT
+  CLAIM: S2b-1 is on the device. Mailbox read first (F0-17 consumed, M0-36 sent); the four target files equalled the
+    twin; apply_s2b1_edits.py, apply_s2b1_test_edits.py and apply_solo_matrix_test_edits.py passed --check and were
+    applied; each file is byte-identical to the validated ~/work/melder_s2b copy. Override key-set plans now place
+    shared sites' children inside their misses (a stored shared site's children are not built; B2) and a miss builds
+    its children before taking its guard (CONFLICT 16:52:30Z). Code-description patch step 8 and invariants updated;
+    release note bullet "A stored shared object skips its dependencies" added under the override section. No version
+    notch (0.2.59 is not yet committed and carries this lane's override work). Normal melds unchanged (S2b-2).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1-1285
+  - context_compass/system_docs/patches/active/override_site_plan_2026_09_26/code_description_patch_site_plan_lowering.md:40-74
+  - release_docs/next_version_release.md:44-60
+  IMPACT: Warm override melds on graphs with shared sites stop building discarded dependencies.
+  NEXT: S2b-2 discovery: read both families' normal-lane hydration and inner executors, then write the S2b-2 plan,
+    parity-gate method and file list.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:03:25Z
+  TYPE: FACT
+  CLAIM: S2b-2 discovery. (1) Generalized hydration builds the inner normal executor from manifest rows
+    (hydrate_no_overrides_executor: unrolled transient source when the schema is present and every row is a
+    non-registering many, else straight-line step source with closure-cell constants), wraps it in both route-keyed
+    doors, and optionally (config flag, default False) installs a warm-tail specializer whose body comes from the old
+    emitter and deopts to the inner executor. The override door builds SitePlanOverrideRuntime lazily at the first
+    override meld from the same rows, so today a root that sees overrides builds its site graph there. (2) many_only
+    hydration compiles its inner through the many_only compiler (transient or step source) and builds the override
+    runtime eagerly. (3) Construction failures in both old emitters and in the lowering go through the same
+    `_raise_meld_construction_error` body (same UnresolvedInputError check and message), so error parity holds.
+    (4) Design v2 S2 gate: identical results, constructor counts differ only as B2 predicts, suites on 3.14t and GIL,
+    normal throughput at or above today.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:265-356
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:569-770
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:111-204
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py:198-336
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:312-342
+  - context_compass/artifacts/melder_override_design_20260926/design_v2.md:403-419
+  IMPACT: The switch is a hydration change in both families plus a normal-mode emission; manifests are unchanged, so no
+    cache generation.
+  NEXT: Measure before code (PLAN below).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:03:25Z
+  TYPE: PLAN
+  CLAIM: S2b-2 measure-first. Probe (artifact s2b2_parity.py, no production change) on the S2b-1 tree: per graph,
+    today's hydrated inner executor vs the lowering's empty-key-set plan, direct warm calls, median of 7, 3.14t and
+    GIL; many_only graphs from the experiment (solo, shallow, wide, diamond, deep) and generalized graphs with shared
+    sites (G1 Root(a many, s upc(x many)); unique service over a many leaf; mixed upc/many; a deep many tree with a
+    shared leaf); plus the first-meld cost of building the plan (steps, site graph, emission, compile). Gate: every
+    graph at or above today within noise (median ratio >= 0.98), results identical, counts differ only by B2. If met,
+    implementation (separate file list note first): SitePlanLowering gains a normal-mode emission (`(meld)`
+    signature, misses without `ov`) for the empty key set; SitePlanOverrideRuntime builds and owns the normal plan
+    and serves it as the family inner executor and its own empty-payload fallback (one site graph per root); both
+    hydrators install it; the old transient lane and the opt-in specializer stay only where measurement says so.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/s2_parity.py:1-65
+  - context_compass/artifacts/melder_override_design_20260926/design_v2.md:403-434
+  IMPACT: No production code until the gate is measured.
+  NEXT: Write and run s2b2_parity.py on ~/work/melder_s2b (3.14t, GIL).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:07:50Z
+  TYPE: MEASURE
+  CLAIM: S2b-2 parity gate, s2b2_parity.py on the S2b-1 tree: today's hydrated inner executor vs the lowering's
+    empty-key-set plan in normal mode (`(meld)`; previewed by dropping the pass-through `ov`), warm direct calls, 11
+    interleaved rounds, median per-round speed ratio. 3.14t / GIL: G1 136% / 138%, unique service 127% / 131%, mixed
+    141% / 144%, tree (shared leaf under a many tree) 101% / 106%, shallow 100% / 101%, wide 101% / 100%, diamond
+    101% / 99%, deep (511 transient) 103% / 101%, solo 94% / 99% in the batch run and 101.8% on 3.14t alone (median of
+    five order-alternating reps of 50,000 calls; its bytecode equals today's inner, so the batch figure was
+    interference on the shared VM). With `ov` still passed the small graphs sat at 95-98%, so normal mode matters.
+    Results are the same type on every graph. Build cost at first meld: site graph 40-75 us on small graphs and about
+    2.1 ms on deep; emission 45-110 us small, about 2-2.4 ms deep; compile is cached by source in production, as the
+    old factory cache is.
+  EVIDENCE: context_compass/artifacts/melder_override_design_20260926/s3_staging/s2b2_parity.py:1-300
+  IMPACT: The design S2 gate (normal throughput at or above today) is met on both builds; shared-site graphs gain
+    27-44% from B2 on warm normal melds. Cost: one site graph per hydrated root, about 2 ms more first-meld latency on a
+    511-site graph.
+  NEXT: DECISION and the implementation file list.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:07:50Z
+  TYPE: DECISION
+  CLAIM: Gate met, so S2b-2 switches the normal lane of both families to the lowering. Shape: (1) SitePlanLowering
+    gets a normal-mode emission (`def _site_plan_executor(meld)`, misses without `ov`) for the empty key set;
+    (2) SitePlanOverrideRuntime builds its site graph and that normal plan at construction and serves it as
+    `execute_normal`, its own fallback for payloads with no winning key (one site graph and one step set per root);
+    (3) both hydrators build the runtime at hydration and install `execute_normal` as the inner executor; the
+    generalized override door reuses that runtime instead of building its own; the opt-in specializer keeps its body
+    from the old emitter with the plan as its generic/deopt target; (4) the old transient/step emitters stay in the
+    tree, unused by the normal lane, for S2b-3 (owner-confirmed retirement). Manifests are unchanged: no cache
+    generation. FILES: shared_assets/site_plan_lowering.py, shared_assets/site_plan_override_runtime.py,
+    strategies/generalized/hydration/generalized_hydrator.py, strategies/many_only/hydration/many_only_hydrator.py,
+    tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py,
+    tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py, and tests that pin the old
+    inner (read first: test_generalized_specializer_wrapper.py, test_ordered_disposal_compiler.py); patch docs
+    component_patch_override_key_set_plans.md and code_description_patch_site_plan_lowering.md; release note.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/design_v2.md:403-419
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:312-342
+  IMPACT: One emitter owns normal and override melds; warm normal melds on shared-site graphs skip B2 work.
+  NEXT: Read the two tests that pin the old inner, update the patch docs, then implement on a fresh VM copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:19:32Z
+  TYPE: FACT
+  CLAIM: S2b-2 implemented on ~/work/melder_s2b (rebuilt from a fresh device twin; apply_s2b2_edits.py and
+    apply_s2b2_test_edits.py, --check first). Lowering unit + key-set component tests 61 passed; the new normal-meld
+    B2 component test fails on the device state (both variants) and passes with S2b-2. 3.14t: unit spellbook 2195,
+    component spellbook 775, integration spellbook 584+2s+2xf+2xp, component aether 1204+1xf, conduit 268,
+    multithreading 42, unit aether 4145, integration aether 716. One failure: the generalized manifest experiment
+    asserts `executor_factory_cache_size() >= 1` after a cache reload; the factory cache belongs to the old emitter,
+    and normal hydration now compiles through the executor code cache. File added to the list:
+    tests/experimentation/test_generalized_cache_strategy_experiment.py (assert the code cache instead; the factory
+    count stays in its printout). VM disk was full at the twin refresh: stale work copies and caches in the VM home
+    were removed (none in the connected folder); the twin was verified identical to the device by a dry-run rsync.
+  EVIDENCE:
+  - tests/experimentation/test_generalized_cache_strategy_experiment.py:186-224
+  - src/melder/aether/spellbook/spell_compiler/executor_code_cache.py:169-176
+  IMPACT: The experiment pinned an implementation detail of the retired normal emitter path, not behavior.
+  NEXT: Add the experiment edit to apply_s2b2_test_edits.py, then run GIL and the remaining suites.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:24:47Z
+  TYPE: MEASURE
+  CLAIM: S2b-2 validated on ~/work/melder_s2b (fresh device twin + apply_s2b2_edits.py + apply_s2b2_test_edits.py incl.
+    the experiment assertion). Suites, 3.14t and GIL identical: unit spellbook 2195, component spellbook 775,
+    integration spellbook 584+2s+2xf+2xp, experimentation 250+4s, component aether 1204+1xf, conduit 268,
+    multithreading 42, unit aether 4145, integration aether 716; 3.14t also crystallizer 565/258+3xf, utilities
+    796+2s+7xf, mutation_research 277/40/66, live_sim 1+1xf, root unit 144. Failures only the known ones (asset stamp,
+    file_backed_morph x4, system_documents_builder x2 in VM copies). Public normal meld (override experiment timing,
+    automatic, median us, device-state twin -> S2b-2): 3.14t solo 0.265 -> 0.255, shallow 0.292 -> 0.299, diamond
+    0.393 -> 0.387, deep 25.46 -> 25.69; GIL solo 0.241 -> 0.239, shallow 0.268 -> 0.265, diamond 0.350 -> 0.334, deep
+    20.63 -> 20.35 (all within +-3% run noise or faster). Fresh-process conjure unchanged; first meld: deep 26-28 ms ->
+    19-21 ms, shallow 0.36 -> 0.52 ms, diamond 0.44 -> 0.52 ms (3.14t).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s2b2_edits.py:1-901
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s2b2_test_edits.py:1-245
+  IMPACT: The design S2 gate holds at the public meld too; the switch is ready for the device.
+  NEXT: Mailbox, confirm the seven target files still equal the twin, --check, apply, verify byte-identity.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:25:14Z
+  TYPE: FACT
+  CLAIM: Mailbox M2-6 (melder_2, 17:12:22Z, ACK of M0-35): melder_2 keeps to meld entry, SpellSpace and the scope
+    lifecycle; every code-emission lever (compilers, hydrators, site_plan_*) routes to melder_0, and P1's emitter file
+    is melder_0's from here on. Pending the owner: P3 (deferred refcounting of the runtime graph on 3.14t, -23% to -36%
+    per worker-thread cycle); if approved, melder_2 hands the hydrator/specializer lines to melder_0 (one
+    RefcountDeferral.defer_graph(...) call at each hot-door publication) and sends a NOTICE before touching conduit.py,
+    conduit_meld.py and spellspace_meld.py (which carry this lane's uncommitted fast-door edits). S2b-2 changes both
+    hydrators, so a P3 handoff lands on the S2b-2 form.
+  EVIDENCE: tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:461-527
+  IMPACT: No conflict now; a later P3 handoff applies to the post-S2b-2 hydrators.
+  NEXT: Apply S2b-2 to the device.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T17:26:20Z
+  TYPE: FACT
+  CLAIM: S2b-2 is on the device. Mailbox consumed first (M2-6); the seven target files equalled the twin;
+    apply_s2b2_edits.py and apply_s2b2_test_edits.py passed --check and were applied; every file is byte-identical to
+    the validated ~/work/melder_s2b copy. Normal melds of the many_only and generalized families now run the
+    site-plan runtime's normal plan (solo roots unchanged); the old normal emitters stay in the tree. Public warm
+    meld on shared-site graphs (ns/call, device-state twin -> S2b-2): 3.14t G1 387.5 -> 317.0, unique service 387.7
+    -> 320.5, mixed 501.9 -> 408.7, tree 599.2 -> 578.8; GIL 328.4 -> 272.0, 323.0 -> 267.2, 441.2 -> 346.5, 525.7 ->
+    480.9 (3-27% more throughput). Patch docs (component S2b-2 section, code-description step 9) and the release
+    note ("Stored shared objects skip their dependencies on every meld") updated. No cache generation.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:1-384
+  - context_compass/system_docs/patches/active/override_site_plan_2026_09_26/component_patch_override_key_set_plans.md:64-99
+  - release_docs/next_version_release.md:76-84
+  IMPACT: One emitter now owns normal and override melds for both families.
+  NEXT: DECISION_REQUEST on S2b-3 (retiring the old normal emitters), then S4 discovery.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:28:08Z
+  TYPE: DECISION_REQUEST
+  CLAIM: S2b-3 (retire the old normal emitters) needs an owner decision: it is a deletion across files outside this
+    lane's list. Normal hydration no longer calls them. Remaining consumers (search, then files opened as named):
+    the opt-in singleton specializer (generalized_manifest_no_overrides_compiler: build_specialized_... and the row
+    helpers it shares with the step emitter); tests pinning old emission (test_generalized_emission_contracts,
+    test_generalized_positional_emission, test_codegen_creation_compilers_core, test_codegen_creation_core,
+    test_ordered_disposal_compiler); many_only_no_overrides_codegen_creation_step.py (live-pipeline status UNKNOWN,
+    to read); the packaged hardcopy docs payload (regenerated with the owner-approved asset rebuild). Options:
+    (1) retire now: delete the generalized step/transient normal emission and the many_only normal compiler lane plus
+    their tests, keep the specializer's emitter; (2) retire including the opt-in specializer (port its warm-tail body
+    onto the lowering, or drop the flag); (3) defer the deletion to S6, alongside docs promotion and the asset
+    rebuild, and do S4/S5 first. Recommendation: (3), because S4/S5 are behavior work and the deletion is safest as one
+    reviewed pass with the docs; the code stays unused and tested meanwhile.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:1420-1811
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:543-744
+  IMPACT: Deleting in the wrong order would break the opt-in specializer or tests that still pin old emission.
+  NEXT: Owner picks; meanwhile read design v2 4.2.6 and the unresolved-input failure path for S4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:31:14Z
+  TYPE: FACT
+  CLAIM: S4 discovery. (1) The failure-path hook `UnresolvedInputError.from_failed_construction` is called from three
+    places: the generalized and many_only `_raise_meld_construction_error` (also used by the lowering) and the solo
+    no-overrides compiler's `guarded_call_target`, which wraps a solo root whose topology has UNRESOLVED_INPUT
+    sockets; the solo override lane passes the payload straight to the constructor and is not a key-set plan.
+    (2) It covers UNRESOLVED_INPUT sockets only. (3) In the lowering's site graph (built from steps) an unresolved
+    input's source_kind is "plain", but socket_kind_value is UNRESOLVED_INPUT from the live Phase-3 topology, so a
+    plan can see it. (4) test_conduit_component_unresolved_inputs.py asserts `__cause__` is a TypeError for solo,
+    many_only and generalized (it changes for plan families under B6).
+  EVIDENCE:
+  - src/melder/utilities/custom_exceptions/unresolved_input_error.py:175-261
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py:246-301
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py:265-335
+  - tests/component/melder/aether/conduit/test_conduit_component_unresolved_inputs.py:125-141
+  IMPACT: S4 splits: plan families can decide it now; solo needs its own decision.
+  NEXT: Record the scope challenge and the S4a plan.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:31:14Z
+  TYPE: ASSUMPTION_CHALLENGE
+  CLAIM: Design v2 4.2 step 6 says "an unresolved or override-required input with no key" is raised by the plan.
+    The canonical architecture contract for non-resolvable registrations says ordinary supplied inputs keep
+    "existing override execution and Python constructor errors ... no new preflight", and the hook itself never
+    covered OVERRIDE_REQUIRED. The only path that keeps the canonical contract: S4 decides UNRESOLVED_INPUT sockets
+    only; OVERRIDE_REQUIRED keeps today's constructor error. Owner may widen it later.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/design_v2.md:106-109
+  - context_compass/system_docs/src_architecture.md:1019-1027
+  IMPACT: No new preflight for override-required inputs; B6 applies to unresolved inputs as the hook did.
+  NEXT: PLAN below.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:31:14Z
+  TYPE: PLAN
+  CLAIM: S4a (plan families; solo and the hook's retirement wait for the owner). The lowering computes, per kept site,
+    its UNRESOLVED_INPUT params without a winning key. A context (plan top, or a shared site's miss) raises for the
+    first such site it builds unconditionally, in step order, before anything in it is constructed: the plan top
+    after the conflict guards for top-level many sites; a miss's top (before its children) for its many children and
+    then the site itself. Stored sites never demand (the hit read skips the miss). The raise is
+    `_raise_unresolved_input(spells[i], names)` -> `UnresolvedInputError.for_unsupplied(spell, names)`, a new
+    classmethod sharing the message builder with `from_failed_construction` (same text; no TypeError cause).
+    FILES: shared_assets/site_plan_lowering.py; utilities/custom_exceptions/unresolved_input_error.py;
+    tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py;
+    tests/component/melder/aether/conduit/test_conduit_component_unresolved_inputs.py; patch docs
+    (code-description step 10, component patch S4a); release note (B6).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/design_v2.md:344-352
+  - context_compass/artifacts/melder_override_design_20260926/design_v2.md:380-381
+  IMPACT: Unresolved inputs fail before any construction under the consumer in normal and override melds of both
+    plan families.
+  NEXT: Patch docs, then implement on the VM copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 In the device tree, uncommitted: S3a (key-set override plans), S3b-1/S3b-2 (old override lane, legacy codec and
-fallback family retired; cache generation 14), S2a (plans read constants as globals), the override fast door, the
-Conduit.meld id-lane trim, the existing-object fast path (entries carry an existing-object flag), the solo benchmark
-on a real override, and version 0.2.59 with its release-note sections. S2b is in this lane (owner, 16:31:17Z).
-S2b-1 (nested shared misses in override plans) is implemented on the VM work copy ~/work/melder_s2b (twin
-~/work/melder_s2bbase) via apply_s2b1_edits.py, 1470 passed on 3.14t and GIL; next are its new unit/component tests,
-full suites, then --check and apply to the device. S2b-2 (normal lane on empty-key-set plans, parity gate) follows
-with its own plan note and file list. Later: S4, S5, S6 (docs, owner-approved asset rebuild, release note). Known
-unrelated failures: crystallizer file_backed_morph x4; asset-stamp test (assets 0.2.56 vs package 0.2.59).
+fallback family retired; cache generation 14, committed), S2a, the override fast door, the Conduit.meld id-lane trim,
+the existing-object fast path, the solo benchmark on a real override, version 0.2.59 with its release-note sections,
+S2b-1 (override plans: shared sites' children built inside their misses, children before the guard; solo matrix
+inputs fixed) and S2b-2 (normal melds of both families on the site-plan runtime's normal plan; parity gate met; the
+old normal emitters remain in the tree). Next: owner decision on S2b-3 (retire the old normal emitters), then S4
+(unresolved inputs decided in the plan), S5, S6 (docs, owner-approved asset rebuild, release note). Known unrelated
+failures: crystallizer file_backed_morph x4; asset-stamp test (assets 0.2.56 vs package 0.2.59); VM work copies lack
+context_compass/system_docs, so test_system_documents_builder x2 fails there only.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

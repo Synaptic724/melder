@@ -8,13 +8,15 @@ first meld, so cache loads can never drift from live builds.
 
 Hydration shape:
     1. Resolve live identity (spells, path registry) through the resolver.
-    2. Build slotted runtime rows from manifest rows.
-    3. Hydrate the inner no-overrides executor through the family compiler
-       (row-driven emission, process-wide factory cache).
-    4. Build the family override runtime lazily at the first override meld:
-       `SitePlanOverrideRuntime` over the same no-overrides rows, one
-       compiled plan per override key set (2026-09-26).
-    5. Wrap both lanes in the shared route-keyed CreationContext doors.
+    2. Hydrate the manifest's no-overrides rows into site-plan steps.
+    3. Build `SitePlanOverrideRuntime` over them (2026-09-26, S2b-2): its
+       normal plan (the empty key set) is the inner no-overrides executor, and
+       it compiles one plan per override key set at first use.
+    4. Wrap both lanes in the shared route-keyed CreationContext doors (the
+       override door is compiled at the first override meld).
+    5. Optionally (configuration flag) install the singleton warm-tail
+       specializer; its body comes from the family's old step emitter and it
+       deopts to the normal plan.
 """
 
 import threading
@@ -27,7 +29,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler import (
     build_specialized_no_overrides_executor,
-    hydrate_no_overrides_executor,
     resolve_root_instance_key_from_rows,
     select_specializable_step_indexes,
 )
@@ -284,13 +285,14 @@ def hydrate_creation_executors(
         resolver=resolver,
         step_spell_ids=no_overrides_payload["step_spell_ids"],
     )
-    inner_no_overrides_executor = hydrate_no_overrides_executor(
-        rows=no_overrides_payload["steps_rows"],
-        transient_schema=no_overrides_payload["transient_schema"],
-        root_instance_key=no_overrides_payload["root_instance_key"],
-        root_spell_id=no_overrides_payload["root_spell_id"],
+    # One runtime per root serves both lanes (S2b-2, 2026-09-26): its normal
+    # plan is the inner no-overrides executor; override key sets compile on it.
+    site_plan_runtime = _build_site_plan_runtime(
+        no_overrides_payload=no_overrides_payload,
         spell_lookup=no_overrides_spell_lookup,
+        root_spell=root_spell,
     )
+    inner_no_overrides_executor = site_plan_runtime.execute_normal
     fast_transient_no_overrides = (
         no_overrides_payload["transient_schema"] is not None
     )
@@ -317,10 +319,10 @@ def hydrate_creation_executors(
         )
     )
     overrides_door = _build_lazy_overrides_door(
-        manifest=manifest,
         root_spell=root_spell,
         route_key=route_key,
         inner_no_overrides_executor=inner_no_overrides_executor,
+        execute_with_overrides=site_plan_runtime.execute_with_overrides,
     )
 
     # The specializing wrapper rides the INSTANCE lane: the no-hooks meld
@@ -355,50 +357,43 @@ def hydrate_creation_executors(
     )
 
 
-def _hydrate_overrides_runtime(
+def _build_site_plan_runtime(
         *,
-        manifest: Dict[str, Any],
-        resolver: Any,
+        no_overrides_payload: Dict[str, Any],
+        spell_lookup: Dict[str, Any],
         root_spell: Any,
-        inner_no_overrides_executor: Callable[..., Any],
-) -> Callable[..., Any]:
+) -> SitePlanOverrideRuntime:
     """
-    Build the family override runtime: one compiled plan per override key set.
+    Build the root's site-plan runtime: the normal plan now, override plans per key set later.
 
     Contract:
         - Reads the manifest's no-overrides step rows through the family's
           step-row hydration (`_hydrate_steps_from_rows`), which also resolves
           contract payload references to live values where rows carry them, so
-          override plans and the normal lane see the same steps (design v2
-          S3a). The manifest's overrides payload is not read.
-        - Returns `SitePlanOverrideRuntime.execute_with_overrides`; plans
-          compile lazily per key set at meld time, and the runtime lives as
-          long as the returned callable (the lazy override door holds it).
+          normal and override plans see the same steps (design v2 S3a, S2b-2).
+          The manifest's overrides payload is not read.
+        - The runtime builds its site graph and normal plan at construction
+          (first meld); requires phases 1-7 live, which meld's structural gates
+          guarantee on every path that reaches hydration.
 
     Args:
-        manifest:
-            Validated family manifest.
-        resolver:
-            Binding resolver for live spell identity.
+        no_overrides_payload:
+            The manifest's `no_overrides` section.
+        spell_lookup:
+            Live spell per step spell id.
         root_spell:
             Live root spell.
-        inner_no_overrides_executor:
-            The lane's inner `(meld) -> instance` executor.
 
     Raises:
         RuntimeError:
-            When rows or the root instance key cannot be resolved.
+            When rows, the root instance key or the site graph cannot be
+            resolved.
 
     Returns:
-        Callable[..., Any]:
-            `(meld, overrides) -> instance`.
+        SitePlanOverrideRuntime: The runtime (kept alive by the executors it
+        hands out).
     """
-    no_overrides_payload = manifest["no_overrides"]
     steps_rows = no_overrides_payload["steps_rows"]
-    spell_lookup = _resolve_spell_lookup(
-        resolver=resolver,
-        step_spell_ids=no_overrides_payload["step_spell_ids"],
-    )
     rows = _hydrate_steps_from_rows(
         steps_rows=steps_rows,
         spell_lookup=spell_lookup,
@@ -408,13 +403,11 @@ def _hydrate_overrides_runtime(
         explicit_root_instance_key=no_overrides_payload["root_instance_key"],
         root_spell_id=no_overrides_payload["root_spell_id"],
     )
-    runtime = SitePlanOverrideRuntime(
+    return SitePlanOverrideRuntime(
         steps=tuple(SitePlanStep.from_generalized_row(row) for row in rows),
         root_spell=root_spell,
         root_instance_key=root_instance_key,
-        inner_no_overrides_executor=inner_no_overrides_executor,
     )
-    return runtime.execute_with_overrides
 
 
 def _resolve_spell_lookup(
@@ -435,50 +428,39 @@ def _resolve_spell_lookup(
 
 def _build_lazy_overrides_door(
         *,
-        manifest: Dict[str, Any],
         root_spell: Any,
         route_key: str,
         inner_no_overrides_executor: Callable[..., Any],
+        execute_with_overrides: Callable[..., Any],
 ) -> Callable[..., Any]:
     """
-    Build a cold overrides door that hydrates the overrides runtime lazily.
+    Build a cold overrides door that compiles the real overrides door lazily.
 
     Purpose:
-        Defer the overrides-lane hydration cost (no-overrides row hydration,
-        root-instance-key resolution, and the key-set plan runtime build)
-        from FIRST MELD to FIRST OVERRIDE MELD, so override-free workloads
-        never pay for the lane at all.
+        Defer the overrides door compile from FIRST MELD to FIRST OVERRIDE
+        MELD. The site-plan runtime itself is built at hydration (its normal
+        plan is the inner executor since S2b-2), so only the door is deferred.
 
     Contract:
-        - Zero hydration work at build time: closure construction only.
-        - The first override call hydrates exactly once (leader under the
-          lock, followers wait), builds the real route-keyed overrides door
-          through the same door compiler the eager path used, then swaps it
-          into the spell's currently published `CreationContext`
-          `_overrides_executor` slot (self-replacing slot contract), so the
-          shim vanishes from later override melds.
-        - Hydration resolves through a fresh `SpellbookBindingResolver` at
-          first override call, mirroring `_hydrate_once`; phases 1-7 liveness
-          is guaranteed by meld's structural gates on every path that can
-          reach an executor.
+        - Zero work at build time: closure construction only.
+        - The first override call compiles exactly once (leader under the
+          lock, followers wait) the real route-keyed overrides door through
+          the same door compiler the eager path used, then swaps it into the
+          spell's currently published `CreationContext` `_overrides_executor`
+          slot (self-replacing slot contract), so the shim vanishes from later
+          override melds.
         - When no context is published (publish=False cache loads), the shim
           keeps delegating correctly; only the swap optimization is skipped.
-        - Behavior delta vs the eager path is TIMING ONLY: overrides-lane
-          hydration errors surface at the first override meld instead of the
-          first meld. Result values, error types, and the no-overrides lane
-          are unchanged.
 
     Args:
-        manifest:
-            Validated family manifest; its no-overrides rows feed the
-            override runtime.
         root_spell:
             Live root spell whose published context receives the hot swap.
         route_key:
             Family route key for the door compiler.
         inner_no_overrides_executor:
-            Already-hydrated inner no-overrides executor the overrides door
-            falls back to for empty payloads.
+            The normal plan the overrides door falls back to for empty payloads.
+        execute_with_overrides:
+            The runtime's `(meld, overrides) -> instance` dispatcher.
 
     Returns:
         Callable[..., Any]: Cold overrides door with the same
@@ -495,14 +477,6 @@ def _build_lazy_overrides_door(
             real_door = door_cell[0]
             if real_door is not None:
                 return real_door
-            resolver = SpellbookBindingResolver(spell=root_spell)
-            execute_with_overrides = _hydrate_overrides_runtime(
-                manifest=manifest,
-                resolver=resolver,
-                root_spell=root_spell,
-                inner_no_overrides_executor=inner_no_overrides_executor,
-            )
-            resolver.cleanup()
             real_door = compile_creation_context_hooks_overrides_only_executor(
                 resolve_route_key=route_key,
                 spell=root_spell,

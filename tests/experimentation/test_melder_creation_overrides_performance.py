@@ -11,8 +11,8 @@ and MELDER_OVERRIDE_OUTPUT (optional directory for JSON and Markdown).
 
 The graph classes come from the two supplied benchmark suites' common models;
 only Melder is constructed. No competitor builder is called. All graph bindings
-are transient: the legacy override suite's existing-singleton solo case is not
-mixed into creation ratios. Supplying a dependency changes requested graph work;
+are transient; solo is one root over one leaf (its old existing-singleton form
+left the benchmark in 0.2.59). Supplying a dependency changes requested graph work;
 the scalar case keeps constructor work equal. The Python control constructs only
 the root from supplied inputs and is not an implemented init={} API.
 
@@ -143,7 +143,7 @@ def _root_inputs(root: object) -> dict[str, object]:
     if isinstance(root, (graph_models.DiamondRoot, graph_models.Depth9Root)):
         return {"left": root.left, "right": root.right}
     if isinstance(root, graph_models.SoloRootA):
-        return {}
+        return {"leaf": root.leaf}
     raise TypeError(f"Unsupported benchmark root: {type(root).__name__}")
 
 

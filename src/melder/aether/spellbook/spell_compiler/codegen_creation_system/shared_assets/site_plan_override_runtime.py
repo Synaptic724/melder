@@ -33,12 +33,18 @@ class SitePlanOverrideRuntime(Cleanable):
         Replace the per-call targeting runtime of the many_only and generalized
         families. An override meld looks up the plan for its payload's key
         tuple and calls it; the plan builds only what the key set leaves
-        unsupplied (design v2 step S3).
+        unsupplied (design v2 step S3). Since S2b-2 (2026-09-26) the runtime
+        also owns the normal lane: its empty-key-set plan is the family's
+        inner no-overrides executor.
 
     Contract:
+        - Construction builds the site graph from the steps and the live
+          Phase-3 topologies and compiles the normal plan, exposed as
+          `execute_normal(meld) -> instance`; the family hydrators install it as
+          the inner no-overrides executor. Site-graph errors raise unwrapped.
         - `execute_with_overrides(meld, overrides) -> instance` keeps the
           signature the CreationContext override doors call. `overrides` None
-          runs the inner no-overrides executor.
+          runs the normal plan.
         - Per call: one key tuple, one dict read, one call. A miss compiles the
           key set under `_compile_lock` (resolution, emission, code-object
           cache, exec; no user code runs) and stores it; at `MAX_PLANS` stored
@@ -49,9 +55,9 @@ class SitePlanOverrideRuntime(Cleanable):
         - Key errors raise `MeldExecutionError("Failed to apply overrides.")`
           chained from the resolver's error, and are not stored.
         - A key set with no winning operand (for example `__args__=[]`) runs
-          the inner no-overrides executor.
-        - The site graph is built once, on the first compile, from the steps
-          and the live Phase-3 topologies.
+          the normal plan.
+        - The site graph is built once, at construction, and kept for later
+          key sets.
 
     Threading:
         Plan lookups are lock-free dict reads. Compiles and evictions hold
@@ -59,18 +65,19 @@ class SitePlanOverrideRuntime(Cleanable):
         uses it. Emitted plans take the normal lane's build locks.
 
     Lifecycle / Cleanup:
-        Owned by the lazy override door that hydrated it, for the executor's
-        lifetime (as the old closure runtime was). `cleanup()` is idempotent:
-        it clears the plans, cleans the site graph and every step it owns
-        (built or masked), then deletes its fields. The root spell and the
-        inner executor are borrowed.
+        Built by the family hydrator at first meld and kept alive by the
+        executors it hands out (the plans' namespaces reference its steps), for
+        the executor lifetime. `cleanup()` is idempotent: it clears the plans,
+        cleans the site graph and every step it owns (built or masked), then
+        deletes its fields; plans called after it are invalid. The root spell
+        is borrowed.
 
     Registration:
         MELDER KERNEL - internal; never bound as a spell.
 
     Subsystem Context:
-        Built by `many_only_hydrator._hydrate_overrides_runtime` and
-        `generalized_hydrator._hydrate_overrides_runtime`.
+        Built by `many_only_hydrator._build_site_plan_runtime` and
+        `generalized_hydrator._build_site_plan_runtime`.
 
     System Context:
         Phase-11 override lane (design v2 step S3); CreationContext override
@@ -85,11 +92,11 @@ class SitePlanOverrideRuntime(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "execute_with_overrides",
+        "execute_normal",
         "_steps",
         "_root_spell",
         "_root_spell_id",
         "_root_instance_key",
-        "_inner_no_overrides_executor",
         "_plans",
         "_compile_lock",
         "_site_graph",
@@ -105,20 +112,19 @@ class SitePlanOverrideRuntime(Cleanable):
             steps: Tuple[SitePlanStep, ...],
             root_spell: Spell,
             root_instance_key: SiteInstanceKey,
-            inner_no_overrides_executor: Callable[[Any], Any],
     ) -> None:
         """
-        Build the runtime; no plan or site graph is compiled yet.
+        Build the runtime: the site graph and the normal plan; override plans compile per key set later.
 
         Args:
             steps: The lane's no-overrides steps in providers-first order (owned).
-            root_spell: The melded root spell (borrowed).
+            root_spell: The melded root spell (borrowed); its Spellbook's live
+                Phase-3 topologies are read here.
             root_instance_key: Instance key of the root step.
-            inner_no_overrides_executor: The lane's inner `(meld) -> instance`
-                executor (borrowed), used for payloads with no winning operand.
 
         Raises:
-            RuntimeError: When no step carries `root_instance_key`.
+            RuntimeError: When no step carries `root_instance_key`, or the site
+                graph cannot be built from the steps.
 
         Returns:
             None.
@@ -132,11 +138,11 @@ class SitePlanOverrideRuntime(Cleanable):
         self._root_spell: Spell = root_spell
         self._root_spell_id: str = root_spell.spell_index.selected_spell_id or root_spell.spell_id
         self._root_instance_key: SiteInstanceKey = root_instance_key
-        self._inner_no_overrides_executor: Callable[[Any], Any] = inner_no_overrides_executor
         self._plans: Dict[Tuple[str, ...], PlanCallable] = {}
         self._compile_lock: threading.Lock = threading.Lock()
         self._site_graph: Optional[SpellSiteGraphAnalysis] = None
         self._owned_masked_steps: List[SitePlanStep] = []
+        self.execute_normal: Callable[[Any], Any] = self._compile_normal_plan()
         self.execute_with_overrides: Callable[[Any, Optional[Dict[str, Any]]], Any] = (
             self._build_dispatcher()
         )
@@ -163,11 +169,11 @@ class SitePlanOverrideRuntime(Cleanable):
             for step in self._steps:
                 step.cleanup()
         del self.execute_with_overrides
+        del self.execute_normal
         del self._steps
         del self._root_spell
         del self._root_spell_id
         del self._root_instance_key
-        del self._inner_no_overrides_executor
         del self._plans
         del self._site_graph
         del self._owned_masked_steps
@@ -187,7 +193,7 @@ class SitePlanOverrideRuntime(Cleanable):
                 overrides: Optional[Dict[str, Any]],
                 plans: Dict[Tuple[str, ...], PlanCallable] = self._plans,
                 plan_for: Callable[[Dict[str, Any]], PlanCallable] = self._plan_for_payload,
-                inner: Callable[[Any], Any] = self._inner_no_overrides_executor,
+                inner: Callable[[Any], Any] = self.execute_normal,
         ) -> Any:
             if overrides is None:
                 return inner(meld)
@@ -295,7 +301,11 @@ class SitePlanOverrideRuntime(Cleanable):
 
     def _site_graph_or_build(self) -> SpellSiteGraphAnalysis:
         """
-        Return the site graph, building it on first use (caller holds the compile lock).
+        Return the site graph, building it on first use.
+
+        Contract:
+            Called from construction (before the runtime is shared) or under the
+            compile lock; since S2b-2 construction always builds it.
         """
         site_graph = self._site_graph
         if site_graph is None:
@@ -319,7 +329,7 @@ class SitePlanOverrideRuntime(Cleanable):
         """
         resolution = self._resolve(keys, arity)
         if not resolution.winners:
-            inner = self._inner_no_overrides_executor
+            inner = self.execute_normal
 
             def normal_plan(meld: Any, ov: Dict[str, Any], inner: Callable[[Any], Any] = inner) -> Any:
                 return inner(meld)
@@ -340,3 +350,35 @@ class SitePlanOverrideRuntime(Cleanable):
         exec(code, namespace)
         plan: PlanCallable = namespace[SitePlanLowering.PLAN_FUNCTION_NAME]
         return plan
+
+    def _compile_normal_plan(self) -> Callable[[Any], Any]:
+        """
+        Build the site graph and compile the empty key set in normal mode (S2b-2).
+
+        Contract:
+            - Runs at construction, before the runtime is shared, so no lock is
+              taken. Site-graph build errors propagate unwrapped: they are not
+              override key errors.
+            - The plan is `(meld) -> instance`: every demanded step, shared sites
+              as hit reads with out-of-line misses (B2), the family's store
+              routing, build guards and registration.
+
+        Returns:
+            Callable[[Any], Any]: The normal-lane executor.
+        """
+        site_graph = self._site_graph_or_build()
+        source, namespace, masked = SitePlanLowering.emit(
+            steps=self._steps,
+            site_graph=site_graph,
+            resolution=OverrideKeyResolver.resolve(site_graph, ()),
+            root_instance_key=self._root_instance_key,
+            root_spell_id=self._root_spell_id,
+            root_spell_name=self._root_spell.spell_name,
+            arity=0,
+            normal_mode=True,
+        )
+        self._owned_masked_steps.extend(masked)
+        code = get_or_compile_executor_code(source=source, source_name=SitePlanLowering.PLAN_SOURCE_NAME)
+        exec(code, namespace)
+        normal: Callable[[Any], Any] = namespace[SitePlanLowering.PLAN_FUNCTION_NAME]
+        return normal

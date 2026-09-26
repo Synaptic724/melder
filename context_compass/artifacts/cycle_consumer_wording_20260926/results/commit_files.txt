@@ -1,0 +1,28 @@
+Cycle-consumer wording lane (melder_1, 2026-09-26) - files for the owner's commit. Not committed by the agent.
+
+Source and tests:
+src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
+tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_circular_dependency_strategy.py
+tests/integration/melder/spellbook/test_spellbook_integration_validation_report.py
+
+Release note:
+release_docs/next_version_release.md   (new bullet in "Clearer errors when conjure refuses spells")
+
+System documents:
+context_compass/system_docs/src_components.md
+context_compass/system_docs/src_components_index.md
+context_compass/system_docs/src_architecture.md
+context_compass/system_docs/src_architecture_index.md
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.json
+context_compass/system_docs/src_graph.md
+context_compass/system_docs/src_graph_index.md
+  (the assembled graph is built from every descriptor in the tree, including other lanes' uncommitted ones)
+
+ContextCompass records:
+context_compass/tickets/tasks/2026-09-26_word_cycle_consumers_in_circular_dependency_report_task.md
+context_compass/system_docs/patches/active/cycle_consumer_wording_2026_09_26/  (moves to completed at closure)
+context_compass/artifacts/cycle_consumer_wording_20260926/
+context_compass/attention_board.md, context_compass/artifact_board.md, context_compass/mailbox_board.md
+
+Owner-side, not done here: version notch (owner notches at commit), asset and LLM bundle rebuild (packaged
+hardcopy documents), suites on the owner machine.

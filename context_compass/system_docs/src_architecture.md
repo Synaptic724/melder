@@ -1225,7 +1225,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
   broken spell and lists only its errors, each with what to change; the conduit verdict's reasons (scope
   ordering, visibility, cycles) are included, errors that belong to no spell appear as whole-graph errors,
   warnings are only counted, and Melder's own consistency codes are marked [internal] to report. Before, a
-  conduit-verdict refusal printed "(none recorded)" and every message carried 64-character spell ids.
+  conduit-verdict refusal printed "(none recorded)" and every message carried 64-character spell ids. A
+  constructor that takes its own class is refused the same way (SELF_DEPENDENCY, naming the parameter); before,
+  conjure aborted with PhaseExecutionError "DagNode cannot depend on itself". A spell that only needs a cycle is
+  named as its consumer ("cannot be built: it needs 'Y' ... 'X' itself is not part of that cycle"), not as a
+  member.
   EVIDENCE: `src/melder/utilities/custom_exceptions/spellbook_validation_error.py:SpellbookValidationError` and
   `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._enforce_conduit_resolution_valid`.
 - Meld raises SpellbookValidationError when spell validity is invalid/gated/disabled.
@@ -2684,6 +2688,14 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 cycle consumers: the conjure report tells a spell that only needs a dependency cycle which of its
+dependencies leads there and that it is not part of the cycle, instead of calling it a member. The component map
+carries the wording.
+
+2026-09-26 self-referencing constructors: a constructor taking its own class is refused by the readable conjure
+report (SELF_DEPENDENCY, naming the parameter) instead of aborting in the compiler. The component map carries the
+detail.
 
 2026-09-26 class binding-profile annotations: a class whose field annotations name a `TYPE_CHECKING`-only type
 lost all of them from its binding profile, so its spell id ignored those fields. They are now kept as source

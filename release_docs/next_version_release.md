@@ -51,6 +51,11 @@ needed, is never constructed.
   whole graph and then swapped your values in, so a supplied dependency's own dependencies were
   constructed anyway, and a supplied shared dependency was built and stored. A supplied dependency that
   is itself missing an input no longer fails the meld.
+- **A stored shared object skips its dependencies.** Once a shared dependency (any existence except
+  `many`) is stored, an override meld reuses it without building the objects only it needs; before, those
+  were built on every call and dropped. Construction order changes with it: a shared object's own
+  dependencies are built just before it, and only when it is missing. Normal melds do the same (see
+  "Faster warm melds").
 - **Positional payloads cover injected parameters.** `meld(spell_id=..., override=(obj,))` supplies the
   root's leading parameters even when they are injected dependencies; it used to raise.
 - **A path through a list parameter reaches every member**, not only the last one.
@@ -69,6 +74,13 @@ needed, is never constructed.
 
 ## Faster warm melds
 
+- **Stored shared objects skip their dependencies on every meld.** Normal melds now run the same compiled
+  plan as override melds (the plan for an empty override set). Once a shared dependency is stored, the
+  objects only it needs are no longer built and dropped on each call: warm melds on our test graphs with
+  shared objects ran 3-27% faster (more when more sits under the shared object), and graphs without them
+  run at the same speed. Those
+  dependencies are built just before their shared object, only when it is missing, so construction order
+  changes. No cache refresh is needed for this.
 - **Id melds on an automatic conduit** - `conduit.meld(spell_id=...)` - are served from the warm fast
   lane directly, about 100 ns less per call (free-threaded 3.14, main thread).
 - **A bound existing object** is returned by a warm meld without entering its generated creation code,
@@ -88,6 +100,12 @@ O(spells^2) step on the cold conjure path. It now hashes them once per conjure. 
   gone. Phase 3 is about a third faster per conjure on the 29-spell benchmark. `Spell.dependency_graph`
   is now always `None` (kept for shape); `Spell.dependencies`, `Spell.resolution_frame` and the
   registered local topology carry the frame. The Phase-4 warning `MISSING_DEPENDENCY_GRAPH` is retired.
+- **Creation caches now record each spell's structural result.** At the end of conjure the cache bundle
+  stores, beside every executor payload, a small value-only row set describing the spell's resolved
+  dependencies, its constructor sockets and its validation verdict, keyed by the spell id and the types its
+  parameters match on and stamped with the book's pool and posture. Nothing replays these rows yet; they are
+  the input for the structural cache hit that follows. The cache format is now generation 15; caches from
+  earlier releases are rebuilt once on first use. Bundles grow by a few hundred bytes per spell.
 
 ## Creation-cache signatures are the same in every process
 
@@ -389,8 +407,19 @@ CycleB:
   gains an optional keyword, `system_diagnostics`. The first line still starts with
   `Spellbook validation failed.` and contains `Broken spells:` whenever it names a spell. Validation codes
   are unchanged; their messages are reworded.
-- **Limitation, not changed here:** a constructor that takes its own class fails earlier, in the compiler,
-  with `PhaseExecutionError` ("DagNode cannot depend on itself"), so this report cannot explain it yet.
+- **A constructor that takes its own class is reported too.** `Node(parent: Node)` used to stop conjure
+  with `PhaseExecutionError` ("DagNode cannot depend on itself"), or raise a bare `ValueError` when bound
+  after conjure in a dynamic world. It now appears in this report as
+  `Spell 'Node' depends on itself: its constructor parameter 'parent' resolves to this same spell. Remove
+  that parameter or give it a default. [SELF_DEPENDENCY]`. A default (`parent: Optional[Node] = None`)
+  makes the parameter plain, and the spell conjures.
+- **A spell that only uses a cycle is told so.** Every spell that needs a cycle, directly or through other
+  spells, is refused with it, but it read as a member of the cycle. `Consumer(a: CycleA)` now reads
+  `Spell 'Consumer' cannot be built: it needs 'CycleA', which is part of a dependency cycle: 'CycleA' ->
+  'CycleB' -> 'CycleA'. Break that cycle (remove one of those constructor dependencies or give that parameter
+  a default); 'Consumer' itself is not part of that cycle.` A spell reaching the cycle through another spell
+  names that spell ("which depends on a dependency cycle"), and one that needs `Node(parent: Node)` reads
+  `it needs 'Node', which depends on itself ('Node' -> 'Node'). Fix 'Node' (...)`. Members read as before.
 
 ### Upgrading
 
