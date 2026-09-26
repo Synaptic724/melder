@@ -50,6 +50,14 @@ hot path.
    exposed as `execute_normal`, installed by both hydrators as the inner no-overrides executor and used as the
    runtime's fallback. `normal_mode` with winners, conflicts or arity raises RuntimeError. Site-graph build errors
    surface unwrapped at hydration (first meld).
+10. Unresolved inputs (S4a, 2026-09-26; design 4.2 step 6, B6): per kept site the UNRESOLVED_INPUT parameters
+   (socket kind from the live Phase-3 topology) without a winning key are known at emission. Each context raises
+   for the first site it builds unconditionally that has any, in step order, before constructing anything: the
+   plan top (after the conflict guards) for top-level many sites; a miss's top (before its children) for its many
+   children, then the site itself. The raise is `_raise_unresolved_input(spells[i], names)`, which raises
+   `UnresolvedInputError.for_unsupplied(spell, names)`: today's message and fields, no TypeError cause. Stored
+   sites never demand (the hit read skips the miss). OVERRIDE_REQUIRED sockets keep today's constructor error.
+   Solo roots keep the interim failure-path guard until the owner decides.
 
 ## Edge/Error Semantics
 - Key validation errors: today's RuntimeError/ValueError texts, wrapped `MeldExecutionError("Failed to apply
@@ -75,7 +83,7 @@ hot path.
   A cold race may build and drop the loser's children, as before.
 
 ## Explicit Non-Goals
-- Retiring the old normal emitters (S2b-3); unresolved inputs decided in the plan (S4); Phase-5 overlay
-  retirement (S5).
+- Retiring the old normal emitters (S2b-3); retiring the unresolved-input failure-path hook and the solo lane's
+  guard (S4b, owner decision); Phase-5 overlay retirement (S5).
 - A per-call cell for a site demanded only from misses of two different shared parents (design L1): such a
   site is placed at their common context instead, which never builds more than the straight-line form did.

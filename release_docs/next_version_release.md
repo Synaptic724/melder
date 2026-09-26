@@ -1,4 +1,4 @@
-# Melder 0.2.59
+# Melder 0.2.64
 
 **Unreleased**
 
@@ -100,12 +100,15 @@ O(spells^2) step on the cold conjure path. It now hashes them once per conjure. 
   gone. Phase 3 is about a third faster per conjure on the 29-spell benchmark. `Spell.dependency_graph`
   is now always `None` (kept for shape); `Spell.dependencies`, `Spell.resolution_frame` and the
   registered local topology carry the frame. The Phase-4 warning `MISSING_DEPENDENCY_GRAPH` is retired.
-- **Creation caches now record each spell's structural result.** At the end of conjure the cache bundle
-  stores, beside every executor payload, a small value-only row set describing the spell's resolved
-  dependencies, its constructor sockets and its validation verdict, keyed by the spell id and the types its
-  parameters match on and stamped with the book's pool and posture. Nothing replays these rows yet; they are
-  the input for the structural cache hit that follows. The cache format is now generation 15; caches from
-  earlier releases are rebuilt once on first use. Bundles grow by a few hundred bytes per spell.
+- **A warm conjure skips the structural phases.** At the end of conjure the cache bundle now stores, beside
+  every executor payload, a small value-only row set describing the spell's resolved dependencies, its
+  constructor sockets and its validation verdict, keyed by the spell id and the types its parameters match
+  on and stamped with the book's pool and posture. The next process that conjures the same book replays
+  those rows instead of running phases 1-4, provided every spell still matches; any change to the pool, a
+  spell's constructor, its parameter types or the frame posture runs the phases as before, and so does
+  `validation_warnings=True`. Melds after a replayed conjure behave exactly as after a cold one. On a
+  29-spell book a warm conjure took about a quarter less time. The cache format is now generation 15;
+  caches from earlier releases are rebuilt once on first use. Bundles grow by a few hundred bytes per spell.
 
 ## Creation-cache signatures are the same in every process
 
@@ -166,7 +169,10 @@ when Task is built as a dependency, or bind a provider for Package.
 - **`UnresolvedInputError` is a `MeldExecutionError`**, so existing handlers keep catching it. Import
   it from `melder`; `param_name`, `expected_type` and `unresolved_params` name what was missing.
 - **`resolvable=False` registrations are unchanged.** They remain a separate, discoverable feature.
-- **Successful melds do no extra work.** The check runs only after a constructor call has failed.
+- **The error comes before anything is built.** A meld's compiled plan already knows which unresolved
+  inputs it leaves out, so it raises before constructing the object or any of its dependencies, and the
+  error no longer chains Python's `TypeError`. An object with no dependencies of its own, melded directly,
+  still gets the error from its failed constructor call. Successful melds do no extra work.
 - **Creation caches rebuild once.** The creation-cache format advances to generation 11 so executors
   compiled before this change are not reused.
 - **Defaults and collections are unchanged.** A parameter with a default keeps using it, and a
@@ -476,4 +482,4 @@ could be silently omitted from the disposal list and never run during scope tear
   conjure validation report.
 - `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
   raised and caught, but it cannot be bound as a spell.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.59.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.64.

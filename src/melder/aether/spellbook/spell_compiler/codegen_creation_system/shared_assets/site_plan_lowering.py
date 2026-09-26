@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, FrozenSet, List, Optional, Set, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis import (
     SpellInjectionAnalysis,
     SpellInjectionInstanceSpec,
@@ -20,6 +21,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     _raise_meld_construction_error,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
@@ -264,8 +266,9 @@ class SitePlanRuntimeHelpers:
 
     Purpose:
         Hold the cold-path helpers a plan reads from its namespace: the
-        generic construct with supplied values, the P2 refusal and the
-        equal-rank conflict guard. None of them runs on a direct-call step.
+        generic construct with supplied values, the P2 refusal, the
+        unresolved-input refusal and the equal-rank conflict guard. None of
+        them runs on a direct-call step.
 
     Contract:
         - Stateless static methods; the class is never instantiated.
@@ -380,6 +383,25 @@ class SitePlanRuntimeHelpers:
         )
 
     @staticmethod
+    def raise_unresolved_input(spell: Spell, param_names: Tuple[str, ...]) -> None:
+        """
+        Raise today's `UnresolvedInputError` for a site the plan is about to build (S4a, B6).
+
+        Contract:
+            Emitted before anything under the site is constructed, so the
+            error has no TypeError cause; message and fields are the failure
+            path's (`UnresolvedInputError.for_unsupplied`).
+
+        Args:
+            spell: The consumer whose unresolved inputs have no winning key.
+            param_names: Those parameters, in signature order.
+
+        Raises:
+            UnresolvedInputError: Always.
+        """
+        raise UnresolvedInputError.for_unsupplied(spell, param_names)
+
+    @staticmethod
     def conflict_guard(
             first: Any,
             second: Any,
@@ -447,6 +469,10 @@ class SitePlanLowering:
           (existing creations, non-callable spells, contract payloads, a
           parameter that cannot be passed in order) use the generic helpers;
           with supplied values the step is masked and the values applied last.
+        - A site with UNRESOLVED_INPUT parameters and no winning key for them
+          raises `UnresolvedInputError` before anything under it is built
+          (S4a, 2026-09-26; B6); OVERRIDE_REQUIRED parameters keep the
+          constructor's own error.
         - Emission is a pure function of its inputs; the returned source names
           no identities, so equal shapes share one code object.
 
@@ -657,6 +683,11 @@ class SitePlanEmission(Cleanable):
           Within a context steps keep the family's providers-first order.
         - Normal mode (S2b-2, 2026-09-26) drops `ov` from the plan and from
           every miss signature and call; nothing else changes.
+        - Unresolved inputs (S4a, 2026-09-26): a context (the plan top, or a
+          shared site's miss) raises first for the first site it builds
+          unconditionally, in step order, whose UNRESOLVED_INPUT parameters
+          have no winning key: its many children, then (in a miss) the site
+          itself. A stored site's miss never runs, so it never demands.
         - A miss function takes `(meld, ov, c{i}, [instance_results], [args],
           v...)`: the outer values its sites read, in step order. It builds the
           sites placed inside it first, then takes the site's build guard for
@@ -755,6 +786,7 @@ class SitePlanEmission(Cleanable):
             "_construct_spell_instance": _construct_spell_instance,
             "_construct_with_supplied_values": SitePlanRuntimeHelpers.construct_with_supplied_values,
             "_raise_existing_override": SitePlanRuntimeHelpers.raise_existing_override,
+            "_raise_unresolved_input": SitePlanRuntimeHelpers.raise_unresolved_input,
             "_conflict_guard": SitePlanRuntimeHelpers.conflict_guard,
             "root_spell_id": root_spell_id,
             "root_spell_name": root_spell_name,
@@ -945,6 +977,7 @@ class SitePlanEmission(Cleanable):
                 f"    _conflict_guard(ov[{winner!r}], ov[{other!r}], {target_name}, "
                 "root_spell_id, root_spell_name)"
             )
+        body.extend(self._unresolved_check_lines(None, "    "))
         if self._dict_mode:
             body.append("    instance_results = {}")
         uses_many_store = self._emit_context(None, "    ", body)
@@ -1102,6 +1135,38 @@ class SitePlanEmission(Cleanable):
         names.extend(f"v{value}" for value in self._miss_value_params[index])
         return names
 
+    def _unsupplied_unresolved(self, index: int) -> Tuple[str, ...]:
+        """
+        Return kept step `index`'s UNRESOLVED_INPUT parameters that have no winning key, in signature order.
+        """
+        site_index = self._site_index(self._steps[index])
+        winners = self._winners
+        unresolved = SocketKind.UNRESOLVED_INPUT.value
+        return tuple(
+            param.name for param in self._site_graph.sites[site_index].params
+            if param.socket_kind_value == unresolved and (site_index, param.name) not in winners
+        )
+
+    def _unresolved_check_lines(self, context: Optional[int], indent: str) -> List[str]:
+        """
+        Return the unresolved-input refusal for one context, or no lines.
+
+        Contract:
+            The sites a context builds unconditionally are its many children
+            (in step order) and, for a miss, the shared site itself (after
+            them, as providers precede consumers). The first with unsupplied
+            unresolved inputs gets one unconditional raise at the context top,
+            before any construction; shared children check in their own miss.
+        """
+        candidates = [child for child in self._children.get(context, []) if not self._shared[child]]
+        if context is not None:
+            candidates.append(context)
+        for index in candidates:
+            names = self._unsupplied_unresolved(index)
+            if names:
+                return [f"{indent}_raise_unresolved_input(spells[{index}], {names!r})"]
+        return []
+
     def _emit_context(self, context: Optional[int], indent: str, lines: List[str]) -> bool:
         """
         Emit the steps placed in one context (top level or one miss body) into `lines`.
@@ -1184,6 +1249,7 @@ class SitePlanEmission(Cleanable):
         parameters = ", ".join(list(self._context_params) + [store] + self._miss_arguments(index))
         lines = self._miss_lines
         lines.append(f"def _miss{index}({parameters}):")
+        lines.extend(self._unresolved_check_lines(index, "    "))
         if uses_many_store:
             lines.extend(self._many_store_prologue("    "))
         lines.extend(children)

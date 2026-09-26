@@ -7,22 +7,27 @@
 - Status: draft
 - Owner: fable_0 (cowork)
 - Created: 2026-09-26T15:49:37Z
-- Updated: 2026-09-26T17:26:53Z
+- Updated: 2026-09-26T18:12:10Z
 
 ## Control Flow
-1. `conjure` (after configuration freeze, before any phase): `classify(spellbook, caching_system)` builds
+1. (LANDED 2026-09-26) `conjure` resolves the conduit name and calls `_prepare_spellbook_for_conjure`, which
+   after the configuration freeze/bind calls `_build_structural_cache_state` (`disabled` without a conduit
+   name, with the opt-in warning report, or with caching off; else) `classify(spellbook, caching_system)`, which builds
    `world_stamp = StructuralSnapshot.world_stamp(spellbook)` (sha256 over sorted pool ids, the posture
    name and the sorted borrowed spell ids) and, for every spell in `spellbook._spells`, the live key
    `StructuralSnapshot.structural_key(spell)` (`{"format", "spell_id", "annotation_refs"}` from the
    bind-time requirements); a spell is HIT when
-   `caching_system.get_structural_payload(spell_id)` decodes, `payload["key"] == live key`,
-   `payload["world_stamp"] == world_stamp` and `payload["replayable"]`; otherwise MISS. Result:
-   `{"path": "full_hit" | "partial" | "miss" | "disabled", "hits": {spell_id: payload}, "misses": set}`.
-   Caching disabled or an empty structural map -> `disabled`/`miss` (today's run, step 6).
-2. Path `full_hit`: `hydrate(spellbook, hits, replay_verdicts=True)` runs step 3 for every spell, then
-   step 4; the structural scheduler run is NOT executed; `_collect_broken_spells` runs as today (all
-   false); continue at step 7.
-3. Replay of one spell (in this order, all through existing surfaces):
+   `caching_system.get_structural_payload(spell_id)` decodes, `payload_well_formed(payload, spell_id)`,
+   `payload["key"] == live key`, `payload["world_stamp"] == world_stamp` and `payload["replayable"]`;
+   otherwise MISS. Result: `{"structural_path": "full_hit" | "partial" | "miss" | "disabled",
+   "world_stamp", "hits": {spell_id: payload}, "misses": set}`. Caching disabled or an empty structural
+   map -> `disabled`/`miss` (today's run, step 6).
+2. (LANDED) Path `full_hit`: `_hydrate_structural_tier_for_conjure` -> `hydrate_full_hit(spellbook, hits)`
+   runs steps 3 and 4 per spell in sorted id order (a missing payload raises KeyError before any write);
+   the structural scheduler run is NOT executed and no broken check runs (rows exist only for spells that
+   passed it). A replay failure is logged (`_hydrate_structural_tier_for_conjure`, documented best-effort)
+   and the phases run live (step 6). Continue at step 7.
+3. (LANDED) Replay of one spell (in this order, all through existing surfaces):
    a. `spell_system_states.update_dependencies(spell.spell_index, phase3.dependency_ids)` (creates the
       lineage state if missing, diffs, reverse edges, marks gated + dirty - the same call phase 3 makes);
    b. `spell_system_states.register_local_topology(spell.spell_index, SpellLocalTopology(spell_id,
@@ -30,19 +35,22 @@
    c. (path `partial` only, where phase 4 runs live and its presence strategy reads the frame)
       `artifact._resolution_frame = SpellResolutionFrame(spell_id, ordered)` with
       `ordered = sorted(set(phase3.dependency_ids) - {spell_id}) + [spell_id]` (derived, not stored);
-   d. `spell._add_build_details(dependencies=phase3.dependency_ids)` (sets `Spell.dependencies`,
-      invalidates the creation context - the cached context is loaded later at activation as today);
+   d. `spell._add_build_details(dependencies=list(dict.fromkeys(phase3.dependency_ids)))` (sets
+      `Spell.dependencies`, invalidates the creation context - the cached context is loaded later at
+      activation as today);
    e. Nexus publication when `spellbook._nexus_publish_enabled`.
-4. Verdict replay (full hit only), per spell: `state = get_by_index_id(spell.spell_index.id)`;
-   `state.clear_dirty(time.time())`; `state.set_validity(valid, validation_passed,
-   flags_to_remove=[contract_unvalidated])` or `set_validity(gated, contract_unvalidated,
-   flags_to_add=[contract_unvalidated])` from `phase4.validity`; `artifact._is_broken = False`. The
-   phase-4 result object is not recreated (phase 6 tests key presence only; the post-pass reset leaves
-   `None` today).
-5. Path `partial`: run the fused phases 1-2 for EVERY spell (chunked units as today); step 3 for every
-   hit; phase 3 for the miss set only (chunked units over the subset; hard barriers kept); phase 4 for
-   EVERY spell (live verdicts; no step 4); broken check as today.
-6. Path `miss`/`disabled`: `run_structural_phases` unchanged.
+4. (LANDED) Verdict replay (full hit only), per spell: `state = get_by_index_id(spell.spell_index.id)`
+   (None raises RuntimeError: states exist from bind); `state.clear_dirty(now)` (one timestamp per
+   hydrate); `state.set_validity(valid, validation_passed, flags_to_remove=[contract_unvalidated])` or
+   `set_validity(gated, contract_unvalidated, flags_to_add=[contract_unvalidated])` from
+   `phase4.validity`. No artifact write: `_is_broken` is already False on a fresh artifact and the phase-4
+   result object is not recreated (phase 6 tests key presence only; the post-pass reset leaves `None`
+   today).
+5. Path `partial` (DESIGN ONLY - pending the owner's decision; today a partial classification runs step 6):
+   run the fused phases 1-2 for EVERY spell (chunked units as today); step 3 (with 3c) for every hit;
+   phase 3 for the miss set only (chunked units over the subset; hard barriers kept); phase 4 for EVERY
+   spell (live verdicts; no step 4); broken check as today.
+6. (LANDED) Path `miss`/`partial`/`disabled`: `run_structural_phases` unchanged.
 7. Executor classification, phases 5-7, 8-11 (or the full-hit skip), conduit build and activation: unchanged.
 8. Capture at conjure end (LANDED 2026-09-26; `_activate_conjured_conduit` ->
    `_capture_structural_payloads_at_conjure_end` ->
@@ -61,8 +69,10 @@
 ## Edge / Error Semantics
 - A payload that fails to decode, lacks a key, or has a schema the reader does not recognize is a MISS for
   that spell and is overwritten at capture; it never raises into conjure.
-- A registry helper raising during step 3 propagates exactly as it would from phase 3 (contract violation,
-  not a cache condition); the cache file is not rewritten for that conjure.
+- A registry helper raising during step 3 propagates out of `hydrate_full_hit` as it would from phase 3;
+  the creation system logs it and runs the structural phases live for the whole book (documented
+  best-effort), so conjure completes with cold-path state; the capture at conjure end then refreshes the
+  rows.
 - Post-conjure binds are unaffected: `run_post_conjure_structural_phases` runs 1-4 for the new spells only,
   as today; their payloads are captured on the NEXT conjure of a process, never mid-run.
 - A spell with `replayable: false` is a MISS on every conjure until a later capture records true (the rule

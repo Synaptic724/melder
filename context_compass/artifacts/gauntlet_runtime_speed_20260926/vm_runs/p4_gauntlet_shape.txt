@@ -1,0 +1,10 @@
+tree iters=300 worker_a=14,820ns  request=18,114ns  worker_b=13,943ns | shells own=30% foreign=70% new=0 | wall/iter median=1,732us
+p4 iters=300 worker_b=13,583ns  request=17,752ns  worker_a=13,637ns | shells own=30% foreign=70% new=0 | wall/iter median=1,672us
+tree iters=300 worker_b=13,601ns  worker_a=13,411ns  request=17,903ns | shells own=30% foreign=70% new=0 | wall/iter median=1,610us
+p4 iters=300 request=16,979ns  worker_a=13,120ns  worker_b=13,310ns | shells own=28% foreign=72% new=0 | wall/iter median=1,613us
+tree iters=300 worker_b=13,552ns  request=17,541ns  worker_a=13,575ns | shells own=32% foreign=68% new=0 | wall/iter median=1,594us
+p4 iters=300 worker_b=12,925ns  request=16,987ns  worker_a=12,853ns | shells own=30% foreign=70% new=0 | wall/iter median=1,600us
+tree iters=300 request=16,918ns  worker_b=13,572ns  worker_a=13,205ns | shells own=32% foreign=68% new=0 | wall/iter median=1,615us
+p4 iters=300 worker_a=13,227ns  request=17,535ns  worker_b=13,337ns | shells own=30% foreign=70% new=0 | wall/iter median=1,643us
+tree iters=300 worker_a=13,641ns  worker_b=13,828ns  request=17,902ns | shells own=29% foreign=71% new=0 | wall/iter median=1,776us
+p4 iters=300 worker_a=13,240ns  worker_b=13,448ns  request=17,469ns | shells own=29% foreign=71% new=0 | wall/iter median=1,613us

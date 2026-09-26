@@ -90,14 +90,14 @@ Disposition values
 | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | artifacts/gauntlet_runtime_speed_20260926/ | measurement_baseline | active | retain_as_reference | Owner-run 2026-09-26 baseline and VM environment filed; VM runs and the cost map follow. | 2026-09-26T15:43:39Z | REQUIRED |
 | tickets/stories/2026-09-26_structural_snapshot_story.md | system_docs/patches/active/structural_snapshot_2026_09_26/ | patch_docs | active | promote_to_documentation | Owner-approved entry gate for the C-C, capture, hydrate and parity tasks; promote at story closure. | 2026-09-26T16:13:09Z | REQUIRED |
 | tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md | artifacts/gauntlet_runtime_speed_20260926/p1_positional_args/ | apply_script_and_tests | active | retain_as_reference | Apply script, diff and the two new test files for P1. | 2026-09-26T16:15:41Z | REQUIRED |
-| tickets/tasks/2026-09-26_word_cycle_consumers_in_circular_dependency_report_task.md | artifacts/cycle_consumer_wording_20260926/ | investigation_evidence | active | retain_as_reference | Probes, before/after renders, scripts, diffs, suites. | 2026-09-26T17:04:41Z | REQUIRED |
-| tickets/tasks/2026-09-26_word_cycle_consumers_in_circular_dependency_report_task.md | system_docs/patches/active/cycle_consumer_wording_2026_09_26/ | patch_docs | active | promote_to_documentation | Architecture and component patches; promote at closure. | 2026-09-26T17:05:50Z | REQUIRED |
 <!-- END USER-DEFINED: active_artifacts -->
 
 ## Recently Cleared Artifacts
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/completed/2026-09-26_word_cycle_consumers_in_circular_dependency_report_task.md | system_docs/patches/completed/cycle_consumer_wording_2026_09_26/ | promote_to_documentation | Promoted to src_components/src_architecture (cycle consumers); two patch files archived. | 2026-09-26T17:32:39Z |
+| tickets/tasks/completed/2026-09-26_word_cycle_consumers_in_circular_dependency_report_task.md | artifacts/cycle_consumer_wording_20260926/ | retain_as_reference | Probes, before/after renders, apply/author/promote/closure scripts, diffs, suites, commit list. | 2026-09-26T17:32:39Z |
 | tickets/tasks/completed/2026-09-26_report_self_referencing_constructor_as_validation_error_task.md | system_docs/patches/completed/self_dependency_report_2026_09_26/ | promote_to_documentation | Promoted to src_components/src_architecture (self-referencing constructors); two patch files archived (written after implementation, recorded). | 2026-09-26T17:00:32Z |
 | tickets/tasks/completed/2026-09-26_report_self_referencing_constructor_as_validation_error_task.md | artifacts/self_dependency_report_20260926/ | retain_as_reference | Probes, before/prototype/after renders, apply/own/promote/author/closure scripts, diffs, fable_0 proposal, suites. | 2026-09-26T17:00:32Z |
 | tickets/tasks/completed/2026-09-26_fix_class_binding_profile_annotations_for_type_checking_names_task.md | system_docs/patches/completed/class_binding_annotations_2026_09_26/ | promote_to_documentation | Promoted to src_components/src_architecture (class binding-profile annotations); two patch files archived. | 2026-09-26T16:32:21Z |

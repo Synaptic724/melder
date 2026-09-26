@@ -25,6 +25,7 @@ from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import
     SpellSocketDescriptor,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 Key = Tuple[str, Optional[int]]
 
@@ -826,3 +827,69 @@ def test_runtime_site_graph_errors_are_not_override_errors() -> None:
     with pytest.raises(RuntimeError) as caught:
         SitePlanOverrideRuntime(steps=steps, root_spell=root, root_instance_key=("root", None))
     assert not isinstance(caught.value, MeldExecutionError)
+
+
+def _unresolved(spell_id: str, name: str, position: int) -> SpellSocketDescriptor:
+    """Build one UNRESOLVED_INPUT socket descriptor."""
+    return SpellSocketDescriptor(
+        spell_id=spell_id, param_name=name, position=position, socket_kind=SocketKind.UNRESOLVED_INPUT,
+        is_collection=False, is_optional=False, target_spell_ids=(), parameter_kind="POSITIONAL_OR_KEYWORD",
+    )
+
+
+def _needs_input(spell: SimpleNamespace, topology: SpellLocalTopology) -> None:
+    """Let a fake spell answer the live-topology read the unresolved-input error makes."""
+    spell._spell_system_states = SimpleNamespace(get_local_topology=lambda index: topology)
+
+
+def test_plan_raises_an_unsupplied_unresolved_input_before_building_anything() -> None:
+    """Root(a: A(x: X), t: T(work)): without a key nothing is built (B6); with `t>work` T gets the value."""
+    built: Counter = Counter()
+    spells = {name: _spell(name, built) for name in ("x", "a", "t", "root")}
+    task_topology = SpellLocalTopology("t", (_unresolved("t", "work", 0),))
+    _needs_input(spells["t"], task_topology)
+    steps = (
+        _step(("x", 3), spells["x"]),
+        _step(("a", 1), spells["a"], ("x", (("x", 3),))),
+        _step(("t", 2), spells["t"]),
+        _step(("root", 0), spells["root"], ("a", (("a", 1),)), ("t", (("t", 2),))),
+    )
+    topologies = {
+        "root": SpellLocalTopology("root", (_socket("root", "a", 0), _socket("root", "t", 1))),
+        "a": SpellLocalTopology("a", (_socket("a", "x", 0),)),
+        "t": task_topology,
+    }
+    with pytest.raises(UnresolvedInputError) as caught:
+        _compile_plan(steps, topologies, ("root", 0))(None, {})
+    assert (caught.value.param_name, caught.value.unresolved_params) == ("work", ("work",))
+    assert caught.value.__cause__ is None
+    assert built == Counter()
+    value = object()
+    result = _compile_plan(steps, topologies, ("root", 0), ("t>work",))(None, {"t>work": value})
+    assert result.args[1].args == (value,)
+    assert built == Counter({"x": 1, "a": 1, "t": 1, "root": 1})
+
+
+def test_shared_site_unresolved_input_is_checked_in_its_miss_before_its_children() -> None:
+    """S(x: X, work) shared: a miss without a key raises before X is built; a stored S never demands."""
+    built: Counter = Counter()
+    spells = {"x": _spell("x", built), "s": _spell("s", built, Existence.unique_per_conduit),
+              "root": _spell("root", built)}
+    shared_topology = SpellLocalTopology("s", (_socket("s", "x", 0), _unresolved("s", "work", 1)))
+    _needs_input(spells["s"], shared_topology)
+    steps = (
+        _step(("x", 2), spells["x"]),
+        _step(("s", None), spells["s"], ("x", (("x", 2),))),
+        _step(("root", 0), spells["root"], ("s", (("s", None),))),
+    )
+    topologies = {"root": SpellLocalTopology("root", (_socket("root", "s", 0),)), "s": shared_topology}
+    meld = SimpleNamespace(_conduit_creations=FakeStore())
+    with pytest.raises(UnresolvedInputError):
+        _compile_plan(steps, topologies, ("root", 0))(meld, {})
+    assert built == Counter()
+    value = object()
+    first = _compile_plan(steps, topologies, ("root", 0), ("s>work",))(meld, {"s>work": value})
+    assert first.args[0].args[1] is value
+    second = _compile_plan(steps, topologies, ("root", 0))(meld, {})
+    assert second.args[0] is first.args[0]
+    assert built == Counter({"x": 1, "s": 1, "root": 2})

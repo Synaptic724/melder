@@ -57,6 +57,33 @@ class Faulty:
         raise TypeError("body failure unrelated to inputs")
 
 
+class Counted:
+    """A transient dependency that counts its constructions."""
+
+    count = 0
+
+    def __init__(self) -> None:
+        """Count one construction."""
+        Counted.count += 1
+
+
+class Needy:
+    """A counted dependency plus an unresolved input."""
+
+    def __init__(self, counted: Counted, work: Package) -> None:
+        """Keep both."""
+        self.counted = counted
+        self.work = work
+
+
+class Outer:
+    """Build Needy as a dependency."""
+
+    def __init__(self, needy: Needy) -> None:
+        """Keep it."""
+        self.needy = needy
+
+
 @pytest.fixture
 def runtime_book() -> Iterator[Spellbook]:
     """Create and tear down an isolated world with deterministic compilation and no disk cache."""
@@ -135,7 +162,11 @@ def test_missing_value_raises_unresolved_input_error(
     assert isinstance(error, MeldExecutionError)
     assert (error.spell_name, error.param_name, error.expected_type) == ("Task", "work", "Package")
     assert error.unresolved_params == ("work",)
-    assert isinstance(error.__cause__, TypeError)
+    # Plans decide it before calling (B6, 2026-09-26); the solo lane still converts the TypeError.
+    if family == "solo":
+        assert isinstance(error.__cause__, TypeError)
+    else:
+        assert error.__cause__ is None
     message = str(error)
     assert "override={'work': ...}" in message
     assert "'>work'" in message and "'**work'" in message
@@ -214,3 +245,22 @@ def test_all_missing_inputs_are_listed_in_signature_order(runtime_book: Spellboo
         conduit.meld(spell_id=root_id, override={"first": Package()})
     assert caught.value.unresolved_params == ("second",)
     assert caught.value.expected_type == "FalseyPackage"
+
+
+@pytest.mark.parametrize("outer_existence", ["many", "unique_per_conduit"])
+def test_nothing_under_the_consumer_is_built_before_the_error(
+    runtime_book: Spellbook, outer_existence: str,
+) -> None:
+    """B6: a missing unresolved input fails before its consumer's dependencies are constructed (both plan families)."""
+    runtime_book.bind(spell=Counted, existence="many")
+    runtime_book.bind(spell=Needy, existence="many")
+    root_id = runtime_book.bind(spell=Outer, existence=outer_existence)
+    conduit = runtime_book.conjure()
+    Counted.count = 0
+    with pytest.raises(UnresolvedInputError) as caught:
+        conduit.meld(spell_id=root_id)
+    assert caught.value.spell_name == "Needy" and caught.value.__cause__ is None
+    assert Counted.count == 0
+    value = Package()
+    assert conduit.meld(spell_id=root_id, override={"needy>work": value}).needy.work is value
+    assert Counted.count == 1

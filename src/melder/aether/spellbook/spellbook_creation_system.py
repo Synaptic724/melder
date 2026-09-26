@@ -227,16 +227,20 @@ class SpellbookCreationSystem(Cleanable):
         spellbook = self._spellbook
 
         phase_scheduler_cls = self._phase_scheduler_cls
+        resolved_conduit_name = (
+            self._name or SpellbookCreationSystem._DEFAULT_ROOT_CONDUIT_NAME
+        )
+        # The conduit name reaches the structural preparation so the structural
+        # tier of the conduit bundle can be classified (and replayed on a full
+        # hit) before the structural phases would run.
         SpellbookCreationSystem._prepare_spellbook_for_conjure(
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,
             validation_warnings=self._validation_warnings,
+            conduit_name=resolved_conduit_name,
         )
         # Classify cache posture before plan phases so a full hit can skip the
         # phase-8-to-11 compile and load the runtime lanes from cache instead.
-        resolved_conduit_name = (
-            self._name or SpellbookCreationSystem._DEFAULT_ROOT_CONDUIT_NAME
-        )
         cache_state = SpellbookCreationSystem._build_conjure_cache_state(
             spellbook=spellbook,
             dynamic=self._dynamic,
@@ -301,22 +305,32 @@ class SpellbookCreationSystem(Cleanable):
             spellbook: Spellbook,
             phase_scheduler_cls: type[PhaseScheduler],
             validation_warnings: bool = False,
+            conduit_name: str | None = None,
     ) -> None:
         """
         Purpose:
             Prepare Spellbook state required before conduit construction.
         Contract:
             - Freezes and binds configuration when not already locked.
-            - Executes structural phases before conduit construction.
+            - Classifies the structural tier of the conduit bundle (when a
+              `conduit_name` is given, caching is enabled and no warning report
+              was requested) and, on a full structural hit, replays the phase
+              3-4 results for every owned spell instead of running the
+              structural phases; on any other classification executes the
+              structural phases exactly as before.
             - When `validation_warnings` is True, reports the Phase-4 validation
               warnings once, right after the structural phases, while their
               results still exist (they are released after resolution). The
               default False reports nothing; internal conjure routes (such as
               the existing-conduit route used by upgrade_to_normal) rely on it.
+              The report needs live phase-4 results, so it forces the live run.
         Args:
             spellbook: Owning Spellbook instance.
             phase_scheduler_cls: Scheduler class used for phase execution.
             validation_warnings: Opt-in for the grouped warning report.
+            conduit_name: Resolved conduit name whose bundle holds the
+                structural tier; None keeps today's unconditional structural run
+                (the existing-conduit route passes none).
         Returns:
             None.
         Raises:
@@ -326,12 +340,105 @@ class SpellbookCreationSystem(Cleanable):
             spellbook._validate_and_freeze_configuration()
             spellbook._bind_aetheric_frame_configuration_to_aether()
             spellbook._bind_configuration_to_aether()
-        SpellbookCreationSystem.run_structural_phases(
+        structural_state = SpellbookCreationSystem._build_structural_cache_state(
             spellbook=spellbook,
-            phase_scheduler_cls=phase_scheduler_cls,
+            conduit_name=conduit_name,
+            validation_warnings=validation_warnings,
         )
+        hydrated = False
+        if structural_state["structural_path"] == "full_hit":
+            hydrated = SpellbookCreationSystem._hydrate_structural_tier_for_conjure(
+                spellbook=spellbook,
+                structural_state=structural_state,
+            )
+        if not hydrated:
+            SpellbookCreationSystem.run_structural_phases(
+                spellbook=spellbook,
+                phase_scheduler_cls=phase_scheduler_cls,
+            )
         if validation_warnings:
             SpellbookCreationSystem._report_validation_warnings(spellbook=spellbook)
+
+    @staticmethod
+    def _build_structural_cache_state(
+            *,
+            spellbook: Spellbook,
+            conduit_name: str | None,
+            validation_warnings: bool,
+    ) -> dict[str, Any]:
+        """
+        Purpose:
+            Classify the owned spells against the structural tier of the
+            conduit bundle before the structural phases would run.
+        Contract:
+            - `disabled` (nothing read) when no conduit name is given, when the
+              warning report was requested (it needs live phase-4 results) or
+              when system caching is disabled; otherwise the Spellbook-owned
+              cache utility is resolved (the same memoized instance the executor
+              classification uses later) and `StructuralSnapshot.classify`
+              decides per spell.
+            - Reads only; the tier is refreshed at conjure end by the capture.
+        Args:
+            spellbook: Owning Spellbook instance.
+            conduit_name: Resolved conduit name, or None.
+            validation_warnings: True when the grouped warning report was requested.
+        Returns:
+            Dict[str, Any]: `StructuralSnapshot.classify` summary
+                (`structural_path`, `world_stamp`, `hits`, `misses`).
+        """
+        if (
+                conduit_name is None
+                or validation_warnings
+                or not spellbook._system_caching_enabled_in_aether()
+        ):
+            return StructuralSnapshot.classify(spellbook, None)
+        caching_system = spellbook._get_or_create_caching_system(
+            conduit_name=conduit_name,
+        )
+        return StructuralSnapshot.classify(spellbook, caching_system)
+
+    @staticmethod
+    def _hydrate_structural_tier_for_conjure(
+            *,
+            spellbook: Spellbook,
+            structural_state: dict[str, Any],
+    ) -> bool:
+        """
+        Purpose:
+            Replay the phase 3-4 results of a full structural hit.
+        Contract:
+            - Delegates to `StructuralSnapshot.hydrate_full_hit`, which performs
+              the durable writes phases 3-4 would have made through the same
+              registry helpers; no scheduler runs and no phase artifact exists
+              afterwards (the state every cold conjure leaves behind after its
+              post-resolution reset).
+            - Best-effort (documented): a failure mid-replay is logged and False
+              is returned so the caller runs the structural phases live, which
+              rewrite every replayed value (phase 3 rewrites its registry
+              writes; phase 4 rewrites the verdict). Nothing raises into conjure
+              from the replay itself.
+        Args:
+            spellbook: Owning Spellbook instance.
+            structural_state: `StructuralSnapshot.classify` summary with
+                `structural_path == "full_hit"`.
+        Returns:
+            bool: True when the replay completed; False when the caller must
+                run the structural phases.
+        """
+        try:
+            StructuralSnapshot.hydrate_full_hit(
+                spellbook,
+                structural_state["hits"],
+            )
+        except Exception as exc:
+            if spellbook._logger is not None:
+                spellbook._logger.error(
+                    f"Structural hydrate failed; running the structural phases live: {exc}",
+                    "_hydrate_structural_tier_for_conjure",
+                    exc_info=True,
+                )
+            return False
+        return True
 
     @staticmethod
     def _report_validation_warnings(*, spellbook: Spellbook) -> None:

@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T17:29:58Z
+- Updated: 2026-09-26T17:36:01Z
 
 ## Objective
 A per-scope-cycle cost map for Melder on the real-world gauntlet - where the time and the calls go in outer and
@@ -592,6 +592,175 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
   NEXT: Owner picks the first clean lever; open its task.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:32:38Z
+  TYPE: DECISION
+  CLAIM: Owner go-ahead (~17:33Z): "if you think you can improve the speed just don't fuck up the app ... do what
+    you think is right just don't break things ... correctness and honesty is the best policy". melder_2 runs
+    the clean levers in order of risk, each sized first on the VM copy with no tree edit: (1) spell-id
+    interning, (2) thread-affine shell pools (Windows benefit uncertain: ownership follows the OS thread
+    identity), (3) a SpellSpace.meld entry fast lane mirroring Conduit.meld, (4) fewer shared-object hops per
+    warm meld (NOTICE melder_0). Gates before any tree edit: VM A/B; suites on 3.14t (gil 0 and 1) and the GIL
+    build; unchanged behavior and cleanup order; a NOTICE to the file owner; patch docs when system-impacting;
+    a 30k-iteration long run. Anything that fails a gate is dropped and recorded.
+  EVIDENCE: tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:577-594
+  IMPACT: Sets the order and the gates for the next implementation tasks.
+  NEXT: Size lever 1 standalone: intern every string reachable from the kernel after warm-up (no deferral), A/B
+    against the tree on fresh worker threads.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:33:37Z
+  TYPE: MEASURE
+  CLAIM: Lever 1 (spell-id interning) on its own gives no gain, so it is DROPPED. Interning in place all 1,281
+    strings reachable from the spellbook and root conduit after warm-up (no deferral), 8 interleaved processes,
+    fresh worker thread per lane: request 14.69 -> 15.12 us (+3.0%), worker_a 10.81 -> 11.31 (+4.6%), worker_b
+    9.73 -> 10.28 (+5.7%), i.e. no improvement (the small slowdown is not explained). The 3-5% seen under P3 existed
+    only once the other shared objects were deferred. Strings are not where the cross-thread cost sits.
+  EVIDENCE:
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/vm_runs/lever1_intern_ab.txt:1-18
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/probes/probe_intern.py:1-55
+  IMPACT: One lever fewer. The shared cost is in object and container loads (spells, contexts, stores, doors,
+    shells), which points at levers 2 and 4.
+  NEXT: Size lever 2 (thread-affine shell pools) with a gauntlet-shaped probe (new threads per iteration)
+    measuring per-thread CPU time per cycle, which removes the VM's preemption noise.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:36:01Z
+  TYPE: MEASURE
+  CLAIM: Lever 2 (thread-affine shell pools), sized with an in-process pool patch (no src change) in a
+    gauntlet-shaped probe: 3 new threads per iteration, per-thread CPU time per cycle, 300 iterations, 6
+    interleaved pairs. Each thread first reuses shells returned under its own threading.get_ident(), then the
+    shared pool. Result: leased lesser shells owned by the running thread rise from 31-34% to 100%. Per-cycle CPU
+    request -6.0%, worker_a -7.4%, worker_b -7.1%; wall per iteration -4.5%. The gain is real but much smaller
+    than P3, because the kernel (spells, contexts, root objects) stays main-owned. Caveat: on Linux get_ident()
+    equals the object-header owner id (pthread_self is the TCB), which the 100% own rate confirms. On Windows
+    get_ident() is the thread id while the owner id is the TEB address, so the gain there is UNKNOWN until an
+    owner run.
+  EVIDENCE:
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/vm_runs/lever2_affine_ab.txt:1-17
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/probes/probe_affine.py:1-94
+  IMPACT: A modest, platform-sensitive gain that changes pooling semantics (per-thread idle stacks, sizing,
+    cleanup of per-thread lists), so it needs patch docs and care. It ranks after the lower-risk SpellSpace.meld
+    entry lane.
+  NEXT: Prototype lever 3 on the VM copy: in SpellSpace.meld, inline the warm id fast lane the way melder_0
+    inlined Conduit.meld; A/B it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:54:14Z
+  TYPE: MEASURE
+  CLAIM: Lever 3 = P4, a warm id lane in SpellSpace.meld, VM copy only (device tree ~17:37Z plus apply_p4.py,
+    CPython 3.14.7t). A `spell_id=` meld with no spell, spellframe or binding_name reads the door's fast-door
+    entry and applies SpellSpaceMeld.meld's guard ladder and arms; a miss or any failed guard continues into the
+    door. Fresh worker thread, 8 interleaved process pairs, medians: request 12,226 -> 11,784 ns (-3.6%),
+    worker_a 10,548 -> 10,141 (-3.9%), worker_b 9,994 -> 9,690 (-3.0%); runs are bimodal (thread-id reuse decides
+    shell ownership), so the gain is small against the spread. Gauntlet shape (3 new threads per iteration,
+    per-thread CPU per cycle, 5 pairs): -2.4% / -2.6% / -1.9%. 30k-iteration soak (30 windows): medians
+    16,548 / 12,305 / 12,534 -> 16,209 / 12,046 / 12,167 ns; last 5 windows vs windows 2-6 flat on both trees
+    (within 1.3%); RSS 81.6 -> 83.6 MB on both; GC collections 14 on both. Suites passed on 3.14t (gil 0, and a
+    gil 1 subset) and on the 3.14.7 GIL build (subset) during the session; those logs were not retained. The new
+    component test (8 cases) fails its 3 lane-specific cases on the base tree and passes on P4.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/p4_ab_fresh_thread.txt:1-16
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/p4_gauntlet_shape.txt:1-10
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/soak_base_30k.txt:1-32
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/soak_p4_30k.txt:1-32
+  - artifacts/gauntlet_runtime_speed_20260926/p4_spellspace_warm_lane/p4_src.diff:1-103
+  - artifacts/gauntlet_runtime_speed_20260926/p4_spellspace_warm_lane/test_spellspace_component_warm_id_lane.py:1-239
+  IMPACT: A modest (~2-4%) per-cycle gain with no drift; not applied. Gates still open before any tree edit: prove
+    the lane cannot skip the active-scope check or any other check the door runs before its fast path; re-run the
+    suites with saved logs; NOTICE melder_0 (one doc sentence in meld.py, a fourth reader of _fast_meld_doors).
+  NEXT: Read SpellSpace.meld and SpellSpaceMeld.meld in full on the device tree and map every check the door
+    performs before its fast path against the lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:57:01Z
+  TYPE: FACT
+  CLAIM: P4 skips no check that the door performs. The current SpellSpace.meld checks only that spell and spell_id
+    are not both given, then forwards to its own SpellSpaceMeld door. For a str spell the door's first action is
+    its fast door, which uses the same guard ladder and arms that the lane copies. Neither method checks that the
+    space is the conduit's active spellspace. SpellSpaceScopeError is raised only by pop_expected on LIFO exit.
+    The lane calls the same executors with the same door object, so anything an executor raises is unchanged.
+    The lane is narrower than the door's fast path: it requires type(spell_id) is str and no spellframe or
+    binding_name. Every other call shape reaches the door with the same arguments as before.
+  EVIDENCE:
+  - src/melder/aether/conduit/spell_space/spell_space.py:455-507
+  - src/melder/aether/conduit/meld/spellspace_meld.py:235-627
+  - src/melder/aether/conduit/spell_space/spell_space_thread_state.py:219-248
+  IMPACT: The equivalence claim holds when checked against the source. The remaining pre-apply gates are a suite
+    re-run with saved logs and the NOTICE to melder_0.
+  NEXT: Record the stale active-scope documentation as a RISK, then re-run the suites on the refreshed copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:57:01Z
+  TYPE: RISK
+  CLAIM: Pre-existing and independent of P4: Melder's documents describe an active-scope check on SpellSpace.meld
+    that the source does not perform. Places: src_architecture "Sequence: SpellSpace Usage", the invariant "can
+    only meld when it is the active spellspace", and the failure mode "SpellSpaceScopeError if a non-active
+    SpellSpace is used for meld"; src_components "SpellSpace Scope Gate" and "Flow: SpellSpace Scoped Meld" (the
+    flow also says it delegates to Conduit.meld; in the source it goes to its own door); the SpellSpace.__init__
+    docstring ("fails its active-scope check") and the SpellSpaceMeld class docstring. In the source, a handle kept
+    after its with-block, once the space is back in the pool, can still meld. The scope store is cleared at exit
+    (recycle_from_managed_context) and not at acquire, so a unique_per_spell_space object built through a stale
+    handle stays in the idle space. The next scope that acquires that space, possibly on another thread, is then
+    served it. This takes caller misuse (purge's docstring already calls reuse of an old reference a violation),
+    but the documents promise a refusal.
+  EVIDENCE:
+  - src/melder/aether/conduit/spell_space/spell_space.py:305-363
+  - src/melder/aether/conduit/spell_space/spell_space_pool.py:185-211
+  - src/melder/aether/conduit/spell_space/spell_space.py:141-156
+  - src/melder/aether/conduit/meld/spellspace_meld.py:62-70
+  - system_docs/src_architecture.md:787-791
+  - system_docs/src_architecture.md:1151-1151
+  - system_docs/src_architecture.md:1237-1237
+  - system_docs/src_components.md:5587-5599
+  - system_docs/src_components.md:6361-6366
+  IMPACT: This is an owner decision and outside P4: (a) enforce the check cheaply, e.g. a per-space active flag set
+    at enter and cleared at exit with one compare in SpellSpace.meld, turning misuse into SpellSpaceScopeError; or
+    (b) correct the documents so reuse after exit is stated as unchecked caller misuse. P4 changes neither.
+  NEXT: Put the decision to the owner with the P4 report; do not change behaviour without an answer.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T18:04:29Z
+  TYPE: MEASURE
+  CLAIM: P4 suites re-run with saved logs on a copy refreshed from the device tree at 17:55Z. The only drift since
+    the 17:37Z copy was __version__.py. apply_p4.py applied cleanly on the refreshed copy, touching only
+    spell_space.py and meld.py. CPython 3.14.7t -X gil=0, all passed: unit/component/integration spellbook
+    2227/778/586, conduit 268, multithreading 42, unit/component/integration aether 4145/1214/716, unit and
+    component utilities 802/21, crystallizer 565/258/110, mutation_research 277/66/40, live_sim 1. The only failures
+    are the 3 pre-existing build-asset and version-stamp cases, identical on the base copy. -X gil=1 and the
+    3.14.7 GIL build: spellbook x3, component aether, conduit, multithreading and unit aether all passed. The new
+    warm-lane test: 8/8 on P4; on the base copy its 3 lane-specific cases fail and the other 5 pass.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/p4_suites.txt:1-45
+  IMPACT: The suite gate is closed with retained logs. Left before the apply: the NOTICE to melder_0, a check that
+    meld.py is unchanged at apply time, and the doc decision (patch docs or not) recorded.
+  NEXT: Check whether src_components describes the fast-door readers or the SpellSpace.meld call path that P4
+    changes, then record the doc decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T18:04:52Z
+  TYPE: DECISION
+  CLAIM: P4 gets no patch docs, by the same test applied to P1. It changes no boundary, lifecycle, policy or
+    cross-component contract, and results, errors and cleanup are identical. src_components mentions the fast-door
+    memo only in passing (admission and rebuild windows); neither system document lists the fast-door readers or
+    the warm id lanes. The code-level contract carries the change: the SpellSpace.meld docstring, and the reader
+    list in Meld._fast_meld_doors (one sentence in meld.py, melder_0's file, after a NOTICE). The stale SpellSpace
+    scope wording in both system documents waits for the owner's answer on the scope RISK, so it is corrected once.
+  EVIDENCE:
+  - system_docs/src_components.md:2865-2877
+  - system_docs/src_components.md:2913-2920
+  - artifacts/gauntlet_runtime_speed_20260926/p4_spellspace_warm_lane/p4_src.diff:1-103
+  IMPACT: P4 can go to the device tree once the NOTICE is sent and meld.py is confirmed unchanged at apply time.
+  NEXT: Open the P4 task (ticket, story checklist, board and artifact rows), then NOTICE melder_0.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Opened 2026-09-26 on the owner's request to run the benchmarks and speed up the library. Baseline filed (owner

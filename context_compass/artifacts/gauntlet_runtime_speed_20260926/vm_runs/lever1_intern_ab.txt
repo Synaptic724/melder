@@ -1,0 +1,18 @@
+# melder_2 VM 2026-09-26 ~17:35Z: lever 1 sizing, probe_intern.py on the device tree copy (no src change), CPython 3.14.7t
+# 'intern' = after warm-up, sys.intern in place on every string reachable from the spellbook and root conduit (1,281 strings); no refcount deferral
+base threads=1 request=13,878ns  worker_a=9,864ns  worker_b=8,722ns
+intern threads=1 request=15,299ns  worker_a=11,350ns  worker_b=10,515ns
+base threads=1 request=14,153ns  worker_a=10,146ns  worker_b=8,814ns
+intern threads=1 request=15,028ns  worker_a=11,670ns  worker_b=10,093ns
+base threads=1 request=15,405ns  worker_a=12,043ns  worker_b=10,894ns
+intern threads=1 request=13,822ns  worker_a=10,342ns  worker_b=8,930ns
+base threads=1 request=16,271ns  worker_a=11,953ns  worker_b=11,008ns
+intern threads=1 request=15,667ns  worker_a=11,547ns  worker_b=10,334ns
+base threads=1 request=14,052ns  worker_a=10,024ns  worker_b=8,891ns
+intern threads=1 request=15,221ns  worker_a=11,456ns  worker_b=10,274ns
+base threads=1 request=15,222ns  worker_a=11,479ns  worker_b=10,561ns
+intern threads=1 request=15,337ns  worker_a=11,267ns  worker_b=10,513ns
+base threads=1 request=13,798ns  worker_a=9,894ns  worker_b=8,867ns
+intern threads=1 request=14,827ns  worker_a=11,259ns  worker_b=10,084ns
+base threads=1 request=15,697ns  worker_a=11,701ns  worker_b=10,577ns
+intern threads=1 request=14,804ns  worker_a=11,117ns  worker_b=10,285ns

@@ -17,6 +17,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import pytest
 
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
+)
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
@@ -111,9 +114,12 @@ class _Index:
 
 
 class _Spell:
-    """Stub spell carrying the durable fields the seam reads."""
+    """Stub spell carrying the durable fields the seam reads and writes."""
 
-    __slots__ = ("spell_id", "profile", "spell_index", "dependencies", "spell", "spellframe", "_caching_enabled")
+    __slots__ = (
+        "spell_id", "profile", "spell_index", "dependencies", "spell", "spellframe", "_caching_enabled",
+        "build_details",
+    )
 
     def __init__(
             self,
@@ -133,28 +139,59 @@ class _Spell:
         self.spell = bound
         self.spellframe = spellframe
         self._caching_enabled = caching_enabled
+        self.build_details: List[List[str]] = []
+
+    def _add_build_details(self, dependencies: List[str]) -> None:
+        if dependencies is None:
+            raise ValueError("Dependencies cannot be None.")
+        self.dependencies = dependencies
+        self.build_details.append(list(dependencies))
 
 
 class _State:
-    __slots__ = ("validity", "flags")
+    """Stub lineage state recording the phase-4 verdict calls."""
+
+    __slots__ = ("validity", "flags", "cleared_at", "verdicts")
 
     def __init__(self, validity: SpellValidity, flags: Optional[set] = None) -> None:
         self.validity = validity
         self.flags = set() if flags is None else flags
+        self.cleared_at: Optional[float] = None
+        self.verdicts: List[Tuple[Any, ...]] = []
+
+    def clear_dirty(self, last_validated_at: float) -> None:
+        self.cleared_at = last_validated_at
+        self.validity = SpellValidity.valid
+
+    def set_validity(self, validity: SpellValidity, *, change_reason: Any = None,
+                     flags_to_add: Any = None, flags_to_remove: Any = None) -> None:
+        self.validity = validity
+        for flag in (flags_to_add or ()):
+            self.flags.add(flag)
+        for flag in (flags_to_remove or ()):
+            self.flags.discard(flag)
+        self.verdicts.append((validity, change_reason, tuple(flags_to_add or ()), tuple(flags_to_remove or ())))
 
 
 class _Registry:
-    """Stub of the frame registry lookups the seam uses."""
+    """Stub of the frame registry lookups and writes the seam uses."""
 
     def __init__(self) -> None:
         self.states: Dict[str, _State] = {}
         self.topologies: Dict[str, SpellLocalTopology] = {}
+        self.dependency_updates: List[Tuple[str, List[str]]] = []
 
     def get_by_index_id(self, index_id: str) -> Optional[_State]:
         return self.states.get(index_id)
 
     def get_local_topology(self, spell_index: _Index) -> Optional[SpellLocalTopology]:
         return self.topologies.get(spell_index.id)
+
+    def update_dependencies(self, spell_index: _Index, dependency_ids: List[str]) -> None:
+        self.dependency_updates.append((spell_index.id, list(dependency_ids)))
+
+    def register_local_topology(self, spell_index: _Index, topology: SpellLocalTopology) -> None:
+        self.topologies[spell_index.id] = topology
 
 
 class _Posture(Enum):
@@ -189,6 +226,11 @@ class _Spellbook:
         self._spells: Dict[str, _Spell] = {}
         self._spell_system_states = _Registry()
         self._logger = _Logger()
+        self._nexus_publish_enabled = False
+        self.published: List[str] = []
+
+    def _publish_spell_record_to_nexus(self, spell: _Spell) -> None:
+        self.published.append(spell.spell_id)
 
 
 def _sid(label: str) -> str:
@@ -349,7 +391,7 @@ def _consumer_world() -> Tuple[_Spellbook, _Spell, str, str]:
     book = _Spellbook({provider_id: provider, consumer_id: consumer})
     book._spells = {"idx-provider": provider, "idx-consumer": consumer}
     registry = book._spell_system_states
-    registry.states["idx-consumer"] = _State(SpellValidity.valid, {SpellState.contract_unvalidated})
+    registry.states["idx-consumer"] = _State(SpellValidity.gated, {SpellState.contract_unvalidated})
     registry.states["idx-provider"] = _State(SpellValidity.valid)
     registry.topologies["idx-consumer"] = SpellLocalTopology(consumer_id, [
         SpellSocketDescriptor(
@@ -378,7 +420,7 @@ def test_build_payload_renders_phase3_and_phase4_rows_from_durable_state() -> No
                 (provider_id,), "POSITIONAL_OR_KEYWORD",
             )],
         },
-        "phase4": {"validity": "valid", "contract_unvalidated": True},
+        "phase4": {"validity": "gated", "contract_unvalidated": True},
     }
     assert marshal.loads(marshal.dumps(payload)) == payload
 
@@ -488,3 +530,218 @@ def test_capture_marks_every_payload_non_replayable_for_an_eq_risky_pool(tmp_pat
             assert caching_system.get_structural_payload(spell_id)["replayable"] is False
     finally:
         caching_system.cleanup()
+
+
+# --------------------------------------------------------------------------- #
+# payload_well_formed / rebuild_topology
+# --------------------------------------------------------------------------- #
+
+def _good_payload(spell_id: str) -> Dict[str, Any]:
+    return {
+        "key": {"format": 1, "spell_id": spell_id, "annotation_refs": [("m", "T")]},
+        "world_stamp": "stamp",
+        "replayable": True,
+        "phase3": {
+            "dependency_ids": [_sid("dep")],
+            "sockets": [("alpha", 0, "NORMAL", False, True, (_sid("dep"),), ("k", "v"), None, (_sid("dep"),), "KEYWORD_ONLY")],
+        },
+        "phase4": {"validity": "gated", "contract_unvalidated": True},
+    }
+
+
+def _mutate(payload: Dict[str, Any], path: Tuple[Any, ...], value: Any) -> Dict[str, Any]:
+    """Deep-copy `payload` and set one nested field."""
+    import copy
+    clone = copy.deepcopy(payload)
+    node: Any = clone
+    for step in path[:-1]:
+        node = node[step]
+    node[path[-1]] = value
+    return clone
+
+
+@pytest.mark.parametrize(
+    "path, value",
+    [
+        pytest.param(("key", "format"), 2, id="format"),
+        pytest.param(("key", "spell_id"), _sid("other"), id="foreign-id"),
+        pytest.param(("key", "annotation_refs"), None, id="refs-not-list"),
+        pytest.param(("world_stamp",), 7, id="stamp-not-str"),
+        pytest.param(("replayable",), "yes", id="replayable-not-bool"),
+        pytest.param(("phase3", "dependency_ids"), ("a",), id="deps-not-list"),
+        pytest.param(("phase3", "dependency_ids"), [1], id="dep-not-str"),
+        pytest.param(("phase3", "sockets"), (), id="sockets-not-list"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL"), id="short-row"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NOPE", False, True, (), None, None, (), None), id="bad-kind"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", 0, True, (), None, None, (), None), id="flag-not-bool"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, ["x"], None, None, (), None), id="targets-not-tuple"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, (), ("k",), None, (), None), id="key-not-pair"),
+        pytest.param(("phase3", "sockets", 0), ("alpha", 0, "NORMAL", False, True, (), None, None, (), 3), id="kind-not-str"),
+        pytest.param(("phase4", "validity"), "invalid", id="validity-not-replayable"),
+        pytest.param(("phase4", "contract_unvalidated"), None, id="flag-none"),
+    ],
+)
+def test_payload_well_formed_rejects_each_shape_violation(path: Tuple[Any, ...], value: Any) -> None:
+    """One mutated field is enough to reject a payload; the untouched payload is accepted."""
+    spell_id = _sid("s")
+    assert StructuralSnapshot.payload_well_formed(_good_payload(spell_id), spell_id) is True
+    assert StructuralSnapshot.payload_well_formed(_mutate(_good_payload(spell_id), path, value), spell_id) is False
+
+
+def test_payload_well_formed_rejects_non_dict_shapes() -> None:
+    """Non-dict payloads and missing sections never raise."""
+    spell_id = _sid("s")
+    assert StructuralSnapshot.payload_well_formed(None, spell_id) is False
+    assert StructuralSnapshot.payload_well_formed([], spell_id) is False
+    assert StructuralSnapshot.payload_well_formed({"key": None}, spell_id) is False
+    assert StructuralSnapshot.payload_well_formed({"key": {"format": 1, "spell_id": spell_id, "annotation_refs": []},
+                                                  "world_stamp": "s", "replayable": True, "phase3": None, "phase4": {}}, spell_id) is False
+
+
+def test_rebuild_topology_round_trips_the_captured_socket_rows() -> None:
+    """build_payload's socket projection rebuilds into descriptors equal to the registered ones."""
+    book, consumer, _provider_id, consumer_id = _consumer_world()
+    registry = book._spell_system_states
+    payload = StructuralSnapshot.build_payload(consumer, registry, world_stamp="s", replayable=True)
+    rebuilt = StructuralSnapshot.rebuild_topology(consumer_id, payload["phase3"]["sockets"])
+    assert rebuilt.spell_id == consumer_id
+    assert rebuilt.sockets == registry.topologies["idx-consumer"].sockets
+    assert rebuilt.get_sockets_for_param("alpha") == registry.topologies["idx-consumer"].get_sockets_for_param("alpha")
+
+
+# --------------------------------------------------------------------------- #
+# classify
+# --------------------------------------------------------------------------- #
+
+def test_classify_without_a_cache_utility_is_disabled() -> None:
+    """No utility means nothing is read and no spell is classified."""
+    book, _consumer, _provider_id, _consumer_id = _consumer_world()
+    state = StructuralSnapshot.classify(book, None)
+    assert state == {"structural_path": "disabled", "world_stamp": "", "hits": {}, "misses": set()}
+
+
+def test_classify_reports_full_hit_after_a_capture_of_the_same_world(tmp_path: Path) -> None:
+    """Captured payloads of an unchanged world classify as a full hit carrying the decoded payloads."""
+    book, _consumer, provider_id, consumer_id = _consumer_world()
+    caching_system = _make_caching_system(tmp_path)
+    try:
+        assert StructuralSnapshot.classify(book, caching_system)["structural_path"] == "miss"
+        StructuralSnapshot.capture_at_conjure_end(book, caching_system)
+        state = StructuralSnapshot.classify(book, caching_system)
+        assert state["structural_path"] == "full_hit"
+        assert state["misses"] == set()
+        assert set(state["hits"]) == {provider_id, consumer_id}
+        assert state["hits"][consumer_id] == caching_system.get_structural_payload(consumer_id)
+        assert state["world_stamp"] == StructuralSnapshot.world_stamp(book)
+    finally:
+        caching_system.cleanup()
+
+
+def test_classify_misses_on_stamp_key_replayability_or_index(tmp_path: Path) -> None:
+    """Each hit condition is necessary: world stamp, key, replayable flag, live key and a bound index."""
+    book, consumer, provider_id, consumer_id = _consumer_world()
+    caching_system = _make_caching_system(tmp_path)
+    try:
+        StructuralSnapshot.capture_at_conjure_end(book, caching_system)
+        consumer_payload = caching_system.get_structural_payload(consumer_id)
+
+        caching_system.upsert_structural_payload(consumer_id, _mutate(consumer_payload, ("world_stamp",), "elsewhere"))
+        state = StructuralSnapshot.classify(book, caching_system)
+        assert state["structural_path"] == "partial" and state["misses"] == {consumer_id}
+
+        caching_system.upsert_structural_payload(consumer_id, _mutate(consumer_payload, ("replayable",), False))
+        assert StructuralSnapshot.classify(book, caching_system)["misses"] == {consumer_id}
+
+        caching_system.upsert_structural_payload(consumer_id, _mutate(consumer_payload, ("key", "annotation_refs"), [("m", "Other")]))
+        assert StructuralSnapshot.classify(book, caching_system)["misses"] == {consumer_id}
+
+        caching_system.upsert_structural_payload(consumer_id, consumer_payload)
+        assert StructuralSnapshot.classify(book, caching_system)["structural_path"] == "full_hit"
+
+        index = consumer.spell_index
+        consumer.spell_index = None
+        assert StructuralSnapshot.classify(book, caching_system)["misses"] == {consumer_id}
+        consumer.spell_index = index
+
+        book._spell_id_pool[_sid("newcomer")] = _Spell(_sid("newcomer"))
+        state = StructuralSnapshot.classify(book, caching_system)
+        assert state["structural_path"] == "miss" and state["misses"] == {provider_id, consumer_id}
+    finally:
+        caching_system.cleanup()
+
+
+def test_classify_misses_a_malformed_payload_without_raising(tmp_path: Path) -> None:
+    """A payload that decodes but fails the shape check is a miss for that spell only."""
+    book, _consumer, provider_id, consumer_id = _consumer_world()
+    caching_system = _make_caching_system(tmp_path)
+    try:
+        StructuralSnapshot.capture_at_conjure_end(book, caching_system)
+        caching_system.upsert_structural_payload(provider_id, {"key": {"format": 1}})
+        state = StructuralSnapshot.classify(book, caching_system)
+        assert state["structural_path"] == "partial"
+        assert state["misses"] == {provider_id} and set(state["hits"]) == {consumer_id}
+    finally:
+        caching_system.cleanup()
+
+
+# --------------------------------------------------------------------------- #
+# hydrate_full_hit
+# --------------------------------------------------------------------------- #
+
+def test_hydrate_full_hit_replays_phase3_writes_and_phase4_verdict(tmp_path: Path) -> None:
+    """Replay performs the registry writes, the Spell build details, Nexus publication and the verdict."""
+    book, consumer, provider_id, consumer_id = _consumer_world()
+    caching_system = _make_caching_system(tmp_path)
+    try:
+        StructuralSnapshot.capture_at_conjure_end(book, caching_system)
+        hits = StructuralSnapshot.classify(book, caching_system)["hits"]
+    finally:
+        caching_system.cleanup()
+    registry = book._spell_system_states
+    captured_consumer_sockets = registry.topologies["idx-consumer"].sockets
+    registry.topologies.clear()
+    registry.states["idx-consumer"].validity = SpellValidity.unknown
+    registry.states["idx-provider"].validity = SpellValidity.unknown
+    consumer.dependencies = []
+    book._nexus_publish_enabled = True
+
+    StructuralSnapshot.hydrate_full_hit(book, hits)
+
+    assert sorted(registry.dependency_updates) == sorted([("idx-consumer", [provider_id]), ("idx-provider", [])])
+    assert registry.topologies["idx-consumer"].sockets == captured_consumer_sockets
+    assert registry.topologies["idx-provider"].sockets == ()
+    assert consumer.dependencies == [provider_id] and consumer.build_details == [[provider_id]]
+    assert book.published == sorted([provider_id, consumer_id])
+    consumer_state = registry.states["idx-consumer"]
+    assert consumer_state.cleared_at is not None
+    assert consumer_state.validity is SpellValidity.gated
+    assert consumer_state.verdicts == [(SpellValidity.gated, SpellStateChangeReason.contract_unvalidated,
+                                        (SpellState.contract_unvalidated,), ())]
+    provider_state = registry.states["idx-provider"]
+    assert provider_state.validity is SpellValidity.valid
+    assert provider_state.verdicts == [(SpellValidity.valid, SpellStateChangeReason.validation_passed,
+                                        (), (SpellState.contract_unvalidated,))]
+
+
+def test_hydrate_full_hit_refuses_an_incomplete_hit_set_before_writing() -> None:
+    """A missing payload raises KeyError and nothing is written."""
+    book, consumer, _provider_id, consumer_id = _consumer_world()
+    registry = book._spell_system_states
+    with pytest.raises(KeyError):
+        StructuralSnapshot.hydrate_full_hit(book, {consumer_id: _good_payload(consumer_id)})
+    assert registry.dependency_updates == [] and consumer.build_details == []
+
+
+def test_hydrate_full_hit_requires_the_lineage_state(tmp_path: Path) -> None:
+    """A spell without a lineage state is a contract violation, not a cache condition."""
+    book, _consumer, _provider_id, consumer_id = _consumer_world()
+    caching_system = _make_caching_system(tmp_path)
+    try:
+        StructuralSnapshot.capture_at_conjure_end(book, caching_system)
+        hits = StructuralSnapshot.classify(book, caching_system)["hits"]
+    finally:
+        caching_system.cleanup()
+    book._spell_system_states.states.pop("idx-consumer")
+    with pytest.raises(RuntimeError):
+        StructuralSnapshot.hydrate_full_hit(book, hits)
+

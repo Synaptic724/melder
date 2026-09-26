@@ -182,6 +182,11 @@ class CachingSystem(Cleanable):
         15: "structural_snapshot_rows",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
+
+    # Structural payloads are value-addressed: marshal format 2 carries no
+    # back-references, so equal values always give equal bytes (see
+    # `upsert_structural_payload`). Executor payloads keep the default format.
+    STRUCTURAL_MARSHAL_VERSION: ClassVar[int] = 2
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"
 
     __slots__ = Cleanable.__slots__ + [
@@ -531,6 +536,12 @@ class CachingSystem(Cleanable):
             - Reports whether the stored bytes CHANGED: an identical payload
               for an id already stored is a no-op that returns False, which
               lets an unchanged world skip the conjure-end file rewrite.
+            - Encodes with `STRUCTURAL_MARSHAL_VERSION` (2): that format has no
+              back-references, so the bytes are a function of the VALUE alone.
+              The default format flags objects by their live reference count,
+              so equal payloads built from different object graphs (a cold
+              pass vs a replay, or two processes) would differ byte-wise and
+              defeat the change check.
 
         Args:
             spell_id:
@@ -542,7 +553,7 @@ class CachingSystem(Cleanable):
             bool:
                 True when the payload was added or its bytes replaced.
         """
-        payload_bytes = marshal.dumps(structural_payload)
+        payload_bytes = marshal.dumps(structural_payload, CachingSystem.STRUCTURAL_MARSHAL_VERSION)
         with self._lock:
             structural_payloads = self._cache_data["structural_payloads"]
             if structural_payloads.get(spell_id) == payload_bytes:

@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T15:03:58Z
-- Updated: 2026-09-26T17:28:31Z
+- Updated: 2026-09-26T18:13:08Z
 
 ## User Narrative
 As the Melder owner, I want a conjure whose creation cache fully hits to skip the structural and resolution
@@ -90,10 +90,15 @@ rows - measured on the gauntlet before it is trusted.
   presence strategy repointed. tickets/tasks/completed/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md (done 2026-09-26T16:59:15Z)
 - [ ] Task: TASK-2026-09-26-capture-structural-payloads-at-conjure-end - per-spell phase 3-4 rows beside the
   executor payload; replayability verdicts; world stamp; key; generation 15. tickets/tasks/2026-09-26_capture_structural_payloads_at_conjure_end_task.md
-  (opened 2026-09-26T16:47:56Z; in REVIEW 2026-09-26T17:28:31Z: landed on the device tree, worktree suites green, owner-run pending). Original line: capture on miss - per-spell phase 1-4 rows beside the executor payload; replayability verdicts;
-  world stamp; key extension; generation bump
-- [ ] Task: hydrate on hit - registry replay through the helpers, Spell flags, structural run only for the
-  regenerating set, phase-4 rerun rule; 5-7 and the 8-11 load unchanged
+  (opened 2026-09-26T16:47:56Z; in REVIEW 2026-09-26T17:28:31Z: landed on the device tree, worktree suites green,
+  owner-run pending). Original line: capture on miss - per-spell phase 1-4 rows beside the executor payload;
+  replayability verdicts; world stamp; key extension; generation bump
+- [ ] Task: TASK-2026-09-26-hydrate-structural-tier-at-conjure - hydrate on hit: registry replay through the
+  helpers, Spell flags, phase-4 verdict replay; v1 full hit or today's run (partial path = owner decision).
+  tickets/tasks/2026-09-26_hydrate_structural_tier_at_conjure_task.md (opened 2026-09-26T17:36:35Z; in REVIEW
+  2026-09-26T18:13:08Z: landed, worktree green, owner-run pending). Original line: hydrate on
+  hit - registry replay through the helpers, Spell flags, structural run only for the regenerating set, phase-4
+  rerun rule; 5-7 and the 8-11 load unchanged
 - [ ] Task: invalidation parity - the D5 table as a test list (cold vs hydrated verdicts)
 - [ ] Task: restore parity and measurement - fresh index ULIDs, gauntlet parity, warm conjure before/after
 - [ ] Enforce Ticket Microcycle across all linked tasks.
@@ -143,6 +148,8 @@ rows - measured on the gauntlet before it is trusted.
   now records its self-dependency for Phase 4 (owner option A, melder_1's lane). Capture task open, go pending.
 - 2026-09-26 (owner): capture task and the rest of the lane approved ("continue go ahead and finish your work its all
   good"); capture landed the same day (task 3 in review, owner-run pending).
+- 2026-09-26 (fable_0, DECISION_REQUEST): partial structural path (b) - land it (subset/phase-selective structural run)
+  or keep v1 (full hit replays; anything else runs today's phases). Pending the owner.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -312,6 +319,22 @@ rows - measured on the gauntlet before it is trusted.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T18:13:08Z
+  TYPE: FACT
+  CLAIM: Task 4 (hydrate) landed on the device tree and is in review: classify + full-hit replay in the seam,
+    conjure wiring in the creation system (`_prepare_spellbook_for_conjure` takes the conduit name), structural
+    payloads encoded value-only (marshal format 2), 30 new tests; worktree suites green across unit/component/
+    integration trees; VM medians at 29 spells: warm conjure -27%, structural preparation -70%. Patch docs and
+    the release note aligned. DECISION_REQUEST to the owner: land the partial path (b) or keep v1.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_hydrate_structural_tier_at_conjure_task.md (Validation; notes 18:10:41Z)
+  - src/melder/aether/spellbook/spellbook_creation_system.py:303-443
+  IMPACT: The structural snapshot is end to end (capture + replay). Remaining lane work: parity task (D5 table,
+    restore parity, two-process key test), measurement (owner-run), promotion into the canonical maps.
+  NEXT: owner-run suites for tasks 3-4; the parity task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -332,8 +355,10 @@ STATE 2026-09-26T16:12:08Z: task 1 DONE (owner approved); task 2 (C-C) opened an
 STATE 2026-09-26T16:40:10Z: task 2 (C-C) in REVIEW - landed on the device tree, worktree suites green; owner-run B6 pending.
 STATE 2026-09-26T16:59:15Z: task 2 (C-C) DONE and turned in; task 3 (capture) in discovery with its Propose->Confirm posted;
 waiting on the owner's go and on melder_0 (F0-17) for the two shared cache-path files.
-STATE 2026-09-26T17:28:31Z: task 3 (capture) in REVIEW - landed on the device tree, worktree suites green, patch docs aligned;
-owner-run suites pending. Next: the hydrate task (task 4).
+STATE 2026-09-26T17:28:31Z: task 3 (capture) in REVIEW - landed on the device tree, worktree suites green, patch docs
+aligned; owner-run suites pending. Next: the hydrate task (task 4).
+STATE 2026-09-26T18:13:08Z: task 4 (hydrate v1) in REVIEW - landed, worktree green, -27% warm conjure at 29 spells;
+partial path is an open owner decision. Tasks 3-4 await owner-run suites. Next: the parity task.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

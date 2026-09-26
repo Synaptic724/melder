@@ -1,0 +1,16 @@
+tree threads=1 request=10,416ns  worker_a=8,581ns  worker_b=8,404ns
+p4 threads=1 request=11,761ns  worker_a=10,250ns  worker_b=9,838ns
+tree threads=1 request=12,482ns  worker_a=10,987ns  worker_b=10,191ns
+p4 threads=1 request=10,387ns  worker_a=8,628ns  worker_b=8,256ns
+tree threads=1 request=10,588ns  worker_a=8,896ns  worker_b=8,469ns
+p4 threads=1 request=12,330ns  worker_a=10,224ns  worker_b=10,313ns
+tree threads=1 request=12,217ns  worker_a=10,633ns  worker_b=10,247ns
+p4 threads=1 request=10,221ns  worker_a=8,459ns  worker_b=8,104ns
+tree threads=1 request=12,257ns  worker_a=10,338ns  worker_b=9,925ns
+p4 threads=1 request=11,806ns  worker_a=10,083ns  worker_b=9,737ns
+tree threads=1 request=11,957ns  worker_a=10,598ns  worker_b=9,907ns
+p4 threads=1 request=10,434ns  worker_a=8,664ns  worker_b=8,149ns
+tree threads=1 request=12,234ns  worker_a=10,497ns  worker_b=10,092ns
+p4 threads=1 request=11,907ns  worker_a=10,199ns  worker_b=9,699ns
+tree threads=1 request=12,477ns  worker_a=10,598ns  worker_b=10,062ns
+p4 threads=1 request=11,809ns  worker_a=10,218ns  worker_b=9,680ns

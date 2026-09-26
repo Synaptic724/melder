@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T17:28:54Z
+- Updated: 2026-09-26T18:13:08Z
 - Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
@@ -1234,6 +1234,8 @@ tickets/tasks/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md. Resume from
 UPDATE 2026-09-26T16:59:15Z (fable_0): C-C done and turned in (tickets/tasks/completed/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md); task 3 (capture) is routed: tickets/tasks/2026-09-26_capture_structural_payloads_at_conjure_end_task.md.
 UPDATE 2026-09-26T17:28:54Z (fable_0): task 3 (capture) landed on the device tree and is in REVIEW (seam module, envelope generation 15,
 conjure-end capture, 33 tests; worktree green; owner-run pending); patch docs aligned. Next: the hydrate task under the same story.
+UPDATE 2026-09-26T18:13:08Z (fable_0): task 4 (hydrate v1) landed and in REVIEW - a full structural hit replays phase 3-4 rows and skips
+phases 1-4 (VM: warm conjure -27% at 29 spells); partial path is an owner decision. Next: the parity task.
 
 IMPLEMENTATION ENTRY - after S11 and the owner's explicit go, in this order:
 - I-0 signature-determinism test plus one serializer (small, compiler-side, protects today's cache;

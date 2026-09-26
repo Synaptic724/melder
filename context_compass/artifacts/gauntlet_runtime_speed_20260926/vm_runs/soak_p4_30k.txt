@@ -1,0 +1,32 @@
+root=copy iterations=30000 window=1000
+win=  1 request=17,828ns worker_a=12,319ns worker_b=12,424ns wall/iter= 1,624us rss=  81.6MB gc_collections=14
+win=  2 request=15,927ns worker_a=11,988ns worker_b=12,117ns wall/iter= 1,604us rss=  82.2MB gc_collections=14
+win=  3 request=16,420ns worker_a=12,129ns worker_b=12,218ns wall/iter= 1,606us rss=  82.4MB gc_collections=14
+win=  4 request=16,065ns worker_a=12,024ns worker_b=12,169ns wall/iter= 1,602us rss=  82.5MB gc_collections=14
+win=  5 request=16,257ns worker_a=12,077ns worker_b=12,152ns wall/iter= 1,614us rss=  82.7MB gc_collections=14
+win=  6 request=16,390ns worker_a=12,057ns worker_b=12,195ns wall/iter= 1,614us rss=  82.7MB gc_collections=14
+win=  7 request=16,560ns worker_a=12,152ns worker_b=12,280ns wall/iter= 1,640us rss=  82.8MB gc_collections=14
+win=  8 request=16,195ns worker_a=12,007ns worker_b=12,156ns wall/iter= 1,624us rss=  82.8MB gc_collections=14
+win=  9 request=16,176ns worker_a=11,917ns worker_b=12,294ns wall/iter= 1,621us rss=  82.8MB gc_collections=14
+win= 10 request=16,158ns worker_a=11,992ns worker_b=12,159ns wall/iter= 1,589us rss=  82.8MB gc_collections=14
+win= 11 request=15,888ns worker_a=12,110ns worker_b=12,105ns wall/iter= 1,595us rss=  82.9MB gc_collections=14
+win= 12 request=16,052ns worker_a=12,189ns worker_b=12,087ns wall/iter= 1,610us rss=  82.9MB gc_collections=14
+win= 13 request=16,454ns worker_a=12,121ns worker_b=12,315ns wall/iter= 1,595us rss=  82.9MB gc_collections=14
+win= 14 request=16,190ns worker_a=12,164ns worker_b=12,188ns wall/iter= 1,601us rss=  83.0MB gc_collections=14
+win= 15 request=16,223ns worker_a=12,031ns worker_b=12,165ns wall/iter= 1,585us rss=  83.0MB gc_collections=14
+win= 16 request=16,066ns worker_a=12,000ns worker_b=12,112ns wall/iter= 1,601us rss=  83.0MB gc_collections=14
+win= 17 request=16,057ns worker_a=12,173ns worker_b=12,154ns wall/iter= 1,596us rss=  83.3MB gc_collections=14
+win= 18 request=16,066ns worker_a=12,024ns worker_b=12,121ns wall/iter= 1,624us rss=  83.3MB gc_collections=14
+win= 19 request=16,602ns worker_a=12,184ns worker_b=12,407ns wall/iter= 1,626us rss=  83.3MB gc_collections=14
+win= 20 request=16,388ns worker_a=12,035ns worker_b=12,219ns wall/iter= 1,638us rss=  83.3MB gc_collections=14
+win= 21 request=16,644ns worker_a=12,124ns worker_b=12,349ns wall/iter= 1,625us rss=  83.4MB gc_collections=14
+win= 22 request=16,572ns worker_a=12,223ns worker_b=12,266ns wall/iter= 1,621us rss=  83.4MB gc_collections=14
+win= 23 request=16,145ns worker_a=11,970ns worker_b=12,042ns wall/iter= 1,598us rss=  83.4MB gc_collections=14
+win= 24 request=15,950ns worker_a=11,986ns worker_b=12,102ns wall/iter= 1,607us rss=  83.4MB gc_collections=14
+win= 25 request=16,753ns worker_a=12,186ns worker_b=12,321ns wall/iter= 1,644us rss=  83.4MB gc_collections=14
+win= 26 request=16,361ns worker_a=11,871ns worker_b=12,175ns wall/iter= 1,623us rss=  83.4MB gc_collections=14
+win= 27 request=16,556ns worker_a=12,068ns worker_b=12,314ns wall/iter= 1,624us rss=  83.5MB gc_collections=14
+win= 28 request=16,174ns worker_a=11,902ns worker_b=12,103ns wall/iter= 1,596us rss=  83.5MB gc_collections=14
+win= 29 request=16,105ns worker_a=11,854ns worker_b=12,055ns wall/iter= 1,582us rss=  83.5MB gc_collections=14
+win= 30 request=16,320ns worker_a=11,944ns worker_b=12,117ns wall/iter= 1,601us rss=  83.6MB gc_collections=14
+total 51.2s

@@ -10,7 +10,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T12:29:50Z
-- Updated: 2026-09-26T17:31:14Z
+- Updated: 2026-09-26T17:38:09Z
 
 ## Objective
 Overrides run through per-key-set plans compiled from the site graph: supplied dependencies and everything
@@ -1795,16 +1795,244 @@ the empty key set; the normal lane switches to it only when it meets the parity 
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T17:37:18Z
+  TYPE: MEASURE
+  CLAIM: S4a implemented and validated on ~/work/melder_s2b (device state + apply_s4a_edits.py +
+    apply_s4a_test_edits.py). The new component contracts (plan families raise with no TypeError cause; nothing under
+    the consumer is constructed, many_only and generalized) fail on the pre-S4a tree (6 failed; the 2 solo cases
+    pass) and pass with S4a. 3.14t and GIL identical: unit spellbook 2197, component spellbook 775, integration
+    spellbook 584+2s+2xf+2xp, experimentation 250+4s, component aether 1206+1xf, conduit 268, multithreading 42, unit
+    aether 4145, integration aether 716; 3.14t utilities 796+2s+7xf, unit crystallizer 565, integration
+    mutation_research 66.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s4a_edits.py:1-333
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s4a_test_edits.py:1-200
+  IMPACT: B6 holds for normal and override melds of both plan families; solo and the hook are unchanged.
+  NEXT: Mailbox, --check and apply S4a to the device, verify byte-identity.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:37:54Z
+  TYPE: FACT
+  CLAIM: S4a is on the device: mailbox empty for melder_0; apply_s4a_edits.py and apply_s4a_test_edits.py passed
+    --check and were applied; the four files are byte-identical to the validated work copy. Plans of the many_only
+    and generalized families raise UnresolvedInputError before building anything under a consumer whose unresolved
+    inputs have no key (B6; no TypeError cause); the solo lane keeps its guard and `from_failed_construction` stays
+    for it and the old emitters. Patch docs (code-description step 10, component S4a section) and the release note
+    bullet "The error comes before anything is built" updated.
+  EVIDENCE:
+  - src/melder/utilities/custom_exceptions/unresolved_input_error.py:1-362
+  - release_docs/next_version_release.md:169-172
+  IMPACT: Remaining: S4b (solo guard and hook retirement, owner), S2b-3 (old emitters, owner), S5, S6.
+  NEXT: Report the two decision requests to the owner; start S5 discovery (the three Phase-5 overlay readers).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T17:38:09Z
+  TYPE: DECISION_REQUEST
+  CLAIM: S4b - retiring `UnresolvedInputError.from_failed_construction` needs the solo lane decided. A root with no
+    dependencies is compiled by the solo family, whose override lane passes the payload straight to the
+    constructor, so today its unresolved inputs are named only from the failed call. Options: (1) teach the solo
+    lane to decide it: its no-overrides executor raises `for_unsupplied` without calling when the root has
+    unsupplied unresolved inputs, and its override lane checks the payload's keys against those names before
+    calling (one set check per override meld, only for such roots); then the hook, the solo guard and the families'
+    failure-path branch are deleted. (2) Send roots with unresolved inputs to the many_only plan family instead of
+    solo; then delete the hook (solo stays untouched; those roots lose the solo fast lane). (3) Keep the interim
+    guard for solo only. Recommendation: (1), which keeps solo's speed for every other root and makes the error
+    uniform (no TypeError cause anywhere).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py:246-301
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py:284-311
+  IMPACT: Until decided, unresolved-input errors differ by family only in their cause (TypeError for solo roots).
+  NEXT: Owner picks; S5 discovery continues meanwhile.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:51:06Z
+  TYPE: FACT
+  CLAIM: Mailbox M1-17 (melder_1, 17:43:56Z, NOTICE): melder_1 notched `__version__` 0.2.59 -> 0.2.61 for its two
+    committed changes (0.2.60 self-dependency afded5ce6, 0.2.61 cycle consumers 1c3dc8580); the release-note header
+    and LLM-bundle line read 0.2.61; this lane notches above 0.2.61. Read-only git (GIT_OPTIONAL_LOCKS=0): this
+    lane's 0.2.59 notch landed in 86993dce8; S2b-1 and S2b-2 (site_plan_lowering, site_plan_override_runtime, both
+    hydrators) were committed in 1c3dc8580 with no notch of their own; S4a (site_plan_lowering,
+    unresolved_input_error, two test files, release note) is uncommitted.
+  EVIDENCE:
+  - context_compass/mailbox_board.md:98-107
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:1-1
+  - release_docs/next_version_release.md:482-482
+  IMPACT: Three landed changes of this lane carry no notch: S2b-1, S2b-2 and S4a.
+  NEXT: Record the notch decision, consume the message, then notch.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:51:06Z
+  TYPE: DECISION
+  CLAIM: Notch 0.2.61 -> 0.2.64, one notch per change as melder_1 counted its own: 0.2.62 S2b-1 (shared sites'
+    children built inside their misses), 0.2.63 S2b-2 (normal melds on the site-plan runtime), 0.2.64 S4a
+    (unresolved inputs decided in the plan). The release-note header and the LLM-bundle line follow the literal.
+    The asset-stamp test stays red until the owner's asset rebuild, as before.
+  EVIDENCE:
+  - context_compass/attention_board.md:163-166
+  IMPACT: The next commit carries a version distinct from every build that lacked these changes.
+  NEXT: Delete M1-17, clear its alert, then anchored whole-line edits of the three version lines.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:51:33Z
+  TYPE: MEASURE
+  CLAIM: M1-17 consumed (message deleted, alert cleared, last_checked updated; no ACK requested). Notched with
+    anchored whole-line edits after a re-read: `__version__` 0.2.61 -> 0.2.64 (CRLF kept), release-note header and
+    LLM-bundle line -> 0.2.64. On the VM work copy (3.14t -X gil=0) `import melder` reports 0.2.64 and
+    test_package_version_metadata.py gives 3 passed, 1 failed: the asset-stamp test (assets stamped 0.2.56; clears
+    after the owner's asset rebuild).
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:1-1
+  - release_docs/next_version_release.md:482-482
+  IMPACT: Version and release note agree at 0.2.64; owner-side commit and asset rebuild remain.
+  NEXT: Re-read the Phase-5 overlay and its three readers, then record the S5 discovery.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T17:55:17Z
+  TYPE: FACT
+  CLAIM: S5 discovery (source read). The Phase-5 overlay `_overlay_sockets_and_index` walks every (node, path) pair
+    from the root, mints a path id per parameter chain in the blueprint's PathRegistry and appends one SocketRef
+    per socket per path, for shared and many nodes alike, so its cost follows logical paths, not instances. Its
+    outputs and their readers: (1) socket_refs: Phase-6 SocketRefSanityStrategy (duplicates only, because the
+    DagIndex branch needs `is_built`, which only `ensure_dag_index_built` sets and only SpellOverrider calls; no
+    src module imports SpellOverrider); the Phase-8 reuse key rows (artifact-local, never persisted, and redundant:
+    the key already holds ordered_node_ids, id(path_registry) and pool topology rows carrying every socket's
+    targets, kind and collection flag); the phase2-5 IR capture (`capture_phase2_5_codegen_ir`), which has no
+    production caller. fable_0's structural_snapshot.py reads none of socket_refs, path_registry or phase 5.
+    (2) Pre-minted path ids: Phase 8 extends the same registry (get-or-create), so without the overlay the ids
+    are minted in Phase 8's order instead; they reach phase-11 rows through instance_key and
+    override_match_prefix. `resolve_path_registry` (both binding resolvers) has no caller since S3.
+    (3) Tests pin the overlay output: component meld_overrides (ensure_dag_index_built), dag_targeting,
+    spell_crafter_phase5, spell_system (SocketRefSanity), dag_index_and_spec.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py:435-505
+  - src/melder/aether/spellbook/spell_compiler/system/validation/socket_ref_sanity_strategy.py:31-207
+  - src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py:198-271
+  - src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:295-325
+  - src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:415-529
+  - src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:134-170
+  - src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:234-340
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py:179-184
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py:140-152
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py:235-264
+  - src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1186-1232
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:576-600
+  - src/melder/aether/conduit/meld/overrides/spell_overrider.py:125-135
+  IMPACT: No live reader needs per-path sockets; S5 can stop the walk. Path-id renumbering changes phase-11 row
+    values (not their shape); SpellOverrider, DagIndex targeting and their tests are dead weight the overlay feeds.
+  NEXT: Measure the overlay's share of conjure time on the experiment graphs before designing S5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T18:00:07Z
+  TYPE: MEASURE
+  CLAIM: The overlay's share of conjure (probe s5_overlay_cost.py on ~/work/melder_s2b = device state; caching off;
+    one conjure per graph, so single samples). Binary chain C_i(a, b -> C_i+1), unique_per_conduit, 3.14t: 13 sites
+    (8,192 paths, 16,356 refs) conjure 45.1 ms, overlay 17.3 ms (38%); 15 sites (32,768 paths, 65,504 refs) 149.8 ms,
+    overlay 84.5 ms (56%). Shared lattices (W classes per layer, all-to-all): overlay 15-39% on 3.14t and 11-62% on
+    GIL from 256 to 4,096 paths; many-existence lattices 2-7% (their Phase 8 grows with paths anyway). cProfile of
+    the 15-site chain (GIL, 0.465 s total): overlay 0.301 s, SocketRefSanityStrategy 0.129 s (it formats every ref's
+    path even when it reports nothing), Phase-8 socket rows 0.029 s; together about 99% of conjure.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s5_staging/s5_overlay_cost.py:1-130
+  - src/melder/aether/spellbook/spell_compiler/system/validation/socket_ref_sanity_strategy.py:96-114
+  IMPACT: Stopping the walk makes conjure of shared graphs linear in sites (design v2 section 14 gate: the binary
+    chain at 13 and 15 sites before/after S5); the sanity strategy's cost goes with it once refs are empty.
+  NEXT: Read the tests that pin the overlay output, then write the S5 plan and file list.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T18:05:33Z
+  TYPE: FACT
+  CLAIM: Exploratory run on ~/work/melder_s2b (device state, overlay walk short-circuited after the fresh index is
+    installed; GIL): 28 tests fail, all pinning the overlay's per-path output, and every other suite passes (unit
+    and integration aether, conduit, multithreading, experimentation, utilities, unit crystallizer; crystallizer
+    component only the known file_backed_morph x4). Failing: 11 unit overlay-walk tests
+    (test_spell_system_root_blueprint_builder.py); component root_blueprint_builder x3, adjacency_snapshot x1,
+    phase5_contracts x1, spell_crafter_phase5 x1, spell_system x2, dag_targeting x4, conduit meld_overrides x2,
+    override_required x1; integration validation_system x2 (socket-ref duplicate/index mismatch built from the
+    first overlay ref). Each asserts per-path socket refs or DagIndex path lookups on a compiled blueprint;
+    their DAG and order assertions still hold.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py:435-505
+  - tests/unit/melder/spellbook/spell_crafter/system/test_spell_system_root_blueprint_builder.py:127-586
+  - tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py:233-429
+  - tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py:1632-1972
+  - tests/component/melder/spellbook/test_spellbook_component_override_required.py:334-356
+  IMPACT: U3 answered: no production reader needs logical paths; only tests of the overlay's output do.
+  NEXT: STRATEGY and PLAN with the file list.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T18:05:33Z
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Objective: conjure linear in sites (design v2 section 14). Constraints: no behavior change; no deletion
+    across files without the owner (as S2b-3); fable_0 owns the phase2-5 capture seam. Options: (A) stop the walk
+    only: Phase 5 installs a fresh index and records no SocketRefs; the dead targeting surface (SpellOverrider,
+    DagTargetingEngine, DagIndex socket maps, SocketRefSanityStrategy, blueprint socket API,
+    resolve_path_registry, Phase-8 key socket rows, phase2-5 socket rows) stays and just sees none; tests that
+    pinned the output are rewritten to the new contract (DAG/order kept; sanity tests inject hand-built refs;
+    conjured-blueprint targeting tests deleted, the engine keeps its hand-built unit tests). (B) A plus retiring
+    the dead surface now. Tradeoff: B removes more code but is a cross-file deletion the owner has not approved
+    and touches fable_0's seam. Recommendation: A now; B joins the S2b-3 retirement decision (one reviewed
+    deletion pass in S6).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/design_v2.md:355-366
+  - context_compass/artifacts/melder_override_design_20260926/design_v2.md:404-431
+  IMPACT: The conjure gain lands without a deletion the owner has not seen.
+  NEXT: PLAN.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T18:05:33Z
+  TYPE: PLAN
+  CLAIM: S5a. (1) SpellSystemRootBlueprintBuilder: `_overlay_sockets_and_index(blueprint, topologies)` becomes
+    `_install_fresh_index(blueprint)` (fresh DagIndex and PathRegistry for Phase 8 to mint into, no SocketRefs);
+    both entry points drop the snapshot-topologies guard that only protected the walk; docstrings and comments
+    updated; the unused SocketRef import goes. (2) RootResolutionBlueprint: docstrings only (compiled blueprints
+    carry no SocketRefs; the targeting API remains for direct callers until retired). (3) Tests rewritten as in
+    the FACT above. (4) Patch docs: architecture patch (S5 step, invariant, U3 resolved) and an S5 section in
+    component_patch_spellcompiler_validation_pipeline.md. (5) Release note (conjure bullet with before/after on
+    the binary chain) and version 0.2.65. (6) NOTICE/QUESTION M0-37 to fable_0 on the capture seam. No cache
+    generation: path ids may be numbered in Phase 8's order, and hydration reads persisted ids as labels only
+    (resolve_path_registry has no caller); the notch retires older bundles anyway.
+    FILES: src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py; src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py;
+    tests/unit/melder/spellbook/spell_crafter/system/test_spell_system_root_blueprint_builder.py;
+    tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_root_blueprint_builder.py;
+    tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_adjacency_snapshot.py;
+    tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system_phase5_contracts.py;
+    tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py; tests/component/melder/spellbook/spell_crafter/phases/test_spellbook_component_spell_crafter_phase5.py;
+    tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_targeting.py;
+    tests/component/melder/aether/conduit/test_conduit_component_meld_overrides.py;
+    tests/component/melder/spellbook/test_spellbook_component_override_required.py;
+    tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py; patch docs; release note;
+    src/melder/__version__.py.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py:13-298
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py:235-264
+  IMPACT: Conjure of shared graphs stops scaling with logical paths; no meld result, emitted shape or public API
+    changes.
+  NEXT: Mailbox, QUESTION M0-37 to fable_0, then the patch docs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-In the device tree, uncommitted: S3a (key-set override plans), S3b-1/S3b-2 (old override lane, legacy codec and
-fallback family retired; cache generation 14, committed), S2a, the override fast door, the Conduit.meld id-lane trim,
-the existing-object fast path, the solo benchmark on a real override, version 0.2.59 with its release-note sections,
-S2b-1 (override plans: shared sites' children built inside their misses, children before the guard; solo matrix
-inputs fixed) and S2b-2 (normal melds of both families on the site-plan runtime's normal plan; parity gate met; the
-old normal emitters remain in the tree). Next: owner decision on S2b-3 (retire the old normal emitters), then S4
-(unresolved inputs decided in the plan), S5, S6 (docs, owner-approved asset rebuild, release note). Known unrelated
-failures: crystallizer file_backed_morph x4; asset-stamp test (assets 0.2.56 vs package 0.2.59); VM work copies lack
-context_compass/system_docs, so test_system_documents_builder x2 fails there only.
+In the device tree, uncommitted: S3a/S3b (key-set override plans; old override lane retired; cache generation 14,
+committed), S2a, the override fast door, the Conduit.meld id-lane trim, the existing-object fast path, the solo
+benchmark on a real override, version 0.2.59 with its release-note sections, S2b-1 (shared sites' children built
+inside their misses, children before the guard), S2b-2 (normal melds of both plan families on the runtime's normal
+plan) and S4a (unresolved inputs decided in the plan, B6). Waiting on the owner: S2b-3 (retire the old normal
+emitters; recommendation defer to S6) and S4b (the solo lane's guard and the failure-path hook). Next: S5 discovery
+(Phase-5 path overlay readers), then S6 (docs promotion, owner-approved asset rebuild, release note). Known
+unrelated failures: crystallizer file_backed_morph x4; asset-stamp test (assets 0.2.56 vs package 0.2.59); VM work
+copies lack context_compass/system_docs, so test_system_documents_builder x2 fails there only.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

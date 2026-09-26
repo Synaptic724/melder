@@ -5,7 +5,7 @@
 - Status: draft (S1 detailed; S2-S6 outlined and detailed in their own lanes before code)
 - Owner: user (implementation: melder_0)
 - Created: 2026-09-26T11:28:08Z
-- Updated: 2026-09-26T11:28:08Z
+- Updated: 2026-09-26T18:08:38Z
 
 ## Patch Scope and Non-Goals
 - Objective: implement the owner-approved override design (design v2): a site graph per root, one plan per
@@ -25,6 +25,7 @@
 | Meld Resolution Runtime | none in S1 | S3 replaces the override executors with the key-set dispatcher | S2, S3 |
 | Creations and SpellSpace | none | Slot guards are reused unchanged in S2/S3 | - |
 | SpellCompiler and Validation Pipeline (PathRegistry, Phases 5 and 8) | fix | Collection members get their own child paths so their many dependencies are built per member (owner ruling 2026-09-26); cache generation 13 | Phase-5 overlay, Phase-8 occurrence graph |
+| SpellCompiler and Validation Pipeline (Phase-5 blueprint builder) | remove | S5: the per-path socket overlay is retired; blueprints carry no SocketRefs and Phase 8 mints the path ids; conjure stops scaling with logical paths | Phase-8 path minting |
 
 ## Interface and Boundary Deltas
 - Boundary delta 1 (S1): `SpellCodegenModel` gains the processor-owned section `site_graph_shape`
@@ -60,6 +61,7 @@
    runtime.
 4. S4: unresolved inputs decided in the plan; retire `UnresolvedInputError.from_failed_construction`.
 5. S5: retire the Phase-5 per-path socket overlay after its readers are resolved.
+   S5a stops the walk; retiring the dead targeting surface it fed waits for the owner (with S2b-3).
 6. S6: canonical docs, graph descriptors, assets, release note.
 
 ## Rollback Strategy
@@ -87,8 +89,9 @@
 ## Unknowns and Decision Requests
 - UNKNOWN: whether a PATH through a collection is covered by any existing test (decides how B7 is
   qualified in S3).
-- UNKNOWN: whether Phase-6 socket_ref_sanity_strategy, the Phase-8 occurrence analyzer and
-  shared_compiler_executions need logical paths (S5).
+- RESOLVED (S5, 2026-09-26T18:08:38Z): Phase-6 socket_ref_sanity_strategy, the Phase-8 occurrence analyzer and
+  shared_compiler_executions do not need logical paths (source read; exploratory run: only tests pinning the
+  overlay's output fail). See component_patch_spellcompiler_validation_pipeline.md, S5 section.
 - DECISION_REQUEST: none open for S1 (Q1-Q5 approved 2026-09-26T11:26Z).
 
 ## Context / Handoff Summary

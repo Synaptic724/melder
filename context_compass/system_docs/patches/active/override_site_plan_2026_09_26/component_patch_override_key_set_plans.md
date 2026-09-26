@@ -97,3 +97,35 @@
 
 ### Rollback
 - Restore the hydrators' inner-executor construction; the old emitters stay in the tree until S2b-3.
+
+## S4a: unresolved inputs decided in the plan (2026-09-26)
+
+### Before
+- A plan (normal or override) calls a constructor without an unresolved input; the call raises TypeError and the
+  family's failure path converts it (`UnresolvedInputError.from_failed_construction`), so the error arrives after
+  the consumer's dependencies were built, chained from the TypeError.
+
+### After
+- The lowering knows each kept site's UNRESOLVED_INPUT parameters without a winning key and raises
+  `UnresolvedInputError` before anything under that consumer is built: at the plan top for top-level many sites,
+  at the top of a shared site's miss for its many children and itself. Message, fields and type are unchanged;
+  there is no TypeError cause. A stored consumer never demands the input. Solo roots and OVERRIDE_REQUIRED
+  sockets are unchanged.
+
+### Interface / State Deltas
+- `UnresolvedInputError.for_unsupplied(spell, names)` (new classmethod; shares the message builder with
+  `from_failed_construction`, which stays for the solo guard and the old emitters). `SitePlanRuntimeHelpers`
+  gains `raise_unresolved_input`. No cache change (plans are built at hydration).
+
+### Behavior Deltas
+- B6 for the many_only and generalized families: nothing under the consumer is constructed, and `__cause__` is
+  None instead of the binding TypeError.
+
+### Validation Expectations
+- Unit: raise before any construction, supplied key builds, stored consumer never demands, raise inside a shared
+  miss before its children. Component: the unresolved-input suite per family (cause changes for plan families).
+  All suites on 3.14t and GIL.
+
+### Rollback
+- Drop the emitted raises; the failure-path hook still converts constructor TypeErrors.
+
