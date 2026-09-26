@@ -22,6 +22,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
@@ -177,9 +178,9 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
                     SystemDiagnostic(
                         code="collection_socket_no_providers",
                         message=(
-                            f"Spell '{spell_id}' parameter '{socket.param_name}' "
-                            "declares a required collection dependency (list[...]) "
-                            "but no providers wired into it in the resolved graph. "
+                            f"Spell {SpellInputUtils.describe_spell_id(spell_id, spell_lookup)} "
+                            f"parameter '{socket.param_name}' is a required list[...] "
+                            "dependency, but no provider is wired into it. "
                             f"{remediation}"
                         ),
                         severity=severity,

@@ -1,0 +1,2 @@
+RAISED melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError
+Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: ValueError: DagNode cannot depend on itself.

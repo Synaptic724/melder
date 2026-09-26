@@ -55,9 +55,10 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
 
     AGENT_PURPOSE:
         access: internal. Phase-4 strategy: warns about list[T] elements and forward references
-        Melder cannot inject. Emits LIST_ELEMENT_NOT_DI_TARGET and UNRESOLVED_FORWARD_REF
-        (warnings). Only list[FrameType] is collection DI; set/dict/tuple parameters are caller
-        inputs, reported by RequiredHolesStrategy.
+        Melder cannot inject. Emits LIST_ELEMENT_NOT_DI_TARGET (only when a user class sits inside
+        the element, e.g. list[Optional[Plugin]]; plain data such as list[str] gets nothing) and
+        UNRESOLVED_FORWARD_REF (warnings). Only list[FrameType] is collection DI; set/dict/tuple
+        parameters are caller inputs, reported by RequiredHolesStrategy.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -141,15 +142,19 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
                     )
                     continue
 
-                if not self._looks_like_di_target(element):
+                # Plain data lists (list[str], list[Any]) are ordinary caller
+                # inputs; warn only when a user class hides inside the element
+                # (list[Optional[Plugin]]), where injection may have been meant.
+                if not self._looks_like_di_target(element) and self._mentions_di_target(element):
                     context.issues.append(
                         SpellValidationIssue(
                             severity="warning",
                             code="LIST_ELEMENT_NOT_DI_TARGET",
                             message=(
-                                f"Parameter {param.name!r} on spell {spell.spell_name!r} "
-                                f"uses list[{element!r}], which is not a DI frame/type. "
-                                "Collection DI only works for list[FrameType]."
+                                f"Parameter {param.name!r} on spell {spell.spell_name!r} is "
+                                f"list[{element!r}]. Melder injects a list only when its element is "
+                                "one registered type (list[Plugin]), so this parameter is left for "
+                                "the caller to supply."
                             ),
                             details={
                                 "parameter_name": param.name,
@@ -174,6 +179,19 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
                         },
                     )
                 )
+
+    def _mentions_di_target(self, annotation: Any) -> bool:
+        """
+        Report whether a DI-eligible class or forward reference appears among the
+        annotation's type arguments (one level down), as in `Optional[Plugin]`.
+
+        Contract:
+            Only classes and forward references count; strings and literals do not.
+        """
+        return any(
+            (inspect.isclass(arg) or isinstance(arg, typing.ForwardRef)) and self._looks_like_di_target(arg)
+            for arg in get_args(annotation)
+        )
 
     def _looks_like_di_target(self, annotation: Any) -> bool:
         """

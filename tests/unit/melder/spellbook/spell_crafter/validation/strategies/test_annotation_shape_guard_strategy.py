@@ -129,16 +129,37 @@ def test_annotation_shape_guard_leaves_container_parameters_to_phase_1() -> None
     assert context.issues == []
 
 
-def test_annotation_shape_guard_warns_for_list_of_any() -> None:
-    """typing.Any is not a DI target (as in Phase 1), so list[Any] draws the list-element warning."""
+def test_annotation_shape_guard_leaves_plain_data_lists_silent() -> None:
+    """list[Any] and list[str] are plain caller inputs: no list-element warning (2026-09-26)."""
     strategy = AnnotationShapeGuardStrategy()
     context = _Context(
-        requirements=_Requirements([_Parameter("values", list[typing.Any], ParameterDIShape.PLAIN)])
+        requirements=_Requirements([
+            _Parameter("values", list[typing.Any], ParameterDIShape.PLAIN),
+            _Parameter("names", list[str], ParameterDIShape.PLAIN),
+        ])
+    )
+
+    strategy.validate(context)
+
+    assert context.issues == []
+
+
+def test_annotation_shape_guard_warns_when_a_user_class_hides_in_the_element() -> None:
+    """list[Optional[Plugin]] may have meant injection: warn, and say it is left to the caller."""
+    class Plugin:
+        """User class stand-in."""
+
+    strategy = AnnotationShapeGuardStrategy()
+    context = _Context(
+        requirements=_Requirements([
+            _Parameter("plugins", list[typing.Optional[Plugin]], ParameterDIShape.PLAIN),
+        ])
     )
 
     strategy.validate(context)
 
     assert [issue.code for issue in context.issues] == ["LIST_ELEMENT_NOT_DI_TARGET"]
+    assert "left for the caller to supply" in context.issues[0].message
 
 
 def test_annotation_shape_guard_warns_for_list_forward_ref() -> None:

@@ -1,0 +1,8 @@
+Suites on VM copies synced from the worktree 2026-09-26 (3.14.7t, -X gil=0). after = ~/val_err (apply_reporting.py + apply_reporting_tests.py); base = ~/val_err_base (unpatched).
+tests/unit after: 47 failed, 8197 passed, 3 skipped, 7 xfailed, 388 errors in 40.72s
+tests/unit base:  47 failed, 8180 passed, 3 skipped, 7 xfailed, 388 errors in 37.57s
+unit failure/error ids identical between base and after (environment-only: github_workflows, system-doc tooling, llm builder need folders outside src/tests).
+tests/component after: 2135 passed, 43 skipped, 1 xfailed in 23.48s
+tests/integration after: spellbook 581 passed (2 skipped, 2 xfailed, 2 xpassed); conduit 268; aether 716; crystallizer 258 (3 xfailed); mutation_research 66; live_sim 1 (1 xfailed); multithreading 42.
+New or changed tests on unpatched source (tests from after, src from base): 32 fail, 1325 pass in the touched files and folders.
+Worktree apply check (VM copy re-synced from the worktree after the apply, other agents' current changes included): tests/unit + tests/component: 47 failed, 10332 passed, 46 skipped, 8 xfailed, 388 errors in 65.47s (0:01:05) - failure/error ids identical to base (environment-only); integration spellbook 581, conduit 268, aether 716, mutation_research 66, live_sim 1, multithreading 42, crystallizer 258 (3 xfailed) passed.

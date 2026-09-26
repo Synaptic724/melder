@@ -1886,7 +1886,9 @@ def test_gated_validation_required_transfer_in_progress_raises() -> None:
     with pytest.raises(SpellbookValidationError) as exc_info:
         meld._gated_validation_required(spell)
 
-    assert "spell-1" in str(exc_info.value)
+    # The report names spells, not ids (2026-09-26); the spell object stays on the error.
+    assert exc_info.value.broken_spells == [spell]
+    assert "Broken spells: Spell." in str(exc_info.value)
 
 
 def test_gated_validation_required_blocks_dirty_root() -> None:

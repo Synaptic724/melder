@@ -454,6 +454,9 @@ class SpellbookCreationSystem(Cleanable):
             - Raises `SpellbookValidationError` naming the spells the ERROR
               diagnostics attribute the failure to; graph-level errors that
               carry no spell_id fall back to every scoped spell.
+            - Hands the conduit diagnostics to the error, which states their
+              reasons; the phase artifacts that used to carry them are already
+              cleaned when this gate runs (2026-09-26).
         Args:
             spellbook: Owning Spellbook instance.
             conduit_id: Conduit id whose resolution verdict is enforced.
@@ -494,7 +497,10 @@ class SpellbookCreationSystem(Cleanable):
             for spell_id in dict.fromkeys(offender_ids)
             if spell_id in spell_id_pool
         ]
-        raise SpellbookValidationError(offending)
+        raise SpellbookValidationError(
+            offending,
+            system_diagnostics=resolution_state.list_diagnostics(),
+        )
 
     @staticmethod
     def _build_conjure_cache_state(
@@ -1532,8 +1538,15 @@ class SpellbookCreationSystem(Cleanable):
             # callers marked the spell resolution-complete with no phase-11
             # creation built, and meld then failed deep in the context
             # builder with an opaque RuntimeError instead of the validation
-            # contract callers rely on.
-            raise SpellbookValidationError([target_spell])
+            # contract callers rely on. The conduit diagnostics carry the
+            # reasons (the phase artifacts were just cleaned), so hand them over.
+            resolution_state = spellbook._spell_system_states.get_conduit_resolution_state(conduit_id)
+            raise SpellbookValidationError(
+                [target_spell],
+                system_diagnostics=(
+                    resolution_state.list_diagnostics() if resolution_state is not None else None
+                ),
+            )
 
         scoped_spell_ids, scoped_root_ids = SpellbookCreationSystem._collect_target_resolution_scope(
             target_spell=target_spell,
@@ -2298,9 +2311,9 @@ class SpellbookCreationSystem(Cleanable):
                 SystemDiagnostic(
                     code="visibility_gap_dependency_filtered",
                     message=(
-                        f"Local resolution referenced dependency "
-                        f"'{missing_dependency_id}', but it is not visible "
-                        "to this Spellbook."
+                        f"Resolving this spell needs spell id {missing_dependency_id[:12]}, "
+                        "which is not visible to this Spellbook. Bind it in this "
+                        "Spellbook, or give this conduit access to it."
                     ),
                     severity=SystemDiagnosticSeverity.ERROR,
                     spell_id=missing_dependency_id,

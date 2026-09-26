@@ -25,6 +25,13 @@
   has no mutation override, exactly as the no-override branch does; so override-only callers reach the fast lane
   from their second call.
 
+- Conduit.meld (2026-09-26, owner-approved public meld trim): for an automatic conduit and a string `spell_id`
+  with no spell/spellframe/binding, the facade reads the meld door's entry itself with the same guard ladder and
+  both arms, then continues in the door's positional id lane on a miss (no keyword marshaling); the cleaned check
+  is an inline flag test before `check_cleaned()`. Three readers now share one guard ladder: ConduitMeld.meld,
+  SpellSpaceMeld.meld and Conduit.meld. Measured solo meld 209 -> 111 ns (3.14t, main thread); from a worker
+  thread 556 -> 404 ns.
+
 ## Interface / State Deltas
 - No public API change. No new lock, state or registry; entries keep the spell-id keyspace (bounded by the
   registry). The payload is passed as given (the full lane's normalization returns non-empty dicts as-is).

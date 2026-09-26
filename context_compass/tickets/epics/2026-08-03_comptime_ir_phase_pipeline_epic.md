@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T13:27:19Z
+- Updated: 2026-09-26T15:03:58Z
 - Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
@@ -219,6 +219,9 @@ and tranche T1 are also closed. Milestones 2-5 not started; I-1 (structural snap
       approved 2026-09-26; patch docs first; five tasks (two added on owner rulings).
       tickets/stories/completed/2026-09-26_signature_determinism_and_phase8_digest_story.md (fable_0;
       done 2026-09-26T13:14:31Z, owner accepted; docs promoted)
+- [ ] Story: STORY-2026-09-26-structural-snapshot - I-1: a full creation-cache hit hydrates value rows
+      for phases 1-7 and skips them; patch docs first, then capture / hydrate / invalidation parity / restore
+      parity tasks. tickets/stories/2026-09-26_structural_snapshot_story.md (fable_0, opened 2026-09-26)
 - [ ] Story: STORY-2026-08-03-ir-schema-design - define the node/edge schema,
       the symbolic id scheme, the version stamp, and the answer to the identity
       question. Owner ratification required.
@@ -391,6 +394,9 @@ and tranche T1 are also closed. Milestones 2-5 not started; I-1 (structural snap
   snapshot inherits the row rule (hash surface; contract override values are never row material).
 - 2026-09-26 (owner): the survey story (Milestone 1) and the improvement-plan story turned in ("turn in your
   shit if your done"); their records stay under artifacts/ as reference. No fable_0 lane is routed after this.
+- 2026-09-26 (owner): I-1 structural snapshot selected as the next lane; story opened with the patch-doc task
+  first; four design rulings requested (custom-__eq__ frames, envelope vs sidecar, per-spell key extension,
+  CCM dirty-root loop).
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -1120,6 +1126,28 @@ and tranche T1 are also closed. Milestones 2-5 not started; I-1 (structural snap
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T15:01:13Z
+  TYPE: FACT
+  CLAIM: Mailbox M0-26 and M0-28 (melder_0, 13:43Z and 14:16Z) consumed: S3b-1 drops the manifests' "overrides"
+    section and targeting serializers (MANIFEST_VERSION 4), unregisters the site-graph/override-targeting
+    phase-9 processors, cache generation 14; S3b-2 (owner "1 and 2") makes `Spellbook._emit_spell_cache` cache
+    manifest creations only, DELETES the legacy codec `spell_codegen_creation_cache.py` with the fallback
+    no-overrides family, drops the `target_spec_count` export key, removes the legacy-package test from
+    `test_contract_override_refs.py` and makes the determinism component test read manifest packages only.
+    S3a delivers SpellMap payload objects by identity on override melds (probe-confirmed); melder_0's S6 release
+    section retires the release-note caveat. T1's no-overrides row builders and hydrators are untouched.
+    Doc consequence for melder_0's promotion (not fable_0's): the canonical "Deterministic signatures ..." block
+    still says both `build_package` builders package (the legacy one is gone) and that the override lanes keep
+    their rows until S3.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  - system_docs/src_components.md:3293-3330
+  IMPACT: No fable_0 action; the T1 closure stands. The structural-snapshot lane, when opened, starts from the
+    S3b tree (manifest-only cache path, generation 14).
+  NEXT: None until the owner selects the next lane.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -1195,6 +1223,8 @@ the survey story (S11) and the improvement-plan story remain in review for the o
 UPDATE 2026-09-26T13:27:19Z (fable_0): the survey story (Milestone 1) and the improvement-plan story are turned in by the
 owner; every fable_0 story under this epic is now in completed/. Resume point after a compaction: this epic's
 Decision Log and IMPLEMENTATION ENTRY; wait for the owner's lane selection.
+UPDATE 2026-09-26T15:03:58Z (fable_0): I-1 opened - tickets/stories/2026-09-26_structural_snapshot_story.md, board row
+ir_structural_snapshot routing to the patch-doc task; waiting on the owner's four rulings. Resume from the task's STATE line.
 
 IMPLEMENTATION ENTRY - after S11 and the owner's explicit go, in this order:
 - I-0 signature-determinism test plus one serializer (small, compiler-side, protects today's cache;

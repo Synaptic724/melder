@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 # Melder imports
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
@@ -150,15 +151,21 @@ class CircularDependencyStrategy(SpellValidationStrategy):
         dfs(root_id, [root_id])
 
         if cycle_path:
-            # Format as "A -> B -> C -> A"
-            pretty = " -> ".join(cycle_path + [cycle_path[0]])
+            # `cycle_path` already closes the loop ("A -> B -> A"): the node that
+            # closes it was appended before the recursion that found it. Name
+            # every member; an id appears only for a spell the book cannot name.
+            pool = spellbook._spell_id_pool
+            pretty = " -> ".join(
+                SpellInputUtils.describe_spell_id(spell_id, pool) for spell_id in cycle_path
+            )
             context.issues.append(
                 SpellValidationIssue(
                     severity="error",
                     code="CIRCULAR_DEPENDENCY",
                     message=(
-                        f"Circular dependency detected starting from spell "
-                        f"{context.spell.spell_name!r}: {pretty}."
+                        f"Spell {context.spell.spell_name!r} is part of a dependency cycle: "
+                        f"{pretty}. Melder cannot build any spell in the cycle; remove one of "
+                        "these constructor dependencies or give that parameter a default."
                     ),
                     details={"cycle": list(cycle_path)},
                 )

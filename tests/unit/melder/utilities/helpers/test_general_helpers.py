@@ -90,3 +90,14 @@ def test_spell_input_utils_normalize_spell_key_prefers_spellframe():
     fk, bk = SpellInputUtils.normalize_spell_key(spell=None, spellframe="MyFrame", binding_name=None)
     assert fk == "myframe"
     assert bk == "__default__"
+
+
+def test_spell_input_utils_describe_spell_id_prefers_names():
+    """describe_spell_id quotes a known spell's name and shortens unknown ids."""
+    from types import SimpleNamespace
+
+    spells = {"a" * 64: SimpleNamespace(spell_name="CodecPacket")}
+
+    assert SpellInputUtils.describe_spell_id("a" * 64, spells) == "'CodecPacket'"
+    assert SpellInputUtils.describe_spell_id("b" * 64, spells) == "spell id " + "b" * 12
+    assert SpellInputUtils.describe_spell_id(None, spells) == "an unknown spell"

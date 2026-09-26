@@ -87,14 +87,16 @@ Disposition values
 | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | artifacts/melder_override_design_20260926/ | design_proposal | review | retain_as_reference | Owner reviews design_v2.md with prototype_results.md (E1-E4) and answers Q1-Q5. | 2026-09-26T11:23:09Z | REQUIRED |
 | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | artifacts/melder_caller_input_regression_20260926/ | investigation_evidence | review | retain_as_reference | Dated-extract probes and results. | 2026-09-26T01:16:08Z | HELPFUL |
 | tickets/stories/2026-09-26_implement_override_site_plan_lowering_story.md | system_docs/patches/active/override_site_plan_2026_09_26/ | patch_docs | active | promote_to_documentation | S1 contracts written (architecture, SpellCompiler component, key-resolver code description); S2-S6 added per step. | 2026-09-26T11:30:45Z | REQUIRED |
-| tickets/tasks/2026-09-26_cleanup_shared_boards_and_mailbox_task.md | artifacts/shared_boards_cleanup_20260926/ | board_history_archive | active | retain_as_reference | Owner reviews the cleanup; archive of retired messages, alerts, roster marks and cleared-artifact rows. | 2026-09-26T13:42:06Z | HELPFUL |
 | tickets/tasks/2026-09-26_review_conjure_validation_error_reporting_task.md | artifacts/validation_error_reporting_20260926/ | investigation_evidence | active | retain_as_reference | Probes and rendered error text for the review. | 2026-09-26T14:47:51Z | REQUIRED |
+| tickets/tasks/2026-09-26_review_conjure_validation_error_reporting_task.md | system_docs/patches/active/validation_error_reporting_2026_09_26/ | patch_docs | active | promote_to_documentation | Architecture, validation-reporting component and renderer code-description patches; promote at closure. | 2026-09-26T15:16:01Z | REQUIRED |
+| tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | artifacts/gauntlet_runtime_speed_20260926/ | measurement_baseline | active | retain_as_reference | Owner-run 2026-09-26 baseline and VM environment filed; VM runs and the cost map follow. | 2026-09-26T15:43:39Z | REQUIRED |
 <!-- END USER-DEFINED: active_artifacts -->
 
 ## Recently Cleared Artifacts
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/completed/2026-09-26_cleanup_shared_boards_and_mailbox_task.md | artifacts/shared_boards_cleanup_20260926/ | retain_as_reference | Verbatim archive of the 2026-09-26 shared-board cleanup (messages, alerts, roster marks, cleared rows, turned-in rows). | 2026-09-26T15:01:13Z |
 | tickets/tasks/completed/2026-09-26_align_annotation_shape_guard_with_phase1_caller_inputs_task.md | system_docs/patches/completed/caller_supplied_container_params_2026_09_26/ | promote_to_documentation | Promoted to src_architecture/src_components earlier; two patch files archived at turn-in. | 2026-09-26T14:47:09Z |
 | tickets/tasks/completed/2026-09-26_align_annotation_shape_guard_with_phase1_caller_inputs_task.md | artifacts/annotation_shape_guard_20260926/ | retain_as_reference | Probes, before/after results, apply scripts, commit manifest, owner trace vs 0.2.54 wheel. | 2026-09-26T14:47:09Z |
 | tickets/tasks/completed/2026-09-26_keep_class_binding_annotations_with_type_checking_names_task.md | artifacts/class_binding_annotations_20260926/ | retain_as_reference | Probes and before/prototype results for the unfixed class-annotation defect. | 2026-09-26T14:47:09Z |

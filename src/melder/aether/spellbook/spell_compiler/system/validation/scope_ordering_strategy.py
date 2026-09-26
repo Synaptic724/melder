@@ -22,6 +22,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
@@ -119,12 +120,17 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
                 if node_rank >= dep_rank:
                     continue
 
+                holder = SpellInputUtils.describe_spell_id(node.spell_id, spell_lookup)
+                dependency = SpellInputUtils.describe_spell_id(dep_id, spell_lookup)
                 diagnostics.append(
                     SystemDiagnostic(
                         code="scope_ordering_violation",
                         message=(
-                            f"Spell '{node.spell_id}' ({node.existence.name}) depends on "
-                            f"'{dep_id}' ({dep_node.existence.name}), which is a narrower scope."
+                            f"Spell {holder} ({node.existence.name}) depends on {dependency} "
+                            f"({dep_node.existence.name}), which lives for a shorter scope, so "
+                            f"{holder} would keep a stale {dependency} after that scope ends. "
+                            f"Give {holder} the same or a shorter existence (or many), or give "
+                            f"{dependency} a longer one."
                         ),
                         severity=SystemDiagnosticSeverity.ERROR,
                         spell_id=node.spell_id,

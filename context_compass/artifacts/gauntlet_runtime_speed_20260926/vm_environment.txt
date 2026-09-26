@@ -1,0 +1,14 @@
+# Measurement environments available to melder_2, probed 2026-09-26 (UTC) by melder_2.
+# Device VM (device_bash on desktop-hcnutdq; Linux VM over the connected folder):
+python3: Python 3.10.12 (/usr/bin/python3); no 3.14 or 3.14t interpreter installed
+uv: /usr/local/bin/uv; pip3: /usr/local/bin/pip3
+nproc: 2
+memory: 3915 MB total
+network: https://pypi.org/simple/dishka/ -> HTTP 200
+# Cloud workspace (melder_2's own container):
+python3: Python 3.11.15; uv: /root/.local/bin/uv
+nproc: 2
+memory: 8032 MB total
+# Consequence: CPython 3.14t must be installed with uv before any run; DI_GAUNTLET_THREADS=3 is
+# oversubscribed on 2 vCPUs, so thread scaling and cross-thread refcount costs are not reproduced.
+# Owner machine (Windows, where the baselines ran): interpreter build, core count and affinity UNKNOWN.

@@ -1051,8 +1051,14 @@ def test_run_resolution_phases_for_target_spell_foundational_error_raises_valida
     the same validation contract as the conduit-wide path, after cleaning the
     scoped phase artifacts.
     """
+    from melder.aether.spellbook.spell_compiler.system.system_diagnostic import SystemDiagnostic
+
     spellbook = _StubSpellbook()
     cleanup_calls = []
+    reason = SystemDiagnostic("scope_ordering_violation", "Holder depends on Leaf.", spell_id="spell-1")
+    spellbook._spell_system_states = types.SimpleNamespace(
+        get_conduit_resolution_state=lambda conduit_id: types.SimpleNamespace(list_diagnostics=lambda: [reason]),
+    )
 
     monkeypatch.setattr(
         SpellbookCreationSystem,
@@ -1070,7 +1076,7 @@ def test_run_resolution_phases_for_target_spell_foundational_error_raises_valida
         staticmethod(lambda *, spellbook, spell_ids=None: cleanup_calls.append(set(spell_ids))),
     )
 
-    with pytest.raises(SpellbookValidationError):
+    with pytest.raises(SpellbookValidationError) as exc_info:
         SpellbookCreationSystem.run_resolution_phases_for_target_spell(
             spellbook=spellbook,
             conduit_id="cid",
@@ -1078,6 +1084,8 @@ def test_run_resolution_phases_for_target_spell_foundational_error_raises_valida
         )
 
     assert cleanup_calls == [{"spell-1"}]
+    # The phase artifacts are cleaned before the raise; the conduit diagnostics carry the reason.
+    assert "Holder depends on Leaf. [scope_ordering_violation]" in str(exc_info.value)
 
 
 def test_run_resolution_phases_for_target_spell_records_visibility_failures(

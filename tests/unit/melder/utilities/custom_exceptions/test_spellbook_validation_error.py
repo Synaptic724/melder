@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, Sequence, cast
 
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
@@ -17,367 +17,287 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
 
 
-def test_spellbook_validation_error_includes_spell_summary() -> None:
+def _spell(
+        name: str = "RootSpell",
+        spell_id: str = "spell-1",
+        frame: Any = "frame-1",
+        issues: Sequence[SpellValidationIssue] = (),
+        phase6_errors: Sequence[SystemDiagnostic] = (),
+) -> "Spell":
     """
     Purpose:
-        Ensure SpellbookValidationError summarizes broken spells.
+        Build a spell stand-in exposing the attributes the renderer reads.
     Contract:
-        The message includes spell name, id, and frame information.
+        Phase 4 issues sit on `validation_result_phase4.issues`; Phase 6 errors on
+        `validation_result_phase6.errors`.
     Returns:
-        None.
-    Raises:
-        AssertionError: If summary details are missing.
+        Spell: The stand-in, cast for typing.
     """
-    spell = SimpleNamespace(
-        spell_name="RootSpell",
-        spell_id="spell-1",
-        spellframe="frame-1",
+    return cast("Spell", SimpleNamespace(
+        spell_name=name,
+        spell_id=spell_id,
+        spellframe=frame,
+        validation_result_phase4=SimpleNamespace(issues=list(issues)),
+        validation_result_phase6=SimpleNamespace(errors=list(phase6_errors), warnings=[]),
+    ))
+
+
+def _issue(code: str, message: str, severity: str = "error") -> SpellValidationIssue:
+    """Build one Phase-4 issue with a source and details the renderer must not print."""
+    return SpellValidationIssue(
+        severity=severity, code=code, message=message, source="SomeStrategy", details={"param": "value"}
     )
 
-    error = SpellbookValidationError([cast("Spell", spell)])
-    message = str(error)
 
-    assert "Broken spells" in message
-    assert "RootSpell" in message
-    assert "id=spell-1" in message
-    assert "frame='frame-1'" in message
-    assert "Diagnostics" in message
+def _diag(code: str, message: str, spell_id: Any = None,
+          severity: SystemDiagnosticSeverity = SystemDiagnosticSeverity.ERROR) -> SystemDiagnostic:
+    """Build one system diagnostic with a source and details the renderer must not print."""
+    return SystemDiagnostic(code=code, message=message, severity=severity, spell_id=spell_id,
+                            source="DiagStrategy", details={"impact": "root"})
 
 
-def test_spellbook_validation_error_handles_empty_list() -> None:
+def test_message_example_lists_errors_by_spell_with_fix_and_code() -> None:
     """
     Purpose:
-        Verify empty spell lists use the fallback message.
+        Pin the full layout for one broken spell with an error, a warning and a frame.
     Contract:
-        The error message indicates no broken spells were supplied.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If the fallback message is missing.
+        First line names the spell; the block lists the error message then its code; the
+        warning is only counted.
     """
-    error = SpellbookValidationError([])
-    assert "no broken spells" in str(error)
+    spell = _spell(issues=[_issue("REQUIRED_HOLE", "Supply name.", "warning"),
+                           _issue("CIRCULAR_DEPENDENCY", "Spell 'RootSpell' is part of a cycle.")])
+
+    message = str(SpellbookValidationError([spell]))
+
+    assert message == "\n".join([
+        "Spellbook validation failed. Broken spells: RootSpell.",
+        "RootSpell (frame 'frame-1'):",
+        "  - Spell 'RootSpell' is part of a cycle. [CIRCULAR_DEPENDENCY]",
+        "1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.",
+    ])
 
 
-def test_spellbook_validation_error_includes_phase_diagnostics() -> None:
+def test_first_line_keeps_matcher_substrings_and_hides_ids() -> None:
     """
     Purpose:
-        Ensure diagnostics from Phase 4 and Phase 6 appear in the error message.
-    Contract:
-        The message includes issue codes, strategy sources, and system diagnostics.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If diagnostic content is missing.
+        Keep "Spellbook validation failed" and "Broken spells" for callers that match on them,
+        while dropping the spell id from the text.
     """
+    spell = _spell(spell_id="a" * 64, issues=[_issue("X", "Bad.")])
 
-    class _Phase4Result:
-        """
-        Purpose:
-            Provide a minimal Phase 4 result stub for diagnostics.
-        Contract:
-            Exposes issues list as expected by SpellbookValidationError.
-        """
+    message = str(SpellbookValidationError([spell]))
 
-        def __init__(self, issues):
-            """
-            Purpose:
-                Store issues for diagnostic formatting.
-            Contract:
-                Preserves the provided issues list.
-            Args:
-                issues: Collection of SpellValidationIssue instances.
-            Returns:
-                None.
-            """
-            self.issues = issues
-
-    class _Phase6State:
-        """
-        Purpose:
-            Provide a minimal Phase 6 state stub for diagnostics.
-        Contract:
-            Exposes errors and warnings lists.
-        """
-
-        def __init__(self, errors, warnings):
-            """
-            Purpose:
-                Store system diagnostics for formatting.
-            Contract:
-                Preserves provided error and warning lists.
-            Args:
-                errors: Collection of SystemDiagnostic errors.
-                warnings: Collection of SystemDiagnostic warnings.
-            Returns:
-                None.
-            """
-            self.errors = errors
-            self.warnings = warnings
-
-    class _SpellStub:
-        """
-        Purpose:
-            Provide a spell stub with validation artifacts attached.
-        Contract:
-            Exposes names, ids, and validation_result_phase4/phase6.
-        """
-
-        def __init__(self, phase4, phase6):
-            """
-            Purpose:
-                Initialize the spell stub with validation artifacts.
-            Contract:
-                Stores supplied Phase 4 and Phase 6 result objects.
-            Args:
-                phase4: Phase 4 validation result stub.
-                phase6: Phase 6 validation state stub.
-            Returns:
-                None.
-            """
-            self.spell_name = "RootSpell"
-            self.spell_id = "spell-1"
-            self.spellframe = "frame-1"
-            self.validation_result_phase4 = phase4
-            self.validation_result_phase6 = phase6
-
-    issue = SpellValidationIssue(
-        severity="error",
-        code="ISSUE_CODE",
-        message="Issue message.",
-        source="IssueStrategy",
-    )
-    diag = SystemDiagnostic(
-        code="DIAG_CODE",
-        message="Diag message.",
-        severity=SystemDiagnosticSeverity.ERROR,
-        spell_id="spell-1",
-        root_id="root-1",
-        source="DiagStrategy",
-    )
-
-    spell = _SpellStub(
-        phase4=_Phase4Result([issue]),
-        phase6=_Phase6State([diag], []),
-    )
-    error = SpellbookValidationError([cast("Spell", spell)])
-    message = str(error)
-
-    assert "Phase 4 issues" in message
-    assert "ISSUE_CODE" in message
-    assert "IssueStrategy" in message
-    assert "Phase 6 diagnostics" in message
-    assert "DIAG_CODE" in message
-    assert "DiagStrategy" in message
+    assert message.startswith("Spellbook validation failed. Broken spells: RootSpell.")
+    assert "a" * 12 not in message
 
 
-def test_spellbook_validation_error_accepts_live_phase4_result() -> None:
+def test_empty_input_uses_fallback_message() -> None:
+    """Purpose: no spells and no diagnostics keep the historical fallback text."""
+    assert str(SpellbookValidationError([])) == "SpellbookValidationError raised with no broken spells."
+
+
+def test_warnings_details_and_sources_are_never_printed() -> None:
     """
     Purpose:
-        Verify the exception renderer works against the live Phase 4 result
-        type rather than only stubbed objects.
+        Prove the body carries errors only.
     Contract:
-        A real SpellValidationResult with one issue renders the issue details
-        in the formatted exception message.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If the live Phase 4 result is not rendered correctly.
+        Warning messages, strategy sources and details payloads are absent; warnings are counted.
     """
-    issue = SpellValidationIssue(
-        severity="error",
-        code="LIVE_PHASE4",
-        message="Live phase4 issue.",
-        source="LiveStrategy",
-    )
-    phase4_result = SpellValidationResult(
-        spell_id="spell-1",
-        spell_name="RootSpell",
-        issues=[issue],
-    )
-    spell = SimpleNamespace(
-        spell_name="RootSpell",
-        spell_id="spell-1",
-        spellframe="frame-1",
-        validation_result_phase4=phase4_result,
-        validation_result_phase6=SimpleNamespace(errors=[], warnings=[]),
-    )
+    spell = _spell(issues=[_issue("W1", "first warning", "warning"),
+                           _issue("W2", "second warning", "warning"),
+                           _issue("E1", "The error.")])
 
-    error = SpellbookValidationError([cast("Spell", spell)])
-    message = str(error)
+    message = str(SpellbookValidationError([spell]))
 
-    assert "LIVE_PHASE4" in message
-    assert "LiveStrategy" in message
+    assert "first warning" not in message and "second warning" not in message
+    assert "SomeStrategy" not in message and "details" not in message and "'param'" not in message
+    assert "2 warnings not shown" in message
+    assert "  - The error. [E1]" in message
 
 
-def test_spellbook_validation_error_accepts_live_phase4_warning_view() -> None:
+def test_internal_codes_are_marked_once_with_report_footer() -> None:
     """
     Purpose:
-        Verify the exception renderer accepts a live Phase 4 result whose only
-        issue is a warning.
+        Render Melder bookkeeping codes as internal errors to report.
     Contract:
-        A real SpellValidationResult warning is rendered without needing a
-        separate stub shape.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If the warning content is missing.
+        The line carries "[internal]"; a repeated internal code appears once; one footer.
     """
-    issue = SpellValidationIssue(
-        severity="warning",
-        code="LIVE_PHASE4_WARNING",
-        message="Live phase4 warning.",
-        source="LiveWarningStrategy",
-    )
-    phase4_result = SpellValidationResult(
-        spell_id="spell-1",
-        spell_name="RootSpell",
-        issues=[issue],
-    )
-    spell = SimpleNamespace(
-        spell_name="RootSpell",
-        spell_id="spell-1",
-        spellframe="frame-1",
-        validation_result_phase4=phase4_result,
-        validation_result_phase6=SimpleNamespace(errors=[], warnings=[]),
-    )
+    spell = _spell(issues=[_issue("CLASS_PROFILE_MISSING", "Profile missing."),
+                           _issue("CLASS_PROFILE_MISSING", "Profile missing again.")])
 
-    message = str(SpellbookValidationError([cast("Spell", spell)]))
+    message = str(SpellbookValidationError([spell]))
 
-    assert "LIVE_PHASE4_WARNING" in message
-    assert "LiveWarningStrategy" in message
+    assert sum(line.startswith("  - [internal]") for line in message.splitlines()) == 1
+    assert "  - [internal] Profile missing. [CLASS_PROFILE_MISSING]" in message
+    assert message.endswith("Please report them with this message.")
 
 
-def test_spellbook_validation_error_lists_multiple_live_phase4_issues_in_order() -> None:
+def test_user_errors_carry_no_internal_footer() -> None:
+    """Purpose: the internal footer appears only when an internal code is shown."""
+    message = str(SpellbookValidationError([_spell(issues=[_issue("X", "Bad.")])]))
+
+    assert "[internal]" not in message and "Melder bugs" not in message
+
+
+def test_binding_cycle_hidden_when_circular_dependency_shown() -> None:
     """
     Purpose:
-        Ensure the renderer preserves the live Phase 4 issue ordering.
+        Report one cycle once per spell.
     Contract:
-        Multiple issues from a real SpellValidationResult are rendered in the
-        same order they appear in the canonical issues list.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If ordering changes.
+        BINDING_RESOLUTION_CYCLE is hidden when CIRCULAR_DEPENDENCY is present in the same
+        block, and shown when it is alone.
     """
-    first_issue = SpellValidationIssue(
-        severity="warning",
-        code="FIRST_WARNING",
-        message="First warning.",
-        source="WarnStrategy",
-    )
-    second_issue = SpellValidationIssue(
-        severity="error",
-        code="SECOND_ERROR",
-        message="Second error.",
-        source="ErrorStrategy",
-    )
-    phase4_result = SpellValidationResult(
-        spell_id="spell-1",
-        spell_name="RootSpell",
-        issues=[first_issue, second_issue],
-    )
-    spell = SimpleNamespace(
-        spell_name="RootSpell",
-        spell_id="spell-1",
-        spellframe="frame-1",
-        validation_result_phase4=phase4_result,
-        validation_result_phase6=SimpleNamespace(errors=[], warnings=[]),
-    )
+    both = _spell(issues=[_issue("CIRCULAR_DEPENDENCY", "Cycle A."), _issue("BINDING_RESOLUTION_CYCLE", "Cycle B.")])
+    alone = _spell(name="Other", spell_id="spell-2", issues=[_issue("BINDING_RESOLUTION_CYCLE", "Key cycle.")])
 
-    message = str(SpellbookValidationError([cast("Spell", spell)]))
+    message = str(SpellbookValidationError([both, alone]))
 
-    assert message.index("FIRST_WARNING") < message.index("SECOND_ERROR")
+    assert "Cycle B." not in message
+    assert "Cycle A. [CIRCULAR_DEPENDENCY]" in message
+    assert "Key cycle. [BINDING_RESOLUTION_CYCLE]" in message
 
 
-def test_spellbook_validation_error_message_example_without_diagnostics() -> None:
+def test_restating_codes_hidden_only_when_another_error_is_shown() -> None:
     """
     Purpose:
-        Provide a concrete example of the default validation error message.
-    Contract:
-        The formatted message matches the expected no-diagnostics layout.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If the message does not match the expected format.
+        Drop root_not_viable / broken_spell_in_dag when a real reason is shown, keep them otherwise.
     """
-    spell = SimpleNamespace(
-        spell_name="RootSpell",
-        spell_id="spell-1",
-        spellframe="frame-1",
-    )
+    with_reason = str(SpellbookValidationError(
+        [_spell(issues=[_issue("X", "Real reason.")])],
+        system_diagnostics=[_diag("root_not_viable", "Not viable.", "spell-1")],
+    ))
+    alone = str(SpellbookValidationError(
+        [_spell(issues=[])],
+        system_diagnostics=[_diag("root_not_viable", "Not viable.", "spell-1")],
+    ))
 
-    error = SpellbookValidationError([cast("Spell", spell)])
-    message = str(error)
-
-    expected = "\n".join(
-        [
-            "Spellbook validation failed; one or more spells are broken. Broken spells: "
-            "RootSpell (id=spell-1, frame='frame-1')",
-            "Diagnostics:",
-            "Phase 4 issues:",
-            "- Spell 'RootSpell' (id=spell-1, frame='frame-1'):",
-            "    (none recorded)",
-            "Phase 6 diagnostics:",
-            "  (none recorded)",
-        ]
-    )
-
-    assert message == expected
+    assert "Not viable." not in with_reason and "Real reason." in with_reason
+    assert "Not viable. [root_not_viable]" in alone
 
 
-def test_spellbook_validation_error_message_example_with_diagnostics() -> None:
+def test_identical_errors_are_listed_once() -> None:
+    """Purpose: an exact (code, message) repeat inside a block is dropped."""
+    spell = _spell(issues=[_issue("X", "Same."), _issue("X", "Same."), _issue("X", "Different.")])
+
+    message = str(SpellbookValidationError([spell]))
+
+    assert message.count("Same. [X]") == 1
+    assert "Different. [X]" in message
+
+
+def test_system_diagnostics_are_attributed_to_spells_or_the_whole_graph() -> None:
     """
     Purpose:
-        Provide a concrete example of the diagnostics-rich error message.
+        Show the conduit reasons the gates hand in.
     Contract:
-        The formatted message matches the expected diagnostic layout.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If the message does not match the expected format.
+        An ERROR naming a supplied spell id joins that spell's block; one naming no supplied
+        spell lands under "Whole-graph errors:"; WARNING diagnostics are ignored.
     """
-    issue = SpellValidationIssue(
-        severity="error",
-        code="ISSUE_CODE",
-        message="Issue message.",
-        details={"param": "value"},
-        source="IssueStrategy",
-    )
-    diag = SystemDiagnostic(
-        code="DIAG_CODE",
-        message="Diag message.",
-        severity=SystemDiagnosticSeverity.ERROR,
-        spell_id="spell-1",
-        root_id="root-1",
-        details={"impact": "root", "path": "root>dep"},
-        source="DiagStrategy",
-    )
+    spell = _spell(issues=[])
+    diagnostics = [
+        _diag("scope_ordering_violation", "Holder depends on Leaf.", "spell-1"),
+        _diag("cycle_detected", "Cycle detected among A, B."),
+        _diag("visibility_gap_dependency_filtered", "Needs spell id deadbeef0000.", "not-a-supplied-id"),
+        _diag("collection_socket_no_providers", "Just a warning.", "spell-1", SystemDiagnosticSeverity.WARNING),
+    ]
 
-    spell = SimpleNamespace(
-        spell_name="RootSpell",
-        spell_id="spell-1",
-        spellframe="frame-1",
-        validation_result_phase4=SimpleNamespace(issues=[issue]),
-        validation_result_phase6=SimpleNamespace(errors=[diag], warnings=[]),
-    )
+    message = str(SpellbookValidationError([spell], system_diagnostics=diagnostics))
 
-    error = SpellbookValidationError([cast("Spell", spell)])
-    message = str(error)
+    assert message.splitlines() == [
+        "Spellbook validation failed. Broken spells: RootSpell.",
+        "RootSpell (frame 'frame-1'):",
+        "  - Holder depends on Leaf. [scope_ordering_violation]",
+        "Whole-graph errors:",
+        "  - Cycle detected among A, B. [cycle_detected]",
+        "  - Needs spell id deadbeef0000. [visibility_gap_dependency_filtered]",
+    ]
 
-    expected = "\n".join(
-        [
-            "Spellbook validation failed; one or more spells are broken. Broken spells: "
-            "RootSpell (id=spell-1, frame='frame-1')",
-            "Diagnostics:",
-            "Phase 4 issues:",
-            "- Spell 'RootSpell' (id=spell-1, frame='frame-1'):",
-            "    - [error] ISSUE_CODE (source=IssueStrategy): Issue message.",
-            "      details: {'param': 'value'}",
-            "Phase 6 diagnostics:",
-            "  - [error] DIAG_CODE (source=DiagStrategy, spell_id=spell-1, root_id=root-1): Diag message.",
-            "    details: {'impact': 'root', 'path': 'root>dep'}",
-        ]
-    )
 
-    assert message == expected
+def test_spells_without_errors_are_not_listed_when_diagnostics_explain() -> None:
+    """
+    Purpose:
+        The conjure gate names every spell when an error carries no spell id; the message must
+        not list them all.
+    """
+    spells = [_spell(name=f"S{i}", spell_id=f"id-{i}") for i in range(5)]
+
+    message = str(SpellbookValidationError(spells, system_diagnostics=[_diag("cycle_detected", "Cycle.")]))
+
+    assert message.splitlines()[0] == "Spellbook validation failed. The dependency graph has errors."
+    assert "S0" not in message and "S4" not in message
+    assert "  - Cycle. [cycle_detected]" in message
+
+
+def test_meld_path_names_spell_with_no_recorded_error() -> None:
+    """
+    Purpose:
+        Meld raises for invalid/gated/disabled validity without handing diagnostics; say so plainly.
+    """
+    message = str(SpellbookValidationError([_spell(frame=None)]))
+
+    assert message.splitlines() == [
+        "Spellbook validation failed. Broken spells: RootSpell.",
+        "RootSpell:",
+        "  - No validation error was recorded for this spell; its validity is invalid, gated or disabled.",
+    ]
+
+
+def test_live_phase4_result_is_read() -> None:
+    """Purpose: the renderer reads a real SpellValidationResult, not only stand-ins."""
+    result = SpellValidationResult(spell_id="spell-1", spell_name="RootSpell",
+                                   issues=[_issue("LIVE", "Live error."), _issue("LW", "Live warning.", "warning")])
+    spell = cast("Spell", SimpleNamespace(spell_name="RootSpell", spell_id="spell-1", spellframe=None,
+                                          validation_result_phase4=result, validation_result_phase6=None))
+
+    message = str(SpellbookValidationError([spell]))
+
+    assert "  - Live error. [LIVE]" in message and "1 warning not shown" in message
+
+
+def test_errors_and_warnings_views_are_the_fallback_for_missing_issues() -> None:
+    """Purpose: a result exposing only `errors`/`warnings` is still rendered."""
+    spell = cast("Spell", SimpleNamespace(
+        spell_name="RootSpell", spell_id="spell-1", spellframe=None,
+        validation_result_phase4=SimpleNamespace(errors=[_issue("E", "Split error.")],
+                                                 warnings=[_issue("W", "Split warning.", "warning")]),
+    ))
+
+    message = str(SpellbookValidationError([spell]))
+
+    assert "  - Split error. [E]" in message and "1 warning not shown" in message
+
+
+def test_rendering_survives_unreadable_attributes() -> None:
+    """
+    Purpose:
+        A cleaned or partial spell must not raise a second error while the first is built.
+    """
+    class _Exploding:
+        """Stand-in whose every attribute read raises."""
+
+        def __getattr__(self, name: str) -> Any:
+            """Raise for any attribute, like a cleaned object."""
+            raise RuntimeError(f"cleaned: {name}")
+
+    message = str(SpellbookValidationError([cast("Spell", _Exploding())]))
+
+    assert message.startswith("Spellbook validation failed. Broken spells: <unknown spell>.")
+
+
+def test_class_frames_render_by_qualified_name() -> None:
+    """Purpose: a Protocol/class spellframe shows its qualified name, not a repr."""
+    class Plugin:
+        """Frame stand-in."""
+
+    message = str(SpellbookValidationError([_spell(frame=Plugin, issues=[_issue("X", "Bad.")])]))
+
+    assert "RootSpell (frame test_class_frames_render_by_qualified_name.<locals>.Plugin):" in message
+
+
+def test_broken_spells_attribute_is_kept_as_supplied() -> None:
+    """Purpose: tooling keeps the spell objects, including gate fallbacks with no own errors."""
+    spells = [_spell(), _spell(name="Other", spell_id="spell-2")]
+
+    error = SpellbookValidationError(spells, system_diagnostics=[_diag("cycle_detected", "Cycle.")])
+
+    assert error.broken_spells is spells

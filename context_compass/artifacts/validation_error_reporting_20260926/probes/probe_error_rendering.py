@@ -2,7 +2,8 @@
 
 Cases: owner (the CommandOps CodecPacket/ClassProfile shapes), ambiguous (a real Phase-3/4 error beside caller
 inputs), cycle (a two-spell cycle beside two unrelated spells), scope (a unique spell depending on a
-unique_per_spell_space spell, beside an unrelated spell). Prints the exception type and full text, or CONJURED.
+unique_per_spell_space spell, beside an unrelated spell), selfdep (a spell needing itself beside caller inputs),
+variadic_any (*args: Any / **kwargs: Any). Prints the exception type and full text, or CONJURED.
 """
 import sys
 from typing import Any
@@ -70,6 +71,16 @@ class Leaf:
         pass
 
 
+class Node:
+    def __init__(self, parent: "Node", name: str, size: int) -> None:
+        self.parent = parent
+
+
+class Flexible:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.args = args
+
+
 class Holder:
     def __init__(self, leaf: Leaf) -> None:
         self.leaf = leaf
@@ -91,6 +102,10 @@ def main(case: str) -> None:
         book.bind(spell=Leaf, existence=Existence.unique_per_spell_space, permissions="create")
         book.bind(spell=Holder, existence=Existence.unique, permissions="create")
         book.bind(spell=Unrelated1, existence=many, permissions="create")
+    elif case == "selfdep":
+        book.bind(spell=Node, existence=many, permissions="create")
+    elif case == "variadic_any":
+        book.bind(spell=Flexible, existence=many, permissions="create")
     else:
         raise SystemExit(f"unknown case {case}")
     try:

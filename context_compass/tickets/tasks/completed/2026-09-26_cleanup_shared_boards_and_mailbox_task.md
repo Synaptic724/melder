@@ -1,14 +1,19 @@
 # Task: Clean the shared boards and the mailbox of stale messages, alerts and roster rows
 
+- Completed: 2026-09-26T15:01:13Z
+- Summary: Owner-directed shared-board cleanup: 13 stale mailbox messages and alerts archived and removed, four
+  dormant roster rows marked stale, cleared-artifact history compacted (68 archived), and 13 dormant active rows
+  turned in on the owner's selection. Owner closed it ("yeah close it").
+
 ## Metadata
 - Task ID: TASK-2026-09-26-cleanup-shared-boards-and-mailbox
 - Story: none
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p2
 - Created: 2026-09-26T13:42:06Z
-- Updated: 2026-09-26T13:45:56Z
+- Updated: 2026-09-26T15:01:13Z
 
 ## Objective
 Under the owner's request ("cleanup attention board and cleanup all that jazz and mailbox shit of old messages"),
@@ -38,6 +43,9 @@ cleared-artifact history older than today, all archived verbatim first.
 - to_state: review
 - transition_reason: Hygiene pass complete and archived (2026-09-26T13:42:06Z); the stale active rows need the
   owner's turn-in selection before anything else changes.
+- from_state: review
+- to_state: done
+- transition_reason: Owner closed the cleanup ("yeah close it and lets move onto something else", 2026-09-26T15:01:13Z); board synced.
 
 ## Steps / Checklist
 - [x] C1: read the four boards; classify messages, alerts and roster rows by recipient activity (one-day rule).
@@ -70,10 +78,10 @@ cleared-artifact history older than today, all archived verbatim first.
 ## Applicable Anti-Patterns
 - [x] No status transition without evidence-backed transition reason.
 - [x] No deletion of another agent's record without a verbatim archive.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [x] Steps complete and checked off (C4 waits on the owner)
+- [x] Steps complete and checked off
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
@@ -81,8 +89,8 @@ cleared-artifact history older than today, all archived verbatim first.
 - [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [x] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -156,6 +164,7 @@ STATE 2026-09-26T13:42:06Z: REVIEW. Hygiene pass done and archived. Open: the ow
 stale review rows to turn in (C4); then close this task.
 STATE 2026-09-26T13:45:56Z: REVIEW. All 13 dormant rows turned in (owner selection); boards and artifact board synced; archive
 complete. Waiting on the owner's "close it".
+STATE 2026-09-26T15:01:13Z: DONE. Owner closed the cleanup; row, details and artifact row synced; anchor added.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

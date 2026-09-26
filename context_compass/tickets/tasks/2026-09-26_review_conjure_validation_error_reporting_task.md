@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-review-conjure-validation-error-reporting
 - Story: none (owner request after a CommandOps failure report)
-- Status: blocked
+- Status: in_progress
 - Owner: user
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-09-26T14:47:51Z
-- Updated: 2026-09-26T14:51:33Z
+- Updated: 2026-09-26T15:16:01Z
 
 ## Objective
 The owner pasted a CommandOps conjure failure (SpellbookValidationError for CodecPacket and ClassProfile) and is
@@ -40,6 +40,9 @@ errors), and how actionable it is - and bring the owner an evidence-based assess
 - from_state: in_progress
 - to_state: blocked
 - transition_reason: Assessment done; DECISION_REQUEST on the report shape open (2026-09-26T14:51:33Z).
+- from_state: blocked
+- to_state: in_progress
+- transition_reason: Owner approved all three steps (2026-09-26T15:09:06Z).
 
 ## Steps / Checklist
 - [x] Read SpellbookValidationError and every raise site in full.
@@ -76,7 +79,8 @@ errors), and how actionable it is - and bring the owner an evidence-based assess
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/validation_error_reporting_20260926/
-- DISPOSITION: retain_as_reference
+  - system_docs/patches/active/validation_error_reporting_2026_09_26/
+- DISPOSITION: retain_as_reference (artifacts); promote_to_documentation (patch docs)
 - CLEANUP_TRIGGER: ticket closure
 
 ## Context Management
@@ -157,6 +161,178 @@ errors), and how actionable it is - and bring the owner an evidence-based assess
   - context_compass/artifacts/validation_error_reporting_20260926/results/rendered_scope_cur.txt:1-8
   IMPACT: Implementation waits for the owner's choice; (6) needs its cause traced first.
   NEXT: Discuss with the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T14:59:34Z
+  TYPE: FACT
+  CLAIM: Owner asked what the "only list[T] is supported" notice is about. From source: Phase 1 makes a parameter
+    collection DI only when it is list[T] with T injectable (a non-builtin class, forward ref or string frame key,
+    never Any); Phase 3 then injects one instance per registered resolvable spell matching T, an empty list when
+    there are none ("all implementations"). dict, set, tuple and list-of-data parameters are PLAIN: Melder never
+    fills them; the caller supplies them like any str or int. Two notices remain in current source: (1) the
+    REQUIRED_HOLE warning appends "Melder injects collections only as list[T]; a dict parameter is always supplied
+    by the caller" to every set/frozenset/dict/tuple hole, whatever the element type (so dict[str, Any] gets it);
+    (2) LIST_ELEMENT_NOT_DI_TARGET warns on list[X] when X is a builtin class, Any or a non-class annotation
+    ("Collection DI only works for list[FrameType]"), so list[str] data parameters get it on top of their
+    REQUIRED_HOLE warning (ClassProfile.mro and .bases in the owner's paste). The error form the owner saw in
+    0.2.54 is already removed.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:1100-1320
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:518-555
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:110-128
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:180-203
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:120-200
+  IMPACT: Both notices fire mostly on plain data parameters where nobody expects injection; they are only useful
+    when the container or list holds a user class (dict[str, Plugin], list[Optional[Plugin]]).
+  NEXT: Put the options to the owner: drop both, narrow both to user-class element types, or add dict injection.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T15:02:59Z
+  TYPE: FACT
+  CLAIM: Catalog built for the owner (AST extraction of every issue/diagnostic construction): Phase 4 has 13
+    registered strategies emitting about 30 error codes and 10 warning codes; Phase 6 has 23 strategies emitting
+    about 35 codes, most of them internal consistency checks worded in index/blueprint/socket-ref terms. Cause of
+    the scope case's empty report (resolves the earlier UNKNOWN): _prepare_resolution_for_conjure cleans every
+    spell's phase artifacts, Phase 4 and Phase 6 results included, before conjure's gate runs; the gate reads the
+    reason from the conduit resolution state but passes only the spells to SpellbookValidationError, which then
+    finds nothing. So no Phase-6 reason ever reaches the conjure message, and a diagnostic without a spell id
+    (cycle_detected) makes the gate name every spell in the pool.
+  EVIDENCE:
+  - context_compass/artifacts/validation_error_reporting_20260926/results/issue_catalog.md:1-74
+  - context_compass/artifacts/validation_error_reporting_20260926/results/issue_catalog_raw.txt:1-320
+  - src/melder/aether/spellbook/spellbook_creation_system.py:243-257
+  - src/melder/aether/spellbook/spellbook_creation_system.py:437-497
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1475-1476
+  - src/melder/aether/spellbook/spell_compiler/validation/validation_system.py:179-191
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py:304-326
+  IMPACT: The fix for the empty report is to hand the gate's diagnostics to the exception; the wording review can
+    go code by code from the catalog.
+  NEXT: Walk the owner through the catalog by group.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T15:06:01Z
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Owner asked whether this confuses people and what to improve. Assessment given: yes for most of it; the
+    good messages (DUPLICATE_SPELL_NAME, UNRESOLVED_INPUT, SPELL_CONTRACT_NON_RESOLVABLE_PROVIDER,
+    collection_socket_no_providers, SPELLMAP_BINDING_NAME_NOT_NORMALIZED) share one shape - what is wrong, by
+    name, and how to fix it - and are the model. Proposed in three steps: (1) the lost-reason bug plus the report
+    shape (errors only, warning count line, no details repr, no phase words) - SpellbookValidationError and the
+    conjure gate; (2) names instead of ids, one fix sentence each, and duplicate reports removed (the two cycle
+    strategies, the two existing-creation strategies, broken_spell_in_dag, root_not_viable) - about 15 strategy
+    files; (3) internal bookkeeping checks reported as "internal error, please report" with the code kept.
+    Test blast radius looks small: tests match on the error text only in test_spellbook_validation_error.py; the
+    distinctive strategy phrases appear in no test file ("not visible" appears in 8, not yet checked).
+  EVIDENCE:
+  - context_compass/artifacts/validation_error_reporting_20260926/results/issue_catalog.md:1-74
+  - tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py:160-170
+  IMPACT: Scope choice is the owner's.
+  NEXT: Owner picks steps; then patch lane and implementation on a VM copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T15:09:06Z
+  TYPE: DECISION
+  CLAIM: Owner approved all three steps ("yeah ok go ahead and improve this please", answering "all three, or step 1
+    first"): (1) conjure's gate hands its diagnostics to SpellbookValidationError and the report shows errors only,
+    a warning count line, no details repr, no phase words, names instead of ids; (2) user-fixable messages carry
+    names and one fix sentence, duplicate reports are removed; (3) Melder bookkeeping codes render as an internal
+    error to report, code kept. Also narrow the two list-only notices discussed earlier (no LIST_ELEMENT_NOT_DI_TARGET
+    for builtin/Any elements; the container hint only when a type argument is a user class). Exception type and the
+    broken_spells attribute stay. Procedure: read every target in full, patch lane, VM copy with before/after
+    renders, suites, then anchored edits on the worktree (other agents' files untouched), docs, graph, release note.
+  EVIDENCE:
+  - context_compass/artifacts/validation_error_reporting_20260926/results/issue_catalog.md:1-74
+  IMPACT: Scope approved; patch framework applies (error semantics and reporting across validation components).
+  NEXT: Notify melder_0 about spellbook_creation_system.py, then read the targets in full.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T15:16:01Z
+  TYPE: PLAN
+  CLAIM: Patch lane validation_error_reporting_2026_09_26 authored and read in order (architecture ->
+    component_patch_validation_reporting -> code_description_patch_validation_error_rendering). Mapping, patch section ->
+    implementation -> validation: renderer -> SpellbookValidationError rewrite -> rewritten exception unit tests;
+    gates pass diagnostics -> SpellbookCreationSystem._enforce_conduit_resolution_valid and the local-rerun raise ->
+    component scope-ordering conjure test; strategy messages -> 7 Phase-4 and 5 Phase-6 strategies, CompilerPhase6's
+    two visibility guards, record_local_resolution_visibility_failure, SpellInputUtils.describe_spell_id -> strategy
+    unit tests; misfires -> ParameterPolicyStrategy Any, AnnotationShapeGuard list warning, RequiredHoles hint -> unit
+    tests. All on a VM copy (~/val_err) by one anchored apply script, before/after renders, then suites.
+  EVIDENCE:
+  - system_docs/patches/active/validation_error_reporting_2026_09_26/architecture_patch.md:1-54
+  - system_docs/patches/active/validation_error_reporting_2026_09_26/component_patch_validation_reporting.md:1-31
+  - system_docs/patches/active/validation_error_reporting_2026_09_26/code_description_patch_validation_error_rendering.md:1-21
+  IMPACT: Patch-framework entry gate satisfied.
+  NEXT: Write the apply script against a fresh VM copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T15:27:51Z
+  TYPE: MEASURE
+  CLAIM: Implemented on the VM copy ~/val_err (base twin ~/val_err_base, both synced from the worktree) by
+    scripts/apply_reporting.py plus new_files/spellbook_validation_error.py: 16 source files, every anchor matched.
+    Renders after vs before: cycle 6 lines with names and one fix sentence (was 16 lines of hex, path start doubled);
+    scope-ordering now states the reason and the fix (was "(none recorded)"); the owner's shapes still conjure.
+    Confirmed misfire on current source: a class with *args: Any, **kwargs: Any is refused (two
+    VARIADIC_DI_UNSUPPORTED errors); it conjures after the fix. Found, not in scope: a constructor taking its own type
+    fails in Phase 3 with PhaseExecutionError "DagNode cannot depend on itself" before SELF_DEPENDENCY can report it.
+    Tests on the copy: 10 expected failures, all pinning old wording or old behaviour (7 exception renderer tests,
+    guard list[Any] and component list[int] warnings, the container-hint unit test) plus one Phase-6 unit test whose
+    spell_lookup stub values are bare object() (production holds Spells); integration not run yet.
+  EVIDENCE:
+  - context_compass/artifacts/validation_error_reporting_20260926/results/render_cycle_after.txt:1-6
+  - context_compass/artifacts/validation_error_reporting_20260926/results/render_scope_after.txt:1-4
+  - context_compass/artifacts/validation_error_reporting_20260926/results/render_variadic_any_base.txt:1-11
+  - context_compass/artifacts/validation_error_reporting_20260926/results/render_selfdep_after.txt:1-2
+  - context_compass/artifacts/validation_error_reporting_20260926/scripts/apply_reporting.py:1-448
+  IMPACT: Source change validated by renders; tests must be rewritten to the new contract.
+  NEXT: Rewrite the 10 tests and add contract tests, then run unit, component and integration suites in chunks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T15:37:31Z
+  TYPE: MEASURE
+  CLAIM: Tests written (scripts/apply_reporting_tests.py): the exception's unit tests rewritten to the new contract
+    (17 tests: layout, matcher substrings, no warnings/details/sources, internal marking and footer, cycle and
+    restating rules, dedupe, diagnostics by spell and whole graph, meld path, live/split results, resilience,
+    frames, broken_spells kept); guard, required-holes, component list[int] and two stub-drift tests updated
+    (Phase-6 lookup stubs now model Spells; the local-rerun gate test now asserts the conduit reason reaches the
+    message; the meld test asserts the name instead of the id); new tests for the circular path, variadic Any,
+    scope and cycle names, describe_spell_id, and a new integration file (scope reason, cycle names with no
+    64-hex ids, variadic Any and plain data conjure). On unpatched source 32 of them fail. Suites on the patched
+    copy: unit 8197 passed with the same 47 failed + 388 errors as base (environment-only), component 2135 passed,
+    integration spellbook 581, conduit 268, aether 716, crystallizer 258, mutation_research 66, live_sim 1,
+    multithreading 42 - all green. Every source change sits on an error branch, so no meld or conjure hot path
+    changes (by construction; not measured).
+  EVIDENCE:
+  - context_compass/artifacts/validation_error_reporting_20260926/results/suite_results.txt:1-8
+  - context_compass/artifacts/validation_error_reporting_20260926/scripts/apply_reporting_tests.py:1-330
+  IMPACT: Ready to apply to the worktree after a fresh anchor check.
+  NEXT: Re-check the 16 source and 11 test targets are unchanged in the worktree, then apply both scripts there.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T15:39:15Z
+  TYPE: FACT
+  CLAIM: Consumed melder_0 M0-30 (NOTICE, no ACK): override melds use the fast meld door; conduit_meld.py and
+    spellspace_meld.py gain an override arm and meld.py's registry docstring changed - none of this lane's 28 target
+    files. Consumed melder_2 M2-2 (NOTICE, no ACK): new agent on stand-by, no lane, no production files. Fresh check
+    before the worktree apply: all 28 targets are byte-identical to the validated base copy and equal HEAD 9eb100389
+    in content; the new integration test file does not exist yet.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_build_site_plan_lowering_task.md:1-20
+  IMPACT: No overlap; the apply may proceed.
+  NEXT: Run apply_reporting.py and apply_reporting_tests.py against the repository root and hash-compare.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+- DATETIME: 2026-09-26T15:42:54Z
+  TYPE: MEASURE
+  CLAIM: Applied to the worktree: both scripts ran against the repository root with every anchor matching; the 28
+    target files and the new integration test are byte-identical to the validated copy (line endings preserved).
+    Source +573/-277 in 16 files, tests +407/-321 in 12 files plus the new 146-line integration file. A VM copy
+    re-synced from the worktree afterwards (other agents' current work included): unit + component 10332 passed
+    with the same environment-only failures and errors as base; integration spellbook 581, conduit 268, aether 716,
+    mutation_research 66, live_sim 1, multithreading 42, crystallizer 258 passed. Owner machine: Not run.
+  EVIDENCE:
+  - context_compass/artifacts/validation_error_reporting_20260926/results/suite_results.txt:1-8
+  - context_compass/artifacts/validation_error_reporting_20260926/results/source_diff.patch:1-1232
+  - context_compass/artifacts/validation_error_reporting_20260926/results/test_diff.patch:1-959
+  IMPACT: Code done; docs, graph and release note remain.
+  NEXT: Promote to src_components (SpellCompiler and Validation Pipeline) and src_architecture (Failure Modes).
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 

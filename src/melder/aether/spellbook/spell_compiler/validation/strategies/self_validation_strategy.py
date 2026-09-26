@@ -84,8 +84,9 @@ class SelfDependencyStrategy(SpellValidationStrategy):
                     severity="error",
                     code="SELF_DEPENDENCY",
                     message=(
-                        f"Spell {spell.spell_name!r} declares a dependency on itself "
-                        f"(spell_id={root_id}). This indicates a configuration bug."
+                        f"Spell {spell.spell_name!r} depends on itself: one of its constructor "
+                        "parameters resolves to this same spell. Remove that parameter or give "
+                        "it a default."
                     ),
                     details={"spell_id": root_id},
                 )

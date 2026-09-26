@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gc
+import importlib
 import inspect
 import os
 import threading
@@ -612,6 +613,41 @@ def _build_override_ops(lib: str, g: _OverrideGraphSpec) -> _OverrideOps:
     raise AssertionError(f"Unknown lib: {lib}")
 
 
+# Modules each builder imports, per library. `_preload_all_libraries` imports all of them before the
+# first case so every case runs with the same process heap: a collection walks every tracked object,
+# `import melder` alone adds ~57k, and a library timed before another was imported would otherwise be
+# measured against a smaller heap.
+_LIBRARY_MODULES: dict[str, tuple[str, ...]] = {
+    "dependency-injector": ("dependency_injector", "dependency_injector.providers"),
+    "lagom": ("lagom",),
+    "injector": ("injector",),
+    "dishka": ("dishka",),
+    "melder": (
+        "melder",
+        "melder.aether.aether",
+        "melder.aether.conduit.conduit",
+        "melder.aether.spellbook.existence.existence",
+        "melder.aether.spellbook.spellbook",
+    ),
+}
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _preload_all_libraries() -> None:
+    """
+    Import every supported library before the first case, whatever DI_LIBS selects, then collect once.
+
+    A library that is not installed is left to its builder's importorskip.
+    """
+    for module_names in _LIBRARY_MODULES.values():
+        for module_name in module_names:
+            try:
+                importlib.import_module(module_name)
+            except ImportError:
+                break
+    gc.collect()
+
+
 # ======================================================================================
 # Stress config + tests (benchmark-style loop)
 # ======================================================================================
@@ -625,8 +661,13 @@ class _OverrideStressConfig:
         DI_OVERRIDE_DURATION_S       default 15.0
         DI_OVERRIDE_VALIDATE_EVERY   default 200 (0 disables)
         DI_OVERRIDE_WARMUP_ITERS     default 50
-        DI_OVERRIDE_GC_EVERY         default 2000
-        DI_OVERRIDE_GC_MODE          periodic | disabled | none (default periodic)
+        DI_OVERRIDE_GC_EVERY         default 2000 (periodic mode only)
+        DI_OVERRIDE_GC_MODE          disabled | periodic | none (default disabled)
+            disabled: automatic GC is off for the timed window and each case collects once
+                      when it ends (its cleanup), so no collection is timed.
+            periodic: gc.collect() every DI_OVERRIDE_GC_EVERY steps inside the window.
+            none:     automatic GC stays on; no explicit collections.
+    Every supported library is imported before the first case (`_preload_all_libraries`).
         DI_OVERRIDE_RUN_PER_GRAPH    default 1
     """
     threads: int
@@ -644,7 +685,7 @@ class _OverrideStressConfig:
             validate_every=_env_int_nonneg("DI_OVERRIDE_VALIDATE_EVERY", 200),
             warmup_iters=_env_int_nonneg("DI_OVERRIDE_WARMUP_ITERS", 50),
             gc_every=_env_int_nonneg("DI_OVERRIDE_GC_EVERY", 2000),
-            gc_mode=_env_str("DI_OVERRIDE_GC_MODE", "periodic").lower(),
+            gc_mode=_env_str("DI_OVERRIDE_GC_MODE", "disabled").lower(),
         )
 
 
@@ -695,36 +736,28 @@ def test_overrides_all(lib: str, graph_name: str) -> None:
 
     def _run_worker(ix: int) -> None:
         try:
-            was_enabled = gc.isenabled()
-            if cfg.gc_mode == "disabled" and was_enabled:
-                gc.disable()
+            start_barrier.wait()
+            stop_at = stop_time_holder[0]
+            local_i = 0
+            local_stats = stats[ix]
 
-            try:
-                start_barrier.wait()
-                stop_at = stop_time_holder[0]
-                local_i = 0
-                local_stats = stats[ix]
+            while not stop_event.is_set() and time.perf_counter() < stop_at:
+                root = ops.get_root()
+                local_stats.steps += 1
+                local_i += 1
 
-                while not stop_event.is_set() and time.perf_counter() < stop_at:
-                    root = ops.get_root()
-                    local_stats.steps += 1
-                    local_i += 1
+                if cfg.validate_every > 0 and (local_i % cfg.validate_every) == 0:
+                    observed = g.override_accessor(root)
+                    for value in observed:
+                        if value is not ops.override_instance:
+                            raise AssertionError(
+                                f"{ops.name}:{g.name} override did not apply "
+                                f"({value!r} is not override instance)"
+                            )
 
-                    if cfg.validate_every > 0 and (local_i % cfg.validate_every) == 0:
-                        observed = g.override_accessor(root)
-                        for value in observed:
-                            if value is not ops.override_instance:
-                                raise AssertionError(
-                                    f"{ops.name}:{g.name} override did not apply "
-                                    f"({value!r} is not override instance)"
-                                )
-
-                    if cfg.gc_mode == "periodic" and cfg.gc_every > 0:
-                        if (local_i % cfg.gc_every) == 0:
-                            gc.collect()
-            finally:
-                if cfg.gc_mode == "disabled" and was_enabled:
-                    gc.enable()
+                if cfg.gc_mode == "periodic" and cfg.gc_every > 0:
+                    if (local_i % cfg.gc_every) == 0:
+                        gc.collect()
 
         except BaseException as e:
             stats[ix].errors += 1
@@ -738,14 +771,25 @@ def test_overrides_all(lib: str, graph_name: str) -> None:
         t.start()
 
     def _run_timed() -> None:
-        start_barrier.wait()
-        start_t = time.perf_counter()
-        stop_time_holder[0] = start_t + cfg.duration_s
+        # GC is switched once, by this thread, around the whole window (workers toggling the
+        # process-global flag raced with threads > 1). The case collects at its end, in cleanup.
+        gc_was_enabled = gc.isenabled()
+        if cfg.gc_mode == "disabled":
+            gc.disable()
+        try:
+            # The stop time is stored before the barrier releases the workers, which read it right
+            # after the barrier (storing it afterwards let a worker read 0.0 and run zero steps).
+            start_t = time.perf_counter()
+            stop_time_holder[0] = start_t + cfg.duration_s
+            start_barrier.wait()
 
-        for t in threads_list:
-            t.join()
+            for t in threads_list:
+                t.join()
 
-        elapsed_s = time.perf_counter() - start_t
+            elapsed_s = time.perf_counter() - start_t
+        finally:
+            if gc_was_enabled:
+                gc.enable()
         if errors:
             raise errors[0]
 

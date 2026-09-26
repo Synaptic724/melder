@@ -86,7 +86,9 @@ class Meld(Cleanable, ABC):
       hydration hot-swaps that slot in place (cold door -> hot door) on
       first execution. The override arm (2026-09-26) reads the same entry
       for an id-string meld with a non-empty dict payload and calls the
-      live `_overrides_executor` slot instead. Cardinality is bounded by
+      live `_overrides_executor` slot instead. Three readers apply one guard
+      ladder and must stay identical: `ConduitMeld.meld`, `SpellSpaceMeld.meld`
+      and `Conduit.meld` (automatic id melds). Cardinality is bounded by
       construction because entries are inserted only after a successful
       full-lane meld (no-override or override branch, never for a spell
       holding a mutation override), so the keyspace is the bound-spell

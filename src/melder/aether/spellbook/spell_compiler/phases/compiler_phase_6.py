@@ -37,6 +37,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy import (
     BrokenSpellInDagStrategy,
 )
@@ -214,9 +215,11 @@ class CompilerPhase6:
                         SystemDiagnostic(
                             code="visibility_gap_dependency_filtered",
                             message=(
-                                f"Spell '{spell_id}' parameter '{socket.param_name}' "
-                                f"depends on '{dependency_id}', but that dependency is "
-                                "not visible to this Spellbook."
+                                f"Spell {SpellInputUtils.describe_spell_id(spell_id, spell_lookup)} "
+                                f"parameter '{socket.param_name}' resolves to "
+                                f"{SpellInputUtils.describe_spell_id(dependency_id, spell_lookup)}, "
+                                "which is not visible to this Spellbook. Bind it in this "
+                                "Spellbook, or give this conduit access to it."
                             ),
                             severity=SystemDiagnosticSeverity.ERROR,
                             spell_id=spell_id,
@@ -270,9 +273,11 @@ class CompilerPhase6:
                     SystemDiagnostic(
                         code="visibility_gap_dependency_filtered",
                         message=(
-                            f"Root '{root_id}' references dependency "
-                            f"'{dependency_id}', but that dependency is not "
-                            "visible to this Spellbook."
+                            "The dependency graph of "
+                            f"{SpellInputUtils.describe_spell_id(root_id, spell_lookup)} includes "
+                            f"{SpellInputUtils.describe_spell_id(dependency_id, spell_lookup)}, "
+                            "which is not visible to this Spellbook. Bind it in this "
+                            "Spellbook, or give this conduit access to it."
                         ),
                         severity=SystemDiagnosticSeverity.ERROR,
                         spell_id=dependency_id,

@@ -10,7 +10,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T12:29:50Z
-- Updated: 2026-09-26T14:55:59Z
+- Updated: 2026-09-26T15:41:51Z
 
 ## Objective
 Overrides run through per-key-set plans compiled from the site graph: supplied dependencies and everything
@@ -920,6 +920,171 @@ the empty key set; the normal lane switches to it only when it meets the parity 
   NEXT: Read test_overrides_all.py in full, then record the edit plan.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T14:56:49Z
+  TYPE: PLAN
+  CLAIM: Benchmark edit (benchmarks/testing_other_di/test_overrides_all.py only, read in full 1-765): (1) a
+    module-scoped autouse fixture imports every supported library's modules (all five, whatever DI_LIBS selects) and
+    collects once before the first case, so every case sees the same heap; builders keep their importorskip.
+    (2) DI_OVERRIDE_GC_MODE defaults to "disabled"; GC is switched off by the main thread around the timed window
+    (today each worker toggles the process-global flag, which races with threads > 1) and every case still collects
+    once at its end in cleanup (all five cleanups already call gc.collect()); "periodic" and "none" stay available.
+    (3) Fix the start race behind the "duration=0.00s steps=0" rows: _run_timed stores the stop time before it
+    releases the start barrier (workers read it right after the barrier). Check first that no library leaves cyclic
+    garbage per resolve large enough to matter over a 15 s window with GC off.
+  EVIDENCE: benchmarks/testing_other_di/test_overrides_all.py:600-765
+  IMPACT: Owner's benchmark compares resolve cost with import order and collection cost removed.
+  NEXT: Measure cyclic garbage per resolve for all five libraries (GC off, then gc.collect() count).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T15:00:26Z
+  TYPE: MEASURE
+  CLAIM: Benchmark fix applied to the device (apply_bench_edits.py, byte-identical to the validated copy): all five
+    libraries preloaded before the first case, GC off for the timed window by default (main thread; each case
+    collects at its end in cleanup), stop time stored before the start barrier (the 0-step rows are gone). Before
+    switching GC off: no library leaves cyclic garbage per warm resolve; the first melder deep override meld leaves
+    6,135 objects once (plan compile), absorbed by warm-up. Fixed benchmark, 3.14t, 3 s, steps/s: solo DI 2,845,734,
+    lagom 2,123,947, dishka 1,834,288, melder 1,585,267, injector 860,601; shallow dishka 1,465,775, DI 1,370,718, melder
+    1,082,389, lagom 870,041; wide dishka 919,956, melder 853,233, DI 588,180; diamond dishka 1,152,279, melder
+    990,192, DI 948,929; deep melder 37,516, dishka 29,462, DI 10,304. GIL 2 s: solo DI 4,757,485, lagom 3,535,398,
+    dishka 3,223,621, melder 2,888,725; shallow dishka 2,072,746, melder 1,577,374, lagom 1,197,568, DI 1,168,148.
+    threads=2 (3.14t) runs clean. 25 passed.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_bench_edits.py:1-213
+  - benchmarks/testing_other_di/test_overrides_all.py:600-809
+  IMPACT: The owner's benchmark now measures resolve cost. Remaining gaps: solo (DI ~1.8x), shallow and diamond vs
+    dishka (~1.2-1.35x).
+  NEXT: Profile the solo public meld path (Conduit.meld wrapper, ConduitMeld fast arm, existing-creation door).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T15:02:43Z
+  TYPE: PLAN
+  CLAIM: Public meld trim (owner "yeah sure", 14:55:59Z). Solo per layer (solo_layers.py, 3.14t / GIL ns): existing
+    door 36/30, ConduitMeld.meld fast arm +111/+102, Conduit.meld wrapper +96/+57 (check_cleaned call, argument
+    juggling, four-keyword call). Prototype (solo_trim_prototype.py): V1 inline cleaned check + positional call
+    209 -> 171 ns (3.14t), V2 V1 plus the fast-door read inlined at the Conduit 209 -> 111 (GIL 208 -> 103); plain
+    shallow 343 -> 228. Change (V2): Conduit.meld, for an automatic conduit and an id meld with no spell/spellframe/
+    binding, reads `self._meld._fast_meld_doors` with the same guard ladder and both arms (plain; non-empty dict ->
+    live `_overrides_executor(...)[0]`), only guard reads inside the AttributeError try; a miss calls the door
+    positionally (`meld(spell_id)` / `meld(spell_id, spell_override=override)`); everything else keeps today's path,
+    cleaned check first. FILES: src/melder/aether/conduit/conduit.py (Conduit.meld), meld.py (registry docstring:
+    three readers keep identical guards), the fast-door component tests (direct ConduitMeld arm, cleaned conduit via
+    spell_id=, Conduit-arm guard trips through existing tests), patch doc component_patch_override_meld_fast_door.md.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/solo_layers.py:1-40
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/solo_trim_prototype.py:1-70
+  - src/melder/aether/conduit/conduit.py:4417-4520
+  IMPACT: About 100 ns off every warm automatic id meld, plain or override.
+  NEXT: Implement on the VM copy with the anchored script; run suites; measure.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T15:11:20Z
+  TYPE: MEASURE
+  CLAIM: Public meld trim applied to the device (apply_conduit_trim_edits.py; four files byte-identical to the
+    validated copy; patch doc updated). Tests: fast-door component file 36 (3 new: Conduit and door arms agree,
+    cleaned conduit via spell_id=, spell+spell_id ValueError); three unit facade tests replaced `_meld` with a bare
+    MagicMock and pinned the keyword forwarding - they now give the mock door an empty `_fast_meld_doors` and the
+    explicit-id test asserts the positional call. Suites 3.14t: unit spellbook 2151, component spellbook 764,
+    integration spellbook 578, component aether 1200+1xf, unit aether 4145, conduit 268, multithreading 42,
+    integration aether 716, experimentation 250, crystallizer 565/258 (+ known file_backed_morph x4), mutation_research
+    277/40/66, unit utilities 785, live_sim 1+1xf; GIL: unit spellbook 2151, component spellbook 764, integration
+    spellbook 578, component aether 1200, unit aether 4145, conduit 268, multithreading 42, experimentation 250.
+    Fixed benchmark 3.14t 3 s (steps/s, before -> after trim): melder solo 1,585,267 -> 1,691,852, shallow 1,082,389
+    -> 1,145,880, wide 853,233 -> 893,279, diamond 990,192 -> 1,093,955, deep 37,516 -> 38,316. Why the benchmark
+    moves less than the main-thread probe (solo 209 -> 111 ns): the benchmark resolves on a worker thread, and on
+    3.14t every reference a non-owner thread takes to a main-thread object is an atomic (biased reference counting).
+    Same call main vs worker thread (thread_origin_cost.py): 3.14t melder solo 188 vs 402 ns, shallow 434 vs 647;
+    dependency-injector solo 69 vs 139; GIL no difference (melder solo 184/180, shallow 402/413; DI shallow 606/600).
+    Trim from a worker thread: solo 556 -> 404, shallow 730 -> 670 ns. No Python-level immortal/deferred refcount
+    exists (sys has only _is_immortal; gc.freeze() does not change it).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_conduit_trim_edits.py:1-268
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/thread_origin_cost.py:1-38
+  - src/melder/aether/conduit/conduit.py:4520-4580
+  IMPACT: Remaining free-threaded gap is per-object shared refcounting on the meld path; the lever is touching fewer
+    shared objects per warm meld.
+  NEXT: Report to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T15:27:44Z
+  TYPE: UNKNOWN
+  CLAIM: Owner reports "overrides are not running on my side". The device tree itself, run from the Linux VM
+    (3.14t, 1 s per case), passes all 25 benchmark cases with errors=0 and the override graphs validated every 200
+    steps; the repo has no pytest warning filters. Cause on the owner's Windows run is UNKNOWN until the command and
+    output are seen. That run wrote src/melder/__melder_cache__/__conjure_cache__/di-overrides/di-overrides.melc at
+    15:26:36Z on the owner's disk (cache; regenerated on demand); ~500 other cache files changed around 15:25Z, which
+    looks like a test run on the owner's machine.
+  EVIDENCE: benchmarks/testing_other_di/test_overrides_all.py:600-809
+  IMPACT: Blocks the owner-machine comparison of the benchmark fix and meld trims.
+  NEXT: Get the owner's command, Python build and output (traceback or the override-perf lines).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T15:36:37Z
+  TYPE: MEASURE
+  CLAIM: Owner run of the fixed benchmark (owner machine, device tree with all trims, 15 s), steps/s: solo DI 2,876,398,
+    lagom 2,029,141, dishka 1,081,947, melder 727,846, injector 658,150; shallow DI 1,092,498, dishka 1,093,629, melder
+    898,585, lagom 673,238; wide dishka 714,728, melder 675,935, DI 376,543; diamond dishka 925,011, melder 836,214, DI
+    759,756; deep melder 29,509, dishka 22,519, DI 7,534. All errors=0 (the earlier "not running" is resolved).
+    Melder's "solo" is not an override: the benchmark binds the object as an existing creation and melds it plainly;
+    the door is `_spell.user_created_object` (a slot) and costs ~22 ns - the rest is the public meld lane plus, on
+    3.14t, atomic reference counts from the worker thread on ~10 main-thread-owned objects. Owner per-step melder
+    1.37 us vs DI 0.35 us (my VM 0.59 vs 0.29): the gap is larger on the owner machine, cause UNKNOWN until
+    thread_origin_cost.py runs there. The owner's `init=` idea: key-set plans already pass root values straight into
+    the root constructor and skip their dependencies (compiled once per key set); what an init route could remove is
+    only the per-call dispatch (tuple of keys + plan lookup, ~66-72 ns) and the override door's (instance, True) tuple
+    (~21-27 ns), and both can be removed from the override path itself without a new API.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:520-530
+  - src/melder/aether/spellbook/spell.py:424-424
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/override_entry_layers.py:1-67
+  IMPACT: Next levers: existing-object fast entry (return the object from the Conduit arm), instance-only override
+    door with the key-set dispatch folded in; owner decision on an `init=` API vs these.
+  NEXT: Answer the owner and ask which to build.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T15:39:43Z
+  TYPE: DECISION
+  CLAIM: Owner: "the solo shouldn't actually be existing object, it should be me making a single object and overriding
+    it ... lets go ahead and fix the existing object pathing then, and if override already works like that, then thats
+    fine we can leave it that way". melder_0 reads: build the existing-object fast path now; no `init=` API and no
+    override-path change for now. Solo's definition is open: override keys target constructor parameters only
+    (override_key_resolver.py), so a no-parameter root cannot be overridden in melder; options sent to the owner
+    (keep solo as fixed-object resolve, plain construction, or a new one-parameter "single" graph for all libraries).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py:142-334
+  - benchmarks/testing_other_di/test_overrides_all.py:266-340
+  IMPACT: Existing-object work proceeds; benchmark solo change waits for the owner's pick.
+  NEXT: Read how the fast-door entry is built and invalidated for existing creations, then plan the shortcut.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T15:41:51Z
+  TYPE: PLAN
+  CLAIM: Existing-object shortcut. Facts: `user_created_object` is assigned only in Spell.__init__ and deleted in
+    Spell.cleanup (which also deletes `_creation_context`, so a warm entry's guard read misses); the existing-creation
+    door only returns that slot (or raises when it is None). Change: in the plain arm of all three warm-lane readers
+    (Conduit.meld, ConduitMeld.meld, SpellSpaceMeld.meld), after the unchanged guards, read
+    `door_spell.user_created_object`; when it is not None return it (after the pending-cache-emit check) without the
+    door call; otherwise read the executor slot as today. Non-existing spells pay one read of a None slot (immortal,
+    no atomic refcount). Override arms unchanged (an existing object with a payload keeps today's refusal).
+    Prototype (existing_shortcut_prototype.py, solo): 3.14t main 163 -> 92 ns, worker 340 -> 227; GIL 147 -> 80.
+    FILES: src/melder/aether/conduit/conduit.py, meld/conduit_meld.py, meld/spellspace_meld.py, meld/meld.py (registry
+    docstring); tests/component/melder/aether/conduit/test_conduit_component_fast_meld_door.py (existing objects on
+    all three readers with a poisoned door slot, same override refusal on both lanes, spell-hook guard trip).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell.py:596-640
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:520-530
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/existing_shortcut_prototype.py:1-72
+  IMPACT: Solo (existing object) meld about 40% cheaper on both builds.
+  NEXT: Write apply_existing_shortcut_edits.py, run it on a fresh device copy, then the suites.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Discovery: reading the Phase-10/11 pipelines to fix the production lowering plan.

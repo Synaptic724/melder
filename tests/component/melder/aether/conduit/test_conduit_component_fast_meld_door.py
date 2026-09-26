@@ -1215,3 +1215,85 @@ def test_component_fast_door_override_lane_serves_spellspace_melds() -> None:
             assert not spy.normal_lane_entered
     finally:
         conduit.permanent_cleanup()
+
+
+def test_component_conduit_and_door_fast_arms_serve_the_same_results() -> None:
+    """
+    Purpose:
+        Verify the Conduit-level id lane and the meld door's fast arm agree.
+    Contract:
+        - Plain and dict-override melds through `conduit.meld(spell_id=...)`
+          (Conduit arm) and `conduit._meld.meld(spell_id, ...)` (door arm) are
+          both served without the normal-lane pool read.
+        - `unique` reuse returns the one stored instance on both; override
+          payloads apply on both.
+    """
+    spellbook = _make_spellbook()
+    unique_id = spellbook.bind(
+        spell=_SharedUniqueService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    override_id = spellbook.bind(
+        spell=_OverridableService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        stored = conduit.meld(spell_id=unique_id)
+        conduit.meld(spell_id=override_id)
+        spy = _install_lane_spy(conduit._meld)
+        assert conduit.meld(spell_id=unique_id) is stored
+        assert conduit._meld.meld(unique_id) is stored
+        assert conduit.meld(spell_id=override_id, override={"value": 8}).value == 8
+        assert conduit._meld.meld(override_id, spell_override={"value": 9}).value == 9
+        assert not spy.normal_lane_entered
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_conduit_id_meld_raises_canonical_error_after_cleanup() -> None:
+    """
+    Purpose:
+        Verify the cleaned-conduit guard on the keyword id call shape.
+    Contract:
+        - `meld(spell_id=...)`, plain or with an override, on a cleaned conduit
+          raises the canonical `check_cleaned` RuntimeError.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_OverridableService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    conduit.meld(spell_id=spell_id)
+    conduit.permanent_cleanup()
+    with pytest.raises(RuntimeError, match="cleaned"):
+        conduit.meld(spell_id=spell_id)
+    with pytest.raises(RuntimeError, match="cleaned"):
+        conduit.meld(spell_id=spell_id, override={"value": 1})
+
+
+def test_component_conduit_id_meld_rejects_spell_and_spell_id_together() -> None:
+    """
+    Purpose:
+        Verify the Conduit-level lane leaves the mutual-exclusion check intact.
+    Contract:
+        - Passing both `spell` and `spell_id` still raises ValueError, even with a
+          warm fast-door entry.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_OverridableService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        conduit.meld(spell_id=spell_id)
+        with pytest.raises(ValueError, match="not both"):
+            conduit.meld(_OverridableService, spell_id=spell_id)
+    finally:
+        conduit.permanent_cleanup()

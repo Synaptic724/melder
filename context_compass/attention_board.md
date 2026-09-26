@@ -74,9 +74,6 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T13:43:21Z)
-- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T14:16:42Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T14:52:33Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -85,20 +82,22 @@ Message alert rules
 <!-- BEGIN USER-DEFINED: active_items -->
 | override_design_melder | review | handoff | claude | melder_0 | none | Owner confirms closure of the design task (design v2 approved). | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T11:30:45Z | REQUIRED |
 | override_many_collection_fix | review | handoff | claude | melder_0 | none | Owner reviews the collection-member fix (member paths, cache 13). | Each collection member builds its own many dependencies. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_fix_collection_member_many_sharing_task.md | 2026-09-26T12:29:50Z | REQUIRED |
-| override_site_plan_lowering | in_progress | implementation | claude | melder_0 | none | Owner decides on the solo findings (harness warm import, gc.freeze option); then S2b normal-lane plan. | Key-set plans for overrides (S3, done in tree) with the normal lane parity-gated (S2). | S2 parity measured; normal lane switched only if it meets the gate. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T14:52:54Z | REQUIRED |
+| override_site_plan_lowering | in_progress | implementation | claude | melder_0 | none | Owner reviews the fixed benchmark and meld trims; next: fewer shared-object touches per warm meld (3.14t cross-thread cost), then S2b. | Key-set plans for overrides (S3, done in tree) with the normal lane parity-gated (S2). | S2 parity measured; normal lane switched only if it meets the gate. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T15:11:20Z | REQUIRED |
 | caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
-| shared_boards_cleanup | review | handoff | claude | fable_0 | none | Owner closes this task (13 dormant rows turned in; boards, mailbox and archive done). | Mailbox, alerts, roster, cleared history and active rows clean; verbatim archive kept. | Owner acceptance; closure sync. | tickets/tasks/2026-09-26_cleanup_shared_boards_and_mailbox_task.md | 2026-09-26T13:45:56Z | HELPFUL |
-| validation_error_reporting | blocked | handoff | claude | melder_1 | owner decision | Owner picks the report shape (DECISION_REQUEST in Notes). | Evidence-based assessment of conjure's broken-spell report with options. | Owner picks a direction or closes. | tickets/tasks/2026-09-26_review_conjure_validation_error_reporting_task.md | 2026-09-26T14:51:33Z | REQUIRED |
+| validation_error_reporting | in_progress | implementation | claude | melder_1 | none | Read targets in full, write the patch lane, implement on a VM copy. | Conjure's broken-spell report explains itself (names, reasons, fixes). | Owner accepts the new report. | tickets/tasks/2026-09-26_review_conjure_validation_error_reporting_task.md | 2026-09-26T15:09:06Z | REQUIRED |
+| ir_structural_snapshot | in_progress | discovery | claude | fable_0 | none | A1: re-read the S3b cache path and the phase-4 strategy reads; then write the three patch docs (A2-A4). | Three patch docs for the 1-4 per-spell snapshot (no refusal; normal regeneration); consumption mapping. | Owner reviews the patch docs; task 2 (C-C) opens. | tickets/tasks/2026-09-26_author_structural_snapshot_patch_docs_task.md | 2026-09-26T15:37:00Z | REQUIRED |
+| gauntlet_runtime_speed | ready | discovery | claude | melder_2 | owner decisions D1-D3 | Owner answers D1-D3; then build the 3.14t VM copy and reproduce the gauntlet. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked candidates. | Cost map and ranked candidates filed; owner picks; implementation tasks open. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T15:43:39Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| shared_boards_cleanup | done | fable_0 | tickets/tasks/completed/2026-09-26_cleanup_shared_boards_and_mailbox_task.md | Mailbox, alerts, roster and cleared history cleaned; 13 dormant rows turned in; verbatim archive kept. | 2026-09-26T15:01:13Z |
 | annotation_shape_guard | done | melder_1 | tickets/tasks/completed/2026-09-26_align_annotation_shape_guard_with_phase1_caller_inputs_task.md | Container params and typing.Any no longer break conjure; in HEAD a67cd3b49; patch lane archived; turned in. | 2026-09-26T14:47:09Z |
 | class_binding_annotations | done | melder_1 | tickets/tasks/completed/2026-09-26_keep_class_binding_annotations_with_type_checking_names_task.md | Turned in UNFIXED: class annotations with TYPE_CHECKING-only names still empty the binding profile; fix prototyped in artifacts. | 2026-09-26T14:47:09Z |
 | creation_context_race | done | melder_1 | tickets/tasks/completed/2026-09-26_investigate_concurrent_first_meld_creation_context_race_task.md | Concurrent first-meld race fixed (September freeze/drain design); 40/40; patch lane archived; owner accepted. | 2026-09-26T14:24:40Z |
-| dormant_rows_turn_in | done | fable_0 | tickets/tasks/2026-09-26_cleanup_shared_boards_and_mailbox_task.md | 13 dormant rows turned in by the owner (codex_1, workflows_0, updater_0, updater_1, muse, one unassigned epic); per-ticket record in artifacts/shared_boards_cleanup_20260926/. | 2026-09-26T13:45:56Z |
+| dormant_rows_turn_in | done | fable_0 | tickets/tasks/completed/2026-09-26_cleanup_shared_boards_and_mailbox_task.md | 13 dormant rows turned in by the owner (codex_1, workflows_0, updater_0, updater_1, muse, one unassigned epic); per-ticket record in artifacts/shared_boards_cleanup_20260926/. | 2026-09-26T13:45:56Z |
 | release_note_t1 | done | fable_0 | tickets/tasks/completed/2026-09-26_update_release_note_for_tranche_t1_task.md | Release note 0.2.56 with the four tranche-T1 sections; owner accepted. | 2026-09-26T13:38:26Z |
 | ir_phase_survey_story | done | fable_0 | tickets/stories/completed/2026-09-25_ir_phase_pipeline_survey_story.md | Milestone 1: drivers, phases 1-7 and the seam recorded (summary.md D1-D6); 8-11 deferred. | 2026-09-26T13:27:19Z |
 | ir_phase_improvement_plan_story | done | fable_0 | tickets/stories/completed/2026-09-26_phase_pipeline_improvement_plan_story.md | Cost model and 13 ranked candidates; T1 chosen and shipped. | 2026-09-26T13:27:19Z |
@@ -106,7 +105,6 @@ Message alert rules
 | ir_phase_survey_5_7 | done | fable_0 | tickets/tasks/completed/2026-09-26_survey_compiler_phases_5_to_7_task.md | phase_05-07.md, resolution_driver.md (D1, D2, D6). | 2026-09-26T13:27:19Z |
 | ir_phase_survey_1_4 | done | fable_0 | tickets/tasks/completed/2026-09-25_survey_compiler_phases_1_to_4_task.md | driver.md, phase_01-04.md, structural_driver.md with classified holds. | 2026-09-26T13:27:19Z |
 | ir_phase_improvement_plan | done | fable_0 | tickets/tasks/completed/2026-09-26_rank_phase_improvement_candidates_task.md | candidates.md: 13 candidates, ranking, T1 recommendation (owner chose T1). | 2026-09-26T13:27:19Z |
-| ir_phase_cost_model | done | fable_0 | tickets/tasks/completed/2026-09-26_model_phase_pipeline_costs_task.md | cost_model.md: counted plus measured per-stage rows. | 2026-09-26T13:27:19Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -126,10 +124,16 @@ Message alert rules
   system_docs/patches/active/override_site_plan_2026_09_26/.
 - caller_input_strictness: SWITCH_TRIGGER is the responsible commit plus before/after runs.
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md.
-- shared_boards_cleanup: SWITCH_TRIGGER is the owner's acceptance of the cleanup (13 dormant rows already turned in).
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_cleanup_shared_boards_and_mailbox_task.md.
-- validation_error_reporting: SWITCH_TRIGGER is the assessment plus an owner decision on the report's shape.
+- validation_error_reporting: SWITCH_TRIGGER is owner acceptance of the new report (all three steps approved).
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_review_conjure_validation_error_reporting_task.md.
+- ir_structural_snapshot: SWITCH_TRIGGER is owner review of the patch docs (task 2, C-C, opens); design settled
+  2026-09-26 (story Decision Log). RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
+  tickets/stories/2026-09-26_structural_snapshot_story.md ->
+  tickets/tasks/2026-09-26_author_structural_snapshot_patch_docs_task.md. Fact base:
+  artifacts/ir_phase_survey_20260925/summary.md (D1-D6) and artifacts/ir_phase_improvement_20260926/candidates.md (C-G).
+- gauntlet_runtime_speed: SWITCH_TRIGGER is the owner's D1-D3 answers (measurement starts), then the filed
+  cost map (owner picks candidates). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
+  tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md.
 ### Agent Message-Pass Protocol (melder_0 <-> melder_1; owner-set 2026-09-25)
 - Channel: `mailbox_board.md` `## Messages` plus one alert line under `## Message Alerts` here,
   per `agent_onboarding/default/general/skills/mailbox_protocol.md`. No harness-native messaging.

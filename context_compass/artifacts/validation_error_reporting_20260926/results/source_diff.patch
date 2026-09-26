@@ -1,0 +1,1232 @@
+diff --git a/src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py b/src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py
+index c8173b7a7..baa925eca 100644
+--- a/src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py
++++ b/src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py
+@@ -37,6 +37,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
+     SystemDiagnostic,
+     SystemDiagnosticSeverity,
+ )
++from melder.utilities.helpers.general_helpers import SpellInputUtils
+ from melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy import (
+     BrokenSpellInDagStrategy,
+ )
+@@ -214,9 +215,11 @@ class CompilerPhase6:
+                         SystemDiagnostic(
+                             code="visibility_gap_dependency_filtered",
+                             message=(
+-                                f"Spell '{spell_id}' parameter '{socket.param_name}' "
+-                                f"depends on '{dependency_id}', but that dependency is "
+-                                "not visible to this Spellbook."
++                                f"Spell {SpellInputUtils.describe_spell_id(spell_id, spell_lookup)} "
++                                f"parameter '{socket.param_name}' resolves to "
++                                f"{SpellInputUtils.describe_spell_id(dependency_id, spell_lookup)}, "
++                                "which is not visible to this Spellbook. Bind it in this "
++                                "Spellbook, or give this conduit access to it."
+                             ),
+                             severity=SystemDiagnosticSeverity.ERROR,
+                             spell_id=spell_id,
+@@ -270,9 +273,11 @@ class CompilerPhase6:
+                     SystemDiagnostic(
+                         code="visibility_gap_dependency_filtered",
+                         message=(
+-                            f"Root '{root_id}' references dependency "
+-                            f"'{dependency_id}', but that dependency is not "
+-                            "visible to this Spellbook."
++                            "The dependency graph of "
++                            f"{SpellInputUtils.describe_spell_id(root_id, spell_lookup)} includes "
++                            f"{SpellInputUtils.describe_spell_id(dependency_id, spell_lookup)}, "
++                            "which is not visible to this Spellbook. Bind it in this "
++                            "Spellbook, or give this conduit access to it."
+                         ),
+                         severity=SystemDiagnosticSeverity.ERROR,
+                         spell_id=dependency_id,
+diff --git a/src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py b/src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py
+index 2141ddd0a..326feffa0 100644
+--- a/src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py
+@@ -21,6 +21,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
+     SystemDiagnostic,
+     SystemDiagnosticSeverity,
+ )
++from melder.utilities.helpers.general_helpers import SpellInputUtils
+ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
+     SpellSystemValidationStrategy,
+ )
+@@ -85,12 +86,19 @@ class BrokenSpellInDagStrategy(SpellSystemValidationStrategy):
+             dag = blueprint.dag
+             for node_id in dag.nodes.keys():
+                 if node_id in broken_spell_ids:
++                    node_label = SpellInputUtils.describe_spell_id(node_id, spell_lookup)
++                    root_label = SpellInputUtils.describe_spell_id(root_id, spell_lookup)
++                    if node_id == root_id:
++                        message = f"Root spell {node_label} is broken (see its own errors)."
++                    else:
++                        message = (
++                            f"Spell {root_label} depends on {node_label}, which is broken, so "
++                            f"root {root_label} cannot be built either."
++                        )
+                     diagnostics.append(
+                         SystemDiagnostic(
+                             code="broken_spell_in_dag",
+-                            message=(
+-                                f"Broken spell '{node_id}' is reachable in root DAG '{root_id}'."
+-                            ),
++                            message=message,
+                             severity=SystemDiagnosticSeverity.ERROR,
+                             spell_id=node_id,
+                             root_id=root_id,
+diff --git a/src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py b/src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py
+index 0902a3140..288b6e6a8 100644
+--- a/src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py
+@@ -6,6 +6,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
+     SystemDiagnostic,
+     SystemDiagnosticSeverity,
+ )
++from melder.utilities.helpers.general_helpers import SpellInputUtils
+ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
+     SpellSystemValidationStrategy,
+ )
+@@ -69,7 +70,8 @@ class CycleDetectionStrategy(SpellSystemValidationStrategy):
+             phase4_results: Phase-4 results (unused by this strategy).
+             broken_spell_ids: Broken spell ids (unused by this strategy).
+             spell_system_states: SpellSystemStates registry (unused by this strategy).
+-            spell_lookup: Mapping of visible spell version ids (unused by this strategy).
++            spell_lookup: Mapping of visible spell version ids, used to name the spells
++                left in or behind a cycle.
+             diagnostics: Mutable list that receives diagnostics.
+             cancel_event: Optional cancellation signal.
+ 
+@@ -121,11 +123,21 @@ class CycleDetectionStrategy(SpellSystemValidationStrategy):
+                     queue.append(child)
+ 
+         if visited != len(indegree):
++            # Nodes Kahn's algorithm could not release sit in a cycle or behind one.
++            blocked_ids = sorted(node_id for node_id, degree in indegree.items() if degree > 0)
++            named = [SpellInputUtils.describe_spell_id(node_id, spell_lookup) for node_id in blocked_ids[:10]]
++            if len(blocked_ids) > 10:
++                named.append(f"and {len(blocked_ids) - 10} more")
+             diagnostics.append(
+                 SystemDiagnostic(
+                     code="cycle_detected",
+-                    message="Cycle detected in system dependency graph.",
++                    message=(
++                        "Cycle detected in the dependency graph. These spells are in a dependency "
++                        f"cycle or depend on one: {', '.join(named)}. Remove one constructor "
++                        "dependency in the cycle, or give that parameter a default."
++                    ),
+                     severity=SystemDiagnosticSeverity.ERROR,
++                    details={"blocked_spell_ids": blocked_ids},
+                 )
+             )
+ 
+diff --git a/src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py b/src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py
+index 5a68958b6..5cce52b15 100644
+--- a/src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py
+@@ -22,6 +22,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
+     SystemDiagnostic,
+     SystemDiagnosticSeverity,
+ )
++from melder.utilities.helpers.general_helpers import SpellInputUtils
+ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
+     SpellSystemValidationStrategy,
+ )
+@@ -177,9 +178,9 @@ class EmptyCollectionStrategy(SpellSystemValidationStrategy):
+                     SystemDiagnostic(
+                         code="collection_socket_no_providers",
+                         message=(
+-                            f"Spell '{spell_id}' parameter '{socket.param_name}' "
+-                            "declares a required collection dependency (list[...]) "
+-                            "but no providers wired into it in the resolved graph. "
++                            f"Spell {SpellInputUtils.describe_spell_id(spell_id, spell_lookup)} "
++                            f"parameter '{socket.param_name}' is a required list[...] "
++                            "dependency, but no provider is wired into it. "
+                             f"{remediation}"
+                         ),
+                         severity=severity,
+diff --git a/src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py b/src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
+index ed7ff8485..b97e25852 100644
+--- a/src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
+@@ -22,6 +22,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
+     SystemDiagnostic,
+     SystemDiagnosticSeverity,
+ )
++from melder.utilities.helpers.general_helpers import SpellInputUtils
+ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
+     SpellSystemValidationStrategy,
+ )
+@@ -119,12 +120,17 @@ class ScopeOrderingStrategy(SpellSystemValidationStrategy):
+                 if node_rank >= dep_rank:
+                     continue
+ 
++                holder = SpellInputUtils.describe_spell_id(node.spell_id, spell_lookup)
++                dependency = SpellInputUtils.describe_spell_id(dep_id, spell_lookup)
+                 diagnostics.append(
+                     SystemDiagnostic(
+                         code="scope_ordering_violation",
+                         message=(
+-                            f"Spell '{node.spell_id}' ({node.existence.name}) depends on "
+-                            f"'{dep_id}' ({dep_node.existence.name}), which is a narrower scope."
++                            f"Spell {holder} ({node.existence.name}) depends on {dependency} "
++                            f"({dep_node.existence.name}), which lives for a shorter scope, so "
++                            f"{holder} would keep a stale {dependency} after that scope ends. "
++                            f"Give {holder} the same or a shorter existence (or many), or give "
++                            f"{dependency} a longer one."
+                         ),
+                         severity=SystemDiagnosticSeverity.ERROR,
+                         spell_id=node.spell_id,
+diff --git a/src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py b/src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py
+index 306af9752..0c83a2c78 100644
+--- a/src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py
+@@ -21,6 +21,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
+     SystemDiagnostic,
+     SystemDiagnosticSeverity,
+ )
++from melder.utilities.helpers.general_helpers import SpellInputUtils
+ from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
+     SpellSystemValidationStrategy,
+ )
+@@ -95,8 +96,13 @@ class VisibilityGapStrategy(SpellSystemValidationStrategy):
+                 SystemDiagnostic(
+                     code="visibility_gap_dependency_filtered",
+                     message=(
+-                        f"Spell '{node.spell_id}' depends on missing spell ids "
+-                        f"{sorted(missing)}, which are not visible in the current spellbook."
++                        f"Spell {SpellInputUtils.describe_spell_id(node.spell_id, spell_lookup)} "
++                        "depends on spells this Spellbook cannot see ("
++                        + ", ".join(
++                            SpellInputUtils.describe_spell_id(dep_id, spell_lookup)
++                            for dep_id in sorted(missing)
++                        )
++                        + "). Bind them in this Spellbook, or give this conduit access to them."
+                     ),
+                     severity=SystemDiagnosticSeverity.ERROR,
+                     spell_id=node.spell_id,
+diff --git a/src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py b/src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
+index ebf70040b..194ab00ba 100644
+--- a/src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
+@@ -55,9 +55,10 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
+ 
+     AGENT_PURPOSE:
+         access: internal. Phase-4 strategy: warns about list[T] elements and forward references
+-        Melder cannot inject. Emits LIST_ELEMENT_NOT_DI_TARGET and UNRESOLVED_FORWARD_REF
+-        (warnings). Only list[FrameType] is collection DI; set/dict/tuple parameters are caller
+-        inputs, reported by RequiredHolesStrategy.
++        Melder cannot inject. Emits LIST_ELEMENT_NOT_DI_TARGET (only when a user class sits inside
++        the element, e.g. list[Optional[Plugin]]; plain data such as list[str] gets nothing) and
++        UNRESOLVED_FORWARD_REF (warnings). Only list[FrameType] is collection DI; set/dict/tuple
++        parameters are caller inputs, reported by RequiredHolesStrategy.
+     """
+ 
+     __slots__ = SpellValidationStrategy.__slots__
+@@ -141,15 +142,19 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
+                     )
+                     continue
+ 
+-                if not self._looks_like_di_target(element):
++                # Plain data lists (list[str], list[Any]) are ordinary caller
++                # inputs; warn only when a user class hides inside the element
++                # (list[Optional[Plugin]]), where injection may have been meant.
++                if not self._looks_like_di_target(element) and self._mentions_di_target(element):
+                     context.issues.append(
+                         SpellValidationIssue(
+                             severity="warning",
+                             code="LIST_ELEMENT_NOT_DI_TARGET",
+                             message=(
+-                                f"Parameter {param.name!r} on spell {spell.spell_name!r} "
+-                                f"uses list[{element!r}], which is not a DI frame/type. "
+-                                "Collection DI only works for list[FrameType]."
++                                f"Parameter {param.name!r} on spell {spell.spell_name!r} is "
++                                f"list[{element!r}]. Melder injects a list only when its element is "
++                                "one registered type (list[Plugin]), so this parameter is left for "
++                                "the caller to supply."
+                             ),
+                             details={
+                                 "parameter_name": param.name,
+@@ -175,6 +180,19 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
+                     )
+                 )
+ 
++    def _mentions_di_target(self, annotation: Any) -> bool:
++        """
++        Report whether a DI-eligible class or forward reference appears among the
++        annotation's type arguments (one level down), as in `Optional[Plugin]`.
++
++        Contract:
++            Only classes and forward references count; strings and literals do not.
++        """
++        return any(
++            (inspect.isclass(arg) or isinstance(arg, typing.ForwardRef)) and self._looks_like_di_target(arg)
++            for arg in get_args(annotation)
++        )
++
+     def _looks_like_di_target(self, annotation: Any) -> bool:
+         """
+         Best-effort check for whether an annotation looks like a DI target.
+diff --git a/src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py b/src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
+index 43305495f..912c9e719 100644
+--- a/src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
+@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
+ # Melder imports
+ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
+ from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
++from melder.utilities.helpers.general_helpers import SpellInputUtils
+ if TYPE_CHECKING:
+     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
+ 
+@@ -150,15 +151,21 @@ class CircularDependencyStrategy(SpellValidationStrategy):
+         dfs(root_id, [root_id])
+ 
+         if cycle_path:
+-            # Format as "A -> B -> C -> A"
+-            pretty = " -> ".join(cycle_path + [cycle_path[0]])
++            # `cycle_path` already closes the loop ("A -> B -> A"): the node that
++            # closes it was appended before the recursion that found it. Name
++            # every member; an id appears only for a spell the book cannot name.
++            pool = spellbook._spell_id_pool
++            pretty = " -> ".join(
++                SpellInputUtils.describe_spell_id(spell_id, pool) for spell_id in cycle_path
++            )
+             context.issues.append(
+                 SpellValidationIssue(
+                     severity="error",
+                     code="CIRCULAR_DEPENDENCY",
+                     message=(
+-                        f"Circular dependency detected starting from spell "
+-                        f"{context.spell.spell_name!r}: {pretty}."
++                        f"Spell {context.spell.spell_name!r} is part of a dependency cycle: "
++                        f"{pretty}. Melder cannot build any spell in the cycle; remove one of "
++                        "these constructor dependencies or give that parameter a default."
+                     ),
+                     details={"cycle": list(cycle_path)},
+                 )
+diff --git a/src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py b/src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
+index a32f5f75d..a9ba02653 100644
+--- a/src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
+@@ -154,9 +154,10 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
+                         severity="error",
+                         code="CONTRACT_IN_AUTOMATIC_MODE",
+                         message=(
+-                            f"Spell {spell.spell_name!r} declares a contract socket for "
+-                            f"parameter {param.name!r} while system_state is automatic. "
+-                            "Contracts require dynamic mode to resolve."
++                            f"Spell {spell.spell_name!r} parameter {param.name!r} has a "
++                            "SpellContract default, but this frame is automatic and contracts "
++                            "only resolve in a dynamic frame. Remove the SpellContract default, "
++                            "or build the frame dynamic (conjure(dynamic=True) before it settles)."
+                         ),
+                         details={
+                             "spell_id": current_spell_id,
+@@ -196,8 +197,10 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
+                             severity="error",
+                             code="SPELL_CONTRACT_AMBIGUOUS",
+                             message=(
+-                                f"Spell {spell.spell_name!r} parameter {param.name!r} "
+-                                f"matches multiple providers for contract key {contract_key}."
++                                f"Spell {spell.spell_name!r} parameter {param.name!r}: "
++                                f"{len(providers)} providers match contract {contract_key}, so "
++                                "Melder cannot choose one. Keep a single provider for this "
++                                "contract, for example by severing one of the links that supply it."
+                             ),
+                             details={
+                                 "parameter_name": param.name,
+@@ -230,8 +233,9 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
+                             code="SPELL_CONTRACT_NON_RESOLVABLE_PROVIDER",
+                             message=(
+                                 f"Spell {spell.spell_name!r} parameter {param.name!r} selects "
+-                                f"non-resolvable provider {providers[0][0]!r}. A SpellContract needs "
+-                                "a resolvable provider; select one or use a required supplied input."
++                                f"provider {contract_key}, which is registered with "
++                                "resolvable=False. A SpellContract needs a resolvable provider: "
++                                "register one, or make this parameter a caller-supplied input."
+                             ),
+                             details={
+                                 "parameter_name": param.name,
+diff --git a/src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py b/src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py
+index 055565676..47cc5e7b7 100644
+--- a/src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py
+@@ -106,8 +106,9 @@ class DanglingDependenciesStrategy(SpellValidationStrategy):
+                         severity="error",
+                         code="DANGLING_DEPENDENCY",
+                         message=(
+-                            f"Spell {spell.spell_name!r} depends on spell_id={dep_id!r}, "
+-                            "but no such spell is visible in the owning Spellbook."
++                            f"Spell {spell.spell_name!r} depends on spell id {dep_id[:12]}, "
++                            "which this Spellbook does not hold. Bind that dependency in "
++                            "this Spellbook, or remove the parameter that needs it."
+                         ),
+                         details={"missing_spell_id": dep_id},
+                     )
+diff --git a/src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py b/src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py
+index e15142faa..b4b1a23d7 100644
+--- a/src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py
+@@ -110,8 +110,11 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
+                             severity="error",
+                             code="VARIADIC_DI_UNSUPPORTED",
+                             message=(
+-                                f"Parameter {param.name!r} on spell {spell.spell_name!r} "
+-                                "is variadic but annotated for DI. Variadic DI is not supported."
++                                f"Parameter {param.name!r} on spell {spell.spell_name!r} is "
++                                "variadic (*args/**kwargs) and annotated with an injectable type, "
++                                "but Melder never injects variadic parameters. Use a list[...] "
++                                "parameter to receive every registered implementation, or drop "
++                                "the annotation."
+                             ),
+                             details={"parameter_name": param.name},
+                         )
+@@ -182,7 +185,15 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
+     def _looks_like_di_target(self, annotation: Any) -> bool:
+         """
+         Best-effort check for DI-eligible annotations.
++
++        Contract:
++            False for `typing.Any` (a class since Python 3.11), matching Phase 1's
++            `SpellRequirementsFinder._looks_like_di_target`, so `*args: Any` and
++            `**kwargs: Any` are not reported as variadic DI (2026-09-26).
+         """
++        if annotation is typing.Any:
++            return False
++
+         if isinstance(annotation, typing.ForwardRef):
+             return True
+ 
+diff --git a/src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py b/src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
+index 0d96f3a99..193f2fd26 100644
+--- a/src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
+@@ -1,4 +1,5 @@
+-from typing import TYPE_CHECKING, Any, get_origin
++import inspect
++from typing import TYPE_CHECKING, Any, get_args, get_origin
+ 
+ 
+ 
+@@ -185,7 +186,9 @@ class RequiredHolesStrategy(SpellValidationStrategy):
+         Contract:
+             - Returns a leading-space sentence when the annotation's origin is set,
+               frozenset, dict or tuple (bare generics such as `dict[str, X]` and
+-              their typing aliases); otherwise an empty string.
++              their typing aliases) AND one of its type arguments is a user class,
++              where someone may have expected injection; plain data such as
++              `dict[str, Any]` gets no hint (2026-09-26). Otherwise an empty string.
+             - Pure; reads only the annotation object.
+ 
+         Args:
+@@ -197,6 +200,11 @@ class RequiredHolesStrategy(SpellValidationStrategy):
+         origin = get_origin(annotation)
+         if origin not in (set, frozenset, dict, tuple):
+             return ""
++        if not any(
++            inspect.isclass(arg) and arg.__module__ != "builtins" and arg is not Any
++            for arg in get_args(annotation)
++        ):
++            return ""
+         return (
+             " Melder injects collections only as list[T]; "
+             f"a {origin.__name__} parameter is always supplied by the caller."
+diff --git a/src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py b/src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py
+index d410afe90..388220f71 100644
+--- a/src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py
++++ b/src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py
+@@ -84,8 +84,9 @@ class SelfDependencyStrategy(SpellValidationStrategy):
+                     severity="error",
+                     code="SELF_DEPENDENCY",
+                     message=(
+-                        f"Spell {spell.spell_name!r} declares a dependency on itself "
+-                        f"(spell_id={root_id}). This indicates a configuration bug."
++                        f"Spell {spell.spell_name!r} depends on itself: one of its constructor "
++                        "parameters resolves to this same spell. Remove that parameter or give "
++                        "it a default."
+                     ),
+                     details={"spell_id": root_id},
+                 )
+diff --git a/src/melder/aether/spellbook/spellbook_creation_system.py b/src/melder/aether/spellbook/spellbook_creation_system.py
+index 99c58e75a..d9d1acdc2 100644
+--- a/src/melder/aether/spellbook/spellbook_creation_system.py
++++ b/src/melder/aether/spellbook/spellbook_creation_system.py
+@@ -454,6 +454,9 @@ class SpellbookCreationSystem(Cleanable):
+             - Raises `SpellbookValidationError` naming the spells the ERROR
+               diagnostics attribute the failure to; graph-level errors that
+               carry no spell_id fall back to every scoped spell.
++            - Hands the conduit diagnostics to the error, which states their
++              reasons; the phase artifacts that used to carry them are already
++              cleaned when this gate runs (2026-09-26).
+         Args:
+             spellbook: Owning Spellbook instance.
+             conduit_id: Conduit id whose resolution verdict is enforced.
+@@ -494,7 +497,10 @@ class SpellbookCreationSystem(Cleanable):
+             for spell_id in dict.fromkeys(offender_ids)
+             if spell_id in spell_id_pool
+         ]
+-        raise SpellbookValidationError(offending)
++        raise SpellbookValidationError(
++            offending,
++            system_diagnostics=resolution_state.list_diagnostics(),
++        )
+ 
+     @staticmethod
+     def _build_conjure_cache_state(
+@@ -1532,8 +1538,15 @@ class SpellbookCreationSystem(Cleanable):
+             # callers marked the spell resolution-complete with no phase-11
+             # creation built, and meld then failed deep in the context
+             # builder with an opaque RuntimeError instead of the validation
+-            # contract callers rely on.
+-            raise SpellbookValidationError([target_spell])
++            # contract callers rely on. The conduit diagnostics carry the
++            # reasons (the phase artifacts were just cleaned), so hand them over.
++            resolution_state = spellbook._spell_system_states.get_conduit_resolution_state(conduit_id)
++            raise SpellbookValidationError(
++                [target_spell],
++                system_diagnostics=(
++                    resolution_state.list_diagnostics() if resolution_state is not None else None
++                ),
++            )
+ 
+         scoped_spell_ids, scoped_root_ids = SpellbookCreationSystem._collect_target_resolution_scope(
+             target_spell=target_spell,
+@@ -2298,9 +2311,9 @@ class SpellbookCreationSystem(Cleanable):
+                 SystemDiagnostic(
+                     code="visibility_gap_dependency_filtered",
+                     message=(
+-                        f"Local resolution referenced dependency "
+-                        f"'{missing_dependency_id}', but it is not visible "
+-                        "to this Spellbook."
++                        f"Resolving this spell needs spell id {missing_dependency_id[:12]}, "
++                        "which is not visible to this Spellbook. Bind it in this "
++                        "Spellbook, or give this conduit access to it."
+                     ),
+                     severity=SystemDiagnosticSeverity.ERROR,
+                     spell_id=missing_dependency_id,
+diff --git a/src/melder/utilities/custom_exceptions/spellbook_validation_error.py b/src/melder/utilities/custom_exceptions/spellbook_validation_error.py
+index 91853a60b..1acab6717 100644
+--- a/src/melder/utilities/custom_exceptions/spellbook_validation_error.py
++++ b/src/melder/utilities/custom_exceptions/spellbook_validation_error.py
+@@ -1,54 +1,64 @@
+-from typing import TYPE_CHECKING, Any, Optional
++from typing import TYPE_CHECKING, Any, ClassVar, Dict, FrozenSet, List, Optional, Sequence, Tuple
+ 
+ 
+ 
+ if TYPE_CHECKING:
+     from melder.aether.spellbook.spell import Spell
++    from melder.aether.spellbook.spell_compiler.system.system_diagnostic import SystemDiagnostic
+ 
+ class SpellbookValidationError(RuntimeError):
+     """
+-    Raised when the Spellbook resolution pipeline (requirements -> symbolic
+-    graph -> local frame -> validation) detects one or more broken spells.
++    Raised when the Spellbook pipeline finds spells it cannot build.
+ 
+-    This is thrown from `_run_resolution_phases` after all phases have executed
+-    and per-spell validation has run, but **before** any Conduit is constructed.
+-
+-    The error message includes a compact summary of all broken spells; callers
+-    may also inspect individual `Spell.validation_result` artifacts via the
+-    Spell's crafter for richer diagnostics.
+-
+-    This exception now expands its message with Phase 4 and Phase 6 diagnostics
+-    (including strategy attribution) when those artifacts are available on the
+-    broken spells.
++    Conjure raises it after the structural phases (1-4) when a spell failed
++    validation, and after the resolution phases when the conduit verdict holds
++    an error; meld raises it when a spell's validity is invalid, gated or
++    disabled after a lazy re-validation. No Conduit is constructed first.
+ 
+     Purpose:
+-        Surface spellbook-level validation failures in a readable error while
+-        preserving per-spell context for remediation.
++        Tell a user which spells failed, why, and how to fix it, in plain words
++        and by name, while keeping the spell objects for tooling.
+ 
+     Raised When:
+         - `conjure(...)` completes phases 1-4 and one or more spells are broken.
+           This is the common case: the pipeline ran, validation rejected the
+           graph, and no Conduit is produced.
++        - `conjure(...)` resolves the conduit and the verdict carries an error
++          (for example a scope-ordering violation or a dependency cycle).
+         - `meld(...)` finds a spell whose validity is invalid, gated, or
+           disabled, including after a lazy re-validation attempt under the
+           per-spell lock.
+ 
+     What To Do About It:
+-        The message names the broken spells and, when the artifacts survive,
+-        the Phase 4 and Phase 6 diagnostics with strategy attribution - so it
+-        usually tells you the actual rule you violated. Common causes are a
+-        circular dependency, a single-annotation parameter resolving to zero or
+-        several candidates, a `SpellMap` default that is ambiguous, or a
+-        `SpellContract` socket with no provider in automatic mode. Fix the
++        Read the lines under each spell: every error names the parameter or the
++        dependency at fault and says what to change. Errors marked `[internal]`
++        come from Melder's own consistency checks and are Melder bugs; report
++        them with the message. Warnings never block conjure and are only
++        counted here; `conjure(validation_warnings=True)` logs them. Fix the
+         binding, not the validator.
+ 
++    Message shape (2026-09-26):
++        - First line: "Spellbook validation failed. Broken spells: A, B." (the
++          two substrings of earlier releases are kept for matchers).
++        - One block per spell with errors, "Name (frame 'x'):", each error as
++          "  - <message> [CODE]"; errors that belong to no spell under
++          "Whole-graph errors:".
++        - Exact duplicates are dropped; BINDING_RESOLUTION_CYCLE is hidden when
++          CIRCULAR_DEPENDENCY is shown for the same spell; root_not_viable and
++          broken_spell_in_dag are hidden when any other error is shown.
++        - Footers count the hidden warnings and explain `[internal]`.
++
+     Contract:
+-        - Always includes a broken-spell summary when spells are supplied.
+-        - Includes Phase 4 issues and Phase 6 diagnostics when available.
+-        - Preserves the primary failure line for backward compatibility.
++        - Always names the broken spells when spells are supplied.
++        - Shows every recorded error reason: Phase 4 issues and Phase 6 errors
++          on the spells, plus the conduit diagnostics handed in through
++          `system_diagnostics`.
++        - Never lists warnings, strategy sources or details payloads.
+         - Remains resilient when spell artifacts are partially unavailable or
+           cleaned while the error is being rendered. Rendering a diagnostic must
+           never raise a second error on top of the first.
++        - The message is built once, at construction; the diagnostics handed in
++          are read then and not retained.
+ 
+     Registration:
+         Exported on the public root surface; import, raise, and catch freely.
+@@ -61,227 +71,378 @@ class SpellbookValidationError(RuntimeError):
+         graph they produced is not resolvable.
+ 
+     System Context:
+-        The main build-time error of the DGR. It fires after phases 1-4 and
+-        before any Conduit is constructed, so nothing has been registered into
+-        Aether and there is no partial world to clean up. Its runtime
+-        counterpart is `MeldExecutionError`; between them they split "your graph
+-        cannot be built" from "your resolution failed while running".
++        The main build-time error of the DGR. It fires before any Conduit is
++        constructed, so nothing has been registered into Aether and there is no
++        partial world to clean up. Its runtime counterpart is
++        `MeldExecutionError`; between them they split "your graph cannot be
++        built" from "your resolution failed while running".
+ 
+     AGENT_ACCESS: public
+ 
+     AGENT_PURPOSE:
+         access: public. The build-time 'your graph is broken' error from conjure/meld; the
+-        message carries Phase 4/6 diagnostics with strategy attribution. Fix the binding, not
+-        the validator.
++        message lists each broken spell's errors by name with a fix, plus whole-graph errors.
++        Fix the binding, not the validator.
+     """
+ 
+-
+-    def __init__(self, broken_spells: list[Spell]) -> None:
++    # Codes whose checks guard Melder's own bookkeeping (index, blueprint, socket
++    # references, bind metadata, Phase 1's own decision). A user cannot cause or
++    # fix them through bindings, so they render as internal errors to report.
++    INTERNAL_CODES: ClassVar[FrozenSet[str]] = frozenset({
++        "CALLABLE_PROFILE_MISSING",
++        "CLASS_PROFILE_MISSING",
++        "DI_BUILTIN_ANNOTATION",
++        "DI_COLLECTION_MISSING_ELEMENT",
++        "DI_COLLECTION_NON_FRAME",
++        "DI_MISSING_ANNOTATION",
++        "EXISTING_CREATION_PROFILE_MISMATCH",
++        "MISSING_BINDING_PROFILE",
++        "MISSING_RESOLUTION_FRAME",
++        "NON_CALLABLE_SPELL_TARGET",
++        "NON_CLASS_SPELL_TARGET",
++        "SPELLMAP_DEFAULT_MISSING",
++        "SPELL_CONTRACT_INVALID",
++        "contract_key_missing",
++        "dag_index_orphan_socket",
++        "dag_orphan_node",
++        "edge_mismatch_index",
++        "edge_missing_from_blueprint",
++        "identity_mixing_detected",
++        "index_node_missing_from_blueprints",
++        "lineage_conduit_conflict",
++        "missing_index_dependency",
++        "missing_index_node",
++        "missing_phase4_validation",
++        "missing_root_blueprint",
++        "root_lineage_conflict",
++        "root_lineage_mismatch",
++        "root_missing_in_dag",
++        "root_missing_in_index",
++        "root_not_marked_in_index",
++        "socket_ref_duplicate",
++        "socket_ref_missing_in_index",
++        "socket_ref_missing_in_index_name",
++        "topology_dependency_mismatch",
++    })
++
++    # Codes that only restate another error; hidden whenever any other error is shown.
++    RESTATING_CODES: ClassVar[FrozenSet[str]] = frozenset({"root_not_viable", "broken_spell_in_dag"})
++
++    # Code -> code that reports the same fault more readably for the same spell.
++    SUPERSEDED_BY: ClassVar[Dict[str, str]] = {"BINDING_RESOLUTION_CYCLE": "CIRCULAR_DEPENDENCY"}
++
++    def __init__(
++            self,
++            broken_spells: list[Spell],
++            *,
++            system_diagnostics: Optional[Sequence[SystemDiagnostic]] = None,
++    ) -> None:
+         """
+         Purpose:
+-            Build a validation error with a readable diagnostic summary.
++            Build a validation error whose message explains every recorded failure.
+         Contract:
+-            - Always includes a broken-spell summary when spells are supplied.
+-            - Includes Phase 4 issues and Phase 6 diagnostics when available.
+-            - Remains resilient when spell attributes are missing or cleaned.
++            - Keeps `broken_spells` exactly as supplied (tooling reads the spells).
++            - Renders the message once from the spells' Phase 4/6 results and the
++              ERROR entries of `system_diagnostics`; WARNING diagnostics are ignored.
++            - Remains resilient when spell or diagnostic attributes are missing or
++              cleaned; a failed read degrades that field only.
+         Args:
+-            broken_spells: Spells marked as broken after validation.
++            broken_spells: Spells refused by validation (may be empty).
++            system_diagnostics: Optional conduit resolution diagnostics that explain
++                the refusal (the conjure and local-rerun gates pass them).
+         Returns:
+             None.
+-
+-        Preserved state:
+-            - `broken_spells` stores the original spell objects supplied to the
+-              error.
+-            - The rendered message preserves the primary failure line and then
+-              appends any available Phase 4 and Phase 6 diagnostics.
+         """
+         self.broken_spells = broken_spells
+-        if not broken_spells:
+-            msg = "SpellbookValidationError raised with no broken spells."
+-            super().__init__(msg)
++        if not broken_spells and not system_diagnostics:
++            super().__init__("SpellbookValidationError raised with no broken spells.")
+             return
+-
+-        spell_contexts: list[tuple[Spell, str, str, Any]] = []
+-        summary_parts = []
++        super().__init__(self._render(broken_spells, system_diagnostics or ()))
++
++    @classmethod
++    def _render(
++            cls,
++            broken_spells: Sequence[Spell],
++            system_diagnostics: Sequence[SystemDiagnostic],
++    ) -> str:
++        """
++        Purpose:
++            Compose the full message from spell blocks, whole-graph errors and footers.
++        Contract:
++            - Lists a spell only when it has an error, except when no diagnostics were
++              handed in (meld paths), where a spell without one is still named.
++            - Applies the dedupe, superseded and restating rules of the class docstring.
++        Args:
++            broken_spells: Spells supplied to the error.
++            system_diagnostics: Conduit diagnostics supplied to the error.
++        Returns:
++            str: The rendered message.
++        """
++        blocks: List[Tuple[str, str, List[Tuple[str, str]]]] = []
++        block_by_id: Dict[str, List[Tuple[str, str]]] = {}
++        warning_count = 0
+         for spell in broken_spells:
+-            try:
+-                spell_name = spell.spell_name
+-            except Exception:
+-                spell_name = "<unknown>"
+-            if not spell_name:
+-                spell_name = "<unknown>"
+-            try:
+-                spell_id = spell.spell_id
+-            except Exception:
+-                spell_id = "<?>"
+-            try:
+-                spell_frame = spell.spellframe
+-            except Exception:
+-                spell_frame = None
+-
+-            summary_parts.append(
+-                f"{spell_name} (id={spell_id}, frame={spell_frame!r})"
+-            )
+-            spell_contexts.append((spell, spell_name, spell_id, spell_frame))
+-
+-        summary = "; ".join(summary_parts)
+-        lines = [
+-            "Spellbook validation failed; one or more spells are broken. "
+-            f"Broken spells: {summary}",
+-            "Diagnostics:",
+-            "Phase 4 issues:",
+-        ]
+-
+-        for spell, spell_name, spell_id, spell_frame in spell_contexts:
+-            header = (
+-                f"- Spell {spell_name!r} "
+-                f"(id={spell_id}, frame={spell_frame!r}):"
+-            )
+-            lines.append(header)
+-
+-            phase4_result = None
+-            try:
+-                phase4_result = spell.validation_result_phase4
+-            except Exception:
+-                phase4_result = None
+-
+-            phase4_issues = []
+-            if phase4_result is not None:
+-                try:
+-                    phase4_issues = list(phase4_result.issues)
+-                except Exception:
+-                    phase4_issues = []
+-                if not phase4_issues:
+-                    errors = []
+-                    warnings = []
+-                    try:
+-                        errors = list(phase4_result.errors)
+-                    except Exception:
+-                        errors = []
+-                    try:
+-                        warnings = list(phase4_result.warnings)
+-                    except Exception:
+-                        warnings = []
+-                    phase4_issues = errors + warnings
+-
+-            if not phase4_issues:
+-                lines.append("    (none recorded)")
+-            else:
+-                for issue in phase4_issues:
+-                    try:
+-                        severity = issue.severity
+-                    except Exception:
+-                        severity = "unknown"
+-                    try:
+-                        code = issue.code
+-                    except Exception:
+-                        code = "UNKNOWN_ISSUE"
+-                    try:
+-                        message = issue.message
+-                    except Exception:
+-                        message = repr(issue)
+-                    try:
+-                        source = issue.source
+-                    except Exception:
+-                        source = None
+-                    try:
+-                        details = issue.details
+-                    except Exception:
+-                        details = None
+-
+-                    source_part = f" (source={source})" if source else ""
+-                    lines.append(
+-                        f"    - [{severity}] {code}{source_part}: {message}"
+-                    )
+-                    if details:
+-                        lines.append(f"      details: {details!r}")
+-
+-        lines.append("Phase 6 diagnostics:")
+-        phase6_diagnostics = []
+-        seen_diag_ids = set()
+-        for spell, _, _, _ in spell_contexts:
+-            phase6_state = None
+-            try:
+-                phase6_state = spell.validation_result_phase6
+-            except Exception:
+-                phase6_state = None
+-
+-            if phase6_state is None:
++            errors, warnings = cls._spell_errors(spell)
++            warning_count += warnings
++            name = cls._read_text(spell, "spell_name") or "<unknown spell>"
++            blocks.append((name, cls._spell_label(spell, name), errors))
++            spell_id = cls._read_text(spell, "spell_id")
++            if spell_id is not None:
++                block_by_id.setdefault(spell_id, errors)
++        graph_errors: List[Tuple[str, str]] = []
++        for diagnostic in system_diagnostics:
++            entry = cls._diagnostic_error(diagnostic)
++            if entry is None:
+                 continue
+-
+-            try:
+-                phase6_errors = list(phase6_state.errors)
+-            except Exception:
+-                phase6_errors = []
+-            try:
+-                phase6_warnings = list(phase6_state.warnings)
+-            except Exception:
+-                phase6_warnings = []
+-
+-            for diag in phase6_errors + phase6_warnings:
+-                diag_id = id(diag)
+-                if diag_id in seen_diag_ids:
++            owner = block_by_id.get(entry[2]) if entry[2] is not None else None
++            (owner if owner is not None else graph_errors).append((entry[0], entry[1]))
++        return cls._compose(blocks, graph_errors, warning_count, bool(system_diagnostics))
++
++    @classmethod
++    def _compose(
++            cls,
++            blocks: List[Tuple[str, str, List[Tuple[str, str]]]],
++            graph_errors: List[Tuple[str, str]],
++            warning_count: int,
++            diagnostics_given: bool,
++    ) -> str:
++        """
++        Purpose:
++            Turn collected (code, message) errors into the final text.
++        Contract:
++            - Filters each block, then drops restating codes when anything else remains.
++            - Emits header, spell blocks, whole-graph block and footers in that order.
++        Args:
++            blocks: (spell name, block label, errors) per supplied spell, in supply order.
++            graph_errors: Errors attributed to no supplied spell.
++            warning_count: Phase-4 warnings seen on the supplied spells.
++            diagnostics_given: Whether conduit diagnostics were handed in.
++        Returns:
++            str: The rendered message.
++        """
++        filtered = [(name, label, cls._filter(errors)) for name, label, errors in blocks]
++        graph = cls._filter(graph_errors)
++        all_codes = [code for _, _, errors in filtered for code, _ in errors] + [code for code, _ in graph]
++        if any(code not in cls.RESTATING_CODES for code in all_codes):
++            filtered = [
++                (name, label, [e for e in errors if e[0] not in cls.RESTATING_CODES])
++                for name, label, errors in filtered
++            ]
++            graph = [e for e in graph if e[0] not in cls.RESTATING_CODES]
++        shown = [(name, label, errors) for name, label, errors in filtered if errors or not diagnostics_given]
++        names = ", ".join(name for name, _, _ in shown)
++        lines = [f"Spellbook validation failed. Broken spells: {names}." if names
++                 else "Spellbook validation failed. The dependency graph has errors."]
++        has_internal = False
++        for _, label, errors in shown:
++            lines.append(f"{label}:")
++            if not errors:
++                lines.append("  - No validation error was recorded for this spell; its validity is "
++                             "invalid, gated or disabled.")
++            for code, message in errors:
++                has_internal = has_internal or code in cls.INTERNAL_CODES
++                lines.append(cls._error_line(code, message))
++        if graph:
++            lines.append("Whole-graph errors:")
++            for code, message in graph:
++                has_internal = has_internal or code in cls.INTERNAL_CODES
++                lines.append(cls._error_line(code, message))
++        if warning_count:
++            plural = "warning" if warning_count == 1 else "warnings"
++            lines.append(f"{warning_count} {plural} not shown (warnings never block conjure); "
++                         "conjure(validation_warnings=True) logs them.")
++        if has_internal:
++            lines.append("Errors marked [internal] come from Melder's own consistency checks: they are "
++                         "Melder bugs, not problems in your code. Please report them with this message.")
++        return "\n".join(lines)
++
++    @classmethod
++    def _filter(cls, errors: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
++        """
++        Purpose:
++            Drop exact duplicates, superseded codes and repeated internal codes.
++        Contract:
++            - Keeps first-seen order; an internal code appears once per block.
++        Args:
++            errors: (code, message) pairs of one block.
++        Returns:
++            List[Tuple[str, str]]: The pairs to show.
++        """
++        codes = {code for code, _ in errors}
++        seen: set[Tuple[str, str]] = set()
++        seen_internal: set[str] = set()
++        kept: List[Tuple[str, str]] = []
++        for code, message in errors:
++            if cls.SUPERSEDED_BY.get(code) in codes or (code, message) in seen:
++                continue
++            if code in cls.INTERNAL_CODES:
++                if code in seen_internal:
+                     continue
+-                seen_diag_ids.add(diag_id)
+-                phase6_diagnostics.append(diag)
++                seen_internal.add(code)
++            seen.add((code, message))
++            kept.append((code, message))
++        return kept
+ 
+-        if not phase6_diagnostics:
+-            lines.append("  (none recorded)")
+-        else:
+-            for diag in phase6_diagnostics:
+-                try:
+-                    severity_value = diag.severity
+-                except Exception:
+-                    severity_value = None
+-
+-                if severity_value is None:
+-                    severity = "unknown"
+-                else:
+-                    try:
+-                        severity = severity_value.name.lower()
+-                    except Exception:
+-                        severity = str(severity_value).lower()
+-
+-                try:
+-                    code = diag.code
+-                except Exception:
+-                    code = "UNKNOWN_DIAGNOSTIC"
+-                try:
+-                    message = diag.message
+-                except Exception:
+-                    message = repr(diag)
+-                diag_source: Optional[str] = None
+-                try:
+-                    diag_source = diag.source
+-                except Exception:
+-                    diag_source = None
+-                diag_spell_id: Optional[str] = None
+-                try:
+-                    diag_spell_id = diag.spell_id
+-                except Exception:
+-                    diag_spell_id = None
+-                diag_root_id: Optional[str] = None
+-                try:
+-                    diag_root_id = diag.root_id
+-                except Exception:
+-                    diag_root_id = None
+-                try:
+-                    details = diag.details
+-                except Exception:
+-                    details = None
+-
+-                meta_parts = []
+-                if diag_source:
+-                    meta_parts.append(f"source={diag_source}")
+-                if diag_spell_id:
+-                    meta_parts.append(f"spell_id={diag_spell_id}")
+-                if diag_root_id:
+-                    meta_parts.append(f"root_id={diag_root_id}")
+-                meta = f" ({', '.join(meta_parts)})" if meta_parts else ""
++    @classmethod
++    def _error_line(cls, code: str, message: str) -> str:
++        """
++        Purpose:
++            Format one error line, marking internal codes.
++        Args:
++            code: Issue or diagnostic code.
++            message: Human-readable message.
++        Returns:
++            str: "  - <message> [CODE]" or "  - [internal] <message> [CODE]".
++        """
++        marker = "[internal] " if code in cls.INTERNAL_CODES else ""
++        return f"  - {marker}{message} [{code}]"
+ 
+-                lines.append(f"  - [{severity}] {code}{meta}: {message}")
+-                if details:
+-                    lines.append(f"    details: {details!r}")
++    @classmethod
++    def _spell_errors(cls, spell: Any) -> Tuple[List[Tuple[str, str]], int]:
++        """
++        Purpose:
++            Collect a spell's error (code, message) pairs and count its Phase-4 warnings.
++        Contract:
++            - Phase 4: `validation_result_phase4.issues`, falling back to `.errors` plus
++              `.warnings` when `issues` is unreadable or empty.
++            - Phase 6: `validation_result_phase6.errors` (warnings ignored).
++            - Any unreadable part is skipped; never raises.
++        Args:
++            spell: A Spell (or a stand-in exposing the same attributes).
++        Returns:
++            Tuple[List[Tuple[str, str]], int]: Errors in order, and the warning count.
++        """
++        errors: List[Tuple[str, str]] = []
++        warnings = 0
++        for issue in cls._phase4_issues(spell):
++            severity = cls._read_text(issue, "severity")
++            code = cls._read_text(issue, "code") or "UNKNOWN_ISSUE"
++            if severity == "error":
++                errors.append((code, cls._read_text(issue, "message") or repr(issue)))
++            elif severity == "warning":
++                warnings += 1
++        for diagnostic in cls._read_list(cls._read_attr(spell, "validation_result_phase6"), "errors"):
++            entry = cls._diagnostic_error(diagnostic)
++            if entry is not None:
++                errors.append((entry[0], entry[1]))
++        return errors, warnings
++
++    @classmethod
++    def _phase4_issues(cls, spell: Any) -> List[Any]:
++        """
++        Purpose:
++            Read a spell's Phase-4 issues with the documented fallback.
++        Args:
++            spell: A Spell (or stand-in).
++        Returns:
++            List[Any]: The issues, possibly empty.
++        """
++        result = cls._read_attr(spell, "validation_result_phase4")
++        if result is None:
++            return []
++        issues = cls._read_list(result, "issues")
++        if issues:
++            return issues
++        return cls._read_list(result, "errors") + cls._read_list(result, "warnings")
++
++    @classmethod
++    def _diagnostic_error(cls, diagnostic: Any) -> Optional[Tuple[str, str, Optional[str]]]:
++        """
++        Purpose:
++            Read an ERROR system diagnostic as (code, message, spell_id).
++        Contract:
++            - Returns None for WARNING diagnostics and for unreadable severities.
++        Args:
++            diagnostic: A SystemDiagnostic (or stand-in).
++        Returns:
++            Optional[Tuple[str, str, Optional[str]]]: The entry, or None.
++        """
++        severity = cls._read_attr(diagnostic, "severity")
++        try:
++            severity_name = severity.name
++        except AttributeError:
++            severity_name = str(severity).upper() if severity is not None else ""
++        if severity_name != "ERROR":
++            return None
++        code = cls._read_text(diagnostic, "code") or "UNKNOWN_DIAGNOSTIC"
++        message = cls._read_text(diagnostic, "message") or repr(diagnostic)
++        return code, message, cls._read_text(diagnostic, "spell_id")
++
++    @classmethod
++    def _spell_label(cls, spell: Any, name: str) -> str:
++        """
++        Purpose:
++            Label a spell for its block header: "Name (frame 'x')", frame omitted when None.
++        Args:
++            spell: A Spell (or stand-in).
++            name: The spell's display name, already read.
++        Returns:
++            str: The label.
++        """
++        frame = cls._read_attr(spell, "spellframe")
++        if frame is None:
++            return name
++        if isinstance(frame, str):
++            return f"{name} (frame {frame!r})"
++        try:
++            frame_text = frame.__qualname__
++        except AttributeError:
++            frame_text = repr(frame)
++        return f"{name} (frame {frame_text})"
++
++    @staticmethod
++    def _read_attr(owner: Any, name: str) -> Any:
++        """
++        Purpose:
++            Read one attribute of a spell, result or diagnostic without letting a
++            cleaned or partial object raise into the error being built.
++        Contract:
++            - The object shapes are external to this renderer (live spells, results,
++              diagnostics or test stand-ins, possibly cleaned), so the name is dynamic
++              and any failure returns None.
++        Args:
++            owner: Object to read from (None allowed).
++            name: Attribute name.
++        Returns:
++            Any: The value, or None.
++        """
++        if owner is None:
++            return None
++        try:
++            return getattr(owner, name)
++        except Exception:
++            # Best-effort diagnostics: a failed read degrades one field only.
++            return None
++
++    @classmethod
++    def _read_text(cls, owner: Any, name: str) -> Optional[str]:
++        """
++        Purpose:
++            Read one attribute as text.
++        Args:
++            owner: Object to read from.
++            name: Attribute name.
++        Returns:
++            Optional[str]: `str(value)`, or None when unreadable or None.
++        """
++        value = cls._read_attr(owner, name)
++        return None if value is None else str(value)
+ 
+-        msg = "\n".join(lines)
+-        super().__init__(msg)
++    @classmethod
++    def _read_list(cls, owner: Any, name: str) -> List[Any]:
++        """
++        Purpose:
++            Read one iterable attribute as a list.
++        Args:
++            owner: Object to read from.
++            name: Attribute name.
++        Returns:
++            List[Any]: The items, or an empty list when unreadable.
++        """
++        value = cls._read_attr(owner, name)
++        if value is None:
++            return []
++        try:
++            return list(value)
++        except TypeError:
++            return []
+diff --git a/src/melder/utilities/helpers/general_helpers.py b/src/melder/utilities/helpers/general_helpers.py
+index 62debf3e0..6ebb9fb3d 100644
+--- a/src/melder/utilities/helpers/general_helpers.py
++++ b/src/melder/utilities/helpers/general_helpers.py
+@@ -1,7 +1,10 @@
+ from enum import Enum
+ import inspect
+ from functools import lru_cache
+-from typing import Any, Optional, Tuple, Union, TypeVar, Type, ClassVar
++from typing import TYPE_CHECKING, Any, Mapping, Optional, Tuple, Union, TypeVar, Type, ClassVar
++
++if TYPE_CHECKING:
++    from melder.aether.spellbook.spell import Spell
+ 
+ 
+ 
+@@ -421,3 +424,34 @@ class SpellInputUtils:
+         frame_key = SpellInputUtils.normalize_frame_key(frame_base)
+         bind_key = SpellInputUtils.normalize_binding_name(binding_name)
+         return frame_key, bind_key
++
++    @staticmethod
++    def describe_spell_id(spell_id: Optional[str], spells: Mapping[str, Spell]) -> str:
++        """
++        Name a spell version id for a user-facing message.
++
++        Purpose:
++            Validation and resolution run on spell version ids; users know spells
++            by name. Messages call this so a 64-character id is shown only when
++            no name is available.
++
++        Contract:
++            - Returns the spell's name, quoted, when `spells` holds `spell_id`.
++            - Otherwise returns "spell id <first 12 characters>"; `None` gives
++              "an unknown spell".
++            - Pure; reads one mapping entry and the spell's name.
++
++        Args:
++            spell_id: Spell version id, or None.
++            spells: Visible spell id -> Spell lookup (a spellbook's
++                `_spell_id_pool` or a phase's `spell_lookup`).
++
++        Returns:
++            str: Display text such as "'CodecPacket'" or "spell id 3ba8e3be488d".
++        """
++        if spell_id is None:
++            return "an unknown spell"
++        spell = spells.get(spell_id)
++        if spell is not None:
++            return repr(spell.spell_name)
++        return f"spell id {spell_id[:12]}"

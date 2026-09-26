@@ -204,12 +204,13 @@ def test_component_annotation_shape_guard_leaves_set_parameters_to_the_caller() 
         spellbook.cleanup()
 
 
-def test_component_annotation_shape_guard_warns_on_list_non_di_element() -> None:
+def test_component_annotation_shape_guard_leaves_list_of_data_silent() -> None:
     """
     Purpose:
-        Validate AnnotationShapeGuardStrategy warns on list elements that are not DI targets.
+        Validate AnnotationShapeGuardStrategy treats a list of plain data as a caller input.
     Contract:
-        - list[int] yields LIST_ELEMENT_NOT_DI_TARGET warnings.
+        - list[int] yields no LIST_ELEMENT_NOT_DI_TARGET warning (2026-09-26); only a user
+          class inside the element draws it.
     Returns:
         None.
     Raises:
@@ -259,10 +260,7 @@ def test_component_annotation_shape_guard_warns_on_list_non_di_element() -> None
         )
         try:
             strategy.validate(context)
-            assert len(issues) == 1
-            issue = issues[0]
-            assert issue.code == "LIST_ELEMENT_NOT_DI_TARGET"
-            assert issue.severity == "warning"
+            assert [issue.code for issue in issues if issue.code == "LIST_ELEMENT_NOT_DI_TARGET"] == []
         finally:
             context.cleanup()
     finally:

@@ -1,0 +1,4 @@
+RAISED melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError
+Spellbook validation failed. Broken spells: Holder.
+Holder:
+  - Spell 'Holder' (unique) depends on 'Leaf' (unique_per_spell_space), which lives for a shorter scope, so 'Holder' would keep a stale 'Leaf' after that scope ends. Give 'Holder' the same or a shorter existence (or many), or give 'Leaf' a longer one. [scope_ordering_violation]

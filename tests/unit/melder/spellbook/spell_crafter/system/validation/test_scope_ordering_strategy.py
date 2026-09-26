@@ -220,3 +220,25 @@ def test_scope_ordering_skips_missing_and_unknown_dependency_existence() -> None
     )
 
     assert diagnostics == []
+
+
+def test_scope_ordering_violation_names_both_spells_and_the_fix() -> None:
+    """The message names holder and dependency with their existences and says how to fix it."""
+    from types import SimpleNamespace
+
+    index = SpellSystemIndex()
+    index.upsert_node(SpellSystemNode(spell_id="root", lineage_id="lr", dependencies={"child"},
+                                      existence=Existence.unique))
+    index.upsert_node(SpellSystemNode(spell_id="child", lineage_id="lc", dependencies=set(),
+                                      existence=Existence.unique_per_spell_space))
+    diagnostics: list = []
+
+    ScopeOrderingStrategy().run(
+        index=index, blueprints={}, phase4_results={}, broken_spell_ids=set(), spell_system_states=object(),
+        spell_lookup={"root": SimpleNamespace(spell_name="Holder"), "child": SimpleNamespace(spell_name="Leaf")},
+        diagnostics=diagnostics, cancel_event=None,
+    )
+
+    message = diagnostics[0].message
+    assert "Spell 'Holder' (unique) depends on 'Leaf' (unique_per_spell_space)" in message
+    assert "Give 'Holder' the same or a shorter existence (or many), or give 'Leaf' a longer one." in message

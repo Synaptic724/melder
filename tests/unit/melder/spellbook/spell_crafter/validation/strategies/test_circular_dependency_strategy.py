@@ -530,3 +530,25 @@ def test_validate_cancel_event_during_traversal() -> None:
         strategy.validate(context)
 
     assert issues == []
+
+
+def test_validate_names_each_cycle_member_and_closes_the_loop_once() -> None:
+    """
+    Purpose:
+        The message names the cycle by spell name and closes it once ("A -> B -> A").
+    Contract:
+        No doubled start node; a fix sentence follows; details keep ids.
+    """
+    strategy = CircularDependencyStrategy()
+    issues: list[SpellValidationIssue] = []
+    spell_a = _SpellStub(spell_id="a", spell_name="Alpha", dependencies=["b"])
+    spell_b = _SpellStub(spell_id="b", spell_name="Beta", dependencies=["a"])
+    spellbook = _SpellbookStub([spell_a, spell_b])
+    context = _make_context(spell=spell_a, spellbook=spellbook, issues=issues)
+
+    strategy.validate(context)
+
+    message = issues[0].message
+    assert "'Alpha' -> 'Beta' -> 'Alpha'." in message
+    assert "-> 'Alpha' -> 'Alpha'" not in message
+    assert "give that parameter a default" in message

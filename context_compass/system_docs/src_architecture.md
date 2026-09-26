@@ -880,7 +880,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Phase 1 decides injection (2026-09-26): only a single class-like annotation or `list[T]` is injected; a
   set, frozenset, dict or tuple parameter, and `typing.Any`, never are. Phase-4 validation judges only what
   Phase 1 decided and never breaks a spell over a caller input: such parameters are REQUIRED_HOLE warnings
-  (the message names list-only collection injection) and the caller supplies them through meld overrides.
+  (for containers of user classes the message names list-only collection injection) and the caller supplies
+  them through meld overrides.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:AnnotationShapeGuardStrategy`
   and `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy`.
 - Process-stable spell ids and complete cache bundles (2026-09-26): bind fingerprint inputs contain no
@@ -1217,7 +1218,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
   typed parameter with no provider; two or more providers still fail Phase 3.
   EVIDENCE: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError`.
 - Duplicate binding keys or spell id collisions raise RuntimeError.
-- Conjure raises SpellbookValidationError when broken spells exist.
+- Conjure raises SpellbookValidationError when broken spells exist. Since 2026-09-26 the message names each
+  broken spell and lists only its errors, each with what to change; the conduit verdict's reasons (scope
+  ordering, visibility, cycles) are included, errors that belong to no spell appear as whole-graph errors,
+  warnings are only counted, and Melder's own consistency codes are marked [internal] to report. Before, a
+  conduit-verdict refusal printed "(none recorded)" and every message carried 64-character spell ids.
+  EVIDENCE: `src/melder/utilities/custom_exceptions/spellbook_validation_error.py:SpellbookValidationError` and
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._enforce_conduit_resolution_valid`.
 - Meld raises SpellbookValidationError when spell validity is invalid/gated/disabled.
 - ChangeControl blocks roots marked dirty for the active conduit (`is_root_dirty(conduit_id, root_id)`).
 - SpellSpaceScopeError if a non-active SpellSpace is used for meld.
@@ -2674,6 +2681,11 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 conjure validation report: a refused conjure now tells the user which spells failed, why and how to
+fix it, by name; reasons from the conduit verdict are no longer dropped, warnings are counted rather than
+listed, and Melder-internal consistency codes are flagged as bugs to report. `*args: Any` / `**kwargs: Any`
+no longer break a spell. The component map carries the layout rules.
 
 2026-09-26 shared context rebuild windows (the September 5 design, finished): concurrent first melds of a
 shared dynamic spell failed in two ways - building a context from the gap between Phase 5 and Phase 11

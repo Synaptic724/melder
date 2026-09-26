@@ -154,9 +154,10 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                         severity="error",
                         code="CONTRACT_IN_AUTOMATIC_MODE",
                         message=(
-                            f"Spell {spell.spell_name!r} declares a contract socket for "
-                            f"parameter {param.name!r} while system_state is automatic. "
-                            "Contracts require dynamic mode to resolve."
+                            f"Spell {spell.spell_name!r} parameter {param.name!r} has a "
+                            "SpellContract default, but this frame is automatic and contracts "
+                            "only resolve in a dynamic frame. Remove the SpellContract default, "
+                            "or build the frame dynamic (conjure(dynamic=True) before it settles)."
                         ),
                         details={
                             "spell_id": current_spell_id,
@@ -196,8 +197,10 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                             severity="error",
                             code="SPELL_CONTRACT_AMBIGUOUS",
                             message=(
-                                f"Spell {spell.spell_name!r} parameter {param.name!r} "
-                                f"matches multiple providers for contract key {contract_key}."
+                                f"Spell {spell.spell_name!r} parameter {param.name!r}: "
+                                f"{len(providers)} providers match contract {contract_key}, so "
+                                "Melder cannot choose one. Keep a single provider for this "
+                                "contract, for example by severing one of the links that supply it."
                             ),
                             details={
                                 "parameter_name": param.name,
@@ -230,8 +233,9 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                             code="SPELL_CONTRACT_NON_RESOLVABLE_PROVIDER",
                             message=(
                                 f"Spell {spell.spell_name!r} parameter {param.name!r} selects "
-                                f"non-resolvable provider {providers[0][0]!r}. A SpellContract needs "
-                                "a resolvable provider; select one or use a required supplied input."
+                                f"provider {contract_key}, which is registered with "
+                                "resolvable=False. A SpellContract needs a resolvable provider: "
+                                "register one, or make this parameter a caller-supplied input."
                             ),
                             details={
                                 "parameter_name": param.name,

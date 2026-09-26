@@ -4465,6 +4465,10 @@ class Conduit(Cleanable):
               spell objects and spellframe/binding addresses remain supported.
             - `spell_id=` is forwarded directly into the internal positional ID
               fast lane and never enters human-name normalization.
+            - On an automatic conduit an id meld (plain, or with a non-empty dict
+              override) is served here from the meld door's fast-door entry when
+              every fast-door guard holds (2026-09-26); results are identical to
+              the door's, and any miss continues in the door's id lane.
             - GATING IS MODE-DEPENDENT: in dynamic mode entry runs through the
               creation gate and is ticketed; in automatic mode the gate is BYPASSED
               entirely for a minimal hot path. The same call therefore has different
@@ -4518,9 +4522,60 @@ class Conduit(Cleanable):
             HookExecutionError:
                 Propagated from Meld.meld if hook execution fails.
         """
-        self.check_cleaned()
+        if self._cleaned:
+            self.check_cleaned()
 
         meld_component = self._meld
+        # Warm automatic id lane (2026-09-26): the dominant call - an id meld on an automatic
+        # conduit - reads the meld door's fast-door entry here, saving the door frame and keyword
+        # marshaling on a hit (solo meld 209 -> 111 ns on 3.14t). The guard ladder and both arms
+        # mirror `ConduitMeld.meld` exactly (`Meld._fast_meld_doors` lists every reader); only
+        # guard reads sit inside the AttributeError try, so a constructor's own AttributeError is
+        # never swallowed. A miss continues in the door's positional id lane; every other call
+        # shape keeps the path below.
+        if (
+            type(spell_id) is str
+            and spell is None
+            and spellframe is None
+            and binding_name is None
+            and not self.__dynamic_environment__
+        ):
+            fast_entry = meld_component._fast_meld_doors.get(spell_id)
+            if fast_entry is not None:
+                (
+                    door_spell,
+                    captured_context,
+                    captured_epoch,
+                ) = fast_entry
+                fast_executor = None
+                try:
+                    if (
+                        not meld_component._meld_hooks
+                        and door_spell._door_epoch == captured_epoch
+                        and door_spell._creation_context is captured_context
+                        and not meld_component._spellbook._spellbook_validation_required
+                    ):
+                        # Slots are read per hit: hydration swaps them in place.
+                        if override is None:
+                            fast_executor = captured_context._no_overrides_instance_executor
+                        elif type(override) is dict and override:
+                            fast_executor = captured_context._overrides_executor
+                except AttributeError:
+                    # Cleaned spell/context: guard miss; the door decides.
+                    fast_executor = None
+                if fast_executor is not None:
+                    if override is None:
+                        instance = fast_executor(meld_component)
+                    else:
+                        instance = fast_executor(meld_component, override)[0]
+                    spellbook = meld_component._spellbook
+                    if spellbook._cache_emit_required:
+                        spellbook._emit_cache_file_if_required()
+                    return instance
+            if override is None:
+                return meld_component.meld(spell_id)
+            return meld_component.meld(spell_id, spell_override=override)
+
         if spell is not None and spell_id is not None:
             raise ValueError("meld accepts either `spell` or `spell_id`, not both.")
 

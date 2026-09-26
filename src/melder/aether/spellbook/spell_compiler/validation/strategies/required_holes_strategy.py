@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, get_origin
+import inspect
+from typing import TYPE_CHECKING, Any, get_args, get_origin
 
 
 
@@ -185,7 +186,9 @@ class RequiredHolesStrategy(SpellValidationStrategy):
         Contract:
             - Returns a leading-space sentence when the annotation's origin is set,
               frozenset, dict or tuple (bare generics such as `dict[str, X]` and
-              their typing aliases); otherwise an empty string.
+              their typing aliases) AND one of its type arguments is a user class,
+              where someone may have expected injection; plain data such as
+              `dict[str, Any]` gets no hint (2026-09-26). Otherwise an empty string.
             - Pure; reads only the annotation object.
 
         Args:
@@ -196,6 +199,11 @@ class RequiredHolesStrategy(SpellValidationStrategy):
         """
         origin = get_origin(annotation)
         if origin not in (set, frozenset, dict, tuple):
+            return ""
+        if not any(
+            inspect.isclass(arg) and arg.__module__ != "builtins" and arg is not Any
+            for arg in get_args(annotation)
+        ):
             return ""
         return (
             " Melder injects collections only as list[T]; "
