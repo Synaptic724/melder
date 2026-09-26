@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T15:03:58Z
+- Updated: 2026-09-26T16:12:08Z
 - Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
@@ -397,6 +397,8 @@ and tranche T1 are also closed. Milestones 2-5 not started; I-1 (structural snap
 - 2026-09-26 (owner): I-1 structural snapshot selected as the next lane; story opened with the patch-doc task
   first; four design rulings requested (custom-__eq__ frames, envelope vs sidecar, per-spell key extension,
   CCM dirty-root loop).
+- 2026-09-26 (owner): I-1 design settled (1-4 per spell, no refusal, normal regeneration) and the patch docs
+  approved; C-C is the first implementation task; release note and turn-in follow owner-run green suites.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -1225,6 +1227,8 @@ owner; every fable_0 story under this epic is now in completed/. Resume point af
 Decision Log and IMPLEMENTATION ENTRY; wait for the owner's lane selection.
 UPDATE 2026-09-26T15:03:58Z (fable_0): I-1 opened - tickets/stories/2026-09-26_structural_snapshot_story.md, board row
 ir_structural_snapshot routing to the patch-doc task; waiting on the owner's four rulings. Resume from the task's STATE line.
+UPDATE 2026-09-26T16:12:08Z (fable_0): I-1 patch docs approved and task 1 completed; task 2 (C-C) is routed:
+tickets/tasks/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md. Resume from its STATE line.
 
 IMPLEMENTATION ENTRY - after S11 and the owner's explicit go, in this order:
 - I-0 signature-determinism test plus one serializer (small, compiler-side, protects today's cache;

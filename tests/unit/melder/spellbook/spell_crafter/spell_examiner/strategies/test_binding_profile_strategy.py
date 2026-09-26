@@ -11,6 +11,79 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_prof
 from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy import (
     BindingProfileStrategy,
 )
+from typing import TYPE_CHECKING, Optional
+
+from melder.aether.spellbook.bind.bind import Bind
+from melder.utilities.helpers.signature_reflection import SignatureReflection
+
+if TYPE_CHECKING:
+    # Annotations only: `Decimal` stays unbound at runtime in this module - the case under test.
+    from decimal import Decimal
+
+
+class _TypeCheckingField:
+    """
+    Purpose:
+        Class whose field annotation names a TYPE_CHECKING-only type.
+    """
+    amount: Decimal
+    label: str
+
+
+class _QuotedUnavailable:
+    """
+    Purpose:
+        Class whose quoted field annotation names a TYPE_CHECKING-only type.
+    """
+    amount: "Decimal"
+    label: str
+
+
+class _NestedUnavailable:
+    """
+    Purpose:
+        Class whose unavailable name sits inside generic annotations.
+    """
+    amounts: list[Decimal]
+    total: Optional[Decimal]
+    count: int
+
+
+@dataclass
+class _DataclassUnavailable:
+    """
+    Purpose:
+        Dataclass whose field annotation names a TYPE_CHECKING-only type.
+    """
+    amount: Decimal
+    label: str = "x"
+
+
+class _ResolvedFields:
+    """
+    Purpose:
+        Class whose annotations all resolve at runtime, one of them quoted.
+    """
+    count: int
+    name: "str"
+
+
+def _priced_class(extra: bool) -> type:
+    """
+    Purpose:
+        Build a class named `Priced` with one or two TYPE_CHECKING-typed fields.
+    Contract:
+        Both variants share name, qualname, module, bases and methods; only the annotation keys differ.
+    Args:
+        extra: Whether to declare the second field.
+    Returns:
+        type: The class.
+    """
+    class Priced:
+        amount: Decimal
+        if extra:
+            surcharge: Decimal
+    return Priced
 
 
 class _SampleService:
@@ -376,3 +449,104 @@ def test_binding_profile_strategy_decorated_class_heuristic_edges() -> None:
 
     Plain = type("Plain", (), {})
     assert BindingProfileStrategy._is_probably_decorated_class(Plain) is False
+
+
+def test_binding_profile_class_annotations_keep_type_checking_names_as_source_text() -> None:
+    """
+    Purpose:
+        Verify a field typed with a TYPE_CHECKING-only name keeps every class annotation.
+    Contract:
+        - Keys are the class's own annotation names.
+        - The unavailable name is its source text; resolvable values stay evaluated.
+    Returns:
+        None.
+    """
+    profile = BindingProfileStrategy()._build_class_profile(_TypeCheckingField)
+
+    assert profile.annotations == {"amount": "Decimal", "label": str}
+
+
+def test_binding_profile_class_annotations_keep_quoted_and_nested_unavailable_names() -> None:
+    """
+    Purpose:
+        Verify quoted and generic-nested unavailable names are kept as written.
+    Contract:
+        - A quoted annotation stays its string; a nested one is the generic's source text.
+    Returns:
+        None.
+    """
+    strategy = BindingProfileStrategy()
+
+    quoted = strategy._build_class_profile(_QuotedUnavailable)
+    nested = strategy._build_class_profile(_NestedUnavailable)
+
+    assert quoted.annotations == {"amount": "Decimal", "label": str}
+    assert nested.annotations == {"amounts": "list[Decimal]", "total": "Optional[Decimal]", "count": int}
+
+
+def test_binding_profile_class_annotations_keep_dataclass_fields_with_unavailable_names() -> None:
+    """
+    Purpose:
+        Verify a dataclass field typed with a TYPE_CHECKING-only name is kept.
+    Returns:
+        None.
+    """
+    profile = BindingProfileStrategy()._build_class_profile(_DataclassUnavailable)
+
+    assert profile.annotations == {"amount": "Decimal", "label": str}
+    assert profile.is_dataclass is True
+
+
+def test_binding_profile_class_annotations_unchanged_when_every_name_resolves() -> None:
+    """
+    Purpose:
+        Verify classes whose annotations resolve keep the evaluated read (quoted strings evaluated).
+    Returns:
+        None.
+    """
+    profile = BindingProfileStrategy()._build_class_profile(_ResolvedFields)
+
+    assert profile.annotations == {"count": int, "name": str}
+
+
+def test_binding_profile_class_annotations_fallback_failure_binds_with_none(monkeypatch) -> None:
+    """
+    Purpose:
+        Verify a failure inside the unevaluated fallback still yields an empty mapping.
+    Contract:
+        - Binding never fails because class annotations cannot be read.
+    Returns:
+        None.
+    """
+    def _raise_name_error(*args, **kwargs):
+        raise NameError("name 'Decimal' is not defined")
+
+    def _raise_type_error(cls):
+        raise TypeError("boom")
+
+    monkeypatch.setattr(inspect, "get_annotations", _raise_name_error)
+    monkeypatch.setattr(SignatureReflection, "class_annotations", staticmethod(_raise_type_error))
+
+    profile = BindingProfileStrategy()._build_class_profile(_TypeCheckingField)
+
+    assert profile.annotations == {}
+
+
+def test_bind_fingerprint_counts_fields_typed_with_type_checking_names() -> None:
+    """
+    Purpose:
+        Verify the bind fingerprint changes when a TYPE_CHECKING-typed field is added.
+    Contract:
+        - Before 2026-09-26 both classes profiled with no annotations and hashed equal.
+        - Equal classes still hash equal.
+    Returns:
+        None.
+    """
+    strategy = BindingProfileStrategy()
+
+    plain = Bind.sha256_profile(strategy._build_class_profile(_priced_class(False)))
+    again = Bind.sha256_profile(strategy._build_class_profile(_priced_class(False)))
+    extended = Bind.sha256_profile(strategy._build_class_profile(_priced_class(True)))
+
+    assert plain == again
+    assert plain != extended

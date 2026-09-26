@@ -1,128 +1,131 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py",
- "source_sha256": "ecbe7c3cbf210784845fb9822791ab23c9852a58dddd62874cc5d1e678683fcf",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy",
-   "label": "binding_profile_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py",
-   "lineno": 1,
-   "include": true,
-   "role": "Builds binding profiles from raw registration candidates.",
-   "semantics_authored_against": "8e900eb9d1f019333b6dab5969422aa1e81ebfb245f6babcc242c8616141a5d4"
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py",
+  "source_sha256": "be9c267e94e07f8c12ead1057ca9f9df92abaf82c45ecf3fc373209f47bd5222",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy",
+      "label": "binding_profile_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py",
+      "lineno": 1,
+      "include": true,
+      "role": "Builds binding profiles from raw registration candidates.",
+      "semantics_authored_against": "8e900eb9d1f019333b6dab5969422aa1e81ebfb245f6babcc242c8616141a5d4"
+    },
+    "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
+      "label": "BindingProfileStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py",
+      "lineno": 19,
+      "bases": [],
+      "markers": [],
+      "public_methods": [
+        "build_profile"
+      ],
+      "shape": {
+        "method_count": 7,
+        "has_bases": false,
+        "trivial": false
+      },
+      "span_sha256": "f7feec883f899fd276002680684c5c2648b1cd33867e16a35fb8adb85c8c487e",
+      "role": "Strategy building binding profiles from raw candidates.",
+      "responsibilities": [
+        "builds the correct binding-profile variant from a raw candidate surface",
+        "captures Python 3.14 signatures with unresolved annotation names retained as ForwardRefs",
+        "renders init_signature and callable signature fingerprint text with unresolved names as source text, keeping spell ids stable across processes",
+        "fills fingerprint_repr and each parameter's default_fingerprint_repr with InspectorUtility.stable_repr beside the truncated display reprs",
+        "reads class-level annotations evaluated where every name resolves, otherwise without evaluating the unavailable names (kept as source text, the ClassInspector read), so the fingerprint's sorted annotation keys cover every annotated field; any other read failure yields an empty mapping"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ],
+      "semantics_authored_against": "f7feec883f899fd276002680684c5c2648b1cd33867e16a35fb8adb85c8c487e"
+    }
   },
-  "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
-   "label": "BindingProfileStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py",
-   "lineno": 18,
-   "bases": [],
-   "markers": [],
-   "public_methods": [
-    "build_profile"
-   ],
-   "shape": {
-    "method_count": 6,
-    "has_bases": false,
-    "trivial": false
-   },
-   "span_sha256": "3e920e856ba77f88fee2dc44d1bc08d7f3c4f6864c674a7f2ab6de4a06520ddb",
-   "role": "Strategy building binding profiles from raw candidates.",
-   "responsibilities": [
-    "builds the correct binding-profile variant from a raw candidate surface",
-    "captures Python 3.14 signatures with unresolved annotation names retained as ForwardRefs",
-    "renders init_signature and callable signature fingerprint text with unresolved names as source text, keeping spell ids stable across processes",
-    "fills fingerprint_repr and each parameter's default_fingerprint_repr with InspectorUtility.stable_repr beside the truncated display reprs"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ],
-   "semantics_authored_against": "3e920e856ba77f88fee2dc44d1bc08d7f3c4f6864c674a7f2ab6de4a06520ddb"
-  }
- },
- "edges_out": [],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
-   "to_label": "ClassBindingProfile",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
+      "to_label": "ClassBindingProfile",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
+      "to_label": "CallableBindingProfile",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
+      "to_label": "InstanceBindingProfile",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
+      "to_label": "OtherBindingProfile",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
+      "to_label": "CallableParameterBindingSummary",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "Format": "annotationlib.Format",
+    "ModuleType": "types.ModuleType",
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "Dict": "typing.Dict",
+    "List": "typing.List",
+    "ClassVar": "typing.ClassVar",
+    "Optional": "typing.Optional",
+    "InspectorUtility": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
+    "SignatureReflection": "melder.utilities.helpers.signature_reflection.SignatureReflection",
+    "ClassBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile",
+    "SpellBindingKind": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingKind",
+    "CallableBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile",
+    "CallableParameterBindingSummary": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary",
+    "InstanceBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile",
+    "OtherBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile",
+    "SpellBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
-   "to_label": "CallableBindingProfile",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
+    "label": "BindingProfileStrategy"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
-   "to_label": "InstanceBindingProfile",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
-   "to_label": "OtherBindingProfile",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
-   "to_label": "CallableParameterBindingSummary",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "Format": "annotationlib.Format",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Any": "typing.Any",
-  "List": "typing.List",
-  "ClassVar": "typing.ClassVar",
-  "Optional": "typing.Optional",
-  "InspectorUtility": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
-  "SignatureReflection": "melder.utilities.helpers.signature_reflection.SignatureReflection",
-  "ClassBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.ClassBindingProfile",
-  "SpellBindingKind": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingKind",
-  "CallableBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile",
-  "CallableParameterBindingSummary": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableParameterBindingSummary",
-  "InstanceBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile",
-  "OtherBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile",
-  "SpellBindingProfile": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
-  "label": "BindingProfileStrategy"
- },
- "edges_authored": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
-   "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
-   "relation": "creates",
-   "why": "BindingProfileStrategy builds binding-profile variants from raw candidates.",
-   "cardinality": "one_to_many",
-   "phase": [
-    "validation"
-   ],
-   "strength": "hard"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
-   "to": "melder.utilities.helpers.signature_reflection.SignatureReflection",
-   "relation": "uses",
-   "why": "BindingProfileStrategy stabilizes init_signature and callable signature text through SignatureReflection, so the bind fingerprint carries no ForwardRef owner or memory address.",
-   "cardinality": "many_to_one",
-   "phase": [
-    "validation"
-   ],
-   "strength": "borrowed"
-  }
- ]
+  "edges_authored": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
+      "to": "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile",
+      "relation": "creates",
+      "why": "BindingProfileStrategy builds binding-profile variants from raw candidates.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "validation"
+      ],
+      "strength": "hard"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy",
+      "to": "melder.utilities.helpers.signature_reflection.SignatureReflection",
+      "relation": "uses",
+      "why": "BindingProfileStrategy stabilizes init_signature and callable signature text through SignatureReflection, so the bind fingerprint carries no ForwardRef owner or memory address.",
+      "cardinality": "many_to_one",
+      "phase": [
+        "validation"
+      ],
+      "strength": "borrowed"
+    }
+  ]
 }

@@ -1,6 +1,7 @@
 import inspect
 from annotationlib import Format
-from typing import TYPE_CHECKING, Any, List, ClassVar, Optional
+from types import ModuleType
+from typing import TYPE_CHECKING, Any, Dict, List, ClassVar, Optional
 
 
 
@@ -79,17 +80,15 @@ class BindingProfileStrategy:
         text renders those names as source text
         (`SignatureReflection.stabilize_signature`) and stays identical across
         processes; the cached signature object keeps the ForwardRefs.
+
+        Class-level annotations come from `_read_class_annotations`: evaluated
+        where every name resolves, otherwise read without evaluating the
+        unavailable names, which stay as their source text (2026-09-26). The
+        bind fingerprint hashes their keys, so every annotated field counts.
         """
         module = inspect.getmodule(cls)
 
-        try:
-            annotations = inspect.get_annotations(
-                cls,
-                eval_str=True,
-                globals=module.__dict__ if module is not None else None,
-            )
-        except Exception:
-            annotations = {}
+        annotations = self._read_class_annotations(cls, module)
 
         try:
             origin_file = inspect.getfile(cls)
@@ -144,6 +143,52 @@ class BindingProfileStrategy:
             decorated=decorated,
             method_names=method_names,
         )
+
+    @staticmethod
+    def _read_class_annotations(cls: type, module: Optional[ModuleType]) -> Dict[str, Any]:
+        """
+        Return the class-level annotations recorded in a class binding profile.
+
+        Contract:
+            - Evaluates with `inspect.get_annotations(..., eval_str=True)` against
+              the class's module, so string annotations resolve where possible.
+              A class whose names all resolve gets exactly that mapping.
+            - A name unbound at runtime (a TYPE_CHECKING-only import under Python
+              3.14 lazy annotations) makes that evaluation raise NameError. The
+              annotations are then read without evaluating it
+              (`SignatureReflection.class_annotations`, the read ClassInspector
+              uses): the same keys, each unavailable name as its source text
+              (`'Decimal'`, `'list[Decimal]'`), quoted strings as written.
+              Before 2026-09-26 this case dropped every annotation of the class.
+            - Keys are always the class's own annotation names, so the bind
+              fingerprint (which hashes the sorted keys) sees every annotated field.
+            - Best-effort: any other failure, including one inside that fallback,
+              yields an empty mapping, so binding never fails because a class's
+              annotations cannot be read.
+
+        Args:
+            cls: Class candidate being profiled.
+            module: Module returned by `inspect.getmodule(cls)`, or None.
+
+        Returns:
+            Dict[str, Any]: Attribute name to annotation value - the evaluated
+                object, or source text for a name unavailable at runtime.
+        """
+        try:
+            return inspect.get_annotations(
+                cls,
+                eval_str=True,
+                globals=module.__dict__ if module is not None else None,
+            )
+        except NameError:
+            try:
+                return SignatureReflection.class_annotations(cls)
+            except Exception:
+                # Best-effort: annotations that cannot be read bind as none.
+                return {}
+        except Exception:
+            # Best-effort: annotations that cannot be read bind as none.
+            return {}
 
     def _build_callable_profile(self, fn: Any) -> CallableBindingProfile:
         """

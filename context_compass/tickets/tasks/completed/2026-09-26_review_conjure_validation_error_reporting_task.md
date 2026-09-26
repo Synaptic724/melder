@@ -2,15 +2,20 @@
 
 # Task: Review how conjure reports broken spells (SpellbookValidationError)
 
+- Completed: 2026-09-26T16:00:30Z
+- Summary: Conjure's refusal report names each broken spell with its errors and a fix, keeps the conduit
+  verdict's reasons (scope, visibility, cycles), counts warnings and marks Melder-internal codes; *args: Any
+  and the list-only notices on plain data no longer misfire. Source and tests in a62df80cb; owner accepted.
+
 ## Metadata
 - Task ID: TASK-2026-09-26-review-conjure-validation-error-reporting
 - Story: none (owner request after a CommandOps failure report)
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-09-26T14:47:51Z
-- Updated: 2026-09-26T15:16:01Z
+- Updated: 2026-09-26T16:00:30Z
 
 ## Objective
 The owner pasted a CommandOps conjure failure (SpellbookValidationError for CodecPacket and ClassProfile) and is
@@ -43,22 +48,39 @@ errors), and how actionable it is - and bring the owner an evidence-based assess
 - from_state: blocked
 - to_state: in_progress
 - transition_reason: Owner approved all three steps (2026-09-26T15:09:06Z).
+- from_state: in_progress
+- to_state: review
+- transition_reason: Applied to the worktree, suites green on a worktree sync; docs, graph and release note current (2026-09-26T15:49:18Z). Awaiting owner acceptance.
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted ("ok cool so thats fine"); closure sync done (2026-09-26T16:00:30Z).
 
 ## Steps / Checklist
 - [x] Read SpellbookValidationError and every raise site in full.
 - [x] Reproduce the owner's failure shape on current source and on 0.2.54 and capture the rendered text.
 - [x] Assess against what a user needs (why it failed, which parameter, how to fix) and record findings.
 - [x] Bring the owner recommendations (DECISION_REQUEST).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Implement all three approved steps with tests; validate; docs, graph and release note.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Evidence and probes under artifacts/validation_error_reporting_20260926/; an assessment and options.
 
 ## Files / Paths Impacted
-- (investigation only so far)
+- src: spellbook_validation_error.py, general_helpers.py, spellbook_creation_system.py, compiler_phase_6.py;
+  Phase-4 strategies circular_dependency, dangling_dependency, self_validation, contract_provider_presence,
+  parameter_policy, annotation_shape_guard, required_holes; Phase-6 strategies scope_ordering, cycle_detection,
+  visibility_gap, empty_collection, broken_spell_in_dag (16 files).
+- tests: 12 changed files and tests/integration/melder/spellbook/test_spellbook_integration_validation_report.py
+  (new); exact list in artifacts/validation_error_reporting_20260926/results/test_diff.patch.
+- docs: src_components, src_architecture (+indexes), 16 graph descriptors, src_graph (+index), release note.
 
 ## Validation
-- Not run.
+- VM copy re-synced from the worktree after the apply (3.14.7t, -X gil=0): unit + component 10332
+  passed with the same environment-only failures as base; integration spellbook 581, conduit 268, aether 716,
+  crystallizer 258, mutation_research 66, live_sim 1, multithreading 42 passed. 32 new or changed tests fail
+  on unpatched source.
+- Owner machine: Not run. Suggested: `pytest tests/unit tests/component tests/integration` on 3.14t.
 
 ## Risks / Rollback Notes
 - Error text is public behaviour; tests and downstream users may match on it.
@@ -69,17 +91,17 @@ errors), and how actionable it is - and bring the owner an evidence-based assess
 - [ ] No behavior claim cited only to a document or a one-line search hit.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Validation status recorded
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/validation_error_reporting_20260926/
-  - system_docs/patches/active/validation_error_reporting_2026_09_26/
+  - system_docs/patches/completed/validation_error_reporting_2026_09_26/
 - DISPOSITION: retain_as_reference (artifacts); promote_to_documentation (patch docs)
 - CLEANUP_TRIGGER: ticket closure
 
@@ -335,8 +357,68 @@ errors), and how actionable it is - and bring the owner an evidence-based assess
   NEXT: Promote to src_components (SpellCompiler and Validation Pipeline) and src_architecture (Failure Modes).
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T15:49:18Z
+  TYPE: FACT
+  CLAIM: Docs, graph and release note done. src_components (SpellCompiler and Validation Pipeline): a "Conjure
+    validation report" block (layout, rules, gates, names, misfires), a NARROWED line on the container-hint block,
+    Failure Modes (variadic Any, reasonless refusals, and the open Phase-3 "DagNode cannot depend on itself"),
+    Key Files +spellbook_validation_error.py, Spell Validation Strategies contract line, handoff entry.
+    src_architecture: Failure Modes bullet on the report, the Phase-1 invariant's hint wording, handoff entry.
+    Both indexes regenerated, --check OK (9536 and 2898 lines). Graph: 16 descriptors re-extracted (3.14.7t
+    --strict, no skips), prose updated for SpellInputUtils, SpellbookValidationError (module and class), the
+    creation system, and seven strategies, then 30 nodes accepted after reading their source; the
+    SpellbookCreationSystem module and class stay SEMANTICS_STALE (they were stale before this lane from other
+    lanes' edits I have not verified). Only these 16 descriptors copied back; assemble --check: 603 sections,
+    28433 lines. Release note: section "Clearer errors when conjure refuses spells" before the cache-refresh
+    section, and the container section's two bullets corrected (hint only for user classes; list[Any] no warning).
+    Packaged documents and LLM bundles are not rebuilt (owner's asset rebuild).
+  EVIDENCE:
+  - system_docs/src_components.md:3202-3230
+  - system_docs/src_architecture.md:1221-1227
+  - system_docs/src_graph_index.md:598-598
+  - release_docs/next_version_release.md:292-324
+  - context_compass/artifacts/validation_error_reporting_20260926/scripts/author_graph.py:1-89
+  IMPACT: Exit gate met apart from owner acceptance and the deferred asset rebuild.
+  NEXT: Move the task to review and report to the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T15:50:26Z
+  TYPE: FACT
+  CLAIM: The owner committed a62df80cb at 2026-09-26T15:45:52Z while this lane was finishing: it contains all 16
+    source files, the 12 changed tests plus the new integration test, src_components/src_architecture with their
+    indexes and the three patch docs (content identical to what was applied). Still uncommitted: the release note,
+    src_graph.md and its index, the 16 graph descriptors, the ticket, the boards and the newest artifact files.
+    The commit list records the split.
+  EVIDENCE:
+  - context_compass/artifacts/validation_error_reporting_20260926/results/commit_files.txt:1-72
+  IMPACT: Only docs/graph/release-note and ContextCompass records remain for the owner's next commit.
+  NEXT: Report to the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T16:00:30Z
+  TYPE: DECISION
+  CLAIM: Owner accepted the lane ("ok cool so thats fine notch the version and add details to the release").
+    Closure: ticket moved to tickets/tasks/completed/; the three patch docs moved to
+    system_docs/patches/completed/validation_error_reporting_2026_09_26/ (deltas already promoted to
+    src_components and src_architecture); artifacts retained as reference; attention and artifact boards synced;
+    the commit list names the moved paths. Owner-machine suites: Not run. Open follow-up, not fixed: Phase 3
+    raises a bare "DagNode cannot depend on itself" for a constructor taking its own class.
+  EVIDENCE:
+  - context_compass/system_docs/patches/completed/validation_error_reporting_2026_09_26/architecture_patch.md:1-54
+  - context_compass/artifacts/validation_error_reporting_20260926/scripts/close_lane.py:1-144
+  IMPACT: The version notch and release-note details continue in a new ticket.
+  NEXT: none (closed).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
+CLOSED 2026-09-26T16:00:30Z: owner accepted; ticket, patch lane, boards and commit list synced. The Phase-3
+self-dependency message stays an open follow-up.
+IN REVIEW 2026-09-26T15:49:18Z: report rewritten (names, reasons, fixes; conduit reasons no longer lost), two misfires
+fixed (*args: Any; notices on plain data). Docs/graph/release note current; patch lane archives at closure.
+Packaged documents and LLM bundles need the owner's asset rebuild. Nothing committed. Open follow-up: Phase 3
+raises a bare "DagNode cannot depend on itself" for a constructor taking its own class.
 Opened 2026-09-26T14:47:51Z on owner direction. Investigation first; no src edits until the owner approves a direction.
 Resume from the latest Notes NEXT.
 

@@ -898,10 +898,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `annotationlib.Format.FORWARDREF`; code that renders them goes through `SignatureReflection`, which
   matches the VALUE-format text whenever every name resolves and otherwise shows the unavailable name as
   source text, never a ForwardRef owner or a memory address. Bind fingerprints hash that text, so a class
-  annotated with a `TYPE_CHECKING`-only type keeps one spell id across processes. Every annotation in
-  `src/melder` evaluates once its `TYPE_CHECKING` imports are bound, enforced by a unit guard.
-  EVIDENCE: `src/melder/utilities/helpers/signature_reflection.py:SignatureReflection` and
-  `tests/unit/melder/test_annotation_integrity.py`.
+  annotated with a `TYPE_CHECKING`-only type keeps one spell id across processes. The class binding
+  profile reads class-level annotations the same way, so a field typed with such a name counts in the
+  fingerprint (affected classes changed id once when this landed). Every annotation in `src/melder`
+  evaluates once its `TYPE_CHECKING` imports are bound, enforced by a unit guard.
+  EVIDENCE: `src/melder/utilities/helpers/signature_reflection.py:SignatureReflection`,
+  `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:BindingProfileStrategy._read_class_annotations`
+  and `tests/unit/melder/test_annotation_integrity.py`.
 - Creation build locks (2026-09-25): build-once exclusion is per SLOT (a spell id whose Existence
   promises one object in a store). unique_per_conduit, unique_per_spell_space, lineage and cluster
   slots use the target store's slot guard; unique uses its Spell lock (its one slot is the owner
@@ -2681,6 +2684,10 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 class binding-profile annotations: a class whose field annotations name a `TYPE_CHECKING`-only type
+lost all of them from its binding profile, so its spell id ignored those fields. They are now kept as source
+text; affected classes get a new id once. The component map carries the detail.
 
 2026-09-26 conjure validation report: a refused conjure now tells the user which spells failed, why and how to
 fix it, by name; reasons from the conduit verdict are no longer dropped, warnings are counted rather than

@@ -12,3 +12,9 @@ memory: 8032 MB total
 # Consequence: CPython 3.14t must be installed with uv before any run; DI_GAUNTLET_THREADS=3 is
 # oversubscribed on 2 vCPUs, so thread scaling and cross-thread refcount costs are not reproduced.
 # Owner machine (Windows, where the baselines ran): interpreter build, core count and affinity UNKNOWN.
+# VM copy built 2026-09-26T15:48Z by melder_2 (session scratch, outside the connected folder):
+interpreter: CPython 3.14.7 free-threading build (uv cpython-3.14.7+freethreaded-linux-x86_64-gnu), GIL disabled
+packages: dishka 1.10.1, dependency-injector 4.49.1, pytest 9.1.1; melder 0.2.57 from the copied src/ (no install)
+tree snapshot: working tree of the connected folder (HEAD a62df80cb plus 586 changed paths under src/), copied
+  without __melder_cache__, __pycache__ or *.prof, so every VM run starts with a cold creation cache
+runner: python -X gil=0 benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py (DI_GAUNTLET_* env knobs)

@@ -1,0 +1,23 @@
+# Files for the owner's commit - class binding-profile annotations lane (melder_1, 2026-09-26)
+# Source and tests
+src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
+tests/unit/melder/spellbook/spell_crafter/spell_examiner/strategies/test_binding_profile_strategy.py
+tests/unit/melder/spellbook/spell_crafter/spell_examiner/strategies/test_binding_profile_strategy_future_annotations.py
+# Docs, graph, release note
+context_compass/system_docs/src_components.md
+context_compass/system_docs/src_components_index.md
+context_compass/system_docs/src_architecture.md
+context_compass/system_docs/src_architecture_index.md
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.json
+context_compass/system_docs/src_graph.md
+context_compass/system_docs/src_graph_index.md
+release_docs/next_version_release.md
+# Patch lane and ContextCompass records
+context_compass/system_docs/patches/active/class_binding_annotations_2026_09_26/   (2 files, new; moves to completed/ at closure)
+context_compass/artifacts/class_binding_annotations_fix_20260926/
+context_compass/tickets/tasks/2026-09-26_fix_class_binding_profile_annotations_for_type_checking_names_task.md
+context_compass/attention_board.md
+context_compass/artifact_board.md
+context_compass/mailbox_board.md
+# Leave out of a folder-level `git add`: many files in these folders show as modified by line endings only.
+# Packaged documents and LLM bundles are not rebuilt (owner's asset rebuild).

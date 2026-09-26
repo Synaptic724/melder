@@ -73,8 +73,8 @@ class Meld(Cleanable, ABC):
       recompilation ownership work
     - own the per-door fast meld door registry (`_fast_meld_doors`): a plain
       success-only memoization dict, keyed by spell-id string, mapping to
-      `(spell, captured_context, captured_epoch)` tuples
-      used by the concrete doors' guarded warm fast lane. `captured_epoch`
+      `(spell, captured_context, captured_epoch, existing_object_entry)`
+      tuples used by the concrete doors' guarded warm fast lane. `captured_epoch`
       is the spell's `_door_epoch` read BEFORE the building meld executed;
       every spell-level invalidation chokepoint (hook attach, resolution
       invalidation, creation-context cleanup/reset) bumps the live epoch,
@@ -86,9 +86,15 @@ class Meld(Cleanable, ABC):
       hydration hot-swaps that slot in place (cold door -> hot door) on
       first execution. The override arm (2026-09-26) reads the same entry
       for an id-string meld with a non-empty dict payload and calls the
-      live `_overrides_executor` slot instead. Three readers apply one guard
-      ladder and must stay identical: `ConduitMeld.meld`, `SpellSpaceMeld.meld`
-      and `Conduit.meld` (automatic id melds). Cardinality is bounded by
+      live `_overrides_executor` slot instead. `existing_object_entry` is
+      True when the spell holds a bound object (`user_created_object`); the
+      plain arm then returns that object without the door call (2026-09-26),
+      since the existing-creation door returns the same slot. The flag keeps
+      the check off every other spell's warm path, and it is a bool rather
+      than the object so a stale entry never keeps a removed object alive.
+      Three readers apply one guard ladder and both arms and must stay
+      identical: `ConduitMeld.meld`, `SpellSpaceMeld.meld` and
+      `Conduit.meld` (automatic id melds). Cardinality is bounded by
       construction because entries are inserted only after a successful
       full-lane meld (no-override or override branch, never for a spell
       holding a mutation override), so the keyspace is the bound-spell
@@ -282,9 +288,10 @@ class Meld(Cleanable, ABC):
         self._meld_hooks_modified: bool = False
 
         # Fast meld door registry: success-only memoization of warm id-string
-        # melds. Entries are (spell, captured_context, creations_store)
-        # tuples built by the concrete doors only after one full normal-lane
-        # meld succeeded for that spell id, and validated per hit by a live
+        # melds. Entries are (spell, captured_context, captured_epoch,
+        # existing_object_entry) tuples built by the concrete doors only after
+        # one full normal-lane meld succeeded for that spell id, and validated
+        # per hit by a live
         # guard ladder (context identity, validation/resolution flags, hook
         # state). The executor is read per hit through the captured context
         # slot because phase-11 hydration hot-swaps it in place. Plain dict on
@@ -293,7 +300,7 @@ class Meld(Cleanable, ABC):
         # registry-bounded by the success-only insertion rule.
         self._fast_meld_doors: Dict[
             str,
-            Tuple[Spell, CreationContext, int],
+            Tuple[Spell, CreationContext, int, bool],
         ] = {}
 
         # Canonical creation-store surface. `_conduit_creations` is the owning

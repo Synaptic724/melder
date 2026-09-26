@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T15:03:58Z
-- Updated: 2026-09-26T15:37:00Z
+- Updated: 2026-09-26T16:12:08Z
 
 ## User Narrative
 As the Melder owner, I want a conjure whose creation cache fully hits to skip the structural and resolution
@@ -83,10 +83,11 @@ rows - measured on the gauntlet before it is trusted.
 - tickets/tasks/2026-09-26_build_site_plan_lowering_task.md (melder_0; generation 14, manifest-only cache path)
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-09-26-author-structural-snapshot-patch-docs - architecture, SpellCompiler component and
+- [x] Task: TASK-2026-09-26-author-structural-snapshot-patch-docs - architecture, SpellCompiler component and
   hydrator code-description patches after the four rulings and a re-read of the S3b cache path
-  tickets/tasks/2026-09-26_author_structural_snapshot_patch_docs_task.md
-- [ ] Task: C-C - phase-3 DAG object to id rows; presence strategy repointed (opened after the patch docs)
+  tickets/tasks/completed/2026-09-26_author_structural_snapshot_patch_docs_task.md (done 2026-09-26T16:12:08Z)
+- [ ] Task: TASK-2026-09-26-drop-phase3-dag-object-for-id-rows (C-C) - phase-3 DAG object to id and edge rows;
+  presence strategy repointed. tickets/tasks/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md (opened 2026-09-26T16:12:08Z)
 - [ ] Task: capture on miss - per-spell phase 1-4 rows beside the executor payload; replayability verdicts;
   world stamp; key extension; generation bump
 - [ ] Task: hydrate on hit - registry replay through the helpers, Spell flags, structural run only for the
@@ -134,11 +135,14 @@ rows - measured on the gauntlet before it is trusted.
   (c) per-spell key extension with the phase-1 annotation type refs; (d) CCM dirty-root loop as public API.
 - 2026-09-26 (owner): snapshot = phases 1-4 only, per spell, beside the executor payload; 5-7 live. No refusal:
   non-replayable spells regenerate 3-4 through the normal phases (per-spell miss); (c) accepted; (d) moot.
+- 2026-09-26 (owner): patch docs approved ("yeah ok finish off what you gotta do"); the lane proceeds task by task
+  (C-C first); the release note is updated when code lands; tickets are turned in on owner-run green suites.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/structural_snapshot_2026_09_26/ (to be authored by the first task)
+  - system_docs/patches/active/structural_snapshot_2026_09_26/ (architecture, SpellCompiler component,
+    structural hydrator code description; in review 2026-09-26T16:07:21Z)
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: durable deltas merged into the canonical maps at closure; patch folder archived.
 
@@ -255,6 +259,22 @@ rows - measured on the gauntlet before it is trusted.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T16:07:21Z
+  TYPE: FACT
+  CLAIM: Gate transition: task 1 (patch docs) is in REVIEW. The three entry-gate artifacts exist and are
+    linked from the task, this story and the artifact board; the consumption mapping (12 rows: patch
+    section -> task -> validation) is in the task notes. Remaining gate item: owner review. Sequencing
+    recorded in the docs: C-C first (phase 3 rows-only, no envelope touch), then capture (envelope key,
+    generation 15 after melder_0's 14), hydrate, parity, measurement, promotion. NOTICE F0-15 told
+    melder_0 the planned cache-path changes; a second NOTICE precedes any edit of their files.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_author_structural_snapshot_patch_docs_task.md
+  - system_docs/patches/active/structural_snapshot_2026_09_26/architecture_patch.md:1-158
+  IMPACT: Task 2 (C-C) can open on owner approval; nothing under src/ moves before it.
+  NEXT: Owner reviews the docs; fable_0 opens the C-C task with a Propose->Confirm.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -269,6 +289,9 @@ rows - measured on the gauntlet before it is trusted.
 ## Context / Handoff Summary
 STATE 2026-09-26T15:03:58Z: opened on the owner's I-1 selection; task 1 (patch docs) routed and waiting on the four
 rulings (a)-(d); no edit under src/. Resume from task 1's latest STATE line.
+STATE 2026-09-26T16:07:21Z: task 1 in REVIEW (three patch docs, consumption mapping); design settled; task 2 (C-C) opens
+on owner approval. No src edit yet. Resume from task 1's latest STATE line.
+STATE 2026-09-26T16:12:08Z: task 1 DONE (owner approved); task 2 (C-C) opened and routed. Resume from task 2's latest STATE line.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

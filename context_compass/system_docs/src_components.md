@@ -4393,8 +4393,17 @@ Invariants/Guarantees:
   falls back to `SignatureReflection.class_annotations` (FORWARDREF) on NameError.
   EVIDENCE:
   - src/melder/utilities/helpers/signature_reflection.py:52-190
-  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:106-114
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:105-113
   - src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py:150-175
+- The class binding profile reads class-level annotations the same way (2026-09-26,
+  `BindingProfileStrategy._read_class_annotations`): a name unbound at runtime keeps its key, its value the
+  source text (`'Decimal'`, `'list[Decimal]'`). `Bind.sha256_profile` hashes the sorted keys, so every
+  annotated field counts in the spell id, and Nexus publishes the fields. Before, one such name dropped every
+  annotation to `{}`; affected classes got a new id once. Any other read failure, or a failing fallback,
+  still gives `{}`, so binding never fails over annotations.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:147-191
+  - src/melder/aether/spellbook/bind/bind.py:946-956
 - Binding profiles carry the fingerprint text beside the display text (2026-09-26): `fingerprint_repr` on
   callable, instance and other profiles and `default_fingerprint_repr` on each callable parameter summary,
   built with `InspectorUtility.stable_repr` (full repr, memory addresses removed). `repr_string` and
@@ -4404,10 +4413,12 @@ Failure Modes:
 - `SpellExaminer.create_profile(...)` raises `ValueError` when the requested
   profile name is not registered.
 - Builder or inspector failures bubble from the resolved builder path.
-- Known limits, recorded and not fixed (2026-09-26): a function spell's fingerprint hashes its `repr()`,
-  which carries a memory address, so function spell ids change per process; the binding profile's class
-  `annotations` fall back to `{}` when any name in them is unresolved.
-  EVIDENCE: src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:84-92
+- Both limits recorded here earlier on 2026-09-26 are fixed: function spell fingerprints hash an
+  address-free repr (process-stable ids), and class binding-profile annotations keep names unbound at
+  runtime. A class whose annotations cannot be read at all (not a NameError) still binds with `{}`.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:1006-1026
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:147-191
 
 Observability:
 - These layers are primarily introspection/tooling surfaces and do not define
@@ -9292,6 +9303,12 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 class binding-profile annotations: a class whose field annotations name a `TYPE_CHECKING`-only type
+kept none of them in its binding profile, so its spell id ignored those fields and Nexus showed none. The
+profile now reads them as `ClassInspector` does (unavailable names as source text); affected classes get a new
+id once. Promoted into the Spell Examination Profiles entry, whose stale "known limits" line (function ids,
+fixed earlier) is corrected.
 
 2026-09-26 conjure validation report: SpellbookValidationError lists each broken spell's errors by name with
 a fix, adds the conduit verdict's reasons (they were lost to artifact cleanup before the gate), counts

@@ -1,0 +1,57 @@
+# post-P1 step breakdown and lifecycle-only probe, VM copy, 3.14.7t, worker thread
+melder lane=request cycles=4000 sum_of_step_medians=9,784 ns
+  lesser_create          median=    834 ns  ( 8.5%)  mean=    917
+  lesser_meld_1st        median=  1,278 ns  (13.1%)  mean=  1,379
+  lesser_meld_2nd        median=    305 ns  ( 3.1%)  mean=    321
+  space_enter            median=    243 ns  ( 2.5%)  mean=    267
+  space_meld_marker_1st  median=  1,326 ns  (13.6%)  mean=  1,385
+  space_meld_marker_2nd  median=    324 ns  ( 3.3%)  mean=    343
+  space_meld_outer       median=    331 ns  ( 3.4%)  mean=    342
+  root_meld(variant)     median=  3,306 ns  (33.8%)  mean=  3,771
+  space_exit             median=    893 ns  ( 9.1%)  mean=    948
+  lesser_cleanup         median=    943 ns  ( 9.6%)  mean=  1,049
+melder lane=worker_b cycles=4000 sum_of_step_medians=7,558 ns
+  lesser_create          median=    910 ns  (12.0%)  mean=  1,340
+  lesser_meld_1st        median=    888 ns  (11.7%)  mean=  1,311
+  lesser_meld_2nd        median=    310 ns  ( 4.1%)  mean=    444
+  space_enter            median=    269 ns  ( 3.6%)  mean=    386
+  space_meld_marker_1st  median=    917 ns  (12.1%)  mean=  1,324
+  space_meld_marker_2nd  median=    332 ns  ( 4.4%)  mean=    436
+  space_meld_outer       median=    337 ns  ( 4.5%)  mean=    410
+  root_meld(variant)     median=  2,015 ns  (26.7%)  mean=  2,731
+  space_exit             median=    613 ns  ( 8.1%)  mean=    930
+  lesser_cleanup         median=    966 ns  (12.8%)  mean=  1,364
+lifecycle ns/cycle median=1,898 min=1,831
+python calls/cycle=42.0
+  1.00    0.86   10.17  /sessions/rcw-01jgkrzpf1pvgrz7xye8dqf7/work/probe_lifecycle.py:17(cycle)
+  1.00    0.78    3.04  src/melder/aether/conduit/conduit.py:606(_prepare_for_pool)
+  1.00    0.72    2.90  src/melder/aether/conduit/conduit.py:2539(create_lesser_conduit)
+  1.00    0.71    1.01  src/melder/aether/conduit/conduit_ward/conduit_ward.py:1176(_link_lesser_conduit)
+  1.00    0.55    1.77  src/melder/aether/conduit/conduit.py:2723(_link_new_lesser_under_lock)
+  1.00    0.55    0.86  src/melder/aether/conduit/conduit_ward/conduit_ward.py:382(_detach_for_pool)
+  5.00    0.49    0.49  ~:0(<method '__exit__' of '_thread.RLock' objects>)
+  5.00    0.48    0.48  ~:0(<method '__enter__' of '_thread.RLock' objects>)
+  1.00    0.48    3.70  src/melder/aether/conduit/conduit.py:566(cleanup)
+  1.00    0.39    0.97  src/melder/aether/conduit/spell_space/spell_space.py:305(recycle_from_managed_context)
+  1.00    0.36    1.67  src/melder/aether/conduit/spell_space/spell_space.py:233(__exit__)
+  1.00    0.35    0.97  src/melder/aether/conduit/conduit.py:1201(enter_spellspace)
+  1.00    0.35    0.51  src/melder/aether/conduit/conduit_pool.py:136(return_lesser_conduit)
+  1.00    0.33    0.51  src/melder/aether/conduit/creations/creations.py:1046(reset_for_pool)
+  1.00    0.32    0.49  src/melder/aether/conduit/spell_space/spell_space_pool.py:264(release)
+  1.00    0.25    0.35  src/melder/aether/conduit/spell_space/spell_space_thread_state.py:219(pop_expected)
+  1.00    0.25    0.37  src/melder/aether/conduit/conduit.py:672(_cleanup_spellspaces_for_pool)
+  1.00    0.23    0.33  src/melder/aether/conduit/spell_space/spell_space_thread_state.py:187(push)
+  1.00    0.22    0.32  src/melder/aether/conduit/conduit_pool.py:106(create_object)
+  1.00    0.20    0.28  src/melder/aether/conduit/spell_space/spell_space_pool.py:185(acquire_untracked)
+  2.00    0.19    0.19  ~:0(<method 'append' of 'collections.deque' objects>)
+  2.00    0.18    0.18  ~:0(<method 'pop' of 'collections.deque' objects>)
+  2.00    0.15    0.15  ~:0(<built-in method builtins.len>)
+  1.00    0.13    0.13  src/melder/aether/conduit/spell_space/spell_space_thread_state.py:259(drain)
+  1.00    0.12    0.12  ~:0(<method 'pop' of 'dict' objects>)
+  1.00    0.10    0.10  src/melder/aether/conduit/creations/creations.py:1068(reset_for_pool_unlocked)
+  1.00    0.10    0.10  ~:0(<method 'pop' of 'list' objects>)
+  1.00    0.10    0.10  ~:0(<method 'append' of 'list' objects>)
+  1.00    0.09    0.09  src/melder/utilities/general_base/cleanable.py:129(check_cleaned)
+  1.00    0.09    0.09  src/melder/utilities/logger/safe_logger.py:174(is_attached)
+  1.00    0.07    0.07  src/melder/aether/conduit/spell_space/spell_space.py:213(__enter__)
+  0.00    0.00    0.00  ~:0(<method 'disable' of '_lsprof.Profiler' objects>)

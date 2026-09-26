@@ -32,6 +32,21 @@
   SpellSpaceMeld.meld and Conduit.meld. Measured solo meld 209 -> 111 ns (3.14t, main thread); from a worker
   thread 556 -> 404 ns.
 
+- Existing objects (2026-09-26, owner: "fix the existing object pathing"): fast-door entries become
+  `(spell, captured_context, captured_epoch, existing_object_entry)`; the four entry builders (both front doors,
+  no-override and override branches) set the bool to `target_spell.user_created_object is not None`. The guard
+  ladder is unchanged. At the call site of the plain arm of all three readers a flagged hit takes
+  `door_spell.user_created_object` instead of calling the context's no-override door, whose whole body is that
+  read (plus a None refusal a flagged entry cannot need: the slot is set once in `Spell.__init__`, only for
+  instance/other binding profiles, which always classify EXISTING_CREATION* and compile to that door, and is
+  deleted in `Spell.cleanup` together with `_creation_context`, which the guards miss on). The read sits outside
+  the AttributeError try as it does in the door. Override arms unpack and ignore the flag, so an existing object
+  with a payload still reaches the override door and its refusal. The entry stores a bool, not the object: spell
+  removal does not clear entries, and a stale entry must not keep a removed object alive. Two rejected shapes: a
+  slot read on every hit (+8-10 ns on every other spell) and the flag checked inside the guards (+6 ns). Measured:
+  existing object 3.14t main 191-234 -> 170 ns, worker 415-442 -> 368-388; GIL 179-187 -> 160-161; ordinary
+  unique meld +2 ns (noise); owner benchmark solo +5%.
+
 ## Interface / State Deltas
 - No public API change. No new lock, state or registry; entries keep the spell-id keyspace (bounded by the
   registry). The payload is passed as given (the full lane's normalization returns non-empty dicts as-is).
@@ -41,6 +56,8 @@
   skips (capability and spellspace eligibility are immutable per version; validation is a live guard;
   resolution, hook and context changes bump the door epoch). Override key errors, P2 and root refusals come from
   the same `_overrides_executor`.
+- Existing objects: none. The existing-creation door's only work is `_spell.user_created_object` plus its None
+  refusal; a flagged hit performs the same read. Other spells pay one bool check per warm hit.
 - Mutation overrides need a dynamic spell, and dynamic spells never get an entry (their creation gate routes them
   through admission), so a stored mutation override is never skipped.
 
@@ -49,8 +66,13 @@
   callers build the entry; guard trips (spell hooks, meld hooks, context invalidation, validation required) fall
   to the full lane and run hooks; tuple and empty-dict payloads take the full lane; key errors are unchanged;
   spellspace override melds are served.
+- Existing objects: served by identity on all three readers with the context's no-override slot poisoned (door
+  not entered); an override on a warm existing object raises the same MeldExecutionError on the fast and full
+  lanes; spell hooks trip the guard and fire; a spell cleaned out of the conduit gives the full lane's error.
 - Override suites, conduit and multithreading suites on 3.14t and GIL; override_entry_layers.py and the owner's
   test_overrides_all.py before/after.
 
 ## Rollback
 - Remove the `elif` override arm and the entry write in the override branch of both front doors.
+- Existing objects: drop the fourth entry element from the four builders and the three readers' unpacks, and the
+  flag branch at the three plain-arm call sites.

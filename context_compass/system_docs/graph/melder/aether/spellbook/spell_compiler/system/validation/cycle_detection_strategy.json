@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py",
- "source_sha256": "3e241960620d763d3f646fb3245c6cecc44f0661017450d106213d21acf42a02",
+ "source_sha256": "b1b33c4a7a5fdad8cc4b5c2a7a7eb1b59909626618d84022ba78857d040330f0",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy": {
@@ -19,14 +19,14 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "3e241960620d763d3f646fb3245c6cecc44f0661017450d106213d21acf42a02"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy",
    "label": "CycleDetectionStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py",
-   "lineno": 24,
+   "lineno": 25,
    "bases": [
     "SpellSystemValidationStrategy"
    ],
@@ -39,18 +39,18 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3ff0d4ae00b4380c934f93b1176f39826a1d68548ac6255f9c20c4a4965083ca",
+   "span_sha256": "b408144ce074ad8d2d354ad98a265458d81d8105e85ea85b50f933a4860629ec",
    "include": true,
    "role": "The broadest structural check in the Phase 6 set: can the frame-level dependency graph still be topologically ordered?",
    "responsibilities": [
     "work at SpellSystemIndex level rather than per root blueprint",
-    "emit at most one coarse cycle_detected error for the frame",
+    "emit at most one cycle_detected error for the frame, naming up to ten spells left in or behind the cycle (all of their ids in details)",
     "honour cancellation during traversal and never mutate the index or its nodes"
    ],
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "3ff0d4ae00b4380c934f93b1176f39826a1d68548ac6255f9c20c4a4965083ca"
+   "semantics_authored_against": "b408144ce074ad8d2d354ad98a265458d81d8105e85ea85b50f933a4860629ec"
   }
  },
  "edges_out": [
@@ -85,6 +85,7 @@
   "Set": "typing.Set",
   "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
   "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
   "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
   "Spell": "melder.aether.spellbook.spell.Spell",

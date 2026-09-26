@@ -1,4 +1,4 @@
-# Melder 0.2.56
+# Melder 0.2.59
 
 **Unreleased**
 
@@ -40,10 +40,39 @@ meld and on every later run that loads the creation cache.
   references for everything else, so a plan is valid in any process that binds the same book.
 - **Existing creation caches keep working.** Cache entries for books whose payload values are all
   scalars are byte-identical; a book with a non-scalar payload value compiles new plans once.
-- **One path still renders values the old way.** A meld that passes its own `override` payload builds
-  through a separate executor that still writes the descriptor's payload values into generated code.
-  That executor is being replaced. Until then, pass such values in `meld(override=...)` itself, which
-  always delivers them by identity.
+
+## Overrides build only what you did not supply
+
+An override meld now runs a plan compiled for its set of override keys the first time that set is used.
+The plan builds only what the call still needs, so a dependency you supply, and everything that only it
+needed, is never constructed.
+
+- **Supplied dependencies are no longer built and discarded.** Before, an override meld built the root's
+  whole graph and then swapped your values in, so a supplied dependency's own dependencies were
+  constructed anyway, and a supplied shared dependency was built and stored. A supplied dependency that
+  is itself missing an input no longer fails the meld.
+- **Positional payloads cover injected parameters.** `meld(spell_id=..., override=(obj,))` supplies the
+  root's leading parameters even when they are injected dependencies; it used to raise.
+- **A path through a list parameter reaches every member**, not only the last one.
+- **Empty payloads are ordinary melds.** `override=()` and `override={}` run at normal meld speed.
+- **Descriptor payloads behave the same on override melds.** `SpellMap` and `SpellContract` payload
+  values reach their providers as the objects you gave, as they do on plain melds.
+- **Unchanged:** the key grammar, the errors for unknown keys and their text, the error for a rule on a
+  shared object that is already stored, and supplied objects are passed as given, never registered or
+  checked.
+- **Faster.** On three benchmark graphs override melds ran 22-44% faster, and 4.6 times faster on a
+  deep graph with 511 transient sites. Warm override melds with a dict payload now also take the fast
+  lane plain melds use. Cold conjure of that deep graph takes about a quarter less time, because override
+  executors are no longer compiled at conjure.
+- **Creation caches refresh once.** The cache format advances to generation 14; older caches are rebuilt
+  on first use.
+
+## Faster warm melds
+
+- **Id melds on an automatic conduit** - `conduit.meld(spell_id=...)` - are served from the warm fast
+  lane directly, about 100 ns less per call (free-threaded 3.14, main thread).
+- **A bound existing object** is returned by a warm meld without entering its generated creation code,
+  about 10-15% faster on free-threaded and GIL builds.
 
 ## Faster conjure on large books
 
@@ -174,8 +203,10 @@ operations = conduit.meld(spell=Operations, override={"ops": {"build": build_op}
 - **These parameters are caller inputs.** Supply them through `override` when melding, as for any other
   required parameter Melder does not inject. A plain data class registered as a spell works the same way.
 - **The hint moved, it did not disappear.** `conjure(validation_warnings=True)` lists such a parameter as
-  `REQUIRED_HOLE`, and the message now says that Melder injects collections only as `list[T]`.
-- **`Any` is never injected.** `list[Any]` now draws the same "not a DI type" warning as `list[int]`.
+  `REQUIRED_HOLE`; when the container holds one of your classes, as in `dict[str, Operation]`, the message
+  says that Melder injects collections only as `list[T]`. Plain data such as `dict[str, Any]` gets no hint.
+- **`Any` is never injected.** `list[Any]`, like `list[int]` or `list[str]`, is plain data you supply; it
+  draws no list warning.
 - **The `UNSUPPORTED_COLLECTION_SHAPE` validation code is no longer emitted.** Code that looked for it in
   validation results can look for `REQUIRED_HOLE`, which reports these parameters when they have no default.
 
@@ -234,6 +265,11 @@ before, its fingerprint carried a memory address.
 
 - **No change for annotations that resolve.** Rendered signatures match Python's own text whenever
   every name in them can be resolved.
+- **Class fields annotated this way now count in the spell id.** A class whose class-level annotations
+  named such a type was bound with no annotations at all, so adding or removing one of its annotated
+  fields kept the same spell id, and Nexus showed no fields for it. The annotations are now kept, each
+  unavailable name as written. These classes get a new spell id once and their creation plans rebuild on
+  the next conjure; classes whose annotations all resolve keep their ids.
 - **Your own introspection of Melder's API is unchanged.** Calling `inspect.signature` or
   `typing.get_type_hints` with default settings on a Melder class or function that names such a type
   still raises `NameError`. Pass `annotation_format=annotationlib.Format.FORWARDREF` to
@@ -287,6 +323,75 @@ rebuilds, and then lets them continue with the new plan. Melds of other spells a
 - **Limitation:** a constructor that melds its own spell through a conduit that must first rebuild
   that spell waits on itself and fails after 30 seconds.
 
+## Clearer errors when conjure refuses spells
+
+When `conjure` refused spells, `SpellbookValidationError` printed every check that had run on them -
+warnings included, each followed by a dump of its details - with 64-character spell ids, internal phase
+names, and cycles written as ids. Some refusals printed no reason at all. The message now says which spells
+failed, why, and what to change, by name:
+
+```text
+Spellbook validation failed. Broken spells: Holder.
+Holder:
+  - Spell 'Holder' (unique) depends on 'Leaf' (unique_per_spell_space), which lives for a shorter scope,
+    so 'Holder' would keep a stale 'Leaf' after that scope ends. Give 'Holder' the same or a shorter
+    existence (or many), or give 'Leaf' a longer one. [scope_ordering_violation]
+```
+
+A cycle between two spells used to take 15 lines: each spell's 64-character id twice, the cycle reported
+twice for each spell (once as spell ids, once as binding keys) and a dump of each check's details. It now
+reads:
+
+```text
+Spellbook validation failed. Broken spells: CycleA, CycleB.
+CycleA:
+  - Spell 'CycleA' is part of a dependency cycle: 'CycleA' -> 'CycleB' -> 'CycleA'. Melder cannot build
+    any spell in the cycle; remove one of these constructor dependencies or give that parameter a default.
+    [CIRCULAR_DEPENDENCY]
+CycleB:
+  - Spell 'CycleB' is part of a dependency cycle: 'CycleB' -> 'CycleA' -> 'CycleB'. Melder cannot build
+    any spell in the cycle; remove one of these constructor dependencies or give that parameter a default.
+    [CIRCULAR_DEPENDENCY]
+```
+
+- **Errors only.** Each broken spell gets one block listing its errors, each with what to change and its
+  code in brackets. Warnings never block conjure, so they are only counted, in a closing line such as
+  `2 warnings not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.`
+- **No more reasonless refusals.** A refusal found while resolving the conduit (scope ordering, a dependency
+  the book cannot see, a cycle) used to print "(none recorded)"; its reason is now in the message. Errors
+  that belong to no single spell are listed under "Whole-graph errors".
+- **Names, not ids.** Cycles read `'CycleA' -> 'CycleB' -> 'CycleA'`, reported once per spell; a
+  spell id appears, shortened, only where Melder has no name for it.
+- **Internal errors are marked.** Checks of Melder's own bookkeeping are shown as `[internal]`, with a note
+  to report them: they are Melder bugs, not problems in your code.
+- **Follow-on errors are left out.** `root_not_viable` and `broken_spell_in_dag`, which only say that a
+  spell cannot be built because something it depends on is broken, appear only when nothing else explains
+  the refusal. A cycle found by two checks is reported by one.
+- **Only spells with an error are named.** A refusal that belongs to the whole graph opens with
+  `Spellbook validation failed. The dependency graph has errors.` and lists its errors under "Whole-graph
+  errors", instead of naming every spell in the book as broken. `broken_spells` is unchanged.
+- **Frames are named only when set.** A spell bound under a spellframe is labelled with it, for example
+  `Holder (frame 'cache')`; a spell in the default frame shows only its name, where the old text printed
+  `frame=None`.
+- **Meld reports the same way.** When `meld` refuses a spell, the message has the same layout and carries
+  the reason when one was recorded; otherwise it says that the spell's validity is invalid, gated or
+  disabled.
+- **`*args: Any` and `**kwargs: Any` no longer break a spell.** A constructor accepting anything through
+  variadic parameters annotated `Any` was refused as "variadic DI"; `Any` is never injected, so it now
+  conjures.
+- **Same exception, same data.** `SpellbookValidationError` and its `broken_spells` are unchanged, and it
+  gains an optional keyword, `system_diagnostics`. The first line still starts with
+  `Spellbook validation failed.` and contains `Broken spells:` whenever it names a spell. Validation codes
+  are unchanged; their messages are reworded.
+- **Limitation, not changed here:** a constructor that takes its own class fails earlier, in the compiler,
+  with `PhaseExecutionError` ("DagNode cannot depend on itself"), so this report cannot explain it yet.
+
+### Upgrading
+
+- **Tests or log filters that matched the old text** - `one or more spells are broken`, `Phase 4 issues`,
+  `Phase 6 diagnostics`, `(id=`, `[error] CODE (source=...)` - need updating. Match the code in brackets
+  that ends every error line, such as `[scope_ordering_violation]`.
+
 ## Automatic creation-cache refresh after a Melder update
 
 Persisted creation caches now record the Melder version that produced them. When a different
@@ -331,8 +436,9 @@ could be silently omitted from the disposal list and never run during scope tear
 - The packaged system documents (`melder.__architecture__`, `__components__`, `__graph_network__` and
   `__graph_details__`) are regenerated and describe unresolved inputs, `UnresolvedInputError`, the
   opt-in conjure warning report, process-stable spell ids, cache generation 12, caller-supplied container
-  parameters, the `override` descriptor keyword with live payload values, and the single
-  codegen-signature implementation.
+  parameters, the `override` descriptor keyword with live payload values, the single
+  codegen-signature implementation, melding a shared spell while another conduit revalidates it, and the
+  conjure validation report.
 - `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
   raised and caught, but it cannot be bound as a spell.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.56.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.59.

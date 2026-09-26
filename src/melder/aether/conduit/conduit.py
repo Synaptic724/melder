@@ -4468,7 +4468,9 @@ class Conduit(Cleanable):
             - On an automatic conduit an id meld (plain, or with a non-empty dict
               override) is served here from the meld door's fast-door entry when
               every fast-door guard holds (2026-09-26); results are identical to
-              the door's, and any miss continues in the door's id lane.
+              the door's, and any miss continues in the door's id lane. A plain
+              id meld of an existing-object spell returns its bound object there
+              without calling the existing-creation door.
             - GATING IS MODE-DEPENDENT: in dynamic mode entry runs through the
               creation gate and is ticketed; in automatic mode the gate is BYPASSED
               entirely for a minimal hot path. The same call therefore has different
@@ -4546,6 +4548,7 @@ class Conduit(Cleanable):
                     door_spell,
                     captured_context,
                     captured_epoch,
+                    existing_object_entry,
                 ) = fast_entry
                 fast_executor = None
                 try:
@@ -4565,7 +4568,12 @@ class Conduit(Cleanable):
                     fast_executor = None
                 if fast_executor is not None:
                     if override is None:
-                        instance = fast_executor(meld_component)
+                        if existing_object_entry:
+                            # Existing object (2026-09-26): its door's whole body is this
+                            # read, so it is done here without the door frame.
+                            instance = door_spell.user_created_object
+                        else:
+                            instance = fast_executor(meld_component)
                     else:
                         instance = fast_executor(meld_component, override)[0]
                     spellbook = meld_component._spellbook

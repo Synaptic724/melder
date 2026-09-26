@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py",
- "source_sha256": "cb065f08e88d94d7455fd9e3a2cd9228f5902d7d1f69c0bc5547a1d3551bc75b",
+ "source_sha256": "595c0e306e0aea044d12dd1f56b554b4a96d1cd0be68a87ff89e5408cd172b03",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy": {
@@ -19,14 +19,14 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "cb065f08e88d94d7455fd9e3a2cd9228f5902d7d1f69c0bc5547a1d3551bc75b"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
    "label": "CircularDependencyStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py",
-   "lineno": 14,
+   "lineno": 15,
    "bases": [
     "SpellValidationStrategy"
    ],
@@ -39,18 +39,19 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f203fd0dc7c6d3d32631667ce36784b0b0abfe9d9bb0218a34e60d6ba1d69c58",
+   "span_sha256": "b19a15277bc3710845e7fe76ec0e0d8cfb413dfad61f5ed7b48dd50d883f1a1a",
    "include": true,
    "role": "The multi-hop cycle check at spell/version-id level; counterpart to SelfDependencyStrategy and to the binding-key cycle strategy.",
    "responsibilities": [
     "traverse the spellbook-wide dependency graph by spell/version id",
     "report only cycles reachable from the spell under validation",
-    "leave dangling ids to DanglingDependenciesStrategy and never try to break cycles automatically"
+    "leave dangling ids to DanglingDependenciesStrategy and never try to break cycles automatically",
+    "names the cycle's members (the loop closed once) and says how to break it"
    ],
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "f203fd0dc7c6d3d32631667ce36784b0b0abfe9d9bb0218a34e60d6ba1d69c58"
+   "semantics_authored_against": "b19a15277bc3710845e7fe76ec0e0d8cfb413dfad61f5ed7b48dd50d883f1a1a"
   }
  },
  "edges_out": [
@@ -77,6 +78,7 @@
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
   "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
  },
  "collapse_candidate": {

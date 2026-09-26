@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py",
- "source_sha256": "3e0fc02803ceffb759badc12dff2423c1351a9c3724099e6e43c0a26625385e0",
+ "source_sha256": "087c45af1a73fd01b8e863876d05ca6662999a538341499127c4e90461dfa21d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy": {
@@ -35,15 +35,15 @@
     "validate"
    ],
    "shape": {
-    "method_count": 2,
+    "method_count": 3,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e56f35482a331988342b4154f36031f163959c7183efc951e61f73a0475b4687",
+   "span_sha256": "561cdc30ca40c9b0f9095d29c31da49adca159885a2cc2e0707151aa0d9c788b",
    "include": true,
    "role": "Warns about list[T] elements and forward references Melder cannot inject, reading Phase-1 requirements annotations; container parameters are caller inputs it leaves to RequiredHolesStrategy.",
    "responsibilities": [
-    "treat list[T] as the only collection DI form: warn LIST_ELEMENT_NOT_DI_TARGET for a non-injectable element and UNRESOLVED_FORWARD_REF for unresolved forward references",
+    "treat list[T] as the only collection DI form: warn LIST_ELEMENT_NOT_DI_TARGET only when a user class sits inside a non-injectable element (list[Optional[Plugin]]) - plain data lists get nothing - and UNRESOLVED_FORWARD_REF for unresolved forward references",
     "never judge set, frozenset, dict or tuple parameters: Phase 1 never injects them, so they are caller inputs",
     "treat typing.Any as not a DI target, matching Phase 1",
     "defer SpellMap and SpellContract defaults to their own strategies",
@@ -53,7 +53,7 @@
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "e56f35482a331988342b4154f36031f163959c7183efc951e61f73a0475b4687"
+   "semantics_authored_against": "561cdc30ca40c9b0f9095d29c31da49adca159885a2cc2e0707151aa0d9c788b"
   }
  },
  "edges_out": [

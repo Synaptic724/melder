@@ -95,10 +95,19 @@ class _NoDeps:
 
 
 # ---- SOLO ---------------------------------------------------------------------------
+# One object per step: the root's only input is the override, so every library builds the root alone with
+# the supplied leaf (a melder override targets constructor parameters; a root with none has nothing to override).
 
 
-class SoloRootA(_NoDeps):
+class SoloLeafA(_NoDeps):
     __slots__ = ()
+
+
+class SoloRootA:
+    __slots__ = ("leaf",)
+
+    def __init__(self, leaf: SoloLeafA) -> None:
+        self.leaf = leaf
 
 
 # ---- SHALLOW ------------------------------------------------------------------------
@@ -260,8 +269,7 @@ class _OverrideGraphSpec:
     classes: tuple[type, ...]
     override_target: type
     override_accessor: Callable[[Any], tuple[Any, ...]]
-    melder_override_key: str | None
-    melder_override_mode: str
+    melder_override_key: str
 
 
 def _override_graphs() -> list[_OverrideGraphSpec]:
@@ -269,11 +277,10 @@ def _override_graphs() -> list[_OverrideGraphSpec]:
         _OverrideGraphSpec(
             name="solo",
             root_type=SoloRootA,
-            classes=(SoloRootA,),
-            override_target=SoloRootA,
-            override_accessor=lambda root: (root,),
-            melder_override_key=None,
-            melder_override_mode="existing",
+            classes=(SoloLeafA, SoloRootA),
+            override_target=SoloLeafA,
+            override_accessor=lambda root: (root.leaf,),
+            melder_override_key="leaf",
         ),
         _OverrideGraphSpec(
             name="shallow",
@@ -282,7 +289,6 @@ def _override_graphs() -> list[_OverrideGraphSpec]:
             override_target=ShallowLeafA,
             override_accessor=lambda root: (root.a,),
             melder_override_key="a",
-            melder_override_mode="payload",
         ),
         _OverrideGraphSpec(
             name="wide",
@@ -301,7 +307,6 @@ def _override_graphs() -> list[_OverrideGraphSpec]:
             override_target=Wide8Leaf0,
             override_accessor=lambda root: (root.leaves[0],),
             melder_override_key="l0",
-            melder_override_mode="payload",
         ),
         _OverrideGraphSpec(
             name="diamond",
@@ -310,7 +315,6 @@ def _override_graphs() -> list[_OverrideGraphSpec]:
             override_target=DiamondSharedLeaf,
             override_accessor=lambda root: (root.left.leaf, root.right.leaf),
             melder_override_key="**leaf",
-            melder_override_mode="payload",
         ),
         _OverrideGraphSpec(
             name="deep",
@@ -319,7 +323,6 @@ def _override_graphs() -> list[_OverrideGraphSpec]:
             override_target=Depth9LeafA,
             override_accessor=lambda root: (_deep_left_leaf(root),),
             melder_override_key="left>left>left>left>left>left>left>left",
-            melder_override_mode="payload",
         ),
     ]
 
@@ -561,21 +564,15 @@ def _build_override_melder(g: _OverrideGraphSpec) -> _OverrideOps:
 
     override_instance = g.override_target()
 
-    if g.melder_override_mode == "existing":
-        root_id = spellbook.bind(spell=override_instance, existence=Existence.unique, permissions="create")
-    else:
-        ids: dict[type, str] = {}
-        for cls in g.classes:
-            ids[cls] = spellbook.bind(spell=cls, existence=Existence.many, permissions="create")
-        root_id = ids[g.root_type]
+    ids: dict[type, str] = {}
+    for cls in g.classes:
+        ids[cls] = spellbook.bind(spell=cls, existence=Existence.many, permissions="create")
+    root_id = ids[g.root_type]
 
     conduit = spellbook.conjure(name="di-overrides")
 
     def get_root() -> Any:
-        if g.melder_override_mode == "existing":
-            root = conduit.meld(spell_id=root_id)
-        else:
-            root = conduit.meld(spell_id=root_id, override={g.melder_override_key: override_instance})
+        root = conduit.meld(spell_id=root_id, override={g.melder_override_key: override_instance})
         if not isinstance(root, g.root_type):
             raise AssertionError("Melder: root resolve returned wrong type")
         return root

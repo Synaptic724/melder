@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py",
- "source_sha256": "0ce93c831ea656ce830341d57246b915fb4413cbf93bc8e4b474ae04656b0b7f",
+ "source_sha256": "9d840971904c2a85b7ec5e642c381ef13b224c9f68dfd89ab421e99d372c81ac",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy": {
@@ -19,7 +19,7 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "0ce93c831ea656ce830341d57246b915fb4413cbf93bc8e4b474ae04656b0b7f"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy.DanglingDependenciesStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy.DanglingDependenciesStrategy",
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "7a6d7f995417e07f37ad7e2daabe751408c0c8b9ed6f0bbaa68eb316b04f2d1f",
+   "span_sha256": "b1269246c8c2a5d0b6d47cdec9d89ef1a37dd7e91b3ff5bd2532f4ac3feba354",
    "include": true,
    "role": "Owner of dangling-id reporting, which the cycle strategies deliberately ignore so this one is the single voice on it.",
    "responsibilities": [
@@ -50,7 +50,7 @@
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "7a6d7f995417e07f37ad7e2daabe751408c0c8b9ed6f0bbaa68eb316b04f2d1f"
+   "semantics_authored_against": "b1269246c8c2a5d0b6d47cdec9d89ef1a37dd7e91b3ff5bd2532f4ac3feba354"
   }
  },
  "edges_out": [

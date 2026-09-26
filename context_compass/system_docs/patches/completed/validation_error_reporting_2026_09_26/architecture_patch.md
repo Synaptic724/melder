@@ -1,6 +1,6 @@
 # Architecture patch: readable conjure validation reports (2026-09-26)
 
-Ticket: tickets/tasks/2026-09-26_review_conjure_validation_error_reporting_task.md (owner approved all three steps).
+Ticket: tickets/tasks/completed/2026-09-26_review_conjure_validation_error_reporting_task.md (owner approved all three steps).
 
 ## Objective
 When conjure (or a meld-time revalidation) refuses spells, the SpellbookValidationError message says which spells

@@ -1,0 +1,24 @@
+orig r1: melder lane=request ns/cycle median=15,522 min=15,140 max=16,735
+orig r1: melder lane=worker_a ns/cycle median=10,129 min=9,828 max=10,611
+orig r1: melder lane=worker_b ns/cycle median=10,096 min=9,742 max=10,429
+p1 r1: melder lane=request ns/cycle median=11,636 min=11,575 max=12,111
+p1 r1: melder lane=worker_a ns/cycle median=8,688 min=8,548 max=9,278
+p1 r1: melder lane=worker_b ns/cycle median=8,686 min=8,573 max=8,778
+orig r2: melder lane=request ns/cycle median=15,099 min=14,750 max=15,350
+orig r2: melder lane=worker_a ns/cycle median=10,495 min=10,151 max=10,599
+orig r2: melder lane=worker_b ns/cycle median=10,176 min=9,970 max=11,013
+p1 r2: melder lane=request ns/cycle median=15,919 min=11,975 max=17,147
+p1 r2: melder lane=worker_a ns/cycle median=11,205 min=10,569 max=11,475
+p1 r2: melder lane=worker_b ns/cycle median=11,004 min=10,588 max=12,866
+orig r3: melder lane=request ns/cycle median=15,432 min=15,179 max=15,725
+orig r3: melder lane=worker_a ns/cycle median=10,721 min=9,999 max=14,741
+orig r3: melder lane=worker_b ns/cycle median=10,309 min=10,070 max=10,333
+p1 r3: melder lane=request ns/cycle median=12,188 min=11,833 max=12,473
+p1 r3: melder lane=worker_a ns/cycle median=8,931 min=8,832 max=9,647
+p1 r3: melder lane=worker_b ns/cycle median=9,011 min=8,586 max=9,905
+dishka lane=request ns/cycle median=11,175 min=10,969 max=11,493
+dishka lane=worker_a ns/cycle median=8,043 min=7,661 max=8,245
+dishka lane=worker_b ns/cycle median=7,400 min=7,204 max=7,739
+dependency-injector lane=request ns/cycle median=21,695 min=21,222 max=27,749
+dependency-injector lane=worker_a ns/cycle median=13,710 min=13,139 max=15,310
+dependency-injector lane=worker_b ns/cycle median=12,812 min=12,688 max=15,095

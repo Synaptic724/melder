@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py",
- "source_sha256": "7d3c9e9e638d9dc74ee628326cceae0acd907cbd972ae0d2cbf04d9c2bbffd76",
+ "source_sha256": "6d5626e3fec381141c6466747797e35e3aeb21f0305f33d76cb8fba505bcb807",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy": {
@@ -19,14 +19,14 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "7d3c9e9e638d9dc74ee628326cceae0acd907cbd972ae0d2cbf04d9c2bbffd76"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy.ScopeOrderingStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy.ScopeOrderingStrategy",
    "label": "ScopeOrderingStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py",
-   "lineno": 30,
+   "lineno": 31,
    "bases": [
     "SpellSystemValidationStrategy"
    ],
@@ -39,17 +39,18 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "a8c80eee991e244d264e3a284cea0ca2d437d02abdd1f5b82aa7f1fe53c5fd31",
+   "span_sha256": "c027122d8edd3a5c5aa9cf2ee5c09df0bab8f1f6f5f98ec195b620c21bb7da05",
    "include": true,
    "role": "Guard lifecycle-scope ordering across dependency edges - the leak check.",
    "responsibilities": [
     "report broader-lived nodes depending on narrower-lived ones",
-    "prevent per-conduit, per-spellspace or per-call instances from leaking upward into shared scopes"
+    "prevent per-conduit, per-spellspace or per-call instances from leaking upward into shared scopes",
+    "names holder and dependency with their existences and says which existence to change"
    ],
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "a8c80eee991e244d264e3a284cea0ca2d437d02abdd1f5b82aa7f1fe53c5fd31"
+   "semantics_authored_against": "c027122d8edd3a5c5aa9cf2ee5c09df0bab8f1f6f5f98ec195b620c21bb7da05"
   }
  },
  "edges_out": [
@@ -79,6 +80,7 @@
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
   "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
   "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
   "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
   "Spell": "melder.aether.spellbook.spell.Spell",

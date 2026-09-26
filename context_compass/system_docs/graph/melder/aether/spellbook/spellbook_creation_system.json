@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook_creation_system.py",
- "source_sha256": "68458e1731150a4e943c338c069dab65fe5ba3292eafa1f5df353e52489d068a",
+ "source_sha256": "c4765c98bed43acfef75b3b32ae840f0afbba7e751dc70b44940265230dd73f4",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook_creation_system": {
@@ -19,7 +19,7 @@
    "label": "SpellbookCreationSystem",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spellbook_creation_system.py",
-   "lineno": 55,
+   "lineno": 51,
    "bases": [
     "Cleanable"
    ],
@@ -54,11 +54,11 @@
     "run_structural_phases"
    ],
    "shape": {
-    "method_count": 67,
+    "method_count": 65,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "22200330ad8658374b64850958657ff950f82a0e90dba46c661696ce40e4a307",
+   "span_sha256": "ca39faed60d1e996dac5d805ea0bd32f45fbe1627a71663f11f0ade7054c028e",
    "role": "Conjure-only orchestration helper for Spellbook.",
    "responsibilities": [
     "prepares spellbook configuration and structural phase execution before conjure",
@@ -68,7 +68,8 @@
     "excludes non-resolvable definitions from executable cache payload and plan-phase eligibility",
     "binds local phase cancellation arguments when units are created within the current scheduler run",
     "when the public conjure passes validation_warnings=True, logs one WARNING grouping every Phase-4 warning by code before phase artifacts are released; otherwise logs nothing",
-    "on a non-full-hit conjure, rebuilds the conduit cache bundle from that compile: removes every payload and re-stages every live payload-eligible spell in sorted id order, so a full hit never hydrates a plan naming a spell id outside the live pool"
+    "on a non-full-hit conjure, rebuilds the conduit cache bundle from that compile: removes every payload and re-stages every live payload-eligible spell in sorted id order, so a full hit never hydrates a plan naming a spell id outside the live pool",
+    "hands the conduit resolution diagnostics to SpellbookValidationError at the conjure gate and the local-rerun gate, so a conduit-verdict refusal states its reasons (the phase artifacts are already cleaned)"
    ],
    "owns_state": [
     "_spellbook",
@@ -105,12 +106,6 @@
   {
    "from": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
    "to_label": "SpellbookValidationError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
-   "to_label": "FunctionType",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -164,8 +159,6 @@
   "Iterable": "collections.abc.Iterable",
   "Mapping": "collections.abc.Mapping",
   "Sequence": "collections.abc.Sequence",
-  "CodeType": "types.CodeType",
-  "FunctionType": "types.FunctionType",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "ClassVar": "typing.ClassVar",
@@ -174,7 +167,6 @@
   "Conduit": "melder.aether.conduit.conduit.Conduit",
   "ConduitState": "melder.aether.conduit.conduit_state.conduit_state.ConduitState",
   "Policies": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
-  "CreationContext": "melder.aether.conduit.meld.creation_context.creation_context.CreationContext",
   "SpellCompilerSystem": "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem",
   "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
   "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
@@ -192,12 +184,8 @@
   "CachingSystem": "melder.utilities.caching_system.caching_system.CachingSystem",
   "CreationGateController": "melder.utilities.synchronization.creation_gate_controller.CreationGateController",
   "UnitOfWork": "melder.utilities.synchronization.unit_of_work.UnitOfWork",
-  "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
   "is_manifest_package": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.is_manifest_package",
-  "load_creation_context_lazy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.load_creation_context_lazy",
-  "load_creation_context": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache.load_creation_context",
-  "_build_inner_no_overrides_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache._build_inner_no_overrides_executor",
-  "_build_inner_overrides_runtime": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache._build_inner_overrides_runtime"
+  "load_creation_context_lazy": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.load_creation_context_lazy"
  },
  "collapse_candidate": {
   "module": "melder.aether.spellbook.spellbook_creation_system",

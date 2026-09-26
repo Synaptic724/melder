@@ -12103,7 +12103,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py
 
-- source_sha256: `065df3f0df42cf575583152c479444cc6ea4d60addaab19277120a55e68dcf17`
+- source_sha256: `15d71b16027538c9bc927a2e4e2315a47d1a01582da9d7850c177b64f5651c8c`
 - nodes: 2
 
 ### Nodes
@@ -12117,7 +12117,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CompilerPhase6` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6`
-- defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py:112`
+- defined at: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py:113`
 - role: Compiler-owned phase-6 system validation surface.
 - responsibilities:
   - builds the canonical system-validation strategy pipeline
@@ -13479,7 +13479,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
 
-- source_sha256: `ecbe7c3cbf210784845fb9822791ab23c9852a58dddd62874cc5d1e678683fcf`
+- source_sha256: `be9c267e94e07f8c12ead1057ca9f9df92abaf82c45ecf3fc373209f47bd5222`
 - nodes: 2
 
 ### Nodes
@@ -13493,13 +13493,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `BindingProfileStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:18`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:19`
 - role: Strategy building binding profiles from raw candidates.
 - responsibilities:
   - builds the correct binding-profile variant from a raw candidate surface
   - captures Python 3.14 signatures with unresolved annotation names retained as ForwardRefs
   - renders init_signature and callable signature fingerprint text with unresolved names as source text, keeping spell ids stable across processes
   - fills fingerprint_repr and each parameter's default_fingerprint_repr with InspectorUtility.stable_repr beside the truncated display reprs
+  - reads class-level annotations evaluated where every name resolves, otherwise without evaluating the unavailable names (kept as source text, the ClassInspector read), so the fingerprint's sorted annotation keys cover every annotated field; any other read failure yields an empty mapping
 - phases: `validation`, `runtime`
 - public methods: `build_profile`
 
@@ -14213,7 +14214,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py
 
-- source_sha256: `63acc81852ee24fe25257f1aaaebb3cb1aee329b3be1c6b2a2f40e3622eb4446`
+- source_sha256: `c46573177100f40a14964ddbf0a1c491e8456c8f9ae9fd25b290fe97b336ee3f`
 - nodes: 2
 
 ### Nodes
@@ -14230,7 +14231,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `BrokenSpellInDagStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py:28`
+- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py:29`
 - extends: `SpellSystemValidationStrategy`
 - role: Lift spell-local breakage into the rooted system view, so a spell already broken at Phase 4 cannot silently survive inside a root DAG.
 - responsibilities:
@@ -14345,7 +14346,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py
 
-- source_sha256: `3e241960620d763d3f646fb3245c6cecc44f0661017450d106213d21acf42a02`
+- source_sha256: `b1b33c4a7a5fdad8cc4b5c2a7a7eb1b59909626618d84022ba78857d040330f0`
 - nodes: 2
 
 ### Nodes
@@ -14362,12 +14363,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CycleDetectionStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py:24`
+- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py:25`
 - extends: `SpellSystemValidationStrategy`
 - role: The broadest structural check in the Phase 6 set: can the frame-level dependency graph still be topologically ordered?
 - responsibilities:
   - work at SpellSystemIndex level rather than per root blueprint
-  - emit at most one coarse cycle_detected error for the frame
+  - emit at most one cycle_detected error for the frame, naming up to ten spells left in or behind the cycle (all of their ids in details)
   - honour cancellation during traversal and never mutate the index or its nodes
 - phases: `compile`
 - public methods: `run`
@@ -14435,7 +14436,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py
 
-- source_sha256: `425101ff8d0177816fe4b6dc735e7dfcf510c62d1b44efac12becb1c1ab44a19`
+- source_sha256: `7bcdc3691519b94ec3f4d22be43e57a7cf840c346d5bd29fb3ec54180fb8427b`
 - nodes: 2
 
 ### Nodes
@@ -14449,7 +14450,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `EmptyCollectionStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py:30`
+- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py:31`
 - extends: `SpellSystemValidationStrategy`
 - role: The runtime-mode-sensitive check: a required collection socket that wired zero providers means two different things depending on the owning book's mode.
 - responsibilities:
@@ -15049,7 +15050,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
 
-- source_sha256: `7d3c9e9e638d9dc74ee628326cceae0acd907cbd972ae0d2cbf04d9c2bbffd76`
+- source_sha256: `6d5626e3fec381141c6466747797e35e3aeb21f0305f33d76cb8fba505bcb807`
 - nodes: 2
 
 ### Nodes
@@ -15066,12 +15067,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ScopeOrderingStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy.ScopeOrderingStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:30`
+- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py:31`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard lifecycle-scope ordering across dependency edges - the leak check.
 - responsibilities:
   - report broader-lived nodes depending on narrower-lived ones
   - prevent per-conduit, per-spellspace or per-call instances from leaking upward into shared scopes
+  - names holder and dependency with their existences and says which existence to change
 - phases: `compile`
 - public methods: `run`
 
@@ -15214,7 +15216,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py
 
-- source_sha256: `e85681a8a1765419e014effa441c26f39e10c79aba52af7d7cc4ffba3b9ca1f7`
+- source_sha256: `df38dd3e5b820ad60ecbca5b6a4c98b0f652dc78b270d9a70dc5524f5cabf702`
 - nodes: 2
 
 ### Nodes
@@ -15231,7 +15233,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `VisibilityGapStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy.VisibilityGapStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py:29`
+- defined at: `src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py:30`
 - extends: `SpellSystemValidationStrategy`
 - role: Guard that spellbook visibility filtering has not silently amputated dependencies a visible spell still needs.
 - responsibilities:
@@ -15445,7 +15447,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
 
-- source_sha256: `3e0fc02803ceffb759badc12dff2423c1351a9c3724099e6e43c0a26625385e0`
+- source_sha256: `087c45af1a73fd01b8e863876d05ca6662999a538341499127c4e90461dfa21d`
 - nodes: 2
 
 ### Nodes
@@ -15466,7 +15468,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - extends: `SpellValidationStrategy`
 - role: Warns about list[T] elements and forward references Melder cannot inject, reading Phase-1 requirements annotations; container parameters are caller inputs it leaves to RequiredHolesStrategy.
 - responsibilities:
-  - treat list[T] as the only collection DI form: warn LIST_ELEMENT_NOT_DI_TARGET for a non-injectable element and UNRESOLVED_FORWARD_REF for unresolved forward references
+  - treat list[T] as the only collection DI form: warn LIST_ELEMENT_NOT_DI_TARGET only when a user class sits inside a non-injectable element (list[Optional[Plugin]]) - plain data lists get nothing - and UNRESOLVED_FORWARD_REF for unresolved forward references
   - never judge set, frozenset, dict or tuple parameters: Phase 1 never injects them, so they are caller inputs
   - treat typing.Any as not a DI target, matching Phase 1
   - defer SpellMap and SpellContract defaults to their own strategies
@@ -15584,7 +15586,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
 
-- source_sha256: `cb065f08e88d94d7455fd9e3a2cd9228f5902d7d1f69c0bc5547a1d3551bc75b`
+- source_sha256: `595c0e306e0aea044d12dd1f56b554b4a96d1cd0be68a87ff89e5408cd172b03`
 - nodes: 2
 
 ### Nodes
@@ -15601,13 +15603,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CircularDependencyStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py:14`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py:15`
 - extends: `SpellValidationStrategy`
 - role: The multi-hop cycle check at spell/version-id level; counterpart to SelfDependencyStrategy and to the binding-key cycle strategy.
 - responsibilities:
   - traverse the spellbook-wide dependency graph by spell/version id
   - report only cycles reachable from the spell under validation
   - leave dangling ids to DanglingDependenciesStrategy and never try to break cycles automatically
+  - names the cycle's members (the loop closed once) and says how to break it
 - phases: `compile`
 - public methods: `validate`
 
@@ -15629,7 +15632,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
 
-- source_sha256: `cf7cc759abe13b9b8938926f3c1c6d511bf474efc5d14feb194e82d1144ba76e`
+- source_sha256: `de31ea1c63b3ededc4fee50aa80e0bf2243235030963bb23dfc4c7d3a94fa697`
 - nodes: 2
 
 ### Nodes
@@ -15654,6 +15657,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - warn on missing SpellContract providers in dynamic mode but error on contract sockets in automatic system state
   - read the Spellbook's contracted-spell maps and the frame system_state
   - caches provider IDs and capability together, rejects a selected False provider and skips False-root provider obligations
+  - each error says what to change; an ambiguity error states how many providers match the contract
 - phases: `compile`
 - public methods: `validate`
 
@@ -15675,7 +15679,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py
 
-- source_sha256: `0ce93c831ea656ce830341d57246b915fb4413cbf93bc8e4b474ae04656b0b7f`
+- source_sha256: `9d840971904c2a85b7ec5e642c381ef13b224c9f68dfd89ab421e99d372c81ac`
 - nodes: 2
 
 ### Nodes
@@ -15808,7 +15812,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py
 
-- source_sha256: `1ffd0b19e04e0e804ed7f6e611eec604c839ef852c679e34ffdd0ad90bb8ce15`
+- source_sha256: `4a31565aa60fbf18e22c95860d398d6d98dfda2dbf65ab8415809747b556c76d`
 - nodes: 2
 
 ### Nodes
@@ -15832,6 +15836,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - error on VARIADIC_DI_UNSUPPORTED, DI_MISSING_ANNOTATION, DI_BUILTIN_ANNOTATION, DI_COLLECTION_MISSING_ELEMENT and DI_COLLECTION_NON_FRAME
   - validate only - mutate nothing
   - applies constructor-DI restrictions only to resolvable registrations
+  - treats typing.Any as not injectable, matching Phase 1, so *args: Any / **kwargs: Any are not variadic DI
 - phases: `compile`
 - public methods: `validate`
 
@@ -15853,7 +15858,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
 
-- source_sha256: `91938d48320aef5b727ffdca62614d96bb0d29f1c83a0da1e7d3ea781e302d56`
+- source_sha256: `8aac8697dace186307c75327524ea31342c8a62cd446e9cc3147165f21a4124a`
 - nodes: 2
 
 ### Nodes
@@ -15870,13 +15875,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `RequiredHolesStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:14`
+- defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:15`
 - extends: `SpellValidationStrategy`
 - role: Reports caller-required parameters that Melder DI will never satisfy - advisory, because the caller may still supply them at invocation.
 - responsibilities:
   - consume the Phase-1 SpellRequirements.iter_required_holes() view
   - emit warnings rather than hard errors
-  - adds the list-only collection hint to REQUIRED_HOLE for set, frozenset, dict and tuple annotations
+  - adds the list-only collection hint to REQUIRED_HOLE only when a set, frozenset, dict or tuple annotation holds a user class; plain data containers get no hint
   - reports resolved OVERRIDE_REQUIRED inputs using durable local topology; descriptive roots have no construction obligations
   - warns once per UNRESOLVED_INPUT socket with parameter, position, kind, expected type and frame key
 - phases: `compile`
@@ -15945,7 +15950,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py
 
-- source_sha256: `f66bd88393f439d5ef0a294469709079d6a8b324954de170cc0e3a66d9ff18ff`
+- source_sha256: `646a002d196d7551dea5542d2c20d56fc20293e2059bdd2e2bf6b39b318e5193`
 - nodes: 2
 
 ### Nodes
@@ -16321,7 +16326,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook_creation_system.py
 
-- source_sha256: `68458e1731150a4e943c338c069dab65fe5ba3292eafa1f5df353e52489d068a`
+- source_sha256: `c4765c98bed43acfef75b3b32ae840f0afbba7e751dc70b44940265230dd73f4`
 - nodes: 2
 
 ### Nodes
@@ -16335,7 +16340,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellbookCreationSystem` (class)
 
 - id: `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem`
-- defined at: `src/melder/aether/spellbook/spellbook_creation_system.py:55`
+- defined at: `src/melder/aether/spellbook/spellbook_creation_system.py:51`
 - extends: `Cleanable`
 - role: Conjure-only orchestration helper for Spellbook.
 - responsibilities:
@@ -16347,6 +16352,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - binds local phase cancellation arguments when units are created within the current scheduler run
   - when the public conjure passes validation_warnings=True, logs one WARNING grouping every Phase-4 warning by code before phase artifacts are released; otherwise logs nothing
   - on a non-full-hit conjure, rebuilds the conduit cache bundle from that compile: removes every payload and re-stages every live payload-eligible spell in sorted id order, so a full hit never hydrates a plan naming a spell id outside the live pool
+  - hands the conduit resolution diagnostics to SpellbookValidationError at the conjure gate and the local-rerun gate, so a conduit-verdict refusal states its reasons (the phase artifacts are already cleaned)
 - owns_state: `_spellbook`, `_policy`, `_dynamic`, `_name`, `_conduit_logger`, `_phase_scheduler_cls`, `_validation_warnings`, `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `check_system_state`, `cleanup`, `cleanup_phase_artifacts_after_resolution`, `conjure`, `define_conduit_into_spells`, `fire_conjure_hooks`, `get_conjure_hook_map`, `phase_change_control_factory`, `phase_execution_plan_factory`, `phase_injection_plan_factory`, `phase_local_frame_factory`, `phase_occurrence_plan_factory` (+15 more)
@@ -16370,13 +16376,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem` -> `melder.utilities.caching_system.caching_system.CachingSystem`: SpellbookCreationSystem loads and emits cached spell payloads through the Spellbook-owned CachingSystem during conjure.
 - `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem` -> `melder.utilities.synchronization.phase_scheduler.PhaseScheduler`: SpellbookCreationSystem delegates structural and resolution phase orchestration to PhaseScheduler instances.
 
-### Edge candidates (10, unconfirmed)
+### Edge candidates (9, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem` creates `RLock`
 - `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem` creates `SpellbookValidationError`
-- `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem` creates `FunctionType`
 - `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem` creates `Conduit`
 - `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem` creates `SpellCompilerSystem`
 - `melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem` creates `CancellationEventSignal`
@@ -26777,7 +26782,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/custom_exceptions/spellbook_validation_error.py
 
-- source_sha256: `7a83247de37dee7dd5ec8a4ba618ce9b115c74c9215957cef698c0d75574a2ff`
+- source_sha256: `9871616762ad3fecfe554a69c482606389916c77053e546d3ce1869b9462cc3a`
 - nodes: 2
 
 ### Nodes
@@ -26786,20 +26791,25 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.utilities.custom_exceptions.spellbook_validation_error`
 - defined at: `src/melder/utilities/custom_exceptions/spellbook_validation_error.py:1`
-- role: Raised when spellbook validation finds broken spells, preserving per-spell context for remediation.
+- role: The build-time 'your graph is broken' error: names each refused spell with its errors and what to change.
 - responsibilities:
-  - surface phase 1-4 breakage at conjure
-  - keep per-spell detail attached for the fix
+  - surface conjure and meld validation failures with their reasons, by spell name
+  - keep the refused spell objects attached for tooling
 - phases: `validation`
 
 #### `SpellbookValidationError` (class)
 
 - id: `melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError`
-- defined at: `src/melder/utilities/custom_exceptions/spellbook_validation_error.py:8`
+- defined at: `src/melder/utilities/custom_exceptions/spellbook_validation_error.py:9`
 - markers: `RuntimeError`
-- role: Exception raised for spellbook validation failures.
+- role: Exception for refused spells whose message lists each broken spell's errors by name, whole-graph errors, a warning count and internal-error marking.
 - responsibilities:
-  - signals fatal spellbook validation failures
+  - render the message once at construction from the spells' Phase 4/6 results and the conduit diagnostics handed in through system_diagnostics
+  - show errors only: warnings are counted; strategy sources, details payloads and spell ids are never printed
+  - drop exact repeats, a binding-key cycle already reported as CIRCULAR_DEPENDENCY, and restating codes (root_not_viable, broken_spell_in_dag) when another error is shown
+  - mark INTERNAL_CODES (Melder bookkeeping checks) as internal errors to report
+  - never raise while rendering; keep broken_spells exactly as supplied
+- owns_state: `broken_spells`
 - phases: `validation`, `runtime`
 
 <!-- END FILE: src/melder/utilities/custom_exceptions/spellbook_validation_error.py -->
@@ -27349,7 +27359,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/helpers/general_helpers.py
 
-- source_sha256: `61cd84fb30852d41f3428bb67d8b6e6ecc1f8517581e05b612b34257012281b1`
+- source_sha256: `736fb07ff0c9a2bd4b7fdc136a8115c1f8cbd814b07b1bbe501a06e7fb506c65`
 - nodes: 3
 
 ### Nodes
@@ -27367,7 +27377,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `EnumHelpers` (class)
 
 - id: `melder.utilities.helpers.general_helpers.EnumHelpers`
-- defined at: `src/melder/utilities/helpers/general_helpers.py:10`
+- defined at: `src/melder/utilities/helpers/general_helpers.py:13`
 - role: Stateless enum normalization helper.
 - responsibilities:
   - converts raw strings into concrete enum members
@@ -27378,14 +27388,15 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellInputUtils` (class)
 
 - id: `melder.utilities.helpers.general_helpers.SpellInputUtils`
-- defined at: `src/melder/utilities/helpers/general_helpers.py:109`
+- defined at: `src/melder/utilities/helpers/general_helpers.py:112`
 - role: Canonical spell-key normalization helper.
 - responsibilities:
   - normalizes frame keys and binding names into canonical lowercase lookup keys
   - builds spellbook and meld lookup tuples from spell and frame inputs
+  - names spell version ids for user-facing messages (describe_spell_id: the quoted spell name, or a 12-character id when the lookup cannot name it)
 - owns_state: `DEFAULT_BINDING_NAME`
 - phases: `init`, `runtime`
-- public methods: `make_spell_key_from_parts`, `normalize_binding_name`, `normalize_frame_key`, `normalize_spell_key`, `normalize_spell_name`
+- public methods: `describe_spell_id`, `make_spell_key_from_parts`, `normalize_binding_name`, `normalize_frame_key`, `normalize_spell_key`, `normalize_spell_name`
 
 ### Edges out
 

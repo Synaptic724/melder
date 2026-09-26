@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py",
- "source_sha256": "e85681a8a1765419e014effa441c26f39e10c79aba52af7d7cc4ffba3b9ca1f7",
+ "source_sha256": "df38dd3e5b820ad60ecbca5b6a4c98b0f652dc78b270d9a70dc5524f5cabf702",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy": {
@@ -19,14 +19,14 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "e85681a8a1765419e014effa441c26f39e10c79aba52af7d7cc4ffba3b9ca1f7"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy.VisibilityGapStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy.VisibilityGapStrategy",
    "label": "VisibilityGapStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py",
-   "lineno": 29,
+   "lineno": 30,
    "bases": [
     "SpellSystemValidationStrategy"
    ],
@@ -39,7 +39,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "685fd86edf894c3029381cbe5c305eed4dbcb59e4e07638a0691f651dd0ae2be",
+   "span_sha256": "859e9c89b1b1f2e8d4ee8303aba1cb56e960399a785b016b65f44a02f369f6f5",
    "include": true,
    "role": "Guard that spellbook visibility filtering has not silently amputated dependencies a visible spell still needs.",
    "responsibilities": [
@@ -49,7 +49,7 @@
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "685fd86edf894c3029381cbe5c305eed4dbcb59e4e07638a0691f651dd0ae2be"
+   "semantics_authored_against": "859e9c89b1b1f2e8d4ee8303aba1cb56e960399a785b016b65f44a02f369f6f5"
   }
  },
  "edges_out": [
@@ -78,6 +78,7 @@
   "Set": "typing.Set",
   "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
   "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
   "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
   "Spell": "melder.aether.spellbook.spell.Spell",

@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-measure-gauntlet-scope-cycle-costs
 - Story: STORY-2026-09-26-gauntlet-runtime-speed
-- Status: ready
+- Status: in_progress
 - Owner: user
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T15:43:24Z
+- Updated: 2026-09-26T16:29:58Z
 
 ## Objective
 A per-scope-cycle cost map for Melder on the real-world gauntlet - where the time and the calls go in outer and
@@ -37,10 +37,9 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
   import/boot setup unless D3 brings it in.
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: Ticket written from the owner's 2026-09-26 request; measurement starts once D1-D3 are
-  answered.
+- from_state: ready
+- to_state: in_progress
+- transition_reason: Owner answered D1-D3 (2026-09-26T15:45:57Z); measurement starts on the VM copy.
 
 ## Steps / Checklist
 - [x] Record the owner's 2026-09-26 runs (5,000 and 30,000 iterations) verbatim as the baseline artifact.
@@ -231,6 +230,117 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
   NEXT: Ask the owner; record each answer as a DECISION note.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T15:45:57Z
+  TYPE: DECISION
+  CLAIM: Owner answers (2026-09-26). D1: "focus on the meld and spellspace hotpath and maybe resolution hotpath,
+    I feel like its pretty tight right now but if you got any ideas go ahead and ... send it" - melder_2 owns the
+    warm meld and SpellSpace path (and the resolution path if the profile points there). That overlaps melder_0's
+    lane, so ownership is settled per file by mailbox notice before any tree edit (M2-4). D2: VM copy with CPython
+    3.14t for attribution and A/B; the owner runs Windows for any number claimed as a gain. D3: setup stays parked.
+  EVIDENCE: tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:217-233
+  IMPACT: Measurement starts now on the VM copy. Ideas are prototyped on the copy and come back with files and
+    measured deltas; tree edits follow the patch gate and the one-writer rule.
+  NEXT: Install CPython 3.14t, build the VM copy, smoke-run the gauntlet.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T15:48:42Z
+  TYPE: FACT
+  CLAIM: Harness semantics (Melder lane, driver and summaries read in full). One scope cycle: create_lesser_conduit,
+    two lesser melds of the outer type (unique_per_conduit), enter_spellspace, three space melds (marker twice,
+    inherited outer once), one or two root/group melds (a request root builds 63 objects, worker_a 25, worker_b 20),
+    spellspace exit, lesser.cleanup. "active cycles/s" divides cycles by the summed request_total (spellspace
+    enter to exit only); "wall cycles/s" by the summed threaded-phase wall; hot_scopes/s by the summed iteration
+    totals, bootstrap included. The runner runs DI, dishka and melder in turn in one `-X gil=0` process, GC normal.
+  EVIDENCE:
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:966-1185
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:1244-1345
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:1376-1405
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:1760-1830
+  - benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py:1-38
+  IMPACT: Melder's 0.55-0.77x "active" gap sits inside the SpellSpace window (enter/exit, the space melds and the
+    root construction); lesser create/cleanup and the lesser melds show only in outer_total, wall and hot_scopes/s.
+  NEXT: Smoke-run the runner on the VM copy (CPython 3.14.7t, cold cache) at reduced iterations.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T15:50:52Z
+  TYPE: MEASURE
+  CLAIM: VM copy (CPython 3.14.7t, -X gil=0, cold cache). Gauntlet smoke run, 300 iterations, 3 threads:
+    hot_scopes/s melder 32,796 vs dishka 42,414 (0.77x) vs dependency-injector 36,787 (0.89x), close to the
+    owner's 30,000-iteration ratios (0.78x, 0.98x). One worker thread, full scope cycle through the harness's own
+    lane callables: request 15.0 us vs dishka 9.7 (1.55x), worker_a 10.2 vs 7.0 (1.47x), worker_b 10.2 vs 7.3
+    (1.40x). Request-cycle steps (medians): lesser create 0.84 us, first lesser meld (session plus a 5-object
+    chain) 1.78, cached lesser meld 0.32, space enter 0.24, FIRST space meld of the marker (one object, one
+    inherited dependency) 1.77, cached space melds 0.34 each, root meld 5.08 (63+ objects, ~80 ns/object),
+    space exit 0.88, lesser cleanup 0.96. cProfile: 227 Python calls per request cycle (dishka 234).
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/smoke_300_iters_3_threads.txt:1-60
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/per_cycle_baseline.txt:1-33
+  - artifacts/gauntlet_runtime_speed_20260926/probes/probe_steps.py:1-50
+  IMPACT: Bulk construction is already cheap (~80 ns/object). The gap is fixed cost: a first build in a fresh
+    scope costs ~1.4 us beyond a cache hit even for one object, cached melds ~0.33 us each (4-5 per cycle), and
+    the scope lifecycle ~2.9 us per cycle. Those three are the targets.
+  NEXT: Read the first-build path of a unique_per_spell_space meld (SpellSpace.meld -> SpellSpaceMeld.meld ->
+    creation-context template -> Creations slot guard and publication) in full.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T15:56:49Z
+  TYPE: MEASURE
+  CLAIM: Generated plans build every dependent object with KEYWORD arguments (`target_N(prior=..., branch=...)`),
+    and on 3.14t a keyword class call costs 170 ns vs 77 ns positional (Layer2Scope, worker thread): only the
+    positional form gets the interpreter's specialized class-call path. Prototype P1 (VM copy only) emits the
+    signature-order prefix of dependency params positionally (Python classes; remaining params stay keyword).
+    A/B, 3 interleaved rounds x 7 x 3,000 cycles, one worker thread, median of medians: request 15.04 -> 11.60 us
+    (-23%), worker_a 10.28 -> 8.79 (-15%), worker_b 10.00 -> 8.65 (-14%); dishka is 9.67 / 6.99 / 7.29, so the
+    gap drops from 1.55x/1.47x/1.37x to 1.20x/1.26x/1.19x. Harness type and caching assertions pass.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:561-661
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/ab_p1_positional_cycle.txt:1-18
+  - artifacts/gauntlet_runtime_speed_20260926/prototypes/p1_positional_constructor_args.diff:1-73
+  - artifacts/gauntlet_runtime_speed_20260926/probes/micro_kw.py:1-35
+  IMPACT: Largest single lever found so far, mechanical and contract-preserving if positional use is limited to
+    params the target provably takes positionally in that order. The emitter is phase-11 code in melder_0's area.
+  NEXT: Full gauntlet A/B (3 threads) on the VM; then the safety rule for positional emission.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-26T16:24:09Z
+  TYPE: MEASURE
+  CLAIM: With P1 in place the request cycle's step medians sum to ~9.6 us (from 12.5): root meld 3.26 us (34%),
+    first marker build 1.31 (still rebuilding the session's 5-object chain it never uses), first session build
+    1.24, three cached melds ~1.0 together, and the scope lifecycle - lesser create 0.80, space exit 0.84, lesser
+    cleanup 0.94, space enter 0.24 - ~2.8 us (29%). Lifecycle alone (no melds) costs 1.88 us per cycle on a worker
+    thread with 42 Python calls and 5 RLock enter/exit pairs; worker_b spends 31% of its cycle there.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/post_p1_breakdown.txt:1-60
+  - artifacts/gauntlet_runtime_speed_20260926/probes/probe_lifecycle.py:1-55
+  IMPACT: Next levers in order of size: the scope lifecycle (~2.8 us), the dominated-chain rebuild (~1 us on
+    the request lane), and the per-call cost of cached space melds.
+  NEXT: Read the lifecycle path in full: Conduit.create_lesser_conduit/_link_new_lesser_under_lock/cleanup/
+    _prepare_for_pool, ConduitWard link/detach, ConduitPool, SpellSpace enter/exit and its pool and thread state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:29:58Z
+  TYPE: FACT
+  CLAIM: Consumed M0-31 and M0-34 from melder_0. At 16:17Z melder_0 applied the existing-object fast path to
+    conduit.py (Conduit.meld), meld/conduit_meld.py, meld/spellspace_meld.py, meld/meld.py and the fast-door
+    component test; fast-door entries are now 4-tuples (spell, context, epoch, existing_object_entry), so the VM
+    copy is stale for those files. melder_0 is done with them for now (next: S2b in site_plan_lowering.py,
+    site_plan_override_runtime.py and the family hydrators) and asks for a NOTICE before any edit to them; it will
+    NOTICE before touching them again. Version is now 0.2.59, so the first conjure after it rebuilds the creation
+    cache once (release-bound admission): gauntlet runs must be cold/warm labelled.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_build_site_plan_lowering_task.md:1257-1284
+  - tickets/tasks/2026-09-26_build_site_plan_lowering_task.md:1313-1335
+  IMPACT: Refresh the VM copy from the device tree before reading or prototyping the meld and lifecycle paths;
+    any trim in conduit.py, meld.py, conduit_meld.py or spellspace_meld.py needs a mailbox NOTICE first.
+  NEXT: Refresh the VM copy (src/ and benchmarks/ from the device tree), then read the scope-lifecycle path.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Opened 2026-09-26 on the owner's request to run the benchmarks and speed up the library. Baseline filed (owner

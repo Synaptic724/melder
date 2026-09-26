@@ -5,12 +5,12 @@
 ## Metadata
 - Story ID: STORY-2026-09-26-gauntlet-runtime-speed
 - Epic: none (standalone; outside the IR epic's boundary and separate from the override performance epic)
-- Status: draft
+- Status: in_progress
 - Owner: user
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T15:43:24Z
+- Updated: 2026-09-26T16:15:41Z
 
 ## User Narrative
 As the Melder owner, I want Melder's per-scope-cycle runtime on the real-world gauntlet (free-threaded, three
@@ -51,8 +51,9 @@ weakens a cleanup or concurrency guarantee is out.
 
 ## State Transition Event
 - from_state: draft
-- to_state: draft
-- transition_reason: Story opened from the owner's 2026-09-26 request; child task waits on D1-D3.
+- to_state: in_progress
+- transition_reason: Owner answered D1-D3 (2026-09-26T15:45:57Z): meld and SpellSpace hot path, VM copy plus owner runs,
+  setup parked.
 
 ## Dependencies / Related Work
 - tickets/tasks/2026-09-26_build_site_plan_lowering_task.md (melder_0; warm meld call, cross-thread refcounts)
@@ -61,6 +62,7 @@ weakens a cleanup or concurrency guarantee is out.
 
 ## Tasks (Implementation Checklist)
 - [ ] Task: TASK-2026-09-26-measure-gauntlet-scope-cycle-costs - reproduce, attribute, rank candidates (no code).
+- [ ] Task: TASK-2026-09-26-emit-positional-constructor-args - P1, positional constructor arguments.
 - [ ] Task: one task per candidate the owner picks, each behind patch docs and a gauntlet gate.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
@@ -91,7 +93,8 @@ weakens a cleanup or concurrency guarantee is out.
 - D1-D3, in the child task's DECISION_REQUEST.
 
 ## Decision Log
-- none yet
+- 2026-09-26T15:45:57Z: focus on the meld and SpellSpace hot path (and resolution if the profile points
+  there); VM copy for attribution, owner-run for claimed gains; setup parked. See the child task's DECISION note.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true

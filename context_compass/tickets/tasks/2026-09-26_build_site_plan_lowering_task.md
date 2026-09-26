@@ -10,7 +10,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T12:29:50Z
-- Updated: 2026-09-26T15:41:51Z
+- Updated: 2026-09-26T16:31:17Z
 
 ## Objective
 Overrides run through per-key-set plans compiled from the site graph: supplied dependencies and everything
@@ -1080,14 +1080,301 @@ the empty key set; the normal lane switches to it only when it meets the parity 
   EVIDENCE:
   - src/melder/aether/spellbook/spell.py:596-640
   - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:520-530
-  - context_compass/artifacts/melder_override_design_20260926/s3_staging/existing_shortcut_prototype.py:1-72
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/existing_shortcut_prototype.py:1-64
   IMPACT: Solo (existing object) meld about 40% cheaper on both builds.
   NEXT: Write apply_existing_shortcut_edits.py, run it on a fresh device copy, then the suites.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T15:45:59Z
+  TYPE: FACT
+  CLAIM: Process record and consumed mail. (1) After the compaction the 15:41:51Z PLAN note was written before
+    REONBOARD, and its prototype range read 1-72 on a 64-line file; the range is corrected in place to 1-64 (factual
+    fix), REONBOARD then completed and the owner re-certified melder_0. (2) Consumed M1-14 (melder_1, conjure error
+    reporting lane): it edits spellbook_creation_system.py only in _enforce_conduit_resolution_valid and the gated raise
+    of run_resolution_phases_for_target_spell, spellbook_validation_error.py and the Phase-4/Phase-6 validation
+    strategies, and not meld.py, conduit_meld.py or spellspace_meld.py. The existing-object shortcut touches conduit.py,
+    conduit_meld.py, spellspace_meld.py, meld.py and the fast-door test file: no overlap, no reply needed (ACK not
+    requested). (3) Consumed M2-1 (melder_2 checked in; since then routed to gauntlet_runtime_speed): nothing to act on.
+  EVIDENCE:
+  - context_compass/mailbox_board.md:88-94
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/existing_shortcut_prototype.py:1-64
+  IMPACT: File ownership stays clear for the shortcut; the plan note's evidence is valid again.
+  NEXT: Add the existing-object section and mapping to the fast-door patch doc, then write the edit script.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T15:49:02Z
+  TYPE: FACT
+  CLAIM: Existing-object shortcut verified equivalent before code. A non-None `user_created_object` comes only from
+    Bind passing `existing_object=spell if is_instance` (Instance/Other binding profiles); those profiles are siblings
+    of the class and callable profiles, so `_determine_spell_type` returns EXISTING_CREATION* for them, the artifact
+    processor routes them to "existing_creation", and that door's whole body is `_spell.user_created_object` plus the
+    None refusal. Fast-door entries exist only after a successful non-dynamic full-lane meld (capability, spellspace,
+    validation and resolution already passed), so returning the slot after the guards equals calling the door. Cleanup
+    deletes `_creation_context` (guard read misses) before `user_created_object`, and a meld racing cleanup behaves as
+    today (the door read the same slot). Patch doc updated (After, Behavior Deltas, Validation, Rollback). Mapping:
+    After "Existing objects" -> plain arms of ConduitMeld.meld, SpellSpaceMeld.meld, Conduit.meld plus the meld.py
+    registry docstring -> fast-door component tests (identity with a poisoned slot on all three readers, override
+    refusal equal on both lanes, spell-hook guard trip, removed spell) and solo/shallow timings.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:719-787
+  - src/melder/aether/spellbook/bind/bind.py:1164-1232
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py:115-140
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:497-530
+  - src/melder/aether/spellbook/spell.py:560-630
+  - src/melder/aether/conduit/meld/conduit_meld.py:365-460
+  - system_docs/patches/active/override_site_plan_2026_09_26/component_patch_override_meld_fast_door.md:35-73
+  IMPACT: No behavior delta; the change is a pure fast-path skip of one frame.
+  NEXT: Snapshot a fresh device copy with a twin, write apply_existing_shortcut_edits.py, run it with --check.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T15:52:45Z
+  TYPE: FACT
+  CLAIM: Existing-object shortcut implemented on a fresh device copy (~/work/melder_ex; untouched twin
+    ~/work/melder_exbase) by apply_existing_shortcut_edits.py; --check is clean on both the copy and the device tree.
+    Edits: plain arms of ConduitMeld.meld and SpellSpaceMeld.meld (init `existing_instance = None`; inside the guard
+    branch read `door_spell.user_created_object`, take the executor only when it is None; return the object after the
+    pending-cache-emit check), Conduit.meld's arm (same, plain arm only), three Contract docstrings and the Meld
+    registry docstring. Four new component tests: identity on all three readers with the context's no-override slot
+    replaced by a raising stub and no pool read; the override refusal (MeldExecutionError "already exists") equal on
+    fast and full lanes; spell hooks trip the guard and fire; a removed spell fails like the full lane. 3.14t: the
+    fast-door file passes 40; on the twin the skip test fails (door entered) and the other three pass, as intended.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_existing_shortcut_edits.py:1-420
+  - src/melder/aether/conduit/meld/conduit_meld.py:365-420
+  - src/melder/aether/conduit/conduit.py:4527-4580
+  IMPACT: Behavior is pinned before the full suites and timings.
+  NEXT: Read the 3.14t and GIL suite logs, then time solo and a non-existing plain meld on both trees.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T16:02:13Z
+  TYPE: MEASURE
+  CLAIM: The slot-read shape (applied on ~/work/melder_ex) passes every suite but taxes ordinary plain melds. Suites
+    with it, 3.14t: unit spellbook 2158, component spellbook 764, integration spellbook 581+2s+2xf+2xp, component aether
+    1204+1xf, conduit 268, unit aether 4145, multithreading 42, integration aether 716, experimentation 250+4s, unit
+    utilities 795+2s+7xf, crystallizer 565/258+3xf, mutation_research 277/40/66, live_sim 1+1xf, component utilities
+    21+43s; GIL: the same counts on the first nine. Failures only crystallizer file_backed_morph x4 (known) and
+    test_generated_build_assets_are_stamped_for_the_live_version, which also fails on the untouched twin (package is
+    now 0.2.57, assets stamped 0.2.56; not this change). Public meld timings, 3 runs: existing object 3.14t main
+    191-241 -> 164-172 ns, worker 411-483 -> 344-371; GIL main 177-180 -> 153-173; but class unique reuse on 3.14t main
+    +8 to +16 ns in every run. In-process shape comparison (same process, interleaved, median of 9 x 200k, main thread):
+    3.14t existing -30.3 / unique +8.4 / many +8.3 ns for the slot read; -25.9 / -0.8 / 0.0 for a bool flag carried in
+    the entry (read the slot only for flagged entries); GIL -21.8 / +9.8 / +9.6 vs -18.2 / +1.7 / -1.4. Capturing the
+    object itself in the entry was prototyped and rejected: spell removal does not clear fast-door entries (only the
+    graduation path clears them), so a stale entry would keep a removed spell's user object alive.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/existing_shortcut_shapes.py:1-145
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/existing_shortcut_timing.py:1-69
+  - tests/unit/melder/test_package_version_metadata.py:1-40
+  - src/melder/aether/spellbook/spellbook.py:6815-6845
+  IMPACT: The slot read costs ~5% on every non-existing warm plain meld; the flag shape removes that cost.
+  NEXT: Record the shape decision and re-plan the edit script.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:02:13Z
+  TYPE: DECISION
+  CLAIM: Build the flag shape. Fast-door entries become `(spell, captured_context, captured_epoch,
+    existing_object_entry)`, the bool computed as `target_spell.user_created_object is not None` by the four entry
+    builders (ConduitMeld and SpellSpaceMeld, no-override and override branches). Plain arms of the three readers:
+    inside the guards, a flagged entry reads `door_spell.user_created_object` (still inside the AttributeError try),
+    others read the executor slot as before; after the try, a flagged hit returns the object and an unflagged hit calls
+    the executor; the pending-cache-emit check is shared. Override arms unpack the flag and ignore it. Same files as the
+    15:41:51Z plan; meld.py also gets the type (Tuple[..., bool]) and its entry comment corrected (it still says
+    `creations_store` for the third element). Patch doc updated to the flag shape.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/existing_shortcut_shapes.py:80-110
+  - src/melder/aether/conduit/meld/meld.py:285-300
+  IMPACT: Existing objects keep ~85% of the slot-read gain with no cost to other spells and no retention change.
+  NEXT: Reset the work copy from the device tree, rewrite apply_existing_shortcut_edits.py to the flag shape, rerun.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:10:38Z
+  TYPE: MEASURE
+  CLAIM: Flag shape (applied on ~/work/melder_ex by apply_existing_flag_edits.py) passes the same suites as the slot
+    shape on 3.14t and GIL (identical counts; only file_backed_morph x4 and the 0.2.57 asset-stamp test fail, both also
+    on the twin). Public timings still showed a residual on ordinary spells, so it was sized with many cross-process
+    samples (unique_meld_timing.py: warm class-unique meld, 3.14t main thread, 8 alternating processes each, medians):
+    twin 181.5 ns, flag checked inside the guards 187.7 (+6), flag checked only at the call site 184.4 (+3; guard code
+    identical to today, the flagged hit reads `door_spell.user_created_object` where the door would have read it).
+    Existing object (existing_shortcut_timing.py, 3.14t, 2 runs): twin main 187-192 / worker 401-415 ns; guard-check
+    173 / 355-361; call-site check 169-173 / 368-373. GIL (guard-check shape): existing 177-185 -> 159-164 ns, other
+    spells within noise.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/unique_meld_timing.py:1-33
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/existing_shortcut_timing.py:1-69
+  IMPACT: The call-site check costs ordinary warm melds ~3 ns (within per-process noise) and keeps ~90% of the
+    existing-object gain on the main thread.
+  NEXT: Record the shape decision, update the flag script to the call-site check, rerun tests and suites.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:10:38Z
+  TYPE: DECISION
+  CLAIM: Final shape: entries carry the existing-object bool (as the 16:02:13Z decision), but the guard code stays
+    exactly as today; only the call site of each plain arm branches: a flagged hit takes
+    `door_spell.user_created_object`, others call the executor. The read sits outside the AttributeError try on
+    purpose: the existing-creation door performs the same unguarded read, so a spell cleaned between the guards and
+    the read raises the same AttributeError the door would. Ordinary spells matter more than existing objects, so
+    the smaller cost on them wins over the extra ~10 ns of worker-thread gain the guard-check shape gave existing
+    objects.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/unique_meld_timing.py:1-33
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:520-530
+  IMPACT: Smallest diff of the three shapes (unpack, builders, call sites, docs); no behavior delta.
+  NEXT: Edit apply_existing_flag_edits.py (drop the in-guard reads, branch at the call sites), rerun on a reset copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:17:25Z
+  TYPE: MEASURE
+  CLAIM: Final shape validated on a fresh device copy (~/work/melder_ex, apply_existing_flag_edits.py; twin
+    ~/work/melder_exbase). Fast-door file + Conduit facade unit tests 78 on both builds. 3.14t: unit spellbook 2158,
+    component spellbook 764, integration spellbook 581+2s+2xf+2xp, component aether 1204+1xf, conduit 268, unit aether
+    4145, integration aether 716, experimentation 250+4s, unit utilities 795+2s+7xf, crystallizer 565/258+3xf,
+    mutation_research 277/40/66, live_sim 1+1xf, component utilities 21+43s, multithreading 41 + 1 flake
+    (test_racing_every_lazy_load_at_once_is_consistent, system-document view, no meld involvement: 0 failures in 64
+    reruns on either tree; cause UNKNOWN). GIL: the same counts on the thirteen suites run. Known failures only
+    (file_backed_morph x4; 0.2.57 asset stamp, also on the twin). Timings, twin -> change: existing object 3.14t main
+    191-234 -> 170 ns, worker 415-442 -> 368-388; GIL main 179-187 -> 160-161, worker 180-186 -> 160-163; ordinary class
+    unique meld (8 alternating processes, 3.14t main) median 182.7 -> 184.7 ns (+2, within noise). Owner benchmark
+    (test_overrides_all.py, melder, 3 s, 3.14t): solo 1,801,565 / 1,807,806 -> 1,897,589 / 1,896,701 steps/s (+5%),
+    shallow 1,170,215 / 1,195,363 -> 1,177,583 / 1,169,147 (unchanged).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_existing_flag_edits.py:1-435
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/existing_shortcut_timing.py:1-69
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/unique_meld_timing.py:1-33
+  - tests/integration/melder/multithreading/test_multithreading_system_document_view.py:166-193
+  IMPACT: Existing-object melds ~10-12% faster on both builds with no measurable cost to other spells.
+  NEXT: Confirm the five device files still match the snapshot, --check, apply, verify byte-identity.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:20:38Z
+  TYPE: FACT
+  CLAIM: Existing-object fast path applied to the device tree after --check (apply_existing_flag_edits.py); all five
+    files are byte-identical to the validated copy: conduit.py (Conduit.meld), meld/conduit_meld.py,
+    meld/spellspace_meld.py, meld/meld.py (registry docstring, entry comment and type) and the fast-door component test
+    file; patch doc updated to the final shape. Uncommitted, like S3. Process lapse: M2-4 (melder_2, 15:45:57Z, asked
+    which meld files I would write; ACK requested) arrived after my 15:45:38Z mailbox pass and was not read before the
+    apply; melder_2 had not edited those files (their P1 touched only generalized_manifest_no_overrides_compiler.py plus
+    two new tests), so nothing collided; answered now (M0-31). Combined device state (my change + melder_2's P1), fresh
+    copy: fast-door file 40; 3.14t unit spellbook 2178, component spellbook 771, integration spellbook 581+2s+2xf+2xp,
+    component aether 1204+1xf, conduit 268, multithreading 42, unit aether 4145, integration aether 716, experimentation
+    250+4s; GIL the same counts on the six suites run. Consumed F0-15 (fable_0): I-1 structural snapshot patch docs in
+    review; planned generation 15 after my generation 14, touching caching_system.py, spellbook_creation_system.conjure,
+    compiler_phase_3.py and spell.py (the DAG object), with notices before edits; my change reads only
+    `Spell.user_created_object`, which I-1 does not list. Consumed M2-5 (melder_2 P1): generalized no-overrides step
+    plans pass leading dependency params positionally (class call 170 -> 77 ns on 3.14t) and positional-only dependency
+    params now meld; the same lever applies to the site-plan emitters (S2b candidate).
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/conduit_meld.py:380-460
+  - src/melder/aether/conduit/conduit.py:4545-4585
+  - tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md:1-161
+  - tickets/stories/2026-09-26_structural_snapshot_story.md:1-298
+  - system_docs/patches/active/override_site_plan_2026_09_26/component_patch_override_meld_fast_door.md:35-78
+  IMPACT: Existing-object pathing is done in the tree; S2b is next, with P1's positional lever to fold into plan emission.
+  NEXT: Report to the owner; then plan S2b (file list and patch docs first).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:25:38Z
+  TYPE: DECISION
+  CLAIM: Owner: "in that specific overrides test please make sure its actually using an override not a user_defined
+    object ... fix that too but notch the version because of your win and lets keep moving". melder_0 reads: (1) the
+    solo graph in test_overrides_all.py must meld with a real `override=`. A melder override targets constructor
+    parameters only, and today's SoloRootA has none, so solo becomes `SoloRootA(leaf: SoloLeafA)` with SoloLeafA
+    overridden in every library (the builders are generic over the spec, as for shallow/wide/diamond/deep): one object
+    is built per step with the supplied input; melder melds `override={"leaf": obj}`. The existing-object mode and its
+    two branches in the melder builder go away with it (no other graph used them). (2) Notch the version one step as
+    the repo's notch tasks do: __version__ 0.2.58 -> 0.2.59 (committed 0.2.57; melder_1's lane took 0.2.58 at 15:52Z),
+    release header to 0.2.59, a release section for this lane's in-tree override work (only behavior the tests pin:
+    B1, B5, B7, B8, unchanged key errors; cache generation 14; the fast lanes), the now-obsolete "One path still renders
+    values the old way" bullet retired (S3a delivers descriptor values by identity, 13:42:48Z), and the packaging
+    bullet's version moved to 0.2.59. No asset rebuild (owner approval; the stamp test keeps failing until then).
+    FILES: benchmarks/testing_other_di/test_overrides_all.py, src/melder/__version__.py,
+    release_docs/next_version_release.md.
+  EVIDENCE:
+  - benchmarks/testing_other_di/test_overrides_all.py:97-102
+  - benchmarks/testing_other_di/test_overrides_all.py:256-325
+  - benchmarks/testing_other_di/test_overrides_all.py:545-600
+  - src/melder/__version__.py:1-12
+  - release_docs/next_version_release.md:25-47
+  - tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py:232-400
+  IMPACT: Solo compares one supplied-input construction across all five libraries; the version carries the win.
+  NEXT: Edit the benchmark on a VM copy, run solo for all five libraries on 3.14t and GIL, then apply.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:28:28Z
+  TYPE: MEASURE
+  CLAIM: Solo now melds with a real override and the version is notched. Benchmark (apply_solo_override_edits.py,
+    byte-identical on the device): SoloRootA(leaf: SoloLeafA), leaf overridden in all five libraries, melder
+    `override={"leaf": obj}`; the existing-object mode is gone. Fresh combined copy, 2 s, steps/s, 3.14t: DI 1,953,612,
+    dishka 1,611,087, melder 1,299,995, lagom 1,141,999, injector 96,544; GIL: dishka 2,493,065, melder 1,987,143, DI
+    1,958,533, lagom 1,583,579, injector 114,405. Full run (1 s, 3.14t) 25 passed, errors=0: shallow melder 1,216,874 vs
+    dishka 1,478,268 / DI 1,430,564; wide dishka 981,976 / melder 922,222; diamond dishka 1,212,876 / melder 1,117,148;
+    deep melder 36,346 / dishka 28,519. __version__ 0.2.58 -> 0.2.59; release note header 0.2.59, new sections
+    "Overrides build only what you did not supply" and "Faster warm melds" (claims from the 12:30:41Z/14:37:20Z owner
+    runs, the 13:41:25Z conjure measure and today's timings), fable_0's obsolete bullet retired (F0-14), packaging
+    bullet 0.2.59. Version tests: only the asset-stamp test fails (assets 0.2.56; owner-approved rebuild pending).
+    Creation caches rebuild once on first use under 0.2.59 (release-bound admission, generation 9 rule).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_solo_override_edits.py:1-113
+  - benchmarks/testing_other_di/test_overrides_all.py:97-112
+  - release_docs/next_version_release.md:1-80
+  - src/melder/__version__.py:12-12
+  IMPACT: The overrides benchmark compares real overrides in every graph; 0.2.59 carries the override work.
+  NEXT: Notices to fable_0, melder_1, melder_2; report; then S2b discovery (plan, patch docs, file list before code).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:29:25Z
+  TYPE: DECISION_REQUEST
+  CLAIM: S2b overlaps melder_2's lane. S2b (design v2 section 13) moves the normal lane's executors onto the site-plan
+    lowering's empty-key-set plans (nested-miss form, B2 constructor order), which replaces the output of
+    generalized_manifest_no_overrides_compiler.py for normal melds. melder_2 (gauntlet_runtime_speed, owner-assigned)
+    applied P1 to exactly that emitter at 16:16Z and is profiling the warm meld and SpellSpace path for more levers.
+    Options: (1) S2b proceeds in this lane and folds P1's positional arguments into the lowering; melder_2 keeps to
+    meld entry and SpellSpace costs and hands emitter levers to this lane (recommended: one emitter, one owner);
+    (2) S2b waits until melder_2's cost map and candidates land, then the owner splits the emitter work; (3) S2b moves
+    to melder_2's lane. Separately recorded: git run on the device mount must use GIT_OPTIONAL_LOCKS=0 and read-only
+    commands (standing note); melder_0 ran git log/show/diff --stat at 16:23-16:28Z without it - no index.lock was left
+    and .git/index is unchanged since 16:04:19Z.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md:59-62
+  - attention_board.md:147-150
+  - artifacts/melder_override_design_20260926/design_v2.md:403-419
+  IMPACT: Avoids two agents rewriting the same normal-lane emission.
+  NEXT: Owner picks; S2b discovery (read-only) can start meanwhile.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:31:17Z
+  TYPE: DECISION
+  CLAIM: Owner: "yeah continue 1". S2b stays in this lane: normal melds move onto the site-plan lowering's
+    empty-key-set plans behind the parity gate, and melder_2's P1 positional arguments are folded into the lowering.
+    melder_2 keeps to meld entry and SpellSpace costs and hands code-emission levers to melder_0 (notice M0-35).
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  IMPACT: One owner for normal and override code emission.
+  NEXT: Read the lowering, the P1 emitter and both families' normal-lane hydration, then write the S2b plan.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Discovery: reading the Phase-10/11 pipelines to fix the production lowering plan.
+In the device tree, uncommitted: S3a (key-set override plans), S3b-1/S3b-2 (old override lane, legacy codec and
+fallback family retired; cache generation 14), S2a (plans read constants as globals), the override fast door, the
+Conduit.meld id-lane trim, the benchmark fix (owner file) and the existing-object fast path (entries carry an
+existing-object flag; flagged warm hits return `user_created_object` without the door). Open with the owner: the
+solo benchmark definition (keep existing-object, plain construction, or a new one-parameter graph for all libraries).
+Next: S2b - empty-key-set plans for the normal lane behind the parity gate (plan, patch docs and file list first;
+melder_2's positional-argument lever applies). Later: S4, S5, S6 (docs, owner-approved asset rebuild, release note;
+retire the bullet at release_docs/next_version_release.md:42-45). Known unrelated failures: crystallizer
+file_backed_morph x4; build assets stamped 0.2.56 vs package 0.2.57.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

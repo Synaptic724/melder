@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py",
- "source_sha256": "065df3f0df42cf575583152c479444cc6ea4d60addaab19277120a55e68dcf17",
+ "source_sha256": "15d71b16027538c9bc927a2e4e2315a47d1a01582da9d7850c177b64f5651c8c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6": {
@@ -12,14 +12,14 @@
    "lineno": 1,
    "include": true,
    "role": "Phase 6: system validation across the rooted graphs.",
-   "semantics_authored_against": "065df3f0df42cf575583152c479444cc6ea4d60addaab19277120a55e68dcf17"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6": {
    "id": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6",
    "label": "CompilerPhase6",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py",
-   "lineno": 112,
+   "lineno": 113,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -31,7 +31,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "757664dad7295ce2559da9ebf5468ac35a8fd6cdc4d0cc0d7612c07d061d9386",
+   "span_sha256": "daac9997c996b4742296d4d4364964f0bec90bbe248176fb7fbcb73bd6c6c321",
    "role": "Compiler-owned phase-6 system validation surface.",
    "responsibilities": [
     "builds the canonical system-validation strategy pipeline",
@@ -42,7 +42,7 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "757664dad7295ce2559da9ebf5468ac35a8fd6cdc4d0cc0d7612c07d061d9386"
+   "semantics_authored_against": "daac9997c996b4742296d4d4364964f0bec90bbe248176fb7fbcb73bd6c6c321"
   }
  },
  "edges_out": [],
@@ -226,6 +226,7 @@
   "SpellSystemValidationSystem": "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem",
   "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
   "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "BrokenSpellInDagStrategy": "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy",
   "ContractGraphCycleStrategy": "melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy.ContractGraphCycleStrategy",
   "ContractedVersionDriftStrategy": "melder.aether.spellbook.spell_compiler.system.validation.contracted_version_drift_strategy.ContractedVersionDriftStrategy",

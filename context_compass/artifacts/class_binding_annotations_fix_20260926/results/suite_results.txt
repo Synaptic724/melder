@@ -1,0 +1,18 @@
+# Suites on ~/cba_fix (worktree sync taken after the patch lane, plus apply_fix.py), 3.14.7t -X gil=0, -p no:cacheprovider
+unit_spellbook     2164 passed in 3.33s
+unit_aether        4145 passed in 14.19s
+unit_rest          4 failed, 1893 passed, 3 skipped, 7 xfailed in 16.24s
+unit_other         44 failed, 388 errors in 1.77s
+component          2135 passed, 43 skipped, 1 xfailed in 23.65s
+int_spellbook      581 passed, 2 skipped, 2 xfailed, 2 xpassed in 5.60s
+int_crystallizer   258 passed, 3 xfailed in 54.34s
+int_conduit        268 passed in 3.22s
+int_mr_live        67 passed, 1 xfailed in 0.56s
+int_aether         716 passed in 15.97s
+int_mt             42 passed in 11.18s
+# unit_rest failures (identical on ~/cba_base, same chunk order):
+FAILED tests/unit/melder/build_assets/test_system_documents_builder.py::test_shipped_entries_carry_sections_and_a_digest
+FAILED tests/unit/melder/build_assets/test_system_documents_builder.py::test_unavailable_entry_matches_a_live_entry_key_for_key
+FAILED tests/unit/melder/test_melder_registration_guard.py::test_bind_rejects_internal_class
+FAILED tests/unit/melder/test_package_version_metadata.py::test_generated_build_assets_are_stamped_for_the_live_version
+# unit_other: 44 failed + 388 errors, identical on ~/cba_base (github_workflows, architecture_and_design: files absent from the VM copy)

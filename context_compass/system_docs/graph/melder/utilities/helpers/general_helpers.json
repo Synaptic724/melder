@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/helpers/general_helpers.py",
- "source_sha256": "61cd84fb30852d41f3428bb67d8b6e6ecc1f8517581e05b612b34257012281b1",
+ "source_sha256": "736fb07ff0c9a2bd4b7fdc136a8115c1f8cbd814b07b1bbe501a06e7fb506c65",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.helpers.general_helpers": {
@@ -19,14 +19,14 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "61cd84fb30852d41f3428bb67d8b6e6ecc1f8517581e05b612b34257012281b1"
+   "semantics_authored_against": ""
   },
   "melder.utilities.helpers.general_helpers.EnumHelpers": {
    "id": "melder.utilities.helpers.general_helpers.EnumHelpers",
    "label": "EnumHelpers",
    "kind": "class",
    "file": "src/melder/utilities/helpers/general_helpers.py",
-   "lineno": 10,
+   "lineno": 13,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -54,10 +54,11 @@
    "label": "SpellInputUtils",
    "kind": "class",
    "file": "src/melder/utilities/helpers/general_helpers.py",
-   "lineno": 109,
+   "lineno": 112,
    "bases": [],
    "markers": [],
    "public_methods": [
+    "describe_spell_id",
     "make_spell_key_from_parts",
     "normalize_binding_name",
     "normalize_frame_key",
@@ -65,15 +66,16 @@
     "normalize_spell_name"
    ],
    "shape": {
-    "method_count": 5,
+    "method_count": 6,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "755097daaf399abb8069fe98708a7038fe4c0c42ed97c74a75e60823ee217065",
+   "span_sha256": "be1e567951086bc730e58691ce999c01a9058e107968379d57bb9a859b29bd43",
    "role": "Canonical spell-key normalization helper.",
    "responsibilities": [
     "normalizes frame keys and binding names into canonical lowercase lookup keys",
-    "builds spellbook and meld lookup tuples from spell and frame inputs"
+    "builds spellbook and meld lookup tuples from spell and frame inputs",
+    "names spell version ids for user-facing messages (describe_spell_id: the quoted spell name, or a 12-character id when the lookup cannot name it)"
    ],
    "owns_state": [
     "DEFAULT_BINDING_NAME"
@@ -82,7 +84,7 @@
     "init",
     "runtime"
    ],
-   "semantics_authored_against": "755097daaf399abb8069fe98708a7038fe4c0c42ed97c74a75e60823ee217065"
+   "semantics_authored_against": "be1e567951086bc730e58691ce999c01a9058e107968379d57bb9a859b29bd43"
   }
  },
  "edges_out": [],
@@ -104,13 +106,16 @@
  "imports": {
   "Enum": "enum.Enum",
   "lru_cache": "functools.lru_cache",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
+  "Mapping": "typing.Mapping",
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
   "Union": "typing.Union",
   "TypeVar": "typing.TypeVar",
   "Type": "typing.Type",
-  "ClassVar": "typing.ClassVar"
+  "ClassVar": "typing.ClassVar",
+  "Spell": "melder.aether.spellbook.spell.Spell"
  },
  "collapse_candidate": null,
  "edges_authored": [

@@ -323,7 +323,7 @@ class ConduitMeld(Meld):
             - Warm id-string melds may take the guarded fast meld door: after
               one successful normal-lane meld in non-dynamic, no-hooks,
               no-override posture, later identical requests execute through a
-              memoized `(spell, context, epoch)` entry validated
+              memoized `(spell, context, epoch, existing-object flag)` entry validated
               per call by live guards (door-epoch compare covering the
               spell-level chokepoints, context identity, spellbook
               validation flag), with the executor read
@@ -336,6 +336,12 @@ class ConduitMeld(Meld):
               (2026-09-26); the full lane's override branch also builds the
               entry when the spell holds no mutation override. List/tuple
               payloads and empty dicts always take the full lane.
+            - A warm plain id-string meld of an existing-object spell (entry
+              flag set when the entry is built) returns the spell's
+              `user_created_object` without calling the existing-creation door
+              (2026-09-26); that door returns the same slot, so results are
+              identical. Override payloads on an existing object still reach
+              the override door and its refusal.
 
         Returns:
             Optional[Any]:
@@ -376,6 +382,7 @@ class ConduitMeld(Meld):
                         door_spell,
                         captured_context,
                         captured_epoch,
+                        existing_object_entry,
                     ) = fast_entry
                     fast_executor = None
                     try:
@@ -419,7 +426,13 @@ class ConduitMeld(Meld):
                     if fast_executor is not None:
                         # Instance-only door: no (instance, created) tuple is
                         # allocated and discarded on the warm fast lane.
-                        instance = fast_executor(self)
+                        if existing_object_entry:
+                            # Existing object (2026-09-26): the door's whole
+                            # body is this read, so it is done here without
+                            # the door frame (unguarded, as in the door).
+                            instance = door_spell.user_created_object
+                        else:
+                            instance = fast_executor(self)
                         if self._spellbook._cache_emit_required:
                             self._spellbook._emit_cache_file_if_required()
                         return instance
@@ -437,6 +450,7 @@ class ConduitMeld(Meld):
                         door_spell,
                         captured_context,
                         captured_epoch,
+                        _existing_object_entry,
                     ) = fast_entry
                     fast_executor = None
                     try:
@@ -578,6 +592,10 @@ class ConduitMeld(Meld):
                         target_spell,
                         creation_context,
                         door_epoch_at_entry,
+                        # Existing-object flag (2026-09-26): warm hits of a
+                        # flagged entry return the bound object. A bool, not
+                        # the object, so a stale entry never keeps it alive.
+                        target_spell.user_created_object is not None,
                     )
             else:
                 instance = creation_context._overrides_executor(
@@ -593,6 +611,10 @@ class ConduitMeld(Meld):
                         target_spell,
                         creation_context,
                         door_epoch_at_entry,
+                        # Existing-object flag (2026-09-26): warm hits of a
+                        # flagged entry return the bound object. A bool, not
+                        # the object, so a stale entry never keeps it alive.
+                        target_spell.user_created_object is not None,
                     )
             # Hot path: inline the staged-cache flag check; the emit helper is
             # only entered when an emit is actually pending.
