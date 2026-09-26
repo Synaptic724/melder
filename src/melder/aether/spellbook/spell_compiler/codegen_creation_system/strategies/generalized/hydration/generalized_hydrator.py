@@ -11,7 +11,9 @@ Hydration shape:
     2. Hydrate the manifest's no-overrides rows into site-plan steps.
     3. Build `SitePlanOverrideRuntime` over them (2026-09-26, S2b-2): its
        normal plan (the empty key set) is the inner no-overrides executor, and
-       it compiles one plan per override key set at first use.
+       it compiles one plan per override key set at first use. The runtime is
+       told the manifest's route key, because every door built in step 4
+       holds that route's build lock when it calls the normal plan (0.2.73).
     4. Wrap both lanes in the shared route-keyed CreationContext doors (the
        override door is compiled at the first override meld).
     5. Optionally (configuration flag) install the singleton warm-tail
@@ -292,6 +294,7 @@ def hydrate_creation_executors(
         no_overrides_payload=no_overrides_payload,
         spell_lookup=no_overrides_spell_lookup,
         root_spell=root_spell,
+        route_key=route_key,
     )
     inner_no_overrides_executor = site_plan_runtime.execute_normal
     fast_transient_no_overrides = (
@@ -363,6 +366,7 @@ def _build_site_plan_runtime(
         no_overrides_payload: Dict[str, Any],
         spell_lookup: Dict[str, Any],
         root_spell: Any,
+        route_key: str,
 ) -> SitePlanOverrideRuntime:
     """
     Build the root's site-plan runtime: the normal plan now, override plans per key set later.
@@ -376,6 +380,12 @@ def _build_site_plan_runtime(
         - The runtime builds its site graph and normal plan at construction
           (first meld); requires phases 1-7 live, which meld's structural gates
           guarantee on every path that reaches hydration.
+        - `route_key` is passed as the runtime's `door_route_key`: this family
+          calls the normal plan only from its route-keyed doors (no-overrides
+          hooks and instance doors, the override door's normal fallback, the
+          specializer's deopt), and each holds that route's build lock across
+          the call. For "unique_per_conduit" and "spellspace" roots the normal
+          plan therefore skips the re-entrant root guard (0.2.73).
 
     Args:
         no_overrides_payload:
@@ -384,6 +394,8 @@ def _build_site_plan_runtime(
             Live spell per step spell id.
         root_spell:
             Live root spell.
+        route_key:
+            The manifest's route key, shared by every door of this root.
 
     Raises:
         RuntimeError:
@@ -408,6 +420,7 @@ def _build_site_plan_runtime(
         steps=tuple(SitePlanStep.from_generalized_row(row) for row in rows),
         root_spell=root_spell,
         root_instance_key=root_instance_key,
+        door_route_key=route_key,
     )
 
 

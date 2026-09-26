@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T21:38:23Z
-- Updated: 2026-09-26T21:38:23Z
+- Updated: 2026-09-26T22:15:30Z
 
 ## Objective
 When a creation-context door builds a slotted object for the first time, it holds the slot's build lock (the
@@ -53,10 +53,10 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
       doors); FACT note.
 - [x] Choose the emission shape (one door-held plan, or a guarded and a door-held variant); DECISION note.
 - [x] Patch docs (architecture, component, code description) with ticket links; consumption mapping note.
-- [ ] Implement on the VM copy (refreshed to 0.2.72) with rich docstrings; tests for build-once under a race, the
+- [x] Implement on the VM copy (refreshed to 0.2.72) with rich docstrings; tests for build-once under a race, the
       hook lanes' created flag, the same-thread recheck, and purge against a first build.
-- [ ] Suites on 3.14t (PYTHON_GIL=0 and 1) and the GIL build; 30k soak; VM A/B with probe_steps3.
-- [ ] NOTICE melder_0; byte-identical device apply; version notch and release note.
+- [x] Suites on 3.14t (PYTHON_GIL=0 and 1) and the GIL build; 30k soak; VM A/B with probe_steps3.
+- [x] NOTICE melder_0; byte-identical device apply; version notch and release note.
 - [ ] Promote docs (src_architecture, src_components, indexes); refresh graph descriptors; artifact disposition.
 - [ ] Owner Windows run and acceptance.
 - [ ] Run Ticket Microcycle during execution:
@@ -77,7 +77,9 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
   indexes and graph descriptors for the touched nodes.
 
 ## Validation
-- Not run.
+- VM copy, 3.14t (PYTHON_GIL=0 and 1) and the GIL build: suites green, new tests included; 30k soak flat;
+  probe_steps3 A/B -3.3% (1 thread) and -3.6% (2 threads) per worker cycle (Notes 22:03:17Z, 22:07:25Z).
+- Not run: the owner's Windows gauntlet.
 
 ## Risks / Rollback Notes
 - A caller that reaches the door-held plan without the door's guard would lose build-once for the root.
@@ -209,7 +211,7 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
     - Tests are new files only: a unit test of the emitted lock discipline (door-held root, kept guards, the recheck)
       and an integration test of concurrent first melds (conduit and shared spellspace) with build-once and exact
       created-hook counts.
-  EVIDENCE: tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md:159-195
+  EVIDENCE: tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md:161-197
   IMPACT: Three production files, all melder_0's lane; NOTICE M2-8 before any device write.
   NEXT: Patch docs under system_docs/patches/active/nested_slot_guard_2026_09_26/.
   REREAD: REQUIRED
@@ -271,12 +273,67 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
     asset rebuild: only src/melder/_build_assets manifests and payloads differ.
   EVIDENCE:
   - tickets/tasks/2026-09-26_snapshot_phase5_live_spell_pool_task.md:227-248
-  - tickets/tasks/2026-09-26_snapshot_phase5_live_spell_pool_task.md:250-258
+  - tickets/tasks/2026-09-26_snapshot_phase5_live_spell_pool_task.md:253-264
   IMPACT: Device apply is unblocked. The notch pipeline for 0.2.73 follows his 0.2.72 sequence: canonical docs and
     C1 re-measure, indexes --check, graph extract/accept/assemble, the asset runner on a work copy carrying
     context_compass/system_docs and then on the device (byte-equal, CRLF kept), and LLM bundles with
     --include-untracked.
   NEXT: Finish the suite comparison, refresh both VM trees from the device (assets), then the soak and A/B.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T22:03:17Z
+  TYPE: MEASURE
+  CLAIM: Suites on the VM copy with the change (work72) are green on free-threaded 3.14t with PYTHON_GIL=0 and 1
+    and on the GIL build: spellbook unit (2194) / component (776) / integration (583), conduit integration (273,
+    the 5 new included), multithreading (42, lock-order deadlock scenarios included), aether unit/component/
+    integration, utilities, crystallizer, mutation_research and live_sim. The only failures are the 3 build-asset
+    tests (live-version stamp, system-document entries), and they fail identically on the unchanged copy: both copies
+    predate melder_0's 0.2.72 asset rebuild. The 15 new unit tests fail on the unchanged tree (keyword unknown, root
+    takes its guard); the 5 integration tests pass on both, as regression guards should.
+  EVIDENCE: artifacts/gauntlet_runtime_speed_20260926/nested_slot_guard/suites_vm.txt:1-46
+  IMPACT: No behavioural regression across the suites that cover melds, doors, purge, pools and lock order.
+  NEXT: 30k soak (base and change), then the probe_steps3 A/B at 1 and 2 threads.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T22:07:25Z
+  TYPE: MEASURE
+  CLAIM: The implemented change saves what the prototype did. probe_steps3 worker_a, 11 interleaved rounds per
+    tree, medians of per-run 95%-trimmed means:
+    - 1 thread: steps 7,071 -> 6,839 ns (-232, -3.3%), wall/cycle 8,413 -> 8,182 (-2.7%). First builds: outer_1st
+      -78, marker_1st -72, root_build -87. Lifecycle unchanged (2,542 -> 2,533).
+    - 2 threads: steps 9,651 -> 9,299 (-352, -3.6%), wall 11,472 -> 11,230 (-2.1%). First builds -121/-96/-113.
+    - Per first build this matches the prototype (-77/-73/-89 at 1 thread).
+    30k soak (gauntlet-shaped, 3 new threads per iteration): the change's rerun is flat. worker_a medians are
+    11,623/11,662 ns over the first and last 10 windows (base 12,211/12,247), and RSS stays within base's range
+    (max 83.3 vs 87.9 MB). The first change run stepped up at window 21 in every lane and in wall/iter at once. That
+    was environmental, and it did not recur.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/nested_slot_guard/ab_steps3_vm.txt:1-45
+  - artifacts/gauntlet_runtime_speed_20260926/nested_slot_guard/soak_30k_vm.txt:1-100
+  IMPACT: VM gates met: suites green, soak flat, gain confirmed. Owner's Windows run is the authoritative number.
+  NEXT: NOTICEs for the 0.2.73 notch; byte-identical device apply of the three src files and two test files.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T22:15:30Z
+  TYPE: FACT
+  CLAIM: Applied to the device tree byte-identically at 22:07Z (sha256 equal to the validated VM copy, after a check
+    that the device copies still equalled the validated base): site_plan_lowering.py (1501 lines),
+    site_plan_override_runtime.py (405) and generalized_hydrator.py (758, CRLF kept), plus the two new test files.
+    NOTICEs M2-9, M2-10 and M2-11 went to melder_0, melder_1 and fable_0 (22:07:45-47Z). __version__ is 0.2.73
+    (CRLF kept). The release note carries the 0.2.73 header, a "Faster first builds of per-conduit and SpellSpace
+    objects" section and the packaging bullets; the 0.2.73 asset and LLM-bundle line is written ahead of that rebuild.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/nested_slot_guard/apply_nested.py:1-36
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:1-1
+  - release_docs/next_version_release.md:98-110
+  - release_docs/next_version_release.md:560-583
+  IMPACT: The change is live in the device tree at 0.2.73. Open gates: canonical docs and indexes, graph, build assets
+    (their manifests stamp the version, so the build-asset tests fail until the rebuild), LLM bundles, the owner's run.
+  NEXT: Promote src_architecture.md (invariant, meld step 4, C1 re-measure, sources, handoff), then src_components.md.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 

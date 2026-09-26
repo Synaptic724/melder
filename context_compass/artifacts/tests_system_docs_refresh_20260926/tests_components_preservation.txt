@@ -1,0 +1,84 @@
+baseline lines with fewer copies after: 86 copies lost: 210
+1->0 |  --doc system_docs/tests_components.md
+1->0 |  --doc system_docs/tests_components.md --check
+1->0 |  --doc system_docs/tests_components.md --slice "<section name>"
+6->5 |  CONTENT of this component rather than its key surfaces, and are counted here
+1->0 |  Current status: blocked on external evidence.
+1->0 |  Local evidence boundary: this checkout has no in-repo `.github/` workflow
+1->0 |  Where to investigate: external CI configuration outside this checkout.
+1->0 |  Why it matters: test components may be executed in smaller CI groups than
+1->0 |  `AetherUtilitySystem`, and viewer-related globals
+1->0 |  `melder/mutation_research`, `melder/spellbook`, and
+1->0 |  `melder/utilities`.
+1->0 |  class-level `_aether` references.
+1->0 |  config, so there is no local CI topology to cite here.
+1->0 |  documented here.
+1->0 |  pytest control
+6->5 |  rather than cited so the core set stays a set an agent can verify.
+1->0 |  shard map; no in-repo CI workflow evidence exists in this checkout.
+1->0 |  singleton state.
+1->0 |  spellbook internals, and utilities.
+1->0 |  the local tree implies.
+1->0 | - C1 Code Map (Key Paths)
+1->0 | - Cover `melder/aether`, `melder/crystallizer`,
+1->0 | - Define pytest collection roots through `pyproject.toml`.
+1->0 | - Exclude non-test worktrees and generated/cache directories.
+1->0 | - No harness or support module of its own; the 3 test_*.py modules in
+2->0 | - No harness or support module of its own; the 33 test_*.py modules in
+1->0 | - No harness or support module of its own; the 39 test_*.py modules in
+1->0 | - No harness or support module of its own; the 43 test_*.py modules in
+1->0 | - No harness or support module of its own; the 44 test_*.py modules in
+1->0 | - No harness or support module of its own; the 6 test_*.py modules in
+1->0 | - No harness or support module of its own; the 9 test_*.py modules in
+1->0 | - Prepend `src/` to `sys.path` through `tests/conftest.py`.
+1->0 | - Reset singleton runtime surfaces around runtime-heavy files.
+1->0 | - Start the suite from the repo root and bind test imports to `src/`.
+1->0 | - The aether tree carries 180 `test_*.py` modules beneath these; they are the
+1->0 | - The rift tree carries 3 `test_*.py` modules beneath these; they are the
+1->0 | - The spellbook tree carries 130 `test_*.py` modules beneath these; they are the
+1->0 | - The spellbook tree carries 50 `test_*.py` modules beneath these; they are the
+1->0 | - UNKNOWN: external CI ownership of suite partitioning/sharding is still not
+1->0 | - Whether future external CI/docs should describe a formal marker taxonomy or
+1->0 | - `codex*` worktrees are excluded from pytest recursion by config
+3->2 | - `pyproject.toml`
+5->4 | - `tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py`
+2->1 | - `tests/integration/melder/aether/rift/codegen_rift_json_testbench_support.py`
+5->4 | - `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
+1->0 | - bootstrap happens at pytest startup/import time
+1->0 | - broken path bootstrap would cause import failure or wrong-package import
+1->0 | - consistent import path for local `melder` code
+1->0 | - follows the same singleton reset discipline when runtime objects are involved
+1->0 | - future pytest options or marker config in `pyproject.toml`
+1->0 | - includes dedicated integration directories for multithreading-related lanes
+1->0 | - includes direct unit coverage for synchronization and lock-oriented helpers
+1->0 | - local repo filesystem layout
+1->0 | - local runtime classes and helper fixtures
+1->0 | - many files use autouse singleton resets for `Aether`, `Nexus`,
+1->0 | - new subsystem-level direct contract tests
+1->0 | - no dedicated parallel harness layer; tests run through real objects under
+1->0 | - no explicit threading concerns
+1->0 | - path/bootstrap logic only; no long-lived runtime state
+1->0 | - singleton leakage and fixture coupling if reset discipline is lost
+1->0 | - stable pytest collection root at `tests/`
+1->0 | - test-local fixtures only
+1->0 | - test-local slices and stubs
+1->0 | - they are the densest tier in the suite by file count
+1->0 | - tier intent is explicitly documented in `tests/component/INFO.MD`
+1->0 | - visible through direct pytest failures on contract mismatch
+1->0 | - visible through pytest import/collection behavior
+1->0 | 1. autouse fixture resets `AetherUtilitySystem`, `Nexus`, and `Aether`
+1->0 | 2. some files also rebind `Spellbook._aether`, `Conduit._aether`, and viewer
+1->0 | 4. fixture teardown resets the same singleton surfaces again.
+1->0 | Consume by slicing, and verify before trusting a range:
+1->0 | Every range was MEASURED from disk on 2026-08-02. THIS SIDE HAS NO GRAPH TO JOIN
+1->0 | This document is AUTHORED. Its only generated companion is
+5->3 | ```
+3->1 | ```bash
+1->0 | `tests_architecture.md` by describing the actual
+1->0 | `tests_components_index.md`, rebuilt in the SAME pass as any edit:
+1->0 | above - 118 paths - and nothing else. Change a component's key files and this set
+1->0 | builders - not every `test_*.py` module beneath it. The 638 test modules are the
+1->0 | component's CONTENT; they are counted in each entry rather than cited, because a
+1->0 | for tests under `tests/`. It complements
+3->0 | python tools/system_documents/index_document.py \
+1->0 | test components and the shared support layers they use.

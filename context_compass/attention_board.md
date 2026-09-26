@@ -81,27 +81,32 @@ Message alert rules
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T20:47:28Z)
 - NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T21:19:43Z)
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T21:36:14Z)
+- NEW MESSAGE for melder_1 (from melder_2, 2026-09-26T22:07:46Z)
+- NEW MESSAGE for fable_0 (from melder_2, 2026-09-26T22:07:47Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-26T22:15:35Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| updater_1_checkout | in_progress | handoff | codex | updater_1 | none | Retire own live coordination state and verify preservation. | Agent checked out; historical work retained. | Checkout verified and receipt completed. | tickets/tasks/2026-09-26_check_out_updater_1_task.md | 2026-09-26T22:15:20Z | HELPFUL |
+| updater_0_checkout | in_progress | handoff | codex | updater_0 | none | Apply and verify own checkout metadata. | No active updater_0 claims remain. | Checkout recorded and this route removed. | tickets/tasks/2026-09-26_checkout_updater_0_task.md | 2026-09-26T22:14:29Z | HELPFUL |
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Implement the owner-approved nested slot-guard removal (own task), then the owner's Windows run. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T21:38:55Z | REQUIRED |
 | gauntlet_p1_positional_args | review | validation | claude | melder_2 | none | Owner closes P1: R2 retired its emitter (0.2.70) and its rule lives on in the lowering (P5). | Generated plans pass dependency values positionally (-11% to -21% per scope cycle on the VM). | Owner accepts or retires P1; closure sync. | tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md | 2026-09-26T20:29:32Z | REQUIRED |
 | gauntlet_p4_spellspace_warm_lane | review | validation | claude | melder_2 | none | Owner accepts P4: Windows runs on 0.2.68-0.2.70 show the SpellSpace window at parity on request and worker_b. | SpellSpace.meld serves warm id melds from the door's fast-door entry (about -17% per cached space meld, -2% to -3% per gauntlet cycle on the VM). | Owner accepts; closure sync. | tickets/tasks/2026-09-26_spellspace_meld_warm_id_lane_task.md | 2026-09-26T20:29:32Z | REQUIRED |
 | gauntlet_tail_spikes | review | handoff | claude | melder_2 | none | Owner accepts the attribution (turn-0 first use, no GC); optional 200k run with GAUNTLET_TREND_WINDOWS=20. | The rare Melder-only multi-ms cycle spikes attributed with evidence and ranked fix candidates. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md | 2026-09-26T20:35:11Z | REQUIRED |
-| phase5_pool_snapshot | review | handoff | claude | melder_0 | none | Owner turns in (patch lane moves to completed at closure). | Compiler passes iterate a copy of the spell pool; concurrent binds cannot abort revalidation (0.2.72). | Owner accepts; closure sync. | tickets/tasks/2026-09-26_snapshot_phase5_live_spell_pool_task.md | 2026-09-26T21:45:09Z | REQUIRED |
-| registration_guard_test_order | review | handoff | claude | melder_0 | none | Owner turns in. | The registration-guard test passes in any order. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_fix_registration_guard_test_order_task.md | 2026-09-26T21:45:09Z | HELPFUL |
-| tests_system_docs_refresh | in_progress | discovery | claude | melder_0 | none | Capture the preservation baseline, read the examples, inventory the suite. | tests_architecture/tests_components describe the current suite (rubric >= 80). | Both docs current with indexes; owner accepts. | tickets/tasks/2026-09-26_refresh_tests_system_docs_task.md | 2026-09-26T21:45:09Z | HELPFUL |
+| tests_system_docs_refresh | review | handoff | claude | melder_0 | none | Owner turns in. | tests_architecture (rubric 91) and tests_components (rubric 85) describe the current suite. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_refresh_tests_system_docs_task.md | 2026-09-26T22:14:00Z | HELPFUL |
 | gauntlet_spellspace_build_locks | review | handoff | claude | melder_2 | none | Owner turns in the discovery task; the owner-approved implementation continues in its own task. | Evidence on whether spellspace-scoped first builds can skip their build locks, with a measured prototype. | Owner turn-in; closure sync. | tickets/tasks/2026-09-26_spellspace_build_locks_task.md | 2026-09-26T21:38:55Z | HELPFUL |
-| gauntlet_nested_slot_guard | in_progress | discovery | claude | melder_2 | none | Read site_plan_lowering.py in full, then every caller of the normal plan. | Door-called first builds take their build lock once; about -0.3 us per worker cycle, nothing observable changes. | Suites, soak and A/B green; byte-identical apply; docs promoted; owner accepts. | tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md | 2026-09-26T21:38:55Z | REQUIRED |
+| gauntlet_nested_slot_guard | in_progress | implementation | claude | melder_2 | none | Promote src_architecture and src_components at 0.2.73, then indexes, graph, build assets and LLM bundles. | Door-called first builds take their build lock once; about -0.3 us per worker cycle, nothing observable changes. | Suites, soak and A/B green; byte-identical apply; docs promoted; owner accepts. | tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md | 2026-09-26T22:16:40Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| phase5_pool_snapshot | done | melder_0 | tickets/tasks/completed/2026-09-26_snapshot_phase5_live_spell_pool_task.md | Compiler passes read a copy of the spell pool; concurrent binds cannot abort revalidation (0.2.72); patch lane archived; owner turn-in. | 2026-09-26T21:59:01Z |
+| registration_guard_test_order | done | melder_0 | tickets/tasks/completed/2026-09-26_fix_registration_guard_test_order_task.md | View fixtures re-boot Aether and the guard test sets up its own world; order-independent; owner turn-in. | 2026-09-26T21:59:01Z |
 | override_site_plan_lowering | done | melder_0 | tickets/tasks/completed/2026-09-26_build_site_plan_lowering_task.md | S2-S6: key-set plans, normal melds on the lowering, unresolved inputs before construction, retirements; 0.2.71 docs, graph, assets, LLM bundles; owner turn-in. | 2026-09-26T21:09:12Z |
 | override_site_plan_story | done | melder_0 | tickets/stories/completed/2026-09-26_implement_override_site_plan_lowering_story.md | S1-S6 done; patch lane archived to system_docs/patches/completed/override_site_plan_2026_09_26/; owner turn-in. | 2026-09-26T21:09:12Z |
 | override_execution_epic | done | melder_0 | tickets/epics/completed/2026-09-24_override_execution_performance_epic.md | Every story and task done: override melds build only what the call does not supply; owner turn-in. | 2026-09-26T21:09:12Z |
@@ -112,18 +117,14 @@ Message alert rules
 | ir_structural_snapshot_parity | done | fable_0 | tickets/tasks/completed/2026-09-26_structural_snapshot_parity_task.md | Cold and hydrated worlds agree on D5 events, across processes and after a crystallizer restore; frame caching-posture fix; owner-run suites green. | 2026-09-26T18:43:15Z |
 | ir_structural_snapshot_hydrate | done | fable_0 | tickets/tasks/completed/2026-09-26_hydrate_structural_tier_at_conjure_task.md | A full structural hit replays phase 3-4 rows and skips phases 1-4 (VM -27% warm conjure at 29 spells); owner-run suites green; turned in. | 2026-09-26T18:18:50Z |
 | ir_structural_snapshot_capture | done | fable_0 | tickets/tasks/completed/2026-09-26_capture_structural_payloads_at_conjure_end_task.md | Per-spell structural payloads (phase 3-4 rows, key, stamp, verdict) beside the executor payloads at generation 15; owner-run suites green; turned in. | 2026-09-26T18:18:50Z |
-| version_notch_melder_1 | done | melder_1 | tickets/tasks/completed/2026-09-26_notch_version_for_self_dependency_and_cycle_consumer_changes_task.md | __version__ 0.2.59 -> 0.2.61 (self-dependency, cycle consumers); release note at 0.2.61; M1-17 to melder_0; turned in. | 2026-09-26T17:44:13Z |
-| unguarded_base_docstrings | done | melder_1 | tickets/tasks/completed/2026-07-25_unguarded_base_docstring_correction_task.md | Registration docstrings agree with the manifest (in 53c9b82c6, July); exit gate re-verified on current source; turned in. | 2026-09-26T17:36:52Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- phase5_pool_snapshot: SWITCH_TRIGGER is the fix with its regression test, then the 0.2.72 notch and assets.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_snapshot_phase5_live_spell_pool_task.md.
-- registration_guard_test_order: SWITCH_TRIGGER is the leaking test found and fixed.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_fix_registration_guard_test_order_task.md.
-- tests_system_docs_refresh: SWITCH_TRIGGER is the Phase-5 task done (its test is documented too).
+- updater_0_checkout: SWITCH_TRIGGER is verified checkout; RESUME_HIERARCHY: tickets/tasks/2026-09-26_checkout_updater_0_task.md.
+- tests_system_docs_refresh: SWITCH_TRIGGER is the owner's turn-in (both docs refreshed, indexed, scored >= 80).
+  RESUME_HIERARCHY: tickets/tasks/2026-09-26_refresh_tests_system_docs_task.md.
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_refresh_tests_system_docs_task.md.
 - gauntlet_runtime_speed: SWITCH_TRIGGER is the nested slot-guard implementation landing, or the owner's answer on
   the SpellSpace scope RISK. The lever-1 lifecycle is closed as measured (21:15Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
@@ -139,7 +140,8 @@ Message alert rules
 - gauntlet_spellspace_build_locks: SWITCH_TRIGGER is the owner's turn-in (implementation approved ~21:37Z, own task).
   RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_spellspace_build_locks_task.md.
-- gauntlet_nested_slot_guard: SWITCH_TRIGGER is the emission-shape DECISION after the read, then patch docs, then code.
+- gauntlet_nested_slot_guard: SWITCH_TRIGGER is the 0.2.73 notch pipeline finished (docs, indexes, graph,
+  build assets, LLM bundles), then the owner's Windows run and acceptance.
   RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md.
 - gauntlet_p4_spellspace_warm_lane: SWITCH_TRIGGER is the byte-identical device apply, then the owner's Windows

@@ -1,4 +1,4 @@
-# Melder 0.2.72
+# Melder 0.2.73
 
 **Unreleased**
 
@@ -94,6 +94,20 @@ needed, is never constructed.
   thread). Results, errors and hooks are unchanged.
 - **A bound existing object** is returned by a warm meld without entering its generated creation code,
   about 10-15% faster on free-threaded and GIL builds.
+
+## Faster first builds of per-conduit and SpellSpace objects
+
+The first time a scope builds a `unique_per_conduit` or `unique_per_spell_space` object, Melder now takes
+that object's build lock once instead of twice. The generated door that starts the build already holds
+the lock, and the compiled plan it calls no longer takes it a second time.
+
+- **About 70-120 ns less per first build** on free-threaded 3.14 (our Linux test machine, one and two
+  threads). A request-shaped scope cycle that builds three such objects ran about 3% faster. Warm melds
+  are unchanged.
+- **Nothing else changes.** Racing threads still get one object per scope, activation hooks still fire
+  once, purge still waits for a build in flight, and the lock order is the same. Objects of other
+  lifetimes (`unique`, lineage and cluster) keep their locking.
+- **No action needed.** Creation caches refresh on this update as on every Melder update.
 
 ## Faster conjure on large books
 
@@ -553,7 +567,8 @@ stay valid.
   conjure validation report. They also cover override key-set plans and the site plans normal melds now
   share with them, unresolved inputs decided before construction, the structural snapshot that lets a warm
   conjure skip phases 1-4, self-referencing constructors and cycle consumers in the conjure report,
-  class binding-profile annotations, and compiler steps that read a copy of the spell registry. The retired
+  class binding-profile annotations, compiler steps that read a copy of the spell registry, and first builds
+  of per-conduit and SpellSpace objects that take their build lock once. The retired
   override-targeting internals and normal-meld emitters no longer appear, and the graph documents drop the
   modules this release deletes.
 - `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
@@ -563,5 +578,6 @@ stay valid.
   `StructuralSnapshot`, so it lists 619 classes (645 before).
 - Docstrings of the site-plan lowering and runtime, the site-graph analysis and its processor, and both
   family hydrators now say the site graph is built when a root is hydrated and serves normal melds as well
-  as override melds.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.72.
+  as override melds. Those of the site-plan lowering, its runtime and the generalized hydrator also state
+  when a root's build lock is held by the calling door.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.73.

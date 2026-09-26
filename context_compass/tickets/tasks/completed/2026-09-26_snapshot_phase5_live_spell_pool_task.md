@@ -3,14 +3,21 @@
 # Task: Phase 5 reads a stable copy of the spell pool, so concurrent binds cannot abort revalidation
 
 ## Metadata
+- Completed: 2026-09-26T21:59:01Z
+- Closure Basis: owner turn-in in chat (2026-09-26T21:59Z): "I accept your 2/3 continue working on the last part"
+  (the Phase-5 pool fix and the guard-test fix; the tests docs task stays open).
+- Summary: Compiler passes on the meld-time path (Phases 3, 4 strategies, 5, 6 frame-wide, the Phase-8 walk) iterate
+  a copy of the spell pool, and Phase 5 admits only ids with a registered state, so a concurrent bind cannot
+  abort revalidation; regression test red before, green after; 0.2.72 docs, graph, assets, LLM bundles and
+  release note current. Raised, not changed: conjure-time sweeps and the Nexus publisher's pool tuple.
 - Task ID: TASK-2026-09-26-snapshot-phase5-live-spell-pool
 - Story: none
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p0
 - Created: 2026-09-26T21:12:25Z
-- Updated: 2026-09-26T21:12:25Z
+- Updated: 2026-09-26T21:59:01Z
 
 ## Objective
 Conjure-time and meld-time Phase 5 build their visible-spell set by iterating `spellbook._spell_id_pool` live.
@@ -36,16 +43,19 @@ every other live iteration of the pool on the same revalidation path must be che
 - from_state: draft
 - to_state: in_progress
 - transition_reason: Owner instruction to fix the reported follow-ups, 2026-09-26T21:12:25Z.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T21:59:01Z; see the Closure Basis.
 
 ## Steps / Checklist
-- [ ] Read Phase 5 and the pool writers; decide the snapshot form (free-threaded atomicity).
-- [ ] Patch docs (architecture, component, code description) and file list.
-- [ ] Regression test red, fix, test green; suites on 3.14t and GIL.
-- [ ] Docs, graph, notch 0.2.72, release entry, assets, LLM bundles.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Read Phase 5 and the pool writers; decide the snapshot form (free-threaded atomicity).
+- [x] Patch docs (architecture, component, code description) and file list.
+- [x] Regression test red, fix, test green; suites on 3.14t and GIL.
+- [x] Docs, graph, notch 0.2.72, release entry, assets, LLM bundles.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Fix, regression test, patch docs promoted, release entry.
@@ -54,32 +64,33 @@ every other live iteration of the pool on the same revalidation path must be che
 - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py (more in the PLAN note if found)
 
 ## Validation
-- Not run.
+- Regression test 5/5 red on unfixed src, 5/5 green with the fix on 3.14t and GIL; suites in the 21:35:35Z
+  note; asset and document tests 21:45:09Z. Nothing was rerun at closure.
 
 ## Risks / Rollback Notes
 - A snapshot can include a spell removed a moment later; the removal path must still gate it (verify).
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/compiler_pool_snapshot_2026_09_26/
+  - system_docs/patches/completed/compiler_pool_snapshot_2026_09_26/
   - artifacts/compiler_pool_snapshot_20260926/
 - DISPOSITION: promote_to_documentation (patch docs); retain_as_reference (probes)
 - CLEANUP_TRIGGER: Task closure.
@@ -264,11 +275,22 @@ every other live iteration of the pool on the same revalidation path must be che
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-09-26T21:59:01Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis); acceptance given.
+  EVIDENCE: tickets/tasks/completed/2026-09-26_snapshot_phase5_live_spell_pool_task.md
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Review. Compiler passes on the meld-time path iterate a copy of the spell pool (Phases 3, 4 strategies, 5, 6
 frame-wide, the Phase-8 walk); Phase 5 admits only ids with a registered state. 0.2.72: docs, graph, assets, LLM
 bundles and release note current. Open items raised, not changed: conjure-time sweeps in the creation system and
 structural snapshot (inside the CONJURE transaction), and the Nexus publisher's tuple(pool.values()).
+Closed 2026-09-26T21:59:01Z on the owner's turn-in. Patch lane archived to
+system_docs/patches/completed/compiler_pool_snapshot_2026_09_26/ (retired_edges.json inside).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

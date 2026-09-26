@@ -5,11 +5,12 @@
 - Story: none (standalone discovery)
 - Successor Epic: EPIC-2026-09-19-discoverable-non-resolvable-registrations
 - Status: review
-- Owner: codex
-- Agent Name: updater_0
+- Owner: user
+- Agent Name: unassigned
+- Original Agent: updater_0
 - Priority: p2
 - Created: 2026-09-19T15:07:35Z
-- Updated: 2026-09-19T16:25:38Z
+- Updated: 2026-09-26T22:14:29Z
 
 ## Objective
 Build a high-level but source-grounded understanding of Nexus, Crystallizer, and Spellbook,
@@ -495,6 +496,11 @@ Read-unit note (component contracts):
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
+Checkout update (2026-09-26): updater_0 has departed and released this assignment. The ticket remains
+in review; the following material records the original discovery and has not been revalidated today.
+Any new work requires a fresh assignment. Checkout record:
+`tickets/tasks/completed/2026-09-26_checkout_updater_0_task.md`.
+
 PROGRAM ROUTE: continue through the discoverable-non-resolvable registrations epic and its S1 task:
 `tickets/epics/completed/2026-09-19_discoverable_non_resolvable_registrations_epic.md`
 `tickets/stories/completed/2026-09-19_discoverable_registration_contract_discovery_story.md`

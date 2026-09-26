@@ -3,14 +3,19 @@
 # Task: The registration-guard test passes in any order
 
 ## Metadata
+- Completed: 2026-09-26T21:59:01Z
+- Closure Basis: owner turn-in in chat (2026-09-26T21:59Z): "I accept your 2/3 continue working on the last part"
+  (the Phase-5 pool fix and the guard-test fix; the tests docs task stays open).
+- Summary: The system-document view fixtures boot a fresh Aether after their teardown resets and the guard test sets
+  up its own world, so the selection passes in either order on 3.14t and GIL. Test-only change.
 - Task ID: TASK-2026-09-26-fix-registration-guard-test-order
 - Story: none
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p2
 - Created: 2026-09-26T21:12:25Z
-- Updated: 2026-09-26T21:12:25Z
+- Updated: 2026-09-26T21:59:01Z
 
 ## Objective
 `tests/unit/melder/test_melder_registration_guard.py::test_bind_rejects_internal_class` passes alone and fails with
@@ -32,15 +37,18 @@ leaves singleton state behind and make the suite order-independent, or raise it 
 - from_state: draft
 - to_state: ready
 - transition_reason: Owner instruction to fix the reported follow-ups, 2026-09-26T21:12:25Z.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T21:59:01Z; see the Closure Basis.
 
 ## Steps / Checklist
-- [ ] Bisect the selection to the leaking test.
-- [ ] Read the leaking test and the Aether/Nexus reset path; decide test vs src.
-- [ ] Fix and rerun both orders.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Bisect the selection to the leaking test.
+- [x] Read the leaking test and the Aether/Nexus reset path; decide test vs src.
+- [x] Fix and rerun both orders.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Order-independent selection.
@@ -49,27 +57,28 @@ leaves singleton state behind and make the suite order-independent, or raise it 
 - tests/unit/melder/test_melder_registration_guard.py (and the leaking test, named in Notes)
 
 ## Validation
-- Not run.
+- Both orders on 3.14t and GIL (21:26:50Z note); the 7-file selection 255 passed, 1 skipped (21:45:09Z).
+  Nothing was rerun at closure.
 
 ## Risks / Rollback Notes
 - A shared fixture change can alter other tests' setup; rerun their files.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -177,9 +186,19 @@ leaves singleton state behind and make the suite order-independent, or raise it 
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-09-26T21:59:01Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis); acceptance given.
+  EVIDENCE: tickets/tasks/completed/2026-09-26_fix_registration_guard_test_order_task.md
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Review. The view fixtures leave a freshly booted Aether after their teardown resets, and the guard test
 sets up its own; the selection passes in either order on 3.14t and GIL. Test-only change.
+Closed 2026-09-26T21:59:01Z on the owner's turn-in.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

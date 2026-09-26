@@ -42,6 +42,14 @@ class SitePlanOverrideRuntime(Cleanable):
           Phase-3 topologies and compiles the normal plan, exposed as
           `execute_normal(meld) -> instance`; the family hydrators install it as
           the inner no-overrides executor. Site-graph errors raise unwrapped.
+        - `door_route_key` names the route of the CreationContext doors that
+          call the normal plan. For "unique_per_conduit" and "spellspace" roots
+          of that existence, the normal plan's root build relies on the door's
+          slot guard instead of re-taking it (2026-09-26, 0.2.73): every caller
+          of `execute_normal` must then hold the root's slot guard of the
+          meld's route store, as the no-overrides doors, the override door
+          (whose dispatcher falls back to the normal plan) and the specializer's
+          deopt do. None (the default) keeps the root guard in the plan.
         - `execute_with_overrides(meld, overrides) -> instance` keeps the
           signature the CreationContext override doors call. `overrides` None
           runs the normal plan.
@@ -62,7 +70,9 @@ class SitePlanOverrideRuntime(Cleanable):
     Threading:
         Plan lookups are lock-free dict reads. Compiles and evictions hold
         `_compile_lock`; a thread that finds a plan compiled while it waited
-        uses it. Emitted plans take the normal lane's build locks.
+        uses it. Emitted plans take the normal lane's build locks; the normal
+        plan of a door-held root (see Contract) takes every build lock except
+        the root's, which its calling door already holds.
 
     Lifecycle / Cleanup:
         Built by the family hydrator at first meld and kept alive by the
@@ -112,6 +122,7 @@ class SitePlanOverrideRuntime(Cleanable):
             steps: Tuple[SitePlanStep, ...],
             root_spell: Spell,
             root_instance_key: SiteInstanceKey,
+            door_route_key: Optional[str] = None,
     ) -> None:
         """
         Build the runtime: the site graph and the normal plan; override plans compile per key set later.
@@ -121,6 +132,10 @@ class SitePlanOverrideRuntime(Cleanable):
             root_spell: The melded root spell (borrowed); its Spellbook's live
                 Phase-3 topologies are read here.
             root_instance_key: Instance key of the root step.
+            door_route_key: Route key of the doors that call the normal plan,
+                which hold that route's build lock across the call; None when a
+                caller may not hold it. Read once, for the normal plan only;
+                override key-set plans keep their root guard.
 
         Raises:
             RuntimeError: When no step carries `root_instance_key`, or the site
@@ -142,7 +157,7 @@ class SitePlanOverrideRuntime(Cleanable):
         self._compile_lock: threading.Lock = threading.Lock()
         self._site_graph: Optional[SpellSiteGraphAnalysis] = None
         self._owned_masked_steps: List[SitePlanStep] = []
-        self.execute_normal: Callable[[Any], Any] = self._compile_normal_plan()
+        self.execute_normal: Callable[[Any], Any] = self._compile_normal_plan(door_route_key)
         self.execute_with_overrides: Callable[[Any, Optional[Dict[str, Any]]], Any] = (
             self._build_dispatcher()
         )
@@ -351,7 +366,7 @@ class SitePlanOverrideRuntime(Cleanable):
         plan: PlanCallable = namespace[SitePlanLowering.PLAN_FUNCTION_NAME]
         return plan
 
-    def _compile_normal_plan(self) -> Callable[[Any], Any]:
+    def _compile_normal_plan(self, door_route_key: Optional[str]) -> Callable[[Any], Any]:
         """
         Build the site graph and compile the empty key set in normal mode (S2b-2).
 
@@ -361,7 +376,12 @@ class SitePlanOverrideRuntime(Cleanable):
               override key errors.
             - The plan is `(meld) -> instance`: every demanded step, shared sites
               as hit reads with out-of-line misses (B2), the family's store
-              routing, build guards and registration.
+              routing, build guards and registration. With an eligible
+              `door_route_key` the root's miss relies on the calling door's
+              slot guard (`SitePlanEmission`, 0.2.73).
+
+        Args:
+            door_route_key: Route key of the doors that call this plan, or None.
 
         Returns:
             Callable[[Any], Any]: The normal-lane executor.
@@ -376,6 +396,7 @@ class SitePlanOverrideRuntime(Cleanable):
             root_spell_name=self._root_spell.spell_name,
             arity=0,
             normal_mode=True,
+            door_route_key=door_route_key,
         )
         self._owned_masked_steps.extend(masked)
         code = get_or_compile_executor_code(source=source, source_name=SitePlanLowering.PLAN_SOURCE_NAME)

@@ -140,6 +140,15 @@ UNKNOWN items must remain explicitly marked until the relevant source is read.
   `tmp_path`), so they are either dead fixtures or committed droppings.
   Where to investigate: `tests/unit/melder/utilities/test_caching_system.py` history.
   Current status: raised to the owner; not changed.
+- UNKNOWN: whether the 140 tracked `.py` files under
+  tests/experimentation/_physical_to_synth_swap_tmp/ and _synthetic_edge_tmp/ belong
+  in the repository.
+  Why it matters: they are case packages the synthetic-module benches write (50 of
+  the tree's 57 `__init__.py` files); each case gets a fresh directory, so no run
+  reads the tracked copies back.
+  Where to investigate: `tests/experimentation/physical_to_synthetic_module_swap_semantics_testbench.py`
+  and `tests/experimentation/unittest_synthetic_module_edge_cases_testbench.py` teardown.
+  Current status: raised to the owner; not changed.
 
 ## System Context (C4)
 The test system's actors and boundary, which are NOT the runtime's:
@@ -252,6 +261,9 @@ The test tree broadly mirrors the production tree:
   `architecture_and_design` (the architecture-docs tool)
 - `tests/experimentation/` holds 33 `test_*.py` experiment and probe modules beside
   the synthetic-module benches; a local `pytest` collects them, CI does not
+- `tests/experiments/cprofile_testing/` holds opt-in crystallizer and
+  mutation-research profiling scripts; no file there matches default discovery
+  (its `pytest_profile_*.py` wrappers run only when passed explicitly)
 
 The most important recent integration addition is the dedicated
 `tests/integration/melder/aether/rift/` harness layer:
@@ -425,9 +437,9 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 464 `.py` files (334 on 2026-06-13)
+- `unit/`: 465 `.py` files (334 on 2026-06-13)
 - `component/`: 143 `.py` files (81)
-- `integration/`: 148 `.py` files (88)
+- `integration/`: 149 `.py` files (88)
 - `mocks/`: 44 `.py` files (42)
 - `experimentation/`: 196 `.py` files, 33 of them `test_*.py` (not counted before)
 Recounted 2026-09-26 with `find tests/<tier> -name '*.py'` (pycache excluded).
@@ -532,19 +544,24 @@ Recounted 2026-09-26 with `find tests/<tier> -name '*.py'` (pycache excluded).
   previous file's fixture teardown before the failing test.
 - RUNTIME POSTURE (CI): a GIL-enabled process fails the CI driver's gate before or
   after pytest, with the instruction to use a free-threaded build and `PYTHON_GIL=0`.
-- TREE ARTIFACTS: cache tests write inside the repository - nine `CachingSystem`
+- TREE ARTIFACTS: cache tests write inside the repository - twelve `CachingSystem`
   unit tests use cwd-relative `tests/unit/melder/utilities/_caching_system_tmp_*`
   directories (under `tests/tests/...` when pytest runs from `tests/`), and
   component cache tests write under the package directory (`src/melder/tests/...`).
-  `.gitignore` covers `*.melc` and the `tests/tests/...` form, so the caches never
-  reach a commit, but they survive between runs; newer tests use `tmp_path`.
+  `.gitignore` covers `*.melc` and the `tests/tests/...` form, so the `.melc` caches
+  never reach a commit (six `bundle.json` files under the `_load_*` directories did;
+  see `## Unknowns`), but they survive between runs; newer tests use `tmp_path`. The
+  two synthetic-module benches write case packages under
+  tests/experimentation/_physical_to_synth_swap_tmp/ and _synthetic_edge_tmp/ and
+  remove them with `shutil.rmtree(..., ignore_errors=True)`; 140 such files are
+  tracked (see `## Unknowns`).
 - COLLECTION DRIFT: a new top-level tree containing Python that is not added to
   `norecursedirs` is collected silently. It does not error; it just runs.
 - HARNESS DRIFT (the one nothing catches): this document and
   `tests_components.md` cite TEST paths, and there is NO graph on this side to
   join against. A renamed or deleted test file leaves a citation that still
-  parses and points nowhere. Existence must be checked explicitly; see
-  `## Indexing` and the recipe in `tests_components_instructions.md`.
+  parses and points nowhere. Existence must be checked explicitly; see the
+  recipe under `## Indexing`.
 
 ## C1 Code Map (Core Only)
 Core is the deduplicated union of every `Key Files (C1)` list in
@@ -839,7 +856,11 @@ concurrent-writer stand-in pattern for race regressions, the in-tree cache
 artifacts, and recounted the inventory. The index commands were moved out of
 `## Indexing` to the documentation tooling (portability rule). C1 ranges remeasured.
 Open: the per-run CI matrix, and six tracked `bundle.json` leftovers under
-tests/unit/melder/utilities/ that no test references.
+tests/unit/melder/utilities/ that no test references. Same-day follow-up, found
+while refreshing `tests_components`: twelve cache tests write cwd-relative
+directories (not nine), the "never reach a commit" claim now covers only `.melc`
+files, the 140 tracked case packages under tests/experimentation/ and the opt-in
+profiling tree are recorded, and a pointer at an authoring skill was removed.
 
 RECOMPOSED 2026-08-02 to the Required Section Contract - which is
 `src_architecture.md`'s contract name for name, because the pair must stay
