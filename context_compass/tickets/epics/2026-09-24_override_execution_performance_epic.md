@@ -8,7 +8,7 @@
 - Lead Agent: updater_0
 - Priority: p1
 - Created: 2026-09-24T09:27:42Z
-- Updated: 2026-09-25T20:53:31Z
+- Updated: 2026-09-26T08:54:50Z
 - Target Window: Investigation first; implementation after owner review.
 - Related Program/Initiative: Melder runtime performance.
 
@@ -104,8 +104,8 @@ parallel inconsistent resolution semantics or slowing ordinary creation.
 - Investigation determines implementation story boundaries; none is activated before baseline evidence.
 - STORY-2026-09-25-verify-override-writer-and-contract (melder_0 lead, melder_1; done 2026-09-26):
   tickets/stories/completed/2026-09-25_verify_override_writer_and_contract_story.md
-- STORY-2026-09-26-unresolved-input-sockets (melder_0):
-  tickets/stories/2026-09-26_unresolved_input_sockets_story.md
+- STORY-2026-09-26-unresolved-input-sockets (melder_0; done 2026-09-26, shipped in 0.2.54):
+  tickets/stories/completed/2026-09-26_unresolved_input_sockets_story.md
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [ ] TASK-2026-09-24-discover-override-execution-semantics:
@@ -303,6 +303,19 @@ No production override code, release version or build assets have changed during
   NEXT: Review the concrete semantic and implementation contract in joint_alpha_proposal.md.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+- DATETIME: 2026-09-26T08:54:50Z
+  TYPE: FACT
+  CLAIM: Design step S1 (caller-supplied inputs) is done as the unresolved-input story: a typed parameter with no
+    registered provider compiles as an UNRESOLVED_INPUT socket, is supplied at meld by override or raises
+    UnresolvedInputError. Its failure-path wiring is marked interim; S3/S4's build plan is meant to decide the
+    error before the call. S2-S5 (the demand-driven override rewrite) remain open and unstarted.
+  EVIDENCE:
+  - tickets/stories/completed/2026-09-26_unresolved_input_sockets_story.md
+  - tickets/tasks/completed/2026-09-26_implement_missing_dependency_sockets_task.md
+  IMPACT: The "value comes from the call" concept S2-S5 build on now exists in the compiler and runtime.
+  NEXT: Owner selects whether S2 starts (override design D1-D4 in the design task).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user.

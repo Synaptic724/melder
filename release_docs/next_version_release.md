@@ -1,6 +1,69 @@
-# Melder 0.2.53
+# Melder 0.2.54
 
 **Unreleased**
+
+## Typed parameters without a provider are supplied at meld
+
+A constructor parameter whose type nothing registered provides - a `Package`, a `Conduit`, or a
+third-party object you never bind - no longer stops `conjure`. It becomes an unresolved input: the
+meld that constructs the object supplies it through `override`, and Melder passes that exact object
+to the constructor.
+
+```python
+class Task:
+    def __init__(self, work: Package) -> None:
+        self.work = work
+
+book.bind(spell=Task, existence="many")
+conduit = book.conjure()  # succeeds and logs one INFO line: Task.work -> Package
+task = conduit.meld(spell=Task, override={"work": package})
+assert task.work is package
+```
+
+When a meld builds the object without that value, Melder raises `UnresolvedInputError` instead of
+Python's missing-argument error. The message names the object, the parameter, the expected type and
+the override keys that would supply it:
+
+```text
+Task.work expects Package, but nothing registered provides it and this meld did not supply it.
+Supply it with override={'work': ...} when melding Task, a path key ending in '>work' (or '**work')
+when Task is built as a dependency, or bind a provider for Package.
+```
+
+- **Behavior change: conjure no longer fails for a missing provider.** A single typed parameter with
+  no matching registration used to raise "no DI candidate found" at conjure. It now surfaces at the
+  first meld that builds the object, and conjure lists every unresolved input in one INFO log line.
+  Two or more matching providers still fail conjure, as before.
+- **Matching rules are unchanged.** A parameter annotated with an interface is still not satisfied
+  by a provider bound only under its concrete class or under a different spellframe. Such a
+  parameter is now an unresolved input rather than a conjure error: bind the provider under that
+  spellframe, or supply the value.
+- **How to supply it.** Use the parameter name when melding the object itself, and a path key ending
+  in `>work` or a `**work` broadcast key when the object is built as a dependency. The value is
+  passed by identity; `None` and other falsey values count as supplied.
+- **A provider bound later is picked up.** In a dynamic world, binding a matching provider after
+  conjure makes the next meld inject it as an ordinary dependency.
+- **Stored objects are unaffected.** An object Melder already holds is returned without running its
+  constructor again, so it never asks for the value. After `cleanup_spell` removes a provider, objects
+  built before that keep the dependency they hold; new builds need the value or a new provider.
+- **`UnresolvedInputError` is a `MeldExecutionError`**, so existing handlers keep catching it. Import
+  it from `melder`; `param_name`, `expected_type` and `unresolved_params` name what was missing.
+- **`resolvable=False` registrations are unchanged.** They remain a separate, discoverable feature.
+- **Successful melds do no extra work.** The check runs only after a constructor call has failed.
+- **Creation caches rebuild once.** The creation-cache format advances to generation 11 so executors
+  compiled before this change are not reused.
+- **Defaults and collections are unchanged.** A parameter with a default keeps using it, and a
+  `list[...]` collection parameter with no providers still receives `[]`. `Optional[T]` without a
+  default is an unresolved input; supplying `None` satisfies it.
+- **Every missing input is named.** When several unresolved inputs are left out, the message leads
+  with the first and lists the rest; `unresolved_params` holds all of them in signature order.
+
+### Upgrading
+
+- **Checks that relied on conjure to catch a forgotten binding** now pass conjure. Meld the affected
+  object once in a smoke test, or watch for the conjure INFO line that lists unresolved inputs.
+- **Tests asserting the old "no DI candidate found" conjure error** should assert that conjure succeeds
+  and that the meld raises `UnresolvedInputError`, or supply the value through `override`.
 
 ## Concurrent first-time melds no longer deadlock
 
@@ -65,3 +128,11 @@ could be silently omitted from the disposal list and never run during scope tear
   retain their existing behavior.
 - **Unrelated binding IDs remain stable.** The class profile is unchanged. Bindings whose resolved
   disposal list now includes an inherited method receive an updated fingerprint when rebound.
+
+## Packaging and documentation
+
+- The packaged system documents (`melder.__architecture__`, `__components__`, `__graph_network__` and
+  `__graph_details__`) are regenerated and describe unresolved inputs and `UnresolvedInputError`.
+- `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
+  raised and caught, but it cannot be bound as a spell.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.54.

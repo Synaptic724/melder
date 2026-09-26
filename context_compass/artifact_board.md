@@ -100,16 +100,17 @@ Disposition values
 | tickets/tasks/2026-09-26_model_phase_pipeline_costs_task.md | artifacts/ir_phase_improvement_20260926/ | design_input | review | retain_as_reference | cost_model.md complete (121 lines, counted plus measured rows); owner review. | 2026-09-26T08:13:27Z | REQUIRED |
 | tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md | artifacts/ir_phase_improvement_20260926/ | design_input | review | retain_as_reference | candidates.md complete (13 candidates, ranking, T1 recommendation); owner decides the tranche. | 2026-09-26T08:18:28Z | REQUIRED |
 | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | artifacts/melder_override_design_20260926/ | design_proposal | review | retain_as_reference | Owner decides D1-D4; probe and results support the current-behavior table. | 2026-09-26T00:22:28Z | REQUIRED |
-| tickets/tasks/2026-09-26_implement_missing_dependency_sockets_task.md | system_docs/patches/active/unresolved_input_sockets_2026_09_26/ | patch_docs | active | promote_to_documentation | Owner reviews; promote after implementation. | 2026-09-26T01:16:08Z | REQUIRED |
-| tickets/tasks/2026-09-26_implement_missing_dependency_sockets_task.md | artifacts/missing_dependency_sockets_20260926/ | investigation_evidence | active | retain_as_reference | Pre-change probe, steps 1-2 probe and provider-removal probe with 3.14t results. | 2026-09-26T07:44:20Z | REQUIRED |
 | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | artifacts/melder_caller_input_regression_20260926/ | investigation_evidence | review | retain_as_reference | Dated-extract probes and results. | 2026-09-26T01:16:08Z | HELPFUL |
-| tickets/epics/2026-09-26_melder_long_run_throughput_truth_epic.md | artifacts/melder_long_run_growth_20260926/ | investigation_evidence | review | retain_as_reference | Owner reviews verdict and applied harness fix (patch + runD logs). | 2026-09-26T08:27:30Z | REQUIRED |
+| tickets/tasks/2026-09-26_fix_inspect_signature_nameerror_on_type_checking_annotations_task.md | artifacts/inspect_signature_nameerror_20260926/ | investigation_evidence | active | retain_as_reference | Scope and call-site probes with before results; after results follow the fix. | 2026-09-26T08:43:36Z | REQUIRED |
 <!-- END USER-DEFINED: active_artifacts -->
 
 ## Recently Cleared Artifacts
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/completed/2026-09-26_implement_missing_dependency_sockets_task.md | system_docs/patches/completed/unresolved_input_sockets_2026_09_26/ | promote_to_documentation | Promoted to src_architecture/src_components, graph, assets and release note; four patch files archived. | 2026-09-26T08:54:37Z |
+| tickets/tasks/completed/2026-09-26_implement_missing_dependency_sockets_task.md | artifacts/missing_dependency_sockets_20260926/ | retain_as_reference | Probes and 3.14t results: steps 1-2, provider removal/rebind/disposal, CommandOps shapes. | 2026-09-26T08:54:37Z |
+| tickets/epics/completed/2026-09-26_melder_long_run_throughput_truth_epic.md | artifacts/melder_long_run_growth_20260926/ | retain_as_reference | Evidence, probes, run logs and the applied harness patch; owner turn-in. | 2026-09-26T08:32:04Z |
 | tickets/tasks/completed/2026-09-25_verify_override_behavior_contract_task.md | artifacts/melder_override_contract_20260925/regression_matrix.md | retain_as_reference | Contract test plan; items 4a/5c chosen; input to override implementation. | 2026-09-26T00:12:00Z |
 | tickets/tasks/completed/2026-09-25_implement_creation_slot_build_guards_task.md | system_docs/patches/completed/creation_slot_build_guards_2026_09_25/ | promote_to_documentation | Promoted to src_architecture/src_components; four patch files archived. | 2026-09-25T23:47:39Z |
 | tickets/tasks/completed/2026-09-25_implement_creation_slot_build_guards_task.md | artifacts/creation_slot_build_guards_20260925/ | retain_as_reference | Before/after overhead benchmarks and scripts. | 2026-09-25T23:47:39Z |

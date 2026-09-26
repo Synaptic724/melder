@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 7c14a3cd41f8cf192be745086cf67dd704a7aa1d1a17289dd15eca56661f989d
-FILE COUNT: 587
+SOURCE FINGERPRINT: 1672d5d46a5384df8c7df8ce2587b62bd2219c8136adc4c2558799d273e56f27
+FILE COUNT: 588
 
 ================================================================================
 BEGIN FILE: src/melder/__architecture__.py
@@ -270,7 +270,7 @@ END FILE: src/melder/__graph_network__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__init__.py
-CONTENT SHA256: 1ae707a6b08a50c36dc7acd93a3180df3d2959817ed59365e1ebef31da16a8ad
+CONTENT SHA256: bdddd92942819a98491c2d579b7b33f9aa829c8d14ea10fed9067fea83ec23b1
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -305,7 +305,7 @@ Workflow map - every name below is importable from this root:
 - ERRORS (catchable from this root): SpellbookValidationError,
   MeldExecutionError, SpellSpaceScopeError, HookExecutionError,
   InternalRegistrationError, PhaseSchedulerError, PhaseExecutionError,
-  PhaseTimeoutError, DeadReferenceError.
+  PhaseTimeoutError, DeadReferenceError, UnresolvedInputError.
 - AGENT DOCS: __architecture__, __components__, __graph_network__, and
   __graph_details__ are live hardcopy objects carrying the system's own
   self-description - agents should read these before deep work.
@@ -434,6 +434,7 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
 from melder.utilities.custom_exceptions.spellbook_validation_error import (
     SpellbookValidationError,
 )
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 Aether()
 
@@ -526,6 +527,7 @@ __all__ = [
     "SpellbookValidationError",
     "SystemState",
     "ULID_Factory",
+    "UnresolvedInputError",
     "ViewConduit",
     "ViewFrame",
     "ViewMultiFrame",
@@ -597,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: a9f09cd814792693c9b889daf51420147323904e0aad0c92438591900d666490
+CONTENT SHA256: 00953f9b8281a589255e68957a23082c8ad72cf3d5e5d604ab39a24800df489a
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -611,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.51"
+__version__ = "0.2.54"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -31337,7 +31339,7 @@ END FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_sys
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
-CONTENT SHA256: fca2ed41c56005182a8d2df53526ec946d328234fc106d6ff8471b5b5041c38e
+CONTENT SHA256: 5e93f92314f033d129b574ac4da17fa093a6f1e73da017d2f166760088493df4
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -32709,11 +32711,17 @@ class SpellSystemStates(Cleanable):
         Extract selector-sensitive frame keys from a local topology.
 
         These frame keys feed the spellbook-scoped collection-dependent index
-        used for targeted invalidation of list[Frame] and OVERRIDE_REQUIRED consumers.
+        used for targeted invalidation of list[Frame], OVERRIDE_REQUIRED and
+        UNRESOLVED_INPUT consumers.
 
         Contract:
-            - NORMAL collection sockets and OVERRIDE_REQUIRED inputs participate.
-            - Required inputs are watched without creating construction dependency edges.
+            - NORMAL collection sockets, OVERRIDE_REQUIRED inputs and
+              UNRESOLVED_INPUT inputs participate.
+            - Required and unresolved inputs are watched without creating
+              construction dependency edges.
+            - An UNRESOLVED_INPUT socket is watched under its expected type's frame
+              key, so binding a matching provider later marks this consumer
+              dependency-changed and its next meld re-resolves it into a NORMAL edge.
             - False-root declarations carry no dependency_key and therefore add no watcher.
             - The frame key is taken from `socket.dependency_key[0]`.
             - Returns a detached set suitable for index replacement.
@@ -32722,8 +32730,10 @@ class SpellSystemStates(Cleanable):
         if topology is None:
             return frames
         for socket in topology.iter_sockets():
-            if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED and not (
-                    socket.socket_kind is SocketKind.NORMAL and socket.is_collection
+            if (
+                    socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED
+                    and socket.socket_kind is not SocketKind.UNRESOLVED_INPUT
+                    and not (socket.socket_kind is SocketKind.NORMAL and socket.is_collection)
             ):
                 continue
             if socket.dependency_key is None:
@@ -57738,7 +57748,7 @@ END FILE: src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/cluster_creations.py
-CONTENT SHA256: b50f82833fd03b9b527ba204f5ec5f2d1d284c2684e3298e363520dbcb71a67d
+CONTENT SHA256: b31d27a21e7d6b251c0a97e8a5284e3edfaf9500dfcaa7635421654ffeae5544
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, ClassVar, List, Optional, TYPE_CHECKING
@@ -57902,7 +57912,9 @@ class ClusterCreations(Cleanable):
         Purpose:
             Hand the meld front door the concrete leader store so the door can
             run the same get-or-create-once block the lineage route uses,
-            locking the real store's `_lock`. The facade itself carries no lock;
+            holding the real store's `slot_guard(spell_id)` across the build
+            (the store's `_lock` is only a leaf around publish). The facade
+            itself carries no lock;
             safety while a leader is bound/unbound comes from the
             `elect_/unelect_conduit_cluster_leader` transaction quiesce, not from
             this facade.
@@ -58008,7 +58020,7 @@ END FILE: src/melder/aether/conduit/creations/cluster_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/conduit_creations.py
-CONTENT SHA256: b0559879875a9629a6b0e01e277ba075602e28e5c1acc86af9f73151c946bb55
+CONTENT SHA256: 838a49e0bc9e6007e7707c5047409a8d0f2d8f085f6fa4ed4ad16d0f1b00ff87
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, ClassVar, Dict, List
@@ -58039,7 +58051,8 @@ class ConduitCreations(Creations):
         this specialization a behaviour delta rather than a storage delta.
 
     Threading:
-        Inherits the base `RLock` discipline; adds no locks of its own.
+        Inherits the base discipline (leaf store lock plus per-slot build
+        guards from `slot_guard`); adds no locks of its own.
 
     Lifecycle / Cleanup:
         Created in `Conduit.__init__` and cleaned during conduit teardown.
@@ -58149,7 +58162,7 @@ END FILE: src/melder/aether/conduit/creations/conduit_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/creations/creations.py
-CONTENT SHA256: e8f386ebe4743927f0db45e42826de178a1055e48c3aba45eb5d96076ca24a10
+CONTENT SHA256: 9ea7001989f843099ab68c86e788614970a660d8b6bc6487725a1bfcf3b67ce3
 SOURCE ENCODING: utf-8
 ================================================================================
 from threading import RLock
@@ -58191,12 +58204,34 @@ class Creations(Cleanable):
           reorder, or clear that list; it owns the entries and their instances.
 
     Owned State:
-        `_owner_conduit_id`, a stable `_id`, one `RLock`, and the two registries
-        (`_creations`, `_disposable_creations`).
+        `_owner_conduit_id`, a stable `_id`, one store `RLock`, the two
+        registries (`_creations`, `_disposable_creations`) and the per-slot
+        build-guard table (`_slot_guards`).
 
     Threading:
-        One instance `RLock` guards both registries. Reads and writes race
-        freely under free-threaded 3.14t, so the lock is not optional.
+        Two lock roles, and keeping them apart is what makes resolution
+        deadlock-free.
+
+        - `_lock` (the store lock) is a LEAF lock over the two registries. It
+          is held only for dict reads and writes: publish of disposal-bearing
+          entries, many append, purge detach, extract/restore and whole-store
+          swap. It is never held while acquiring another lock and never
+          around user code. (A publish without disposal methods is one atomic
+          dict store under the caller's build lock; see `add_creation`.)
+        - `slot_guard(spell_id)` returns one `RLock` per slot - a spell id
+          whose Existence promises at most one object in this store. Generated
+          doors and plan steps hold it across recheck -> construct -> publish,
+          so only builders of the SAME slot wait for each other. `unique`
+          spells use `Spell._lock` for the same job, because a unique spell has
+          exactly one slot (its owner store).
+
+        Lock order is always build lock (slot guard or `Spell._lock`) first,
+        store lock last. Build locks are taken consumer before provider along
+        the dependency graph, which has no cycles, so no wait cycle can form.
+        Before 2026-09-25 the store lock itself was held across whole builds;
+        a thread holding it could then wait on a unique's `Spell._lock` while
+        that unique's builder waited on the store - a deadlock. Reads and writes
+        race freely under free-threaded 3.14t, so neither lock is optional.
 
     Lifecycle / Cleanup:
         Idempotent. Cleanup runs the declared disposal methods and AGGREGATES
@@ -58250,6 +58285,7 @@ class Creations(Cleanable):
         "_lock",
         "_creations",
         "_disposable_creations",
+        "_slot_guards",
     ]
 
     def __init__(
@@ -58298,6 +58334,9 @@ class Creations(Cleanable):
         self._lock = RLock()
         self._creations: Dict[str, Any] = {}
         self._disposable_creations: Dict[str, Any] = {}
+        # One build guard per slot, created on first use and kept for this
+        # store's lifetime (bounded by the number of spell ids built here).
+        self._slot_guards: Dict[str, RLock] = {}
         # Note: resolution-store selection for broad-lived existences
         # (`unique_per_conduit_lineage` lineage root, `unique_per_conduit_cluster`
         # elected-leader store) lives on the meld front doors
@@ -58318,9 +58357,17 @@ class Creations(Cleanable):
             - Raises `ExceptionGroup` after best-effort disposal attempts.
             - Drops the live field surface after cleanup so later use fails
               honestly instead of reading stale state.
+            - Keeps `_lock` as a deliberate post-cleanup tombstone: a build
+              that was already in flight (holding only its slot guard) may
+              still publish afterwards, and it must be able to take the store
+              lock and observe `_cleaned` instead of failing on a missing
+              attribute. See `add_creation`.
 
         Threading:
             - Performs the detach step under `_lock`.
+            - Does not wait for in-flight builds: they hold slot guards, not the
+              store lock. A build that publishes after this point is refused
+              and its object disposed by `add_creation`.
             - Disposal work happens after detach so callers cannot keep racing
               the live registries while cleanup is executing.
 
@@ -58349,9 +58396,11 @@ class Creations(Cleanable):
 
         del self._creations
         del self._disposable_creations
+        del self._slot_guards
         del self._owner_conduit_id
         del self._id
-        del self._lock
+        # `_lock` is intentionally retained (tombstone): a racing publish takes
+        # it and observes `_cleaned` rather than a missing attribute.
 
         if errors:
             raise ExceptionGroup("Errors occurred during cleaning", errors)
@@ -58471,6 +58520,105 @@ class Creations(Cleanable):
                 errors.extend(self._dispose_many_creations(value))
         return errors
 
+    def slot_guard(self, spell_id: str) -> RLock:
+        """
+        Return the build guard for one slot in this store.
+
+        Purpose:
+            Give "build this slot at most once" its own lock, so the store lock
+            only ever protects the registries and can stay a leaf. A slot is a
+            spell id whose Existence promises at most one object in this store:
+            `unique_per_conduit`, `unique_per_spell_space`,
+            `unique_per_conduit_lineage` and `unique_per_conduit_cluster`.
+            (`unique` uses `Spell._lock` instead; `many` has no slot.)
+
+        Contract:
+            - Returns the same `RLock` for a spell id on every call for this
+              store's lifetime, including across `clear_all()` and
+              `reset_for_pool()`.
+            - A hit is one lock-free dict read. The first request for a slot
+              publishes a new `RLock` with `dict.setdefault`, which is atomic on
+              a builtin dict with `str` keys (GIL and free-threaded builds), so
+              concurrent first requests converge on one guard.
+            - Returning or holding a guard never implies holding `_lock`.
+            - Generated doors and plan steps inline the hit as
+              `store._slot_guards.get(spell_id) or store.slot_guard(spell_id)`
+              (one method call fewer per cold build). `_slot_guards` is
+              therefore part of this class's internal contract: a plain
+              `dict` of spell id -> `RLock` whose entries are never replaced
+              or removed while the store is live.
+
+        Args:
+            spell_id:
+                Stable spell id of the slot being built or retired.
+
+        Returns:
+            RLock:
+                The slot's build guard. Re-entrant, so a door and the root plan
+                step (or a same-thread nested meld) can both take it.
+
+        Raises:
+            AttributeError:
+                After `cleanup()`, like every other live-surface read of a
+                retired store.
+
+        Threading:
+            Callers hold the guard across recheck -> construct -> publish and
+            acquire it BEFORE `_lock`, never while holding `_lock`.
+        """
+        guard = self._slot_guards.get(spell_id)
+        if guard is None:
+            guard = self._slot_guards.setdefault(spell_id, RLock())
+        return guard
+
+    def _refuse_publish_into_cleaned_store(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool,
+            disposal_methods: Optional[List[str]],
+    ) -> None:
+        """
+        Dispose an object whose build finished after this store was cleaned, then raise.
+
+        Purpose:
+            Keep the "a retired store owns nothing" rule when a build that held
+            only its slot guard finishes after `cleanup()`. The object was built
+            for this scope, so its declared disposal methods run here rather than
+            leaking an undisposed object to the caller.
+
+        Contract:
+            - Called only after `add_creation`/`add_many_creations` observed
+              `_cleaned` under `_lock`, with that lock already released.
+            - Runs the object's disposal methods (when declared) outside any lock.
+            - Always raises; never registers anything.
+
+        Args:
+            key: Spell id the object would have been published under.
+            item: The just-built object.
+            has_disposal_methods: Whether the spell declared disposal methods.
+            disposal_methods: The Spell-owned disposal method names.
+
+        Raises:
+            RuntimeError:
+                Always. Chained from the disposal failure when disposal failed.
+        """
+        disposal_error: Optional[Exception] = None
+        if has_disposal_methods:
+            disposal_error = self._attempt_cleanup(
+                (item, disposal_methods if disposal_methods is not None else [])
+            )
+        message = (
+            f"{self.__class__.__name__} was cleaned while creation '{key}' was "
+            f"being built; the new instance was not registered"
+            + (" and its disposal methods were run." if has_disposal_methods else ".")
+            + " Quiesce melds on a scope before cleaning it."
+        )
+        if disposal_error is not None:
+            raise RuntimeError(message) from disposal_error
+        raise RuntimeError(message)
+
     def add_creation(
             self,
             key: str,
@@ -58491,19 +58639,62 @@ class Creations(Cleanable):
               payload; there is no `Creation.value` wrapper in the live store.
             - Retains the supplied disposal list directly, including an empty
               list. Omitted names use an empty list when disposal is enabled.
+            - Refuses a cleaned store: the object is disposed (when it declared
+              disposal methods) and `RuntimeError` is raised.
+
+        Raises:
+            ValueError:
+                If the key is already registered.
+            RuntimeError:
+                If this store was cleaned while the object was being built.
+
+        Threading:
+            - Callers hold the slot's build lock (the slot guard, or
+              `Spell._lock` for `unique`) - that is what makes "check, build,
+              publish" happen once per slot - and never the store lock across
+              the build. A caller that still holds `_lock` re-enters it safely.
+            - Disposal-bearing entries publish under the store lock (`_lock`)
+              as a leaf, because the live and disposal writes must land
+              together relative to purge detach, reusable clears and cleanup
+              (a clear iterates the detached disposal map).
+            - Entries without disposal methods publish with ONE lock-free dict
+              write (measured: the leaf lock cost ~58 ns per cold build on
+              3.14t). This is safe because the build lock already excludes
+              every other publisher of the key, a single dict store is atomic
+              on GIL and free-threaded builds, and the only other writers are
+              whole-store swaps: a write racing `clear_all()`/`reset_for_pool()`
+              lands in the detached generation and is dropped with it (the
+              build straddled the clear; there is nothing to dispose). A write
+              racing `cleanup()` is a caller contract violation: it is refused
+              here, dropped with the detached map, or fails on the retired
+              store's missing registry - and has no disposal methods to leak.
 
         Returns:
             None.
         """
-        if key in self._creations or key in self._disposable_creations:
-            raise ValueError(f"Key {key} already exists in creations.")
-
-        self._creations[key] = item
-        if has_disposal_methods:
-            self._disposable_creations[key] = (
-                item,
-                disposal_methods if disposal_methods is not None else [],
-            )
+        if not has_disposal_methods:
+            if not self._cleaned:
+                if key in self._creations or key in self._disposable_creations:
+                    raise ValueError(f"Key {key} already exists in creations.")
+                self._creations[key] = item
+                return
+        else:
+            with self._lock:
+                if not self._cleaned:
+                    if key in self._creations or key in self._disposable_creations:
+                        raise ValueError(f"Key {key} already exists in creations.")
+                    self._creations[key] = item
+                    self._disposable_creations[key] = (
+                        item,
+                        disposal_methods if disposal_methods is not None else [],
+                    )
+                    return
+        self._refuse_publish_into_cleaned_store(
+            key,
+            item,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
 
     def add_many_creations(
             self,
@@ -58536,38 +58727,81 @@ class Creations(Cleanable):
             - Runs under `_lock` (re-entrant, shared with extract/restore/
               clear); every successfully returned managed creation is
               represented in both registries once this method returns.
+            - `_lock` is a leaf here: only dict work runs under it. A cleaned
+              store is refused the same way as in `add_creation`.
+
+        Raises:
+            ValueError:
+                If the key already holds a non-list slot.
+            RuntimeError:
+                If this store was cleaned while the object was being built.
 
         Returns:
             None.
         """
         with self._lock:
-            live_value = self._creations.get(key)
-            if live_value is None:
-                self._creations[key] = []
-                live_value = self._creations[key]
-            if not isinstance(live_value, list):
-                raise ValueError(
-                    f"Key {key} already exists in creations with non-list slot."
-                )
-            live_value.append(item)
-
-            if not has_disposal_methods:
-                return
-
-            disposable_value = self._disposable_creations.get(key)
-            if disposable_value is None:
-                self._disposable_creations[key] = []
-                disposable_value = self._disposable_creations[key]
-            if not isinstance(disposable_value, list):
-                raise ValueError(
-                    f"Key {key} already exists in disposable creations with non-list slot."
-                )
-            disposable_value.append(
-                (
+            if not self._cleaned:
+                self._append_many_locked(
+                    key,
                     item,
-                    disposal_methods if disposal_methods is not None else [],
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
                 )
+                return
+        self._refuse_publish_into_cleaned_store(
+            key,
+            item,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
+
+    def _append_many_locked(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool,
+            disposal_methods: Optional[List[str]],
+    ) -> None:
+        """
+        Append one many creation and its disposal record; caller holds `_lock`.
+
+        Contract:
+            - The caller holds `_lock` and has checked the store is not cleaned.
+            - Creates first-use buckets and appends to both registries in one
+              critical section (BUG-073 invariant).
+
+        Raises:
+            ValueError:
+                If the key already holds a non-list live or disposable slot.
+        """
+        live_value = self._creations.get(key)
+        if live_value is None:
+            self._creations[key] = []
+            live_value = self._creations[key]
+        if not isinstance(live_value, list):
+            raise ValueError(
+                f"Key {key} already exists in creations with non-list slot."
             )
+        live_value.append(item)
+
+        if not has_disposal_methods:
+            return
+
+        disposable_value = self._disposable_creations.get(key)
+        if disposable_value is None:
+            self._disposable_creations[key] = []
+            disposable_value = self._disposable_creations[key]
+        if not isinstance(disposable_value, list):
+            raise ValueError(
+                f"Key {key} already exists in disposable creations with non-list slot."
+            )
+        disposable_value.append(
+            (
+                item,
+                disposal_methods if disposal_methods is not None else [],
+            )
+        )
 
     def get_creation(self, spell_id: str) -> Optional[Any]:
         """
@@ -58638,10 +58872,14 @@ class Creations(Cleanable):
                 processing of the selected objects. There is no disposal rollback.
 
         Threading / Concurrency:
-            Unique takes Spell._lock before this store's lock. Other modes take
-            only this store's lock, including lineage/cluster stores selected by
-            their Meld door. Both maps detach in one critical section. All
-            removal locks are released before any user disposal method runs.
+            Retirement takes the slot's build lock first, then this store's leaf
+            lock, so it waits for an in-flight build of the same slot and never
+            removes a half-built entry: `unique` takes Spell._lock;
+            `unique_per_conduit`, `unique_per_spell_space`, lineage and cluster
+            take `slot_guard(spell_id)` of this store (the lineage/cluster store
+            selected by their Meld door); `many` has no slot and takes only the
+            store lock. Both maps detach in one critical section. All removal
+            locks are released before any user disposal method runs.
 
         Lifecycle / Cleanup:
             Detached live references stay alive until lock release, so implicit
@@ -58652,15 +58890,21 @@ class Creations(Cleanable):
         self.check_cleaned()
         if not purge_all and creation is None:
             raise ValueError("Single-object purge requires a creation reference.")
-        if spell.existence is Existence.unique:
+        existence = spell.existence
+        if existence is Existence.unique:
             with spell._lock:
                 count, retired, disposal = self._detach_purge_entries(
                     spell, purge_all=purge_all, creation=creation,
                 )
-        else:
+        elif existence is Existence.many:
             count, retired, disposal = self._detach_purge_entries(
                 spell, purge_all=purge_all, creation=creation,
             )
+        else:
+            with self.slot_guard(spell.spell_id):
+                count, retired, disposal = self._detach_purge_entries(
+                    spell, purge_all=purge_all, creation=creation,
+                )
         errors: List[Exception] = []
         if isinstance(disposal, tuple):
             maybe_error = self._attempt_cleanup(disposal)
@@ -58689,7 +58933,9 @@ class Creations(Cleanable):
             preserving a strong reference to every removed live value.
 
         Contract:
-            - The caller already holds Spell._lock when Existence is unique.
+            - The caller already holds the slot's build lock: Spell._lock for
+              unique, this store's `slot_guard` for the other slotted
+              existences, none for many.
             - Rechecks cleaned state after acquiring the store lock.
             - Key membership determines presence; Existence determines whether
               the value is one object or an owned many bucket.
@@ -58936,7 +59182,15 @@ class Creations(Cleanable):
             - Detaches live and disposable registries before disposal work.
             - Raises `ExceptionGroup` after best-effort disposal attempts.
             - Leaves this `Creations` instance reusable after the clear
-              completes.
+              completes. Slot guards are kept (they are per spell id, not per
+              generation).
+
+        Threading:
+            The swap runs under the leaf store lock. In-flight builds hold slot
+            guards, not the store lock, so this does not wait for them: a build
+            that started before the clear and publishes after it lands in the
+            fresh registry. Callers that need "nothing survives the clear" must
+            quiesce melds on this scope first, as pool return already does.
 
         Returns:
             None.
@@ -66030,7 +66284,7 @@ END FILE: src/melder/aether/conduit/spell_space/spell_space_thread_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/bind/bind.py
-CONTENT SHA256: 0391f765ccbb9dd46098960a865411b31b710a151099bdc414f93acea5e2ddfe
+CONTENT SHA256: cdf493d031cf2d671fb8a5709b253a538964d6ef771ceefd43717f7616d1391b
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -66656,8 +66910,11 @@ class Bind(Cleanable):
             Native fingerprint rules are unchanged and callback returns are ignored.
 
         Disposal contract:
-            Only names present in the existing ClassBindingProfile are retained.
-            Missing names and non-class profiles contribute nothing. Book names
+            Retain declared profile methods and requested inherited callables,
+            respecting the first class declaration in Python's MRO. Non-callable
+            shadows and hidden dunders remain excluded; descriptors are not invoked
+            during matching. The shallow profile and its fingerprint inputs do not
+            expand. Missing names and non-class profiles contribute nothing. Book names
             own overlaps in both modes and keep their configured order. Spell-only
             names keep their supplied order, before or after the book block. Each
             matching name appears once in the single result list.
@@ -66723,7 +66980,7 @@ class Bind(Cleanable):
                 if configured_disposal_method_names is not None:
                     for method_name in configured_disposal_method_names:
                         if (
-                                method_name in binding_profile.method_names
+                                Bind._matches_disposal_method(binding_profile, method_name)
                                 and method_name not in resolved_disposal_method_names
                         ):
                             resolved_disposal_method_names.append(method_name)
@@ -66731,7 +66988,7 @@ class Bind(Cleanable):
                 if disposal_method_names is not None:
                     for method_name in disposal_method_names:
                         if (
-                                method_name in binding_profile.method_names
+                                Bind._matches_disposal_method(binding_profile, method_name)
                                 and method_name not in resolved_disposal_method_names
                         ):
                             resolved_disposal_method_names.insert(spell_position, method_name)
@@ -66829,6 +67086,40 @@ class Bind(Cleanable):
         finally:
             if not completed:
                 self._cleanup_unpublished_spell(new_spell, spell_index)
+
+    @staticmethod
+    def _matches_disposal_method(profile: ClassBindingProfile, method_name: str) -> bool:
+        """
+        Match one disposal candidate without expanding the class binding profile.
+
+        Contract:
+            Preserve existing declared-method eligibility. For other non-dunder
+            names, inspect class namespaces in MRO order and stop at the first
+            declaration, including a non-callable shadow. A local declaration
+            excluded by the profile stays excluded. Raw inherited members use
+            the same callable test as the profile builder; properties and raw
+            classmethod descriptors remain unsupported. Never invoke descriptors
+            or admit metaclass-only members as instance disposal methods.
+
+        Args:
+            profile: Binding-time profile of the registered class.
+            method_name: Requested configured or per-spell disposal name.
+
+        Returns:
+            bool: Whether the class exposes an eligible disposal candidate.
+
+        Lifecycle / Threading:
+            Runs under the existing Bind lock before fingerprinting. Owns no
+            state, invokes no cleanup and adds no work to ordinary resolution.
+        """
+        if method_name in profile.method_names:
+            return True
+        if method_name.startswith("__") and method_name.endswith("__"):
+            return False
+        for owner in profile.original_object.__mro__:
+            if method_name in owner.__dict__:
+                return owner is not profile.original_object and callable(owner.__dict__[method_name])
+        return False
 
     #region Spell Inspector Helpers
     @staticmethod
@@ -72000,7 +72291,7 @@ END FILE: src/melder/aether/spellbook/spell.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py
-CONTENT SHA256: e4add22c1ccbc944b39f6d5fc0872824776278f6ef33bd218b4ea89362b8f1d1
+CONTENT SHA256: 07413ac8e50256e2f81fe3945503130f54d046a2d744bc74343ecdd971ec5033
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Dict, List, Optional, Tuple
@@ -72028,6 +72319,9 @@ class SpellInjectionParamSource:
           socket with exactly one wired provider still injects a list.
         - override_required sources retain signature position/kind and descriptive
           reference IDs without introducing dependency instance keys.
+        - unresolved_input sources (a typed parameter no registered spell
+          provides) retain signature position/kind with no dependency instance
+          keys and no reference IDs; the constructing call supplies the value.
     """
 
     __slots__ = [
@@ -72057,14 +72351,16 @@ class SpellInjectionParamSource:
         Build one injection parameter source descriptor.
 
         Args:
-            kind: Source kind ("dependency", "contract", or "override_required").
+            kind: Source kind ("dependency", "contract", "override_required", or
+                "unresolved_input").
             dependency_keys: Instance keys this parameter reads, in order.
             override_key: Root-override key this parameter answers to.
             contract_key: Contract payload key when contract-sourced.
             is_collection: True when the underlying constructor socket is a
                 collection DI shape (list[Frame]); the injected value must be
                 a list even when exactly one dependency key is present.
-            position: Original constructor position for required supplied inputs.
+            position: Original constructor position for required supplied and
+                unresolved inputs.
             parameter_kind: Original inspect.Parameter kind name for those inputs.
             referenced_spell_ids: Non-executable target identities for graph navigation.
         """
@@ -72132,6 +72428,9 @@ class SpellInjectionInstanceSpec:
     ) -> Tuple[RequiredOverrideParam, ...]:
         """
         Freeze required-input policy into plain values for either planner variant.
+
+        Only override_required sources participate. unresolved_input sources carry
+        no reference IDs and remain ordinary override targets.
 
         Args:
             param_sources: Fitted injection sources in deterministic parameter order.
@@ -73717,7 +74016,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py
-CONTENT SHA256: e8888189a788dc923ffe91c92bf028bde16ff8efd51091d3d7d24d24a9619fb2
+CONTENT SHA256: e76dd57e50e2d86542b590fc8cc2363c65f47da192964c22e6245f0f46c989bc
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
@@ -73860,6 +74159,11 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
               dependency count, so one-member collections stay collections.
             - OVERRIDE_REQUIRED sources are retained even without occurrence edges;
               signature/reference metadata comes from the same durable topology.
+            - UNRESOLVED_INPUT sockets (no registered provider) become
+              "unresolved_input" sources: no dependency keys, override_key set to
+              the parameter name, signature position/kind retained. Planners treat
+              them like any override target, so the constructing call supplies the
+              value or the argument is omitted and construction fails.
         """
         instance_specs_by_instance_key: Dict[InstanceKey, SpellInjectionInstanceSpec] = {}
         # Per-spell collection-socket sets, resolved lazily once per spell id.
@@ -73959,6 +74263,17 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                 topology = spell_system_states.get_local_topology_by_id(spell_id)
                 if topology is not None:
                     for socket in topology.sockets:
+                        if socket.socket_kind is SocketKind.UNRESOLVED_INPUT:
+                            # No provider and no occurrence edge: the value can
+                            # only come from the constructing call's overrides.
+                            param_sources[socket.param_name] = SpellInjectionParamSource(
+                                kind="unresolved_input",
+                                dependency_keys=(),
+                                override_key=socket.param_name,
+                                position=socket.position,
+                                parameter_kind=socket.parameter_kind,
+                            )
+                            continue
                         if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED:
                             continue
                         param_sources[socket.param_name] = SpellInjectionParamSource(
@@ -77708,7 +78023,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py
-CONTENT SHA256: c428d4a30f330d278bbc6647ceae10ef8ed0a13f9dcbaac13d301054798e5917
+CONTENT SHA256: 9ead6979e1de6178ccfa85dae7d9f77cf631875dcb73d47e07309736fcf7cea8
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Optional, Any, Callable, Sequence
@@ -78221,6 +78536,14 @@ def _build_no_overrides_lines(
     existence route. This is where route semantics such as existing-creation
     reuse, spellspace enforcement, shared-instance reuse, or transient creation
     are converted into emitted Python statements.
+
+    Locking:
+        Slotted routes (`unique_per_conduit`, `spellspace`, `lineage`,
+        `cluster`) hold the target store's `slot_guard(_spell_id)` across the
+        recheck and the executor call; `unique` holds `_spell._lock`. The store
+        lock itself is never held here - publication inside the executor takes
+        it as a leaf. Holding the store lock across the build (the pre
+        2026-09-25 shape) deadlocked against a unique dependency's builder.
     """
     if resolve_route_key == "existing_creation":
         return [
@@ -78258,7 +78581,7 @@ def _build_no_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "with caller_creations._lock:",
+            "with (caller_creations._slot_guards.get(_spell_id) or caller_creations.slot_guard(_spell_id)):",
             "    creation = caller_creations._creations.get(_spell_id)",
             "    if creation is None:",
         ] + _indent_lines(
@@ -78287,7 +78610,7 @@ def _build_no_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "with caller_creations._lock:",
+            "with (caller_creations._slot_guards.get(_spell_id) or caller_creations.slot_guard(_spell_id)):",
             "    creation = caller_creations._creations.get(_spell_id)",
             "    if creation is None:",
         ] + _indent_lines(
@@ -78346,7 +78669,7 @@ def _build_no_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "with root_creations._lock:",
+            "with (root_creations._slot_guards.get(_spell_id) or root_creations.slot_guard(_spell_id)):",
             "    creation = root_creations._creations.get(_spell_id)",
             "    if creation is None:",
         ] + _indent_lines(
@@ -78377,7 +78700,7 @@ def _build_no_overrides_lines(
                     return_created=return_created,
                 ),
             ),
-            "with leader_creations._lock:",
+            "with (leader_creations._slot_guards.get(_spell_id) or leader_creations.slot_guard(_spell_id)):",
             "    creation = leader_creations._creations.get(_spell_id)",
             "    if creation is None:",
         ] + _indent_lines(
@@ -78413,6 +78736,11 @@ def _build_with_overrides_lines(
     whether it must create under a lock, and what error path should be emitted
     for invalid override usage.
 
+    Locking:
+        Same as `_build_no_overrides_lines`: slotted routes hold the target
+        store's `slot_guard(_spell_id)`, `unique` holds `_spell._lock`, and the
+        store lock is only taken as a leaf by publication inside the executor.
+
     Contract:
         - Overrides-only doors are selected by the meld front doors ONLY when
           a normalized override payload exists, so `overrides` is never None
@@ -78447,7 +78775,7 @@ def _build_with_overrides_lines(
             "        spell_name=_spell.spell_name,",
             "        message=_existing_override_message,",
             "    )",
-            "with caller_creations._lock:",
+            "with (caller_creations._slot_guards.get(_spell_id) or caller_creations.slot_guard(_spell_id)):",
             "    creation = caller_creations._creations.get(_spell_id)",
             "    if creation is None:",
             "        instance = _execute_with_overrides(meld, overrides)",
@@ -78474,7 +78802,7 @@ def _build_with_overrides_lines(
             "        spell_name=_spell.spell_name,",
             "        message=_existing_override_message,",
             "    )",
-            "with caller_creations._lock:",
+            "with (caller_creations._slot_guards.get(_spell_id) or caller_creations.slot_guard(_spell_id)):",
             "    creation = caller_creations._creations.get(_spell_id)",
             "    if creation is None:",
             "        instance = _execute_with_overrides(meld, overrides)",
@@ -78529,7 +78857,7 @@ def _build_with_overrides_lines(
             "        spell_name=_spell.spell_name,",
             "        message=_existing_override_message,",
             "    )",
-            "with root_creations._lock:",
+            "with (root_creations._slot_guards.get(_spell_id) or root_creations.slot_guard(_spell_id)):",
             "    creation = root_creations._creations.get(_spell_id)",
             "    if creation is None:",
             "        instance = _execute_with_overrides(meld, overrides)",
@@ -78559,7 +78887,7 @@ def _build_with_overrides_lines(
             "        spell_name=_spell.spell_name,",
             "        message=_existing_override_message,",
             "    )",
-            "with leader_creations._lock:",
+            "with (leader_creations._slot_guards.get(_spell_id) or leader_creations.slot_guard(_spell_id)):",
             "    creation = leader_creations._creations.get(_spell_id)",
             "    if creation is None:",
             "        instance = _execute_with_overrides(meld, overrides)",
@@ -79821,7 +80149,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
-CONTENT SHA256: a8e80f1faa90a7a68d8ee0fa6607875929527fa503d85bd7df2cdad1ffcd7053
+CONTENT SHA256: f61788e077d5414428c224053ae07e94e209eb6c30f3d6d7b8223c327659fc7e
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -79911,6 +80239,7 @@ _STEP_STATIC_NAMESPACE = {
 
 _TRANSIENT_STATIC_NAMESPACE = {
     "MeldExecutionError": MeldExecutionError,
+    "_raise_meld_construction_error": raise_meld_construction_error,
 }
 
 _TRANSIENT_SCHEMA_SEQUENCE_FIELDS = (
@@ -80156,7 +80485,9 @@ def _append_step_resolution_source(
         )
         if has_disposal_methods:
             # `many` is transient (a new instance per meld, never cached), so
-            # the append is lockless -- matching the solo / many_only families.
+            # there is no build guard. The append goes through
+            # `add_many_creations`, which takes the store lock as a leaf (the
+            # former lockless inline append could lose a first-use bucket).
             _append_register_source(
                 lines=lines,
                 step_index=step_index,
@@ -80173,9 +80504,9 @@ def _append_step_resolution_source(
     if existence in (
             Existence.unique_per_conduit,
             Existence.unique_per_spell_space,
-            # cluster/lineage are CALLER + creations_lock now (meld supplies the
-            # leader / lineage-root store as caller_creations), so they take the
-            # same reuse-read + creations-lock path as unique_per_conduit -- which
+            # cluster/lineage are CALLER-routed (meld supplies the leader /
+            # lineage-root store as caller_creations), so they take the same
+            # reuse-read + slot-guard path as unique_per_conduit -- which
             # correctly threads key_to_step_index for locals mode. (The fall-
             # through 'plain' branch below does not, and is unreachable.)
             Existence.unique_per_conduit_cluster,
@@ -80187,7 +80518,9 @@ def _append_step_resolution_source(
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
             ),
             f"    if instance_{step_index} is None:",
-            f"        with creations_{step_index}._lock:",
+            # Build-once under this slot's guard; `add_creation` takes the
+            # store lock itself as a leaf (see Creations.slot_guard).
+            f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             (
                 f"            instance_{step_index} = "
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
@@ -80227,10 +80560,12 @@ def _append_step_resolution_source(
             f"    if instance_{step_index} is None:",
             f"        use_spell_lock_{step_index} = True",
             f"        if use_spell_lock_{step_index}:",
+            # `unique` has one slot (its owner store), so Spell._lock is its
+            # slot guard; the recheck is a plain dict read and `add_creation`
+            # takes the store lock itself as a leaf.
             f"            with spell_{step_index}._lock:",
-            f"                with creations_{step_index}._lock:",
             (
-                f"                    instance_{step_index} = "
+                f"                instance_{step_index} = "
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
             ),
             f"                if instance_{step_index} is None:",
@@ -80243,17 +80578,16 @@ def _append_step_resolution_source(
             key_to_step_index=key_to_step_index,
             row=row,
         )
-        lines.append(f"                    with creations_{step_index}._lock:")
         _append_register_source(
             lines=lines,
             step_index=step_index,
-            indent="                        ",
+            indent="                    ",
             existence=existence,
             has_disposal_methods=has_disposal_methods,
         )
         lines.extend([
             "        else:",
-            f"            with creations_{step_index}._lock:",
+            f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             (
                 f"                instance_{step_index} = "
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
@@ -80287,7 +80621,7 @@ def _append_step_resolution_source(
             f"creations_{step_index}._creations.get(spell_id_{step_index})"
         ),
         f"    if instance_{step_index} is None:",
-        f"        with creations_{step_index}._lock:",
+        f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         (
             f"            instance_{step_index} = "
             f"creations_{step_index}._creations.get(spell_id_{step_index})"
@@ -80458,9 +80792,18 @@ def _emit_construct_instance(
         lines.append(
             f"{indent}    instance_{step_index} = target_{step_index}()"
         )
+    # Contract-payload keywords and a positional payload are supplied by this
+    # call too; the failure helper needs them to tell an unsupplied unresolved
+    # input apart from any other constructor failure. Dependency keywords never
+    # name an unresolved input, so they are not repeated here.
+    supplied_arguments = ""
+    if positional is not None:
+        supplied_arguments = f", {tuple(payload_names)!r}, len(positional_{step_index})"
+    elif payload_names:
+        supplied_arguments = f", {tuple(payload_names)!r}"
     lines.extend([
         f"{indent}except Exception as exc:",
-        f"{indent}    _raise_meld_construction_error(spell_{step_index}, exc)",
+        f"{indent}    _raise_meld_construction_error(spell_{step_index}, exc{supplied_arguments})",
     ])
 
 
@@ -80473,24 +80816,34 @@ def _append_register_source(
         has_disposal_methods: bool,
 ) -> None:
     """
-    Append inline registration stores specialized for one existence mode.
+    Append registration calls specialized for one existence mode.
 
     Contract:
-        - Emits direct `_creations` / `_disposable_creations` stores instead
-          of `add_creation` / `add_many_creations` calls. The store methods
-          are lock-free with caller-held locking, and every branch inside
-          them is decided by fingerprint-stable facts (existence, disposal),
-          so the call is pure dispatch overhead on this path.
-        - The legacy duplicate-key guard is intentionally not emitted: every
-          caller registers under `creations._lock` immediately after a locked
-          re-check found no live entry, and disposal/live slots are co-written
-          only by this path, so duplicates are structurally impossible here.
-        - The `many` slot is always a list for this spell id because existence
-          is fingerprint-stable; the legacy non-list slot guard is likewise
-          structurally unreachable.
+        - Callers hold only the slot's build lock (slot guard, or Spell._lock
+          for unique) around this block, never the store lock. (Before
+          2026-09-25 the caller held the store lock across the whole build,
+          and the disposal-bearing `many` append ran with no lock at all.)
+        - Singleton entries WITHOUT disposal methods publish with one direct
+          `_creations` store: the build lock excludes every other publisher of
+          the key and a single dict store is atomic, so no store lock and no
+          duplicate check are needed (the same reasoning as the lock-free
+          branch of `Creations.add_creation`; measured to matter on the cold
+          path). A store retired by `cleanup()` fails on its missing registry.
+        - Singleton entries WITH disposal methods, and every disposal-bearing
+          `many` append, go through `add_creation` / `add_many_creations`,
+          which take the store lock as a LEAF so the live and disposal writes
+          land together, and refuse a store cleaned during the build.
         - Both storage shapes retain the bound Spell disposal list directly,
           matching Creations registration without allocating a copied policy.
     """
+    disposal_arguments = (
+        [
+            f"{indent}    has_disposal_methods=True,",
+            f"{indent}    disposal_methods=disposal_methods_{step_index},",
+        ]
+        if has_disposal_methods
+        else []
+    )
     if existence in (
             Existence.unique,
             Existence.unique_per_conduit,
@@ -80498,47 +80851,29 @@ def _append_register_source(
             Existence.unique_per_conduit_lineage,
             Existence.unique_per_spell_space,
     ):
-        lines.append(
-            f"{indent}creations_{step_index}._creations"
-            f"[spell_id_{step_index}] = instance_{step_index}"
-        )
-        if has_disposal_methods:
+        if not has_disposal_methods:
             lines.append(
-                f"{indent}creations_{step_index}._disposable_creations"
-                f"[spell_id_{step_index}] = "
-                f"(instance_{step_index}, disposal_methods_{step_index})"
+                f"{indent}creations_{step_index}._creations"
+                f"[spell_id_{step_index}] = instance_{step_index}"
             )
+            return
+        lines.extend([
+            f"{indent}creations_{step_index}.add_creation(",
+            f"{indent}    spell_id_{step_index},",
+            f"{indent}    instance_{step_index},",
+            *disposal_arguments,
+            f"{indent})",
+        ])
         return
 
     if existence is Existence.many:
         # Callers emit this block only when disposal truth is present.
         lines.extend([
-            (
-                f"{indent}many_live_{step_index} = "
-                f"creations_{step_index}._creations.get(spell_id_{step_index})"
-            ),
-            f"{indent}if many_live_{step_index} is None:",
-            f"{indent}    many_live_{step_index} = []",
-            (
-                f"{indent}    creations_{step_index}._creations"
-                f"[spell_id_{step_index}] = many_live_{step_index}"
-            ),
-            f"{indent}many_live_{step_index}.append(instance_{step_index})",
-            (
-                f"{indent}many_disposable_{step_index} = "
-                f"creations_{step_index}._disposable_creations"
-                f".get(spell_id_{step_index})"
-            ),
-            f"{indent}if many_disposable_{step_index} is None:",
-            f"{indent}    many_disposable_{step_index} = []",
-            (
-                f"{indent}    creations_{step_index}._disposable_creations"
-                f"[spell_id_{step_index}] = many_disposable_{step_index}"
-            ),
-            (
-                f"{indent}many_disposable_{step_index}.append("
-                f"(instance_{step_index}, disposal_methods_{step_index}))"
-            ),
+            f"{indent}creations_{step_index}.add_many_creations(",
+            f"{indent}    spell_id_{step_index},",
+            f"{indent}    instance_{step_index},",
+            *disposal_arguments,
+            f"{indent})",
         ])
         return
 
@@ -81331,7 +81666,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_overrides_runtime.py
-CONTENT SHA256: 7a66cfd299b4a4b08d5098c3da9793c80e286c8b5212f0491d9900482fdec363
+CONTENT SHA256: 4956f7418cb026b14de1e898703a9b57dd01a96b85775e1715eb3cf7fdd1e25c
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -81371,6 +81706,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
     emit_overrides_codegen_creation_executor_shape_source,
     get_existing_creation,
     invoke_spell_with_kwargs,
+    raise_meld_construction_error,
     raise_override_on_existing_instance,
     register_spell_instance_prebound,
 )
@@ -81405,6 +81741,9 @@ _OVERRIDES_STATIC_NAMESPACE = {
     "_get_existing_creation": get_existing_creation,
     "_register_spell_instance_prebound": register_spell_instance_prebound,
     "_raise_override_on_existing_instance": raise_override_on_existing_instance,
+    # Emitted override shapes route constructor failures through this helper,
+    # which names an unsupplied unresolved input before the generic error.
+    "_raise_meld_construction_error": raise_meld_construction_error,
 }
 
 # Process-wide emitted-source memo for override shapes. Sources are pure
@@ -81994,11 +82333,11 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py
-CONTENT SHA256: e6a79ccc68995087d2c4cadc3dd8f077df832bc2e5edcfc30d987b42085b3117
+CONTENT SHA256: 98c4859c23a14087769e4375435fbc40d6af2acd92f597c51591e0c58ca35d4b
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Collection, Dict, Optional, Sequence, Tuple, Union
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
@@ -82009,6 +82348,7 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generaliz
     SpellGeneralizedCodegenPlanTargetKind,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 _MISSING = object()
@@ -82599,14 +82939,42 @@ def _inlinable_common_shape(
     return tuple(params)
 
 
-def _raise_meld_construction_error(spell: Any, exc: BaseException) -> None:
+def _raise_meld_construction_error(
+        spell: Any,
+        exc: BaseException,
+        supplied_names: Collection[str] = (),
+        supplied_positional_count: int = 0,
+) -> None:
     """
-    Raise the ``MeldExecutionError`` for a failed inlined constructor call.
+    Raise the ``MeldExecutionError`` for a failed constructor call.
 
-    Mirrors the error wrapping in ``_construct_spell_instance`` so the inlined
-    fast path and the generic fallback report construction failures
-    identically. Lives off the hot path: only the failure branch calls it.
+    Shared by the inlined fast path, the generic ``_construct_spell_instance``
+    helper and the transient unrolled executor, so all three report
+    construction failures identically. Lives off the hot path: only the
+    failure branch calls it.
+
+    Contract:
+        - First asks ``UnresolvedInputError.from_failed_construction`` whether
+          an unresolved input (a typed parameter no registered spell provides)
+          was left out of the call; if so that error is raised, chained from
+          ``exc``. INTERIM until the build plan decides it (design S3/S4).
+        - Otherwise raises the existing ``MeldExecutionError`` unchanged.
+        - ``supplied_names`` / ``supplied_positional_count`` describe what the
+          call actually passed. Inlined calls pass only dependency keywords,
+          which never name an unresolved input, so they use the defaults.
+
+    Raises:
+        UnresolvedInputError: An unresolved input was not supplied.
+        MeldExecutionError: Any other constructor failure.
     """
+    unresolved = UnresolvedInputError.from_failed_construction(
+        spell,
+        exc,
+        supplied_names=supplied_names,
+        supplied_positional_count=supplied_positional_count,
+    )
+    if unresolved is not None:
+        raise unresolved from exc
     raise MeldExecutionError(
         spell_id=spell.spell_index.selected_spell_id,
         spell_name=spell.spell_name,
@@ -82941,10 +83309,13 @@ def _append_step_resolution_source(
             Existence.unique_per_conduit,
             Existence.unique_per_spell_space,
     ):
+        # Build-once under this slot's guard; the store lock is only taken as a
+        # leaf inside `add_creation`. Holding the store lock across the build
+        # deadlocked against unique dependencies (see Creations.slot_guard).
         lines.extend([
             f"    instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"    if instance_{step_index} is None:",
-            f"        with creations_{step_index}._lock:",
+            f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             f"            instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"            if instance_{step_index} is None:",
         ])
@@ -82976,9 +83347,11 @@ def _append_step_resolution_source(
             # so compute it here (cold) instead of on every warm meld.
             f"        use_spell_lock_{step_index} = True",
             f"        if use_spell_lock_{step_index}:",
+            # `unique` has one slot (its owner store), so Spell._lock is its
+            # slot guard. The recheck is a plain dict read and `add_creation`
+            # takes the store lock itself as a leaf.
             f"            with spell_{step_index}._lock:",
-            f"                with creations_{step_index}._lock:",
-            f"                    instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
+            f"                instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"                if instance_{step_index} is None:",
         ])
         _emit_construct_instance(
@@ -82988,16 +83361,15 @@ def _append_step_resolution_source(
             indent="                    ",
             instance_index_by_key=instance_index_by_key,
         )
-        lines.append(f"                    with creations_{step_index}._lock:")
         _append_step_register_source(
             lines=lines,
             step_index=step_index,
-            indent="                        ",
+            indent="                    ",
             existence=existence,
         )
         lines.extend([
             "        else:",
-            f"            with creations_{step_index}._lock:",
+            f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             f"                instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"                if instance_{step_index} is None:",
         ])
@@ -83024,7 +83396,7 @@ def _append_step_resolution_source(
     lines.extend([
         f"    instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
         f"    if instance_{step_index} is None:",
-        f"        with creations_{step_index}._lock:",
+        f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         f"            instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
         f"            if instance_{step_index} is None:",
     ])
@@ -83062,12 +83434,13 @@ def _append_step_register_source(
         - Preserves `_register_spell_instance_prebound(...)` routing semantics.
         - Emits direct creations method calls to avoid per-registration helper
           dispatch and existence branching at runtime.
-        - Singleton / spellspace branches assume the caller has already emitted
-          the required creations lock around this registration.
+        - Singleton / spellspace branches run inside the caller-emitted build
+          lock (the slot guard, or Spell._lock for unique). `add_creation`
+          takes the store lock itself as a leaf around the dict writes.
         - The `many` branch is emitted ONLY for disposal-bearing `many` steps
           (the caller gates on disposal at compile time), so it registers
-          unconditionally under the creations lock with no runtime disposal
-          check. The caller must NOT pre-emit a lock for the `many` branch.
+          unconditionally with no runtime disposal check. `add_many_creations`
+          takes the store lock itself; the caller must NOT pre-emit a lock.
         - Binds `has_disposal_methods_{step_index}` / `disposal_methods_{step_index}`
           here (cold construct/register path) so warm reuse melds never pay for
           those per-step lookups.
@@ -83105,8 +83478,9 @@ def _append_step_register_source(
         # The caller gates this branch on disposal at COMPILE time, so it is
         # emitted only for disposal-bearing `many` steps -- registration is
         # unconditional here, with no runtime `if has_disposal_methods_N`.
-        # `many` is transient (a new instance per meld, never cached), so the
-        # append is lockless -- matching the solo / many_only families.
+        # `many` is transient (a new instance per meld, never cached), so no
+        # build guard is needed; `add_many_creations` takes the store lock as a
+        # leaf around the bucket append.
         lines.extend([
             f"{indent}spell_id_{step_index} = step_spell_ids[{step_index}]",
             f"{indent}creations_{step_index}.add_many_creations(",
@@ -83304,12 +83678,7 @@ def _construct_spell_instance(
     try:
         return spell.spell(*args, **call_kwargs)
     except Exception as exc:
-        raise MeldExecutionError(
-            spell_id=spell.spell_index.selected_spell_id,
-            spell_name=spell.spell_name,
-            message=f"Error invoking spell '{spell.spell_name}'.",
-            inner=exc,
-        ) from exc
+        _raise_meld_construction_error(spell, exc, call_kwargs, len(args))
 
 
 def _build_kwargs_no_overrides(
@@ -83635,7 +84004,7 @@ def _build_no_overrides_codegen_executor_source(
     # Closure-cell form (measured on the step-plan lane: signature defaults
     # cost one pointer copy + incref PER PARAM PER CALL - the old ~40-default
     # signature was pure frame-setup weight, and only `t{N}`, `steps`, and
-    # `MeldExecutionError` are ever read by the body). The t{N} hoist lines
+    # `_raise_meld_construction_error` are ever read by the body). The t{N} hoist lines
     # execute ONCE per hydration in the enclosing scope (factory locals or
     # exec namespace); the executor closes over them and its signature is the
     # bare door contract `(meld)`. The dep arrays are emission-time inputs
@@ -83698,18 +84067,11 @@ def _build_no_overrides_codegen_executor_source(
         lines.append("    try:")
         lines.append(f"        v{step_index} = {call_expression}")
         lines.append("    except Exception as exc:")
-        lines.append(f"        step_spell = steps[{step_index}].spell")
-        lines.append("        raise MeldExecutionError(")
+        # Transient calls pass their CALLn dependencies positionally, so the
+        # failure helper is told how many positions the call supplied.
         lines.append(
-            "            spell_id=step_spell.spell_index.selected_spell_id,"
+            f"        _raise_meld_construction_error(steps[{step_index}].spell, exc, (), {int(call_mode)})"
         )
-        lines.append("            spell_name=step_spell.spell_name,")
-        lines.append(
-            "            message=f\"Error invoking spell "
-            "'{step_spell.spell_name}'.\","
-        )
-        lines.append("            inner=exc,")
-        lines.append("        ) from exc")
 
     lines.append(f"    return v{transient_root_index}")
     return "\n".join(lines)
@@ -83942,6 +84304,7 @@ def _build_executor_namespace(
 
     return {
         "MeldExecutionError": MeldExecutionError,
+        "_raise_meld_construction_error": _raise_meld_construction_error,
         "transient_root_index": transient_schema["root_step_index"],
         "transient_targets": transient_targets,
         "transient_dep1": transient_schema["dep1"],
@@ -84017,7 +84380,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py
-CONTENT SHA256: de950d736514d8c2a0f04ba16ae751ae9b2903989a230afce08f1fe3a7f9a936
+CONTENT SHA256: f576a4721ffea0f329b78473a2060e58395765a40d5fd9db3f55f18b7b4fa192
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections import Counter
@@ -84033,6 +84396,7 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generaliz
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler import (
     _get_existing_creation,
+    _raise_meld_construction_error,
     _register_spell_instance_prebound,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -84485,6 +84849,7 @@ def _build_overrides_codegen_creation_executor_namespace(
     """
     return {
         "MeldExecutionError": MeldExecutionError,
+        "_raise_meld_construction_error": _raise_meld_construction_error,
         "Sequence": Sequence,
         "Existence": Existence,
         "SpellGeneralizedCodegenPlanTargetKind": SpellGeneralizedCodegenPlanTargetKind,
@@ -85639,8 +86004,9 @@ def _append_overrides_invoke_source(
           creation, callable, and raw-value spell variants.
         - Supports `__args__` payload decoding only when the shape can carry
           positional overrides.
-        - Keeps error translation in generated source for invalid args and
-          invoke-time exceptions.
+        - Keeps error translation in generated source for invalid args; invoke-time
+          exceptions go to the family `_raise_meld_construction_error`, which names
+          an unsupplied unresolved input or raises the existing MeldExecutionError.
     """
     def _append_existing_creation_body(body_indent: str) -> None:
         """
@@ -85702,15 +86068,11 @@ def _append_overrides_invoke_source(
                     f"plan_step_{step_index}.spell.spell(*args_{step_index}, **call_kwargs_{step_index})"
                 ),
                 f"{body_indent}except Exception as exc:",
-                f"{body_indent}    raise MeldExecutionError(",
-                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
-                f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
                 (
-                    f"{body_indent}        message=(\"Error invoking spell '\" + "
-                    f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
+                    f"{body_indent}    _raise_meld_construction_error("
+                    f"plan_step_{step_index}.spell, exc, "
+                    f"call_kwargs_{step_index}, len(args_{step_index}))"
                 ),
-                f"{body_indent}        inner=exc,",
-                f"{body_indent}    ) from exc",
             ])
             return
         if kwargs_always_empty:
@@ -85721,15 +86083,7 @@ def _append_overrides_invoke_source(
                     f"plan_step_{step_index}.spell.spell()"
                 ),
                 f"{body_indent}except Exception as exc:",
-                f"{body_indent}    raise MeldExecutionError(",
-                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
-                f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
-                (
-                    f"{body_indent}        message=(\"Error invoking spell '\" + "
-                    f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
-                ),
-                f"{body_indent}        inner=exc,",
-                f"{body_indent}    ) from exc",
+                f"{body_indent}    _raise_meld_construction_error(plan_step_{step_index}.spell, exc)",
             ])
             return
         lines.extend([
@@ -85739,15 +86093,10 @@ def _append_overrides_invoke_source(
                 f"plan_step_{step_index}.spell.spell(**kwargs_{step_index})"
             ),
             f"{body_indent}except Exception as exc:",
-            f"{body_indent}    raise MeldExecutionError(",
-            f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
-            f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
             (
-                f"{body_indent}        message=(\"Error invoking spell '\" + "
-                f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
+                f"{body_indent}    _raise_meld_construction_error("
+                f"plan_step_{step_index}.spell, exc, kwargs_{step_index})"
             ),
-            f"{body_indent}        inner=exc,",
-            f"{body_indent}    ) from exc",
         ])
 
     def _append_raw_value_body(body_indent: str) -> None:
@@ -86038,7 +86387,9 @@ def _append_overrides_step_shape_source(
                 f"root_spell_id=root_spell_id)"
             ),
             "    else:",
-            f"        with creations_{step_index}._lock:",
+            # Build-once under this slot's guard; publication takes the store
+            # lock itself as a leaf (see Creations.slot_guard).
+            f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             (
                 f"            instance_{step_index} = _get_existing_creation("
                 f"spell=spell_{step_index}, "
@@ -86162,7 +86513,9 @@ def _append_overrides_step_shape_source(
                 f"disposal_methods=disposal_methods_{step_index})"
             ),
             "    else:",
-            f"        with creations_{step_index}._lock:",
+            # Build-once under this slot's guard; publication takes the store
+            # lock itself as a leaf (see Creations.slot_guard).
+            f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             (
                 f"            instance_{step_index} = _get_existing_creation("
                 f"spell=spell_{step_index}, "
@@ -86222,8 +86575,10 @@ def _append_overrides_step_shape_source(
             ),
         ])
     else:
+        # Lineage / cluster: build-once under this slot's guard in the store the
+        # meld selected; publication takes the store lock itself as a leaf.
         lines.extend([
-            f"    with creations_{step_index}._lock:",
+            f"    with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             (
                 f"        instance_{step_index} = _get_existing_creation("
                 f"spell=spell_{step_index}, "
@@ -86427,7 +86782,7 @@ def _append_overrides_step_source(
             f"root_spell_id=root_spell_id)"
         ),
         "        else:",
-        f"            with creations_{step_index}._lock:",
+        f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         (
             f"                instance_{step_index} = _get_existing_creation("
             f"spell=spell_{step_index}, "
@@ -86499,7 +86854,7 @@ def _append_overrides_step_source(
                 f"disposal_methods=disposal_methods_{step_index})"
             ),
         "        else:",
-        f"            with creations_{step_index}._lock:",
+        f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         (
             f"                instance_{step_index} = _get_existing_creation("
             f"spell=spell_{step_index}, "
@@ -87058,6 +87413,9 @@ def _invoke_spell_with_kwargs(
         - ``"__args__"`` must be a list/tuple when supplied.
         - Avoids kwargs copy when positional override args are absent.
         - Preserves tuple positional payloads without rebuilding list objects.
+        - A constructor failure raises UnresolvedInputError when an unresolved
+          input was not among the passed names/positions, otherwise the existing
+          MeldExecutionError (see `_raise_meld_construction_error`).
     """
     if spell.existence is Existence.unique and spell.is_existing_creation:
         instance = spell.user_created_object
@@ -87099,12 +87457,7 @@ def _invoke_spell_with_kwargs(
     try:
         return spell.spell(*args, **call_kwargs)
     except Exception as exc:
-        raise MeldExecutionError(
-            spell_id=spell.spell_index.selected_spell_id,
-            spell_name=spell.spell_name,
-            message=f"Error invoking spell '{spell.spell_name}'.",
-            inner=exc,
-        ) from exc
+        _raise_meld_construction_error(spell, exc, call_kwargs, len(args))
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py
 ================================================================================
@@ -91247,15 +91600,16 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py
-CONTENT SHA256: 949139ca42b9e9eac6db1532b3b71b2cd2a109c7c951b845cf50331ba34af0da
+CONTENT SHA256: e230ded4b303e7795e7e553207f20322f8be9418c9c342b40ba62b66693f5828
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Collection, Dict, Optional, Sequence, Tuple, Union
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 _MISSING = object()
@@ -91938,14 +92292,42 @@ def _inlinable_common_shape(
     return tuple(params)
 
 
-def _raise_meld_construction_error(spell: Any, exc: BaseException) -> None:
+def _raise_meld_construction_error(
+        spell: Any,
+        exc: BaseException,
+        supplied_names: Collection[str] = (),
+        supplied_positional_count: int = 0,
+) -> None:
     """
-    Raise the ``MeldExecutionError`` for a failed inlined constructor call.
+    Raise the ``MeldExecutionError`` for a failed constructor call.
 
-    Mirrors the error wrapping in ``_construct_spell_instance`` so the inlined
-    fast path and the generic fallback report construction failures
-    identically. Lives off the hot path: only the failure branch calls it.
+    Shared by the inlined fast path, the generic ``_construct_spell_instance``
+    helper and the transient unrolled executor, so all three report
+    construction failures identically. Lives off the hot path: only the
+    failure branch calls it.
+
+    Contract:
+        - First asks ``UnresolvedInputError.from_failed_construction`` whether
+          an unresolved input (a typed parameter no registered spell provides)
+          was left out of the call; if so that error is raised, chained from
+          ``exc``. INTERIM until the build plan decides it (design S3/S4).
+        - Otherwise raises the existing ``MeldExecutionError`` unchanged.
+        - ``supplied_names`` / ``supplied_positional_count`` describe what the
+          call actually passed. Inlined calls pass only dependency keywords,
+          which never name an unresolved input, so they use the defaults.
+
+    Raises:
+        UnresolvedInputError: An unresolved input was not supplied.
+        MeldExecutionError: Any other constructor failure.
     """
+    unresolved = UnresolvedInputError.from_failed_construction(
+        spell,
+        exc,
+        supplied_names=supplied_names,
+        supplied_positional_count=supplied_positional_count,
+    )
+    if unresolved is not None:
+        raise unresolved from exc
     raise MeldExecutionError(
         spell_id=spell.spell_index.selected_spell_id,
         spell_name=spell.spell_name,
@@ -92296,12 +92678,7 @@ def _construct_spell_instance(
     try:
         return spell.spell(*args, **call_kwargs)
     except Exception as exc:
-        raise MeldExecutionError(
-            spell_id=spell.spell_index.selected_spell_id,
-            spell_name=spell.spell_name,
-            message=f"Error invoking spell '{spell.spell_name}'.",
-            inner=exc,
-        ) from exc
+        _raise_meld_construction_error(spell, exc, call_kwargs, len(args))
 
 
 def _build_kwargs_no_overrides(
@@ -92507,8 +92884,8 @@ def _build_no_overrides_codegen_executor_source(
     # Closure-cell form, PARITY with the shared generalized transient
     # builder: hoist `t{N}` once per hydration (enclosing scope), bare
     # `(meld)` signature (the old ~40-default signature paid one pointer copy
-    # + incref per param per call and only t{N}/steps/MeldExecutionError are
-    # ever read by the body); dep arrays are emission-time inputs only.
+    # + incref per param per call and only t{N}/steps/_raise_meld_construction_error
+    # are ever read by the body); dep arrays are emission-time inputs only.
     lines = []
     for step_index in range(transient_step_count):
         lines.append(
@@ -92568,18 +92945,11 @@ def _build_no_overrides_codegen_executor_source(
         lines.append("    try:")
         lines.append(f"        v{step_index} = {call_expression}")
         lines.append("    except Exception as exc:")
-        lines.append(f"        step_spell = steps[{step_index}].spell")
-        lines.append("        raise MeldExecutionError(")
+        # Transient calls pass their CALLn dependencies positionally, so the
+        # failure helper is told how many positions the call supplied.
         lines.append(
-            "            spell_id=step_spell.spell_index.selected_spell_id,"
+            f"        _raise_meld_construction_error(steps[{step_index}].spell, exc, (), {int(call_mode)})"
         )
-        lines.append("            spell_name=step_spell.spell_name,")
-        lines.append(
-            "            message=f\"Error invoking spell "
-            "'{step_spell.spell_name}'.\","
-        )
-        lines.append("            inner=exc,")
-        lines.append("        ) from exc")
 
     lines.append(f"    return v{transient_root_index}")
     return "\n".join(lines)
@@ -92812,6 +93182,7 @@ def _build_executor_namespace(
 
     return {
         "MeldExecutionError": MeldExecutionError,
+        "_raise_meld_construction_error": _raise_meld_construction_error,
         "transient_root_index": transient_schema["root_step_index"],
         "transient_targets": transient_targets,
         "transient_dep1": transient_schema["dep1"],
@@ -92887,7 +93258,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_overrides_codegen_creation_compiler.py
-CONTENT SHA256: 5baaa98a5bcee7a89d3d1286350ae811f527ba7cd1538d4a628e03a835c7997d
+CONTENT SHA256: c12da11e8eec4e763a45797ad1342681d5b1b53fbf18b061aa35bef8260fac22
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections import Counter
@@ -92900,6 +93271,7 @@ from melder.aether.spellbook.spell_compiler.executor_code_cache import (
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler import (
     ManyOnlyCodegenPlanTargetKind,
+    _raise_meld_construction_error,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
@@ -93351,6 +93723,7 @@ def _build_overrides_codegen_creation_executor_namespace(
     """
     return {
         "MeldExecutionError": MeldExecutionError,
+        "_raise_meld_construction_error": _raise_meld_construction_error,
         "Sequence": Sequence,
         "Existence": Existence,
         "ManyOnlyCodegenPlanTargetKind": ManyOnlyCodegenPlanTargetKind,
@@ -94492,8 +94865,9 @@ def _append_overrides_invoke_source(
           creation, callable, and raw-value spell variants.
         - Supports `__args__` payload decoding only when the shape can carry
           positional overrides.
-        - Keeps error translation in generated source for invalid args and
-          invoke-time exceptions.
+        - Keeps error translation in generated source for invalid args; invoke-time
+          exceptions go to the family `_raise_meld_construction_error`, which names
+          an unsupplied unresolved input or raises the existing MeldExecutionError.
     """
     def _append_existing_creation_body(body_indent: str) -> None:
         """
@@ -94555,15 +94929,11 @@ def _append_overrides_invoke_source(
                     f"plan_step_{step_index}.spell.spell(*args_{step_index}, **call_kwargs_{step_index})"
                 ),
                 f"{body_indent}except Exception as exc:",
-                f"{body_indent}    raise MeldExecutionError(",
-                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
-                f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
                 (
-                    f"{body_indent}        message=(\"Error invoking spell '\" + "
-                    f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
+                    f"{body_indent}    _raise_meld_construction_error("
+                    f"plan_step_{step_index}.spell, exc, "
+                    f"call_kwargs_{step_index}, len(args_{step_index}))"
                 ),
-                f"{body_indent}        inner=exc,",
-                f"{body_indent}    ) from exc",
             ])
             return
         if kwargs_always_empty:
@@ -94574,15 +94944,7 @@ def _append_overrides_invoke_source(
                     f"plan_step_{step_index}.spell.spell()"
                 ),
                 f"{body_indent}except Exception as exc:",
-                f"{body_indent}    raise MeldExecutionError(",
-                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
-                f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
-                (
-                    f"{body_indent}        message=(\"Error invoking spell '\" + "
-                    f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
-                ),
-                f"{body_indent}        inner=exc,",
-                f"{body_indent}    ) from exc",
+                f"{body_indent}    _raise_meld_construction_error(plan_step_{step_index}.spell, exc)",
             ])
             return
         lines.extend([
@@ -94592,15 +94954,10 @@ def _append_overrides_invoke_source(
                 f"plan_step_{step_index}.spell.spell(**kwargs_{step_index})"
             ),
             f"{body_indent}except Exception as exc:",
-            f"{body_indent}    raise MeldExecutionError(",
-            f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.selected_spell_id,",
-            f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
             (
-                f"{body_indent}        message=(\"Error invoking spell '\" + "
-                f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
+                f"{body_indent}    _raise_meld_construction_error("
+                f"plan_step_{step_index}.spell, exc, kwargs_{step_index})"
             ),
-            f"{body_indent}        inner=exc,",
-            f"{body_indent}    ) from exc",
         ])
 
     def _append_raw_value_body(body_indent: str) -> None:
@@ -94962,7 +95319,10 @@ def _append_overrides_step_source(
             f"root_spell_id=root_spell_id)"
         ),
         "        else:",
-        f"            with creations_{step_index}._lock:",
+        # Unreachable in this family (every step is `many`), kept in step with
+        # the generalized emitter: slotted builds hold the slot guard, never
+        # the store lock, across construction.
+        f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         (
             f"                instance_{step_index} = _get_existing_creation("
             f"spell=spell_{step_index}, "
@@ -95034,7 +95394,10 @@ def _append_overrides_step_source(
                 f"disposal_methods=disposal_methods_{step_index})"
             ),
         "        else:",
-        f"            with creations_{step_index}._lock:",
+        # Unreachable in this family (every step is `many`), kept in step with
+        # the generalized emitter: slotted builds hold the slot guard, never
+        # the store lock, across construction.
+        f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         (
             f"                instance_{step_index} = _get_existing_creation("
             f"spell=spell_{step_index}, "
@@ -95580,6 +95943,9 @@ def _invoke_spell_with_kwargs(
         - ``"__args__"`` must be a list/tuple when supplied.
         - Avoids kwargs copy when positional override args are absent.
         - Preserves tuple positional payloads without rebuilding list objects.
+        - A constructor failure raises UnresolvedInputError when an unresolved
+          input was not among the passed names/positions, otherwise the existing
+          MeldExecutionError (see `_raise_meld_construction_error`).
     """
     if spell.existence is Existence.unique and spell.is_existing_creation:
         instance = spell.user_created_object
@@ -95621,12 +95987,7 @@ def _invoke_spell_with_kwargs(
     try:
         return spell.spell(*args, **call_kwargs)
     except Exception as exc:
-        raise MeldExecutionError(
-            spell_id=spell.spell_index.selected_spell_id,
-            spell_name=spell.spell_name,
-            message=f"Error invoking spell '{spell.spell_name}'.",
-            inner=exc,
-        ) from exc
+        _raise_meld_construction_error(spell, exc, call_kwargs, len(args))
 
 
 def _get_existing_creation(
@@ -98451,14 +98812,16 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py
-CONTENT SHA256: 51ff06f6e4e62ec174d8c73c01a94b975be1437a67215c719bcfed2f4f6ae2ca
+CONTENT SHA256: a51bad2b801f32342436f432faa4c7b206fa6ac51fdf54f65b3b20c5df41470c
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Callable, Optional, Tuple, Union
 
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
 )
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 def compile_solo_no_overrides_codegen_creation_executor(
         *,
@@ -98481,6 +98844,8 @@ def compile_solo_no_overrides_codegen_creation_executor(
         - Uses the process-wide emitted-source code-object cache.
         - Binds the established Spell disposal list directly into each fresh
           executor namespace, including when its code object is reused.
+        - Binds `call_target` through `_call_target_for`: the raw spell callable,
+          or an unresolved-input guard when the spell has UNRESOLVED_INPUT sockets.
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType`.
     """
@@ -98498,7 +98863,7 @@ def compile_solo_no_overrides_codegen_creation_executor(
     )
     local_namespace: dict[str, Any] = {}
     namespace = {
-        "call_target": spell.spell,
+        "call_target": _call_target_for(spell),
         "spell": spell,
         "spell_id": spell.spell_id,
     }
@@ -98695,6 +99060,64 @@ def _build_source(
     )
 
 
+def _call_target_for(spell: Any) -> Callable[..., Any]:
+    """
+    Return the callable a solo executor invokes for one spell.
+
+    Purpose:
+        Solo executors call the target with no try block, so a missing input
+        propagates as a raw TypeError. A spell with an unresolved input (a typed
+        parameter no registered spell provides) instead needs the named
+        `UnresolvedInputError` when its caller did not supply that value.
+
+    Contract:
+        - When the spell's Phase-3 topology has no UNRESOLVED_INPUT socket, returns
+          `spell.spell` itself: those executors keep the direct call and raw
+          exception propagation.
+        - Otherwise returns a guard that calls `spell.spell`; a TypeError that
+          leaves an unresolved input unsupplied raises `UnresolvedInputError`
+          chained from it, and every other exception re-raises unchanged.
+        - Decided when the executor is compiled or hydrated; the emitted source is
+          identical either way, so the code-object cache is unaffected.
+        - INTERIM until the build plan decides unresolved inputs (design S3/S4).
+
+    Args:
+        spell: The root spell the solo executor constructs.
+
+    Returns:
+        Callable[..., Any]: The callable bound as `call_target`.
+    """
+    call_target = spell.spell
+    topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+    if topology is None or not any(
+            socket.socket_kind is SocketKind.UNRESOLVED_INPUT
+            for socket in topology.sockets
+    ):
+        return call_target
+
+    def guarded_call_target(*args: Any, **kwargs: Any) -> Any:
+        """
+        Call the spell and name an unsupplied unresolved input on failure.
+
+        Raises:
+            UnresolvedInputError: An unresolved input was not among `args`/`kwargs`.
+        """
+        try:
+            return call_target(*args, **kwargs)
+        except TypeError as exc:
+            unresolved = UnresolvedInputError.from_failed_construction(
+                spell,
+                exc,
+                supplied_names=kwargs,
+                supplied_positional_count=len(args),
+            )
+            if unresolved is not None:
+                raise unresolved from exc
+            raise
+
+    return guarded_call_target
+
+
 def _normalize_disposal_methods(
         disposal_method_names: list[str],
 ) -> Optional[list[str]]:
@@ -98712,11 +99135,14 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/str
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py
-CONTENT SHA256: 526a0f3967f6496de9bbafe4d4e068c24cbbb5fe674d5c2532abe39eb56c618c
+CONTENT SHA256: 3ec53ccfbc2f8045609739c1268977b5ee5538cb1e264041a9f64f90ac6205c0
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler import (
+    _call_target_for,
+)
 from melder.aether.spellbook.spell_compiler.executor_code_cache import (
     get_or_compile_executor_code,
 )
@@ -98741,6 +99167,8 @@ def compile_solo_overrides_codegen_creation_executor(
         - Uses the process-wide emitted-source code-object cache.
         - Binds the established Spell disposal list directly into each fresh
           executor namespace, including when its code object is reused.
+        - Binds `call_target` through `_call_target_for`: the raw spell callable,
+          or an unresolved-input guard when the spell has UNRESOLVED_INPUT sockets.
         - When `return_compiled_code_object` is true, also returns the
           compiled `CodeType`.
     """
@@ -98756,7 +99184,7 @@ def compile_solo_overrides_codegen_creation_executor(
     )
     local_namespace: dict[str, Any] = {}
     namespace = {
-        "call_target": spell.spell,
+        "call_target": _call_target_for(spell),
         "spell": spell,
         "spell_id": spell.spell_id,
         "_invoke_with_overrides": _invoke_with_overrides,
@@ -107781,7 +108209,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/dag/resolution_frame/resolu
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
-CONTENT SHA256: 814054022ff9ee950e1a2fb60d1884117065aae6355e8473c6b543bcd0e3f7c3
+CONTENT SHA256: c3a81f5113f4ece52eea86980fa5bc9b1764a48ebe92232bc03c8f32b30e199d
 SOURCE ENCODING: utf-8
 ================================================================================
 from enum import Enum, auto
@@ -107803,6 +108231,14 @@ class SocketKind(Enum):
     - OVERRIDE_REQUIRED:
         A required input whose selected registration is non-resolvable. Its
         target is descriptive; a caller supplies the value during construction.
+    - UNRESOLVED_INPUT:
+        A single typed dependency that no registered spell provides. Resolution
+        records it instead of failing: it has no target and no DAG edge, the
+        constructing call must supply the value through its override payload,
+        and a missing value raises `UnresolvedInputError` when that object is
+        built. Registering a matching provider later re-resolves the consumer
+        and the socket becomes NORMAL. Distinct from OVERRIDE_REQUIRED, which is
+        produced only by a registered non-resolvable definition.
 
     Subsystem Context:
         The edge-kind vocabulary of the `dag` package: a DAG socket carries one of
@@ -107815,12 +108251,14 @@ class SocketKind(Enum):
 
     AGENT_PURPOSE:
         access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs
-        SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input).
+        SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input),
+        UNRESOLVED_INPUT (typed dependency with no provider; supplied by the call or reported).
     """
 
     NORMAL = auto()
     SPELL_CONTRACT = auto()
     OVERRIDE_REQUIRED = auto()
+    UNRESOLVED_INPUT = auto()
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py
 ================================================================================
@@ -109037,13 +109475,13 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
-CONTENT SHA256: 219ea91695866b7b9be5ec912a6315ecfd5f96cf212450828304a6b367fc58cd
+CONTENT SHA256: 1ee54eb8f1c11e25bfc9646995f6e1d644b43e3c8d8af15eeb6817bf542ac59e
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
 import types
 import typing
-from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, Union, get_args, get_origin
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Set, Tuple, Union, get_args, get_origin
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -109488,6 +109926,8 @@ class CompilerPhase3:
         Prefer matching resolvable providers. Only when none exist may a single
         non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
         Matching and index grouping happen first; capability does not change them.
+        When nothing matches at all, the mapping is empty: the caller records an
+        UNRESOLVED_INPUT socket, which the constructing meld must supply.
 
         Args:
             spell:
@@ -109499,11 +109939,12 @@ class CompilerPhase3:
 
         Returns:
             Dict[Any, Spell]:
-                Mapping from matched `spell_index` to spell.
+                Mapping from matched `spell_index` to spell. Empty when no
+                registered spell matches the annotation.
 
         Raises:
-            RuntimeError: If zero candidates are found or multiple candidates
-                match the annotation constraints.
+            RuntimeError: If multiple candidates match the annotation
+                constraints (ambiguity is a configuration error, not an input).
         """
         annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
@@ -109532,11 +109973,11 @@ class CompilerPhase3:
             candidates = resolvable_candidates
 
         if not candidates:
-            raise RuntimeError(
-                f"SpellCrafter Phase 3: no DI candidate found for parameter "
-                f"{dep.param_name!r} on spell {spell.spell_name!r} "
-                f"(annotation={annotation!r})."
-            )
+            # Nothing registered provides this type. `_build_local_frame_dag`
+            # records an UNRESOLVED_INPUT socket instead of failing resolution;
+            # the constructing meld supplies the value or raises
+            # UnresolvedInputError when this object is built.
+            return {}
 
         if len(candidates) > 1:
             names = ", ".join(
@@ -109740,6 +110181,7 @@ class CompilerPhase3:
             *,
             requirements: SpellRequirements,
             socket_references: Dict[tuple[str, int], List[str]],
+            socket_unresolved: Optional[Set[tuple[str, int]]] = None,
     ) -> SpellLocalTopology:
         """
             Internal helper for Phase 3.
@@ -109753,6 +110195,9 @@ class CompilerPhase3:
             For each: class:`SpellSymbolicDependency`:
                 * Determine declaration kind, then mark selected descriptive targets
                   OVERRIDE_REQUIRED without altering Phase-1/2 declaration facts.
+                * Mark single typed sockets listed in "socket_unresolved" (no
+                  registered provider at all) UNRESOLVED_INPUT. They keep their
+                  dependency_key so a later matching bind re-resolves this spell.
                 * Copy "is_collection" and "is_optional" flags from the
                   symbolic graph.
                 * Look up any concrete targets via "socket_targets" using
@@ -109784,8 +110229,14 @@ class CompilerPhase3:
             referenced_spell_ids = tuple(socket_references.get((dep.param_name, dep.position), ()))
             if referenced_spell_ids:
                 socket_kind = SocketKind.OVERRIDE_REQUIRED
+            elif socket_unresolved and (dep.param_name, dep.position) in socket_unresolved:
+                socket_kind = SocketKind.UNRESOLVED_INPUT
             dependency_key = None
-            if spell.resolvable and socket_kind in (SocketKind.NORMAL, SocketKind.OVERRIDE_REQUIRED):
+            if spell.resolvable and socket_kind in (
+                    SocketKind.NORMAL,
+                    SocketKind.OVERRIDE_REQUIRED,
+                    SocketKind.UNRESOLVED_INPUT,
+            ):
                 dependency_key = self._dependency_key_for_dep(dep)
 
             descriptor = SpellSocketDescriptor(
@@ -109854,6 +110305,9 @@ class CompilerPhase3:
                 * Selected non-resolvable definitions produce reference-only
                   OVERRIDE_REQUIRED inputs. Non-resolvable roots retain their own
                   declarations/topology without resolving constructor requirements.
+                * A single typed dependency that no registered spell provides
+                  produces an UNRESOLVED_INPUT socket (no DAG edge, no dependency
+                  id) instead of failing: the constructing meld supplies it.
         """
         if requirements is None:
             raise ValueError("requirements must not be None.")
@@ -109885,6 +110339,8 @@ class CompilerPhase3:
         # keyed by (param_name, position) -> [spell_id, ...]
         socket_targets: Dict[tuple[str, int], List[str]] = {}
         socket_references: Dict[tuple[str, int], List[str]] = {}
+        # Single typed sockets with no registered provider: recorded, not refused.
+        socket_unresolved: Set[tuple[str, int]] = set()
 
         for dep in graph.dependencies if spell.resolvable else ():
             CompilerPhaseUtility.throw_if_cancelled(cancellation_event)
@@ -109913,10 +110369,13 @@ class CompilerPhase3:
                 # participate in the local topology below.
                 resolved = {}
 
-            if not resolved:
-                continue
-
             key = (dep.param_name, dep.position)
+            if not resolved:
+                if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
+                    # Nothing registered provides this typed parameter; keep it
+                    # as an unresolved input instead of failing resolution.
+                    socket_unresolved.add(key)
+                continue
 
             for spell_index, spell_obj in resolved.items():
                 dep_spell_id = spell_index.selected_spell_id
@@ -109949,6 +110408,7 @@ class CompilerPhase3:
             spell, graph, socket_targets,
             requirements=requirements,
             socket_references=socket_references,
+            socket_unresolved=socket_unresolved,
         )
 
         # Update spell-system state with dependency IDs and local topology.
@@ -112007,7 +112467,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py
-CONTENT SHA256: e909d2fd418d596c3ab2b2f58ebb80a436f660e313791ac1bcad96fcff8e3f91
+CONTENT SHA256: df3b5a2ebbede1d09e61dbcb6318fb60f1ab63a2c447a3ce6e1a3804af781109
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
@@ -112884,7 +113344,8 @@ class SharedCompilerExecutions:
                 - Expects InjectionSpec/ParamSource contract fields to be present.
                 - Fails fast when malformed/cleaned artifacts violate contract.
                 - override_required rows append signature position/kind and descriptive IDs;
-                  ordinary source kinds retain their existing six-field row layout.
+                  unresolved_input rows append signature position/kind only (no provider,
+                  no references); ordinary source kinds retain their six-field row layout.
             Args:
                 instance_injections:
                     Mapping from instance key to InjectionSpec-like objects.
@@ -112949,6 +113410,11 @@ class SharedCompilerExecutions:
                             param_source.position,
                             param_source.parameter_kind,
                             tuple(param_source.referenced_spell_ids),
+                        )
+                    elif kind == "unresolved_input":
+                        param_row += (
+                            param_source.position,
+                            param_source.parameter_kind,
                         )
                     param_rows.append(param_row)
 
@@ -113231,6 +113697,7 @@ class SharedCompilerExecutions:
                 - Includes param source wiring, aggregation flags, and contract payload.
                 - Returns tuple-only deterministic structure.
                 - Required-input position/kind/reference fields survive either metadata mode.
+                - Unresolved-input position/kind fields survive either metadata mode.
             Args:
                 injection_spec:
                     Phase 9 InjectionSpec-like object.
@@ -113264,6 +113731,11 @@ class SharedCompilerExecutions:
                     param_source.position,
                     param_source.parameter_kind,
                     tuple(param_source.referenced_spell_ids),
+                )
+            elif param_source.kind == "unresolved_input":
+                param_row += (
+                    param_source.position,
+                    param_source.parameter_kind,
                 )
             param_rows.append(param_row)
 
@@ -129947,7 +130419,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/annot
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py
-CONTENT SHA256: 7722398cdbd02efe24ea5d9370e4ba6b40d3b3eee3b4e55779a82439319c3cd3
+CONTENT SHA256: 4cee88eb36a2b5224818356c5324b659183fc66dfe1e47c1961310d548312d57
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
@@ -129989,8 +130461,10 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
 
     Contract:
         - Builds a binding-key graph from available requirements.
-        - Excludes non-resolvable constructors and resolved OVERRIDE_REQUIRED sockets.
-          Descriptive references are never reconstruction of a construction edge.
+        - Excludes non-resolvable constructors, resolved OVERRIDE_REQUIRED sockets
+          and UNRESOLVED_INPUT sockets. Descriptive references are never
+          reconstruction of a construction edge, and an unresolved input has no
+          provider to form one.
         - Reports cycles reachable from the spell under validation.
         - Does not mutate spells, spellbooks, or requirements.
 
@@ -130143,7 +130617,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             - The result is treated as immutable by all consumers; pass-cache
               reuse depends on that.
             - Consults durable Phase-3 topology when present to exclude required
-              supplied inputs. Before topology exists, declaration-only analysis
+              supplied and unresolved inputs. Before topology exists, declaration-only analysis
               remains available; non-resolvable constructors never contribute edges.
         Args:
             spellbook: Owning Spellbook whose local pool should be modeled.
@@ -130180,6 +130654,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             for param in parameters:
                 if topology is not None and any(
                         socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
+                        or socket.socket_kind is SocketKind.UNRESOLVED_INPUT
                         for socket in topology.get_sockets_for_param(param.name)
                 ):
                     continue
@@ -131625,7 +132100,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/param
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
-CONTENT SHA256: e7abea1c35b49d1bd9d62fa005b34bd24629366648ef29d58fb3fe9cc9f480b0
+CONTENT SHA256: 703cbb528f15079fbe0224df23af5114427da523fc444000de11a07362f38571
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING
@@ -131635,7 +132110,9 @@ from typing import TYPE_CHECKING
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import SpellValidationIssue
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import SpellValidationStrategy
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements import SpellRequirements
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
 
@@ -131656,6 +132133,10 @@ class RequiredHolesStrategy(SpellValidationStrategy):
       provide these values at invocation time.
     - Also reports resolved OVERRIDE_REQUIRED sockets from durable local topology.
       Non-resolvable roots have no construction-input obligations.
+    - Also reports UNRESOLVED_INPUT sockets (a typed parameter no registered
+      spell provides) with the expected type, so a forgotten binding is visible
+      at conjure even though constructing the spell without the value only fails
+      at meld.
 
     Registration:
         MELDER KERNEL. A built-in strategy; registered, never bound.
@@ -131673,7 +132154,8 @@ class RequiredHolesStrategy(SpellValidationStrategy):
     AGENT_PURPOSE:
         access: internal. Phase-4 strategy: emits a REQUIRED_HOLE warning per PLAIN,
         default-less parameter - a hole Melder DI will never fill, so the caller must supply it
-        via overrides or manual composition. Reporting only.
+        via overrides or manual composition - plus OVERRIDE_REQUIRED and UNRESOLVED_INPUT
+        warnings for supplied-input sockets. Reporting only.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -131703,6 +132185,12 @@ class RequiredHolesStrategy(SpellValidationStrategy):
           or convert the hole into a DI target.
         - Reads reference-only required inputs from SpellSystemStates without
           taking ownership of their topology or changing declaration facts.
+        - Emits one `UNRESOLVED_INPUT` warning per unresolved-input socket,
+          naming the expected type from the Phase-1 annotation.
+
+        Raises:
+            RuntimeError: If an UNRESOLVED_INPUT socket has no matching Phase-1
+                parameter (topology and requirements out of step).
         """
         self.check_cleaned()
 
@@ -131741,6 +132229,31 @@ class RequiredHolesStrategy(SpellValidationStrategy):
         if topology is None:
             return
         for socket in topology.sockets:
+            if socket.socket_kind is SocketKind.UNRESOLVED_INPUT:
+                expected_type = self._expected_type_for(requirements, socket.param_name)
+                context.issues.append(
+                    SpellValidationIssue(
+                        severity="warning",
+                        code="UNRESOLVED_INPUT",
+                        message=(
+                            f"Parameter {socket.param_name!r} on spell {spell.spell_name!r} expects "
+                            f"{expected_type}, but no registered spell provides it. Supply it through a "
+                            f"meld override (key {socket.param_name!r}, or a path key ending in "
+                            f"'>{socket.param_name}' when this spell is built as a dependency) or bind "
+                            f"a provider for {expected_type}. Constructing this spell without it raises "
+                            "UnresolvedInputError."
+                        ),
+                        details={
+                            "spell_id": spell.spell_id,
+                            "parameter_name": socket.param_name,
+                            "position": socket.position,
+                            "parameter_kind": socket.parameter_kind,
+                            "expected_type": expected_type,
+                            "dependency_key": socket.dependency_key,
+                        },
+                    )
+                )
+                continue
             if socket.socket_kind is not SocketKind.OVERRIDE_REQUIRED:
                 continue
             context.issues.append(
@@ -131761,6 +132274,34 @@ class RequiredHolesStrategy(SpellValidationStrategy):
                     },
                 )
             )
+
+    @staticmethod
+    def _expected_type_for(requirements: SpellRequirements, param_name: str) -> str:
+        """
+        Name the expected type of one unresolved-input parameter.
+
+        Contract:
+            - Reads the Phase-1 annotation of `param_name` and renders it with
+              `UnresolvedInputError.expected_type_name`, the rule the meld-time
+              error also uses.
+
+        Args:
+            requirements: Phase-1 requirements of the spell under validation.
+            param_name: Parameter carried by the UNRESOLVED_INPUT socket.
+
+        Returns:
+            str: Display name of the expected type.
+
+        Raises:
+            RuntimeError: If `param_name` is not a Phase-1 parameter.
+        """
+        for param in requirements.parameters:
+            if param.name == param_name:
+                return UnresolvedInputError.expected_type_name(param.annotation)
+        raise RuntimeError(
+            f"UNRESOLVED_INPUT socket {param_name!r} has no Phase-1 parameter. "
+            "Re-run the structural phases for this spell."
+        )
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
 ================================================================================
@@ -140826,7 +141367,7 @@ END FILE: src/melder/aether/spellbook/spellbook.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook_creation_system.py
-CONTENT SHA256: 308cef937dff50462b7a6691cd8101fb929a91dcfd2bebb0d51f9585563ac94a
+CONTENT SHA256: c3a7756b82c6d8e210946c1ccfc06339019f1a8099dc2063e6ff27d5dbd6c572
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -141129,6 +141670,9 @@ class SpellbookCreationSystem(Cleanable):
         Contract:
             - Freezes and binds configuration when not already locked.
             - Executes structural phases before conduit construction.
+            - Reports unresolved inputs once, right after the structural phases,
+              while their Phase-4 results still exist (they are released after
+              resolution).
         Args:
             spellbook: Owning Spellbook instance.
             phase_scheduler_cls: Scheduler class used for phase execution.
@@ -141144,6 +141688,45 @@ class SpellbookCreationSystem(Cleanable):
         SpellbookCreationSystem.run_structural_phases(
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,
+        )
+        SpellbookCreationSystem._report_unresolved_inputs(spellbook=spellbook)
+
+    @staticmethod
+    def _report_unresolved_inputs(*, spellbook: Spellbook) -> None:
+        """
+        Purpose:
+            Make unresolved inputs visible at conjure. A typed parameter that no
+            registered spell provides no longer fails conjure; it must be supplied
+            by the meld that constructs its spell. Without this line a forgotten
+            binding would first surface as an UnresolvedInputError at meld.
+        Contract:
+            - Reads the UNRESOLVED_INPUT warnings Phase 4 stored on this book's
+              active spells; emits nothing when there are none.
+            - Emits one INFO line per conjure listing `Spell.param -> ExpectedType`.
+            - Reporting only; conjure continues either way.
+        Args:
+            spellbook: Owning Spellbook whose structural phases just ran.
+        Returns:
+            None.
+        """
+        entries: list[str] = []
+        for spell in spellbook._spells.values():
+            result = spell.validation_result_phase4
+            if result is None:
+                continue
+            for issue in result.issues:
+                if issue.code != "UNRESOLVED_INPUT":
+                    continue
+                entries.append(
+                    f"{spell.spell_name}.{issue.details['parameter_name']} -> "
+                    f"{issue.details['expected_type']}"
+                )
+        if not entries:
+            return
+        spellbook._logger.info(
+            f"Conjure: {len(entries)} unresolved input(s) have no registered provider and must be "
+            f"supplied by the meld that constructs them (or given a provider): {', '.join(entries)}.",
+            "_report_unresolved_inputs",
         )
 
     @staticmethod
@@ -260480,7 +261063,7 @@ END FILE: src/melder/utilities/caching_system/asset_cache.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/caching_system/caching_system.py
-CONTENT SHA256: baf6b388595549a87f7b3749bc9fbc3cb0b544b219e099537542459dffb4e097
+CONTENT SHA256: ecd45049db3135e0ff4d1204f715182bbcc26475c60929209e8275c63ba89c38
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -260581,6 +261164,15 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 11: a typed parameter with no registered provider compiles as an
+    # UNRESOLVED_INPUT socket instead of failing conjure, and every executor
+    # family routes constructor failures through the helper that raises
+    # UnresolvedInputError (2026-09-26). Version-10 bundles carry executors
+    # emitted with the old except blocks and must be rebuilt.
+    # Version 10: creation executors hold a per-slot build guard instead of the
+    # store lock across construction, and registration goes through the
+    # self-locking store methods (deadlock fix, 2026-09-25). Version-9 bundles
+    # carry executors emitted with the old locking and must be rebuilt.
     # Version 9: require the canonical Melder release in the cache envelope.
     # The separate generation also makes older readers reject these bundles
     # rather than ignoring the release field during a package downgrade.
@@ -260621,6 +261213,8 @@ class CachingSystem(Cleanable):
         7: "root_visible_family_selection",
         8: "ordinary_defaults_are_plain",
         9: "exact_melder_release_compatibility",
+        10: "creation_slot_build_guards",
+        11: "unresolved_input_sockets",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"
@@ -262307,6 +262901,312 @@ class SpellbookValidationError(RuntimeError):
         super().__init__(msg)
 ================================================================================
 END FILE: src/melder/utilities/custom_exceptions/spellbook_validation_error.py
+================================================================================
+================================================================================
+BEGIN FILE: src/melder/utilities/custom_exceptions/unresolved_input_error.py
+CONTENT SHA256: eb95255b6c3072721da7be361f04f8cebc58faff0f221a306f1bab380cc06581
+SOURCE ENCODING: utf-8
+================================================================================
+import annotationlib
+import inspect
+import types
+import typing
+from typing import TYPE_CHECKING, Any, Collection, List, Optional, Tuple
+
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
+    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellSocketDescriptor
+
+
+class UnresolvedInputError(MeldExecutionError):
+    """
+
+    Purpose:
+        Signal that a meld had to construct an object whose typed constructor
+        parameter has no registered provider, and the meld did not supply the
+        value. Names the consumer, the parameter, the expected type and how to
+        supply it, instead of a bare Python missing-argument error.
+
+    Raised When:
+        Constructing an object whose Phase-3 topology carries an UNRESOLVED_INPUT
+        socket (a single typed dependency no registered spell provides), and the
+        constructing call's overrides did not supply that parameter. It fires only
+        when that object is actually built: a stored (reused) object never demands
+        its unresolved inputs, and conjure succeeds regardless.
+
+    What To Do About It:
+        Supply the value in the meld's override payload: the parameter name when
+        melding the consumer itself, a path key ending in `>param` (or a broadcast
+        `**param`) when the consumer is built as a dependency. Or bind a provider
+        for the expected type; the consumer re-resolves into a normal dependency
+        on its next meld.
+
+    Contract:
+        - A `MeldExecutionError`: code that catches `MeldExecutionError` keeps
+          catching it. `node_id` is the consumer's spell id and `param_name` the
+          first missing parameter.
+        - `expected_type` is the parameter annotation's display name, read from the
+          constructor signature on the failure path (Optional and forward references
+          unwrapped); the lowercased frame key is used only if that is unreadable.
+        - `unresolved_params` lists every missing unresolved parameter of the
+          consumer, in signature order.
+        - `inner` carries the constructor-call exception that exposed the gap.
+
+    Owned State:
+        - Inherited `spell_id`, `spell_name`, `node_id`, `param_name`, `inner`.
+        - `expected_type`: display name of the first missing parameter's type.
+        - `unresolved_params`: names of all missing unresolved parameters.
+
+    Registration:
+        A public exception type; import, raise, and catch freely. Like every
+        Melder class it is refused as a spell registration.
+
+    Subsystem Context:
+        One of the `utilities/custom_exceptions/` types; the specific form of
+        `MeldExecutionError` for the unresolved-input socket contract.
+
+    System Context:
+        Fires in the resolution layer on a constructor-failure path only, after
+        conjure produced the Conduit. Successful melds never evaluate it.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. Raised at meld when an object whose typed parameter has no
+        registered provider is built without that value; supply it by override
+        (root key, `>param` path key or `**param`) or bind a provider for
+        expected_type.
+    """
+
+    __slots__ = (
+        "expected_type",
+        "unresolved_params",
+    )
+
+    def __init__(
+            self,
+            *,
+            spell_id: str,
+            spell_name: str,
+            message: str,
+            node_id: Optional[str] = None,
+            param_name: Optional[str] = None,
+            inner: Optional[BaseException] = None,
+            expected_type: str,
+            unresolved_params: Tuple[str, ...],
+    ) -> None:
+        """
+        Construct an unresolved-input failure.
+
+        Args:
+            spell_id:
+                Id of the spell whose construction failed (the consumer).
+            spell_name:
+                Human-readable name of that spell.
+            message:
+                Remediation-bearing message naming the parameter, expected type
+                and override keys.
+            node_id:
+                Consumer spell id; kept for `MeldExecutionError` attribution.
+            param_name:
+                First missing unresolved parameter.
+            inner:
+                Constructor-call exception that exposed the missing input.
+            expected_type:
+                Display name of the first missing parameter's expected type.
+            unresolved_params:
+                Every missing unresolved parameter of the consumer, in signature
+                order. Never empty.
+
+        Contract:
+            - Preserves every `MeldExecutionError` field unchanged.
+
+        Returns:
+            None.
+        """
+        super().__init__(
+            spell_id=spell_id,
+            spell_name=spell_name,
+            message=message,
+            node_id=node_id,
+            param_name=param_name,
+            inner=inner,
+        )
+        self.expected_type: str = expected_type
+        self.unresolved_params: Tuple[str, ...] = unresolved_params
+
+    @staticmethod
+    def expected_type_name(annotation: Any) -> str:
+        """
+        Render a parameter annotation as the expected-type display name.
+
+        Purpose:
+            One naming rule for the Phase-4 UNRESOLVED_INPUT warning and this
+            error, so both name the type identically.
+
+        Contract:
+            - Unwraps `Optional[T]` / `Union[T, None]` to `T`, and a forward
+              reference to its written name, mirroring Phase-3 matching.
+            - A class renders as its `__qualname__`; any other annotation object
+              as its `repr`.
+            - A string renders as itself, minus one layer of matching quotes: a
+              quoted annotation in a module using postponed evaluation arrives as
+              the source text `'Name'`.
+            - Pure: no lookups, no side effects.
+
+        Args:
+            annotation:
+                The parameter's annotation: Phase-1 requirements at conjure, the
+                constructor signature at meld.
+
+        Returns:
+            str: Display name of the expected type.
+        """
+        if isinstance(annotation, typing.ForwardRef):
+            return annotation.__forward_arg__
+        if isinstance(annotation, str):
+            text = annotation.strip()
+            if len(text) >= 2 and text[0] == text[-1] and text[0] in "'\"":
+                return text[1:-1]
+            return text
+        origin = typing.get_origin(annotation)
+        if origin is typing.Union or origin is types.UnionType:
+            members = [arg for arg in typing.get_args(annotation) if arg is not type(None)]
+            if len(members) == 1:
+                return UnresolvedInputError.expected_type_name(members[0])
+        if isinstance(annotation, type):
+            return annotation.__qualname__
+        return repr(annotation)
+
+    @classmethod
+    def from_failed_construction(
+            cls,
+            spell: Spell,
+            exc: BaseException,
+            supplied_names: Collection[str] = (),
+            supplied_positional_count: int = 0,
+    ) -> Optional[UnresolvedInputError]:
+        """
+        Name the unresolved inputs a failed constructor call did not receive.
+
+        Purpose:
+            The single failure-path decision every executor family consults after
+            a constructor call raised. INTERIM: once the demand-driven build plan
+            exists, the plan decides this error before calling and these
+            failure-path hooks are removed.
+
+        Contract:
+            - Returns None unless `exc` is a `TypeError`: a missing required
+              argument can only fail at call binding, which raises TypeError.
+            - Reads the consumer's durable Phase-3 topology and selects its
+              UNRESOLVED_INPUT sockets whose name is not in `supplied_names` and,
+              for positional-capable parameters, whose position is not below
+              `supplied_positional_count`. Returns None when none remain, so any
+              other failure keeps its existing error.
+            - A required parameter that was not passed makes binding fail, so a
+              non-empty selection is exactly the cause of `exc`.
+            - Runs only after a call already raised; successful melds never reach it.
+
+        Args:
+            spell:
+                The spell whose constructor call raised.
+            exc:
+                The exception raised by that call.
+            supplied_names:
+                Keyword names actually passed to the call (dependencies, contract
+                payload and overrides together).
+            supplied_positional_count:
+                Number of positional arguments actually passed.
+
+        Returns:
+            Optional[UnresolvedInputError]: The error to raise (chain it from
+                `exc`), or None when no unresolved input explains the failure.
+        """
+        if not isinstance(exc, TypeError):
+            return None
+        topology = spell._spell_system_states.get_local_topology(spell.spell_index)
+        if topology is None:
+            return None
+        missing: List[SpellSocketDescriptor] = []
+        for socket in topology.sockets:
+            if socket.socket_kind is not SocketKind.UNRESOLVED_INPUT:
+                continue
+            if socket.param_name in supplied_names:
+                continue
+            if (
+                    socket.parameter_kind in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")
+                    and socket.position < supplied_positional_count
+            ):
+                continue
+            missing.append(socket)
+        if not missing:
+            return None
+        missing.sort(key=lambda socket: socket.position)
+        first = missing[0]
+        consumer = spell.spell_name
+        param_name = first.param_name
+        expected_type = cls._constructor_expected_type(spell, first)
+        message = (
+            f"{consumer}.{param_name} expects {expected_type}, but nothing registered provides it "
+            f"and this meld did not supply it. Supply it with override={{{param_name!r}: ...}} when "
+            f"melding {consumer}, a path key ending in '>{param_name}' (or '**{param_name}') when "
+            f"{consumer} is built as a dependency, or bind a provider for {expected_type}."
+        )
+        if len(missing) > 1:
+            others = ", ".join(repr(socket.param_name) for socket in missing[1:])
+            message += f" Also not supplied: {others}."
+        spell_id = spell.spell_index.selected_spell_id
+        return cls(
+            spell_id=spell_id,
+            spell_name=consumer,
+            message=message,
+            node_id=spell_id,
+            param_name=param_name,
+            inner=exc,
+            expected_type=expected_type,
+            unresolved_params=tuple(socket.param_name for socket in missing),
+        )
+
+    @staticmethod
+    def _constructor_expected_type(spell: Spell, socket: SpellSocketDescriptor) -> str:
+        """
+        Name one unresolved parameter's expected type at meld time.
+
+        Contract:
+            - Phase-1 requirements are released after resolution, so this re-reads
+              the constructor signature with FORWARDREF annotations (a name that
+              only exists under TYPE_CHECKING stays its written name) and applies
+              `expected_type_name`.
+            - When the signature cannot be read or does not annotate the
+              parameter, the socket's watched frame key names the type instead.
+            - Failure path only.
+
+        Args:
+            spell: The consumer whose construction failed.
+            socket: Its first missing UNRESOLVED_INPUT socket.
+
+        Returns:
+            str: Display name of the expected type.
+        """
+        try:
+            signature = inspect.signature(
+                spell.spell,
+                annotation_format=annotationlib.Format.FORWARDREF,
+            )
+        except (TypeError, ValueError):
+            signature = None
+        if signature is not None:
+            parameter = signature.parameters.get(socket.param_name)
+            if parameter is not None and parameter.annotation is not inspect.Parameter.empty:
+                return UnresolvedInputError.expected_type_name(parameter.annotation)
+        if socket.dependency_key is not None:
+            return socket.dependency_key[0]
+        return "an unregistered type"
+================================================================================
+END FILE: src/melder/utilities/custom_exceptions/unresolved_input_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py

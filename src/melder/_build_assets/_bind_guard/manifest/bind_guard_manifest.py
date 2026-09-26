@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.51"
-SOURCE_SHA256 = "334cf41bd2ddda74e686853a9acd0329dc8511ba1ccea93095b4d56999dad9d4"
-ENTRY_COUNT = 631
+BUILT_FOR_VERSION = "0.2.54"
+SOURCE_SHA256 = "beb5f0c7c36eb26f36f2f31598719303104478c44a1a67e3193f7fc47ba17e06"
+ENTRY_COUNT = 632
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -612,6 +612,7 @@ ENTRIES = (
     ('melder.utilities.custom_exceptions.phase_timeout_error', 'PhaseTimeoutError'),
     ('melder.utilities.custom_exceptions.spell_space_scope_error', 'SpellSpaceScopeError'),
     ('melder.utilities.custom_exceptions.spellbook_validation_error', 'SpellbookValidationError'),
+    ('melder.utilities.custom_exceptions.unresolved_input_error', 'UnresolvedInputError'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', 'WeakConcurrentDict'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictItemsView'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', '_WeakDictKeysView'),

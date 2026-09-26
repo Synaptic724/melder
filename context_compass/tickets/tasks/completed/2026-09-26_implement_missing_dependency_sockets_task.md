@@ -3,15 +3,20 @@
 # Task: Compile unprovided constructor dependencies as missing-dependency sockets instead of refusing conjure
 
 ## Metadata
+- Completed: 2026-09-26T08:53:38Z
+- Closure Basis: owner direction ("finish off the last few steps and you can build asset runs update the version number and add details to the release").
+- Summary: Provider-less typed parameters compile as UNRESOLVED_INPUT sockets and are supplied at meld or raise
+  UnresolvedInputError; 15 tests rewritten, 70 added; 3.14t/GIL qualified; docs, graph, assets and 0.2.54
+  release note promoted.
 - Task ID: TASK-2026-09-26-implement-missing-dependency-sockets
 - Epic: EPIC-2026-09-24-override-execution-performance
 - Story: STORY-2026-09-26-unresolved-input-sockets (step S1 of artifacts/melder_override_design_20260926/design.md)
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T00:44:21Z
-- Updated: 2026-09-26T08:16:36Z
+- Updated: 2026-09-26T08:53:38Z
 
 ## Objective
 A typed constructor parameter with no registered provider no longer fails conjure. It compiles as a
@@ -40,6 +45,13 @@ raises a named MeldExecutionError that identifies the missing dependency and how
 - from_state: draft
 - to_state: in_progress
 - transition_reason: Owner approved starting the investigation, 2026-09-26T00:44:21Z.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Rollout steps 1-5 complete with qualification evidence (2026-09-26T08:32:27Z); step 6 and acceptance
+  are owner decisions.
+- from_state: review
+- to_state: done
+- transition_reason: Owner directed completion; step 6 done under the version task (2026-09-26T08:53:38Z).
 
 ## Steps / Checklist
 - [x] Trace Phase 3: where the zero-candidate raise sits and how socket kinds are assigned.
@@ -47,20 +59,22 @@ raises a named MeldExecutionError that identifies the missing dependency and how
 - [x] Trace how a missing required input fails today in each executor family and the no-override lane.
 - [x] Late-provider behavior: existing OVERRIDE_REQUIRED frame-key watcher recompiles the consumer.
 - [x] Write patch docs and the file/symbol list; owner confirmation before any src/ edit.
-- [ ] Implement, test, promote docs. (in progress since 2026-09-26T07:12:37Z)
+- [x] Implement, test, promote docs. (steps 1-5 done 2026-09-26T08:32Z)
+- [x] Step 6: build-asset rebuild (owner-approved), closure and patch-lane archive.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
 - [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
-- Patch lane system_docs/patches/active/unresolved_input_sockets_2026_09_26/ (written 2026-09-26).
+- Patch lane system_docs/patches/completed/unresolved_input_sockets_2026_09_26/ (written 2026-09-26, archived at closure).
 - Source and tests (after confirmation).
 
 ## Files / Paths Impacted
-- Listed per component in system_docs/patches/active/unresolved_input_sockets_2026_09_26/.
+- Listed per component in system_docs/patches/completed/unresolved_input_sockets_2026_09_26/.
 
 ## Validation
+- 2026-09-26T08:09:30Z full suites on 3.14.7t and 3.14 GIL (see MEASURE note); 08:53Z unit suite at 0.2.54.
 - 2026-09-26T08:09:30Z full unit/component/integration/experimentation from the VM copy: 3.14.7t 12281 passed,
   21 failed; 3.14 GIL 12280 passed, 22 failed. All failures are the pre-existing baseline plus the known
   concurrency flake (see the 08:09:30Z MEASURE note). New component files: 70 passed on both builds.
@@ -76,22 +90,22 @@ raises a named MeldExecutionError that identifies the missing dependency and how
 - [ ] No src/ edit before patch docs and owner confirmation.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
 - [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >= `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
 - [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/missing_dependency_sockets_20260926/
-  - system_docs/patches/active/unresolved_input_sockets_2026_09_26/
-- DISPOSITION: retain_as_reference
+  - system_docs/patches/completed/unresolved_input_sockets_2026_09_26/
+- DISPOSITION: retain_as_reference (artifacts); promote_to_documentation (patch docs, promoted and archived)
 - CLEANUP_TRIGGER: Owner decision at task closure.
 
 ## Context Management
@@ -944,14 +958,86 @@ raises a named MeldExecutionError that identifies the missing dependency and how
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T08:32:02Z
+  TYPE: FACT
+  CLAIM: Step 5c done: release note section "Typed parameters without a provider are supplied at meld" leads
+    release_docs/next_version_release.md (conjure contract change, unchanged matching incl. the B2 frame cases,
+    supply keys, late provider, stored-object reuse after cleanup_spell (D-A), exception and fields,
+    resolvable=False unchanged, no success-path cost, cache generation 11). Its code example was executed on
+    3.14t from the VM copy: conjure succeeds, the override value arrives by identity, and a missing value
+    raises UnresolvedInputError with param_name 'work', expected_type 'Package' and the quoted message.
+    Quality scoring: this pass was scoped to the promoted sections, so no new whole-document rubric total is
+    claimed; the last recorded totals stand (src_architecture 89.5 on 2026-08-02). Gate status for the touched
+    content: preservation accounted for, citations in bounds, join 0 misses, no wrapped headings; the
+    portability checks fail only on the pre-existing Indexing lines (RISK note above). Mirror gap: the two new
+    component test files are not yet in tests_components; that document was outside the patch file list.
+  EVIDENCE:
+  - release_docs/next_version_release.md:5-55
+  - system_docs/src_components_index.md:1-30
+  IMPACT: Rollout step 5 is complete. Step 6 (build-asset rebuild) and the follow-ups need the owner.
+  NEXT: Ask the owner for step 6 and the follow-up list; then acceptance walkthrough and patch-lane archive.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T08:32:43Z
+  TYPE: FACT
+  CLAIM: Mailbox M1-8 consumed from melder_1: the owner approved the gauntlet harness fix; both harnesses keep
+    samples in array('q') and the shared gauntlet builds Melder from its own lane matched to
+    test_melder_gauntlet (guarded by test_gauntlet_melder_lane_parity.py). Long-run numbers from before the fix
+    are not comparable with later ones; S2-S5 override benchmarks must use post-fix baselines.
+  EVIDENCE: tickets/tasks/2026-09-26_fix_gauntlet_sample_storage_and_melder_lane_isolation_task.md
+  IMPACT: None on this task's code; supersedes the benchmark caveat in the M1-7 note.
+  NEXT: none
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T08:53:21Z
+  TYPE: MEASURE
+  CLAIM: Step 6 done under TASK-2026-09-26-bump-version-rebuild-assets-for-unresolved-inputs: version 0.2.54,
+    build assets regenerated (bind guard now refuses UnresolvedInputError; packaged documents carry the
+    promotion), LLM bundles rebuilt, both --check gates pass. Acceptance evidence for the story's first
+    criterion, with stand-in types because the CommandOps repository is not reachable from here: the reported
+    shapes (Package-typed input bound before conjure, a Conduit-typed input, the input one level down via a
+    path key, a consumer bound into an already-conjured dynamic root, and the missing case) all behave as
+    specified on 3.14t.
+  EVIDENCE:
+  - artifacts/missing_dependency_sockets_20260926/probe_commandops_shapes.py:1-39
+  - artifacts/missing_dependency_sockets_20260926/probe_commandops_shapes_314t.txt
+  - tickets/tasks/2026-09-26_bump_version_rebuild_assets_for_unresolved_inputs_task.md
+  IMPACT: All six rollout steps are complete.
+  NEXT: Close on the owner's direction; archive the patch lane.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T08:53:21Z
+  TYPE: DECISION
+  CLAIM: Owner directed completion of the remaining steps ("finish off the last few steps ..."). Closing the
+    task, the S1 story and the version task; patch lane archived to patches/completed (mv). Follow-ups raised
+    at 08:32Z that the owner has not ticketed stay listed in the handoff summary below.
+  EVIDENCE: tickets/stories/2026-09-26_unresolved_input_sockets_story.md
+  IMPACT: Closure sync on attention and artifact boards.
+  NEXT: none
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Patch docs owner-approved. Steps 1-4 are implemented and qualified: compiler socket and consumers (07:30Z),
 failure-path wiring in every family (07:37Z), root export (D-B), conjure INFO report and cache generation 11
 (07:53Z), 15 old-contract tests rewritten and 70 new component regressions (08:01Z), full 3.14t and GIL runs with
 no attributable failure (08:09Z). Owner decisions in force: D-A (c) stored consumers keep their dependency after
 the provider's spell is cleaned up; D-B root export of UnresolvedInputError.
-Remaining: step 5 (promote to src_architecture/src_components, graph descriptors, release note), step 6 (owner
-decides the build-asset rebuild), then acceptance walkthrough and patch-lane archive. Resume from the latest NEXT.
+Step 5 done (08:21Z-08:32Z): both canonical documents and indexes, graph descriptors and assembled graph,
+release note. Remaining: step 6 (owner decides the build-asset rebuild), acceptance walkthrough, patch-lane
+archive and closure sync. Open follow-ups for the owner: see the RISK note (Indexing-section paths) and the
+list in the step-6 question. Resume from the latest NEXT.
+CLOSED 2026-09-26 on owner direction after step 6 (version 0.2.54 and asset rebuild in the version task).
+Patch lane archived to system_docs/patches/completed/unresolved_input_sockets_2026_09_26/.
+Open follow-ups, not ticketed (owner has not chosen): Indexing-section tool paths in both canonical
+documents; tests_components does not list the two new component files; 3.14t and GIL share cache tag
+cpython-314; cleanup_spell then provider rebind raises "Cannot build CreationContext before
+spell_codegen_creation exists"; a solo root passes a `**param` broadcast key through literally; the
+flaky concurrency test (also fails on the pre-change copy); cleanup_spell does not call a provider's
+close() (unique measured); sibling exception docstrings say "one of the 11"; SpellSocketDescriptor's
+docstring does not list UNRESOLVED_INPUT; Nexus publication of unresolved inputs (deferred by the owner).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

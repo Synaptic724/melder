@@ -1,0 +1,18 @@
+A meld user Car (TYPE_CHECKING-annotated default): OK -> 'Car'
+   car spell found: OK -> 'Spell'
+   requirements after conjure: OK -> 'None'
+B analyzer _iter_spell_contract_defaults(car): RAISED NameError: name 'Decimal' is not defined @ melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:1016
+B' processor _iter_spell_contract_defaults(car): RAISED NameError: name 'Decimal' is not defined @ melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:239
+C ConduitWard._get_spell_contract_keys(car): RAISED NameError: name 'Decimal' is not defined @ melder/aether/conduit/conduit_ward/conduit_ward.py:2511
+C' lesser conduit create + meld: OK -> 'Car'
+D Package(make_car).describe(): RAISED NameError: name 'Decimal' is not defined @ melder/utilities/helpers/package.py:325
+D' Package(make_car).signature: RAISED NameError: name 'Decimal' is not defined @ melder/utilities/helpers/package.py:883
+E ProtocolCrafter.craft_protocol_code(Car): RAISED NameError: name 'Decimal' is not defined @ melder/utilities/ai_native_support_tools/protocol_crafter.py:608
+E' ProtocolCrafter.craft_protocol_code(Conduit): RAISED NameError: name 'MutationResearch' is not defined @ melder/aether/conduit/conduit.py:3848
+E'' ProtocolCrafter.craft_protocol_code(Spellbook): RAISED NameError: name 'Conduit' is not defined @ melder/aether/spellbook/spellbook.py:6431
+F SpellExaminer general(Car class): OK -> 'SpellGeneralProfile'
+F' SpellExaminer detailed(Car class): OK -> 'SpellDetailedProfile'
+F'' SpellExaminer detailed(car spell): RAISED NameError: name 'Decimal' is not defined @ melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py:132
+F''' SpellExaminer detailed(make_car fn): OK -> 'SpellDetailedProfile'
+G SpellExaminer detailed(Conduit class): OK -> 'SpellDetailedProfile'
+G' SpellExaminer detailed(Spellbook class): OK -> 'SpellDetailedProfile'

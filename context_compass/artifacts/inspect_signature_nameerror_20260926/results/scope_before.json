@@ -1,0 +1,5184 @@
+{
+ "fail": [
+  [
+   "melder.aether.aether.Aether._bind_configuration",
+   false,
+   "method",
+   "name 'SpellbookConfiguration' is not defined"
+  ],
+  [
+   "melder.aether.aether.Aether._get_configuration",
+   false,
+   "method",
+   "name 'SpellbookConfiguration' is not defined"
+  ],
+  [
+   "melder.aether.aether.Aether.get_conduit_by_name",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aether.Aether.get_conduit_by_id",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aether.Aether.get_conduit_cloud",
+   true,
+   "method",
+   "name 'ConduitCloud' is not defined"
+  ],
+  [
+   "melder.aether.aether.Aether._get_conduit_by_name",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aether.Aether._get_conduit_by_id",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aether.Aether._get_conduit_by_spell_id",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aether.Aether._get_devops_manager",
+   false,
+   "method",
+   "name 'DevOpsManager' is not defined"
+  ],
+  [
+   "melder.aether.aether.Aether._get_spell_system_states",
+   false,
+   "method",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.aether.Aether._get_incident_manager",
+   false,
+   "method",
+   "name 'IncidentManager' is not defined"
+  ],
+  [
+   "melder.aether.aether.Aether._get_change_control_manager",
+   false,
+   "method",
+   "name 'ChangeControlManager' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.aetheric_frame.AethericFrame.register_root_conduit",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.aetheric_frame.AethericFrame.unregister_root_conduit",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.aetheric_frame.AethericFrame.find_index_for_spell",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.aetheric_frame.AethericFrame.register_conduit_spells",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.aetheric_frame.AethericFrame.unregister_conduit_spells",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.aetheric_frame.AethericFrame.register_spell_index",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.aetheric_frame.AethericFrame.unregister_spell_index",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud._register_named_conduit",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud._unregister_named_conduit",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud._reserve_conduit_name",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud._release_conduit_name",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud._assert_normal_conduit",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud.get_conduit",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud.get_conduit_by_name",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud.get_conduit_by_id",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud.add_conduit_to_cluster",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud.remove_conduit_from_cluster",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.conduit_cloud.ConduitCloud.refresh_cluster_shares_for_conduit",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager",
+   true,
+   "class",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.__init__",
+   true,
+   "method",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.set_audit_logger",
+   true,
+   "method",
+   "name 'ChangeControlTransactionRequest' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.set_commit_validator",
+   true,
+   "method",
+   "name 'ChangeControlStagedMutation' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.set_structural_validator",
+   true,
+   "method",
+   "name 'ChangeControlStagedMutation' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.set_commit_hook",
+   true,
+   "method",
+   "name 'ChangeControlStagedMutation' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.set_dirty_marker",
+   true,
+   "method",
+   "name 'ChangeControlStagedMutation' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.set_abort_hook",
+   true,
+   "method",
+   "name 'ChangeControlStagedMutation' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager._dispatch_commit_validator",
+   false,
+   "method",
+   "name 'ChangeControlStagedMutation' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager._dispatch_commit_hook",
+   false,
+   "method",
+   "name 'ChangeControlStagedMutation' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager._dispatch_abort_hook",
+   false,
+   "method",
+   "name 'ChangeControlStagedMutation' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager._resolve_spellbook_for_staged",
+   false,
+   "method",
+   "name 'ChangeControlStagedMutation' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager._default_structural_validator",
+   false,
+   "method",
+   "name 'ChangeControlStagedMutation' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager._default_dirty_marker",
+   false,
+   "method",
+   "name 'ChangeControlStagedMutation' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.admit_request",
+   true,
+   "method",
+   "name 'ChangeControlTransactionRequest' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.register_pending_change",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.set_revalidator",
+   true,
+   "method",
+   "name 'CancellationEvent' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.rebuild_component_of",
+   true,
+   "method",
+   "name 'RootResolutionBlueprint' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager.upsert_component_of",
+   true,
+   "method",
+   "name 'RootResolutionBlueprint' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager.ChangeControlConflictManager.find_conflicts",
+   true,
+   "method",
+   "name 'ChangeControlTransactionRequest' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator._stage_request",
+   false,
+   "method",
+   "name 'ChangeControlTransactionRequest' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator.admit_request",
+   true,
+   "method",
+   "name 'ChangeControlTransactionRequest' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator.commit_request",
+   true,
+   "method",
+   "name 'ChangeControlTransactionManager' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator.ChangeControlOrchestrator.abort_request",
+   true,
+   "method",
+   "name 'ChangeControlTransactionManager' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation.from_request",
+   true,
+   "method",
+   "name 'ChangeTransactionType' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy.build_start_plan",
+   true,
+   "method",
+   "name 'DevopsIdentity' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy._resolve_cluster_id",
+   false,
+   "method",
+   "name 'DevopsIdentity' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy._add_transaction_owner_scopes",
+   false,
+   "method",
+   "name 'DevopsIdentity' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy.on_start",
+   true,
+   "method",
+   "name 'DevopsIdentity' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy.ClusterLinkTransactionStrategy.on_end",
+   true,
+   "method",
+   "name 'DevopsIdentity' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager.ChangeControlTransactionManager.build_request",
+   true,
+   "method",
+   "name 'ChangeTransactionType' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager",
+   true,
+   "class",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager.__init__",
+   true,
+   "method",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager.revalidate_dirty_roots",
+   true,
+   "method",
+   "name 'CancellationEvent' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.dev_ops_manager.DevOpsManager.spell_system_states",
+   true,
+   "method",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.incident_manager.incident.Incident",
+   true,
+   "class",
+   "name 'IncidentSeverity' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.incident_manager.incident.Incident.__init__",
+   true,
+   "method",
+   "name 'IncidentSeverity' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.incident_manager.incident.Incident.severity",
+   true,
+   "method",
+   "name 'IncidentSeverity' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager.create_incident",
+   true,
+   "method",
+   "name 'IncidentSeverity' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager.IncidentManager.list_incidents",
+   true,
+   "method",
+   "name 'IncidentStatus' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager._ConduitRiskState",
+   false,
+   "class",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager._ConduitRiskState.__init__",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager",
+   true,
+   "class",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager.__init__",
+   true,
+   "method",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager.register_conduit",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager.register_spell",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager.unregister_spell",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager._iter_spellbook_spells",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager._resolve_lineage_id",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager._get_structural_validity",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager.RiskManager._get_resolution_validity",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state._get_resolution_risk_manager_callback",
+   false,
+   "function",
+   "name 'RiskManager' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState.set_spell_validity",
+   true,
+   "method",
+   "name 'SpellStateChangeReason' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState.bulk_set_spell_validity",
+   true,
+   "method",
+   "name 'SpellStateChangeReason' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState.set_root_validity",
+   true,
+   "method",
+   "name 'SpellStateChangeReason' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState.bulk_set_root_validity",
+   true,
+   "method",
+   "name 'SpellStateChangeReason' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState.mark_dirty",
+   true,
+   "method",
+   "name 'SpellStateChangeReason' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state.ConduitResolutionState._set_risk_manager",
+   false,
+   "method",
+   "name 'RiskManager' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state.SpellSystemState._set_risk_manager",
+   false,
+   "method",
+   "name 'RiskManager' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states._get_structural_risk_manager_callback",
+   false,
+   "function",
+   "name 'RiskManager' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+   true,
+   "class",
+   "name 'AethericFrame' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates.__init__",
+   true,
+   "method",
+   "name 'AethericFrame' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates.register_index",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates.update_dependencies",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates.mark_structural_change",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates.unregister_index",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates.set_risk_manager",
+   true,
+   "method",
+   "name 'RiskManager' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates.record_conduit_diagnostics",
+   true,
+   "method",
+   "name 'SystemDiagnostic' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates.register_local_topology",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates.get_local_topology",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates.get_local_topology_by_id",
+   true,
+   "method",
+   "name 'SpellLocalTopology' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates._extract_collection_frame_keys",
+   false,
+   "method",
+   "name 'SpellLocalTopology' is not defined"
+  ],
+  [
+   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates._extract_contract_keys",
+   false,
+   "method",
+   "name 'SpellLocalTopology' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit",
+   true,
+   "class",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.__init__",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit._resolve_logger_from_config",
+   false,
+   "method",
+   "name 'SafeLogger' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit._register_to_creations",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit._create_gate_for_current_root",
+   false,
+   "method",
+   "name 'CreationGate' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit._register_existing_gate_for_current_root",
+   false,
+   "method",
+   "name 'CreationGate' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.get_spell_by_id",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.get_spell_by_index_id",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.find_contracted_spell",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.add_bind_hooks",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.mutation_research",
+   true,
+   "method",
+   "name 'MutationResearch' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.transfer_spell_ownership",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit._build_transfer_transaction_metadata",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.get_resolution_state",
+   true,
+   "method",
+   "name 'ConduitResolutionState' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.validate_resolution",
+   true,
+   "method",
+   "name 'ConduitResolutionState' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.add_spell_to_contract",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.remove_spell_from_contract",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.add_spell_to_contract_with_dependencies",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.get_all_spells_in_contracts",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.get_spell_in_contracts",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.get_spells_in_contract_by_conduit",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit.Conduit.get_spells_in_contract_by_conduit_name",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster",
+   true,
+   "class",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster.__init__",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster.add_shared_spell",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster.remove_shared_spell",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster.get_shared_spells",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster._assert_normal_conduit",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster.handle_join",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster.handle_leave",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster.refresh_shareable_roots",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster.refresh_member_shares",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster.add_and_share_spell",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster.share_to_borrower",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster.remove_shared_from_borrower",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster._get_shareable_spells",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster._resolve_spell_from_index",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_cluster.ConduitCluster._resolve_conduit_by_id",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_pool.ConduitPool",
+   true,
+   "class",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_pool.ConduitPool.__init__",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_pool.ConduitPool.root_conduit",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_pool.ConduitPool.create_object",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_pool.ConduitPool.destroy_object",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_pool.ConduitPool.return_lesser_conduit",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
+   true,
+   "class",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard.__init__",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard.root_conduit",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._link",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._create_new_contract",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._find_contract_id",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._find_contract",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._sever_link",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._remove_contract",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._link_lesser_conduit",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._get_lesser_conduit",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._get_links",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._get_initiated_conduits",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._get_provider_conduits",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._get_initiated_conduit",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._get_provider_conduit",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._check_conduit_id_and_conduit",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._check_spell_if_eligible",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._add_spell_to_contract",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._add_index_to_contract",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._remove_index_from_contract",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._get_index_links",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._remove_root_from_contracts",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._add_spells_to_contract",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._remove_spell_from_contract",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._remove_spells_from_contract",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._remove_all_spells_from_contract",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._get_contracted_conduits",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard._transfer_spell_ownership",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._get_opposite_conduit",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._get_detail_map",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._add",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._remove",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._get_index_detail_map",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._add_index",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._remove_index",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._check_index_exists",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._remove_source",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._check_if_exists_and_permissions",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._check_if_exists",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._find_spell_in_ward",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.contract.contract.Contract._grant",
+   false,
+   "method",
+   "name 'ConduitWard' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership",
+   true,
+   "class",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership.__init__",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership.TransferOfOwnership._get_source_conduit_cloud",
+   false,
+   "method",
+   "name 'ConduitCloud' is not defined"
+  ],
+  [
+   "melder.aether.conduit.creations.cluster_creations.ClusterCreations.bind",
+   true,
+   "method",
+   "name 'Creations' is not defined"
+  ],
+  [
+   "melder.aether.conduit.creations.creations.Creations.purge",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.creations.creations.Creations._detach_purge_entries",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.conduit_meld.ConduitMeld._get_purge_creations",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.conduit_meld.ConduitMeld._describe_spellspace_request_target",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.conduit_meld.ConduitMeld._describe_spell_live_creation_status",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory",
+   true,
+   "class",
+   "name 'CreationGateController' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory.__init__",
+   true,
+   "method",
+   "name 'CreationGateController' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory._cleanup_creation_context",
+   false,
+   "method",
+   "name 'CreationContext' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory._stage_cache_after_publish",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory._index_id_for_spell",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory._resolve_or_create_spell_index_gate",
+   false,
+   "method",
+   "name 'CreationGate' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory._resolve_runtime_gate_for_spell",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.creation_context.creation_context_factory.CreationContextFactory._set_creation_context_switch_open",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild",
+   true,
+   "class",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild.__init__",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.creation_context.creation_context_rebuild.CreationContextRebuild.__exit__",
+   false,
+   "method",
+   "name 'TracebackType' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld",
+   true,
+   "class",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld.__init__",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._resolve_purge_spell",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._raise_non_resolvable_registration",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._ensure_lineage_resolvable",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._describe_spell_live_creation_status",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._ensure_runtime_resolution_ready",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._get_cached_change_control_manager",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._gated_validation_required",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._ensure_resolution_resolvable",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._check_contracts_and_force_revalidation",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._iter_spell_contract_defaults",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._force_resolution_revalidation",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._get_resolution_validity",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._resolve_spell",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._resolve_spell_by_id",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._resolve_spell_by_lookup_key",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._resolve_local_by_lookup_key",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.meld.Meld._resolve_contracted_by_lookup_key",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.overrides.spell_overrider.SpellOverrider",
+   true,
+   "class",
+   "name 'RootResolutionBlueprint' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.overrides.spell_overrider.SpellOverrider.__init__",
+   true,
+   "method",
+   "name 'RootResolutionBlueprint' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.overrides.spell_overrider.SpellOverrider.apply",
+   true,
+   "method",
+   "name 'SocketRef' is not defined"
+  ],
+  [
+   "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld._describe_spell_live_creation_status",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.conduit.spell_space.spell_space.SpellSpace",
+   true,
+   "class",
+   "name 'ConduitMeld' is not defined"
+  ],
+  [
+   "melder.aether.conduit.spell_space.spell_space.SpellSpace.__init__",
+   true,
+   "method",
+   "name 'ConduitMeld' is not defined"
+  ],
+  [
+   "melder.aether.conduit.spell_space.spell_space_pool.SpellSpacePool",
+   true,
+   "class",
+   "name 'ConduitMeld' is not defined"
+  ],
+  [
+   "melder.aether.conduit.spell_space.spell_space_pool.SpellSpacePool.__init__",
+   true,
+   "method",
+   "name 'ConduitMeld' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.bind.bind.Bind",
+   true,
+   "class",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.bind.bind.Bind.__init__",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.bind.bind.Bind.sha256_profile",
+   true,
+   "method",
+   "name 'SpellBindingProfile' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.bind.bind.Bind._validate_binding",
+   false,
+   "method",
+   "name 'SpellBindingProfile' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.bind.bind.Bind._determine_spell_type",
+   false,
+   "method",
+   "name 'SpellBindingProfile' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration.add_bind_hooks",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration.get_bind_hooks",
+   true,
+   "method",
+   "name 'BindLifecycleHooks' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.configuration.spellbook_configuration.SpellbookConfiguration.with_bind_hooks",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell.Spell.requirements",
+   true,
+   "method",
+   "name 'SpellRequirements' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell.Spell.validation_result_phase4",
+   true,
+   "method",
+   "name 'SpellValidationResult' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell.Spell.validation_result_phase6",
+   true,
+   "method",
+   "name 'SpellSystemValidationState' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell.Spell.system_state",
+   true,
+   "method",
+   "name 'SpellSystemState' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor.SpellArtifactProcessor.process",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor.SpellArtifactProcessor._build_model_shell",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy.process",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+   true,
+   "class",
+   "name 'SpellOccurrenceGraphAnalysis' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel.__init__",
+   true,
+   "method",
+   "name 'SpellOccurrenceGraphAnalysis' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_injection_processor_strategy.SpellInjectionProcessorStrategy.process",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_injection_processor_strategy.SpellInjectionProcessorStrategy._build_instance_specs",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_injection_processor_strategy.SpellInjectionProcessorStrategy._resolve_shared_contract_payload",
+   false,
+   "method",
+   "name 'SpellOccurrenceContractAnalysis' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy.process",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy._compile_contract_overrides",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy._compile_contract_overrides_for_occurrence",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy._iter_spell_contract_defaults",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy._resolve_spell_contract_spell_id",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy._collect_contracted_contract_candidates",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy._allow_missing_contract_providers",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy.SpellOccurrenceInstanceProcessorStrategy.process",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy.SpellOccurrenceInstanceProcessorStrategy._build_instance_plan",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy.SpellOccurrenceInstanceProcessorStrategy._instance_key_for_occurrence",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy.SpellOccurrenceOrderProcessorStrategy.process",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep",
+   true,
+   "class",
+   "name 'RequiredOverrideParam' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep.__init__",
+   true,
+   "method",
+   "name 'RequiredOverrideParam' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanStep.required_override_params",
+   true,
+   "method",
+   "name 'RequiredOverrideParam' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanStep",
+   true,
+   "class",
+   "name 'RequiredOverrideParam' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanStep.__init__",
+   true,
+   "method",
+   "name 'RequiredOverrideParam' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanStep.required_override_params",
+   true,
+   "method",
+   "name 'RequiredOverrideParam' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.dag.dag_index.DagTargetingEngine.resolve",
+   true,
+   "method",
+   "name 'TargetSpec' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.dag.dag_index.DagTargetingEngine._resolve_path",
+   false,
+   "method",
+   "name 'TargetSpec' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.dag.dag_index.DagTargetingEngine._resolve_unique",
+   false,
+   "method",
+   "name 'TargetSpec' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.dag.dag_index.DagTargetingEngine._resolve_broadcast",
+   false,
+   "method",
+   "name 'TargetSpec' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_1.CompilerPhase1.run",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_2.CompilerPhase2.run",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._get_required_current_spell_id",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._get_required_spell_system_states",
+   false,
+   "method",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._iter_all_spells",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._matches_annotation",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._build_candidate_index",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._get_candidate_index",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._resolve_single_by_annotation",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._resolve_collection_by_annotation",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._socket_kind_for_dep",
+   false,
+   "method",
+   "name 'SpellSymbolicDependency' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._resolve_spellmap_default",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._dependency_key_for_dep",
+   false,
+   "method",
+   "name 'SpellSymbolicDependency' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._build_local_topology",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3._build_local_frame_dag",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3.run",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_4.CompilerPhase4.run",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5._get_required_spellbook_frame_name",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5._get_required_current_spell_id",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5._get_required_spell_system_states",
+   false,
+   "method",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5._get_required_spell_state_by_spell_id",
+   false,
+   "method",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5._set_root_blueprint_phase5",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5._set_spell_system_index_phase5",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5._build_system_index_for_snapshot",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5._attach_phase5_artifacts_for_snapshot",
+   false,
+   "method",
+   "name 'RootResolutionBlueprint' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5._filter_root_blueprints_to_owned",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5.run_frame_wide",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5.CompilerPhase5.run_local",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6._get_required_entire_dag_blueprint_phase5",
+   false,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6._get_required_spell_system_index_phase5",
+   false,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6._collect_local_visibility_gap_diagnostics",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6._collect_local_blueprint_visibility_gap_diagnostics",
+   false,
+   "method",
+   "name 'RootResolutionBlueprint' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6.run_frame_wide",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6.CompilerPhase6.run_local",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7._get_required_entire_dag_blueprint_phase5",
+   false,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7.run_frame_wide",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7.run_local",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7._ensure_change_control_ready",
+   false,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7.CompilerPhase7._ensure_change_control_ready_local",
+   false,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions.ensure_codegen_ir",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions.build_phase5_socket_rows",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions.build_phase5_dag_edge_rows",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions.capture_phase2_5_codegen_ir",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions.build_phase11_spell_signature_row",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions.capture_phase8_11_codegen_ir",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions.capture_phase8_11_codegen_ir_if_dirty",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions.reset_phase2_5_codegen_ir",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions.reset_phase8_11_codegen_ir",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility.throw_if_cancelled",
+   true,
+   "method",
+   "name 'CancellationEvent' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile",
+   true,
+   "class",
+   "name 'SpellRequirements' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile.__init__",
+   true,
+   "method",
+   "name 'SpellRequirements' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_requirements",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_symbolic_graph",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_local_frame",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_validation",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_root_blueprints",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_root_blueprints_local",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_system_validation",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_system_validation_local",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_change_control",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_change_control_local",
+   true,
+   "method",
+   "name 'SpellCompilerArtifact' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_occurrence_plan",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_injection_plan",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_patch_maps",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler.SpellCompiler.run_phase_execution_plan",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_requirements",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_symbolic_graph",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_local_frame",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_validation",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_root_blueprints",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_root_blueprints_local",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_occurrence_plan",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_injection_plan",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_patch_maps",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_execution_plan",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_system_validation",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_system_validation_local",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_change_control",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_phase_change_control_local",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.get_local_resolution_scoped_spell_ids",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.get_local_resolution_scoped_root_ids",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.is_current_spell_phase5_root",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.reset_phase_artifacts",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.cleanup_phase_artifacts",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.clear_phase5_artifacts",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_structural_phases",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_compiler_system.SpellCompilerSystem.run_all_phases",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile.ClassProfile",
+   true,
+   "class",
+   "name 'MethodProfile' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile.ClassProfile.__init__",
+   true,
+   "method",
+   "name 'MethodProfile' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile",
+   true,
+   "class",
+   "name 'SpellBindingProfile' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile.SpellDetailedProfile.__init__",
+   true,
+   "method",
+   "name 'SpellBindingProfile' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile",
+   true,
+   "class",
+   "name 'SpellBindingProfile' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile.SpellGeneralProfile.__init__",
+   true,
+   "method",
+   "name 'SpellBindingProfile' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy.build_profile",
+   true,
+   "method",
+   "name 'SpellBindingProfile' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution_profile_strategy.ResolutionProfileStrategy.build_profile",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement",
+   true,
+   "class",
+   "name 'SpellMap' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement.__init__",
+   true,
+   "method",
+   "name 'SpellMap' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements.SpellParameterRequirement.spellmap_default",
+   true,
+   "method",
+   "name 'SpellMap' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder",
+   true,
+   "class",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder.__init__",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder.spell",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder.build_requirements",
+   true,
+   "method",
+   "name 'CancellationEvent' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder._throw_if_cancelled",
+   false,
+   "method",
+   "name 'CancellationEvent' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder._resolve_call_target",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder.SpellRequirementsFinder._build_parameter_requirements",
+   false,
+   "method",
+   "name 'CancellationEvent' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder.SpellSystemAdjacencyBuilder.build",
+   true,
+   "method",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot",
+   true,
+   "class",
+   "name 'SpellLocalTopology' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot.__init__",
+   true,
+   "method",
+   "name 'SpellLocalTopology' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot.SpellSystemAdjacencySnapshot.topologies",
+   true,
+   "method",
+   "name 'SpellLocalTopology' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder.build_root_blueprints",
+   true,
+   "method",
+   "name 'SpellSystemAdjacencySnapshot' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder.build_blueprint_for_spell_id",
+   true,
+   "method",
+   "name 'SpellSystemAdjacencySnapshot' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder._reachable_by_id_for",
+   false,
+   "method",
+   "name 'SpellSystemAdjacencySnapshot' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder._overlay_sockets_and_index",
+   false,
+   "method",
+   "name 'SpellLocalTopology' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState",
+   true,
+   "class",
+   "name 'SystemDiagnostic' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState.__init__",
+   true,
+   "method",
+   "name 'SystemDiagnostic' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState.errors",
+   true,
+   "method",
+   "name 'SystemDiagnostic' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState.warnings",
+   true,
+   "method",
+   "name 'SystemDiagnostic' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state.SpellSystemValidationState.nodes",
+   true,
+   "method",
+   "name 'SpellSystemNode' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem",
+   true,
+   "class",
+   "name 'SpellSystemValidationStrategy' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem.__init__",
+   true,
+   "method",
+   "name 'SpellSystemValidationStrategy' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem.validate",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system.SpellSystemValidationSystem._record_conduit_resolution_state",
+   false,
+   "method",
+   "name 'SpellSystemStates' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy.BrokenSpellInDagStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy.ContractGraphCycleStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy.ContractGraphCycleStrategy._detect_cycles",
+   false,
+   "method",
+   "name 'CancellationEvent' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.contracted_version_drift_strategy.ContractedVersionDriftStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy.CycleDetectionStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.dependency_type_sanity_strategy.DependencyTypeSanityStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.graph_consistency_strategy.GraphConsistencyStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy.IdentityMixingStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.index_coverage_strategy.IndexCoverageStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy.IndexDependencySanityStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy.LineageAlignmentStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.lineage_version_conflict_strategy.LineageVersionConflictStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.missing_phase4_strategy.MissingPhase4Strategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.ownership_consistency_strategy.OwnershipConsistencyStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.root_coverage_strategy.RootCoverageStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.root_lineage_conflict_strategy.RootLineageConflictStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.root_reachability_strategy.RootReachabilityStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.root_scale_limit_strategy.RootScaleLimitStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.root_viability_strategy.RootViabilityStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy.ScopeOrderingStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy.SocketRefSanityStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.topology_dependency_mismatch_strategy.TopologyDependencyMismatchStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy.VisibilityGapStrategy.run",
+   true,
+   "method",
+   "name 'SpellSystemIndex' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext",
+   true,
+   "class",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext.__init__",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy.validate",
+   true,
+   "method",
+   "name 'SpellValidationContext' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy.validate",
+   true,
+   "method",
+   "name 'SpellValidationContext' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy._build_binding_graph",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy._binding_key_for_requirement",
+   false,
+   "method",
+   "name 'SpellParameterRequirement' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy.BindingResolutionCycleStrategy._detect_cycles",
+   false,
+   "method",
+   "name 'CancellationEvent' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy.validate",
+   true,
+   "method",
+   "name 'SpellValidationContext' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy.validate",
+   true,
+   "method",
+   "name 'SpellValidationContext' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy.DanglingDependenciesStrategy.validate",
+   true,
+   "method",
+   "name 'SpellValidationContext' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy.validate",
+   true,
+   "method",
+   "name 'SpellValidationContext' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy.validate",
+   true,
+   "method",
+   "name 'SpellValidationContext' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy._expected_type_for",
+   false,
+   "method",
+   "name 'SpellRequirements' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy.ResolutionFramePresenceStrategy.validate",
+   true,
+   "method",
+   "name 'SpellValidationContext' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy.SelfDependencyStrategy.validate",
+   true,
+   "method",
+   "name 'SpellValidationContext' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy.validate",
+   true,
+   "method",
+   "name 'SpellValidationContext' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem.register_strategy",
+   true,
+   "method",
+   "name 'SpellValidationStrategy' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem.iter_strategies",
+   true,
+   "method",
+   "name 'SpellValidationStrategy' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spell_compiler.validation.validation_system.SpellValidationSystem.validate_spell",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbinder.SpellBinder",
+   true,
+   "class",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbinder.SpellBinder.__init__",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbinder.SpellBinder._require_spellbook",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook._get_required_conduit_surface",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook._get_conduit_by_spell_id",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook._get_required_transaction_mediator",
+   false,
+   "method",
+   "name 'TransactionMediator' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook._register_conduit_with_risk_manager",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook._publish_nexus_state_for_conjure",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook.conduit",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook.mutation_research",
+   true,
+   "method",
+   "name 'MutationResearch' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook.conjure",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook._conjure_existing_conduit",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook._conjure_within_transaction_window",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook._run_structural_phases",
+   false,
+   "method",
+   "name 'UnitOfWork' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook._run_resolution_phases_for_conduit",
+   false,
+   "method",
+   "name 'UnitOfWork' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook._run_resolution_phases_for_target_spell",
+   false,
+   "method",
+   "name 'UnitOfWork' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook.Spellbook._run_deferred_resolution_phases_for_target_spell",
+   false,
+   "method",
+   "name 'UnitOfWork' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem",
+   true,
+   "class",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.__init__",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._prepare_spellbook_for_conjure",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._report_unresolved_inputs",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._prepare_resolution_for_conjure",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._enforce_conduit_resolution_valid",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._build_conjure_cache_state",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._load_cached_spell_payloads_for_conjure",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._emit_spell_payloads_for_conjure",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._resolve_conjure_policy",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._build_conduit",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._resolve_frame_creation_gate_controller",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._resolve_existing_frame",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._activate_conjured_conduit",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._load_cached_creation_contexts_for_conjure",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._stage_spell_payloads_at_conjure_end",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._emit_conduit_cache_file_at_conjure_end",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.check_system_state",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.define_conduit_into_spells",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.get_conjure_hook_map",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.fire_conjure_hooks",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.run_resolution_phases",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.run_structural_phases",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.run_post_conjure_structural_phases",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.run_resolution_phases_for_conduit",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.run_resolution_phases_for_target_spell",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.run_deferred_resolution_phases_for_target_spell",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._register_conduit_resolution_phases",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._new_phase_scheduler",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._cleanup_phase_scheduler",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._run_scheduler_with_phases",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._register_structural_phases",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._collect_broken_spells",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._raise_structural_validation_error",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._conduit_resolution_has_errors",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._run_conduit_foundational_resolution_phases",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._run_conduit_plan_resolution_phases",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._run_target_foundational_resolution_phases",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._collect_target_resolution_scope",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._run_target_plan_resolution_phases",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.record_local_resolution_visibility_failure",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._build_per_spell_phase_units",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._chunk_spells",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._run_spell_chunk",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._build_chunked_phase_units",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem._is_spell_plan_phase_eligible",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_requirements_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_symbolic_graph_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_requirements_symbolic_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_local_frame_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_validation_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_root_blueprints_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_occurrence_plan_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_injection_plan_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_patch_maps_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_execution_plan_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_plan_group_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_system_validation_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem.phase_change_control_factory",
+   true,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter.SqliteMeshAdapter.register_with",
+   true,
+   "method",
+   "name 'ExternalPersistenceManagerConfiguration' is not defined"
+  ],
+  [
+   "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
+   true,
+   "class",
+   "name 'PersistenceSystem' is not defined"
+  ],
+  [
+   "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem.__init__",
+   true,
+   "method",
+   "name 'PersistenceSystem' is not defined"
+  ],
+  [
+   "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem.configure_external_persistence_manager",
+   true,
+   "method",
+   "name 'ExternalPersistenceManagerConfiguration' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem",
+   true,
+   "class",
+   "name 'PersistenceSystem' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystal_loader_system.crystal_loader_system.CrystalLoaderSystem.__init__",
+   true,
+   "method",
+   "name 'PersistenceSystem' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner._bind_selected",
+   false,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner._park_members",
+   false,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission",
+   true,
+   "class",
+   "name 'PersistenceSystem' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission.__init__",
+   true,
+   "method",
+   "name 'PersistenceSystem' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission.execute_plan",
+   true,
+   "method",
+   "name 'PhaseScheduler' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine",
+   true,
+   "class",
+   "name 'PhaseScheduler' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine.__init__",
+   true,
+   "method",
+   "name 'PhaseScheduler' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine._conjure_for_book",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystallizer.Crystallizer.__init__",
+   true,
+   "method",
+   "name 'Aether' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystallizer.Crystallizer.create_contract_crystal",
+   true,
+   "method",
+   "name 'Contract' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystallizer.Crystallizer.create_spell_index_crystal",
+   true,
+   "method",
+   "name 'SpellIndex' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystallizer.Crystallizer.create_spell_crystal",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystals.spell_crystal.SpellCrystal",
+   true,
+   "class",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystals.spell_crystal.SpellCrystal.__init__",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.crystallizer.crystals.spell_crystal.SpellCrystal._resolve_root_target_from_spell",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.mutation_research.mutation_research.MutationResearch.__init__",
+   true,
+   "method",
+   "name 'Aether' is not defined"
+  ],
+  [
+   "melder.mutation_research.mutation_research.MutationResearch._require_live_custody",
+   false,
+   "method",
+   "name 'Crystallizer' is not defined"
+  ],
+  [
+   "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder",
+   true,
+   "class",
+   "name 'FrameACLContainer' is not defined"
+  ],
+  [
+   "melder.nexus.acl.builder.frame_acl_builder.FrameACLBuilder.__init__",
+   true,
+   "method",
+   "name 'FrameACLContainer' is not defined"
+  ],
+  [
+   "melder.nexus.acl.builder.frame_acl_codegen_builder.FrameACLCodegenBuilder",
+   true,
+   "class",
+   "name 'FrameACLBuilder' is not defined"
+  ],
+  [
+   "melder.nexus.acl.builder.frame_acl_codegen_builder.FrameACLCodegenBuilder.__init__",
+   true,
+   "method",
+   "name 'FrameACLBuilder' is not defined"
+  ],
+  [
+   "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder",
+   true,
+   "class",
+   "name 'FrameACLBuilder' is not defined"
+  ],
+  [
+   "melder.nexus.acl.builder.frame_acl_command_builder.FrameACLCommandBuilder.__init__",
+   true,
+   "method",
+   "name 'FrameACLBuilder' is not defined"
+  ],
+  [
+   "melder.nexus.acl.builder.frame_acl_view_builder.FrameACLViewBuilder",
+   true,
+   "class",
+   "name 'FrameACLBuilder' is not defined"
+  ],
+  [
+   "melder.nexus.acl.builder.frame_acl_view_builder.FrameACLViewBuilder.__init__",
+   true,
+   "method",
+   "name 'FrameACLBuilder' is not defined"
+  ],
+  [
+   "melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder.FrameACLProfileBuilder.create_profile",
+   true,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler",
+   true,
+   "class",
+   "name 'IFrameACLProfileBuilder' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler.__init__",
+   true,
+   "method",
+   "name 'IFrameACLProfileBuilder' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._compile_frame_payload_fields",
+   false,
+   "method",
+   "name 'FrameACLViewProfile' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._compile_conduit_access",
+   false,
+   "method",
+   "name 'FrameACLViewProfile' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._compile_spell_access",
+   false,
+   "method",
+   "name 'FrameACLViewProfile' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_operation_effects",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_effective_operation_effects",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_effective_operation_effects_from_rulesets",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_condition_string_values_from_rulesets",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_import_module_roots_from_rulesets",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_effective_spell_operation_effects_for_record",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._as_frame_acl_ruleset",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._spell_selector_rules_present_for_operation",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_selector_spell_operation_effects_for_record",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain._validate_revision_payload",
+   false,
+   "method",
+   "name 'Any' is not defined"
+  ],
+  [
+   "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator",
+   true,
+   "class",
+   "name 'IFrameACLProfileBuilder' is not defined"
+  ],
+  [
+   "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator.__init__",
+   true,
+   "method",
+   "name 'IFrameACLProfileBuilder' is not defined"
+  ],
+  [
+   "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator._check_visibility_vs_enable",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator._check_member_visibility_vs_command",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator._collect_operation_effects",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator._collect_effective_operation_effects",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator._collect_effective_operation_effects_from_rulesets",
+   false,
+   "method",
+   "name 'FrameACLRuleSet' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor.frame_handle",
+   true,
+   "method",
+   "name 'AethericFrame' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor.frame_configuration",
+   true,
+   "method",
+   "name 'AethericFrameConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor.spell_records_by_key",
+   true,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor.set_frame_handle",
+   true,
+   "method",
+   "name 'AethericFrame' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor.set_frame_configuration",
+   true,
+   "method",
+   "name 'AethericFrameConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor.set_frame_overview",
+   true,
+   "method",
+   "name 'FrameRecord' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor.upsert_conduit_record",
+   true,
+   "method",
+   "name 'ConduitRecord' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor.upsert_spell_record",
+   true,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor._discard_spell_from_indexes",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor_manager.FrameDescriptorManager",
+   true,
+   "class",
+   "name 'Aether' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor_manager.FrameDescriptorManager.__init__",
+   true,
+   "method",
+   "name 'Aether' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor_manager.FrameDescriptorManager._refresh_frame_posture_cache",
+   false,
+   "method",
+   "name 'AethericFrameConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor_manager.FrameDescriptorManager._get_publishable_frame_posture",
+   false,
+   "method",
+   "name 'AethericFrameConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor_manager.FrameDescriptorManager._publish_frame_record",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor_manager.FrameDescriptorManager._publish_conduit_record",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor_manager.FrameDescriptorManager._resolve_parent_conduit_id",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor_manager.FrameDescriptorManager._compute_lineage_depth",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor_manager.FrameDescriptorManager._publish_spell_record",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.nexus.frame_descriptor_manager.FrameDescriptorManager._build_published_relationships",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.__init__",
+   true,
+   "method",
+   "name 'Aether' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.create_rift",
+   true,
+   "method",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.add_rift",
+   true,
+   "method",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.get_rift",
+   true,
+   "method",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.get_rift_by_name",
+   true,
+   "method",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus._publish_frame_record",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus._publish_conduit_record",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus._publish_spell_record",
+   false,
+   "method",
+   "name 'Spellbook' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.register_frame_acl_profile",
+   true,
+   "method",
+   "name 'FrameACLProfile' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.get_frame_acl_profile",
+   true,
+   "method",
+   "name 'FrameACLProfile' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.get_frame_acl_builder",
+   true,
+   "method",
+   "name 'FrameACLBuilder' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.get_current_view_frame_acl_configuration",
+   true,
+   "method",
+   "name 'FrameACLViewConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.get_current_command_frame_acl_configuration",
+   true,
+   "method",
+   "name 'FrameACLCommandConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.get_current_codegen_frame_acl_configuration",
+   true,
+   "method",
+   "name 'FrameACLCodegenConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.get_nexus_frame_for_rift",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus.create_nexus_frame_for_rift",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus._get_required_target_frame_runtime_configuration",
+   false,
+   "method",
+   "name 'AethericFrameConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus._get_required_target_frame_configuration",
+   false,
+   "method",
+   "name 'SpellbookConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus._get_required_frame_descriptor",
+   false,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus._get_or_create_frame_descriptor",
+   false,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus._get_required_rift",
+   false,
+   "method",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.nexus.Nexus._validate_frame_acl_configuration_against_descriptor",
+   false,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_builder.NexusFrameBuilder",
+   true,
+   "class",
+   "name 'NexusFrameManager' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_builder.NexusFrameBuilder.__init__",
+   true,
+   "method",
+   "name 'NexusFrameManager' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_builder.NexusFrameBuilder.create",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_manager.NexusFrameManager",
+   true,
+   "class",
+   "name 'Nexus' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_manager.NexusFrameManager.__init__",
+   true,
+   "method",
+   "name 'Nexus' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_manager.NexusFrameManager.create_dynamic_frame",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_manager.NexusFrameManager.create",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_manager.NexusFrameManager._create_configuration",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_manager.NexusFrameManager.get_frame_for_rift",
+   true,
+   "method",
+   "name 'AethericFrame' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_manager.NexusFrameManager.create_frame_for_rift",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_manager.NexusFrameManager._conjure_root_conduit_for_configuration",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_manager.NexusFrameManager._get_required_root_conduit_for_frame",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.nexus_frame_manager.NexusFrameManager._get_root_conduit_spellbook_id",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext",
+   true,
+   "class",
+   "name 'CodegenProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext.__init__",
+   true,
+   "method",
+   "name 'CodegenProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext.projection",
+   true,
+   "method",
+   "name 'CodegenProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext.namespace_configuration",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext.namespace",
+   true,
+   "method",
+   "name 'CodegenNamespace' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext.set_projection",
+   true,
+   "method",
+   "name 'CodegenProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext.set_namespace_configuration",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.codegen_transaction_context.CodegenTransactionContext.set_namespace",
+   true,
+   "method",
+   "name 'CodegenNamespace' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.execution.codegen_compiler.CodegenCompiler.compile",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.execution.codegen_executor.CodegenExecutor.execute",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface",
+   true,
+   "class",
+   "name 'CodegenSystem' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.codegen_control_surface.CodegenControlSurface.__init__",
+   true,
+   "method",
+   "name 'CodegenSystem' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace",
+   true,
+   "class",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace.__init__",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace.create_placeholder",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.codegen_namespace.CodegenNamespace.configuration",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder.CodegenNamespaceBuilder.build",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy.CodegenBuiltinsStrategy.build_namespace_entries",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy.CodegenCommandStrategy.build_namespace_entries",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy.CodegenControlStrategy.build_namespace_entries",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy.CodegenRoomObjectsStrategy.build_namespace_entries",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy.CodegenTargetStrategy.build_namespace_entries",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy.CodegenWorkstationStrategy.build_namespace_entries",
+   true,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.observability.codegen_event_publisher.CodegenEventPublisher.publish_validation_started",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.observability.codegen_event_publisher.CodegenEventPublisher.publish_validation_finished",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.observability.codegen_event_publisher.CodegenEventPublisher.publish_execution_started",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.observability.codegen_event_publisher.CodegenEventPublisher.publish_execution_finished",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.observability.codegen_event_publisher.CodegenEventPublisher._emit_event",
+   false,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.observability.codegen_monitor.CodegenMonitor.on_validation_started",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.observability.codegen_monitor.CodegenMonitor.on_validation_finished",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.observability.codegen_monitor.CodegenMonitor.on_execution_started",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.observability.codegen_monitor.CodegenMonitor.on_execution_finished",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.codegen_validation_reporter.CodegenValidationReporter.report",
+   true,
+   "method",
+   "name 'CodegenValidationResult' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator.validate",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.codegen_validator.CodegenValidator._run_strategy",
+   false,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy.CodegenAstStructureStrategy.validate",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy.CodegenAstStructureStrategy._reject",
+   false,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_attribute_access_strategy.CodegenAttributeAccessStrategy.validate",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy.CodegenBuiltinPolicyStrategy.validate",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy.CodegenBuiltinPolicyStrategy._reject",
+   false,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy.validate",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy._import_root_is_denied",
+   false,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy.CodegenImportPolicyStrategy._reject",
+   false,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy.CodegenNameResolutionStrategy.validate",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy.CodegenNameResolutionStrategy._collect_allowed_builtin_names",
+   false,
+   "method",
+   "name 'CodegenNamespaceConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_recursive_control_strategy.CodegenRecursiveControlStrategy.validate",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy.CodegenReflectionPolicyStrategy.validate",
+   true,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.capability_command_system.CapabilityCommandSystem",
+   true,
+   "class",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem",
+   true,
+   "class",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem.__init__",
+   true,
+   "method",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem.attach_codegen_system",
+   true,
+   "method",
+   "name 'CodegenSystem' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem._emit_codegen_memory_if_enabled",
+   false,
+   "method",
+   "name 'CodegenTransactionContext' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.codegen_command_system.CodegenCommandSystem._require_codegen_system",
+   false,
+   "method",
+   "name 'CodegenSystem' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.command_system.CommandSystem",
+   true,
+   "class",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.command_system.CommandSystem.__init__",
+   true,
+   "method",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.command_system.CommandSystem._get_conduit_by_id_locked",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.command_system.CommandSystem._get_conduit_by_name_locked",
+   false,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.command_system.CommandSystem._get_required_compiled_access_surface",
+   false,
+   "method",
+   "name 'CompiledFrameACLAccessSurface' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem",
+   true,
+   "class",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.command_system.static_command_system.StaticCommandSystem._describe_static_spell_status",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer",
+   true,
+   "class",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.__init__",
+   true,
+   "method",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer._iter_conduit_records",
+   false,
+   "method",
+   "name 'ConduitRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer._iter_spell_records",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer._build_spell_source_id",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer._get_required_spell_record",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer._get_required_conduit_record",
+   false,
+   "method",
+   "name 'ConduitRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_visible_root_conduits",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.search_targets_contains",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.search_targets_prefix",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.group_targets_by_kind",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.find_target_by_display_name",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_targets",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_conduits",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_root_conduits",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.get_conduit",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_conduit_spells",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_conduits_by_root_id",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_conduits_by_policy",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_conduits_by_state",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_peer_conduits",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.find_conduit_by_name",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_spells",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.get_spell",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_spells_by_payload_type",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.find_spell_by_binding_name",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_spells_by_index_id",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.list_spells_by_spell_name",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.search_spells_contains",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer.search_spells_prefix",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer._get_required_frame_descriptor",
+   false,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer._get_required_compiled_access_surface",
+   false,
+   "method",
+   "name 'CompiledFrameACLAccessSurface' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer._get_required_frame_acl_configuration",
+   false,
+   "method",
+   "name 'FrameACLConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.frame_viewer.FrameViewer._get_required_view_projection",
+   false,
+   "method",
+   "name 'ViewProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer",
+   true,
+   "class",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer._iter_spell_records",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer._get_required_spell_record",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer._iter_live_spell_records_for_frame",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer._is_spell_record_live",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit.list_conduits",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit.list_conduit_spells",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit.list_root_conduits",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit.list_conduits_by_root_id",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit.list_conduits_by_policy",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit.list_conduits_by_state",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit.list_peer_conduits",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit.find_conduit_by_name",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit.get_required_conduit",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_conduit.ViewConduit._get_required_conduit_record",
+   false,
+   "method",
+   "name 'ConduitRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_frame.ViewFrame",
+   true,
+   "class",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_frame.ViewFrame.__init__",
+   true,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_frame.ViewFrame._build_spell_source_id",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_frame.ViewFrame._get_required_frame_descriptor",
+   false,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_frame.ViewFrame._get_required_compiled_access_surface",
+   false,
+   "method",
+   "name 'CompiledFrameACLAccessSurface' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_frame.ViewFrame._iter_visible_spell_links_and_records",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame",
+   true,
+   "class",
+   "name 'FrameViewer' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame.__init__",
+   true,
+   "method",
+   "name 'FrameViewer' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame._get_required_frame_descriptor",
+   false,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame._iter_conduit_records",
+   false,
+   "method",
+   "name 'ConduitRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame._iter_spell_records",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame._build_spell_source_id",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame._get_required_spell_record",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame._get_required_conduit_record",
+   false,
+   "method",
+   "name 'ConduitRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame._describe_spell_value_groups",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame._describe_spell_value_collisions",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_multiframe.ViewMultiFrame._describe_spellbook_mismatches",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.list_spells",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.list_spells_by_payload_type",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.find_spell_by_binding_name",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.list_spells_by_owner_conduit",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.list_spells_by_spellbook_id",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.list_spells_by_index_id",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.list_spells_by_permission",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.list_spells_by_existence",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.list_spells_by_spell_name",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.list_spells_by_spellframe",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.search_spells_contains",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.search_spells_prefix",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell.get_required_spell",
+   true,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell._get_required_spell_record",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell._iter_visible_spell_links_and_records",
+   false,
+   "method",
+   "name 'FrameLink' is not defined"
+  ],
+  [
+   "melder.nexus.rift.frame_viewer.view_spell.ViewSpell._build_spell_source_id",
+   false,
+   "method",
+   "name 'SpellRecord' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.codegen_projection.CodegenProjection",
+   true,
+   "class",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.codegen_projection.CodegenProjection.__init__",
+   true,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.codegen_projection.CodegenProjection.frame_descriptor",
+   true,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.codegen_projection.CodegenProjection.frame_acl_configuration",
+   true,
+   "method",
+   "name 'FrameACLConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.codegen_projection.CodegenProjection.compiled_access_surface",
+   true,
+   "method",
+   "name 'CompiledFrameACLAccessSurface' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.command_projection.CommandProjection",
+   true,
+   "class",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.command_projection.CommandProjection.__init__",
+   true,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.command_projection.CommandProjection.frame_descriptor",
+   true,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.command_projection.CommandProjection.frame_acl_configuration",
+   true,
+   "method",
+   "name 'FrameACLConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.command_projection.CommandProjection.compiled_access_surface",
+   true,
+   "method",
+   "name 'CompiledFrameACLAccessSurface' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet",
+   true,
+   "class",
+   "name 'ViewProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet.__init__",
+   true,
+   "method",
+   "name 'ViewProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet.view_projection",
+   true,
+   "method",
+   "name 'ViewProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet.command_projection",
+   true,
+   "method",
+   "name 'CommandProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.frame_projection_set.FrameProjectionSet.codegen_projection",
+   true,
+   "method",
+   "name 'CodegenProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.view_projection.ViewProjection",
+   true,
+   "class",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.view_projection.ViewProjection.__init__",
+   true,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.view_projection.ViewProjection.frame_descriptor",
+   true,
+   "method",
+   "name 'FrameDescriptor' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.view_projection.ViewProjection.frame_acl_configuration",
+   true,
+   "method",
+   "name 'FrameACLConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.projection.view_projection.ViewProjection.compiled_access_surface",
+   true,
+   "method",
+   "name 'CompiledFrameACLAccessSurface' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift",
+   true,
+   "class",
+   "name 'RiftConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift.__init__",
+   true,
+   "method",
+   "name 'RiftConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift.configuration",
+   true,
+   "method",
+   "name 'RiftConfiguration' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift.refresh_runtime_projections",
+   true,
+   "method",
+   "name 'FrameProjectionSet' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift._apply_projection_sets",
+   false,
+   "method",
+   "name 'FrameProjectionSet' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift._get_required_frame_projection_set",
+   false,
+   "method",
+   "name 'FrameProjectionSet' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift._get_required_view_projection",
+   false,
+   "method",
+   "name 'ViewProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift._get_required_command_projection",
+   false,
+   "method",
+   "name 'CommandProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift._get_required_codegen_projection",
+   false,
+   "method",
+   "name 'CodegenProjection' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift.get_frame_viewer",
+   true,
+   "method",
+   "name 'FrameViewer' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift.space",
+   true,
+   "method",
+   "name 'RiftSpace' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift._create_primary_space_from_configuration",
+   false,
+   "method",
+   "name 'RiftSpace' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift.get_nexus_frame",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift.Rift.create_nexus_frame",
+   true,
+   "method",
+   "name 'Conduit' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift_space.capability_rift_space.CapabilityRiftSpace._create_command_system",
+   false,
+   "method",
+   "name 'CommandSystem' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace",
+   true,
+   "class",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift_space.codegen_rift_space.CodegenRiftSpace.__init__",
+   true,
+   "method",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift_space.rift_space.RiftSpace",
+   true,
+   "class",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift_space.rift_space.RiftSpace.__init__",
+   true,
+   "method",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift_space.rift_space.RiftSpace._create_command_system",
+   false,
+   "method",
+   "name 'Rift' is not defined"
+  ],
+  [
+   "melder.nexus.rift.rift_space.static_rift_space.StaticRiftSpace._create_command_system",
+   false,
+   "method",
+   "name 'CommandSystem' is not defined"
+  ],
+  [
+   "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError",
+   true,
+   "class",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError.__init__",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError.from_failed_construction",
+   true,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError._constructor_expected_type",
+   false,
+   "method",
+   "name 'Spell' is not defined"
+  ],
+  [
+   "melder.utilities.synchronization.phase_scheduler.PhaseScheduler._get_worker_count",
+   false,
+   "method",
+   "name 'SpellbookConfiguration' is not defined"
+  ],
+  [
+   "melder.utilities.synchronization.phase_scheduler.PhaseScheduler._get_timeout_ms",
+   false,
+   "method",
+   "name 'SpellbookConfiguration' is not defined"
+  ]
+ ],
+ "per_module": {
+  "melder.aether.aether": 12,
+  "melder.aether.aetheric_frame.aetheric_frame": 7,
+  "melder.aether.aetheric_frame.conduit_cloud": 11,
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager": 19,
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager": 1,
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.orchestrator": 4,
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation": 1,
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.strategies.cluster_link_transaction_strategy": 5,
+  "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_manager.transaction_manager": 1,
+  "melder.aether.aetheric_frame.dev_ops.dev_ops_manager": 4,
+  "melder.aether.aetheric_frame.dev_ops.incident_manager.incident": 3,
+  "melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager": 2,
+  "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager": 11,
+  "melder.aether.aetheric_frame.dev_ops.spell_system_states.conduit_resolution_state": 7,
+  "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_state": 1,
+  "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states": 14,
+  "melder.aether.conduit.conduit": 22,
+  "melder.aether.conduit.conduit_cluster": 16,
+  "melder.aether.conduit.conduit_pool": 6,
+  "melder.aether.conduit.conduit_ward.conduit_ward": 29,
+  "melder.aether.conduit.conduit_ward.contract.contract": 13,
+  "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership": 3,
+  "melder.aether.conduit.creations.cluster_creations": 1,
+  "melder.aether.conduit.creations.creations": 2,
+  "melder.aether.conduit.meld.conduit_meld": 3,
+  "melder.aether.conduit.meld.creation_context.creation_context_factory": 8,
+  "melder.aether.conduit.meld.creation_context.creation_context_rebuild": 3,
+  "melder.aether.conduit.meld.meld": 19,
+  "melder.aether.conduit.meld.overrides.spell_overrider": 3,
+  "melder.aether.conduit.meld.spellspace_meld": 1,
+  "melder.aether.conduit.spell_space.spell_space": 2,
+  "melder.aether.conduit.spell_space.spell_space_pool": 2,
+  "melder.aether.spellbook.bind.bind": 5,
+  "melder.aether.spellbook.configuration.spellbook_configuration": 3,
+  "melder.aether.spellbook.spell": 4,
+  "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor": 2,
+  "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model": 2,
+  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_injection_processor_strategy": 3,
+  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy": 7,
+  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_instance_processor_strategy": 3,
+  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan": 3,
+  "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan": 3,
+  "melder.aether.spellbook.spell_compiler.dag.dag_index": 4,
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_1": 1,
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_2": 1,
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3": 14,
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_4": 1,
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_5": 11,
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_6": 6,
+  "melder.aether.spellbook.spell_compiler.phases.compiler_phase_7": 5,
+  "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions": 9,
+  "melder.aether.spellbook.spell_compiler.phases.utility": 1,
+  "melder.aether.spellbook.spell_compiler.profiles.resolution_profile": 2,
+  "melder.aether.spellbook.spell_compiler.spell_compiler": 14,
+  "melder.aether.spellbook.spell_compiler.spell_compiler_system": 22,
+  "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile": 2,
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.detailed_profile": 2,
+  "melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile": 2,
+  "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.resolution_profile_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_parameter_requirements": 3,
+  "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements_finder": 7,
+  "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_builder": 1,
+  "melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot": 3,
+  "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder": 4,
+  "melder.aether.spellbook.spell_compiler.system.spell_system_validation_state": 5,
+  "melder.aether.spellbook.spell_compiler.system.spell_system_validation_system": 4,
+  "melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.contract_graph_cycle_strategy": 2,
+  "melder.aether.spellbook.spell_compiler.system.validation.contracted_version_drift_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.cycle_detection_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.dependency_type_sanity_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.graph_consistency_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.identity_mixing_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.index_coverage_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.index_dependency_sanity_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.lineage_alignment_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.lineage_version_conflict_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.missing_phase4_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.ownership_consistency_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.root_coverage_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.root_lineage_conflict_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.root_reachability_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.root_scale_limit_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.root_viability_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.strategy_base": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.topology_dependency_mismatch_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.system.validation.visibility_gap_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.validation.spell_validation_context": 2,
+  "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.validation.strategies.binding_resolution_cycle_strategy": 4,
+  "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.validation.strategies.dangling_dependency_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy": 2,
+  "melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy": 1,
+  "melder.aether.spellbook.spell_compiler.validation.validation_system": 3,
+  "melder.aether.spellbook.spellbinder": 3,
+  "melder.aether.spellbook.spellbook": 14,
+  "melder.aether.spellbook.spellbook_creation_system": 60,
+  "melder.crystallizer.asset_management.adapters.sqlite_mesh_adapter": 1,
+  "melder.crystallizer.asset_management.asset_management_system": 3,
+  "melder.crystallizer.crystal_loader_system.crystal_loader_system": 2,
+  "melder.crystallizer.crystal_loader_system.graft_runner": 2,
+  "melder.crystallizer.crystal_loader_system.load_admission": 3,
+  "melder.crystallizer.crystal_loader_system.restore_engine": 3,
+  "melder.crystallizer.crystallizer": 4,
+  "melder.crystallizer.crystals.spell_crystal": 3,
+  "melder.mutation_research.mutation_research": 2,
+  "melder.nexus.acl.builder.frame_acl_builder": 2,
+  "melder.nexus.acl.builder.frame_acl_codegen_builder": 2,
+  "melder.nexus.acl.builder.frame_acl_command_builder": 2,
+  "melder.nexus.acl.builder.frame_acl_view_builder": 2,
+  "melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder": 1,
+  "melder.nexus.acl.frame_acl_compiler": 14,
+  "melder.nexus.acl.frame_acl_configuration_chain": 1,
+  "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator": 7,
+  "melder.nexus.frame_descriptor.frame_descriptor": 9,
+  "melder.nexus.frame_descriptor_manager": 10,
+  "melder.nexus.nexus": 22,
+  "melder.nexus.nexus_frame_builder": 3,
+  "melder.nexus.nexus_frame_manager": 10,
+  "melder.nexus.rift.codegen_system.codegen_transaction_context": 8,
+  "melder.nexus.rift.codegen_system.execution.codegen_compiler": 1,
+  "melder.nexus.rift.codegen_system.execution.codegen_executor": 1,
+  "melder.nexus.rift.codegen_system.namespace.codegen_control_surface": 2,
+  "melder.nexus.rift.codegen_system.namespace.codegen_namespace": 4,
+  "melder.nexus.rift.codegen_system.namespace.codegen_namespace_builder": 1,
+  "melder.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy": 1,
+  "melder.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy": 1,
+  "melder.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy": 1,
+  "melder.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy": 1,
+  "melder.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy": 1,
+  "melder.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy": 1,
+  "melder.nexus.rift.codegen_system.observability.codegen_event_publisher": 5,
+  "melder.nexus.rift.codegen_system.observability.codegen_monitor": 4,
+  "melder.nexus.rift.codegen_system.validation.codegen_validation_reporter": 1,
+  "melder.nexus.rift.codegen_system.validation.codegen_validator": 2,
+  "melder.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy": 2,
+  "melder.nexus.rift.codegen_system.validation.strategies.codegen_attribute_access_strategy": 1,
+  "melder.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy": 2,
+  "melder.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy": 3,
+  "melder.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy": 2,
+  "melder.nexus.rift.codegen_system.validation.strategies.codegen_recursive_control_strategy": 1,
+  "melder.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy": 1,
+  "melder.nexus.rift.command_system.capability_command_system": 1,
+  "melder.nexus.rift.command_system.codegen_command_system": 5,
+  "melder.nexus.rift.command_system.command_system": 5,
+  "melder.nexus.rift.command_system.static_command_system": 2,
+  "melder.nexus.rift.frame_viewer.frame_viewer": 34,
+  "melder.nexus.rift.frame_viewer.static_frame_viewer": 5,
+  "melder.nexus.rift.frame_viewer.view_conduit": 10,
+  "melder.nexus.rift.frame_viewer.view_frame": 6,
+  "melder.nexus.rift.frame_viewer.view_multiframe": 11,
+  "melder.nexus.rift.frame_viewer.view_spell": 16,
+  "melder.nexus.rift.projection.codegen_projection": 5,
+  "melder.nexus.rift.projection.command_projection": 5,
+  "melder.nexus.rift.projection.frame_projection_set": 5,
+  "melder.nexus.rift.projection.view_projection": 5,
+  "melder.nexus.rift.rift": 14,
+  "melder.nexus.rift.rift_space.capability_rift_space": 1,
+  "melder.nexus.rift.rift_space.codegen_rift_space": 2,
+  "melder.nexus.rift.rift_space.rift_space": 3,
+  "melder.nexus.rift.rift_space.static_rift_space": 1,
+  "melder.utilities.custom_exceptions.spellbook_validation_error": 2,
+  "melder.utilities.custom_exceptions.unresolved_input_error": 2,
+  "melder.utilities.synchronization.phase_scheduler": 2
+ },
+ "missing": {
+  "SpellbookConfiguration": 5,
+  "Conduit": 94,
+  "ConduitCloud": 2,
+  "DevOpsManager": 1,
+  "SpellSystemStates": 13,
+  "IncidentManager": 1,
+  "ChangeControlManager": 1,
+  "SpellIndex": 18,
+  "ChangeControlTransactionRequest": 5,
+  "ChangeControlStagedMutation": 11,
+  "CancellationEvent": 8,
+  "RootResolutionBlueprint": 6,
+  "ChangeControlTransactionManager": 2,
+  "ChangeTransactionType": 2,
+  "DevopsIdentity": 5,
+  "IncidentSeverity": 4,
+  "IncidentStatus": 1,
+  "Spellbook": 95,
+  "Spell": 128,
+  "RiskManager": 5,
+  "SpellStateChangeReason": 5,
+  "AethericFrame": 5,
+  "SystemDiagnostic": 5,
+  "SpellLocalTopology": 7,
+  "SafeLogger": 1,
+  "CreationGate": 3,
+  "MutationResearch": 2,
+  "ConduitResolutionState": 2,
+  "ConduitWard": 12,
+  "Creations": 1,
+  "CreationGateController": 2,
+  "CreationContext": 1,
+  "TracebackType": 1,
+  "SocketRef": 1,
+  "ConduitMeld": 4,
+  "SpellBindingProfile": 8,
+  "BindLifecycleHooks": 1,
+  "SpellRequirements": 4,
+  "SpellValidationResult": 1,
+  "SpellSystemValidationState": 1,
+  "SpellSystemState": 1,
+  "SpellOccurrenceGraphAnalysis": 2,
+  "SpellOccurrenceContractAnalysis": 1,
+  "RequiredOverrideParam": 6,
+  "TargetSpec": 4,
+  "SpellSymbolicDependency": 2,
+  "SpellCompilerArtifact": 17,
+  "MethodProfile": 2,
+  "SpellMap": 3,
+  "SpellSystemAdjacencySnapshot": 3,
+  "SpellSystemNode": 1,
+  "SpellSystemValidationStrategy": 2,
+  "SpellSystemIndex": 25,
+  "SpellValidationContext": 10,
+  "SpellParameterRequirement": 1,
+  "SpellValidationStrategy": 2,
+  "TransactionMediator": 1,
+  "UnitOfWork": 4,
+  "ExternalPersistenceManagerConfiguration": 2,
+  "PersistenceSystem": 6,
+  "PhaseScheduler": 3,
+  "Aether": 5,
+  "Contract": 1,
+  "Crystallizer": 1,
+  "FrameACLContainer": 2,
+  "FrameACLBuilder": 7,
+  "FrameACLRuleSet": 15,
+  "IFrameACLProfileBuilder": 4,
+  "FrameACLViewProfile": 3,
+  "Any": 1,
+  "AethericFrameConfiguration": 5,
+  "SpellRecord": 21,
+  "FrameRecord": 1,
+  "ConduitRecord": 6,
+  "Rift": 19,
+  "FrameACLProfile": 2,
+  "FrameACLViewConfiguration": 1,
+  "FrameACLCommandConfiguration": 1,
+  "FrameACLCodegenConfiguration": 1,
+  "FrameDescriptor": 17,
+  "NexusFrameManager": 2,
+  "Nexus": 2,
+  "CodegenProjection": 6,
+  "CodegenNamespaceConfiguration": 15,
+  "CodegenNamespace": 2,
+  "CodegenTransactionContext": 24,
+  "CodegenSystem": 4,
+  "CodegenValidationResult": 1,
+  "CompiledFrameACLAccessSurface": 6,
+  "FrameLink": 46,
+  "FrameACLConfiguration": 4,
+  "ViewProjection": 5,
+  "FrameViewer": 3,
+  "CommandProjection": 2,
+  "RiftConfiguration": 3,
+  "FrameProjectionSet": 3,
+  "RiftSpace": 2,
+  "CommandSystem": 2
+ },
+ "import_errors": []
+}

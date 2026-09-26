@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 8999
-CONTENT_SHA256 = '31bbe1501b78ba64a8729b28511b82c829b71511066191cb03829fa8b43e2603'
+LINE_COUNT = 9234
+CONTENT_SHA256 = '301e436a05cee42d04b9b0f647a3504da2977dfbfc23f3d7fe164f1c4895be13'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-24
+- Updated: 2026-09-26
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -371,6 +371,8 @@ Release-bound creation cache (2026-09-24):
   Existing same-release warm behavior, disabled caching and nested payload formats remain intact.
 - Asset accelerator caches keep manifest-change admission; Crystallizer durable-record versioning
   remains independent. An older generation-8 creation-cache reader rejects a new generation-9 file.
+- Generation 10 (2026-09-25) keeps this envelope unchanged. The bump alone rejects cached executors
+  emitted before slot build guards, so they are rebuilt with the current locking on next conjure.
 EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem`,
 `src/melder/aether/spellbook/spellbook.py:Spellbook._emit_cache_file_if_required` and
 `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`.
@@ -498,7 +500,7 @@ Concurrency/Threading:
   EVIDENCE:
   - src/melder/aether/spellbook/spellbook.py:6295-6306 (`_run_structural_phases`
     at :6295; the caller-held-lock precondition is stated at :6306)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1868 (the only
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1922 (the only
     `_phase_run_lock` acquisition, reached from that path)
 - `_run_structural_phases` documents a CALLER-HELD precondition rather than
   taking a lock itself: the caller must hold the Spellbook lock for
@@ -506,7 +508,7 @@ Concurrency/Threading:
   which is why it is written down here.
   EVIDENCE:
   - src/melder/aether/spellbook/spellbook.py:265 (`_phase_run_lock` created)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1863-1880
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1894-1922
     (`_run_scheduler_with_phases` - the only acquisition, with its rationale)
   - src/melder/aether/spellbook/spellbook.py:6279-6288 (policy flags under `_lock`)
 
@@ -619,17 +621,22 @@ Protocol admission for supplied values (2026-09-19):
   and exact-reference injection; compiler selection and meld add no repeated Protocol reflection.
 - EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic` and `Bind._structurally_implements_protocol`.
 
-Ordered disposal contract (2026-09-05):
+Ordered disposal contract (2026-09-05; inherited matching corrected 2026-09-24):
 - Spellbook forwards configured candidates and each bind's explicit candidates separately.
-- Bind matches the existing class profile once into one ordered list. Missing names disappear
+- Bind matches requested class disposal candidates once into one ordered list. Missing names disappear
   and duplicate names occur once. Book names own overlaps in BOTH priority modes.
 - `enforce_priority_disposal_methods=False` places spell-only names before the complete book
   block; True places that block first. Each block retains its supplied order.
 - That resolved order participates in the bind SHA and is retained directly by Spell.
   The first bind does not configure subsequent binds; conjure does not rematch names.
-- Matching uses the class profile's own declared callable methods, not inherited-only methods,
-  factory-returned objects, or prebuilt-instance methods.
-- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`.
+- Existing declared profile methods retain their eligibility. Unmatched non-dunder candidates
+  inspect class namespaces in Python MRO order; the first declaration wins, including a non-callable
+  shadow. Profile-excluded local members remain excluded. Raw descriptors are never invoked during
+  this fallback, and metaclass-only members do not qualify as instance disposal methods.
+- Matching remains class-only; factory-returned objects and prebuilt-instance methods are excluded.
+  The shallow method_names profile is unchanged. Only a changed resolved disposal list changes the
+  disposal contribution to the fingerprint; unrelated inherited members do not change spell IDs.
+- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic` and `Bind._matches_disposal_method`.
 
 Responsibilities:
 - Build binding profiles via SpellExaminer.
@@ -748,6 +755,9 @@ Responsibilities:
   `SPELLMAP_DEFAULT`, `SPELL_CONTRACT`.
 - Resolved SocketKind adds OVERRIDE_REQUIRED without changing those declaration shapes. It retains
   a selected non-resolvable reference while requiring caller supply when constructing the consumer.
+- Resolved SocketKind also adds UNRESOLVED_INPUT (2026-09-26), again with no new declaration shape: a
+  SINGLE_BY_ANNOTATION parameter that no registered spell provides. It carries no target and no
+  reference; the constructing meld supplies the value, or `UnresolvedInputError` names what is missing.
 
 Inputs:
 - Spell/frame/binding identifiers and optional override payloads (dict/list/tuple).
@@ -2609,7 +2619,8 @@ Native purge (2026-09-21): Creations.purge receives the discovered definition, p
 original creation for single removal; it does not discover or authorize scopes. _detach_purge_entries
 removes a full target or the supplied singleton under the store lock. For single many removal,
 _detach_single_many_creation searches only that target's bucket and removes its paired disposal
-record, preserving other entries and deleting empty buckets. Unique also holds Spell._lock first.
+record, preserving other entries and deleting empty buckets. The slot's build lock is taken first:
+Spell._lock for unique, the store's slot_guard for the other slotted lifetimes (2026-09-25).
 Key membership and Existence distinguish absence, falsey singletons and many buckets. An unretained
 reference returns zero. Detached references survive lock release, then _attempt_cleanup or the
 shared _dispose_many_creations applies established method order and newest-first batch disposal.
@@ -2620,6 +2631,25 @@ lifetimes even when its owning conduit is a root or elected leader. Managed stac
 unchanged, and direct manual SpellSpace use needs no active-stack entry.
 EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.purge` and
 `src/melder/aether/conduit/spell_space/spell_space.py:SpellSpace.purge`.
+
+Slot build guards (2026-09-25): build-once exclusion lives in one build lock per SLOT, not in the
+store lock. A slot is a spell id whose Existence promises at most one object in a store.
+`unique_per_conduit`, `unique_per_spell_space`, lineage and cluster slots use
+`Creations.slot_guard(spell_id)`: an RLock created on first use (atomic dict setdefault) and kept for
+the store's lifetime, including across reusable clears. `unique` keeps `Spell._lock`, because its only
+slot is the owner store; `many` has no slot. Generated doors and plan steps hold the build lock across
+recheck -> construct -> publish, reading the guard map inline on the hit path. The store `_lock` is a
+LEAF: it wraps only dict work (disposal-bearing publish, many append, purge detach, extract/restore,
+swaps), never another lock acquisition and never user code. Entries without disposal methods publish
+as one atomic dict store under the build lock. Build locks are taken consumer before provider along
+the acyclic dependency graph, so no wait cycle can form. Before this change doors held the store lock
+across whole builds and deadlocked against a unique dependency's builder (reproduced since 0.2.3).
+Behavioural consequences: different slots of one store build in parallel; publishing into a store
+cleaned during the build disposes the new object and raises RuntimeError; a reusable clear racing an
+in-flight build does not wait for it, so that object publishes into the fresh store.
+EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.slot_guard`, `Creations.add_creation`,
+`Creations.purge` and
+`src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:_build_no_overrides_lines`.
 
 Responsibilities:
 - Track live objects in `_creations`.
@@ -2645,6 +2675,8 @@ Outputs:
 Owned State:
 - `_creations`
 - `_disposable_creations`
+- `_slot_guards` (spell id -> build RLock; entries never replaced or removed while live)
+- `_lock` (leaf store lock; retained after cleanup as a documented tombstone)
 - owner/scope ids
 
 Lifecycle/Cleanup:
@@ -2658,17 +2690,24 @@ Lifecycle/Cleanup:
   ordering structure was added: `_disposable_creations` is a plain dict, dict
   iteration is insertion-ordered by language guarantee, and insertion happens at
   creation time, so the registry already IS the creation-order record.
-  EVIDENCE: src/melder/aether/conduit/creations/creations.py:214-253.
+  EVIDENCE: src/melder/aether/conduit/creations/creations.py:305-354.
 - That covers ordering WITHIN one scope. Ordering BETWEEN scopes (lesser conduit
   before root, narrower existence before broader) remains owned by the conduit
   cleanup cascade, so the two axes compose without any graph walk.
 - SpellSpace cleanup resets scope and unregisters from owner.
+- Cleanup and reusable clears do not wait for in-flight builds (they hold build
+  locks, not the store lock). Cleanup deletes `_slot_guards` but keeps `_lock`, so a
+  late publish can observe `_cleaned` and be refused instead of failing on a
+  missing attribute.
 
 Concurrency/Threading:
-- One `RLock` over the instance maps, and the source states plainly that it is
-  NOT OPTIONAL under free-threaded 3.14t: with no GIL, two threads resolving
+- Two lock roles (2026-09-25). The leaf store `RLock` keeps the two maps paired and
+  is NOT OPTIONAL under free-threaded 3.14t: with no GIL, two threads resolving
   into the same scope mutate these maps concurrently, and the ordering that
-  disposal depends on is exactly what a lost update destroys.
+  disposal depends on is exactly what a lost update destroys. Build-once exclusion
+  belongs to the per-slot build locks (`slot_guard`, `Spell._lock` for unique).
+- Lock order: build lock first, store lock last, never the reverse; the store lock
+  is never held around user code or while acquiring another lock.
 
 Invariants/Guarantees:
 - Creations is used by both normal and lesser conduits; behavior is driven by
@@ -2686,6 +2725,8 @@ Invariants/Guarantees:
 
 Failure Modes:
 - ExceptionGroup raised if any disposal errors occur.
+- RuntimeError when a build publishes into a store cleaned during that build; the
+  new object's disposal methods run first (2026-09-25).
 - `SpellSpaceScopeError` if scope is misused. NOT RAISED BY THIS COMPONENT -
   the sole raise site in the tree is `SpellSpaceThreadState`, at
   `src/melder/aether/conduit/spell_space/spell_space_thread_state.py:245`, and
@@ -2700,8 +2741,8 @@ Observability:
   every badly behaved object at once rather than discovering them one redeploy
   at a time. A single failing disposal must not strand the rest of the scope.
   EVIDENCE:
-  - src/melder/aether/conduit/creations/creations.py:39-46
-  - src/melder/aether/conduit/creations/creations.py:150-156
+  - src/melder/aether/conduit/creations/creations.py:69-80
+  - src/melder/aether/conduit/creations/creations.py:223-239
 
 Extension Points:
 - Disposal method names in `SpellbookConfiguration`. The registry calls a
@@ -2794,6 +2835,39 @@ Non-resolvable registration admission:
   `ConduitMeld.meld_existing_spell`, `src/melder/aether/conduit/meld/spellspace_meld.py:SpellSpaceMeld`,
   `src/melder/aether/conduit/meld/meld.py:Meld._raise_non_resolvable_registration`.
 
+Unresolved inputs (2026-09-26):
+- An UNRESOLVED_INPUT socket (Phase 3: a single typed parameter no registered spell provides) reaches every
+  executor family as an ordinary override target. Phase 9 emits an "unresolved_input" source whose
+  override_key is the parameter name and which has no dependency keys, so the planners omit the argument
+  unless the call supplies it. A root key, a `>param` path key, or a `**param` broadcast key when the
+  consumer is built as a dependency, supplies it. The value passes by identity and counts by presence, so
+  None and falsey objects satisfy it.
+- When it is not supplied, Python raises TypeError at argument binding. Each construction failure site then
+  consults `UnresolvedInputError.from_failed_construction(spell, exc, supplied_names,
+  supplied_positional_count)`. It requires a TypeError, reads the consumer's durable Phase-3 topology and
+  returns an error only for UNRESOLVED_INPUT sockets that were neither named nor covered by the positional
+  count; that error is raised from the TypeError. Any other failure keeps its existing error:
+  MeldExecutionError, or the raw exception at a solo root.
+- Sites: `_raise_meld_construction_error` and `_construct_spell_instance` in the generalized and many_only
+  no-override compilers, the transient unrolled and manifest no-override emitted blocks, and the three
+  emitted override blocks plus `_invoke_spell_with_kwargs` in both override compilers. The hydrated
+  manifest override runtime receives the helper through its static namespace. Solo executors bind a
+  guarded `call_target` only for a spell whose topology has an UNRESOLVED_INPUT socket; their emitted
+  source is unchanged.
+- The error fires only when that object is constructed. A stored consumer is returned without calling its
+  constructor, so it never demands the input again. After `cleanup_spell` removes a provider's spell, a
+  consumer stored before that keeps the dependency object it holds (owner decision 2026-09-26); new builds
+  need the value supplied or a provider bound. Successful melds do no extra work.
+- The expected type is read on the failure path from the constructor signature with FORWARDREF
+  annotations, because Phase 1-4 artifacts are released after resolution. `expected_type_name` renders it:
+  Optional/Union with None unwrapped, a ForwardRef or quoted string as its written name, a class as its
+  `__qualname__`. The socket's lowercased frame key is only the fallback.
+- INTERIM: the demand-driven build plan (override design S3/S4) is meant to decide this error before the
+  call and retire these failure-path hooks. OVERRIDE_REQUIRED inputs keep their existing errors when omitted.
+- EVIDENCE: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.from_failed_construction`,
+  `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py:_raise_meld_construction_error`,
+  `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py:_call_target_for`.
+
 Responsibilities:
 - Provide a shared abstract `Meld` core for lookup, validation, lazy
   recompilation, and creation-context dispatch.
@@ -2844,10 +2918,16 @@ Lifecycle/Cleanup:
 - Cleanup clears spellbook references and CreationContext caches.
 
 Concurrency/Threading:
-- One instance `RLock` serialising resolution within a Meld. It is re-entrant
-  because resolution is RECURSIVE: resolving a spell resolves its dependencies
-  through the same object, so a non-reentrant lock would deadlock on any
-  dependency chain deeper than one.
+- CORRECTED 2026-09-25: the Meld instance `RLock` does NOT serialise resolution.
+  It guards cleanup, lazy SpellCompilerSystem creation and hook-map changes only;
+  two melds on one conduit run concurrently. Earlier text here claimed otherwise.
+  EVIDENCE: src/melder/aether/conduit/meld/meld.py:304-345 and
+  src/melder/aether/conduit/meld/meld.py:1245-1470 (every `self._lock` site).
+- Build-once exclusion is per slot: generated doors and plan steps hold the target
+  store's `slot_guard(spell_id)` (or `Spell._lock` for unique) across recheck ->
+  construct -> publish, and take the store lock only as a leaf. All locks involved
+  are re-entrant, so same-thread nested melds of the same slot still work. See
+  Component: Creations and SpellSpace, "Slot build guards".
 - Spell-owned CreationContext retrieval has a second, narrower boundary. A
   ready state-2 context remains a lock-free read. A missing or invalidated
   context takes `spell._lock`, rechecks readiness, and enters factory election
@@ -2890,6 +2970,9 @@ Failure Modes:
   (`src/melder/aether/conduit/spell_space/spell_space_thread_state.py:245`),
   not by this component.
 - MeldExecutionError for invalid spell state or dirty root gating.
+- UnresolvedInputError (a MeldExecutionError subclass, exported at the package root) when a constructed
+  spell's unresolved input was not supplied. `param_name` is the first missing parameter,
+  `expected_type` its display type and `unresolved_params` every missing one in signature order.
 - HookExecutionError for hook failures.
 
 Observability:
@@ -2915,6 +2998,7 @@ Key Files (C1):
 - `src/melder/aether/conduit/conduit.py`
 - `src/melder/aether/conduit/meld/creation_context/creation_context.py`
 - `src/melder/aether/spellbook/spell.py`
+- `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
 
 
 #### Architecture narrative (folded in from `src_architecture.md`, 2026-08-01)
@@ -3027,6 +3111,9 @@ Spec vs implementation notes:
 - Implementation: Phase 4 `DuplicateSpellNameStrategy` scans local + contracted
   spells by `spell_name` and raises `DUPLICATE_SPELL_NAME` errors to prevent
   name-based resolution ambiguity.
+- Decision (2026-09-26): zero providers for a single typed parameter is no longer a build-time error.
+  The parameter compiles as an UNRESOLVED_INPUT socket that the constructing meld supplies. Two or more
+  providers remain a build-time error.
 
 ### Component: SpellCompiler and Validation Pipeline
 Purpose:
@@ -3055,6 +3142,28 @@ Non-resolvable definitions and required inputs (S3, 2026-09-19):
 - EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3`,
   `src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py:SpellSocketDescriptor`,
   `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:SpellInjectionInstanceSpec`.
+
+Unresolved inputs (2026-09-26):
+- Phase 3 `_resolve_single_by_annotation` returns an empty mapping when no registered spell matches a
+  SINGLE_BY_ANNOTATION parameter; two or more candidates still raise. `_build_local_frame_dag` records that
+  `(param_name, position)` and `_build_local_topology` marks the socket UNRESOLVED_INPUT after the
+  OVERRIDE_REQUIRED rule, keeping its `dependency_key` (the lowercased expected-type frame key). It adds no
+  DAG node, edge, target or dependency id. Empty collection, SpellMap, contract and PLAIN results are unchanged.
+- Phase 4: `RequiredHolesStrategy` adds one UNRESOLVED_INPUT warning per socket (parameter, position, kind,
+  expected type from the Phase-1 annotation, dependency key). `BindingResolutionCycleStrategy` skips these
+  sockets as it skips OVERRIDE_REQUIRED. Conjure logs one INFO line listing `Spell.param -> ExpectedType`
+  from those warnings right after the structural phases, before Phase 1-4 artifacts are released.
+- Phase 8 graph-shape rows carry the socket kind, so a socket changing kind changes the occurrence
+  signature. Phase 9 emits an "unresolved_input" source (override_key only) and both injection row
+  exporters append its position and kind. The planners and emitters need no kind-specific branch.
+- A later bind with the same frame key marks the consumer dependency-changed through the
+  collection-frame watcher. Its next meld re-runs Phases 1-4, the socket becomes NORMAL, and the gated
+  resolution verdict rebuilds Phases 5-11.
+- Cache generation 11 (`unresolved_input_sockets`) retires executors emitted with the previous except blocks.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`, `CompilerPhase3._build_local_topology`,
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy`,
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._report_unresolved_inputs`,
+  `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
 
 Phase-5 publication authority (2026-09-19):
 - Snapshot visibility remains local plus contracted dependencies. The graph and system index retain
@@ -3085,6 +3194,45 @@ Disposal metadata propagation (2026-09-05):
 - Serialized IR/hash tuples remain ordered value boundaries. Cached executors hydrate against
   current bound Spells. No new configuration matching, lock, or disposal call is added to Meld.
 - EVIDENCE: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py`.
+
+Codegen IR export seams (2026-09-25):
+- `SpellCompilerArtifact._codegen_ir` is a plain dict `{"phase2_5", "phase8_11", "signatures"}`
+  allocated by `SharedCompilerExecutions.ensure_codegen_ir`. Every other artifact slot holds a
+  Cleanable phase object; the IR dict is the one value-shaped export surface.
+- `capture_phase2_5_codegen_ir` exports value-only rows for phases 2-5 (symbolic dependency
+  tuples, local ordered node ids, dependency ids, phase-4 flags and issue codes, phase-5 root ids,
+  ordered node ids, socket rows `(node_id, param_name, param_path_id, socket_kind)`, DAG edge rows
+  `(parent, child, param_name, socket_kind)`, index spell ids) and signs them with SHA256. It is
+  DORMANT: the eager capture was removed from phases 2-5 because it had no production readers; the
+  helper is retained as the seam for a future incremental recompile path.
+- `capture_phase8_11_codegen_ir` is a digest (root ids, counts, strategy ids, the no-overrides
+  executor signature), not plan content. Plan content is exported by
+  `build_phase11_variant_ir_payload`: per-step rows plus the fast transient schema, a 40-slot tuple
+  of `step_count`, `root_step_index`, call modes and dependency index arrays whose schema is only
+  ints and tuples of ints; call targets (slot 2) are excluded as process-local.
+- Phase-11 codegen creation CONSUMES the step rows through
+  `CodegenCreationSchemaHelpers.get_phase11_step_ir_rows`, memoized on the plan because build,
+  conjure-end cache export, override specialization and the family manifest each rowified the same
+  immutable steps (up to 4x per lane on a cold pass).
+- Signatures come from `hash_codegen_signature`: SHA256 over typed scalar tags, containers via
+  `pickle.dumps(protocol=5)`, `repr` fallback. `freeze_phase11_schema_value` sorts dicts and sets
+  and returns `repr(value)` for non-primitive objects; step rows freeze user-supplied contract
+  payload values through it. `CodegenCreationSchemaHelpers` carries a second copy of the
+  serializer, hasher, freezer and row builders, imported by several consumers under the alias
+  `SharedCompilerExecutions`; the two copies must stay byte-identical for cache keys to agree.
+- Phases 9 and 10 gate on `spell.resolvable` and delegate to `process(spell, artifact)` and
+  `planner.build(artifact)`; phase 10 defers the planner subtree import to first use because
+  full-hit conjures never run it.
+- EVIDENCE:
+  - `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py:78-146`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:34-137`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:266-376`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:503-565`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1024-1106`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1290-1462`
+  - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py:179-184`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:300-345`
+  - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_10.py:44-48`
 
 Responsibilities:
 - Build requirements, symbolic graph, and local frames.
@@ -3134,6 +3282,7 @@ Invariants/Guarantees:
 - Phase artifacts are keyed by `spell_index.selected_spell_id`.
 - Broken spells halt conjure via SpellbookValidationError.
 - Single-annotation DI selects one resolvable class/creation provider or one reference-only definition.
+- Single-annotation DI with no matching registration at all yields an UNRESOLVED_INPUT socket (2026-09-26).
 - Collection DI (list[FrameType]) can resolve zero or more eligible spells, including methods/lambdas.
 - SpellMap defaults must resolve to exactly one candidate.
 - `phase8_11` IR dirty state means "refresh export payload before read/compile",
@@ -3141,7 +3290,8 @@ Invariants/Guarantees:
 
 Failure Modes:
 - Validation errors captured in SpellValidationResult and SpellbookValidationError.
-- RuntimeError when single-annotation DI resolves to zero or multiple candidates.
+- RuntimeError when single-annotation DI resolves to multiple candidates. Zero candidates raised this
+  error until 2026-09-26; they now yield an UNRESOLVED_INPUT socket.
 - RuntimeError when SpellMap defaults resolve to zero or multiple candidates.
 
 Observability:
@@ -3152,6 +3302,8 @@ Extension Points:
 
 Key Files (C1):
 - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py`
+- `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py`
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
 - `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
 - `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py`
@@ -3189,13 +3341,13 @@ Dirty terminology guardrail for this pipeline:
   for some time while still looking authoritative):
   - `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py:146`,
     `:203`, `:322` - the IR-freshness bit itself
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1342`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1367`
     (`capture_phase8_11_codegen_ir`)
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1432-1451`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1457-1477`
     (dirty-bit set/flush)
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1435`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1460`
     (`capture_phase8_11_codegen_ir_if_dirty`)
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1477`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1502`
     (`reset_phase8_11_codegen_ir`)
   - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:535-546`
     (`run_phase_change_control_local`)
@@ -3218,6 +3370,7 @@ Phase 4 strategy coverage (non-exhaustive):
 - Contract provider presence checks (warnings in dynamic/late-binding cases).
 - Binding-resolution cycle detection and callable profile hygiene.
 - Existing-creation compatibility checks.
+- Required-hole reporting, including UNRESOLVED_INPUT warnings (2026-09-26).
 
 ### Component: DevOps Control Plane
 Purpose:
@@ -5124,9 +5277,10 @@ Contract/Interface:
 Data Structures:
 - Spellbook lookup maps and creation manager.
 Concurrency/Threading:
-- Meld RLock serializes one door's recursive resolution. Spell RLock serializes
-  only a missing/invalidated CreationContext rebuild against Phase 5-11; a ready
-  state-2 context remains lock-free.
+- Build-once exclusion is per slot (store `slot_guard`, or Spell RLock for unique);
+  the store lock is a leaf (2026-09-25). The Spell RLock also serializes a
+  missing/invalidated CreationContext rebuild against Phase 5-11; a ready state-2
+  context remains lock-free. The Meld RLock does not serialize resolution.
 Key Files (C1):
 - `src/melder/aether/conduit/meld/meld.py`
 - `src/melder/aether/spellbook/spell.py`
@@ -5238,6 +5392,8 @@ Purpose:
   Bind/notch/removal notifications invalidate those consumers without executable dependency IDs.
   False roots publish no watched constructor key; Optional/ForwardRef keys normalize as matching does.
   EVIDENCE: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates._extract_collection_frame_keys`.
+- UNRESOLVED_INPUT consumers (2026-09-26) are watched the same way, under the expected type's frame key,
+  so binding a matching provider later re-resolves them into a NORMAL edge.
 Contract/Interface:
 - `register_lineage`, `update_dependencies`, `consume_dirty_lineages`.
 - `get_or_create_conduit_resolution_state`, `set_conduit_spell_validity`,
@@ -5659,7 +5815,8 @@ Key Files (C1):
 1. Conduit.purge or SpellSpace.purge normalizes logical names versus explicit spell_id as meld does.
 2. Meld._resolve_purge_spell inspects an instance's class or forwards explicit selectors to _resolve_spell.
 3. ConduitMeld._get_purge_creations or SpellSpaceMeld.purge authorizes the existing target store.
-4. Creations.purge takes Spell._lock for unique, then _detach_purge_entries takes the store lock.
+4. Creations.purge takes the slot's build lock (Spell._lock for unique, slot_guard for other slotted
+   lifetimes, none for many), then _detach_purge_entries takes the store lock.
 5. Both maps detach the whole target or supplied instance. Single many removal preserves peer entries.
 6. After lock release, _attempt_cleanup or _dispose_many_creations runs the recorded disposal methods.
 7. Return the count or raise aggregated errors. Other keys, definitions and warmed contexts remain.
@@ -5812,10 +5969,18 @@ These flows describe concrete method sequences for core behaviors.
 1. `Spellbook.conjure(...)`:
    - Validates and freezes `SpellbookConfiguration`.
    - Binds `SpellbookConfiguration` to Aether frame.
-   - Runs phases 1-4 via PhaseScheduler.
+   - Runs phases 1-4 via PhaseScheduler (`_prepare_spellbook_for_conjure` ->
+     `run_structural_phases`), on every conjure.
+   - Classifies the creation cache (`_build_conjure_cache_state`): live
+     resolvable, non-existing-creation spell ids vs cached ids ->
+     `disabled` | `full_hit` | `mixed` | `full_miss`.
    - Runs phases 5-7 via PhaseScheduler (foundational conduit resolution).
    - Runs phases 8-11 via PhaseScheduler only when phases 5-7 report no
-     resolution errors.
+     resolution errors and the cache path is not `full_hit`; a full hit sets
+     `force_skip_plan_phases=True`, loads both-lane creation contexts from the
+     cache, and skips `_enforce_conduit_resolution_valid`.
+     EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:226-247`,
+     `src/melder/aether/spellbook/spellbook_creation_system.py:454-562`.
    - Live 8-11 output contract:
      - phase 8 `_occurrence_graph_analysis`
      - phase 9 `_spell_codegen_model`
@@ -5858,6 +6023,20 @@ These flows describe concrete method sequences for core behaviors.
 2. `CompilerPhase3._resolve_collection_by_annotation(...)` scans all spells and
    matches the frame annotation (methods/lambdas allowed).
 3. The resulting candidate map (possibly empty) is injected as the collection dependency.
+
+### Flow: Unresolved Input (Phase 3 -> Meld)
+1. `CompilerPhase3._resolve_single_by_annotation(...)` finds no registered provider and returns `{}`;
+   `_build_local_frame_dag(...)` records the socket key and `_build_local_topology(...)` marks it
+   `SocketKind.UNRESOLVED_INPUT` with its `dependency_key`.
+2. `SpellSystemStates._extract_collection_frame_keys(...)` registers the consumer under that frame key.
+3. `RequiredHolesStrategy.validate(...)` stores a Phase-4 UNRESOLVED_INPUT warning and
+   `SpellbookCreationSystem._report_unresolved_inputs(...)` logs the conjure INFO line from it.
+4. `SpellInjectionProcessorStrategy` emits an "unresolved_input" param source; the Phase-10 planners treat
+   it as an override target that is omitted unless supplied.
+5. At meld a supplied value reaches the constructor by identity. A missing one fails argument binding with
+   TypeError; the family's failure site calls `UnresolvedInputError.from_failed_construction(...)` and
+   raises the result from that TypeError.
+6. A later matching bind marks the consumer dirty; its next meld re-runs Phases 1-4 and the socket is NORMAL.
 
 ### Flow: Meld-Time Validation Gate
 1. `Meld._ensure_lineage_resolvable(...)` checks SpellSystemState validity.
@@ -5939,9 +6118,9 @@ These flows describe concrete method sequences for core behaviors.
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 613
-  loc: 613
-  verified_at: 2026-09-24T09:38:22Z
+  end_line: 624
+  loc: 624
+  verified_at: 2026-09-26T08:21:36Z
   note: release-bound creation-cache admission and atomic envelope persistence.
 
 The CORE set: every path cited by a `Key Files (C1)` list in the C3 catalog,
@@ -5958,9 +6137,9 @@ expanded into its real modules rather than given a plausible number.
 
 - path: `src/melder/__init__.py`
   start_line: 1
-  end_line: 260
-  loc: 260
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 271
+  loc: 271
+  verified_at: 2026-09-26T08:21:36Z
 - path: `src/melder/system_document.py`
   start_line: 1
   end_line: 395
@@ -6018,9 +6197,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 1226
-  loc: 1226
-  verified_at: 2026-09-22T18:41:58Z
+  end_line: 1263
+  loc: 1263
+  verified_at: 2026-09-24T11:09:19Z
 - path: `src/melder/aether/spellbook/bind/spell_index.py`
   start_line: 1
   end_line: 507
@@ -6383,14 +6562,14 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 884
-  loc: 884
-  verified_at: 2026-09-21T00:25:48Z
+  end_line: 1125
+  loc: 1125
+  verified_at: 2026-09-25T23:40:00Z
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
-  end_line: 133
-  loc: 133
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 134
+  loc: 134
+  verified_at: 2026-09-25T23:40:00Z
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
   end_line: 589
@@ -6416,6 +6595,11 @@ expanded into its real modules rather than given a plausible number.
   end_line: 309
   loc: 309
   verified_at: 2026-08-02T13:00:45Z
+- path: `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
+  start_line: 1
+  end_line: 298
+  loc: 298
+  verified_at: 2026-09-26T08:27:59Z
 - path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
   start_line: 1
   end_line: 713
@@ -6448,9 +6632,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
   start_line: 1
-  end_line: 1514
-  loc: 1514
-  verified_at: 2026-09-19T21:23:18Z
+  end_line: 1522
+  loc: 1522
+  verified_at: 2026-09-26T08:21:36Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
   end_line: 676
@@ -8584,6 +8768,28 @@ flowchart LR
 
 Runtime argument enforcement and persisted replay of required-input policy remain later feature layers.
 
+### Unresolved Input Flow
+```text
+typed parameter -> Phase 3: no provider -> UNRESOLVED_INPUT socket (no edge; frame key watched)
+                                  |                              |
+                 Phase 4 warning + conjure INFO     Phase 9 "unresolved_input" source
+                                                                 |
+meld: value supplied -> constructor receives it      missing -> TypeError -> UnresolvedInputError
+later bind of a matching provider -> watcher -> next meld re-resolves -> NORMAL edge
+```
+
+```mermaid
+flowchart LR
+  P[Phase 3: no registered provider] --> U[UNRESOLVED_INPUT socket]
+  U --> W[Phase 4 warning and conjure INFO line]
+  U --> S[Phase 9 unresolved_input source]
+  S --> M{Meld supplies value?}
+  M -->|Yes| C[Constructor receives it by identity]
+  M -->|No| E[UnresolvedInputError raised from TypeError]
+  U --> F[Frame-key watcher]
+  F --> B[Later matching bind re-resolves to NORMAL]
+```
+
 
 ### Mermaid: Conduit Upgrade
 ```mermaid
@@ -8656,6 +8862,15 @@ sequenceDiagram
 
 ## Information Sources
 - `src/melder/utilities/caching_system/caching_system.py`
+- `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
+- `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
+- `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py`
+- `src/melder/aether/spellbook/spellbook_creation_system.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_no_overrides_codegen_creation_compiler.py`
 
 Every promoted FACT in this document traces to source. The C3 catalog cites its
 own evidence inline per entry; this is the consolidated list, and it is the same
@@ -8841,6 +9056,26 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 unresolved inputs are promoted into the DI descriptor, SpellCompiler, Meld runtime and
+SpellSystemStates entries, with a C1 flow and a diagram. A single typed parameter no registered spell
+provides now compiles as an UNRESOLVED_INPUT socket; the constructing meld supplies it or raises
+UnresolvedInputError, and a later provider re-resolves it. Two lines that said zero candidates raise at
+Phase 3 were corrected in place. The failure-path wiring is recorded as interim until the override design's
+build plan. The Full Package Inventory is a dated walk and does not list `unresolved_input_error.py`;
+the C1 Code Map (Core) does. Verify next: the Nexus publication of unresolved inputs, deferred by the owner.
+
+2026-09-25 creation slot build guards are promoted into Creations and SpellSpace and the Meld runtime.
+Build-once exclusion moved from the store lock to per-slot build locks; the store lock is a leaf.
+This removed the store/Spell lock-order deadlock (7 reproduced shapes plus unique -> many ->
+per_conduit, pinned in the multithreading suite). The Meld concurrency entry was corrected: its RLock
+never serialized resolution. Cache generation 10 retires executors emitted with the old locking.
+
+2026-09-25 the SpellCompiler component gains a dated block on the codegen IR export seams: the
+artifact's value-shaped `_codegen_ir` dict, the dormant signed phase 2-5 export, the phase 8-11
+digest versus the consumed phase-11 step rows and int-array transient schema, the signature path
+and its duplicated helper surface. The conjure flow now records cache-path classification and the
+full-hit skip of phases 8-11 only. Key Files add the artifact container and the shared executions.
 
 2026-09-24 creation-cache envelopes are release-bound. The CachingSystem admission check rejects
 missing or differing release stamps alongside existing schema/interpreter checks. Normalization and

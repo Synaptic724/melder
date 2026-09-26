@@ -3,13 +3,17 @@
 # Epic: Establish why Melder's gauntlet throughput falls on long runs, from evidence
 
 ## Metadata
+- Completed: 2026-09-26T08:32:04Z
+- Closure Basis: owner directed turn-in 2026-09-26 ("turn in the tickets related to this").
+- Summary: No Melder leak; the long-run drop was the harness retaining worker-thread ints. Harness
+  fixed in both gauntlets, shared Melder lane repaired and isolated with a parity guard; tests added.
 - Epic ID: EPIC-2026-09-26-melder-long-run-throughput-truth
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-09-26T00:33:00Z
-- Updated: 2026-09-26T08:05:49Z
+- Updated: 2026-09-26T08:32:04Z
 - Target Window: 2026-09
 - Related Program/Initiative: benchmarks/testing_other_di shared gauntlet; free-threaded performance
 
@@ -62,6 +66,9 @@ SpellSpace cycle returns the runtime to the state it was in before the cycle, wh
 - from_state: in_progress
 - to_state: review
 - transition_reason: Both tasks in review with evidence; owner acceptance and harness decision pending.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in 2026-09-26; ticket moved to completed.
 
 ## Success Metrics
 - Every candidate cause listed in Notes carries FACT or ruled-out status with evidence ranges.
@@ -185,9 +192,9 @@ SpellSpace cycle returns the runtime to the state it was in before the cycle, wh
   SCORE_0_TO_10: 8
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user (owner turn-in)
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: program-level direction, cross-story tradeoffs, and tranche order.

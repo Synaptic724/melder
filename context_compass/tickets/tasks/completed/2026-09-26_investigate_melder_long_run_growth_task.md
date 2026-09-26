@@ -3,14 +3,18 @@
 # Task: Investigate Melder's long-run gauntlet slowdown and possible retained growth
 
 ## Metadata
+- Completed: 2026-09-26T08:32:04Z
+- Closure Basis: owner directed turn-in 2026-09-26 ("turn in the tickets related to this").
+- Summary: Retained growth ruled out in source and by measurement (650k cycles, 30k threads, 0 GC);
+  test_melder_long_run_retention.py added with guard tests and an opt-in attribution benchmark.
 - Task ID: TASK-2026-09-26-investigate-melder-long-run-growth
 - Epic: EPIC-2026-09-26-melder-long-run-throughput-truth
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-09-26T00:24:13Z
-- Updated: 2026-09-26T08:04:59Z
+- Updated: 2026-09-26T08:32:04Z
 
 ## Objective
 Find out why Melder's gauntlet throughput held from 5k to 50k iterations but fell 12.5% at 100k,
@@ -45,6 +49,9 @@ and add diagnostic tests under benchmarks/testing_other_di that detect the mecha
 - to_state: review
 - transition_reason: Retained growth ruled out in source and by measurement; diagnostic tests added,
   sandbox-validated with a negative control; owner acceptance pending.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in 2026-09-26; ticket moved to completed.
 
 ## Steps / Checklist
 - [x] Record the three gauntlet runs and the questions they raise.
@@ -93,8 +100,8 @@ and add diagnostic tests under benchmarks/testing_other_di that detect the mecha
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true

@@ -3,14 +3,18 @@
 # Task: Measure what causes Melder's long-run gauntlet drop (retained state vs process effects)
 
 ## Metadata
+- Completed: 2026-09-26T08:32:04Z
+- Closure Basis: owner directed turn-in 2026-09-26 ("turn in the tickets related to this").
+- Summary: 2x2 controls attributed the long-run slowdown to the harness keeping ints allocated by
+  exited worker threads (Melder and dishka alike, zero GC); owner chose array('q') storage.
 - Task ID: TASK-2026-09-26-measure-melder-long-run-attribution
 - Epic: EPIC-2026-09-26-melder-long-run-throughput-truth
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-09-26T00:34:00Z
-- Updated: 2026-09-26T08:05:19Z
+- Updated: 2026-09-26T08:32:04Z
 
 ## Objective
 Run the gauntlet's Melder cycle under controlled conditions in a CPython 3.14 free-threaded sandbox
@@ -40,6 +44,9 @@ two libraries in the same process.
 - to_state: review
 - transition_reason: Attribution established by controlled 2x2 runs; owner decision and owner-machine
   confirmation pending.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in 2026-09-26; ticket moved to completed.
 
 ## Steps / Checklist
 - [x] Confirm the sandbox runs the Melder gauntlet lane on the snapshot.
@@ -78,8 +85,8 @@ two libraries in the same process.
 - [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true

@@ -3,15 +3,19 @@
 # Story: Unresolved input sockets - typed parameters with no provider are supplied at meld, not refused at conjure
 
 ## Metadata
+- Completed: 2026-09-26T08:54:04Z
+- Closure Basis: owner direction ("finish off the last few steps ...") after step 6.
+- Summary: UNRESOLVED_INPUT sockets and UnresolvedInputError shipped for 0.2.54 with tests, docs, graph, assets and
+  release note. CommandOps' own suite was not run here; its reported shapes pass with stand-in types.
 - Story ID: STORY-2026-09-26-unresolved-input-sockets
 - Epic: EPIC-2026-09-24-override-execution-performance
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Lead Agent: melder_0
 - Priority: p1
 - Created: 2026-09-26T01:10:07Z
-- Updated: 2026-09-26T01:16:08Z
+- Updated: 2026-09-26T08:54:04Z
 
 ## User Narrative
 As a Melder user, I want a constructor parameter whose type nothing registered can provide (Package,
@@ -51,6 +55,9 @@ Introduces the "value comes from the call" concept the demand-driven override re
 - from_state: draft
 - to_state: in_progress
 - transition_reason: Owner approved strategy and directed deep investigation first, 2026-09-26T01:10:07Z.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Both linked tasks done; owner directed completion (2026-09-26T08:54:04Z).
 
 ## Dependencies / Related Work
 - tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md
@@ -58,8 +65,10 @@ Introduces the "value comes from the call" concept the demand-driven override re
 - tickets/tasks/2026-09-24_investigate_required_caller_inputs_task.md (workflows_0)
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-09-26-implement-missing-dependency-sockets - investigate, patch docs, implement, qualify
-  tickets/tasks/2026-09-26_implement_missing_dependency_sockets_task.md
+- [x] Task: TASK-2026-09-26-implement-missing-dependency-sockets - investigate, patch docs, implement, qualify
+  tickets/tasks/completed/2026-09-26_implement_missing_dependency_sockets_task.md
+- [x] Task: TASK-2026-09-26-bump-version-rebuild-assets-for-unresolved-inputs - 0.2.54, assets, release note
+  tickets/tasks/completed/2026-09-26_bump_version_rebuild_assets_for_unresolved_inputs_task.md
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
 
@@ -87,12 +96,14 @@ Introduces the "value comes from the call" concept the demand-driven override re
 
 ## Decision Log
 - 2026-09-26T01:10:07Z: Owner approved UNRESOLVED_INPUT with UnresolvedInputError; resolvable=False stays a separate Nexus feature.
+- 2026-09-26T07:49:37Z: D-B root export of UnresolvedInputError. 07:52:36Z: D-A stored consumers keep their dependency after
+  cleanup_spell. 08:43Z: version 0.2.54 with asset rebuild.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/missing_dependency_sockets_20260926/
-  - system_docs/patches/active/unresolved_input_sockets_2026_09_26/
+  - system_docs/patches/completed/unresolved_input_sockets_2026_09_26/
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: Patch docs promoted and archived at story closure.
 
@@ -126,16 +137,33 @@ Introduces the "value comes from the call" concept the demand-driven override re
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T08:32:52Z
+  TYPE: FACT
+  CLAIM: The S1 task finished rollout steps 1-5 and moved to review: UNRESOLVED_INPUT socket, watcher, injection,
+    UnresolvedInputError in every executor family, conjure INFO line, cache generation 11, root export (D-B),
+    stored-consumer reuse after provider cleanup (D-A), 15 rewritten and 70 new tests, 3.14t and GIL runs with
+    no attributable failure, docs, graph and release note promoted. Step 6 (build-asset rebuild) and
+    acceptance are with the owner. CommandOps' five reported failures were not re-run here; the component
+    tests cover the same shape (a typed parameter of an unregistered type) with stand-in types.
+  EVIDENCE: tickets/tasks/2026-09-26_implement_missing_dependency_sockets_task.md
+  IMPACT: The story's acceptance criteria can be walked with the owner once step 6 is decided.
+  NEXT: Owner decision on step 6, then the acceptance walkthrough.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user (owner directed completion)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
 
 ## Context / Handoff Summary
-Opened on owner approval. Investigation proceeds in the implementation task. No src/ edits yet.
+Opened on owner approval. The implementation task completed rollout steps 1-5 and is in review; step 6
+(build-asset rebuild) and acceptance are owner decisions. Resume from the task's latest NEXT.
+CLOSED 2026-09-26T08:54:04Z: steps 1-6 done; patch lane archived; open follow-ups are listed in the implementation task's
+handoff summary.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

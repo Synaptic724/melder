@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 688ace4d38ede1a7a19444f5c5a98a1164e3c54c8e48de92ccf7c5acab69ff45
-FILE COUNT: 367
+SOURCE FINGERPRINT: 5609952bf6f817dd092198989a0df1b3e84c8dd78eacfb466b5c4d49294825f6
+FILE COUNT: 370
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -425,6 +425,29 @@ candidate SHA, version, approval, and timestamp; advancing preprod must not
 change that selected release. No scheduler is enabled by these workflows.
 ================================================================================
 END FILE: .github/BRANCH_WORKFLOW.md
+================================================================================
+================================================================================
+BEGIN FILE: .github/FUNDING.yml
+CONTENT SHA256: 8b151272ec8c262d161dd04f8c14a1650fb8037c53aa7df3c7b3a6ecad749c82
+SOURCE ENCODING: utf-8
+================================================================================
+# These are supported funding model platforms
+# NOT SETUP YET
+github: Synaptic724
+patreon: Synaptic724
+open_collective: # Replace with a single Open Collective username
+ko_fi: Synaptic724
+tidelift: # Replace with a single Tidelift platform-name/package-name e.g., npm/babel
+community_bridge: # Replace with a single Community Bridge project-name e.g., cloud-foundry
+liberapay: # Replace with a single Liberapay username
+issuehunt: # Replace with a single IssueHunt username
+lfx_crowdfunding: # Replace with a single LFX Crowdfunding project-name e.g., cloud-foundry
+polar: # Replace with a single Polar username
+buy_me_a_coffee: synapticaiw
+thanks_dev: # Replace with a single thanks.dev username
+custom: # Replace with up to 4 custom sponsorship URLs e.g., ['link1', 'link2']
+================================================================================
+END FILE: .github/FUNDING.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/rulesets/dev.json
@@ -3565,6 +3588,218 @@ refresh of the entire resolution. Review the diff and validate the affected chec
 out of the shared lock. `pip install melder` remains the normal package-consumer installation path.
 ================================================================================
 END FILE: CONTRIBUTING.md
+================================================================================
+================================================================================
+BEGIN FILE: Claude outputs/design.md
+CONTENT SHA256: 8a9ae37e1e1e7cc9b66a39a96920dd10e784a5aa4d4aaed80337d71073464daf
+SOURCE ENCODING: utf-8
+================================================================================
+# Override execution and caller inputs: one demand-driven design
+
+Date: 2026-09-26. Author: melder_0. Task: tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md.
+Epic: EPIC-2026-09-24-override-execution-performance. Status: design proposal; production unchanged.
+Alternative to: artifacts/override_structural_discovery_20260924/joint_alpha_proposal.md.
+
+## Recommendation
+
+Resolve an override payload once per key shape into a static plan over the physical construction
+graph Melder already builds, then lower that plan top-down: a consumer asks for each dependency,
+a shared dependency is looked up in its store first, and only a miss builds its subtree under the
+slot guard shipped on 2026-09-25. The empty shape is the ordinary meld, so one lowering serves both.
+Caller-supplied constructor inputs become a socket kind that needs no provider at conjure and is
+checked per shape at meld.
+
+Three properties follow, and they are the difference from joint alpha:
+- No new lock protocol. Slot guards already give an acyclic, consumer-first lock order.
+- Operand choice is a pure function of the key shape. Live store state decides only whether a
+  constructor runs, never which value it receives, so results do not depend on thread timing.
+- No path enumeration anywhere. Selectors resolve by walking named edges or counting paths.
+
+## What current source does
+
+| # | Behavior | Evidence |
+| --- | --- | --- |
+| 1 | The physical graph exists: shared spells expand once; instance keys are (id, None) for shared sites and per-path for many sites. | spell_occurrence_graph_analyzer_strategy.py:719-785; spell_occurrence_instance_processor_strategy.py:127-215 |
+| 2 | Plans run bottom-up: Kahn order, providers first, one step per instance key. Reuse of a shared step is checked after its dependencies were built. | spell_occurrence_order_processor_strategy.py:103-171; spell_generalized_codegen_lane_plan.py:1500-1600 |
+| 3 | Probe: meld Root(many) -> Middle(unique) -> Leaf(many) twice builds Leaf twice. No override involved. | current_behavior_results_314t.json |
+| 4 | Probe: supplying a and b to Consumer(a, b, c) still builds A and B, then passes the supplied objects. | same |
+| 5 | Phase-5 socket overlay walks every logical path; targeting then keys every socket ref. Runs at every conjure. | spell_system_root_blueprint_builder.py:435-500; spell_override_targeting_processor_strategy.py:51-110 |
+| 6 | Probe: binary unique chain, 13 sites -> 8,190 root socket refs, 0.08 s conjure; 15 sites -> 32,766 refs, 0.31 s. | current_behavior_results_314t.json |
+| 7 | An unbound required type fails conjure in Phase 3 ("no DI candidate"). OVERRIDE_REQUIRED is assigned only when a non-resolvable definition was selected. | compiler_phase_3.py:435-513, 693-768; probe case 3 |
+| 8 | Slot guards: build locks nest consumer-first along the DAG; store locks are leaves. 12 lock-order cases pass. | creations.py:Creations.slot_guard; completed slot-guard task |
+
+Contract items 1-8 as melder_1 verified them stay the reference for current override behavior:
+tickets/tasks/completed/2026-09-25_verify_override_behavior_contract_task.md.
+
+## Joint alpha: what to keep, what to drop
+
+Keep: physical sites instead of logical paths; a supplied edge removes demand; reuse must precede
+exclusive construction; one lowering for ordinary and override calls; value-only rows in the cache.
+
+Drop, with reasons:
+- **The claim protocol** (non-blocking claims, release-before-wait, retry, claim records). It exists to
+  break the store/Spell inversion. Slot guards removed that inversion with an acyclic order, and the
+  protocol's open items (claim lifetime, retirement, reentrancy, fairness) disappear with it.
+- **Live-state operand selection.** Joint alpha lets a rule count only if its path is constructed now.
+  A shared descendant then gets its value from whichever thread builds it first, depending on whether
+  that thread saw an ancestor already stored. It is also what forces the claim prelude, guarded ranked
+  candidates, fallback edges and a cache keyed by the complete selector layout.
+- **The selector-state machine.** It avoids path explosion, but a PATH selector names one walk from the
+  root and UNIQUE only needs a path count; neither needs enumeration or per-prefix state.
+- It does not cover caller-supplied inputs, which is the consumer blocker since 09-24.
+
+## The design
+
+### 1. Physical graph rows
+
+One row per site: spell id, existence, store operation, and per parameter: name, kind, position,
+collection flag, default policy and socket kind (DI edge, PLAIN, CALLER_INPUT, CONTRACT). A DI edge
+points at child sites. A many child belongs to its physical parent's parameter; shared sites merge.
+These rows replace the Phase-5 path overlay and `targets_by_spec`, so conjure cost becomes
+O(sites + edges) instead of O(logical paths), for every user, with or without overrides.
+
+### 2. Shape plan, built once per key shape
+
+The shape is the set of normalized override keys (plus positional arity). The first meld with a new
+shape builds its plan; later melds with the same shape reuse it.
+
+1. Parse keys with the existing TargetSpec parser and PATH > UNIQUE > BROADCAST precedence.
+2. Validate against the declared graph, before any cut (contract item 3 unchanged):
+   - PATH: walk named edges from the root; at least one match.
+   - UNIQUE: exactly one declared logical path. Count paths by DP over sites (paths(child) +=
+     paths(parent)), which gives today's count (a shared parameter reached twice counts twice).
+   - BROADCAST: at least one site with that parameter name.
+3. Cuts: a key that names a whole dependency replaces that edge with an operand. A PATH rule whose
+   walk crosses a cut edge is inert (contract item 4, option (a), decided statically).
+4. Demand: sites reachable from the root through uncut edges. Only these can run.
+5. Operands: each live rule attaches to its physical (site, parameter). The highest rank wins. Two
+   live PATH rules reaching one physical input through different aliases are a shape error; no
+   values are compared (replaces the item-5 equality question).
+6. Obligations per demanded site: a CALLER_INPUT with no operand, or an unresolved contract
+   descriptor with no provider, lowers to a named error in that site's build branch.
+7. Scope: `requires_spellspace_request` is computed over demanded sites, so a supplied Space-scoped
+   dependency no longer makes a Conduit meld refuse.
+
+### 3. Top-down lowering
+
+Dependencies are built on demand, depth-first in parameter order, before their consumer. A shared site
+has an inline hit path and an out-of-line miss function. Out-of-line is required: CPython rejects
+deeply nested `with` blocks ("too many statically nested blocks"; 21 compile, 40 fail on 3.14.7).
+
+```python
+# Shape {"a"}: Consumer(a, b, c) with b many and c unique_per_conduit (store `s`).
+def execute(ov, s):
+    b = B()
+    c = s._creations.get(ID_C, MISSING)
+    if c is MISSING:
+        c = _build_C(s)                  # C's subtree runs only on a miss
+    return Consumer(a=ov["a"], b=b, c=c)
+
+def _build_C(s):
+    with (s._slot_guards.get(ID_C) or s.slot_guard(ID_C)):
+        c = s._creations.get(ID_C, MISSING)
+        if c is MISSING:
+            c = C(d=D())                 # construct under the build lock
+            s._creations[ID_C] = c       # existing publication path
+    return c
+```
+
+- Reuse short-circuit falls out of the order: a stored shared site never builds its subtree. This
+  also removes the ordinary-meld waste in row 3.
+- A shared site that has operands from the shape and is found stored keeps today's refusal
+  (MeldExecutionError), like an existing root with overrides (contract item 6).
+- Many-only graphs are trees, so the lowering is straight-line code with no guards.
+- The existing doors (admission, gate tickets, root reuse and its refusal) stay as they are; the
+  lowering replaces only what runs inside them.
+- Operands are literal-key reads from the call's override dict; nothing is interpreted per call.
+
+### 4. Caller-supplied inputs
+
+- Declare per binding, e.g. `bind(Task, existence="many", caller_inputs=("work",))`; the name is a
+  decision. Validate names against the real signature. Part of binding identity, descriptions,
+  crystallizer records and replay (workflows_0's list, findings.md:99-135).
+- Phase 3 skips provider search for declared parameters and records a socket with no targets and no
+  reference ids. Undeclared parameters keep today's "no DI candidate" failure.
+- At meld, the shape plan either binds the input to an operand or lowers a named error into the
+  site's build branch: "Task.work is supplied by the caller: meld(Task, override={'work': ...})".
+  It fires only when that site is constructed, so a reused site never demands it, and a hit costs
+  nothing. No per-call preflight is added.
+- Option: parameters annotated with a type Melder refuses to bind (Conduit, Package) could be
+  classified as caller inputs automatically, since no provider can ever exist for them.
+
+### 5. Concurrency
+
+No new mechanism. Miss functions take the site's slot guard (Spell lock for unique) and recheck
+under it. Guards nest consumer-first along DAG edges, the order the 09-25 fix proved acyclic. Purge
+already takes the same guard. No constructor is replayed and nothing retries. The decision a miss
+makes is made under the guard that publishes its result, so no settled-claim concept is needed.
+
+### 6. Caching
+
+Shape plans and their executors live on the CreationContext, keyed by shape and bounded (e.g. 64,
+least recently used), and are dropped when the context is replaced (revalidation, epoch change).
+Purge keeps them: a plan holds no store state. A full-hit conjure skips phases 8-11, so the
+persisted creation cache must carry the physical rows for shapes to be built. Needs generation 11.
+
+## Failure and edge semantics
+
+| Case | Result |
+| --- | --- |
+| Whole dependency supplied | Edge cut; the child runs only if another uncut edge demands it |
+| Dependency parameter overridden | Child constructed with that operand (item 2; None/False by presence) |
+| Rule below a supplied dependency | Inert, decided statically (item 4 (a)) |
+| Rule below a shared parent that is reused at runtime | That subtree does not run; see D2 |
+| Two live PATH rules on one physical input | Shape error at first meld of that shape (D3) |
+| Invalid, unmatched or ambiguous selector | Shape error, checked against declarations (item 3) |
+| Root or targeted shared site already stored | MeldExecutionError, unchanged (item 6) |
+| Caller input missing on a constructed site | Named MeldExecutionError, raised in its build branch |
+| Unresolved descriptor on a constructed site | Error; the descriptor object is never passed |
+| Constructor raises | Current family error wrapping; no replay; published dependencies keep lifecycle (item 8) |
+
+Hook ordering: shape resolution sits where targeting runs today, after root pre-hooks, so the
+selector-error ordering structural_plan.md flagged is preserved.
+
+## Decisions for the owner
+
+- **D1 Caller-input declaration.** A per-binding keyword naming parameters (recommended), plus
+  optional automatic classification of parameters typed with unbindable Melder kernel types.
+- **D2 Reuse never changes operands.** A live rule configures the physical object it reaches. If a
+  shared descendant is built for another consumer while the rule's own parent was reused, it still
+  gets that value. Recommended, because the alternative makes a shared object's configuration depend
+  on thread timing. This narrows the item-4 choice to supplied (static) cuts.
+- **D3 Equal-rank aliases are an error.** Two PATH rules reaching one physical input fail regardless
+  of values. Replaces item 5 (c) and removes the arbitrary-equality question.
+- **D4 Construction order and count.** Constructors run depth-first in parameter order (dependencies
+  still first), and stored shared sites no longer build throwaway subtrees in ordinary melds. Fewer
+  constructors and disposals is observable; so is the changed sibling order.
+
+## Implementation sequence
+
+1. **Caller inputs (S1).** Declaration and the Phase-3 socket, executed by today's override
+   executors; a missing input keeps today's missing-argument failure until S4 names it.
+   Small, independent, and it unblocks CommandOps now.
+2. **Physical rows and selector resolution (S2).** Replace the Phase-5 overlay and `targets_by_spec`;
+   resolve PATH/UNIQUE/BROADCAST by walk, DP count and scan. Conjure becomes linear.
+3. **Top-down lowering for the empty shape (S3).** Ordinary melds first, with out-of-line shared
+   misses under slot guards. Gate: ordinary warm/cold parity measured on 3.14t and GIL.
+4. **Shape plans (S4).** Cuts, operands, obligations and per-shape scope through the same lowering.
+   Retire the separate override compilers and targeting artifacts. Cache generation 11.
+5. **Qualification (S5).** melder_1's matrix updated for D2/D3, the 12 lock-order cases, contract
+   regressions, constructor/disposal counts, then cold/warm/hydrated performance.
+
+## Not verified
+
+- No performance of this lowering is measured. Parity with ordinary melds is a gate, not a claim.
+- many_only, solo and manifest families were not re-read in full; S3/S4 assume their tactics can
+  lower from the same plan.
+- PATH selectors into multi-provider collections, positional/variadic sockets, methods, lambdas and
+  existing objects must keep today's semantics; not re-traced here.
+- Nested child-hook behavior stays as it is today; not redesigned.
+- Optional contract sockets (`Optional[...]` with a SpellContract default) may legitimately resolve
+  to None; the unresolved-descriptor error must respect that. Not traced here.
+- Shape count per context in real applications is unknown; the bound is a starting point.
+================================================================================
+END FILE: Claude outputs/design.md
 ================================================================================
 ================================================================================
 BEGIN FILE: LICENSE
@@ -33449,7 +33684,7 @@ END FILE: benchmarks/testing_other_di/melder_gauntlet_cprofile_runner.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/melder_gauntlet_support.py
-CONTENT SHA256: 5b03e077de8137037b02511f069f083325c8f714a649ca3205c25135e45e8ef1
+CONTENT SHA256: 9b7be0dcbcdfedce4e64c4e1a6e30fc70ccb7bb53e7a4878196b2e3ad7f6b343
 SOURCE ENCODING: utf-8
 ================================================================================
 import os
@@ -33458,8 +33693,9 @@ import statistics
 import sys
 import threading
 import time
+from array import array
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, MutableSequence, Sequence, Tuple, Union
 
 
 def env_int(name: str, default: int) -> int:
@@ -33902,12 +34138,32 @@ class ScopeCycleMetrics:
 
 @dataclass
 class LaneMetricSamples:
-    outer_create_ns: List[int]
-    outer_cleanup_ns: List[int]
-    outer_total_ns: List[int]
-    request_create_ns: List[int]
-    request_cleanup_ns: List[int]
-    request_total_ns: List[int]
+    """
+    Per-lane scope-cycle timings in nanoseconds, one entry per cycle.
+
+    Two storage kinds share this shape, and the split is deliberate:
+
+    - One iteration's samples are plain lists (`new_lane_metric_samples`). The
+      short-lived worker threads append to them; list appends stay safe when
+      several workers share a lane, and the lists die with the iteration.
+    - The run-long accumulation is packed `array("q")` storage
+      (`new_lane_metric_storage`), extended on the main thread. It holds values, not int
+      objects. Keeping the workers' int objects for the whole leg (the former
+      list storage) retained objects allocated by threads that had exited, and
+      on free-threaded CPython 3.14 that made every later scope cycle
+      progressively more expensive: 2-2.5x slower over 40k iterations for
+      Melder and dishka alike, with zero garbage collections. The attribution
+      test in test_melder_long_run_retention.py reproduces it.
+
+    Values, ordering and every summary computed from them are unchanged.
+    """
+
+    outer_create_ns: MutableSequence[int]
+    outer_cleanup_ns: MutableSequence[int]
+    outer_total_ns: MutableSequence[int]
+    request_create_ns: MutableSequence[int]
+    request_cleanup_ns: MutableSequence[int]
+    request_total_ns: MutableSequence[int]
 
 
 @dataclass(frozen=True)
@@ -33973,6 +34229,26 @@ def new_lane_metric_samples() -> LaneMetricSamples:
     )
 
 
+def new_lane_metric_storage() -> LaneMetricSamples:
+    """
+    Return empty run-long sample storage: six signed 64-bit `array("q")`.
+
+    Contract:
+        - Used only for accumulation across iterations on the main thread.
+        - `extend(...)` copies values out of an iteration's lists, so no int
+          object created on a worker thread outlives that iteration. See
+          `LaneMetricSamples` for why this matters on free-threaded CPython.
+    """
+    return LaneMetricSamples(
+        outer_create_ns=array("q"),
+        outer_cleanup_ns=array("q"),
+        outer_total_ns=array("q"),
+        request_create_ns=array("q"),
+        request_cleanup_ns=array("q"),
+        request_total_ns=array("q"),
+    )
+
+
 def lane_objects_per_cycle(name: str) -> int:
     if name == "request":
         return REQUEST_OBJECTS_PER_ROOT
@@ -33983,7 +34259,7 @@ def lane_objects_per_cycle(name: str) -> int:
     raise AssertionError(f"Unknown lane: {name}")
 
 
-def summarize(samples: List[int]) -> Summary:
+def summarize(samples: Sequence[int]) -> Summary:
     ordered = sorted(samples)
     stdev_ns = statistics.pstdev(samples) if len(samples) > 1 else 0.0
     avg_ns = float(sum(samples)) / float(len(samples))
@@ -34177,9 +34453,9 @@ def run_gauntlet_benchmark(ops: RuntimeOps, cfg: GauntletConfig) -> BenchmarkRes
         bootstrap_samples: List[int] = []
         threaded_samples: List[int] = []
         lane_metric_samples = {
-            "request": new_lane_metric_samples(),
-            "worker_a": new_lane_metric_samples(),
-            "worker_b": new_lane_metric_samples(),
+            "request": new_lane_metric_storage(),
+            "worker_a": new_lane_metric_storage(),
+            "worker_b": new_lane_metric_storage(),
         }
         lane_variant_counts = {
             "request": [0] * VARIANT_COUNT,
@@ -34217,12 +34493,14 @@ def run_gauntlet_benchmark(ops: RuntimeOps, cfg: GauntletConfig) -> BenchmarkRes
                 wall_total_ns=threaded_summary.total_ns,
             )
 
-        combined_outer_create: List[int] = []
-        combined_outer_cleanup: List[int] = []
-        combined_outer_total: List[int] = []
-        combined_request_create: List[int] = []
-        combined_request_cleanup: List[int] = []
-        combined_request_total: List[int] = []
+        # Packed like the run-long lane storage, so combining lanes does not
+        # materialize an int object per sample before summarizing.
+        combined_outer_create: array[int] = array("q")
+        combined_outer_cleanup: array[int] = array("q")
+        combined_outer_total: array[int] = array("q")
+        combined_request_create: array[int] = array("q")
+        combined_request_cleanup: array[int] = array("q")
+        combined_request_total: array[int] = array("q")
         for metric_samples in lane_metric_samples.values():
             combined_outer_create.extend(metric_samples.outer_create_ns)
             combined_outer_cleanup.extend(metric_samples.outer_cleanup_ns)
@@ -47561,6 +47839,465 @@ def test_counter_switch_state_check_only_perf() -> None:
 END FILE: benchmarks/testing_other_di/test_fast_switch_three_mode_orchestrated_perf.py
 ================================================================================
 ================================================================================
+BEGIN FILE: benchmarks/testing_other_di/test_gauntlet_melder_lane_parity.py
+CONTENT SHA256: 5d2a6fe3ed8ec96972e9f30a1f0c28f07fccd7059e140af7e367f8ed8d015d64
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Parity guard between the shared gauntlet's Melder lane and the Melder-only gauntlet.
+
+Purpose:
+    Two benchmarks run the same Melder workload:
+
+    - `test_real_world_gauntlet._build_runtime_melder` - the Melder lane of the
+      shared three-library comparison, built over the same class graph the
+      dependency-injector and dishka lanes use;
+    - `test_melder_gauntlet._build_runtime_melder` - the Melder-only gauntlet,
+      built over `melder_gauntlet_support`'s copy of that graph.
+
+    They are separate code on purpose, so tuning the Melder-only benchmark can
+    never move the shared comparison. The owner's requirement is that they stay
+    configured identically, so results from one are comparable with the other
+    and neither is skewed. This module enforces that:
+
+    - both builders make the same Melder setup calls (Spellbook construction,
+      every configuration property, every bind, the conjure, any frame posture);
+    - both conjure the same spells with the same existence;
+    - both class graphs and lane sizes match;
+    - both lanes meld the same types, in the same order, for every variant;
+    - the shared gauntlet still builds when the Melder-only builder is broken,
+      which proves it no longer borrows that builder.
+
+Method:
+    Setup calls are recorded by wrapping the public Melder entry points the
+    builders use (`Spellbook.__init__`, `Spellbook.bind`, `Spellbook.conjure`,
+    `Spellbook.configure_aether_frame`, `SpellbookConfiguration.set_property`)
+    for the duration of one build, normalized to plain values (classes by name,
+    enums by member name). Internal calls those entry points make are recorded
+    too, which is intended: equal inputs through equal code must produce equal
+    sequences.
+
+Usage:
+    python -X gil=0 -m pytest benchmarks/testing_other_di/test_gauntlet_melder_lane_parity.py -q
+
+This is a benchmark diagnostic surface, not production runtime code.
+"""
+
+import difflib
+import enum
+import importlib
+import sys
+from pathlib import Path
+from typing import Any, Callable, Dict, Iterator, List, Tuple
+
+import pytest
+
+
+def _ensure_local_paths() -> None:
+    """
+    Ensure the repository root, `src/` and this benchmark directory are importable.
+
+    Contract:
+        Adds each path once, so the module imports the same way from pytest or a
+        direct `python` run, from the repository root or this directory.
+    """
+    current_dir = Path(__file__).resolve().parent
+    repo_root = current_dir.parents[1]
+    for path in (repo_root, repo_root / "src", current_dir):
+        path_as_str = str(path)
+        if path_as_str not in sys.path:
+            sys.path.insert(0, path_as_str)
+
+
+_ensure_local_paths()
+
+import melder_gauntlet_support as _support
+import test_melder_gauntlet as _melder_only
+import test_real_world_gauntlet as _shared
+
+
+class _LaneNames:
+    """
+    Frame and conduit names both lanes register, used to find the live conduit.
+
+    Contract:
+        Both builders conjure `"real-world-gauntlet"` on the frame of the same
+        name; the setup-call test fails first if either changes.
+    """
+
+    FRAME: str = "real-world-gauntlet"
+    CONDUIT: str = "real-world-gauntlet"
+
+
+def _plain(value: Any) -> Any:
+    """
+    Normalize one recorded argument to a comparable plain value.
+
+    Contract:
+        - Classes compare by `__name__` (the two graphs are distinct class
+          objects with the same names and shapes).
+        - Enum members compare as `"<EnumType>.<member>"`.
+        - Lists, tuples and dicts are normalized recursively (dicts sorted by key).
+        - `str`, `int`, `float`, `bool` and `None` pass through.
+        - Anything else compares by type name, so runtime objects with identity
+          (loggers, conduits) never make two equal setups look different.
+
+    Args:
+        value: One positional or keyword argument value.
+
+    Returns:
+        Any: A hashable, comparable representation.
+    """
+    if isinstance(value, type):
+        return f"class:{value.__name__}"
+    if isinstance(value, enum.Enum):
+        return f"{type(value).__name__}.{value.name}"
+    if isinstance(value, (list, tuple)):
+        return tuple(_plain(item) for item in value)
+    if isinstance(value, dict):
+        return tuple(sorted((str(key), _plain(item)) for key, item in value.items()))
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return f"object:{type(value).__name__}"
+
+
+class _SetupRecorder:
+    """
+    Record the Melder setup calls one lane builder makes.
+
+    Purpose:
+        Capture everything a builder asks Melder to configure, through the public
+        entry points both builders use, so two builders can be compared call by
+        call.
+
+    Contract:
+        - `record(builder)` wraps the entry points with `pytest.MonkeyPatch`,
+          runs `builder()`, restores the originals, and returns the built ops
+          plus the ordered, normalized call list.
+        - Wrappers always delegate to the original; recording never changes
+          behaviour.
+
+    Lifecycle / Cleanup:
+        Patches are scoped to one `record(...)` call. The caller owns the
+        returned ops and must call `ops.cleanup()`.
+    """
+
+    def __init__(self) -> None:
+        """Initialize an empty call log."""
+        self._calls: List[Tuple[str, Any, Any]] = []
+
+    def _wrap(self, label: str, original: Callable[..., Any]) -> Callable[..., Any]:
+        """
+        Return a wrapper that logs `(label, args, kwargs)` and calls `original`.
+
+        Args:
+            label: Name recorded for this entry point.
+            original: The unbound method being wrapped.
+
+        Returns:
+            Callable[..., Any]: The logging wrapper (method-compatible).
+        """
+
+        def wrapper(receiver: Any, *args: Any, **kwargs: Any) -> Any:
+            """Log this call's normalized arguments, then delegate unchanged."""
+            self._calls.append((label, _plain(args), _plain(kwargs)))
+            return original(receiver, *args, **kwargs)
+
+        return wrapper
+
+    def record(self, builder: Callable[[], Any]) -> Tuple[Any, List[Tuple[str, Any, Any]]]:
+        """
+        Build one lane while recording its Melder setup calls.
+
+        Args:
+            builder: A lane builder such as `_shared._build_runtime_melder`.
+
+        Returns:
+            Tuple[Any, List[Tuple[str, Any, Any]]]: The built ops and the call log.
+        """
+        from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+        from melder.aether.spellbook.spellbook import Spellbook
+
+        self._calls = []
+        targets = (
+            (Spellbook, "__init__", "Spellbook.__init__"),
+            (Spellbook, "configure_aether_frame", "Spellbook.configure_aether_frame"),
+            (Spellbook, "bind", "Spellbook.bind"),
+            (Spellbook, "conjure", "Spellbook.conjure"),
+            (SpellbookConfiguration, "set_property", "SpellbookConfiguration.set_property"),
+        )
+        with pytest.MonkeyPatch.context() as patcher:
+            for owner, attribute, label in targets:
+                patcher.setattr(owner, attribute, self._wrap(label, getattr(owner, attribute)))
+            ops = builder()
+        return ops, list(self._calls)
+
+
+class _MeldRecorder:
+    """
+    Record what one scope cycle melds, for comparing the two lanes' workloads.
+
+    Contract:
+        - `record(call, variant)` wraps `Conduit.meld` and `SpellSpace.meld`,
+          runs one scope cycle, and returns the ordered list of
+          `(surface, resolved type name)` pairs.
+        - Wrappers delegate to the originals; the cycle runs exactly as in the
+          benchmark.
+    """
+
+    def record(self, call: Callable[[int], Any], variant: int) -> List[Tuple[str, str]]:
+        """
+        Run one scope cycle and return what it melded.
+
+        Args:
+            call: A lane callable such as `ops.request_scope_cycle`.
+            variant: Variant index passed to the lane.
+
+        Returns:
+            List[Tuple[str, str]]: `(surface, type name)` per meld, in order.
+        """
+        from melder.aether.conduit.conduit import Conduit
+        from melder.aether.conduit.spell_space.spell_space import SpellSpace
+
+        melds: List[Tuple[str, str]] = []
+
+        def wrap(surface: str, original: Callable[..., Any]) -> Callable[..., Any]:
+            """Return a meld wrapper that records `(surface, resolved type name)`."""
+
+            def wrapper(receiver: Any, *args: Any, **kwargs: Any) -> Any:
+                """Delegate the meld, then record what it resolved."""
+                result = original(receiver, *args, **kwargs)
+                melds.append((surface, type(result).__name__))
+                return result
+
+            return wrapper
+
+        with pytest.MonkeyPatch.context() as patcher:
+            patcher.setattr(Conduit, "meld", wrap("conduit", Conduit.meld))
+            patcher.setattr(SpellSpace, "meld", wrap("spellspace", SpellSpace.meld))
+            call(variant)
+        return melds
+
+
+def _live_spells() -> List[Tuple[Any, ...]]:
+    """
+    Describe the spells visible through the conjured lane conduit.
+
+    Returns:
+        List[Tuple[Any, ...]]: Sorted `(spell_name, binding_name, spellframe,
+        existence, resolvable)` rows. Spell ids are excluded: they hash the
+        defining module, which differs between the two class graphs by design.
+    """
+    from melder.aether.aether import Aether
+
+    conduit = Aether().get_conduit_by_name(_LaneNames.CONDUIT, _LaneNames.FRAME)
+    return sorted(
+        (
+            row["spell_name"],
+            row["binding_name"],
+            row["spellframe"],
+            str(row["existence"]),
+            row["resolvable"],
+        )
+        for row in conduit.describe_spells_in_conduit()
+    )
+
+
+def _builders() -> Dict[str, Callable[[], Any]]:
+    """
+    Return the two lane builders under comparison, keyed by label.
+
+    Returns:
+        Dict[str, Callable[[], Any]]: `"shared"` and `"melder_only"` builders.
+    """
+    return {
+        "shared": _shared._build_runtime_melder,
+        "melder_only": _melder_only._build_runtime_melder,
+    }
+
+
+def _diff(left: List[Any], right: List[Any]) -> str:
+    """
+    Render a unified diff of two recorded sequences for assertion messages.
+
+    Args:
+        left: Shared-lane sequence.
+        right: Melder-only-lane sequence.
+
+    Returns:
+        str: Unified diff text (empty when equal).
+    """
+    return "\n".join(
+        difflib.unified_diff(
+            [repr(item) for item in left],
+            [repr(item) for item in right],
+            fromfile="shared gauntlet lane",
+            tofile="melder-only gauntlet lane",
+            lineterm="",
+        )
+    )
+
+
+@pytest.fixture
+def built_lanes() -> Iterator[Dict[str, Dict[str, Any]]]:
+    """
+    Build each lane once (recording setup calls and live spells), then clean up.
+
+    Yields:
+        Dict[str, Dict[str, Any]]: Per label: `"calls"` (setup call log) and
+        `"spells"` (live spell rows).
+
+    Lifecycle / Cleanup:
+        Each lane is cleaned before the next is built, because both reset and
+        reuse the Aether singleton.
+    """
+    lanes: Dict[str, Dict[str, Any]] = {}
+    for label, builder in _builders().items():
+        ops, calls = _SetupRecorder().record(builder)
+        try:
+            lanes[label] = {"calls": calls, "spells": _live_spells()}
+        finally:
+            ops.cleanup()
+    yield lanes
+
+
+def test_lanes_make_identical_melder_setup_calls(built_lanes: Dict[str, Dict[str, Any]]) -> None:
+    """
+    Both builders configure Melder identically, call for call.
+
+    Contract:
+        Compares the full ordered setup-call logs: Spellbook construction
+        arguments, every configuration property written, every bind (class name,
+        existence, permissions), the conjure (name, dynamic) and any frame
+        posture call. Any difference fails with a unified diff.
+    """
+    shared_calls = built_lanes["shared"]["calls"]
+    melder_only_calls = built_lanes["melder_only"]["calls"]
+    assert shared_calls, "Recorder captured no setup calls; the entry points it wraps may have moved."
+    assert shared_calls == melder_only_calls, (
+        "The shared gauntlet's Melder lane and the Melder-only gauntlet no longer configure "
+        "Melder identically, so their results are not comparable:\n" + _diff(shared_calls, melder_only_calls)
+    )
+
+
+def test_lanes_conjure_identical_spells(built_lanes: Dict[str, Dict[str, Any]]) -> None:
+    """
+    Both lanes end up with the same spells, existence and resolvability.
+
+    Contract:
+        Reads the conjured conduit's public spell description after each build
+        and compares every row except the spell id.
+    """
+    shared_spells = built_lanes["shared"]["spells"]
+    melder_only_spells = built_lanes["melder_only"]["spells"]
+    assert len(shared_spells) == len(_shared._ALL_CLASSES)
+    assert shared_spells == melder_only_spells, _diff(shared_spells, melder_only_spells)
+
+
+def test_lane_class_graphs_and_sizes_match() -> None:
+    """
+    The two workload definitions are the same graph with the same lane sizes.
+
+    Contract:
+        For every class name: identical constructor parameter names and
+        annotation names, and identical membership in each existence group
+        (the shared module lists request roots under its request-scoped group;
+        the Melder-only builder adds them explicitly - both must resolve to the
+        same set). Lane sizes, objects per root, variant count and seed match.
+    """
+
+    def shape(classes: Tuple[type, ...]) -> Dict[str, Tuple[Tuple[str, str], ...]]:
+        """Map class name to its constructor `(parameter, annotation name)` pairs."""
+        return {
+            cls.__name__: tuple((name, annotation.__name__) for name, annotation in _shared._ctor_param_types(cls))
+            for cls in classes
+        }
+
+    assert list(shape(_shared._ALL_CLASSES).items()) == list(shape(_support.ALL_CLASSES).items())
+    request_roots = {"RequestRoot", "WorkerAJobRoot", "WorkerBJobRoot"}
+    shared_request = {cls.__name__ for cls in _shared._REQUEST_SCOPED_TYPES}
+    melder_only_request = {cls.__name__ for cls in _support.REQUEST_SCOPED_TYPES} | request_roots
+    assert shared_request == melder_only_request
+    for shared_group, support_group in (
+            (_shared._SINGLETON_TYPES, _support.SINGLETON_TYPES),
+            (_shared._BOOTSTRAP_TYPES, _support.BOOTSTRAP_TYPES),
+            (_shared._OUTER_SCOPED_TYPES, _support.OUTER_SCOPED_TYPES),
+    ):
+        assert [cls.__name__ for cls in shared_group] == [cls.__name__ for cls in support_group]
+    assert (
+        _shared._REQUEST_OBJECTS_PER_ROOT,
+        _shared._REQUEST_SCOPE_RUNS_DEFAULT,
+        _shared._WORKER_A_OBJECTS_PER_ROOT,
+        _shared._WORKER_B_OBJECTS_PER_ROOT,
+        _shared._WORKER_A_JOBS_DEFAULT,
+        _shared._WORKER_B_JOBS_DEFAULT,
+        _shared._BOOTSTRAP_FANOUT_PER_SINGLETON,
+        _shared._VARIANT_COUNT,
+        _shared._LIB_SEEDS["melder"],
+    ) == (
+        _support.REQUEST_OBJECTS_PER_ROOT,
+        _support.REQUEST_SCOPE_RUNS_DEFAULT,
+        _support.WORKER_A_OBJECTS_PER_ROOT,
+        _support.WORKER_B_OBJECTS_PER_ROOT,
+        _support.WORKER_A_JOBS_DEFAULT,
+        _support.WORKER_B_JOBS_DEFAULT,
+        _support.BOOTSTRAP_FANOUT_PER_SINGLETON,
+        _support.VARIANT_COUNT,
+        _support.LIB_SEED,
+    )
+
+
+def test_lanes_meld_the_same_workload_per_variant() -> None:
+    """
+    Every lane and variant melds the same types in the same order in both builders.
+
+    Contract:
+        Runs one scope cycle per (lane, variant) on each builder with meld
+        recording and compares the `(surface, type name)` sequences.
+    """
+    recorded: Dict[str, List[List[Tuple[str, str]]]] = {}
+    for label, builder in _builders().items():
+        ops = builder()
+        try:
+            ops.spawn_singletons()
+            recorded[label] = [
+                _MeldRecorder().record(call, variant)
+                for call in (ops.request_scope_cycle, ops.worker_a_scope_cycle, ops.worker_b_scope_cycle)
+                for variant in range(_shared._VARIANT_COUNT)
+            ]
+        finally:
+            ops.cleanup()
+    assert all(recorded["shared"]), "A cycle recorded no melds; the meld entry points may have moved."
+    assert recorded["shared"] == recorded["melder_only"], _diff(recorded["shared"], recorded["melder_only"])
+
+
+def test_shared_gauntlet_does_not_borrow_the_melder_only_builder(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    The shared gauntlet's Melder lane is isolated from the Melder-only gauntlet module.
+
+    Contract:
+        Replaces the Melder-only builder (under both import names it can have)
+        with one that raises, then builds the shared lane through
+        `_shared._build_ops("melder")`. Success proves the shared comparison no
+        longer depends on the Melder-only benchmark's code.
+    """
+
+    def refuse() -> Any:
+        """Stand-in builder that fails if the shared gauntlet ever calls it."""
+        raise AssertionError("shared gauntlet called the Melder-only builder")
+
+    for module_name in ("test_melder_gauntlet", "benchmarks.testing_other_di.test_melder_gauntlet"):
+        module = importlib.import_module(module_name)
+        monkeypatch.setattr(module, "_build_runtime_melder", refuse)
+    ops = _shared._build_ops("melder")
+    try:
+        assert ops.name == "melder"
+    finally:
+        ops.cleanup()
+================================================================================
+END FILE: benchmarks/testing_other_di/test_gauntlet_melder_lane_parity.py
+================================================================================
+================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_local_alias_vs_direct_attr_perf.py
 CONTENT SHA256: 280479bb4032c6bffe167efb20d3f502312297b72507b46b4365635b8b1e3ec1
 SOURCE ENCODING: utf-8
@@ -51705,6 +52442,739 @@ def test_profile_cycle_conjure_meld_cleanup_depth9() -> None:
 END FILE: benchmarks/testing_other_di/test_melder_hotpath_profiles.py
 ================================================================================
 ================================================================================
+BEGIN FILE: benchmarks/testing_other_di/test_melder_long_run_retention.py
+CONTENT SHA256: e4f58f8b102c8354c171ff3becdc9fc67e0f02fc95e2a222ad3b133f9cc498ba
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Long-run retention and attribution diagnostics for the shared gauntlet's Melder lane.
+
+Purpose:
+    The owner's shared gauntlet showed Melder holding throughput from 5k to 50k
+    iterations and dropping ~12.5% at 100k, which raised the question of a
+    memory leak. These tests pin down the answer in a form that can be rerun on
+    any machine:
+
+    - The two retention tests prove that Melder's lesser-conduit + SpellSpace
+      scope cycle returns the process to the same object and allocator state,
+      both when every iteration starts three NEW threads (the gauntlet's shape)
+      and when the same cycles run on three persistent threads. A leak of one
+      object per cycle, per iteration, or per thread fails them by orders of
+      magnitude.
+    - The attribution test (opt-in, it is slow) runs one lane three times:
+      discarding samples, storing them as the harness now does (values in
+      `array("q")`), and storing them as the harness used to (the worker
+      threads' int objects in lists). It prints per-window throughput, CPU per
+      cycle and GC activity for each, to answer "is a long-run drop the
+      library, or the measuring harness?" on the owner's own hardware. In the
+      2026-09-26 sandbox runs (CPython 3.14.0rc2 free-threaded) only the former
+      storage slowed down - Melder and dishka alike, with zero automatic
+      collections - which is why the harness was changed.
+
+Method:
+    The workload is the exact one the shared gauntlet runs: the runtime is built
+    by `test_real_world_gauntlet._build_ops("melder")` (the shared gauntlet's own
+    Melder lane, kept identical to the Melder-only gauntlet by
+    `test_gauntlet_melder_lane_parity.py`), and one iteration is
+    `test_real_world_gauntlet._run_gauntlet_once(...)`: 65 scope cycles spread
+    over three lanes (10 request, 25 worker A, 30 worker B).
+
+    Retention is measured in two windows after a warm-up, each preceded by
+    `gc.collect()`: the count of GC-tracked objects (`gc.get_objects()`) and the
+    interpreter's allocated block count (`sys.getallocatedblocks()`). Only the
+    growth BETWEEN the two post-warm-up snapshots is asserted, so first-use
+    caches (pools filling, lazy doors, slot guards) never count as a leak.
+
+Usage (from the repository root):
+    python -X gil=0 -m pytest benchmarks/testing_other_di/test_melder_long_run_retention.py -q -s
+
+    Attribution run, PowerShell:
+        $env:MELDER_LONG_RUN_ATTRIBUTION = "1"
+        $env:MELDER_LONG_RUN_ATTRIBUTION_ITERS = "50000"      # per mode; three modes run
+        $env:MELDER_LONG_RUN_ATTRIBUTION_LIB = "melder"       # or dishka / dependency-injector
+        python -X gil=0 -m pytest benchmarks/testing_other_di/test_melder_long_run_retention.py -q -s -k attribution
+
+    Attribution run, POSIX shell:
+        MELDER_LONG_RUN_ATTRIBUTION=1 MELDER_LONG_RUN_ATTRIBUTION_ITERS=50000 \\
+            python -X gil=0 -m pytest benchmarks/testing_other_di/test_melder_long_run_retention.py \\
+            -q -s -k attribution
+
+Validation:
+    Intended for free-threaded CPython 3.14 (`-X gil=0`); it also runs with the
+    GIL. Assertions are on object and block counts, never on wall-clock time.
+
+This is a benchmark diagnostic surface, not production runtime code.
+"""
+
+import gc
+import os
+import random
+import sys
+import threading
+import time
+from pathlib import Path
+from array import array
+from typing import Any, Callable, Dict, List, MutableSequence, Optional, Tuple
+
+import pytest
+
+
+def _ensure_local_paths() -> None:
+    """
+    Ensure the repository root, `src/` and this benchmark directory are importable.
+
+    Contract:
+        Mirrors the path setup of `real_world_gauntlet_gil_runner.py` (repository
+        root, so `benchmarks.testing_other_di...` resolves) and of
+        `test_melder_gauntlet.py` (`src/` and this directory), adding each path
+        once. Supports pytest and direct `python` execution.
+    """
+    current_dir = Path(__file__).resolve().parent
+    repo_root = current_dir.parents[1]
+    for path in (repo_root, repo_root / "src", current_dir):
+        path_as_str = str(path)
+        if path_as_str not in sys.path:
+            sys.path.insert(0, path_as_str)
+
+
+_ensure_local_paths()
+
+import test_real_world_gauntlet as _gauntlet
+
+
+class _RetentionBudget:
+    """
+    Iteration counts and growth ceilings for the retention tests.
+
+    Purpose:
+        Keep every tunable in one place (this profile keeps constants on classes,
+        not at module scope) and document why each ceiling is safe.
+
+    Contract:
+        - `WARMUP_ITERATIONS` fills the lesser-conduit and SpellSpace pools and
+          every lazily built door before any snapshot is taken.
+        - `WINDOW_ITERATIONS` is the length of each measured window. One window
+          is 65 x WINDOW_ITERATIONS scope cycles and 3 x WINDOW_ITERATIONS fresh
+          threads in the churn test.
+        - The ceilings bound growth between the two post-warm-up snapshots. The
+          sandbox measurement that set them (CPython 3.14.0rc2 free-threaded,
+          2,000-iteration windows) saw -316..0 objects and -1..+12 blocks per
+          window. A leak of one object per iteration alone would add
+          WINDOW_ITERATIONS objects and fail; one per cycle would add 65x that.
+    """
+
+    WARMUP_ITERATIONS: int = 300
+    WINDOW_ITERATIONS: int = 1_000
+    MAX_OBJECT_GROWTH: int = 150
+    MAX_BLOCK_GROWTH: int = 400
+
+
+class _Snapshot:
+    """
+    One post-`gc.collect()` reading of process-level object and block counts.
+
+    Purpose:
+        Carry the two retention measures the tests compare, taken the same way
+        every time.
+
+    Contract:
+        - `take()` runs a full `gc.collect()` first so only reachable objects
+          are counted.
+        - `objects` counts GC-tracked objects; `blocks` is
+          `sys.getallocatedblocks()`, which also covers untracked allocations
+          such as ints, strings and list storage.
+    """
+
+    __slots__ = ("objects", "blocks")
+
+    def __init__(self, objects: int, blocks: int) -> None:
+        """
+        Store one reading.
+
+        Args:
+            objects: Number of GC-tracked objects after a full collection.
+            blocks: `sys.getallocatedblocks()` after the same collection.
+        """
+        self.objects: int = objects
+        self.blocks: int = blocks
+
+    @classmethod
+    def take(cls) -> _Snapshot:
+        """
+        Collect garbage, then read the object and block counts.
+
+        Returns:
+            _Snapshot: The current reading.
+        """
+        gc.collect()
+        return cls(objects=len(gc.get_objects()), blocks=sys.getallocatedblocks())
+
+
+class _PersistentLaneRunner:
+    """
+    Run the gauntlet's three Melder lanes on three long-lived threads.
+
+    Purpose:
+        Provide the no-churn control for the retention tests: the same 65 scope
+        cycles per iteration as `_run_gauntlet_once`, but every iteration reuses
+        the same three threads, so per-thread state is created once.
+
+    Contract:
+        - `run_iteration(ix)` runs one bootstrap fan-out on the calling thread,
+          then releases the three workers, which each run their lane's cycle
+          count with the harness's seed formula, and returns when all three are
+          done.
+        - A worker failure is re-raised on the calling thread from the next
+          `run_iteration` or from `close()`.
+        - `close()` stops and joins the workers; it is idempotent.
+
+    Threading:
+        Two `threading.Barrier(4)` objects gate each iteration (start, end). The
+        iteration index is written before the start barrier and read after it.
+
+    Lifecycle / Cleanup:
+        The runner owns its three threads and barriers. Call `close()` in a
+        `finally`. The Melder runtime itself is owned by the caller.
+    """
+
+    def __init__(self, ops: Any) -> None:
+        """
+        Start three persistent lane workers against one Melder runtime.
+
+        Args:
+            ops: The `_RuntimeOps` returned by `_gauntlet._build_ops("melder")`.
+                Borrowed; the caller cleans it.
+        """
+        self._ops: Any = ops
+        self._start: threading.Barrier = threading.Barrier(4)
+        self._end: threading.Barrier = threading.Barrier(4)
+        self._iteration_ix: int = 0
+        self._stopping: bool = False
+        self._closed: bool = False
+        self._errors: List[BaseException] = []
+        lanes: Tuple[Tuple[Callable[[int], Any], int, int], ...] = (
+            (ops.request_scope_cycle, _gauntlet._REQUEST_SCOPE_RUNS_DEFAULT, 17),
+            (ops.worker_a_scope_cycle, _gauntlet._WORKER_A_JOBS_DEFAULT, 29),
+            (ops.worker_b_scope_cycle, _gauntlet._WORKER_B_JOBS_DEFAULT, 41),
+        )
+        self._threads: List[threading.Thread] = [
+            threading.Thread(target=self._worker, args=lane, daemon=True) for lane in lanes
+        ]
+        for thread in self._threads:
+            thread.start()
+
+    def _worker(self, call: Callable[[int], Any], reps: int, seed_offset: int) -> None:
+        """
+        Run one lane's cycles once per released iteration until stopped.
+
+        Args:
+            call: The lane's scope-cycle callable (takes a variant index).
+            reps: Cycles per iteration for this lane.
+            seed_offset: The lane's seed offset in the harness seed formula.
+        """
+        while True:
+            self._start.wait()
+            if self._stopping:
+                return
+            try:
+                rng = random.Random(
+                    _gauntlet._LIB_SEEDS["melder"] + self._iteration_ix * 101 + seed_offset
+                )
+                for _ in range(reps):
+                    call(rng.randrange(_gauntlet._VARIANT_COUNT))
+            except BaseException as exc:
+                self._errors.append(exc)
+            self._end.wait()
+
+    def run_iteration(self, iteration_ix: int) -> None:
+        """
+        Run one gauntlet iteration on the persistent workers.
+
+        Args:
+            iteration_ix: Iteration index used in the lane seed formula.
+
+        Raises:
+            BaseException: The first error raised by any worker.
+        """
+        self._ops.bootstrap_fanout()
+        self._iteration_ix = iteration_ix
+        self._start.wait()
+        self._end.wait()
+        if self._errors:
+            raise self._errors[0]
+
+    def close(self) -> None:
+        """
+        Stop and join the three workers. Idempotent.
+
+        Raises:
+            BaseException: The first worker error, if one was recorded.
+        """
+        if self._closed:
+            return
+        self._closed = True
+        self._stopping = True
+        self._start.wait()
+        for thread in self._threads:
+            thread.join()
+        if self._errors:
+            raise self._errors[0]
+
+
+def _build_melder_ops() -> Any:
+    """
+    Build the Melder runtime exactly as the shared gauntlet does, singletons spawned.
+
+    Returns:
+        Any: The `_RuntimeOps` for the Melder lane. The caller must call
+        `.cleanup()`.
+    """
+    ops = _gauntlet._build_ops("melder")
+    ops.spawn_singletons()
+    return ops
+
+
+def _gauntlet_config(iterations: int) -> Any:
+    """
+    Return the shared gauntlet's default three-thread configuration.
+
+    Args:
+        iterations: Iteration count to record in the config.
+
+    Returns:
+        Any: A `_GauntletConfig` with the harness's default lane sizes.
+    """
+    return _gauntlet._GauntletConfig(
+        iterations=iterations,
+        threads=3,
+        request_scope_runs=_gauntlet._REQUEST_SCOPE_RUNS_DEFAULT,
+        worker_a_jobs=_gauntlet._WORKER_A_JOBS_DEFAULT,
+        worker_b_jobs=_gauntlet._WORKER_B_JOBS_DEFAULT,
+    )
+
+
+def _measure_window_growth(run_iteration: Callable[[int], None]) -> Tuple[_Snapshot, _Snapshot, _Snapshot]:
+    """
+    Warm up, then take snapshots before and after two equal measured windows.
+
+    Args:
+        run_iteration: Runs one gauntlet iteration for a given index.
+
+    Returns:
+        Tuple[_Snapshot, _Snapshot, _Snapshot]: Readings after warm-up, after
+        window one and after window two.
+    """
+    budget = _RetentionBudget
+    ix = 0
+    for _ in range(budget.WARMUP_ITERATIONS):
+        run_iteration(ix)
+        ix += 1
+    after_warmup = _Snapshot.take()
+    for _ in range(budget.WINDOW_ITERATIONS):
+        run_iteration(ix)
+        ix += 1
+    after_first = _Snapshot.take()
+    for _ in range(budget.WINDOW_ITERATIONS):
+        run_iteration(ix)
+        ix += 1
+    after_second = _Snapshot.take()
+    return after_warmup, after_first, after_second
+
+
+def _assert_no_window_growth(label: str, readings: Tuple[_Snapshot, _Snapshot, _Snapshot]) -> None:
+    """
+    Print the three readings and assert the second window added nothing material.
+
+    Args:
+        label: Scenario name for the printed report.
+        readings: Snapshots after warm-up, window one and window two.
+
+    Raises:
+        AssertionError: Object or block growth across window two exceeded the
+            `_RetentionBudget` ceilings.
+    """
+    after_warmup, after_first, after_second = readings
+    object_growth = after_second.objects - after_first.objects
+    block_growth = after_second.blocks - after_first.blocks
+    cycles = 65 * _RetentionBudget.WINDOW_ITERATIONS
+    print(
+        f"[{label}] objects {after_warmup.objects} -> {after_first.objects} -> {after_second.objects} "
+        f"| blocks {after_warmup.blocks} -> {after_first.blocks} -> {after_second.blocks} "
+        f"| window-2 growth: objects {object_growth:+d}, blocks {block_growth:+d} over {cycles} cycles"
+    )
+    assert object_growth <= _RetentionBudget.MAX_OBJECT_GROWTH, (
+        f"{label}: {object_growth} GC-tracked objects survived {cycles} Melder scope cycles "
+        f"(ceiling {_RetentionBudget.MAX_OBJECT_GROWTH}). Something on the lesser-conduit/"
+        "SpellSpace cycle retains state; diff gc.get_objects() by type between windows to find it."
+    )
+    assert block_growth <= _RetentionBudget.MAX_BLOCK_GROWTH, (
+        f"{label}: allocated blocks grew by {block_growth} over {cycles} Melder scope cycles "
+        f"(ceiling {_RetentionBudget.MAX_BLOCK_GROWTH}). Untracked memory (strings, ints, list or "
+        "dict storage) is accumulating; compare tracemalloc snapshots between windows."
+    )
+
+
+def test_melder_scope_cycles_retain_nothing_under_fresh_thread_churn() -> None:
+    """
+    Melder's scope cycle leaves no residue when every iteration starts three new threads.
+
+    Contract:
+        Runs the shared gauntlet's own `_run_gauntlet_once` (three fresh threads
+        per iteration, 65 lesser-conduit + SpellSpace cycles) and asserts that
+        the second measured window adds no GC-tracked objects or allocated
+        blocks beyond `_RetentionBudget`. Covers per-thread state
+        (`SpellSpaceThreadState`'s `threading.local`), pool return, ward
+        detach and store reset together.
+    """
+    ops = _build_melder_ops()
+    cfg = _gauntlet_config(_RetentionBudget.WARMUP_ITERATIONS + 2 * _RetentionBudget.WINDOW_ITERATIONS)
+    try:
+        readings = _measure_window_growth(lambda ix: _gauntlet._run_gauntlet_once(ops, cfg, ix))
+    finally:
+        ops.cleanup()
+    _assert_no_window_growth("fresh-thread churn", readings)
+
+
+def test_melder_scope_cycles_retain_nothing_on_persistent_threads() -> None:
+    """
+    Melder's scope cycle leaves no residue on three long-lived threads.
+
+    Contract:
+        Same workload and ceilings as the churn test, but the three lanes run on
+        persistent threads, so any growth here is per cycle, not per thread.
+    """
+    ops = _build_melder_ops()
+    runner = _PersistentLaneRunner(ops)
+    try:
+        readings = _measure_window_growth(runner.run_iteration)
+    finally:
+        try:
+            runner.close()
+        finally:
+            ops.cleanup()
+    _assert_no_window_growth("persistent threads", readings)
+
+
+class _AttributionSettings:
+    """
+    Environment switches for the opt-in long-run attribution benchmark.
+
+    Purpose:
+        Keep the attribution run out of ordinary test sessions (it runs for
+        minutes) and let the owner size it on his machine.
+
+    Contract:
+        - `enabled()` is True only when `MELDER_LONG_RUN_ATTRIBUTION` is truthy.
+        - `iterations()` reads `MELDER_LONG_RUN_ATTRIBUTION_ITERS` (default 20,000).
+        - `windows()` reads `MELDER_LONG_RUN_ATTRIBUTION_WINDOWS` (default 10).
+        - `lib()` reads `MELDER_LONG_RUN_ATTRIBUTION_LIB` (default "melder"); any
+          name `_gauntlet._build_ops` accepts is valid, so the same control can
+          be run for dependency-injector or dishka.
+    """
+
+    ENABLE_ENV: str = "MELDER_LONG_RUN_ATTRIBUTION"
+    ITERS_ENV: str = "MELDER_LONG_RUN_ATTRIBUTION_ITERS"
+    WINDOWS_ENV: str = "MELDER_LONG_RUN_ATTRIBUTION_WINDOWS"
+    LIB_ENV: str = "MELDER_LONG_RUN_ATTRIBUTION_LIB"
+    DEFAULT_ITERATIONS: int = 20_000
+    DEFAULT_WINDOWS: int = 10
+
+    @classmethod
+    def enabled(cls) -> bool:
+        """
+        Returns:
+            bool: True when the attribution benchmark was requested.
+        """
+        return os.getenv(cls.ENABLE_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
+
+    @classmethod
+    def iterations(cls) -> int:
+        """
+        Returns:
+            int: Iterations per mode (discard, harness and worker_objects each run this many).
+        """
+        return _gauntlet._env_int(cls.ITERS_ENV, cls.DEFAULT_ITERATIONS)
+
+    @classmethod
+    def windows(cls) -> int:
+        """
+        Returns:
+            int: Number of equal reporting windows per mode.
+        """
+        return _gauntlet._env_int(cls.WINDOWS_ENV, cls.DEFAULT_WINDOWS)
+
+    @classmethod
+    def lib(cls) -> str:
+        """
+        Returns:
+            str: Library lane to run through the shared harness.
+        """
+        return os.getenv(cls.LIB_ENV, "melder").strip() or "melder"
+
+
+class _GcPauseWindow:
+    """
+    gc.callbacks recorder that reports collections and pauses per window.
+
+    Purpose:
+        Attribute per-window slowdowns to automatic collections: how many ran
+        and how long the stop-the-world pauses were.
+
+    Contract:
+        - `install()` / `uninstall()` add and remove one gc.callbacks hook.
+        - `take()` returns (collections, pause_total_ns, pause_max_ns) since the
+          previous `take()` and resets the counters.
+
+    Threading:
+        Under the free-threaded build the callback runs on the thread that
+        triggered the collection; start stamps are kept per thread and totals
+        are merged under `_lock`.
+    """
+
+    def __init__(self) -> None:
+        """Initialize empty counters and the merge lock."""
+        self._lock: threading.Lock = threading.Lock()
+        self._start_by_thread: Dict[int, int] = {}
+        self._collections: int = 0
+        self._pause_total_ns: int = 0
+        self._pause_max_ns: int = 0
+
+    def _callback(self, phase: str, info: Dict[str, Any]) -> None:
+        """
+        Time one collection.
+
+        Args:
+            phase: "start" or "stop", as supplied by the collector.
+            info: Collector-supplied mapping (unused).
+        """
+        thread_id = threading.get_ident()
+        if phase == "start":
+            self._start_by_thread[thread_id] = time.perf_counter_ns()
+            return
+        start_ns: Optional[int] = self._start_by_thread.pop(thread_id, None)
+        if start_ns is None:
+            return
+        pause_ns = time.perf_counter_ns() - start_ns
+        with self._lock:
+            self._collections += 1
+            self._pause_total_ns += pause_ns
+            self._pause_max_ns = max(self._pause_max_ns, pause_ns)
+
+    def install(self) -> None:
+        """Append the recording hook to gc.callbacks."""
+        gc.callbacks.append(self._callback)
+
+    def uninstall(self) -> None:
+        """Remove the recording hook; a no-op when already absent."""
+        if self._callback in gc.callbacks:
+            gc.callbacks.remove(self._callback)
+
+    def take(self) -> Tuple[int, int, int]:
+        """
+        Return and reset this window's counters.
+
+        Returns:
+            Tuple[int, int, int]: (collections, pause_total_ns, pause_max_ns).
+        """
+        with self._lock:
+            result = (self._collections, self._pause_total_ns, self._pause_max_ns)
+            self._collections = 0
+            self._pause_total_ns = 0
+            self._pause_max_ns = 0
+        return result
+
+
+class _RetentionMode:
+    """
+    Names of the three sample-handling modes the attribution benchmark compares.
+
+    Purpose:
+        Show on any machine that the gauntlet harness is fair after the
+        2026-09-26 storage fix, and reproduce the defect it removed.
+
+    Contract:
+        - `DISCARD`: each iteration's samples are dropped; nothing accumulates.
+          The no-harness baseline.
+        - `HARNESS`: exactly what `_run_gauntlet_benchmark` does now - values are
+          copied from each iteration's lists into run-long `array("q")` storage,
+          so no int object created on a worker thread outlives its iteration.
+        - `WORKER_OBJECTS`: what the harness did before the fix - the int objects
+          the worker threads created are kept in run-long lists for the whole
+          leg, outliving the threads that allocated them. On free-threaded
+          CPython 3.14 this mode slows down window after window.
+    """
+
+    DISCARD: str = "discard"
+    HARNESS: str = "harness"
+    WORKER_OBJECTS: str = "worker_objects"
+    ALL: Tuple[str, str, str] = ("discard", "harness", "worker_objects")
+
+
+def _new_lane_keepers(mode: str) -> Dict[str, List[MutableSequence[int]]]:
+    """
+    Return empty run-long per-lane storage for one attribution mode.
+
+    Args:
+        mode: One of `_RetentionMode.ALL`.
+
+    Returns:
+        Dict[str, List[MutableSequence[int]]]: Per lane, six sequences in harness
+        metric order: `array("q")` for `HARNESS` (the fixed harness storage),
+        plain lists otherwise (which keep the worker-created int objects).
+    """
+    lanes = ("request", "worker_a", "worker_b")
+    if mode == _RetentionMode.HARNESS:
+        return {name: [array("q") for _ in range(6)] for name in lanes}
+    return {name: [[] for _ in range(6)] for name in lanes}
+
+
+def _keep_iteration_samples(
+        result: Any,
+        mode: str,
+        kept_iteration: List[List[int]],
+        kept_lanes: Dict[str, List[MutableSequence[int]]],
+) -> None:
+    """
+    Store one iteration's samples according to the retention mode.
+
+    Contract:
+        Iteration-level times are measured on the main thread and are kept as
+        the harness keeps them. Lane samples are extended into `kept_lanes`,
+        whose storage type (see `_new_lane_keepers`) decides whether values or
+        worker-created objects are retained.
+
+    Args:
+        result: The `_IterationResult` returned by `_gauntlet._run_gauntlet_once`.
+        mode: One of `_RetentionMode.ALL`.
+        kept_iteration: Run-long lists for total, bootstrap and threaded times.
+        kept_lanes: Run-long storage per lane, six metrics each, in harness order.
+    """
+    if mode == _RetentionMode.DISCARD:
+        return
+    kept_iteration[0].append(result.total_ns)
+    kept_iteration[1].append(result.bootstrap_ns)
+    kept_iteration[2].append(result.threaded_ns)
+    for name, values in result.lane_metrics.items():
+        sources = (
+            values.outer_create_ns,
+            values.outer_cleanup_ns,
+            values.outer_total_ns,
+            values.request_create_ns,
+            values.request_cleanup_ns,
+            values.request_total_ns,
+        )
+        for kept, source in zip(kept_lanes[name], sources):
+            kept.extend(source)
+
+
+def _run_attribution_mode(lib: str, mode: str, iterations: int, windows: int) -> List[str]:
+    """
+    Run one library lane through the shared harness and report per-window cost.
+
+    Contract:
+        - Uses `_gauntlet._run_gauntlet_once` for every iteration (three fresh
+          worker threads, 65 scope cycles), exactly as `_run_gauntlet_benchmark`
+          does, with a fresh runtime from `_gauntlet._build_ops(lib)`.
+        - Samples are handled per `_RetentionMode` (see `_new_lane_keepers` and
+          `_keep_iteration_samples`).
+        - Each window reports wall scope cycles/s, the median threaded-phase
+          time, process CPU microseconds per cycle, GC collections and pauses,
+          and the number of retained entries at the window's end.
+
+    Args:
+        lib: Library lane name accepted by `_gauntlet._build_ops`.
+        mode: One of `_RetentionMode.ALL`.
+        iterations: Iterations to run.
+        windows: Number of reporting windows.
+
+    Returns:
+        List[str]: One formatted line per window.
+    """
+    cfg = _gauntlet_config(iterations)
+    window_size = max(1, iterations // windows)
+    cycles = window_size * (cfg.request_scope_runs + cfg.worker_a_jobs + cfg.worker_b_jobs)
+    ops = _gauntlet._build_ops(lib)
+    probe = _GcPauseWindow()
+    kept_iteration: List[List[int]] = [[], [], []]
+    kept_lanes = _new_lane_keepers(mode)
+    lines: List[str] = []
+    try:
+        ops.spawn_singletons()
+        probe.install()
+        wall_t0 = time.perf_counter()
+        cpu_t0 = time.process_time()
+        threaded: List[int] = []
+        for ix in range(iterations):
+            result = _gauntlet._run_gauntlet_once(ops, cfg, ix)
+            threaded.append(result.threaded_ns)
+            _keep_iteration_samples(result, mode, kept_iteration, kept_lanes)
+            if (ix + 1) % window_size != 0:
+                continue
+            wall_s = time.perf_counter() - wall_t0
+            cpu_s = time.process_time() - cpu_t0
+            collections, pause_total_ns, pause_max_ns = probe.take()
+            retained = sum(len(values) for values in kept_iteration) + sum(
+                len(values) for lane in kept_lanes.values() for values in lane
+            )
+            threaded.sort()
+            lines.append(
+                f"[{lib} {mode:<7}] iters<={ix + 1:7d} | "
+                f"cycles/s={cycles / wall_s:9,.0f} | thr_med={threaded[len(threaded) // 2] / 1e6:6.3f}ms | "
+                f"cpu={cpu_s / cycles * 1e6:6.1f}us/cycle | gc={collections:4d} "
+                f"pause_tot={pause_total_ns / 1e6:8.1f}ms max={pause_max_ns / 1e6:7.2f}ms | "
+                f"retained={retained:,}"
+            )
+            print(lines[-1], flush=True)
+            threaded = []
+            wall_t0 = time.perf_counter()
+            cpu_t0 = time.process_time()
+    finally:
+        probe.uninstall()
+        kept_iteration.clear()
+        kept_lanes.clear()
+        ops.cleanup()
+    return lines
+
+
+@pytest.mark.skipif(
+    not _AttributionSettings.enabled(),
+    reason="Opt-in long-run benchmark: set MELDER_LONG_RUN_ATTRIBUTION=1 (minutes per run).",
+)
+def test_long_run_attribution_harness_retention_modes() -> None:
+    """
+    Show whether a long-run slowdown follows the harness's sample retention.
+
+    Contract:
+        Runs the chosen lane three times in one process - discard, harness
+        (the fixed run-long `array("q")` storage) and worker_objects (the former
+        list storage) - each with a fresh runtime, and prints a per-window table
+        for each.
+
+        How to read it: DISCARD and HARNESS should both stay flat across windows;
+        if they do, the harness no longer penalizes long runs on this machine.
+        WORKER_OBJECTS shows the defect the fix removed. If DISCARD itself slows
+        down, the library (or the machine) is responsible. `gc=` shows whether
+        automatic collections ran at all.
+
+        The only assertion is that every window was reported; the printed table
+        is the deliverable. Timing is machine-specific and is never asserted.
+    """
+    lib = _AttributionSettings.lib()
+    iterations = _AttributionSettings.iterations()
+    windows = _AttributionSettings.windows()
+    print(
+        f"[attribution] lib={lib} iterations={iterations} windows={windows} "
+        f"python={sys.version.split()[0]} gil_enabled={sys._is_gil_enabled()}"
+    )
+    reported: Dict[str, List[str]] = {}
+    for mode in _RetentionMode.ALL:
+        reported[mode] = _run_attribution_mode(lib, mode, iterations, windows)
+        gc.collect()
+    assert all(len(lines) == windows for lines in reported.values())
+================================================================================
+END FILE: benchmarks/testing_other_di/test_melder_long_run_retention.py
+================================================================================
+================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py
 CONTENT SHA256: 4ac3a0a3e07feae063f725ad18e761a5156ca4028fb471dd79047bb34a2eb2c2
 SOURCE ENCODING: utf-8
@@ -55365,7 +56835,7 @@ END FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_real_world_gauntlet.py
-CONTENT SHA256: 56e1579121344b45b9da7fe42c20e620d584316ed33660e74ab83001aea6bdc9
+CONTENT SHA256: 83aaf8362392d878d49e2a99f95fa1adb5ac80845b9d4ccfb622fdcd28451fa2
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -55381,7 +56851,8 @@ import sys
 import threading
 import time
 import typing
-from collections.abc import Callable
+from array import array
+from collections.abc import Callable, MutableSequence, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -55818,7 +57289,7 @@ class _GauntletConfig:
     @staticmethod
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
-            iterations=_env_int("DI_GAUNTLET_ITERS", 5000),
+            iterations=_env_int("DI_GAUNTLET_ITERS", 50_000),
             threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
@@ -55875,12 +57346,32 @@ class _ScopeCycleMetrics:
 
 @dataclass
 class _LaneMetricSamples:
-    outer_create_ns: list[int]
-    outer_cleanup_ns: list[int]
-    outer_total_ns: list[int]
-    request_create_ns: list[int]
-    request_cleanup_ns: list[int]
-    request_total_ns: list[int]
+    """
+    Per-lane scope-cycle timings in nanoseconds, one entry per cycle.
+
+    Two storage kinds share this shape, and the split is deliberate:
+
+    - One iteration's samples are plain lists (`_new_lane_metric_samples`). The
+      short-lived worker threads append to them; list appends stay safe when
+      several workers share a lane, and the lists die with the iteration.
+    - The run-long accumulation is packed `array("q")` storage
+      (`_new_lane_metric_storage`), extended on the main thread. It holds values, not int
+      objects. Keeping the workers' int objects for the whole leg (the former
+      list storage) retained objects allocated by threads that had exited, and
+      on free-threaded CPython 3.14 that made every later scope cycle
+      progressively more expensive: 2-2.5x slower over 40k iterations for
+      Melder and dishka alike, with zero garbage collections. The attribution
+      test in test_melder_long_run_retention.py reproduces it.
+
+    Values, ordering and every summary computed from them are unchanged.
+    """
+
+    outer_create_ns: MutableSequence[int]
+    outer_cleanup_ns: MutableSequence[int]
+    outer_total_ns: MutableSequence[int]
+    request_create_ns: MutableSequence[int]
+    request_cleanup_ns: MutableSequence[int]
+    request_total_ns: MutableSequence[int]
 
 
 @dataclass(frozen=True)
@@ -56313,6 +57804,24 @@ def _build_runtime_dishka() -> _RuntimeOps:
 
 
 def _build_runtime_melder() -> _RuntimeOps:
+    """
+    Build the shared gauntlet's Melder lane over this module's class graph.
+
+    Contract:
+        - Uses the same classes as the dependency-injector and dishka lanes in
+          this module, so all three libraries resolve the identical graph.
+        - Setup MUST stay identical to the Melder-only gauntlet
+          (`test_melder_gauntlet._build_runtime_melder`): same frame and conduit
+          names, one phase-scheduler worker, no frame-posture overrides, the
+          same existence per class, `permissions="create"`, `dynamic=False`.
+          The two builders are separate code on purpose - tuning the
+          Melder-only benchmark cannot change this shared comparison - and
+          `test_gauntlet_melder_lane_parity.py` fails if their setup diverges.
+        - Resets the Aether singleton before building and again in cleanup.
+
+    Returns:
+        _RuntimeOps: The Melder lane callables for `_run_gauntlet_once`.
+    """
     from melder.aether.aether import Aether
     from melder.aether.conduit.conduit import Conduit
     from melder.aether.spellbook.existence.existence import Existence
@@ -56329,13 +57838,12 @@ def _build_runtime_melder() -> _RuntimeOps:
 
     spellbook = Spellbook(aetheric_frame="real-world-gauntlet")
     cfg = spellbook.get_configuration()
-    spellbook.configure_aether_frame(
-        system_state=None,
-        disposal=None,
-        disposal_method_names=None,
-        system_caching_enabled=True,
-    )
-    cfg.set_property("phase_scheduler_workers_per_spellbook", 3)
+    # Matches the Melder-only gauntlet exactly: one phase-scheduler worker and no
+    # frame-posture overrides (system caching is already on by frame default).
+    # This builder previously called configure_aether_frame(...) first, which
+    # freezes the configuration, so the set_property below raised and the shared
+    # gauntlet had been borrowing the Melder-only builder instead.
+    cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
 
     spell_ids: dict[type, str] = {}
     for cls in _ALL_CLASSES:
@@ -56522,9 +58030,9 @@ def _build_ops(lib: str) -> _RuntimeOps:
     if lib == "dishka":
         return _build_runtime_dishka()
     if lib == "melder":
-        from benchmarks.testing_other_di import test_melder_gauntlet as melder_gauntlet
-
-        return melder_gauntlet._build_runtime_melder()
+        # This module's own Melder lane: isolated from the Melder-only gauntlet,
+        # kept equal to it by test_gauntlet_melder_lane_parity.py.
+        return _build_runtime_melder()
     raise AssertionError(f"Unknown lib: {lib}")
 
 
@@ -56546,6 +58054,26 @@ def _new_lane_metric_samples() -> _LaneMetricSamples:
         request_create_ns=[],
         request_cleanup_ns=[],
         request_total_ns=[],
+    )
+
+
+def _new_lane_metric_storage() -> _LaneMetricSamples:
+    """
+    Return empty run-long sample storage: six signed 64-bit `array("q")`.
+
+    Contract:
+        - Used only for accumulation across iterations on the main thread.
+        - `extend(...)` copies values out of an iteration's lists, so no int
+          object created on a worker thread outlives that iteration. See
+          `_LaneMetricSamples` for why this matters on free-threaded CPython.
+    """
+    return _LaneMetricSamples(
+        outer_create_ns=array("q"),
+        outer_cleanup_ns=array("q"),
+        outer_total_ns=array("q"),
+        request_create_ns=array("q"),
+        request_cleanup_ns=array("q"),
+        request_total_ns=array("q"),
     )
 
 
@@ -56655,7 +58183,7 @@ def _run_gauntlet_once(ops: _RuntimeOps, cfg: _GauntletConfig, iteration_ix: int
     )
 
 
-def _summarize(samples: list[int]) -> _Summary:
+def _summarize(samples: Sequence[int]) -> _Summary:
     ordered = sorted(samples)
     stdev_ns = statistics.pstdev(samples) if len(samples) > 1 else 0.0
     avg_ns = float(sum(samples)) / float(len(samples))
@@ -56920,9 +58448,9 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
         bootstrap_samples: list[int] = []
         threaded_samples: list[int] = []
         lane_metric_samples = {
-            "request": _new_lane_metric_samples(),
-            "worker_a": _new_lane_metric_samples(),
-            "worker_b": _new_lane_metric_samples(),
+            "request": _new_lane_metric_storage(),
+            "worker_a": _new_lane_metric_storage(),
+            "worker_b": _new_lane_metric_storage(),
         }
         lane_variant_counts = {
             "request": [0] * _VARIANT_COUNT,
@@ -57083,12 +58611,14 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
                 wall_total_ns=threaded_summary.total_ns,
             )
 
-        combined_outer_create = []
-        combined_outer_cleanup = []
-        combined_outer_total = []
-        combined_request_create = []
-        combined_request_cleanup = []
-        combined_request_total = []
+        # Packed like the run-long lane storage, so combining multi-million-entry
+        # lanes does not materialize an int object per sample before summarizing.
+        combined_outer_create: array[int] = array("q")
+        combined_outer_cleanup: array[int] = array("q")
+        combined_outer_total: array[int] = array("q")
+        combined_request_create: array[int] = array("q")
+        combined_request_cleanup: array[int] = array("q")
+        combined_request_total: array[int] = array("q")
         for metric_samples in lane_metric_samples.values():
             combined_outer_create.extend(metric_samples.outer_create_ns)
             combined_outer_cleanup.extend(metric_samples.outer_cleanup_ns)
@@ -66878,340 +68408,6 @@ class Asset:
 END FILE: docs/tools/site_model.py
 ================================================================================
 ================================================================================
-BEGIN FILE: experimentation/test_spellframe_type_injection.py
-CONTENT SHA256: 93ffa350dbbc556831cf68ecac2768697561a71601be1d2bed4814f4d0da2cb2
-SOURCE ENCODING: utf-8
-================================================================================
-"""Probe spellframe grouping through Melder's real public integration path.
-
-Run from the Melder repository in PowerShell:
-    $env:PYTHONPATH = (Resolve-Path src).Path
-    py -3.14t experimentation/test_spellframe_type_injection.py -v
-
-Ten scenarios run in both automatic and dynamic mode. Constructor inference,
-explicit SpellMap selection, qualified public meld and machine-ID lookup are
-kept separate. No compiler or resolver behavior is mocked. The native test-only
-Aether reset isolates each case inside this experiment process. System caching
-is disabled through frame configuration, matching the native cache tests, so
-saved compilation plans cannot contaminate these binding/injection cases.
-
-The file uses unittest so it runs without pytest and can also be collected by
-pytest when that runner is available. Application/runtime source is unchanged.
-"""
-
-import inspect
-import sys
-import unittest
-from typing import ClassVar, Optional, Union
-
-from melder.aether.aether import Aether
-from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.meld.contracts.spell_map import SpellMap
-from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spellbook import Spellbook
-from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
-
-
-class Provider:
-    """A resource-free dependency with observable behavior for identity checks."""
-
-    def __init__(self) -> None:
-        """Initialize the provider's stable value; no external resource is owned."""
-        self.value = "ready"
-
-    def read(self) -> str:
-        """Return the stable value used to prove that a constructed provider works."""
-        return self.value
-
-
-class UserProvider(Provider):
-    """A distinct provider type with an observable userland value."""
-
-    def __init__(self) -> None:
-        """Initialize the inherited value contract with a different public result."""
-        super().__init__()
-        self.value = "userland"
-
-
-class Consumer:
-    """Borrow an injected Provider and use it through its ordinary typed contract."""
-
-    def __init__(self, provider: Provider) -> None:
-        """Retain the injected provider without taking ownership of its disposal."""
-        self.provider = provider
-
-    def execute(self) -> str:
-        """Use the dependency so an unresolved descriptor or missing object fails."""
-        return "consumer:" + self.provider.read()
-
-
-class MappedConsumer(Consumer):
-    """Choose the commandops provider explicitly when several providers are bound."""
-
-    def __init__(
-        self,
-        provider: Union[Provider, SpellMap] = SpellMap(
-            spellframe="commandops",
-            binding_name="service",
-        ),
-    ) -> None:
-        """Require Melder to replace the descriptor with the selected Provider.
-
-        A direct Python call that leaves the SpellMap default unresolved raises
-        TypeError. The injected provider remains borrowed by the consumer.
-        """
-        if isinstance(provider, SpellMap):
-            raise TypeError("MappedConsumer requires its SpellMap to be resolved.")
-        super().__init__(provider)
-
-
-class AutomaticSpellframeTests(unittest.TestCase):
-    """Exercise public binding/conjure/meld behavior in a fresh automatic world."""
-
-    DYNAMIC: ClassVar[bool] = False
-
-    @staticmethod
-    def reset_world() -> None:
-        """Use the repository's native test reset and reattach class-level hosts.
-
-        This is process-local test isolation, matching Melder integration tests;
-        it does not replace registration, compilation, validation or resolution.
-        """
-        Aether._reset_singleton_for_tests()
-        runtime = Aether()
-        Spellbook._aether = runtime
-        Conduit._aether = runtime
-
-    def setUp(self) -> None:
-        """Create one real book with deterministic phase scheduling for each case."""
-        self.reset_world()
-        self.book: Spellbook = Spellbook()
-        self.book.get_configuration().set_property(
-            "phase_scheduler_workers_per_spellbook", 1
-        )
-        self.book.configure_aether_frame(
-            system_state="dynamic" if self.DYNAMIC else None,
-            disposal=None,
-            disposal_method_names=None,
-            system_caching_enabled=False,
-        )
-        self.root: Optional[Conduit] = None
-
-    def tearDown(self) -> None:
-        """Attempt root/book cleanup and always reset the process-local world."""
-        try:
-            if self.root is not None:
-                self.root.cleanup()
-        finally:
-            try:
-                self.book.cleanup()
-            finally:
-                self.reset_world()
-
-    def bind_provider(
-        self,
-        spellframe: Optional[str] = None,
-        binding_name: Optional[str] = None,
-    ) -> str:
-        """Bind Provider with unique lifetime and return its public machine ID."""
-        return self.book.bind(
-            spell=Provider,
-            existence=Existence.unique,
-            permissions="create",
-            spellframe=spellframe,
-            binding_name=binding_name,
-        )
-
-    def bind_distinct_provider_pair(self) -> tuple[str, str]:
-        """Bind two distinct types under the same binding name in different frames."""
-        commandops_id = self.bind_provider("commandops", "service")
-        userland_id = self.book.bind(
-            spell=UserProvider,
-            existence=Existence.unique,
-            permissions="create",
-            spellframe="userland",
-            binding_name="service",
-        )
-        return commandops_id, userland_id
-
-    def bind_consumer(self, consumer_type: type[Consumer] = Consumer) -> str:
-        """Bind a consumer class and return the ID used to resolve the root object."""
-        return self.book.bind(
-            spell=consumer_type,
-            existence=Existence.many,
-            permissions="create",
-        )
-
-    def conjure_root(self) -> Conduit:
-        """Run real native validation/compilation and retain the root for cleanup."""
-        self.root = self.book.conjure(
-            name="spellframe_type_injection_experiment",
-            dynamic=self.DYNAMIC,
-        )
-        return self.root
-
-    def test_plain_class_injection_baseline(self) -> None:
-        """Unframed constructor injection and direct class lookup share Provider."""
-        provider_id = self.bind_provider()
-        consumer_id = self.bind_consumer()
-        root = self.conjure_root()
-
-        consumer = root.meld(spell_id=consumer_id)
-        provider = root.meld(spell_id=provider_id)
-
-        self.assertEqual(consumer.execute(), "consumer:ready")
-        self.assertIs(consumer.provider, provider)
-        self.assertIs(root.meld(Provider), provider)
-
-    def test_named_framed_provider_still_injects_by_concrete_type(self) -> None:
-        """A unique framed/named Provider satisfies an ordinary typed parameter."""
-        provider_id = self.bind_provider("commandops", "service")
-        consumer_id = self.bind_consumer()
-        root = self.conjure_root()
-
-        consumer = root.meld(spell_id=consumer_id)
-        provider = root.meld(spellframe="commandops", binding_name="service")
-
-        self.assertEqual(consumer.execute(), "consumer:ready")
-        self.assertIs(consumer.provider, provider)
-        self.assertIs(provider, root.meld(spell_id=provider_id))
-
-    def test_two_spellframes_do_not_disambiguate_plain_type_injection(self) -> None:
-        """Two Provider registrations fail specifically because inference is ambiguous."""
-        self.bind_provider("commandops", "service")
-        self.bind_provider("userland", "service")
-        self.bind_consumer()
-
-        with self.assertRaises(PhaseExecutionError) as raised:
-            self.conjure_root()
-
-        errors = raised.exception.errors
-        self.assertTrue(
-            any("multiple DI candidates" in str(error) for error in errors),
-            "Expected an ambiguous-provider error, got: "
-            + "; ".join(str(error) for error in errors),
-        )
-
-    def test_spellmap_selects_one_provider_across_spellframes(self) -> None:
-        """The explicit descriptor chooses commandops and leaves userland distinct."""
-        commandops_id = self.bind_provider("commandops", "service")
-        userland_id = self.bind_provider("userland", "service")
-        consumer_id = self.bind_consumer(MappedConsumer)
-        root = self.conjure_root()
-
-        consumer = root.meld(spell_id=consumer_id)
-        commandops_provider = root.meld(spell_id=commandops_id)
-        userland_provider = root.meld(spell_id=userland_id)
-
-        self.assertEqual(consumer.execute(), "consumer:ready")
-        self.assertIs(consumer.provider, commandops_provider)
-        self.assertIsNot(consumer.provider, userland_provider)
-
-    def test_spellframe_only_selects_default_binding(self) -> None:
-        """Omitting binding_name selects each spellframe's default provider."""
-        commandops_id = self.bind_provider(spellframe="commandops")
-        userland_id = self.book.bind(
-            spell=UserProvider,
-            existence=Existence.unique,
-            permissions="create",
-            spellframe="userland",
-        )
-        consumer_id = self.bind_consumer()
-        root = self.conjure_root()
-
-        commandops_provider = root.meld(spellframe="commandops")
-        userland_provider = root.meld(spellframe="userland")
-        consumer = root.meld(spell_id=consumer_id)
-
-        self.assertEqual(commandops_provider.read(), "ready")
-        self.assertEqual(userland_provider.read(), "userland")
-        self.assertIsNot(commandops_provider, userland_provider)
-        self.assertIs(commandops_provider, root.meld(spell_id=commandops_id))
-        self.assertIs(userland_provider, root.meld(spell_id=userland_id))
-        self.assertIs(
-            commandops_provider,
-            root.meld(spellframe="commandops", binding_name="__default__"),
-        )
-        self.assertEqual(consumer.execute(), "consumer:ready")
-        self.assertIs(consumer.provider, commandops_provider)
-
-    def test_spellframe_only_does_not_guess_named_binding(self) -> None:
-        """A missing default is an error even when the frame has one named provider."""
-        provider_id = self.bind_provider("commandops", "service")
-        root = self.conjure_root()
-
-        with self.assertRaisesRegex(KeyError, "binding='__default__'"):
-            root.meld(spellframe="commandops")
-
-        provider = root.meld(spellframe="commandops", binding_name="service")
-        self.assertEqual(provider.read(), "ready")
-        self.assertIs(provider, root.meld(spell_id=provider_id))
-
-    def test_same_binding_name_across_spellframes_selects_distinct_providers(self) -> None:
-        """The frame distinguishes two addresses whose binding name is identical."""
-        commandops_id, userland_id = self.bind_distinct_provider_pair()
-        root = self.conjure_root()
-
-        commandops_provider = root.meld(spellframe="commandops", binding_name="service")
-        userland_provider = root.meld(spellframe="userland", binding_name="service")
-
-        self.assertEqual(commandops_provider.read(), "ready")
-        self.assertEqual(userland_provider.read(), "userland")
-        self.assertIsNot(commandops_provider, userland_provider)
-        self.assertIs(commandops_provider, root.meld(spell_id=commandops_id))
-        self.assertIs(userland_provider, root.meld(spell_id=userland_id))
-
-    def test_spellmap_selects_distinct_types_with_same_binding_name(self) -> None:
-        """SpellMap selects commandops/service when userland/service also exists."""
-        commandops_id, userland_id = self.bind_distinct_provider_pair()
-        consumer_id = self.bind_consumer(MappedConsumer)
-        root = self.conjure_root()
-
-        consumer = root.meld(spell_id=consumer_id)
-        commandops_provider = root.meld(spell_id=commandops_id)
-        userland_provider = root.meld(spell_id=userland_id)
-
-        self.assertEqual(consumer.execute(), "consumer:ready")
-        self.assertIs(consumer.provider, commandops_provider)
-        self.assertIsNot(consumer.provider, userland_provider)
-        self.assertEqual(userland_provider.read(), "userland")
-
-    def test_direct_qualified_lookup_needs_no_spellmap(self) -> None:
-        """Public frame/binding arguments and spell_id resolve the same live object."""
-        provider_id = self.bind_provider("commandops", "service")
-        root = self.conjure_root()
-
-        by_address = root.meld(spellframe="commandops", binding_name="service")
-        by_id = root.meld(spell_id=provider_id)
-
-        self.assertEqual(by_address.read(), "ready")
-        self.assertIs(by_address, by_id)
-
-    def test_direct_class_lookup_does_not_alias_custom_address(self) -> None:
-        """Direct class lookup has different addressing semantics from inference."""
-        provider_id = self.bind_provider("commandops", "service")
-        root = self.conjure_root()
-        self.assertEqual(root.meld(spell_id=provider_id).read(), "ready")
-
-        with self.assertRaisesRegex(KeyError, "No spell found"):
-            root.meld(Provider)
-
-
-class DynamicSpellframeTests(AutomaticSpellframeTests):
-    """Run the same ten scenarios with dynamic frame posture and native meld gates."""
-
-    DYNAMIC: ClassVar[bool] = True
-
-
-if __name__ == "__main__":
-    print("Python:", sys.version.split()[0], flush=True)
-    print("GIL enabled:", sys._is_gil_enabled(), flush=True)
-    print("Melder source:", inspect.getfile(Spellbook), flush=True)
-    unittest.main(verbosity=2)
-================================================================================
-END FILE: experimentation/test_spellframe_type_injection.py
-================================================================================
-================================================================================
 BEGIN FILE: pyproject.toml
 CONTENT SHA256: de7c77db321d42a8956257e849606b08210436adb2f387e4aa24a55b5a262232
 SOURCE ENCODING: utf-8
@@ -67942,12 +69138,100 @@ END FILE: release_docs/0.2.50.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 79b4b12ff5debf34e04faf02bfa4f7a83faed991bf85ae0766f83fa9e2a65b65
+CONTENT SHA256: aca84c4e78ad112a7a989d95240ff54cb6b212be2f3ee4ddc580e5a28179c22a
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.51
+# Melder 0.2.54
 
 **Unreleased**
+
+## Typed parameters without a provider are supplied at meld
+
+A constructor parameter whose type nothing registered provides - a `Package`, a `Conduit`, or a
+third-party object you never bind - no longer stops `conjure`. It becomes an unresolved input: the
+meld that constructs the object supplies it through `override`, and Melder passes that exact object
+to the constructor.
+
+```python
+class Task:
+    def __init__(self, work: Package) -> None:
+        self.work = work
+
+book.bind(spell=Task, existence="many")
+conduit = book.conjure()  # succeeds and logs one INFO line: Task.work -> Package
+task = conduit.meld(spell=Task, override={"work": package})
+assert task.work is package
+```
+
+When a meld builds the object without that value, Melder raises `UnresolvedInputError` instead of
+Python's missing-argument error. The message names the object, the parameter, the expected type and
+the override keys that would supply it:
+
+```text
+Task.work expects Package, but nothing registered provides it and this meld did not supply it.
+Supply it with override={'work': ...} when melding Task, a path key ending in '>work' (or '**work')
+when Task is built as a dependency, or bind a provider for Package.
+```
+
+- **Behavior change: conjure no longer fails for a missing provider.** A single typed parameter with
+  no matching registration used to raise "no DI candidate found" at conjure. It now surfaces at the
+  first meld that builds the object, and conjure lists every unresolved input in one INFO log line.
+  Two or more matching providers still fail conjure, as before.
+- **Matching rules are unchanged.** A parameter annotated with an interface is still not satisfied
+  by a provider bound only under its concrete class or under a different spellframe. Such a
+  parameter is now an unresolved input rather than a conjure error: bind the provider under that
+  spellframe, or supply the value.
+- **How to supply it.** Use the parameter name when melding the object itself, and a path key ending
+  in `>work` or a `**work` broadcast key when the object is built as a dependency. The value is
+  passed by identity; `None` and other falsey values count as supplied.
+- **A provider bound later is picked up.** In a dynamic world, binding a matching provider after
+  conjure makes the next meld inject it as an ordinary dependency.
+- **Stored objects are unaffected.** An object Melder already holds is returned without running its
+  constructor again, so it never asks for the value. After `cleanup_spell` removes a provider, objects
+  built before that keep the dependency they hold; new builds need the value or a new provider.
+- **`UnresolvedInputError` is a `MeldExecutionError`**, so existing handlers keep catching it. Import
+  it from `melder`; `param_name`, `expected_type` and `unresolved_params` name what was missing.
+- **`resolvable=False` registrations are unchanged.** They remain a separate, discoverable feature.
+- **Successful melds do no extra work.** The check runs only after a constructor call has failed.
+- **Creation caches rebuild once.** The creation-cache format advances to generation 11 so executors
+  compiled before this change are not reused.
+- **Defaults and collections are unchanged.** A parameter with a default keeps using it, and a
+  `list[...]` collection parameter with no providers still receives `[]`. `Optional[T]` without a
+  default is an unresolved input; supplying `None` satisfies it.
+- **Every missing input is named.** When several unresolved inputs are left out, the message leads
+  with the first and lists the rest; `unresolved_params` holds all of them in signature order.
+
+### Upgrading
+
+- **Checks that relied on conjure to catch a forgotten binding** now pass conjure. Meld the affected
+  object once in a smoke test, or watch for the conjure INFO line that lists unresolved inputs.
+- **Tests asserting the old "no DI candidate found" conjure error** should assert that conjure succeeds
+  and that the meld raises `UnresolvedInputError`, or supply the value through `override`.
+
+## Concurrent first-time melds no longer deadlock
+
+Two threads that resolved related objects for the first time at the same moment could hang
+forever. The typical shape: one thread melds a `unique_per_conduit`, lineage, cluster or
+SpellSpace-scoped object that depends on a `unique` service, while another thread melds that
+service directly (or purges it). This affected ordinary request-scoped lesser conduits and
+constructors that call `meld` themselves, on GIL and free-threaded builds, and it has existed
+since at least 0.2.3.
+
+Each object that may exist only once per scope now has its own build lock. Threads that need the
+same object still wait for it and receive the one instance; threads building different objects
+no longer block each other, and no thread holds a scope's store lock while waiting on another lock.
+
+- **No API change.** Existence semantics, hooks and override behavior are unchanged.
+- **Warm melds are unaffected.** Resolving an object that already exists takes no lock, as before.
+- **First-time builds of shared objects cost slightly more** (a few percent in micro-benchmarks
+  with empty constructors). Multi-threaded workloads can see less contention.
+- **Purge waits for an in-flight build** of the same object instead of racing it.
+- **Cleaning a scope while another thread is still building into it** now raises `RuntimeError`
+  for that build (after running the new object's disposal methods) instead of handing back an
+  object the cleanup already disposed. Reusing a SpellSpace or pooled scope while a build is in
+  flight lets that build land in the fresh scope.
+- **Creation caches rebuild once.** The creation-cache format advances to generation 10 so plans
+  compiled with the previous locking are not reused.
 
 ## Automatic creation-cache refresh after a Melder update
 
@@ -67971,6 +69255,30 @@ still matched. The new release check prevents that reuse automatically.
 This change affects derived creation-plan caches only. It does not delete Crystallizer checkpoints,
 formations or research history, and it does not change their record format. Applications with
 creation caching disabled retain their existing behavior.
+
+## Inherited cleanup methods are honored
+
+Class bindings now recognize requested disposal methods inherited from a base class. For example,
+`disposal_method_names=["cleanup"]` retains an eligible inherited `cleanup()` method without
+requiring the subclass to repeat it. This applies to both per-binding and configured disposal names.
+
+Previously, binding inspected only methods declared directly on the class, so inherited cleanup
+could be silently omitted from the disposal list and never run during scope teardown.
+
+- **Python inheritance rules are respected.** Subclass overrides take precedence, and a
+  non-callable declaration hides a base method instead of allowing it to be selected.
+- **Disposal ordering is preserved.** Book priority, shared-name ordering and deduplication
+  retain their existing behavior.
+- **Unrelated binding IDs remain stable.** The class profile is unchanged. Bindings whose resolved
+  disposal list now includes an inherited method receive an updated fingerprint when rebound.
+
+## Packaging and documentation
+
+- The packaged system documents (`melder.__architecture__`, `__components__`, `__graph_network__` and
+  `__graph_details__`) are regenerated and describe unresolved inputs and `UnresolvedInputError`.
+- `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
+  raised and caught, but it cannot be bound as a spell.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.54.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

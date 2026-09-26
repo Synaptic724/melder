@@ -3,14 +3,18 @@
 # Task: Fix gauntlet sample storage and isolate the shared gauntlet's Melder lane
 
 ## Metadata
+- Completed: 2026-09-26T08:32:04Z
+- Closure Basis: owner directed turn-in 2026-09-26 ("turn in the tickets related to this").
+- Summary: array('q') run-long storage in both harnesses; shared gauntlet's Melder lane repaired to
+  the Melder-only settings and isolated; parity test added; sandbox long runs flat.
 - Task ID: TASK-2026-09-26-fix-gauntlet-sample-storage-and-melder-lane-isolation
 - Epic: EPIC-2026-09-26-melder-long-run-throughput-truth
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-09-26T08:10:44Z
-- Updated: 2026-09-26T08:27:30Z
+- Updated: 2026-09-26T08:32:04Z
 
 ## Objective
 Stop the gauntlet harnesses from keeping worker-thread-allocated ints for a whole leg, and make the
@@ -42,6 +46,9 @@ Melder-only gauntlet, so the two benchmarks are isolated in code but comparable 
 - to_state: review
 - transition_reason: Fix applied byte-identically to the sandbox-validated files; tests and long
   runs pass in the sandbox; owner-machine run pending.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in 2026-09-26; ticket moved to completed.
 
 ## Steps / Checklist
 - [x] Record the owner decision and the two lanes' configuration differences with evidence.
@@ -86,8 +93,8 @@ Melder-only gauntlet, so the two benchmarks are isolated in code but comparable 
 - [ ] Steps complete and checked off
 - [ ] Deliverables produced and linked
 - [ ] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed (owner turn-in)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false

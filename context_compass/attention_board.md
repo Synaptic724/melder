@@ -81,7 +81,7 @@ Message alert rules
 - NEW MESSAGE for updater_1 (from melder_0, 2026-09-25T23:30:00Z)
 - NEW MESSAGE for updater_0 (from melder_0, 2026-09-26T00:22:42Z)
 - NEW MESSAGE for workflows_0 (from melder_0, 2026-09-26T00:22:42Z)
-- NEW MESSAGE for melder_0 (from melder_1, 2026-09-26T08:27:49Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T08:43:16Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -107,29 +107,26 @@ Message alert rules
 | ir_phase_cost_model | review | handoff | claude | fable_0 | none | Owner reviews cost_model.md (counted rows, measured rows, owner-run command). | Per-stage cost model for phases 1-11 with two owner-run measurement sources. | Owner accepts the cost model or redirects scope. | tickets/tasks/2026-09-26_model_phase_pipeline_costs_task.md | 2026-09-26T08:13:27Z | REQUIRED |
 | ir_phase_improvement_plan | review | handoff | claude | fable_0 | none | Owner picks tranche T1 (C-H+C-A+C-B), T1' (snapshot) or T1'' (chunking) from the epic strategy note. | Thirteen ranked candidates and one first-tranche recommendation (candidates.md). | Owner selects a tranche or redirects. | tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md | 2026-09-26T08:18:28Z | REQUIRED |
 | override_design_melder | review | handoff | claude | melder_0 | none | Owner decides D1-D4 in design.md; S1 caller inputs can start after D1. | Source-grounded override + caller-input design compared with joint alpha. | Owner accepts or redirects the design; implementation tasks open per decision. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T00:22:28Z | REQUIRED |
-| melder_long_run_growth | review | handoff | claude | melder_1 | none | Owner runs test_melder_long_run_retention.py on 3.14t and reviews the verdict. | No-leak verdict with source and measurement; guard tests delivered. | Owner accepts or redirects; closure on explicit turn-in. | tickets/tasks/2026-09-26_investigate_melder_long_run_growth_task.md | 2026-09-26T08:05:49Z | REQUIRED |
-| melder_long_run_attribution | review | handoff | claude | melder_1 | none | Owner reviews the attribution; option (a) chosen and applied in gauntlet_harness_fix. | Long-run drop attributed to harness retention of worker-thread ints (2x2 controls). | Owner accepts or redirects; turn-in. | tickets/tasks/2026-09-26_measure_melder_long_run_attribution_task.md | 2026-09-26T08:27:49Z | REQUIRED |
-| gauntlet_harness_fix | review | handoff | claude | melder_1 | none | Owner runs the parity and retention tests plus a fresh gauntlet on 3.14t. | Flat long runs; Melder lanes isolated and parity-guarded. | Owner accepts or redirects; turn-in. | tickets/tasks/2026-09-26_fix_gauntlet_sample_storage_and_melder_lane_isolation_task.md | 2026-09-26T08:27:30Z | REQUIRED |
 | caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
-| missing_dependency_sockets | in_progress | implementation | claude | melder_0 | none | Step 5: promote the patch into src_architecture/src_components, graph descriptors and release note. | Steps 1-4 implemented and qualified on 3.14t and GIL with no attributable failure. | Docs promoted; owner decides the build-asset rebuild and accepts. | tickets/tasks/2026-09-26_implement_missing_dependency_sockets_task.md | 2026-09-26T08:16:36Z | REQUIRED |
+| inspect_signature_nameerror | in_progress | discovery | claude | melder_1 | none | Probe every Melder callable with inspect.signature on 3.14t and count failures. | Root cause, scope and a tested fix for TYPE_CHECKING-annotation NameErrors. | Fix applied with zero probe failures, or DECISION_REQUEST recorded. | tickets/tasks/2026-09-26_fix_inspect_signature_nameerror_on_type_checking_annotations_task.md | 2026-09-26T08:32:46Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| unresolved_input_sockets_story | done | melder_0 | tickets/stories/completed/2026-09-26_unresolved_input_sockets_story.md | S1 shipped: unresolved inputs supplied at meld; follow-ups listed in the task. | 2026-09-26T08:54:37Z |
+| missing_dependency_sockets | done | melder_0 | tickets/tasks/completed/2026-09-26_implement_missing_dependency_sockets_task.md | Steps 1-6 done; 3.14t/GIL qualified; patch lane archived. | 2026-09-26T08:54:37Z |
+| version_assets_0_2_54 | done | melder_0 | tickets/tasks/completed/2026-09-26_bump_version_rebuild_assets_for_unresolved_inputs_task.md | 0.2.54; assets and LLM bundles rebuilt and checked; release note detailed. | 2026-09-26T08:54:37Z |
+| melder_long_run_epic | done | melder_1 | tickets/epics/completed/2026-09-26_melder_long_run_throughput_truth_epic.md | No leak; harness attributed and fixed; lanes isolated. | 2026-09-26T08:32:04Z |
+| gauntlet_harness_fix | done | melder_1 | tickets/tasks/completed/2026-09-26_fix_gauntlet_sample_storage_and_melder_lane_isolation_task.md | array('q') storage; Melder lane parity-guarded. | 2026-09-26T08:32:04Z |
+| melder_long_run_attribution | done | melder_1 | tickets/tasks/completed/2026-09-26_measure_melder_long_run_attribution_task.md | 2x2 controls: harness retention, not Melder. | 2026-09-26T08:32:04Z |
+| melder_long_run_growth | done | melder_1 | tickets/tasks/completed/2026-09-26_investigate_melder_long_run_growth_task.md | No retained growth; guard tests added. | 2026-09-26T08:32:04Z |
 | version_notch_0_2_53 | done | melder_0 | tickets/tasks/completed/2026-09-26_bump_version_for_deadlock_fix_task.md | Version and next-release header at 0.2.53; asset rebuild held. | 2026-09-26T00:11:19Z |
 | override_contract_story | done | melder_0, melder_1 | tickets/stories/completed/2026-09-25_verify_override_writer_and_contract_story.md | Deadlock fixed; contract verified; items 4a/5c chosen; open items carried. | 2026-09-26T00:15:00Z |
 | override_contract_verify | done | melder_1 | tickets/tasks/completed/2026-09-25_verify_override_behavior_contract_task.md | Items 1-8 verified with regression matrix; owner-directed turn-in. | 2026-09-26T00:12:00Z |
 | creation_slot_guards_impl | done | melder_0 | tickets/tasks/completed/2026-09-25_implement_creation_slot_build_guards_task.md | Per-slot build guards; deadlock fixed; docs, graph and release note updated. | 2026-09-25T23:47:39Z |
 | deadlock_regression_tests | done | melder_0 | tickets/tasks/completed/2026-09-25_add_meld_lock_order_deadlock_regression_tests_task.md | 12 lock-order cases must complete (3.14t and GIL). | 2026-09-25T23:47:39Z |
-| writer_lock_order_verify | done | melder_0 | tickets/tasks/completed/2026-09-25_verify_native_writer_lock_order_task.md | Store/Spell inversion confirmed; Idea A chosen and implemented. | 2026-09-25T23:47:39Z |
-| inherited_cleanup_profiling | done | workflows_0 | tickets/tasks/completed/2026-09-24_investigate_inherited_cleanup_profiling_task.md | Inherited disposal fixed; 428 checks pass; next-release note added and patch records archived. | 2026-09-24T11:24:41Z |
-| release_cache_invalidation | done | updater_0 | tickets/epics/completed/2026-09-23_invalidate_creation_cache_on_melder_version_change_epic.md | Release-bound cache, schema 9 and 0.2.51 notes delivered. | 2026-09-24T09:52:40Z |
-| release_cache_implementation | done | updater_0 | tickets/tasks/completed/2026-09-24_implement_release_version_cache_invalidation_task.md | 138 unique final-version tests qualified; scoped docs promoted. | 2026-09-24T09:52:40Z |
-| named_discovery_test_repair | done | updater_0 | tickets/tasks/completed/2026-09-23_fix_named_conduit_discovery_test_doubles_task.md | Both CI fixture errors fixed; 201 tests pass. | 2026-09-23T22:37:00Z |
-| public_next_release | done | updater_0 | tickets/tasks/completed/2026-09-23_position_next_release_for_public_task.md | Public naming/discovery release copy verified. | 2026-09-23T22:30:29Z |
-| graduation_packaged_assets | done | updater_0 | tickets/tasks/completed/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md | Both builders rerun after final updates; checks pass. | 2026-09-23T13:01:03Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -190,21 +187,10 @@ Message alert rules
 - override_design_melder: SWITCH_TRIGGER is the design artifact plus owner decision requests.
   RESUME_HIERARCHY: tickets/epics/2026-09-24_override_execution_performance_epic.md ->
   tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md.
-- melder_long_run_growth: SWITCH_TRIGGER is a source-backed verdict plus added benchmark tests.
-  RESUME_HIERARCHY: tickets/epics/2026-09-26_melder_long_run_throughput_truth_epic.md ->
-  tickets/tasks/2026-09-26_investigate_melder_long_run_growth_task.md.
-- melder_long_run_attribution: SWITCH_TRIGGER is measured attribution recorded with caveats.
-  RESUME_HIERARCHY: tickets/epics/2026-09-26_melder_long_run_throughput_truth_epic.md ->
-  tickets/tasks/2026-09-26_measure_melder_long_run_attribution_task.md.
-- gauntlet_harness_fix: SWITCH_TRIGGER is sandbox-validated harness fix plus parity test.
-  RESUME_HIERARCHY: tickets/epics/2026-09-26_melder_long_run_throughput_truth_epic.md ->
-  tickets/tasks/2026-09-26_fix_gauntlet_sample_storage_and_melder_lane_isolation_task.md.
 - caller_input_strictness: SWITCH_TRIGGER is the responsible commit plus before/after runs.
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md.
-- missing_dependency_sockets: SWITCH_TRIGGER is patch docs plus owner-confirmed file list.
-  RESUME_HIERARCHY: tickets/epics/2026-09-24_override_execution_performance_epic.md ->
-  tickets/stories/2026-09-26_unresolved_input_sockets_story.md ->
-  tickets/tasks/2026-09-26_implement_missing_dependency_sockets_task.md.
+- inspect_signature_nameerror: SWITCH_TRIGGER is a tested fix or a recorded owner decision request.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-26_fix_inspect_signature_nameerror_on_type_checking_annotations_task.md.
 ### Agent Message-Pass Protocol (melder_0 <-> melder_1; owner-set 2026-09-25)
 - Channel: `mailbox_board.md` `## Messages` plus one alert line under `## Message Alerts` here,
   per `agent_onboarding/default/general/skills/mailbox_protocol.md`. No harness-native messaging.

@@ -19,9 +19,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.51"
-SOURCE_SHA256 = "334cf41bd2ddda74e686853a9acd0329dc8511ba1ccea93095b4d56999dad9d4"
-MARKED_COUNT = 452
+BUILT_FOR_VERSION = "0.2.54"
+SOURCE_SHA256 = "beb5f0c7c36eb26f36f2f31598719303104478c44a1a67e3193f7fc47ba17e06"
+MARKED_COUNT = 453
 EXEMPT_COUNT = 163
 PENDING_COUNT = 16
 
@@ -179,7 +179,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.dag.dag_node', 'DagNode'): ('internal', 'access: internal. A node in the resolution DAG: a keyed unit of work with dependency/dependent DagNode sets and param-aware edges (children_by_param / incoming_params). Lightweight - no separate Edge objects.'),
     ('melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph', 'DirectedAcyclicWorkGraph'): ('internal', 'access: internal. Minimal DAG of DagNodes keyed by id: add_node/add_dependency (+ bulk), topological_sort, topological_levels (parallel-execution peeling), collect_dependency_ids, execute. Static build-then-sort; RLock-guarded. Not a general workflow engine.'),
     ('melder.aether.spellbook.spell_compiler.dag.resolution_frame.resolution_frame', 'ResolutionFrame'): ('internal', 'access: internal. Per-meld resolution state: caller overrides, per-node results, and per-node errors keyed by node id. Created once per resolution run, RLock-guarded, cleaned after. Knows no graph structure.'),
-    ('melder.aether.spellbook.spell_compiler.dag.socket_kind', 'SocketKind'): ('internal', 'access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input).'),
+    ('melder.aether.spellbook.spell_compiler.dag.socket_kind', 'SocketKind'): ('internal', 'access: internal. Phase-3 DAG edge classifier: NORMAL (regular DI socket) vs SPELL_CONTRACT (late-bound provider socket), OVERRIDE_REQUIRED (required supplied input), UNRESOLVED_INPUT (typed dependency with no provider; supplied by the call or reported).'),
     ('melder.aether.spellbook.spell_compiler.dag.target_spec', 'TargetSpec'): ('internal', 'access: internal. Parsed override target key: kind (TargetSpecKind) plus path (PATH segments) or param_name (UNIQUE/BROADCAST). Built by TargetSpec.parse(raw).'),
     ('melder.aether.spellbook.spell_compiler.dag.target_spec', 'TargetSpecKind'): ('internal', 'access: internal. Override-targeting mode: PATH (a>b>c param path), UNIQUE (*name), BROADCAST (**name). Classifies how an override key targets DAG sockets.'),
     ('melder.aether.spellbook.spell_compiler.profiles.resolution_profile', 'SpellResolutionFrame'): ('internal', "access: internal. Phase-3 concrete resolution frame in the profile family: spell_id plus ordered_node_ids (the topological order the resolver walks). Distinct from dag/resolution_frame's ResolutionFrame."),
@@ -216,7 +216,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy', 'DuplicateSpellNameStrategy'): ('internal', 'access: internal. Phase-4 strategy: collects visible spells sharing a spell_name (pass-cached) and emits DUPLICATE_SPELL_NAME (error) when more than one collide, since meld(spell_name=...) would be ambiguous. Advises disambiguating via spellframe/binding_name.'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.existing_creation_compatibility_strategy', 'ExistingCreationCompatibilityStrategy'): ('internal', 'access: internal. Phase-4 strategy for existing-creation spells: errors if there is no bound instance, existence is not unique, the instance binding profile is missing, or DI parameters are declared. No-op for non-existing-creation spells.'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.parameter_policy_strategy', 'ParameterPolicyStrategy'): ('internal', 'access: internal. Phase-4 strategy: enforces DI policy on parameters - no variadic DI, single/collection DI must carry a resolvable non-builtin annotation/element. Emits the DI_* / VARIADIC_DI_UNSUPPORTED errors. Validation only.'),
-    ('melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy', 'RequiredHolesStrategy'): ('internal', 'access: internal. Phase-4 strategy: emits a REQUIRED_HOLE warning per PLAIN, default-less parameter - a hole Melder DI will never fill, so the caller must supply it via overrides or manual composition. Reporting only.'),
+    ('melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy', 'RequiredHolesStrategy'): ('internal', 'access: internal. Phase-4 strategy: emits a REQUIRED_HOLE warning per PLAIN, default-less parameter - a hole Melder DI will never fill, so the caller must supply it via overrides or manual composition - plus OVERRIDE_REQUIRED and UNRESOLVED_INPUT warnings for supplied-input sockets. Reporting only.'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.resolution_frame_presence_strategy', 'ResolutionFramePresenceStrategy'): ('internal', 'access: internal. Phase-4 structural gate: emits MISSING_RESOLUTION_FRAME (error) when Phase 3 produced no resolution frame, or MISSING_DEPENDENCY_GRAPH (warning) when the frame exists but the spell has no attached dependency graph.'),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.self_validation_strategy', 'SelfDependencyStrategy'): ('internal', "access: internal. Phase-4 strategy: emits one SELF_DEPENDENCY error if a spell's dependency list contains its own selected_spell_id. Direct self-dependency only, not longer cycles."),
     ('melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy', 'SpellValidationStrategy'): ('internal', 'access: internal. Base class for Phase-4 validation strategies: implement validate(context) to inspect one spell and append SpellValidationIssue; name/description identify it in the registry. Never mutate the spell/spellbook; prefer appending issues to raising.'),
@@ -451,6 +451,7 @@ AGENT_METADATA = {
     ('melder.utilities.custom_exceptions.phase_timeout_error', 'PhaseTimeoutError'): ('public', 'access: public. Raised when a conjure phase exceeds its barrier timeout; phase_name + timeout_ms locate it. Usually a blocked constructor/lock/hook, not slow work.'),
     ('melder.utilities.custom_exceptions.spell_space_scope_error', 'SpellSpaceScopeError'): ('public', 'access: public. Raised when a unique_per_spell_space spell is resolved with no active SpellSpace, or a SpellSpace is used cross-conduit or after close; enter conduit.enter_spellspace() first.'),
     ('melder.utilities.custom_exceptions.spellbook_validation_error', 'SpellbookValidationError'): ('public', "access: public. The build-time 'your graph is broken' error from conjure/meld; the message carries Phase 4/6 diagnostics with strategy attribution. Fix the binding, not the validator."),
+    ('melder.utilities.custom_exceptions.unresolved_input_error', 'UnresolvedInputError'): ('public', 'access: public. Raised at meld when an object whose typed parameter has no registered provider is built without that value; supply it by override (root key, `>param` path key or `**param`) or bind a provider for expected_type.'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', 'WeakConcurrentDict'): ('public', 'access: public. Dict with STRONG keys and WEAK values - putting an object in never keeps it alive, so use it as a cache, not a store. An entry can die between two statements, so `k in d` then `d[k]` may raise DeadReferenceError. Dead entries stay visible until pruned; freeze() speeds reads but does not stop collection.'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_list', 'WeakConcurrentList'): ('public', 'access: public. Ordered container holding elements WEAKLY - it never keeps its contents alive. Indices are NOT stable: entries vanish on collection, so iterate directly rather than by index, and expect DeadReferenceError from a stale one.'),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_set', 'WeakConcurrentSet'): ('public', 'access: public. Set holding members WEAKLY - membership is a question about lifetime, since a member nothing else references drops out on its own. `x in s` is point-in-time and len() is advisory unless you just pruned. freeze() speeds reads but does not stop collection.'),
@@ -1167,6 +1168,7 @@ CLASS_BASES = {
     ('melder.utilities.custom_exceptions.phase_timeout_error', 'PhaseTimeoutError'): ('PhaseSchedulerError',),
     ('melder.utilities.custom_exceptions.spell_space_scope_error', 'SpellSpaceScopeError'): ('RuntimeError',),
     ('melder.utilities.custom_exceptions.spellbook_validation_error', 'SpellbookValidationError'): ('RuntimeError',),
+    ('melder.utilities.custom_exceptions.unresolved_input_error', 'UnresolvedInputError'): ('MeldExecutionError',),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict', 'WeakConcurrentDict'): ('Cleanable',),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_list', 'WeakConcurrentList'): ('Cleanable',),
     ('melder.utilities.data_structures.weak_data_structures.weak_concurrent_set', 'WeakConcurrentSet'): ('Cleanable',),

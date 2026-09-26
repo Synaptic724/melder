@@ -1,0 +1,287 @@
+
+
+# Task: Stop `inspect.signature` from raising NameError on Melder's public API
+
+## Metadata
+- Task ID: TASK-2026-09-26-fix-inspect-signature-nameerror-on-type-checking-annotations
+- Status: in_progress
+- Owner: user
+- Agent Name: melder_1
+- Priority: p1
+- Created: 2026-09-26T08:32:46Z
+- Updated: 2026-09-26T08:32:46Z
+
+## Objective
+`inspect.signature(Aether.get_conduit_by_name)` raises `NameError: name 'Conduit' is not defined` on
+CPython 3.14 because the return annotation names a type imported only under `TYPE_CHECKING`, and
+3.14's lazy annotations are evaluated by `inspect` in VALUE format. Find every place this breaks
+(public API introspection by users and tools, and Melder's own introspection code), establish the
+root cause from source, and fix it.
+
+## Ticket Contract
+- ENTRY_GATE: Owner direction 2026-09-26 ("make a new ticket for the inspect side finding and go hunt
+  that shit down and fix it"). Found during TASK-2026-09-26-fix-gauntlet-sample-storage-and-melder-
+  lane-isolation (RISK note).
+- EXECUTION_BOUNDARY: Investigation reads src/ and runs probes in the 3.14t sandbox copy. src/ edits
+  are authorized by the owner's "fix it"; if the fix changes the repository's typing policy
+  (synaptic 5.14: TYPE_CHECKING-only concrete imports, no quotes, no fallbacks, no future import) or
+  spans many modules, record a DECISION_REQUEST with options before editing.
+- DEPENDENCIES: CPython 3.14 annotation semantics (PEP 649/749) as observed in the sandbox.
+- EXIT_GATE: Every affected surface counted before and after; fix applied with tests; owner review.
+- FAILURE_ESCALATION: CONFLICT if the fix contradicts repository typing policy; DECISION_REQUEST for
+  the policy-level choice; BLOCKER if the sandbox cannot validate.
+
+## Scope Boundaries
+- In scope: public and internal Melder callables whose annotations cannot be evaluated at runtime;
+  Melder code that introspects signatures/annotations (its own objects and user objects).
+- Out of scope: third-party libraries' introspection behaviour.
+
+## State Transition Event
+- from_state: draft
+- to_state: in_progress
+- transition_reason: Owner directed the hunt and fix on 2026-09-26.
+
+## Steps / Checklist
+- [x] Reproduce with a probe and record the exact failure.
+- [x] Measure scope: every Melder callable whose signature fails under default `inspect.signature`.
+- [ ] Find and read Melder's own introspection call sites; test them against the pattern.
+- [ ] Root cause and fix options recorded; choose (or raise DECISION_REQUEST).
+- [ ] Implement with tests; re-measure to zero failures.
+- [ ] Run Ticket Microcycle; document each meaningful finding before continuing.
+
+## Deliverables
+- Source fix plus regression test(s); before/after counts in Notes.
+
+## Files / Paths Impacted
+- UNKNOWN until the scope measurement.
+
+## Validation
+- Not run.
+
+## Risks / Rollback Notes
+- Runtime imports added to break TYPE_CHECKING-only names can create import cycles; any such change
+  must be import-order tested from a cold interpreter.
+
+## Applicable Anti-Patterns
+- [ ] No status transition without evidence-backed transition reason.
+- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [ ] No closure without acceptance confirmation and board-sync completion.
+- [ ] No behavior claim cited only to a document or a one-line search hit.
+
+## Done Checklist
+- [ ] Steps complete and checked off
+- [ ] Deliverables produced and linked
+- [ ] Validation status recorded
+- [ ] Acceptance criteria reviewed with user and confirmed
+- [ ] Board sync completed for successor routing or closure anchor update.
+
+## Artifact Links (Optional)
+- ARTIFACTS_REQUIRED: true
+- ARTIFACT_PATHS:
+  - artifacts/inspect_signature_nameerror_20260926/
+- DISPOSITION: retain_as_reference
+- CLEANUP_TRIGGER: ticket closure (retain probes and before/after results)
+
+## Context Management
+- CONTEXT_MANAGEMENT_REQUIRED: false
+- CONTEXT_IDS:
+  - none
+- CONTEXT_TOPICS:
+  - Python 3.14 lazy annotations versus TYPE_CHECKING-only imports in Melder.
+- IF_UNKNOWN: none
+
+## Noting Behavior
+- Note focus: tactical findings, concrete impacts, and single-step continuation.
+- Keep notes append-only; promote `UNKNOWN` to `FACT` only with direct evidence pointers.
+
+## Notes
+- DATETIME: 2026-09-26T08:32:46Z
+  TYPE: FACT
+  CLAIM: Observed during the gauntlet parity work: inspect.signature(aether.get_conduit_by_name) on
+    CPython 3.14.0rc2 free-threaded raised NameError from annotationlib evaluating the method's
+    __annotate__; the return annotation `Conduit` is not bound in aether.py's module globals.
+  EVIDENCE: src/melder/aether/aether.py:1842-1861
+  IMPACT: Any VALUE-format introspection of this API fails (inspect.signature default, get_type_hints).
+  NEXT: Write a probe that enumerates every Melder callable and counts signature failures.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T08:34:14Z
+  TYPE: MEASURE
+  CLAIM: Scope probe (sandbox 3.14.0rc2t, fresh src snapshot 08:33Z, all 595 melder modules imported
+    first): 7,689 classes/functions/methods checked; 817 raise NameError under default
+    inspect.signature (VALUE format), 504 of them public-named, across 175 modules; all 7,689 succeed
+    with annotation_format=FORWARDREF. Most-missing names: Spell 128, Spellbook 95, Conduit 94,
+    FrameLink 46, SpellSystemIndex 25, CodegenTransactionContext 24, SpellRecord 21, Rift 19.
+    Top modules: spellbook_creation_system 60, frame_viewer 34, conduit_ward 29, conduit 22,
+    spell_compiler_system 22, nexus 22.
+  EVIDENCE:
+  - src/melder/aether/aether.py:1842-1861
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:1-60
+  IMPACT: This is systemic, not one method: the repository's TYPE_CHECKING-only import rule leaves
+    every such name unbound at runtime, and 3.14 evaluates annotations lazily against module globals.
+    Even importing every module does not bind them.
+  NEXT: Find Melder's own signature/annotation introspection call sites and test them.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T08:41:36Z
+  TYPE: FACT
+  CLAIM: Melder's own introspection splits in two. FORWARDREF already (safe): Meld contract-key scan,
+    SpellRequirementsFinder, binding-profile strategy, UnresolvedInputError. VALUE format (raises
+    NameError on any TYPE_CHECKING-only or undefined annotation name) at 11 sites, none of which
+    catches NameError: ConduitWard._get_spell_contract_keys (catches only TypeError/ValueError; the
+    identical Meld helper already uses FORWARDREF), both _iter_spell_contract_defaults fallbacks
+    (analyzer + contract processor, no try), Package.describe and Package.signature, ProtocolCrafter
+    _collect_attributes (class __annotations__), _render_signature and _get_property_annotation,
+    ClassInspector._header (get_annotations eval_str=True, outside any try) and _members line 248
+    (catches TypeError/ValueError only), MethodInspector._fill_signature (same). The contract
+    helpers read only parameter defaults; the inspectors and ProtocolCrafter render annotations.
+    ClassInspector/MethodInspector are reached through DetailedProfile (SpellExaminer "detailed").
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2482-2529
+  - src/melder/aether/conduit/meld/meld.py:1135-1152
+  - src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:994-1031
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:218-253
+  - src/melder/utilities/helpers/package.py:309-333
+  - src/melder/utilities/helpers/package.py:873-889
+  - src/melder/utilities/ai_native_support_tools/protocol_crafter.py:581-636
+  - src/melder/utilities/ai_native_support_tools/protocol_crafter.py:730-767
+  - src/melder/utilities/ai_native_support_tools/protocol_crafter.py:812-895
+  - src/melder/utilities/ai_native_support_tools/protocol_crafter.py:912-925
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py:111-146
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py:244-288
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py:168-192
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py:302-394
+  IMPACT: Any user class whose annotations name a TYPE_CHECKING-only type (the repo's own recommended
+    style) can crash dynamic-link contract-key collection, detailed SpellExaminer profiles,
+    Package.describe and ProtocolCrafter with NameError. Reachability is from reading, not yet run.
+  NEXT: Probe each site with a user class/function annotated with a TYPE_CHECKING-only name.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T08:43:45Z
+  TYPE: MEASURE
+  CLAIM: Call-site probe (sandbox 3.14.0rc2t, src identical by sha256 to the device tree) with a user
+    module in the repo's own style (Decimal imported only under TYPE_CHECKING, unquoted). Ordinary
+    bind/conjure/meld and lesser meld of the user class WORK (requirements finder uses FORWARDREF).
+    NameError raised at: both _iter_spell_contract_defaults fallbacks, ConduitWard
+    _get_spell_contract_keys, Package.describe and Package.signature, ProtocolCrafter on the user
+    class AND on Melder's own Conduit (MutationResearch) and Spellbook (Conduit), and
+    SpellExaminer.create_profile(spell, "detailed") at ClassInspector._header. The detailed profile
+    of a raw class or function works because Spell completion is where ClassInspector runs. Spell
+    requirements are None after conjure, so the contract fallback is the path any later phase-8 rerun
+    without phases 1-4 takes. _get_spell_contract_keys has no src caller (tests only).
+  EVIDENCE:
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/call_sites_before.txt:1-18
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/probes/probe_call_sites.py:1-83
+  - src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py:265-303
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py:203-260
+  IMPACT: Confirmed user-facing failures in three public tools (Package.describe, ProtocolCrafter,
+    detailed SpellExaminer profile of a Spell). ProtocolCrafter cannot mirror Melder's own classes.
+    Whether a runtime conjure/meld path reaches the contract fallback is UNKNOWN.
+  NEXT: Probe post-conjure paths that rerun phases 5-11 only (dynamic bind after conjure,
+    upgrade_to_normal) to settle whether the contract fallback is runtime-reachable.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T08:44:58Z
+  TYPE: MEASURE
+  CLAIM: The contract fallback IS runtime-reachable. Dynamic world: bind Engine+Car, conjure, meld
+    Car (ok), then bind Garage(car: Car) after conjure and meld it -> PhaseExecutionError in phase
+    occurrence_plan_local wrapping NameError('Decimal'), raised by the analyzer's
+    _iter_spell_contract_defaults(Car) VALUE-format signature (Car's requirements were released at
+    conjure). A lesser meld of Garage afterwards fails with "Cannot build CreationContext before
+    spell_codegen_creation exists" (the aborted plan left no executor). Automatic mode forbids
+    post-conjure bind, so this is dynamic-world only as far as probed.
+  EVIDENCE:
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/runtime_paths_before.txt:1-12
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/runtime_s1_trace_before.txt:1-9
+  - src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:965-1031
+  IMPACT: A user following Melder's own typing style breaks late binding in dynamic worlds; this is a
+    runtime bug, not only a tooling one. Severity above the tool failures.
+  NEXT: Record root cause and fix plan (DECISION), then propose exact files/symbols to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-09-26T08:47:27Z
+  TYPE: MEASURE
+  CLAIM: Second defect from the same root: spell ids are NOT stable across processes for a class whose
+    constructor names a TYPE_CHECKING-only type. Bind-time BindingProfileStrategy renders
+    init_signature as str(inspect.signature(cls, FORWARDREF)); an unresolved name renders as
+    ForwardRef('Decimal', owner=<function Car.__init__ at 0x...>), and Bind.sha256_profile hashes that
+    string, so the memory address enters the v4 fingerprint (Car id differed across two runs; Engine
+    and Garage ids identical). Separately and PRE-EXISTING for every function spell, whatever its
+    annotations: the callable fingerprint hashes repr_string ("<function f at 0x...>"), so function
+    spell ids change every process (plain make_engine differed too). External view: pydoc/help() of
+    Aether/Conduit work on 3.14; typing.get_type_hints and default inspect.signature raise.
+  EVIDENCE:
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/spell_id_stability_before.txt:1-14
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/pydoc_and_hints_before.txt:1-4
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:68-197
+  - src/melder/aether/spellbook/bind/bind.py:890-996
+  IMPACT: Unstable class ids defeat cross-process creation-cache reuse and crystallizer id stability
+    for such spells. The function-id instability violates sha256_profile's own "not transient runtime
+    object identity" contract but is independent of annotations: out of this ticket's scope, needs
+    its own ticket and owner call (fixing it changes every function spell id once).
+  NEXT: Write the root-cause DECISION and the fix proposal (files/symbols) for owner confirmation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T08:48:53Z
+  TYPE: PLAN
+  CLAIM: Root cause: under 3.14 lazy annotations a TYPE_CHECKING-only name is unbound when an
+    annotation is evaluated. VALUE format (inspect.signature default, class __annotations__,
+    get_annotations eval_str) raises NameError; FORWARDREF succeeds but str()/repr() of a ForwardRef
+    embeds owner=<function ... at 0x...>. The compiler already moved to FORWARDREF; 11 sites were not
+    migrated, and the rendering sites never handled ForwardRef. Plan (policy-compliant, no typing
+    policy change): (1) defaults-only sites -> inspect.signature(..., annotation_format=FORWARDREF),
+    the meld.py pattern; (2) one stateless helper utilities/helpers/signature_reflection.py
+    (SignatureReflection) whose display signature keeps FORWARDREF values and swaps only
+    ForwardRef-bearing annotations for their Format.STRING text, so output is unchanged whenever
+    all names resolve and deterministic otherwise; used by Package.describe, ClassInspector,
+    MethodInspector and BindingProfileStrategy's init_signature/signature strings (the Signature
+    object the requirements finder borrows stays FORWARDREF); (3) ProtocolCrafter keeps its own
+    renderer: FORWARDREF reads plus a ForwardRef branch rendering the quoted name; (4) ClassInspector
+    class annotations keep the repo's finder pattern: eval_str first, FORWARDREF map on NameError.
+    Out of scope, raised separately: function-spell id instability (repr address), binding-profile
+    annotations cleared on unresolved names, and external get_type_hints on Melder's API.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/meld.py:1135-1152
+  - src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:471-548
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:68-197
+  IMPACT: Fixes the dynamic late-bind crash, the three public tools and class-spell id instability
+    without touching TYPE_CHECKING imports; spell ids change only where they were random already.
+  NEXT: Prototype in a sandbox copy and prove VALUE-equal output on all 7,689 Melder callables,
+    then propose exact files/symbols to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T08:57:05Z
+  TYPE: MEASURE
+  CLAIM: Sandbox prototype (copy of src, not the repo) validates the PLAN with one refinement: FORWARDREF
+    output also contains ownerless ForwardRefs that typing builds for quoted generic args
+    (Optional['Conduit']), and those render deterministically, so only OWNER-bearing ForwardRefs are
+    replaced; display_signature is VALUE-first with the FORWARDREF path only on NameError. Results:
+    display_signature identical to VALUE on all 6,873 callables where VALUE works, recovers all 817
+    NameError callables, never renders an owner; class_annotations identical on 637 classes.
+    stabilize_signature(FORWARDREF) differs from VALUE only for ChangeControlStagedMutation (a
+    dataclass whose FORWARDREF read yields an owner-bearing ref), rendered deterministically. All
+    probe sites pass; dynamic late bind + lesser meld now work; Car's spell id is identical across
+    processes. The probe also exposed ONE Melder annotation no format can read:
+    Conduit._resolve_peer_conduit_for_contract_hooks declares conduit: "Conduit" | None (TypeError);
+    the prototype changes it to Optional[Conduit]/Optional[str], making ProtocolCrafter(Conduit) pass.
+    Targeted existing tests (887) pass identically before and after.
+  EVIDENCE:
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/display_equivalence_prototype.txt:1-5
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/call_sites_prototype.txt:1-18
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/runtime_paths_prototype.txt:1-12
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/spell_id_stability_prototype.txt:1-14
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/invalid_annotations_before.txt:1-2
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/prototype/signature_reflection.py:1-245
+  - src/melder/aether/conduit/conduit.py:6734-6740
+  IMPACT: The fix is proven in isolation without any typing-policy change; ready for owner confirmation
+    of exact files/symbols and a melder_0 overlap check before touching the repository.
+  NEXT: Full unit run of the prototype, then mailbox melder_0 (M1-9) and propose to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+## Context / Handoff Summary
+Opened 2026-09-26T08:32:46Z on owner direction. Resume from the latest Notes NEXT.
+
+## Project-Specific Additions
+<!-- BEGIN USER-DEFINED: project_fields -->
+<!-- END USER-DEFINED: project_fields -->

@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: fa1a33b6af0b5b6634ec5a0f6b31bc781c7ec724797787741898a618e4042221
-FILE COUNT: 851
+SOURCE FINGERPRINT: 9eafb423745b6b3fa5dc96080a48ccffbe9721eb28c05c350d62f27751a4e962
+FILE COUNT: 857
 
 ================================================================================
 BEGIN FILE: tests/_codegen_system_support.py
@@ -10306,7 +10306,7 @@ END FILE: tests/component/melder/aether/conduit/test_conduit_component_policy_re
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_purge.py
-CONTENT SHA256: 6d212b4576db070a87eb013afeaed5d260a00e8d05ecd990aa97bfbdedf6ecc8
+CONTENT SHA256: 505dd0e30bdb1301bfd7aa1dffa4eb9a719f79145fd845f4753da931d564d943
 SOURCE ENCODING: utf-8
 ================================================================================
 """Contracts for scoped purge, native disposal and creation-writer synchronization."""
@@ -10893,9 +10893,11 @@ def test_native_purge_mirrors_creation_lock_family_and_order(
     purge_all: bool,
 ) -> None:
     """
-    Purpose: Verify the existing writer-lock family for all six lifetimes.
-    Contract: Unique acquires Spell then store; all others acquire only the
-        selected store lock. Restore original locks before runtime teardown.
+    Purpose: Verify the writer-lock family for all six lifetimes.
+    Contract: Unique acquires Spell then store; the other slotted lifetimes
+        acquire the store's slot guard then the store lock (the build lock
+        their creation holds since 2026-09-25); many acquires only the store
+        lock. Restore original locks before runtime teardown.
     Args:
         existence: Lifetime determining the native retirement lock family.
         purge_all: Select whole-target or single-object retirement.
@@ -10916,13 +10918,17 @@ def test_native_purge_mirrors_creation_lock_family_and_order(
             store.add_creation(spell_id, creation)
         spell._lock = ObservedLock("spell", trace)
         store._lock = ObservedLock("store", trace)
+        store._slot_guards[spell_id] = ObservedLock("guard", trace)
         assert store.purge(spell, purge_all=purge_all, creation=creation) == 1
         expected = ["store:enter", "store:exit"]
         if existence is Existence.unique:
             expected = ["spell:enter", *expected, "spell:exit"]
+        elif existence is not Existence.many:
+            expected = ["guard:enter", *expected, "guard:exit"]
         assert trace == expected
     finally:
         spell._lock, store._lock = original_spell_lock, original_store_lock
+        store._slot_guards.pop(spell_id, None)
         root.permanent_cleanup()
 
 
@@ -10986,10 +10992,14 @@ def test_purge_waits_for_the_actual_singleton_constructor_lock(
         else root._creations
     )
     spell = book._spells_by_id[spell_id]
-    lock_owner = spell if existence is Existence.unique else store
-    original_lock = lock_owner._lock
     observed = ObservedLock("writer", [])
-    lock_owner._lock = observed
+    # The constructor's build lock: Spell._lock for unique, otherwise the
+    # store's slot guard (since 2026-09-25 the store lock is only a leaf).
+    if existence is Existence.unique:
+        original_lock = spell._lock
+        spell._lock = observed
+    else:
+        store._slot_guards[spell_id] = observed
 
     def run_purge() -> int:
         """
@@ -11016,7 +11026,10 @@ def test_purge_waits_for_the_actual_singleton_constructor_lock(
             assert caller.meld(spell_id=spell_id) is not obj
     finally:
         finish.set()
-        lock_owner._lock = original_lock
+        if existence is Existence.unique:
+            spell._lock = original_lock
+        else:
+            store._slot_guards.pop(spell_id, None)
         space.cleanup()
         root.permanent_cleanup()
 
@@ -14757,6 +14770,230 @@ def test_transfer_spell_ownership_still_moves_the_spell_after_migration() -> Non
         target.cleanup()
 ================================================================================
 END FILE: tests/component/melder/aether/conduit/test_conduit_component_transfer_footprint.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_unresolved_inputs.py
+CONTENT SHA256: bc7e0ca51d324873bf04518d2d13acd1730cda3e87fc797e8a8073c6a77edc7a
+SOURCE ENCODING: utf-8
+================================================================================
+"""Unresolved inputs execute through every executor family: supplied by the meld, or a named error."""
+
+import marshal
+from collections.abc import Iterator
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache import (
+    build_package,
+    load_creation_context_lazy,
+)
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
+
+
+class Package:
+    """A callable-wrapper type that no spell registers (like a kernel-guarded Melder type)."""
+
+
+class FalseyPackage(Package):
+    """A supplied value must count by presence, not truthiness."""
+
+    def __bool__(self) -> bool:
+        """Return False while keeping ordinary identity."""
+        return False
+
+
+class Task:
+    """Require an unregistered typed value; the meld that constructs it supplies it."""
+
+    def __init__(self, work: Package) -> None:
+        """Retain the supplied value by identity."""
+        self.work = work
+
+
+class Shared:
+    """Registered with a shared lifetime to force the generalized family."""
+
+
+class Pool:
+    """Build Task as a dependency so the unresolved input sits one level down."""
+
+    def __init__(self, task: Task, shared: Shared) -> None:
+        """Keep both dependencies."""
+        self.task = task
+        self.shared = shared
+
+
+class Faulty:
+    """Its body raises TypeError with the input supplied: the generic error must be kept."""
+
+    def __init__(self, work: Package) -> None:
+        """Fail inside the constructor body, after binding succeeded."""
+        raise TypeError("body failure unrelated to inputs")
+
+
+@pytest.fixture
+def runtime_book() -> Iterator[Spellbook]:
+    """Create and tear down an isolated world with deterministic compilation and no disk cache."""
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    book = Spellbook()
+    book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
+    book._aetheric_frame_configuration.with_system_caching_enabled(False)
+    try:
+        yield book
+    finally:
+        Aether._reset_singleton_for_tests()
+        aether = Aether()
+        Spellbook._aether = aether
+        Conduit._aether = aether
+
+
+def _build_runtime(book: Spellbook, family: str, cached: bool, task_existence: str = "many") -> tuple[Conduit, str]:
+    """Build a family around Task and optionally marshal/reinstall its lazy manifest cache package."""
+    task_id = book.bind(spell=Task, existence=task_existence)
+    root_id = task_id
+    if family != "solo":
+        book.bind(spell=Shared, existence="unique" if family == "generalized" else "many")
+        root_id = book.bind(spell=Pool, existence="many")
+    conduit = book.conjure()
+    root = book._spells_by_id[root_id]
+    package = build_package(root)
+    assert package["family_id"] == f"{family}_codegen_creation"
+    if cached:
+        detached_package = marshal.loads(marshal.dumps(package))
+        root._cleanup_creation_context()
+        load_creation_context_lazy(root, detached_package, publish=True)
+    return conduit, root_id
+
+
+def _task_of(result: object, family: str) -> Task:
+    """Return the Task a family's root produced."""
+    return result if family == "solo" else result.task
+
+
+@pytest.mark.parametrize(("family", "key"), [
+    ("solo", "work"),
+    ("many_only", "task>work"),
+    ("many_only", "**work"),
+    ("generalized", "task>work"),
+    ("generalized", "**work"),
+])
+@pytest.mark.parametrize("cached", [False, True])
+@pytest.mark.parametrize("value_kind", ["object", "falsey", "none"])
+def test_supplied_value_reaches_the_consumer_by_identity(
+    runtime_book: Spellbook, family: str, key: str, cached: bool, value_kind: str,
+) -> None:
+    """
+    Root key, path key and broadcast key deliver the exact supplied object, None included.
+
+    Broadcast keys address dependencies; a solo root takes root keys only (existing behavior).
+    """
+    conduit, root_id = _build_runtime(runtime_book, family, cached)
+    value = None if value_kind == "none" else FalseyPackage() if value_kind == "falsey" else Package()
+    for _attempt in range(2):
+        assert _task_of(conduit.meld(spell_id=root_id, override={key: value}), family).work is value
+
+
+@pytest.mark.parametrize("family", ["solo", "many_only", "generalized"])
+@pytest.mark.parametrize("cached", [False, True])
+def test_missing_value_raises_unresolved_input_error(
+    runtime_book: Spellbook, family: str, cached: bool,
+) -> None:
+    """Omitting the value names the consumer, parameter, expected type and override keys."""
+    conduit, root_id = _build_runtime(runtime_book, family, cached)
+    with pytest.raises(UnresolvedInputError) as caught:
+        conduit.meld(spell_id=root_id)
+    error = caught.value
+    assert isinstance(error, MeldExecutionError)
+    assert (error.spell_name, error.param_name, error.expected_type) == ("Task", "work", "Package")
+    assert error.unresolved_params == ("work",)
+    assert isinstance(error.__cause__, TypeError)
+    message = str(error)
+    assert "override={'work': ...}" in message
+    assert "'>work'" in message and "'**work'" in message
+
+
+@pytest.mark.parametrize("family", ["many_only", "generalized"])
+@pytest.mark.parametrize("cached", [False, True])
+def test_overriding_another_input_still_names_the_missing_one(
+    runtime_book: Spellbook, family: str, cached: bool,
+) -> None:
+    """The override lane reports the unresolved input left out of an otherwise overridden meld."""
+    conduit, root_id = _build_runtime(runtime_book, family, cached)
+    with pytest.raises(UnresolvedInputError, match="Task.work expects Package"):
+        conduit.meld(spell_id=root_id, override={"shared": Shared()})
+
+
+def test_positional_value_supplies_the_unresolved_input(runtime_book: Spellbook) -> None:
+    """A positional override counts as supplying the parameter at that position."""
+    conduit, root_id = _build_runtime(runtime_book, "solo", False)
+    value = Package()
+    assert conduit.meld(spell_id=root_id, override=[value]).work is value
+
+
+def test_reused_consumer_needs_no_repeated_value(runtime_book: Spellbook) -> None:
+    """A stored consumer is reused without its constructor, so it never demands the input again."""
+    root_id = runtime_book.bind(spell=Task, existence="unique")
+    conduit = runtime_book.conjure()
+    value = Package()
+    first = conduit.meld(spell_id=root_id, override={"work": value})
+    assert conduit.meld(spell_id=root_id) is first
+    assert first.work is value
+
+
+@pytest.mark.parametrize("nested", [False, True])
+def test_unrelated_constructor_type_error_keeps_the_existing_error(runtime_book: Spellbook, nested: bool) -> None:
+    """With the input supplied, a TypeError from the constructor body is not reported as a missing input."""
+    class Holder:
+        """Build Faulty as a dependency."""
+
+        def __init__(self, faulty: Faulty) -> None:
+            """Keep the dependency."""
+            self.faulty = faulty
+
+    runtime_book.bind(spell=Faulty, existence="many")
+    root_id = runtime_book.bind(spell=Holder, existence="many") if nested else None
+    conduit = runtime_book.conjure()
+    value = Package()
+    if nested:
+        with pytest.raises(MeldExecutionError) as caught:
+            conduit.meld(spell_id=root_id, override={"faulty>work": value})
+        assert not isinstance(caught.value, UnresolvedInputError)
+        assert "body failure" in str(caught.value.__cause__)
+    else:
+        with pytest.raises(TypeError, match="body failure") as caught:
+            conduit.meld(spell=Faulty, override={"work": value})
+        assert not isinstance(caught.value, UnresolvedInputError)
+
+
+def test_all_missing_inputs_are_listed_in_signature_order(runtime_book: Spellbook) -> None:
+    """Every unresolved input left out is named; the first one drives the message."""
+    class TwoInputs:
+        """Two unregistered typed parameters."""
+
+        def __init__(self, first: Package, second: FalseyPackage) -> None:
+            """Keep both values."""
+            self.first = first
+            self.second = second
+
+    root_id = runtime_book.bind(spell=TwoInputs, existence="many")
+    conduit = runtime_book.conjure()
+    with pytest.raises(UnresolvedInputError) as caught:
+        conduit.meld(spell_id=root_id)
+    assert caught.value.unresolved_params == ("first", "second")
+    assert "Also not supplied: 'second'" in str(caught.value)
+    with pytest.raises(UnresolvedInputError) as caught:
+        conduit.meld(spell_id=root_id, override={"first": Package()})
+    assert caught.value.unresolved_params == ("second",)
+    assert caught.value.expected_type == "FalseyPackage"
+================================================================================
+END FILE: tests/component/melder/aether/conduit/test_conduit_component_unresolved_inputs.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_graduation_configuration.py
@@ -42620,8 +42857,273 @@ def test_existing_protocol_provider_keeps_unique_only_error_precedence(instance_
 END FILE: tests/component/melder/spellbook/test_existing_instance_protocol_admission.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/component/melder/spellbook/test_inherited_disposal_binding.py
+CONTENT SHA256: 33a6a24e99375c67b9c74d581371d771ea24ac6275040c13d8abd2807e54d7e5
+SOURCE ENCODING: utf-8
+================================================================================
+"""Inherited disposal contracts across binding, identity and real instance teardown."""
+
+from collections.abc import Iterator
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.bind.bind import Bind
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
+from tests.component.melder.spellbook.test_ordered_disposal_binding import (
+    configured_book,
+)
+
+
+class CleanupBase:
+    """Expose deterministic disposal observations without owning external resources."""
+
+    def __init__(self) -> None:
+        """Create a private per-instance log for ordered teardown assertions."""
+        self.calls: list[str] = []
+
+    def cleanup(self) -> None:
+        """Record base cleanup; the test retains the log as its teardown observation."""
+        self.calls.append("cleanup")
+
+    def flush(self) -> None:
+        """Record flush at its actual position in the runtime disposal sequence."""
+        self.calls.append("flush")
+
+
+class InheritedCleanup(CleanupBase):
+    """Use the inherited constructor and cleanup without a forwarding implementation."""
+
+
+class GrandchildCleanup(InheritedCleanup):
+    """Inherit cleanup through two class boundaries."""
+
+
+class UnrelatedMixin:
+    """Contribute a first MRO branch without a cleanup declaration."""
+
+
+class MultipleCleanup(UnrelatedMixin, CleanupBase):
+    """Find cleanup in the second inheritance branch."""
+
+
+class OverrideCleanup(CleanupBase):
+    """Replace the base implementation with an observable subclass override."""
+
+    def cleanup(self) -> None:
+        """Record only the winning subclass method, never the base method."""
+        self.calls.append("override")
+
+
+class MultipleOverrideCleanup(OverrideCleanup, InheritedCleanup):
+    """Resolve a diamond through the first callable definition in Python's MRO."""
+
+
+class NonCallableShadow(CleanupBase):
+    """Hide the base cleanup behind a deliberate non-callable declaration."""
+
+    cleanup = None
+
+
+class InheritedShadow(NonCallableShadow):
+    """Keep an intermediate non-callable shadow authoritative over a deeper method."""
+
+
+class PropertyShadow(CleanupBase):
+    """Ensure disposal admission does not invoke a shadowing property."""
+
+    @property
+    def cleanup(self) -> object:
+        """Fail if reflection evaluates this descriptor instead of inspecting it statically."""
+        raise AssertionError("Binding must not evaluate disposal properties.")
+
+
+class CleanupMetaclass(type):
+    """Declare class-object behavior that does not exist on constructed instances."""
+
+    def cleanup(cls) -> None:
+        """Fail if metaclass-only cleanup is treated as an instance disposal method."""
+        raise AssertionError("Metaclass cleanup is not instance cleanup.")
+
+
+class MetaclassOnlyCleanup(metaclass=CleanupMetaclass):
+    """Expose no instance cleanup despite its metaclass having a callable member."""
+
+
+class StaticCleanup:
+    """Provide a staticmethod using the existing raw-callable admission rule."""
+
+    @staticmethod
+    def cleanup() -> None:
+        """Accept a no-argument disposal call without constructing external resources."""
+        return
+
+
+class InheritedStaticCleanup(StaticCleanup):
+    """Inherit an already-supported callable descriptor kind."""
+
+
+class ClassMethodCleanup:
+    """Preserve the existing exclusion of raw classmethod descriptors."""
+
+    @classmethod
+    def cleanup(cls) -> None:
+        """Fail if the inheritance correction silently broadens descriptor eligibility."""
+        raise AssertionError("This correction does not add classmethod disposal support.")
+
+
+class InheritedClassMethodCleanup(ClassMethodCleanup):
+    """Retain the same descriptor eligibility across an inheritance boundary."""
+
+
+class OrderedCleanup(InheritedCleanup):
+    """Combine a declared per-spell method with inherited configured methods."""
+
+    def close(self) -> None:
+        """Record the declared method's position relative to inherited cleanup and flush."""
+        self.calls.append("close")
+
+
+@pytest.fixture(autouse=True)
+def isolated_world() -> Iterator[None]:
+    """Use the suite's existing process-owner reset around each real binding graph."""
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    Spellbook._aether = Aether()
+    Conduit._aether = Spellbook._aether
+    try:
+        yield
+    finally:
+        Nexus._reset_singleton_for_tests()
+        Aether._reset_singleton_for_tests()
+        Spellbook._aether = Aether()
+        Conduit._aether = Spellbook._aether
+
+
+@pytest.mark.parametrize("source", ["explicit", "configured"])
+@pytest.mark.parametrize("profile", ["general", "detailed"])
+def test_requested_inherited_cleanup_is_retained(source: str, profile: str) -> None:
+    """Both candidate sources and profile families admit an inherited callable cleanup."""
+    with configured_book(["cleanup"] if source == "configured" else []) as book:
+        spell_id = book.bind(
+            spell=InheritedCleanup, existence="many", profile=profile,
+            disposal_method_names=["cleanup"] if source == "explicit" else [],
+        )
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == ["cleanup"]
+        assert spell.has_disposal_methods is True
+        assert spell_id == Bind.spell_id_inspector(
+            InheritedCleanup, spell_name=spell.spell_name,
+            existence=Existence.many, disposal_method_names=["cleanup"],
+        )
+
+
+@pytest.mark.parametrize("target,expected", [
+    (CleanupBase, "cleanup"), (InheritedCleanup, "cleanup"),
+    (GrandchildCleanup, "cleanup"), (MultipleCleanup, "cleanup"),
+    (OverrideCleanup, "override"), (MultipleOverrideCleanup, "override"),
+])
+@pytest.mark.parametrize("existence", ["many", "unique"])
+def test_teardown_uses_the_winning_inherited_method(
+        target: type[CleanupBase], expected: str, existence: str,
+) -> None:
+    """Real teardown invokes exactly the callable selected by Python inheritance semantics."""
+    with configured_book([]) as book:
+        spell_id = book.bind(spell=target, existence=existence, disposal_method_names=["cleanup"])
+        conduit = book.conjure()
+        instance = conduit.meld(spell_id=spell_id)
+        conduit.permanent_cleanup()
+        assert instance.calls == [expected]
+
+
+@pytest.mark.parametrize("target", [
+    NonCallableShadow, InheritedShadow, PropertyShadow, MetaclassOnlyCleanup,
+    ClassMethodCleanup, InheritedClassMethodCleanup,
+])
+def test_unavailable_or_unsupported_cleanup_stays_excluded(target: type) -> None:
+    """Do not revive shadowed methods, evaluate properties or admit metaclass-only callables."""
+    with configured_book(["cleanup"]) as book:
+        spell_id = book.bind(spell=target, existence="many", disposal_method_names=["cleanup"])
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == []
+        assert spell.has_disposal_methods is False
+
+
+def test_inherited_staticmethod_keeps_existing_callable_eligibility() -> None:
+    """A staticmethod that is eligible when declared remains eligible when inherited."""
+    with configured_book([]) as book:
+        spell_id = book.bind(
+            spell=InheritedStaticCleanup, existence="many", disposal_method_names=["cleanup"],
+        )
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == ["cleanup"]
+
+
+@pytest.mark.parametrize("priority,expected", [
+    (False, ["close", "flush", "cleanup"]), (True, ["flush", "cleanup", "close"]),
+])
+def test_inherited_disposal_preserves_priority_overlap_and_deduplication(
+        priority: bool, expected: list[str],
+) -> None:
+    """Mixed declared/inherited methods retain book overlap ownership and actual call ordering."""
+    with configured_book(["flush", "cleanup", "flush"], priority) as book:
+        spell_id = book.bind(
+            spell=OrderedCleanup, existence="many",
+            disposal_method_names=["cleanup", "close", "close", "missing", "__str__"],
+        )
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == expected
+        conduit = book.conjure()
+        instance = conduit.meld(spell_id=spell_id)
+        conduit.permanent_cleanup()
+        assert instance.calls == expected
+
+
+def test_unrequested_base_callable_does_not_change_binding_identity(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Preserving the shallow profile avoids unrelated ID drift from expanding inherited members."""
+    before = Bind.spell_id_inspector(InheritedCleanup, existence=Existence.many)
+
+    def unrelated_method(self: CleanupBase) -> None:
+        """Supply an unrequested base method whose existence must not affect the child fingerprint."""
+        return
+
+    monkeypatch.setattr(CleanupBase, "unrelated_operation", unrelated_method, raising=False)
+    after = Bind.spell_id_inspector(InheritedCleanup, existence=Existence.many)
+    assert after == before
+
+
+def test_inactive_binding_resolves_inherited_cleanup_before_fingerprinting() -> None:
+    """A staged member receives its own inherited disposal policy without changing the active one."""
+    with configured_book([], dynamic=True) as book:
+        active_id = book.bind(spell=InheritedCleanup, existence="many")
+        active = book.find_spell_by_id(active_id)
+        assert active is not None
+        staged_id = book.bind_inactive(
+            spell=InheritedCleanup, spell_index=active.spell_index, existence="many",
+            disposal_method_names=["cleanup"],
+        )
+        staged = book._get_owned_spell(staged_id)
+        assert staged is not None
+        try:
+            assert staged_id != active_id
+            assert staged.disposal_method_names == ["cleanup"]
+            assert active.disposal_method_names == []
+            assert active.spell_index.selected_spell_id == active_id
+        finally:
+            book.cleanup_spell(spell=staged)
+================================================================================
+END FILE: tests/component/melder/spellbook/test_inherited_disposal_binding.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_ordered_disposal_binding.py
-CONTENT SHA256: 5b2578919389c7482b6f11c7c9b57c41d66cef3ca03e3af580b567d6dfaf9992
+CONTENT SHA256: 0f8a05306e76a5e975e13a4e8494251627f9c6480d4d3a32b71a779971e4b218
 SOURCE ENCODING: utf-8
 ================================================================================
 """Producer contracts for ordered book/per-spell disposal metadata and bind identity."""
@@ -42666,7 +43168,7 @@ class OrderedDisposalService:
 
 
 class InheritedOnlyDisposal(OrderedDisposalService):
-    """An empty own namespace keeps inherited-only methods outside current profile matching."""
+    """Inherit disposal methods without adding duplicate subclass implementations."""
 
 
 def service_factory() -> OrderedDisposalService:
@@ -42832,15 +43334,27 @@ def test_fluent_binder_forwards_explicit_disposal_names(priority: bool) -> None:
         assert spell.disposal_method_names == (["flush", "stop", "close"] if priority else ["stop", "close", "flush"])
 
 
-@pytest.mark.parametrize("target", [InheritedOnlyDisposal, service_factory, OrderedDisposalService()])
+@pytest.mark.parametrize("target", [service_factory, OrderedDisposalService()])
 def test_disposal_matching_stays_with_existing_class_profile(target: object) -> None:
-    """Inherited-only, factory, and prebuilt-instance methods remain outside class-profile matching."""
+    """Factory and prebuilt-instance methods remain outside class binding disposal matching."""
     with configured_book(["flush", "close"], True) as book:
         spell_id = book.bind(spell=target, existence="unique", disposal_method_names=["stop"])
         spell = book.find_spell_by_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == []
         assert spell.has_disposal_methods is False
+
+
+def test_inherited_class_disposal_preserves_book_and_spell_order() -> None:
+    """Inherited methods participate in the same book-first ordering as declared methods."""
+    with configured_book(["flush", "close"], True) as book:
+        spell_id = book.bind(
+            spell=InheritedOnlyDisposal, existence="many", disposal_method_names=["stop"],
+        )
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == ["flush", "close", "stop"]
+        assert spell.has_disposal_methods is True
 
 
 def test_raw_configuration_can_bind_without_disposal_name_property() -> None:
@@ -52896,6 +53410,352 @@ def test_component_spellbook_remove_contracted_spell_raises_when_missing_version
         spellbook.cleanup()
 ================================================================================
 END FILE: tests/component/melder/spellbook/test_spellbook_component_spellbook.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py
+CONTENT SHA256: 7dfffa594f1ecf001a2724d07fbc58bd3df771924cb7279c35a326c9a7eb158f
+SOURCE ENCODING: utf-8
+================================================================================
+"""Compiler contracts for typed parameters that no registered spell provides (UNRESOLVED_INPUT)."""
+
+import annotationlib
+import inspect
+import logging
+from collections.abc import Iterator
+from typing import Optional, Union
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
+from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
+    SharedCompilerExecutions,
+)
+from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
+    SpellCompilerSystem,
+)
+from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
+    SpellLocalTopology,
+)
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
+
+
+class Unregistered:
+    """A type deliberately absent from every registration pool."""
+
+
+class Provider(Unregistered):
+    """Ordinary provider used to turn the input into a normal edge."""
+
+
+class OtherProvider(Unregistered):
+    """Second provider keeps the two-candidate ambiguity error meaningful."""
+
+
+class Consumer:
+    """Require one typed value that nothing registered provides."""
+
+    def __init__(self, value: Unregistered) -> None:
+        """Retain the supplied value by identity."""
+        self.value = value
+
+
+class OptionalConsumer:
+    """A nullable annotation without a default is still a required input."""
+
+    def __init__(self, value: Optional[Unregistered]) -> None:
+        """Retain the supplied value, including None."""
+        self.value = value
+
+
+class DefaultConsumer:
+    """An ordinary Python default keeps PLAIN semantics."""
+
+    def __init__(self, value: Optional[Unregistered] = None) -> None:
+        """Retain the default unless a caller overrides it."""
+        self.value = value
+
+
+class CollectionConsumer:
+    """Zero providers for a collection still injects an empty list."""
+
+    def __init__(self, values: list[Unregistered]) -> None:
+        """Store the ordered providers."""
+        self.values = values
+
+
+class KeywordConsumer:
+    """Keyword-only unresolved input keeps its signature kind."""
+
+    def __init__(self, *, value: Unregistered) -> None:
+        """Retain the supplied value."""
+        self.value = value
+
+
+@pytest.fixture
+def compiler_book() -> Iterator[Spellbook]:
+    """Own one isolated compiler world and clean it after each contract test."""
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    book = Spellbook(aetheric_frame="unresolved-input")
+    book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
+    book._aetheric_frame_configuration.with_system_caching_enabled(False)
+    try:
+        yield book
+    finally:
+        book.cleanup()
+        Aether._reset_singleton_for_tests()
+        aether = Aether()
+        Spellbook._aether = aether
+        Conduit._aether = aether
+
+
+def _selected(book: Spellbook, spell_id: str) -> Spell:
+    """Return the exact selected record produced by this test's bind."""
+    spell = book.find_spell_by_id(spell_id)
+    assert spell is not None and spell.spell_id == spell_id
+    return spell
+
+
+def _structural_pass(book: Spellbook, compiler: SpellCompilerSystem) -> None:
+    """Run each structural phase across the real book before advancing its barrier."""
+    for spell in book.spells.values():
+        compiler.run_phase_requirements(spell)
+        compiler.run_phase_symbolic_graph(spell)
+    for spell in book.spells.values():
+        compiler.run_phase_local_frame(book, spell)
+    for spell in book.spells.values():
+        compiler.run_phase_validation(book, spell)
+
+
+def _local_topology(book: Spellbook, spell_id: str, *, indexed: bool) -> SpellLocalTopology:
+    """Run real phases 1-3 for one consumer through indexed or ordinary candidate matching."""
+    spell = _selected(book, spell_id)
+    compiler = SpellCompilerSystem()
+    try:
+        compiler.run_phase_requirements(spell)
+        compiler.run_phase_symbolic_graph(spell)
+        compiler.run_phase_local_frame(book, spell, resolution_pass_cache={} if indexed else None)
+    finally:
+        compiler.cleanup()
+    topology = book._spell_system_states.get_local_topology(spell.spell_index)
+    assert topology is not None
+    return topology
+
+
+@pytest.mark.parametrize("indexed", [False, True])
+@pytest.mark.parametrize("consumer_type", [Consumer, OptionalConsumer])
+def test_zero_providers_compile_as_an_unresolved_input(
+    compiler_book: Spellbook, indexed: bool, consumer_type: type,
+) -> None:
+    """No candidate at all yields an UNRESOLVED_INPUT socket with its watch key, not a Phase-3 error."""
+    consumer_id = compiler_book.bind(spell=consumer_type, existence="unique")
+    socket, = _local_topology(compiler_book, consumer_id, indexed=indexed).sockets
+    assert socket.socket_kind is SocketKind.UNRESOLVED_INPUT
+    assert socket.target_spell_ids == ()
+    assert socket.referenced_spell_ids == ()
+    assert socket.dependency_key == ("unregistered", "__default__")
+    assert (socket.position, socket.parameter_kind) == (0, "POSITIONAL_OR_KEYWORD")
+    assert _selected(compiler_book, consumer_id).dependencies == []
+
+
+def test_keyword_only_unresolved_input_keeps_its_signature_kind(compiler_book: Spellbook) -> None:
+    """Position and kind survive so supply by name or position is judged against the real signature."""
+    consumer_id = compiler_book.bind(spell=KeywordConsumer, existence="unique")
+    socket, = _local_topology(compiler_book, consumer_id, indexed=True).sockets
+    assert socket.socket_kind is SocketKind.UNRESOLVED_INPUT
+    assert socket.parameter_kind == "KEYWORD_ONLY"
+
+
+@pytest.mark.parametrize(("setup", "expected_kind"), [
+    ("one_provider", SocketKind.NORMAL),
+    ("definition_only", SocketKind.OVERRIDE_REQUIRED),
+])
+def test_existing_socket_kinds_are_unchanged(
+    compiler_book: Spellbook, setup: str, expected_kind: SocketKind,
+) -> None:
+    """A provider still makes a normal edge; a non-resolvable definition still means OVERRIDE_REQUIRED."""
+    if setup == "one_provider":
+        compiler_book.bind(spell=Provider, spellframe=Unregistered, existence="unique")
+    else:
+        compiler_book.bind(spell=Unregistered, existence="unique", resolvable=False)
+    consumer_id = compiler_book.bind(spell=Consumer, existence="unique")
+    socket, = _local_topology(compiler_book, consumer_id, indexed=True).sockets
+    assert socket.socket_kind is expected_kind
+
+
+def test_two_providers_remain_an_ambiguity_error(compiler_book: Spellbook) -> None:
+    """Ambiguity is a configuration error, never an input the caller could supply."""
+    compiler_book.bind(spell=Provider, spellframe=Unregistered, existence="unique", binding_name="one")
+    compiler_book.bind(spell=OtherProvider, spellframe=Unregistered, existence="unique", binding_name="two")
+    consumer_id = compiler_book.bind(spell=Consumer, existence="unique")
+    with pytest.raises(RuntimeError, match="multiple DI candidates"):
+        _local_topology(compiler_book, consumer_id, indexed=True)
+
+
+@pytest.mark.parametrize(("consumer_type", "expected_kind"), [
+    (DefaultConsumer, SocketKind.NORMAL),
+    (CollectionConsumer, SocketKind.NORMAL),
+])
+def test_defaults_and_collections_do_not_become_unresolved_inputs(
+    compiler_book: Spellbook, consumer_type: type, expected_kind: SocketKind,
+) -> None:
+    """PLAIN defaults and empty collections keep their existing meaning with zero providers."""
+    consumer_id = compiler_book.bind(spell=consumer_type, existence="unique")
+    socket, = _local_topology(compiler_book, consumer_id, indexed=True).sockets
+    assert socket.socket_kind is expected_kind
+    assert socket.socket_kind is not SocketKind.UNRESOLVED_INPUT
+
+
+def test_validation_warns_with_the_expected_type_and_keeps_the_spell_valid(compiler_book: Spellbook) -> None:
+    """Phase 4 records an UNRESOLVED_INPUT warning naming the type; the spell is not broken."""
+    consumer_id = compiler_book.bind(spell=Consumer, existence="unique")
+    compiler = SpellCompilerSystem()
+    try:
+        _structural_pass(compiler_book, compiler)
+        spell = _selected(compiler_book, consumer_id)
+        assert not spell.is_broken
+        issue, = [issue for issue in spell.validation_result_phase4.issues if issue.code == "UNRESOLVED_INPUT"]
+        assert issue.severity == "warning"
+        assert issue.details["parameter_name"] == "value"
+        assert issue.details["expected_type"] == "Unregistered"
+        assert issue.details["dependency_key"] == ("unregistered", "__default__")
+        assert "UnresolvedInputError" in issue.message
+    finally:
+        compiler.cleanup()
+
+
+@pytest.mark.parametrize("family", ["solo", "many_only", "generalized"])
+def test_injection_source_and_rows_carry_the_unresolved_input(compiler_book: Spellbook, family: str) -> None:
+    """Phase 9 emits an edge-less override source; exporters append position and kind only."""
+    class RuntimeDependency:
+        """Give non-solo consumers one real executable provider."""
+
+    class MixedConsumer:
+        """Use an ordinary provider plus a keyword-only unresolved input."""
+
+        def __init__(self, dependency: RuntimeDependency, *, value: Unregistered) -> None:
+            """Retain both values."""
+            self.dependency = dependency
+            self.value = value
+
+    if family == "solo":
+        consumer_id = compiler_book.bind(spell=Consumer, existence="unique")
+        expected_suffix = (0, "POSITIONAL_OR_KEYWORD")
+    else:
+        compiler_book.bind(spell=RuntimeDependency, existence="many" if family == "many_only" else "unique")
+        consumer_id = compiler_book.bind(spell=MixedConsumer, existence="many")
+        expected_suffix = (1, "KEYWORD_ONLY")
+    compiler = SpellCompilerSystem()
+    try:
+        _structural_pass(compiler_book, compiler)
+        consumer = _selected(compiler_book, consumer_id)
+        compiler.run_phase_root_blueprints(compiler_book, consumer, "compiler-conduit")
+        compiler.run_phase_occurrence_plan(compiler_book, consumer)
+        compiler.run_phase_injection_plan(consumer)
+        injection = consumer._compiler_artifact._spell_codegen_model.injection_shape
+        root_spec = injection.instance_specs_by_instance_key[injection.root_instance_key]
+        source = root_spec.param_sources["value"]
+        assert source.kind == "unresolved_input"
+        assert source.dependency_keys == ()
+        assert source.override_key == "value"
+        assert source.referenced_spell_ids == ()
+        assert root_spec.required_override_params == ()
+        exported = SharedCompilerExecutions.build_injection_instance_rows(injection.instance_specs_by_instance_key)
+        root_row = next(row for row in exported if row[0] == injection.root_instance_key)
+        input_row = next(row for row in root_row[4] if row[0] == "value")
+        assert input_row[6:] == expected_suffix
+        for include_metadata in (False, True):
+            signature = SharedCompilerExecutions.build_phase11_injection_spec_signature_row(
+                root_spec, include_override_metadata=include_metadata,
+            )
+            signature_input = next(row for row in signature[0] if row[0] == "value")
+            assert signature_input[6:] == expected_suffix
+    finally:
+        compiler.cleanup()
+
+
+def test_conjure_reports_unresolved_inputs_once(caplog: pytest.LogCaptureFixture) -> None:
+    """Conjure succeeds and logs one INFO line listing Spell.param -> ExpectedType."""
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    logger = logging.getLogger("melder.tests.unresolved_input_report")
+    book = Spellbook(aetheric_frame="unresolved-input-report", logger=logger)
+    book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
+    book._aetheric_frame_configuration.with_system_caching_enabled(False)
+    try:
+        book.bind(spell=Consumer, existence="many")
+        with caplog.at_level(logging.INFO, logger=logger.name):
+            conduit = book.conjure()
+        lines = [record.getMessage() for record in caplog.records if "unresolved input" in record.getMessage()]
+        assert len(lines) == 1
+        assert "Consumer.value -> Unregistered" in lines[0]
+        conduit.cleanup()
+    finally:
+        book.cleanup()
+        Aether._reset_singleton_for_tests()
+        aether = Aether()
+        Spellbook._aether = aether
+        Conduit._aether = aether
+
+
+@pytest.mark.parametrize("consumer_type", [Consumer, OptionalConsumer])
+def test_late_provider_turns_the_unresolved_input_into_a_normal_edge(
+    compiler_book: Spellbook, consumer_type: type,
+) -> None:
+    """Binding a matching provider after conjure re-resolves the consumer on its next meld."""
+    consumer_id = compiler_book.bind(spell=consumer_type, existence="many")
+    conduit = compiler_book.conjure(dynamic=True, name="late-provider")
+    try:
+        with pytest.raises(UnresolvedInputError):
+            conduit.meld(spell=consumer_type)
+        provider_id = conduit.bind(spell=Provider, spellframe=Unregistered, existence="unique")
+        result = conduit.meld(spell=consumer_type)
+        assert isinstance(result.value, Provider)
+        assert _selected(compiler_book, consumer_id).dependencies == [provider_id]
+        socket, = compiler_book._spell_system_states.get_local_topology(
+            _selected(compiler_book, consumer_id).spell_index,
+        ).sockets
+        assert socket.socket_kind is SocketKind.NORMAL
+    finally:
+        conduit.cleanup()
+
+
+def test_unresolved_input_error_is_a_meld_execution_error() -> None:
+    """Existing handlers that catch MeldExecutionError keep catching the specific error."""
+    assert issubclass(UnresolvedInputError, MeldExecutionError)
+
+
+@pytest.mark.parametrize(("annotation", "expected"), [
+    (Unregistered, "Unregistered"),
+    (Optional[Unregistered], "Unregistered"),
+    (Union[Unregistered, None], "Unregistered"),
+    ("Unregistered", "Unregistered"),
+    ("'Unregistered'", "Unregistered"),
+    (list[Unregistered], repr(list[Unregistered])),
+])
+def test_expected_type_name_renders_annotations(annotation: object, expected: str) -> None:
+    """One naming rule for the warning and the error: unwrap Optional, quotes and forward refs."""
+    assert UnresolvedInputError.expected_type_name(annotation) == expected
+
+
+def test_expected_type_name_uses_the_written_name_of_an_unresolvable_forward_ref() -> None:
+    """A TYPE_CHECKING-only name read with FORWARDREF renders as written, never raising."""
+    def target(value: NotImportedAtRuntime) -> None:
+        """Carry an annotation that cannot be evaluated."""
+
+    parameter = inspect.signature(target, annotation_format=annotationlib.Format.FORWARDREF).parameters["value"]
+    assert UnresolvedInputError.expected_type_name(parameter.annotation) == "NotImportedAtRuntime"
+================================================================================
+END FILE: tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_conjure_existing_conduit.py
@@ -63143,17 +64003,20 @@ END FILE: tests/experimentation/test_cache_warm_meld_parity_probe.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_cleanup_dependency_breaks_dependents_experiment.py
-CONTENT SHA256: 6c4ca71cbe97f7925798482c066bc1ea7773f9ccd3d8ec22d71805df7d36ccce
+CONTENT SHA256: 8234048ce20b898014980bfce88399094dfd0fa68228480dd7129fb2bd1c7f15
 SOURCE ENCODING: utf-8
 ================================================================================
 """
-Experiment: cleaning up a shared dependency must BREAK its dependents.
+Experiment: cleaning up a shared dependency's spell gates its dependents.
 
 Purpose / expected behaviour (this is the point of invalidation on cleanup):
     A spell that is a dependency of other spells is cleaned up. The dependents
-    must NOT keep resolving against the now-removed dependency -- they must become
-    gated/invalid and FAIL to meld. A dependent that still resolves after its
-    dependency was disposed is a correctness violation.
+    become gated and re-resolve. The file name records the original contract,
+    under which they then FAILED to meld. Since 2026-09-26 (owner decision) a
+    removed provider leaves an unresolved input instead: dependent objects built
+    before the cleanup keep being served with the dependency they already hold
+    (Melder stops tracking it, it does not close it); a dependent built after the
+    cleanup needs the value supplied by the meld or a new provider.
 
 Method (dynamic mode):
     Bind three leaf dependencies (Dep1, Dep2, Dep3) and two consumers:
@@ -63165,11 +64028,12 @@ Method (dynamic mode):
        work and are cached).
     2. cleanup_spell(Dep1).
     3. Confirm both roots flip to gated on the SpellSystemStates plane.
-    4. MELD BOTH roots again AFTER cleanup -- expected to BREAK (unresolvable).
+    4. MELD BOTH roots again AFTER cleanup -- the stored instances are reused.
     5. Control: notify_spell_changed(Dep1) to show the CCM meld-gate plane.
 
 Asserts the purpose: both dependents meld before cleanup, both are gated after,
-and both FAIL to resolve after. All evidence is printed before any assert.
+and both stored dependents are served again after. All evidence is printed
+before any assert.
 
 This is an experimentation surface, not production runtime code.
 """
@@ -63359,7 +64223,7 @@ def test_cleanup_dependency_breaks_dependents_experiment() -> None:
             "is_root_dirty(other_root)_after": ccm_dirty_other,
         })
 
-        # --- Phase D2: MELD BOTH dependents AFTER cleanup (expected to BREAK) ---
+        # --- Phase D2: MELD BOTH dependents AFTER cleanup (stored instances reused) ---
         root_after = _try_meld(conduit, root_id)
         other_after = _try_meld(conduit, other_root_id)
         print("EXPERIMENT_D2_MELD_AFTER")
@@ -63384,13 +64248,13 @@ def test_cleanup_dependency_breaks_dependents_experiment() -> None:
             "gated" in (root_validity_after or "").lower()
             and "gated" in (other_validity_after or "").lower()
         )
-        both_broke_after = (not root_after[0]) and (not other_after[0])
+        both_reused_after = root_after[0] and other_after[0]
         print("EXPERIMENT_F_VERDICT")
         print({
             "both_dependents_melded_before_cleanup": both_melded_before,
             "both_dependents_gated_after_cleanup": both_gated_after,
-            "both_dependents_broke_after_cleanup": both_broke_after,
-            "purpose_satisfied": both_melded_before and both_gated_after and both_broke_after,
+            "both_stored_dependents_reused_after_cleanup": both_reused_after,
+            "purpose_satisfied": both_melded_before and both_gated_after and both_reused_after,
         })
 
         # Assert the purpose (evidence already printed above).
@@ -63402,9 +64266,9 @@ def test_cleanup_dependency_breaks_dependents_experiment() -> None:
             f"dependents were not gated after cleanup -- "
             f"root={root_validity_after}, other={other_validity_after}"
         )
-        assert both_broke_after, (
-            f"PURPOSE VIOLATED: a dependent still resolved after its dependency was "
-            f"cleaned up; both were expected to break (unresolvable) -- "
+        assert both_reused_after, (
+            f"PURPOSE VIOLATED: a dependent built before the cleanup was not served "
+            f"again; stored dependents keep the dependency they hold -- "
             f"root_after={root_after}, other_after={other_after}"
         )
     finally:
@@ -65906,7 +66770,7 @@ END FILE: tests/experimentation/test_existing_instance_gap_experiment.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_existing_instance_injection_experiment.py
-CONTENT SHA256: e4a83c4f796d0782b5adbb3519976349a7c6736ac6555ecb50a6b92b3fc5896a
+CONTENT SHA256: 3016c7ffc411ecdfd443462b276b42f254f6ade7691d3d5ed9ff84909c6f776f
 SOURCE ENCODING: utf-8
 ================================================================================
 """Characterize existing-object injection before selecting a production repair.
@@ -65922,6 +66786,7 @@ import pytest
 
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
     CollectionValueConsumer,
     ExistingValue,
@@ -66015,7 +66880,11 @@ def test_characterize_existing_instance_injection(instance_book: Spellbook, mode
         report.update(outcome="same_instance", stage=stage)
     except (RuntimeError, TypeError) as error:
         message = str(error)
-        if "not a callable object" in message:
+        if isinstance(error, UnresolvedInputError):
+            # Since 2026-09-26 an unmatched type frame conjures as an unresolved
+            # input and surfaces at meld instead of refusing conjure.
+            failure = "no_matching_type_frame"
+        elif "not a callable object" in message:
             failure = "existing_instance_signature_inspection"
         elif "no DI candidate found" in message:
             failure = "no_matching_type_frame"
@@ -66051,7 +66920,7 @@ END FILE: tests/experimentation/test_existing_instance_injection_experiment.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/test_forced_phase10_phase11_creation_context_comparison_harness.py
-CONTENT SHA256: 1bd9c2af48cfee3a16b04812ae177e45366cd396768045382a83ca42cf0c5954
+CONTENT SHA256: 757d10125fed4d4e5ad2708055a430a4841375ffd71fc150f03b8412f8095475
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -66150,12 +67019,25 @@ class _FreshCreationsProbe:
         "_creations",
         "_disposable_creations",
         "_lock",
+        "_slot_guards",
     ]
 
     def __init__(self) -> None:
         self._creations = {}
         self._disposable_creations = {}
         self._lock = _NullLock()
+        # Generated code reads this map directly on the guard hit path.
+        self._slot_guards: dict[str, _NullLock] = {}
+
+    def slot_guard(self, spell_id: str) -> _NullLock:
+        """
+        Mirror `Creations.slot_guard` for the single-threaded measurement loop.
+
+        The probe measures lane cost, not contention, so the slot's build guard
+        is the same no-op lock the probe uses for its store lock.
+        """
+        _ = spell_id
+        return self._lock
 
     def reset(self) -> None:
         """
@@ -69332,8 +70214,497 @@ def test_unhashable_instance_still_resolves_without_the_input_cache(
 END FILE: tests/experimentation/test_meld_instance_reference_discovery_experiment.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/experimentation/test_melder_creation_overrides_performance.py
+CONTENT SHA256: 164341e9b70fb6d7b80ae3c150be62e462ab4859e9a0a47677304496b0e3e96f
+SOURCE ENCODING: utf-8
+================================================================================
+"""Compare warm Melder creation and overrides with one timing harness.
+
+Run correctness checks normally with pytest. Enable timings explicitly:
+    MELDER_OVERRIDE_PERF=1 python -m pytest -q -s <this file>
+
+Controls: MELDER_OVERRIDE_GRAPHS (solo,scalar,shallow,wide,diamond,deep),
+MELDER_OVERRIDE_MODES (automatic,dynamic), MELDER_OVERRIDE_REPEATS (7),
+MELDER_OVERRIDE_SAMPLE_MS (30), MELDER_OVERRIDE_ITERS (0 = calibrate),
+MELDER_OVERRIDE_WARMUP (128), MELDER_OVERRIDE_GC (disabled or enabled),
+and MELDER_OVERRIDE_OUTPUT (optional directory for JSON and Markdown).
+
+The graph classes come from the two supplied benchmark suites' common models;
+only Melder is constructed. No competitor builder is called. All graph bindings
+are transient: the legacy override suite's existing-singleton solo case is not
+mixed into creation ratios. Supplying a dependency changes requested graph work;
+the scalar case keeps constructor work equal. The Python control constructs only
+the root from supplied inputs and is not an implemented init={} API.
+
+Samples exclude setup, warmup, correctness assertions and explicit GC collection.
+They include the same Python loop/call wrapper and normal object release. GC is
+restored after every sample. Timing numbers are observations, never pass criteria.
+"""
+
+import gc
+import hashlib
+import json
+import os
+import platform
+import statistics
+import sys
+import sysconfig
+import time
+from collections.abc import Callable
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Optional
+
+import pytest
+
+from benchmarks.testing_other_di import test_overrides_all as graph_models
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import (
+    SpellbookConfiguration,
+)
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
+from tests._frame_posture_test_support import (
+    configure_frame_posture_for_spellbook_configuration,
+)
+
+Case = tuple[Callable[[], object], dict[str, object], str]
+
+
+class ScalarRoot:
+    """One plain Python constructor argument with no dependency graph.
+
+    The default and explicit input perform exactly one scalar assignment.
+    Instances own no external resources; fresh identity is observable in tests.
+    """
+
+    __slots__ = ("value",)
+
+    def __init__(self, value: int = 13) -> None:
+        """Store the supplied value, defaulting to the benchmark's normal value."""
+        self.value = value
+
+
+@dataclass(frozen=True)
+class TimingSettings:
+    """Value-only settings for repeated single-thread measurements.
+
+    Zero iterations requests calibration to sample_ms, bounded to 64..100,000
+    calls. Explicit positive iterations bypass calibration. No timing threshold
+    controls success; invalid settings raise before runtime construction.
+    """
+
+    repeats: int
+    sample_ms: float
+    iterations: int
+    warmup: int
+    gc_mode: str
+
+    @classmethod
+    def from_environment(cls) -> TimingSettings:
+        """Parse strict environment controls and reject invalid sample settings."""
+        settings = cls(
+            repeats=int(os.environ.get("MELDER_OVERRIDE_REPEATS", "7")),
+            sample_ms=float(os.environ.get("MELDER_OVERRIDE_SAMPLE_MS", "30")),
+            iterations=int(os.environ.get("MELDER_OVERRIDE_ITERS", "0")),
+            warmup=int(os.environ.get("MELDER_OVERRIDE_WARMUP", "128")),
+            gc_mode=os.environ.get("MELDER_OVERRIDE_GC", "disabled"),
+        )
+        if settings.repeats < 1 or settings.sample_ms <= 0:
+            raise ValueError("Repeats and sample duration must be positive.")
+        if settings.iterations < 0 or settings.warmup < 1:
+            raise ValueError("Iterations must be nonnegative and warmup positive.")
+        if settings.gc_mode not in ("disabled", "enabled"):
+            raise ValueError("MELDER_OVERRIDE_GC must be disabled or enabled.")
+        return settings
+
+
+@dataclass(frozen=True)
+class TimingResult:
+    """Value-only raw samples and derived statistics for one measured call shape."""
+
+    graph: str
+    mode: str
+    case: str
+    iterations_per_sample: int
+    samples_ns: list[float]
+    median_ns: float
+    min_ns: float
+    max_ns: float
+    median_absolute_deviation_ns: float
+    operations_per_second: float
+    throughput_percent_of_normal: float
+    latency_ratio_to_normal: float
+    note: str
+
+
+def _selection(
+    variable: str, choices: tuple[str, ...], default: Optional[tuple[str, ...]] = None,
+) -> list[str]:
+    """Read a nonempty comma-separated subset without silently accepting typos."""
+    selected = os.environ.get(variable, ",".join(choices if default is None else default)).split(",")
+    selected = [value.strip() for value in selected if value.strip()]
+    if not selected or len(selected) != len(set(selected)) or any(v not in choices for v in selected):
+        raise ValueError(f"{variable} must select distinct values from {choices}.")
+    return selected
+
+
+def _root_inputs(root: object) -> dict[str, object]:
+    """Read the known graph's direct constructor fields for supplied-input cases."""
+    if isinstance(root, ScalarRoot):
+        return {"value": root.value}
+    if isinstance(root, graph_models.ShallowRootAB):
+        return {"a": root.a, "b": root.b}
+    if isinstance(root, graph_models.Wide8Root):
+        return {f"l{index}": leaf for index, leaf in enumerate(root.leaves)}
+    if isinstance(root, (graph_models.DiamondRoot, graph_models.Depth9Root)):
+        return {"left": root.left, "right": root.right}
+    if isinstance(root, graph_models.SoloRootA):
+        return {}
+    raise TypeError(f"Unsupported benchmark root: {type(root).__name__}")
+
+
+def _path_value(root: object, path: str) -> object:
+    """Follow a test-declared attribute path; names are genuinely dynamic here."""
+    if isinstance(root, graph_models.Wide8Root) and path.startswith("l") and path[1:].isdigit():
+        return root.leaves[int(path[1:])]
+    value = root
+    for part in path.split(">"):
+        value = getattr(value, part)
+    return value
+
+
+class MelderExperiment:
+    """Own one Book/root and borrowed test values for one graph and frame mode.
+
+    Setup is explicit so its caller can clean partially constructed test state.
+    Runtime caching on disk is disabled; in-memory compilation and warm doors
+    remain normal. Cases use the public Conduit.meld API, without patching it.
+    """
+
+    def __init__(self) -> None:
+        """Initialize optional owners before any runtime setup can fail."""
+        self.book: Optional[Spellbook] = None
+        self.conduit: Optional[Conduit] = None
+        self.graph = ""
+        self.root_type: type = ScalarRoot
+        self.root_id = ""
+        self.cases: dict[str, Case] = {}
+        self.rejected_cases: dict[str, str] = {}
+
+    def cleanup(self) -> None:
+        """Release case closures, then the conduit/Book and isolated Aether world."""
+        self.cases.clear()
+        self.rejected_cases.clear()
+        try:
+            if self.conduit is not None:
+                self.conduit.permanent_cleanup()
+        finally:
+            try:
+                if self.book is not None:
+                    self.book.cleanup()
+            finally:
+                self.conduit = None
+                self.book = None
+                Aether._reset_singleton_for_tests()
+                Spellbook._aether = Aether()
+                Conduit._aether = Spellbook._aether
+
+    def setup(self, graph: str, mode: str) -> None:
+        """Build transient bindings and case closures outside every timed sample."""
+        self.graph = graph
+        Aether._reset_singleton_for_tests()
+        Spellbook._aether = Aether()
+        Conduit._aether = Spellbook._aether
+        if graph == "scalar":
+            self.root_type, classes = ScalarRoot, (ScalarRoot,)
+        else:
+            spec = next(spec for spec in graph_models._override_graphs() if spec.name == graph)
+            self.root_type, classes = spec.root_type, spec.classes
+        configuration = SpellbookConfiguration(f"override-perf-{graph}-{mode}").with_defaults()
+        configuration.with_phase_scheduler_workers(1)
+        frame = configure_frame_posture_for_spellbook_configuration(
+            configuration, dynamic=mode == "dynamic",
+        )
+        frame.with_system_caching_enabled(False)
+        self.book = Spellbook(aetheric_frame=configuration._aether_frame, configuration=configuration)
+        ids = {
+            model: self.book.bind(spell=model, existence=Existence.many, permissions="create")
+            for model in classes
+        }
+        self.root_id = ids[self.root_type]
+        self.conduit = self.book.conjure(name="benchmark", dynamic=mode == "dynamic")
+        self.cases = self._build_cases()
+
+    def _build_cases(self) -> dict[str, Case]:
+        """Build public-call cases with explicit expected fields and workload notes."""
+        meld = self.conduit.meld
+        root_id = self.root_id
+        root_type = self.root_type
+        inputs = _root_inputs(meld(spell_id=root_id))
+        cases: dict[str, Case] = {
+            "normal": (lambda: meld(spell_id=root_id), {}, "Full transient graph; no overrides."),
+            "empty_dict": (lambda: meld(spell_id=root_id, override={}), {}, "Same graph; fresh empty dict."),
+            "empty_tuple": (lambda: meld(spell_id=root_id, override=()), {}, "Same graph; empty positional input."),
+        }
+        if inputs:
+            first_key = next(iter(inputs))
+            first_value = inputs[first_key]
+            one = {first_key: first_value}
+            args = tuple(inputs.values())
+            cases["root_one_reused"] = (
+                lambda: meld(spell_id=root_id, override=one), one,
+                "One supplied root argument; payload and value reused.",
+            )
+            cases["root_one_fresh"] = (
+                lambda: meld(spell_id=root_id, override={first_key: first_value}), one,
+                "Same root argument; one fresh dict per call, matching the original benchmark.",
+            )
+            if len(inputs) > 1:
+                cases["root_all_reused"] = (
+                    lambda: meld(spell_id=root_id, override=inputs), inputs,
+                    "All direct root arguments supplied; retained graph values reused.",
+                )
+            cases["root_args_tuple"] = (
+                lambda: meld(spell_id=root_id, override=args), inputs,
+                "All root arguments supplied positionally; public normalization remains timed.",
+            )
+        cases["python_root_only"] = (
+            lambda: root_type(**inputs), inputs,
+            "Lower bound: Python root constructor only, supplied dependencies; no Melder semantics.",
+        )
+        self._add_targeted_cases(cases, meld, root_id)
+        return cases
+
+    def _add_targeted_cases(
+        self, cases: dict[str, Case], meld: Callable[..., object], root_id: str,
+    ) -> None:
+        """Add the supplied benchmark's exact/broadcast dependency targeting cases."""
+        if self.graph in ("solo", "scalar"):
+            return
+        spec = next(spec for spec in graph_models._override_graphs() if spec.name == self.graph)
+        supplied = spec.override_target()
+        key = spec.melder_override_key
+        assert key is not None, "A dependency-override fixture must declare its target key."
+        original = {key: supplied}
+        expected = (
+            {"left>leaf": supplied, "right>leaf": supplied}
+            if self.graph == "diamond" else {key: supplied}
+        )
+        cases["original_override"] = (
+            lambda: meld(spell_id=root_id, override={key: supplied}), expected,
+            f"Original override workload: {key}; fresh mapping and precreated replacement.",
+        )
+        if self.graph in ("diamond", "deep"):
+            cases["nested_reused"] = (
+                lambda: meld(spell_id=root_id, override=original), expected,
+                f"Same nested selector {key}; payload reused.",
+            )
+        if self.graph == "diamond":
+            exact = {"left>leaf": supplied}
+            cases["nested_exact"] = (
+                lambda: meld(spell_id=root_id, override=exact), exact,
+                "One exact nested leaf; the right branch remains normally constructed.",
+            )
+
+    def verify(self) -> None:
+        """Check outcomes and expose known positional/DI rejection without timing failed calls.
+
+        Only the observed positional duplicate-argument error is classified as
+        rejected. Every other exception propagates. If runtime later supports
+        this input shape, it automatically rejoins the measured cases.
+        """
+        for label, (call, expected, _note) in self.cases.items():
+            try:
+                first, second = call(), call()
+            except MeldExecutionError as error:
+                if (
+                    label != "root_args_tuple" or not isinstance(error.__cause__, TypeError)
+                    or "multiple values for argument" not in str(error.__cause__)
+                ):
+                    raise
+                self.rejected_cases[label] = str(error.__cause__)
+                continue
+            assert isinstance(first, self.root_type), label
+            assert isinstance(second, self.root_type), label
+            assert first is not second, f"{label}: transient root was reused"
+            for path, supplied in expected.items():
+                assert _path_value(first, path) is supplied, f"{label}: override missed {path}"
+                assert _path_value(second, path) is supplied, f"{label}: repeated override missed {path}"
+                normal = self.conduit.meld(spell_id=self.root_id)
+                if not isinstance(supplied, int):
+                    assert _path_value(normal, path) is not supplied, f"{label}: leaked into normal creation"
+        for label in self.rejected_cases:
+            del self.cases[label]
+        if self.graph == "scalar":
+            changed = self.conduit.meld(spell_id=self.root_id, override={"value": 97})
+            assert isinstance(changed, ScalarRoot) and changed.value == 97
+            normal = self.conduit.meld(spell_id=self.root_id)
+            assert isinstance(normal, ScalarRoot) and normal.value == 13
+
+
+def _average_ns(call: Callable[[], object], iterations: int, gc_mode: str) -> float:
+    """Time only repeated calls; restore the process GC posture even on failure."""
+    gc.collect()
+    was_enabled = gc.isenabled()
+    if gc_mode == "disabled":
+        gc.disable()
+    else:
+        gc.enable()
+    try:
+        started = time.perf_counter_ns()
+        for _ in range(iterations):
+            call()
+        return (time.perf_counter_ns() - started) / iterations
+    finally:
+        if was_enabled:
+            gc.enable()
+        else:
+            gc.disable()
+
+
+def _measure(world: MelderExperiment, settings: TimingSettings, mode: str) -> list[TimingResult]:
+    """Warm/calibrate each case, rotate sample order and return raw plus summary timings."""
+    labels = list(world.cases)
+    counts: dict[str, int] = {}
+    samples: dict[str, list[float]] = {label: [] for label in labels}
+    for label, (call, _expected, _note) in world.cases.items():
+        for _ in range(settings.warmup):
+            call()
+        probe_ns = _average_ns(call, 64, settings.gc_mode)
+        counts[label] = settings.iterations or max(64, min(100_000, int(settings.sample_ms * 1e6 / probe_ns)))
+    for repeat in range(settings.repeats):
+        order = labels[repeat % len(labels):] + labels[:repeat % len(labels)]
+        for label in order:
+            samples[label].append(_average_ns(world.cases[label][0], counts[label], settings.gc_mode))
+    baseline_ns = statistics.median(samples["normal"])
+    return [
+        TimingResult(
+            graph=world.graph, mode=mode, case=label,
+            iterations_per_sample=counts[label], samples_ns=values,
+            median_ns=statistics.median(values), min_ns=min(values), max_ns=max(values),
+            median_absolute_deviation_ns=statistics.median(abs(v - statistics.median(values)) for v in values),
+            operations_per_second=1e9 / statistics.median(values),
+            throughput_percent_of_normal=100 * baseline_ns / statistics.median(values),
+            latency_ratio_to_normal=statistics.median(values) / baseline_ns,
+            note=world.cases[label][2],
+        )
+        for label, values in samples.items()
+    ]
+
+
+def _source_fingerprints(repo: Path) -> dict[str, str]:
+    """Hash runtime and input fixtures to detect concurrent edits during measurement."""
+    paths = [
+        path for path in (repo / "src/melder").rglob("*.py")
+        if "_build_assets" not in path.parts and "__melder_cache__" not in path.parts
+    ]
+    paths.extend([
+        Path(__file__), repo / "benchmarks/testing_other_di/test_shallow_all.py",
+        repo / "benchmarks/testing_other_di/test_overrides_all.py", repo / "tests/mocks/spellbook/deep_layers.py",
+    ])
+    return {path.relative_to(repo).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(paths)}
+
+
+def _render_report(
+    rows: list[TimingResult], metadata: dict[str, object], rejected: list[dict[str, str]],
+) -> str:
+    """Render comparable case statistics and the limits of the measured workload."""
+    lines = [
+        "# Melder creation and override experiment", "",
+        f"Python: {metadata['python']}", f"GIL enabled: {metadata['gil_enabled']}",
+        f"GC during samples: {metadata['gc_mode']}; repeats: {metadata['repeats']}", "",
+        "Warm single-thread calls; disk cache disabled. Setup, assertions and explicit GC are outside timing.",
+        "Supplied dependencies may change graph work. Python root-only rows exclude all Melder behavior.",
+        "No init={} API or runtime optimization is implemented by this experiment.", "",
+        "| Mode | Graph | Case | Median us | Min-max us | Ops/s | % normal speed |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: |",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row.mode} | {row.graph} | {row.case} | {row.median_ns / 1000:.3f} | "
+            f"{row.min_ns / 1000:.3f}-{row.max_ns / 1000:.3f} | "
+            f"{row.operations_per_second:,.0f} | {row.throughput_percent_of_normal:.1f} |"
+        )
+    if rejected:
+        lines.extend(["", "Cases rejected by current runtime (not timed):"])
+        lines.extend(
+            f"- {item['mode']}/{item['graph']}/{item['case']}: {item['reason']}"
+            for item in rejected
+        )
+    lines.extend(["", "Case semantics:"])
+    lines.extend(f"- {row.graph}/{row.case}: {row.note}" for row in rows if row.mode == rows[0].mode)
+    return "\n".join(lines) + "\n"
+
+
+@pytest.mark.parametrize("graph", ["solo", "scalar", "shallow", "wide", "diamond", "deep"])
+def test_melder_override_matrix_contracts(graph: str) -> None:
+    """Verify the experimental workloads without any performance threshold or timing run."""
+    world = MelderExperiment()
+    try:
+        world.setup(graph, "automatic")
+        world.verify()
+    finally:
+        world.cleanup()
+
+
+@pytest.mark.skipif(os.environ.get("MELDER_OVERRIDE_PERF") != "1", reason="Opt-in performance experiment")
+def test_melder_creation_overrides_performance() -> None:
+    """Run the unified Melder-only matrix and optionally preserve JSON/Markdown results.
+
+    Source hashes before/after must match; concurrent edits make the run fail
+    rather than silently mix code versions. Performance numbers never fail CI.
+    """
+    settings = TimingSettings.from_environment()
+    graphs = _selection("MELDER_OVERRIDE_GRAPHS", ("solo", "scalar", "shallow", "wide", "diamond", "deep"))
+    modes = _selection("MELDER_OVERRIDE_MODES", ("automatic", "dynamic"), default=("automatic",))
+    repo = Path(__file__).resolve().parents[2]
+    before = _source_fingerprints(repo)
+    rows: list[TimingResult] = []
+    rejected: list[dict[str, str]] = []
+    for mode in modes:
+        for graph in graphs:
+            world = MelderExperiment()
+            try:
+                world.setup(graph, mode)
+                world.verify()
+                rejected.extend(
+                    {"graph": graph, "mode": mode, "case": label, "reason": reason}
+                    for label, reason in world.rejected_cases.items()
+                )
+                rows.extend(_measure(world, settings, mode))
+            finally:
+                world.cleanup()
+    after = _source_fingerprints(repo)
+    changed = sorted(path for path in before.keys() | after.keys() if before.get(path) != after.get(path))
+    metadata: dict[str, object] = {
+        "timestamp_utc": datetime.now(UTC).isoformat(), "python": sys.version,
+        "executable": sys.executable, "platform": platform.platform(), "processor": platform.processor(),
+        "logical_cpus": os.cpu_count(), "gil_enabled": sys._is_gil_enabled(),
+        "free_threaded_build": sysconfig.get_config_var("Py_GIL_DISABLED"),
+        "gc_mode": settings.gc_mode, "repeats": settings.repeats, "warmup": settings.warmup,
+        "sample_ms": settings.sample_ms, "requested_iterations": settings.iterations,
+        "source_changed_during_run": changed, "source_sha256": before,
+    }
+    report = _render_report(rows, metadata, rejected)
+    output = os.environ.get("MELDER_OVERRIDE_OUTPUT")
+    if output:
+        directory = Path(output)
+        directory.mkdir(parents=True, exist_ok=True)
+        payload = {"metadata": metadata, "results": [asdict(row) for row in rows], "rejected_cases": rejected}
+        (directory / "results.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        (directory / "results.md").write_text(report, encoding="utf-8")
+    print(report)
+    assert not changed, f"Runtime changed during measurement; rerun a stable checkout: {changed}"
+================================================================================
+END FILE: tests/experimentation/test_melder_creation_overrides_performance.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/experimentation/test_optional_dependency_default_resolution_experiment.py
-CONTENT SHA256: 676fd03b1556905c26d1f475c839ebd23e736140f41ac5f44b729ff63ad46414
+CONTENT SHA256: 7aeccee648278333ef5eabf64d890388ff80e5ec45e9c00e522c1e950fcf9f3f
 SOURCE ENCODING: utf-8
 ================================================================================
 """Run the canonical default-precedence regressions from the original experiment path.
@@ -69354,7 +70725,7 @@ from tests.integration.melder.spellbook.test_spellbook_integration_default_prece
     test_none_default_needs_no_registered_provider as test_none_default_needs_no_registered_provider,
     test_numeric_falsy_and_other_plain_defaults_are_preserved as test_numeric_falsy_and_other_plain_defaults_are_preserved,
     test_plain_optional_object_default_stays_none_with_provider_registered as test_plain_optional_object_default_stays_none_with_provider_registered,
-    test_required_dependency_without_provider_still_refuses as test_required_dependency_without_provider_still_refuses,
+    test_required_dependency_without_provider_is_a_required_meld_input as test_required_dependency_without_provider_is_a_required_meld_input,
     test_selected_instance_default_is_preserved_with_registered_provider as test_selected_instance_default_is_preserved_with_registered_provider,
     test_selected_instance_default_needs_no_registered_provider as test_selected_instance_default_needs_no_registered_provider,
 )
@@ -75771,17 +77142,20 @@ END FILE: tests/integration/melder/aether/conduit/test_human_spell_name_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/conduit/test_index_invalidation_integration.py
-CONTENT SHA256: 647649e4c439e09440dea13768ba7b64f5cfb55fee395d63292d9876b381a49c
+CONTENT SHA256: c0aa1cc14d3d6268b4f309762a5149d1b33365a0829cbf78b8bdaea3a27171d9
 SOURCE ENCODING: utf-8
 ================================================================================
 """
 Integration tests -- invalidation / dependent rechecking (area B).
 
-Formalizes the proven experiment `test_cleanup_dependency_breaks_dependents_experiment`:
-cleaning up a shared dependency must BREAK its dependents. A spell that other spells
-depend on is disposed; the dependents must go gated on the SpellSystemStates plane and
-FAIL to resolve -- a dependent that still melds after its dependency was disposed is a
-correctness violation.
+Formalizes `test_cleanup_dependency_breaks_dependents_experiment`. Cleaning up a shared
+dependency's spell gates its dependents on the SpellSystemStates plane and re-resolves them.
+Since 2026-09-26 (owner decision) the removed provider leaves an unresolved input rather
+than a resolution failure:
+    - a dependent object built before the cleanup keeps being served with the dependency
+      object it already holds (Melder stops tracking that dependency, it does not close it);
+    - building a dependent after the cleanup needs the value supplied by the meld, or a new
+      provider; otherwise UnresolvedInputError is raised.
 
 Dependencies are expressed via constructor type-hints (the repo's DI convention).
 Transactions are OUT OF SCOPE. Runtime: Python 3.14t; the 3.10 sandbox cannot run
@@ -75797,6 +77171,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 from tests._frame_posture_test_support import (
     apply_dynamic_defaults_for_spellbook_configuration,
@@ -75897,27 +77272,35 @@ def test_cleanup_dependency_gates_both_dependents():
         conduit.cleanup()
 
 
-def test_cleanup_dependency_breaks_dependent_meld():
+def test_cleanup_dependency_keeps_stored_dependent_with_its_dependency():
     book = _make_spellbook()
     conduit = book.conjure(dynamic=True, name="root")
     try:
         dep1, dep2, root, other = _bound_graph(book)
-        _resolves(conduit, root)
+        built = conduit.meld(spell_id=root)
+        held = built.dep1
         conduit.cleanup_spell(spell=_spell(book, dep1))
-        # The shared dependency is gone -> the dependent can no longer resolve.
-        assert _resolves(conduit, root) is False
+        # The stored dependent was built before the cleanup: it is served unchanged,
+        # still holding the dependency object it was constructed with.
+        again = conduit.meld(spell_id=root)
+        assert again is built
+        assert again.dep1 is held
     finally:
         conduit.cleanup()
 
 
-def test_cleanup_shared_dependency_breaks_the_other_root_too():
+def test_cleanup_shared_dependency_leaves_unbuilt_dependent_needing_the_input():
     book = _make_spellbook()
     conduit = book.conjure(dynamic=True, name="root")
     try:
         dep1, dep2, root, other = _bound_graph(book)
-        _resolves(conduit, other)
         conduit.cleanup_spell(spell=_spell(book, dep1))
-        assert _resolves(conduit, other) is False
+        # _OtherRoot was never built: constructing it now needs dep1 from the meld.
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell_id=other)
+        assert caught.value.unresolved_params == ("dep1",)
+        supplied = _Dep1()
+        assert conduit.meld(spell_id=other, override={"dep1": supplied}).dep1 is supplied
     finally:
         conduit.cleanup()
 
@@ -113923,6 +115306,554 @@ def test_multithreading_live_link_unlink_and_contract_churn_cycles() -> None:
 END FILE: tests/integration/melder/multithreading/test_multithreading_link_bind_contract_features.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/multithreading/test_multithreading_meld_lock_order_deadlock.py
+CONTENT SHA256: 82ac0f9e33752afb614642cf664b9d878068ad0ff30b5a09616ffa2ec61f4326
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Deadlock regression tests for meld's store-lock / Spell-lock ordering.
+
+WHAT IS BEING CLAIMED
+---------------------
+Concurrent melds (and a meld racing a purge) on one conduit tree must always finish.
+
+THE DEFECT THESE TESTS PIN (fixed 2026-09-25)
+---------------------------------------------
+Until melder 0.2.52 several ordinary shapes deadlocked:
+
+    - A `unique_per_conduit`, lineage, cluster or SpellSpace-scoped meld door held
+      its creations-store lock for the WHOLE build, including dependency steps.
+    - A `unique` build takes that spell's Spell lock first, and then a store lock:
+      to check/publish itself in its owner store, or to register a disposal-bearing
+      `many` dependency into the caller's store.
+    - On a normal root the per-conduit store, the lineage store (also for every
+      lesser of that root) and every owned unique's store are ONE object.
+
+So one thread held a store and waited for a Spell lock while another held that
+Spell lock and waited for the store. Reproduced on melder 0.2.3 and 0.2.52, GIL and
+free-threaded 3.14.
+
+The fix gives build-once exclusion its own lock per slot (`Creations.slot_guard`;
+`Spell._lock` for `unique`) and makes the store lock a leaf that is only held for
+dict reads and writes. Evidence and design: STORY-2026-09-25-verify-override-writer-
+and-contract, TASK-2026-09-25-implement-creation-slot-build-guards.
+
+WHY A CHILD PROCESS
+-------------------
+A real deadlock cannot be undone inside the process that has it: the stuck threads
+keep both locks forever and any later cleanup of that world would hang too. Each
+scenario therefore runs in its own interpreter. The child joins its threads against
+one shared deadline, prints one JSON verdict and leaves through `os._exit`, so stuck
+daemon threads and exit-time cleanup can never hang it. The parent adds a hard
+`subprocess.run(timeout=...)` backstop on top.
+
+HOW THE INTERLEAVING IS FORCED
+------------------------------
+Public behaviour only; no Melder lock is patched. Thread A always starts the
+consumer meld and parks inside a user constructor (the `DeadlockLeaf` built as the
+first plan step, or `NestedMeldConsumer` itself) while its door holds the store.
+The competitor then runs until it provably holds the Spell lock:
+
+    - competitor `meld`: thread C melds the unique service; its own `DeadlockLeaf`
+      constructor runs inside the service build (Spell lock held) and releases A.
+    - competitor `purge`: thread P purges the not-yet-built service; the coordinator
+      releases A once P has either finished or is observed (via its stack) inside
+      `Creations._detach_purge_entries`, i.e. holding the Spell lock and waiting on
+      the store. That frame name is the one private detail this file depends on.
+    - competitor `nested`: like `meld`, but thread A's consumer has NO dependency on
+      the service; its constructor melds the service itself (service-locator style).
+
+If a gate is never reached the child reports `precondition_not_reached` and the test
+FAILS outright with a different message than a deadlock, so a broken harness and a
+reintroduced deadlock are never confused.
+
+EXPECTATIONS
+------------
+Every case must complete. `FORMERLY_DEADLOCKING_CASES` are the shapes that hung
+before the fix (plus `unique -> many -> unique_per_conduit`, which the fix design had
+to cover); a `MeldDeadlockDetected` there means the store lock is once again held
+across a build. `SAFE_CASES` were safe before the fix and prove the harness can
+report success. Do NOT loosen the assertions or the timeouts to make a case green.
+"""
+
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+from threading import Event, Thread, current_thread
+from typing import Dict, List, Optional
+
+import pytest
+
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.spell_space.spell_space import SpellSpace
+from melder.aether.spellbook.spellbook import Spellbook
+
+pytestmark = pytest.mark.integration
+
+
+class MeldDeadlockDetected(AssertionError):
+    """
+    Raised by the parent test when the child reports that its threads deadlocked.
+
+    Purpose:
+        Name the one failure that means "the lock-order deadlock is back", distinct
+        from every other failure (a missed gate, a crash, a whole-child timeout).
+    """
+
+
+class ScenarioGate:
+    """
+    Hold the events and borrowed door that order the threads inside one child process.
+
+    Contract:
+        - `a_parked` is set by thread A from inside its gating constructor, while
+          A's consumer door holds its store.
+        - `release_a` lets thread A leave that constructor; it is set by the
+          competitor (meld/nested) or by the coordinator (purge).
+        - `competitor_inside` is set by thread C from inside the service build.
+        - `nested_door` is the door `NestedMeldConsumer` melds the service through.
+        - Owned by `MeldDeadlockScenario.run_child`; borrowed by the fixture classes
+          through class attributes for one child run only.
+    """
+
+    def __init__(self, gate_timeout_seconds: float, nested_door: Optional[object]) -> None:
+        """
+        Create the unset events.
+
+        Args:
+            gate_timeout_seconds: How long thread A waits to be released before its
+                gating constructor raises `TimeoutError`.
+            nested_door: Conduit or SpellSpace used by `NestedMeldConsumer`, if any.
+        """
+        self.a_parked: Event = Event()
+        self.release_a: Event = Event()
+        self.competitor_inside: Event = Event()
+        self.gate_timeout_seconds: float = gate_timeout_seconds
+        self.nested_door: Optional[object] = nested_door
+
+    def park_thread_a(self) -> None:
+        """
+        Signal that thread A is inside its gating constructor and wait for release.
+
+        Raises:
+            TimeoutError: If nothing releases thread A within the gate timeout.
+        """
+        self.a_parked.set()
+        if not self.release_a.wait(self.gate_timeout_seconds):
+            raise TimeoutError("thread A was never released")
+
+
+class DeadlockLeaf:
+    """
+    Transient (`many`) dependency of the service; its constructor is the usual gate.
+
+    Contract:
+        - With no gate installed (warm-up, parent process) it does nothing.
+        - In thread `meld-A` it parks thread A while A's door holds the store.
+        - In thread `meld-C` it records that C is inside the service build (holding
+          the service's Spell lock) and releases thread A.
+    """
+
+    gate: Optional[ScenarioGate] = None
+
+    def __init__(self) -> None:
+        """Apply the scenario gate for the current thread, if a gate is installed."""
+        gate = DeadlockLeaf.gate
+        if gate is None:
+            return
+        thread_name = current_thread().name
+        if thread_name == "meld-A":
+            gate.park_thread_a()
+        elif thread_name == "meld-C":
+            gate.competitor_inside.set()
+            gate.release_a.set()
+
+    def close(self) -> None:
+        """Disposal method used by the scenarios that declare one."""
+
+
+class ChainTool:
+    """`unique_per_conduit` dependency of `ChainLeaf`: a slotted step inside a unique's plan."""
+
+
+class ChainLeaf(DeadlockLeaf):
+    """
+    `many` gate leaf that itself depends on a `unique_per_conduit` tool.
+
+    Contract:
+        - Gates exactly like `DeadlockLeaf` (same class-level gate).
+        - Makes a `unique` build's plan reach a slotted step on the caller's store
+          BEFORE the gate: unique -> many -> unique_per_conduit.
+    """
+
+    def __init__(self, tool: ChainTool) -> None:
+        """
+        Borrow the tool, then apply the inherited gate.
+
+        Args:
+            tool: The per-conduit dependency built earlier in the same plan.
+        """
+        self.tool: ChainTool = tool
+        super().__init__()
+
+
+class ChainService:
+    """Frame-wide singleton (`unique`) whose leaf reaches a per-conduit step."""
+
+    def __init__(self, leaf: ChainLeaf) -> None:
+        """
+        Borrow the chained leaf.
+
+        Args:
+            leaf: Transient dependency that holds a per-conduit tool.
+        """
+        self.leaf: ChainLeaf = leaf
+
+
+class DeadlockService:
+    """Frame-wide singleton (`unique`) that holds one leaf."""
+
+    def __init__(self, leaf: DeadlockLeaf) -> None:
+        """
+        Borrow the leaf.
+
+        Args:
+            leaf: Transient dependency built for this service.
+        """
+        self.leaf: DeadlockLeaf = leaf
+
+
+class DeadlockConsumer:
+    """Consumer of the unique service; its Existence and door vary per scenario."""
+
+    def __init__(self, service: DeadlockService, value: int = 0) -> None:
+        """
+        Borrow the service and keep one plain input for the override scenario.
+
+        Args:
+            service: The frame-wide singleton this consumer depends on.
+            value: Plain parameter targeted by the override scenario.
+        """
+        self.service: DeadlockService = service
+        self.value: int = value
+
+
+class NestedMeldConsumer:
+    """
+    Consumer with NO dependency edge to the service; its constructor melds the service.
+
+    Contract:
+        - With no gate installed it simply melds the service through the gate-free
+          door stored on the class for warm-up.
+        - In thread `meld-A` it parks first (door holds the store), then melds.
+    """
+
+    gate: Optional[ScenarioGate] = None
+    warmup_door: Optional[object] = None
+    service_type: type = DeadlockService
+
+    def __init__(self) -> None:
+        """Meld the service from inside this constructor, gated when a gate is installed."""
+        gate = NestedMeldConsumer.gate
+        if gate is None:
+            door = NestedMeldConsumer.warmup_door
+        else:
+            if current_thread().name == "meld-A":
+                gate.park_thread_a()
+            door = gate.nested_door
+        if not isinstance(door, (Conduit, SpellSpace)):
+            raise RuntimeError("NestedMeldConsumer has no door to meld through")
+        self.service: object = door.meld(spell=NestedMeldConsumer.service_type)
+
+
+class MeldDeadlockScenario:
+    """
+    Describe, run (in a child process) and judge one lock-order scenario.
+
+    Spec fields (all JSON-serialisable):
+        consumer_existence: Existence name of the consumer.
+        door: "root", "lessers" (A and C on two different lessers of one root) or
+            "space" (A and C on one shared manual SpellSpace).
+        competitor: "meld", "purge" or "nested".
+        leaf_disposal: Whether `DeadlockLeaf` declares a disposal method.
+        override: Whether thread A melds the consumer with `{"value": 7}`.
+        service_chain: Optional. "direct" (default): the service is `DeadlockService`.
+            "many_to_per_conduit": the service is `ChainService`, whose `many` leaf
+            depends on a `unique_per_conduit` tool (unique -> many -> per_conduit).
+
+    Timeouts:
+        GATE_TIMEOUT_SECONDS bounds each ordering gate, DEADLOCK_TIMEOUT_SECONDS is
+        one deadline shared by all thread joins, CHILD_TIMEOUT_SECONDS is the
+        parent's hard backstop for the whole child.
+    """
+
+    GATE_TIMEOUT_SECONDS: float = 10.0
+    DEADLOCK_TIMEOUT_SECONDS: float = 5.0
+    CHILD_TIMEOUT_SECONDS: float = 120.0
+    POLL_SECONDS: float = 0.01
+    MODULE_PATH: str = "tests.integration.melder.multithreading.test_multithreading_meld_lock_order_deadlock"
+
+    FORMERLY_DEADLOCKING_CASES: List[object] = [
+        pytest.param({"consumer_existence": "unique_per_conduit", "door": "root", "competitor": "meld",
+                      "leaf_disposal": False, "override": False}, id="per_conduit-root-meld"),
+        pytest.param({"consumer_existence": "unique_per_conduit_lineage", "door": "root", "competitor": "meld",
+                      "leaf_disposal": False, "override": False}, id="lineage-root-meld"),
+        pytest.param({"consumer_existence": "unique_per_conduit_lineage", "door": "lessers", "competitor": "meld",
+                      "leaf_disposal": False, "override": False}, id="lineage-two_lessers-meld"),
+        pytest.param({"consumer_existence": "unique_per_conduit", "door": "root", "competitor": "meld",
+                      "leaf_disposal": False, "override": True}, id="per_conduit-root-meld-override"),
+        pytest.param({"consumer_existence": "unique_per_conduit", "door": "root", "competitor": "purge",
+                      "leaf_disposal": False, "override": False}, id="per_conduit-root-purge"),
+        pytest.param({"consumer_existence": "unique_per_conduit", "door": "root", "competitor": "nested",
+                      "leaf_disposal": False, "override": False}, id="per_conduit-root-nested_meld"),
+        pytest.param({"consumer_existence": "unique_per_conduit", "door": "root", "competitor": "meld",
+                      "leaf_disposal": True, "override": False}, id="per_conduit-root-meld-disposal_leaf"),
+        # Not reproducible as a deadlock before the fix (the competitor blocked before its gate), but it
+        # is the composition the fix had to cover without restricting users: a unique's plan reaches a
+        # per-conduit step on the same store thread A is building into.
+        pytest.param({"consumer_existence": "unique_per_conduit", "door": "root", "competitor": "nested",
+                      "leaf_disposal": False, "override": False, "service_chain": "many_to_per_conduit"},
+                     id="per_conduit-root-nested_meld-unique_many_per_conduit"),
+    ]
+
+    SAFE_CASES: List[object] = [
+        pytest.param({"consumer_existence": "many", "door": "root", "competitor": "meld",
+                      "leaf_disposal": False, "override": False}, id="many-root-meld"),
+        pytest.param({"consumer_existence": "unique_per_conduit", "door": "lessers", "competitor": "meld",
+                      "leaf_disposal": False, "override": False}, id="per_conduit-two_lessers-meld"),
+        pytest.param({"consumer_existence": "unique_per_spell_space", "door": "space", "competitor": "meld",
+                      "leaf_disposal": False, "override": False}, id="space-shared_space-meld"),
+        # Predicted to deadlock and observed NOT to (2026-09-25): a unique built through a SpellSpace
+        # only touches its owner root's store, never the space store thread A holds. Kept as a tripwire.
+        pytest.param({"consumer_existence": "unique_per_spell_space", "door": "space", "competitor": "meld",
+                      "leaf_disposal": True, "override": False}, id="space-shared_space-meld-disposal_leaf"),
+    ]
+
+    @staticmethod
+    def _finish(verdict: Dict[str, object]) -> None:
+        """
+        Print one JSON verdict and terminate the child immediately.
+
+        `os._exit` is deliberate: deadlocked daemon threads still hold Melder locks,
+        so normal interpreter shutdown or exit-time cleanup could block forever.
+
+        Args:
+            verdict: JSON-serialisable outcome record.
+        """
+        sys.stdout.write(json.dumps(verdict) + "\n")
+        sys.stdout.flush()
+        os._exit(0)
+
+    @staticmethod
+    def _thread_holds_spell_lock_in_purge(thread: Thread) -> bool:
+        """
+        Report whether `thread` is currently inside `Creations._detach_purge_entries`.
+
+        Purge takes the unique Spell lock before calling that method, so a thread
+        observed inside it holds the Spell lock and is at (or past) the store lock.
+
+        Args:
+            thread: The purge thread to inspect.
+
+        Returns:
+            bool: True when that frame is on the thread's current stack.
+        """
+        frame = sys._current_frames().get(thread.ident) if thread.ident is not None else None
+        while frame is not None:
+            if frame.f_code.co_name == "_detach_purge_entries":
+                return True
+            frame = frame.f_back
+        return False
+
+    @staticmethod
+    def run_child(spec_json: str) -> None:
+        """
+        Build one world, force the scenario's interleaving and report what happened.
+
+        Args:
+            spec_json: JSON-encoded scenario spec (see the class docstring).
+
+        Returns:
+            Never returns; always leaves through `_finish`.
+        """
+        spec: Dict[str, object] = json.loads(spec_json)
+        existence = str(spec["consumer_existence"])
+        chained = spec.get("service_chain", "direct") == "many_to_per_conduit"
+        service_type: type = ChainService if chained else DeadlockService
+        consumer_type: type = NestedMeldConsumer if spec["competitor"] == "nested" else DeadlockConsumer
+        book = Spellbook(aetheric_frame=f"meld-deadlock-{os.getpid()}")
+        book.bind(spell=DeadlockLeaf, existence="many",
+                  disposal_method_names=["close"] if spec["leaf_disposal"] else None)
+        book.bind(spell=DeadlockService, existence="unique")
+        if chained:
+            book.bind(spell=ChainTool, existence="unique_per_conduit")
+            book.bind(spell=ChainLeaf, existence="many")
+            book.bind(spell=ChainService, existence="unique")
+        NestedMeldConsumer.service_type = service_type
+        book.bind(spell=consumer_type, existence=existence)
+        root = book.conjure(name=f"meld-deadlock-{os.getpid()}")
+
+        door_a: object
+        door_c: object
+        if spec["door"] == "root":
+            door_a = door_c = root
+        elif spec["door"] == "lessers":
+            door_a = root.create_lesser_conduit()
+            door_c = root.create_lesser_conduit()
+        else:
+            door_a = door_c = root.create_spellspace()
+        if not isinstance(door_a, (Conduit, SpellSpace)) or not isinstance(door_c, (Conduit, SpellSpace)):
+            MeldDeadlockScenario._finish({"outcome": "precondition_not_reached", "detail": "no usable door"})
+
+        # Warm the compiled contexts (no gate installed), then return the consumer and
+        # the service to the never-built state. Purge authority: space-scoped entries
+        # through the space, per-conduit entries through their own conduit, lineage
+        # and unique entries through the root.
+        NestedMeldConsumer.warmup_door = door_a
+        door_a.meld(spell=consumer_type)
+        if existence == "unique_per_spell_space" or existence == "unique_per_conduit":
+            door_a.purge(consumer_type)
+        elif existence == "unique_per_conduit_lineage":
+            root.purge(consumer_type)
+        root.purge(service_type)
+        if chained:
+            # The competitor's unique build must reach a NOT-yet-built per-conduit step.
+            door_c.purge(ChainTool)
+
+        gate = ScenarioGate(MeldDeadlockScenario.GATE_TIMEOUT_SECONDS, nested_door=door_a)
+        DeadlockLeaf.gate = gate
+        NestedMeldConsumer.gate = gate
+        outcomes: Dict[str, List[str]] = {"A": [], "competitor": []}
+        override = {"value": 7} if spec["override"] else None
+
+        def run_a() -> None:
+            """Thread A: meld the consumer through door A and record the outcome."""
+            try:
+                result = door_a.meld(spell=consumer_type, override=override)
+                outcomes["A"].append(type(result).__name__)
+            except Exception as error:  # recorded for the parent's verdict
+                outcomes["A"].append(f"{type(error).__name__}: {error}")
+
+        def run_competitor() -> None:
+            """Competitor: meld (C) or purge (P) the service; record the outcome."""
+            try:
+                if spec["competitor"] == "purge":
+                    outcomes["competitor"].append(f"purged={root.purge(service_type)}")
+                else:
+                    outcomes["competitor"].append(type(door_c.meld(spell=service_type)).__name__)
+            except Exception as error:  # recorded for the parent's verdict
+                outcomes["competitor"].append(f"{type(error).__name__}: {error}")
+
+        competitor_name = "purge-P" if spec["competitor"] == "purge" else "meld-C"
+        thread_a = Thread(target=run_a, name="meld-A", daemon=True)
+        competitor = Thread(target=run_competitor, name=competitor_name, daemon=True)
+        thread_a.start()
+        if not gate.a_parked.wait(MeldDeadlockScenario.GATE_TIMEOUT_SECONDS):
+            MeldDeadlockScenario._finish({"outcome": "precondition_not_reached",
+                                          "detail": "thread A never parked", **outcomes})
+        competitor.start()
+        if spec["competitor"] == "purge":
+            gate_deadline = time.monotonic() + MeldDeadlockScenario.GATE_TIMEOUT_SECONDS
+            while not (not competitor.is_alive()
+                       or MeldDeadlockScenario._thread_holds_spell_lock_in_purge(competitor)):
+                if time.monotonic() > gate_deadline:
+                    MeldDeadlockScenario._finish({"outcome": "precondition_not_reached",
+                                                  "detail": "purge never reached its store step", **outcomes})
+                time.sleep(MeldDeadlockScenario.POLL_SECONDS)
+            gate.release_a.set()
+        elif not gate.competitor_inside.wait(MeldDeadlockScenario.GATE_TIMEOUT_SECONDS):
+            MeldDeadlockScenario._finish({"outcome": "precondition_not_reached",
+                                          "detail": "competitor never entered the service build", **outcomes})
+
+        deadline = time.monotonic() + MeldDeadlockScenario.DEADLOCK_TIMEOUT_SECONDS
+        for thread in (thread_a, competitor):
+            thread.join(max(0.0, deadline - time.monotonic()))
+        stuck = [thread.name for thread in (thread_a, competitor) if thread.is_alive()]
+        if stuck:
+            MeldDeadlockScenario._finish({"outcome": "deadlock", "stuck_threads": stuck, **outcomes})
+        MeldDeadlockScenario._finish({"outcome": "completed", **outcomes})
+
+    @staticmethod
+    def assert_completes(spec: Dict[str, object]) -> None:
+        """
+        Launch the child for one scenario and assert every thread completed normally.
+
+        Args:
+            spec: Scenario spec (see the class docstring).
+
+        Raises:
+            MeldDeadlockDetected: The child reported stuck threads.
+            pytest.fail.Exception: Any other non-completion (missed gate, crash,
+                whole-child timeout, unexpected meld or purge result).
+        """
+        repository = Path(__file__).resolve().parents[4]
+        environment = dict(os.environ)
+        environment["PYTHONPATH"] = os.pathsep.join((str(repository / "src"), str(repository)))
+        child_code = (
+            f"from {MeldDeadlockScenario.MODULE_PATH} import MeldDeadlockScenario; "
+            f"MeldDeadlockScenario.run_child({json.dumps(spec)!r})"
+        )
+        try:
+            result = subprocess.run(
+                [sys.executable, "-c", child_code], cwd=repository, env=environment, text=True,
+                capture_output=True, timeout=MeldDeadlockScenario.CHILD_TIMEOUT_SECONDS, check=False,
+            )
+        except subprocess.TimeoutExpired:
+            pytest.fail(f"child exceeded {MeldDeadlockScenario.CHILD_TIMEOUT_SECONDS}s without a verdict")
+        lines = [line for line in result.stdout.splitlines() if line.startswith("{")]
+        if result.returncode != 0 or not lines:
+            pytest.fail(f"child failed (rc={result.returncode}): {result.stderr[-2000:]}")
+        verdict = json.loads(lines[-1])
+        if verdict["outcome"] == "deadlock":
+            raise MeldDeadlockDetected(f"threads deadlocked: {verdict}")
+        if verdict["outcome"] != "completed":
+            pytest.fail(f"scenario did not run as designed: {verdict}")
+        expected_a = "NestedMeldConsumer" if spec["competitor"] == "nested" else "DeadlockConsumer"
+        assert verdict["A"] == [expected_a], verdict
+        if spec["competitor"] == "purge":
+            assert len(verdict["competitor"]) == 1 and verdict["competitor"][0].startswith("purged="), verdict
+        else:
+            expected_service = (
+                "ChainService" if spec.get("service_chain", "direct") == "many_to_per_conduit"
+                else "DeadlockService"
+            )
+            assert verdict["competitor"] == [expected_service], verdict
+
+
+@pytest.mark.parametrize("spec", MeldDeadlockScenario.FORMERLY_DEADLOCKING_CASES)
+def test_formerly_deadlocking_shape_completes(spec: Dict[str, object]) -> None:
+    """
+    Purpose:
+        Pin each shape that deadlocked while meld doors held the store lock across a build.
+
+    Contract:
+        - Every thread completes with its normal result.
+        - `MeldDeadlockDetected` means the store lock is again held while a thread waits
+          on a unique's Spell lock (or another build lock); any other non-completion,
+          including a missed ordering gate, also fails.
+    """
+    MeldDeadlockScenario.assert_completes(spec)
+
+
+@pytest.mark.parametrize("spec", MeldDeadlockScenario.SAFE_CASES)
+def test_meld_lock_order_safe_shape_completes(spec: Dict[str, object]) -> None:
+    """
+    Purpose:
+        Prove the harness reports success and pin shapes that were safe before the fix.
+
+    Contract:
+        - Every thread completes with its normal result under the same gates and timing.
+        - A failure here means either the harness is wrong or a new lock-order hazard
+          appeared in a shape that used to be safe.
+    """
+    MeldDeadlockScenario.assert_completes(spec)
+================================================================================
+END FILE: tests/integration/melder/multithreading/test_multithreading_meld_lock_order_deadlock.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/multithreading/test_multithreading_spell_system_states.py
 CONTENT SHA256: 13f35d56df3c1d3e44cfa62a1ad56bb6193079f77d284306f713e0ba859493e5
 SOURCE ENCODING: utf-8
@@ -116563,7 +118494,7 @@ END FILE: tests/integration/melder/spellbook/test_cache_runtime_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_cache_schema_version_integration.py
-CONTENT SHA256: c083619bbbce972a47e316e132f1224411f7c7989fa24e4a566761da686638ce
+CONTENT SHA256: 568c9204e9b29389b2d6d7c42fece4137a83cf82c2a63eb9957e5e7db088105e
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -116587,6 +118518,8 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     7: "root_visible_family_selection",
     8: "ordinary_defaults_are_plain",
     9: "exact_melder_release_compatibility",
+    10: "creation_slot_build_guards",
+    11: "unresolved_input_sockets",
 }
 
 
@@ -116649,7 +118582,7 @@ END FILE: tests/integration/melder/spellbook/test_cache_schema_version_integrati
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_deferred_annotations.py
-CONTENT SHA256: 456fa8a039dd2eeebeb022aef6c7bf3b038b9e993a9730125ef13eef78c47d9b
+CONTENT SHA256: 9cc21eacd44f5cc6df7d261d3648a744d6ee013162b4a8b89732814273015f75
 SOURCE ENCODING: utf-8
 ================================================================================
 """Python 3.14 deferred annotations preserve normal DI and selected defaults.
@@ -116667,6 +118600,7 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_pr
     BindingProfileStrategy,
 )
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
     instance_book as instance_book,
 )
@@ -116758,11 +118692,21 @@ def test_typechecking_annotation_preserves_default(instance_book: Spellbook, sel
     assert not root.has_live_creation(spell=provider_id)
 
 
-def test_typechecking_dependency_without_provider_still_fails_validation(instance_book: Spellbook) -> None:
-    """An unresolved name remains required DI and cannot silently become an empty requirement."""
-    instance_book.bind(spell=DeferredConsumer, existence="many")
-    with pytest.raises(RuntimeError, match="no DI candidate found"):
-        instance_book.conjure(dynamic=True)
+def test_typechecking_dependency_without_provider_is_a_required_meld_input(instance_book: Spellbook) -> None:
+    """
+    An unresolved name without a provider stays a required input, never an empty requirement.
+
+    Conjure succeeds; the meld must supply the value. Omitting it raises
+    UnresolvedInputError naming the TYPE_CHECKING-only type by its written name.
+    """
+    target = instance_book.bind(spell=DeferredConsumer, existence="many")
+    root = instance_book.conjure(dynamic=True)
+    with pytest.raises(UnresolvedInputError) as caught:
+        root.meld(spell_id=target)
+    assert caught.value.expected_type == "BasicService"
+    assert caught.value.unresolved_params == ("service",)
+    supplied = RuntimeService("supplied")
+    assert root.meld(spell_id=target, override={"service": supplied}).service is supplied
 
 
 @pytest.mark.parametrize("late_bind", (False, True))
@@ -121171,7 +123115,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_deep_gra
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_default_precedence.py
-CONTENT SHA256: 56d5c79a52b94222a0c312a2719f9f058f2a5a5d11e1d3d4eba89ceeef1bc9a5
+CONTENT SHA256: edea5d3a833142fb6367b986887c94696425b5fc14b938d1c535e272d428a46a
 SOURCE ENCODING: utf-8
 ================================================================================
 """Regress ordinary constructor defaults taking precedence over inferred DI.
@@ -121189,6 +123133,7 @@ import pytest
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
@@ -121541,14 +123486,22 @@ def test_annotation_without_default_still_requests_injection(
     assert consumer.dependency is conduit.meld_existing_spell(spell=provider_id)
 
 
-def test_required_dependency_without_provider_still_refuses(
+def test_required_dependency_without_provider_is_a_required_meld_input(
         optional_runtime: OptionalResolutionRuntime,
 ) -> None:
-    """Guard the existing no-provider failure for a parameter with no Python default."""
-    with pytest.raises(RuntimeError, match="no DI candidate found for parameter 'dependency'"):
-        consumer_id = optional_runtime.bind_consumer(RequiresSomething)
-        conduit = optional_runtime.ensure_conduit()
+    """
+    A parameter with no Python default and no provider is still required, never defaulted.
+
+    Conjure succeeds (the parameter compiles as an unresolved input); the meld that
+    constructs the consumer must supply it, and omitting it raises UnresolvedInputError.
+    """
+    consumer_id = optional_runtime.bind_consumer(RequiresSomething)
+    conduit = optional_runtime.ensure_conduit()
+    with pytest.raises(UnresolvedInputError, match="RequiresSomething.dependency expects Something") as caught:
         conduit.meld(spell_id=consumer_id)
+    assert caught.value.param_name == "dependency"
+    supplied = Something("supplied")
+    assert conduit.meld(spell_id=consumer_id, override={"dependency": supplied}).dependency is supplied
 
 
 @pytest.mark.parametrize("optional_runtime", ("dynamic_prebind",), indirect=True)
@@ -123781,7 +125734,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_function
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_future_annotations.py
-CONTENT SHA256: c776b63a36b36fb44f2a12dec034683b896425c18f1f093de43f39a75e306ed5
+CONTENT SHA256: 5a62259a8e233e873990833260ee3e475010dc106112ab23274388c5b99e69a7
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -123796,7 +125749,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
 @pytest.fixture(autouse=True)
@@ -125026,12 +126979,14 @@ def test_future_annotations_local_protocol_forward_ref_collection_resolves_by_na
         conduit.cleanup()
 
 
-def test_future_annotations_missing_forward_ref_raises_no_candidate() -> None:
+def test_future_annotations_missing_forward_ref_is_a_required_meld_input() -> None:
     """
     Purpose:
-        Validate unresolved forward refs raise a clear no-candidate error.
+        Validate an unresolved forward ref with no provider becomes a required meld input.
     Contract:
-        - Conjure fails when no DI candidates exist for the forward ref.
+        - Conjure succeeds; the parameter compiles as an unresolved input.
+        - Melding without the value raises UnresolvedInputError naming the forward ref
+          by its written name; supplying it by override constructs the service.
     Returns:
         None.
     Raises:
@@ -125068,13 +127023,15 @@ def test_future_annotations_missing_forward_ref_raises_no_candidate() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError) as exc_info:
-        spellbook.conjure(name="root")
-
-    assert any(
-        "no DI candidate found" in str(error) and "MissingDependency" in str(error)
-        for error in exc_info.value.errors
-    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        with pytest.raises(UnresolvedInputError) as exc_info:
+            conduit.meld(_BrokenService)
+        assert exc_info.value.expected_type == "MissingDependency"
+        supplied = object()
+        assert conduit.meld(_BrokenService, override={"missing": supplied}).missing is supplied
+    finally:
+        conduit.cleanup()
 ================================================================================
 END FILE: tests/integration/melder/spellbook/test_spellbook_integration_future_annotations.py
 ================================================================================
@@ -128260,7 +130217,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_break_matrix.py
-CONTENT SHA256: e63532c61e55bb8d28222e1a210a311e3f1694086f1688494d5b52a18e59bd41
+CONTENT SHA256: 45fc4b6d3cff6830dd21f43d0fbf1696ae2696056e7aed632a7815bc4fedc452
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -128297,6 +130254,7 @@ from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecut
 from melder.utilities.custom_exceptions.spellbook_validation_error import (
     SpellbookValidationError,
 )
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
 RESOLUTION_ERRORS = (
@@ -128686,14 +130644,20 @@ def test_a6_spell_name_with_wrong_binding_raises() -> None:
 # =========================================================================== #
 # B1 / B2 - constructor type-hint DI
 # =========================================================================== #
-def test_b1_concrete_dependency_unbound_fails_conjure() -> None:
-    """B1: a concrete dependency that is never bound must fail conjure."""
+def test_b1_concrete_dependency_unbound_defers_to_meld() -> None:
+    """B1: a never-bound concrete dependency conjures as an unresolved input and fails only at meld."""
     spellbook = _make_spellbook()
+    conduit = None
     try:
         spellbook.bind(spell=NeedsEngineConcrete, existence=Existence.unique, permissions="create")
-        with pytest.raises(RESOLUTION_ERRORS):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell=NeedsEngineConcrete)
+        assert caught.value.expected_type == "Engine"
+        assert caught.value.unresolved_params == ("engine",)
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 
@@ -128712,8 +130676,8 @@ def test_b1_dependency_only_under_binding_defers_and_conjures() -> None:
         spellbook.cleanup()
 
 
-def test_b1_deep_chain_missing_leaf_fails_conjure() -> None:
-    """B1: a 3-deep chain with an unbound leaf must fail conjure."""
+def test_b1_deep_chain_missing_leaf_defers_to_meld() -> None:
+    """B1: a 3-deep chain with an unbound leaf dependency conjures; melding the top names the leaf's input."""
     spellbook = _make_spellbook()
 
     class Leaf:
@@ -128724,37 +130688,57 @@ def test_b1_deep_chain_missing_leaf_fails_conjure() -> None:
         def __init__(self, leaf: Leaf) -> None:
             self.leaf = leaf
 
+    conduit = None
     try:
-        # Engine intentionally NOT bound -> the leaf can't resolve.
+        # Engine intentionally NOT bound -> the leaf's engine is an unresolved input.
         spellbook.bind(spell=Leaf, existence=Existence.unique, permissions="create")
         spellbook.bind(spell=Mid, existence=Existence.unique, permissions="create")
-        with pytest.raises(RESOLUTION_ERRORS):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell=Mid)
+        assert caught.value.spell_name == "Leaf"
+        assert caught.value.param_name == "engine"
+        supplied = Engine()
+        assert conduit.meld(spell=Mid, override={"leaf>engine": supplied}).leaf.engine is supplied
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 
-def test_b2_provider_under_different_frame_fails_conjure() -> None:
-    """B2: a provider registered under a different frame can't satisfy IEngine."""
+def test_b2_provider_under_different_frame_leaves_input_unresolved() -> None:
+    """B2: a provider registered under a different frame never satisfies IEngine; the meld must supply it."""
     spellbook = _make_spellbook()
+    conduit = None
     try:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create", spellframe=IPlugin)
         spellbook.bind(spell=NeedsEngineProtocol, existence=Existence.unique, permissions="create")
-        with pytest.raises(RESOLUTION_ERRORS):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell=NeedsEngineProtocol)
+        assert caught.value.expected_type == "IEngine"
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 
-def test_b2_provider_bound_under_own_class_only_fails_frame_hint() -> None:
-    """B2: a provider bound without the frame key can't satisfy the protocol hint."""
+def test_b2_provider_bound_under_own_class_only_leaves_frame_hint_unresolved() -> None:
+    """B2: a provider bound without the frame key never satisfies the protocol hint; the meld must supply it."""
     spellbook = _make_spellbook()
+    conduit = None
     try:
         spellbook.bind(spell=Engine, existence=Existence.unique, permissions="create")
         spellbook.bind(spell=NeedsEngineProtocol, existence=Existence.unique, permissions="create")
-        with pytest.raises(RESOLUTION_ERRORS):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell=NeedsEngineProtocol)
+        assert caught.value.expected_type == "IEngine"
+        supplied = Engine()
+        assert conduit.meld(spell=NeedsEngineProtocol, override={"engine": supplied}).engine is supplied
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 
@@ -129168,7 +131152,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py
-CONTENT SHA256: 29c8cf0f4371bd8bdb822b22ff0a1ae19d9427895159098101bb32826f2f251c
+CONTENT SHA256: 72c9993691010abb2a97bd22372a4a2fad65c3e6a8491a8ba2524ff7c9613309
 SOURCE ENCODING: utf-8
 ================================================================================
 import pytest
@@ -129180,6 +131164,7 @@ from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
 @pytest.fixture(autouse=True)
@@ -129692,13 +131677,14 @@ def test_collection_di_forward_ref_list_injects_all() -> None:
         conduit.cleanup()
 
 
-def test_type_hint_di_unresolved_forward_ref_raises() -> None:
+def test_type_hint_di_unresolved_forward_ref_is_a_required_meld_input() -> None:
     """
     Purpose:
-        Validate unresolved forward-ref annotations fail with a clear error.
+        Validate an unresolvable forward-ref annotation becomes a required meld input.
     Contract:
-        - Unresolvable DI annotations raise during Phase 1.
-        - The error message points at the missing type.
+        - Conjure succeeds; no registered spell provides the type.
+        - Melding without the value raises UnresolvedInputError naming the missing
+          type; supplying it by override constructs the spell.
     Returns:
         None.
     Raises:
@@ -129735,13 +131721,14 @@ def test_type_hint_di_unresolved_forward_ref_raises() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError) as exc_info:
-        spellbook.conjure(name="root")
-
-    assert any(
-        "no DI candidate found" in str(error) and "MissingDependency" in str(error)
-        for error in exc_info.value.errors
-    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        with pytest.raises(UnresolvedInputError, match="expects MissingDependency"):
+            conduit.meld(_BrokenService)
+        supplied = object()
+        assert conduit.meld(_BrokenService, override={"dep": supplied}).dep is supplied
+    finally:
+        conduit.cleanup()
 
 
 def test_type_hint_di_forward_ref_optional_resolves_dependency() -> None:
@@ -135666,7 +137653,7 @@ END FILE: tests/integration/melder/spellbook/test_spellbook_integration_resoluti
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/spellbook/test_spellbook_integration_resolution_error_matrix.py
-CONTENT SHA256: b2211079a2b9dea8353e9a828a3eadcbda3ee5712d09522158426cfb66a56275
+CONTENT SHA256: 2e35628b2a666a4708247913108e4f37f62622ad19f66d4492fd188b9cda3ce5
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -135698,6 +137685,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
 @pytest.fixture(autouse=True)
@@ -136012,14 +138000,19 @@ def test_conjure_with_cycle_raises() -> None:
         spellbook.cleanup()
 
 
-def test_conjure_with_unresolvable_dependency_raises() -> None:
-    """A consumer depending on an unbound type must fail to conjure."""
+def test_unbound_dependency_conjures_and_fails_at_meld() -> None:
+    """A consumer depending on an unbound type conjures; melding it without the value raises UnresolvedInputError."""
     spellbook = _make_spellbook()
+    conduit = None
     try:
         spellbook.bind(spell=UsesUnbound, existence=Existence.unique, permissions="create")
-        with pytest.raises(Exception):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell=UsesUnbound)
+        assert caught.value.expected_type == "UnboundThing"
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 
@@ -165949,7 +167942,7 @@ END FILE: tests/unit/melder/aether/conduit/creations/test_conduit_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations.py
-CONTENT SHA256: 79e4082de0d4b793f770cb10a1c7e411d56688beff71732ed0efd22bde280704
+CONTENT SHA256: 14b85ab4a3a745d73620c0bfbe2838038bb5db12c76f688b1cbbcfbd47ea24c2
 SOURCE ENCODING: utf-8
 ================================================================================
 from unittest.mock import patch
@@ -166431,14 +168424,18 @@ def test_cleanup_raises_exceptiongroup_when_disposal_fails(
 
 def test_public_methods_fail_after_cleanup(creations: Creations) -> None:
     """
-    Verify post-clean access now fails through deleted-field runtime errors.
+    Verify post-clean access fails.
+
+    Reads fail through deleted fields. Publication is refused explicitly with
+    `RuntimeError` (2026-09-25): builds hold slot guards rather than the store
+    lock, so a build can legitimately finish after cleanup and must be told.
     """
     creations.cleanup()
 
     assert not hasattr(creations, "_creations")
-    with pytest.raises(AttributeError):
+    with pytest.raises(RuntimeError):
         creations.add_creation("spell-x", object())
-    with pytest.raises(AttributeError):
+    with pytest.raises(RuntimeError):
         creations.add_many_creations("spell-x", object())
     with pytest.raises(AttributeError):
         creations.get_creation("spell-x")
@@ -167204,6 +169201,236 @@ def test_sequential_many_registrations_preserve_order_and_metadata() -> None:
     assert probe.dispose_calls == 1
 ================================================================================
 END FILE: tests/unit/melder/aether/conduit/creations/test_creations_many_first_use_atomicity_regression.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations_slot_guard.py
+CONTENT SHA256: dbf0ce1f24a42e71ecfbecf3b9583fa678fdfa02c4a66bc016e2fb1ec290583f
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit contracts for `Creations` slot guards and the leaf store lock.
+
+Background: before 2026-09-25 generated meld code held the store lock across whole
+builds, which deadlocked against `unique` builders. Build-once exclusion now lives in
+one build guard per slot (`Creations.slot_guard`), and the store lock is a leaf that
+publication takes by itself. These tests pin the store-side half of that contract;
+tests/integration/melder/multithreading/test_multithreading_meld_lock_order_deadlock.py
+pins the end-to-end behaviour.
+"""
+
+from threading import Event, RLock, Thread
+from typing import List
+
+import pytest
+
+from melder.aether.conduit.creations.creations import Creations
+from melder.aether.spellbook.existence.existence import Existence
+
+
+class DisposalProbe:
+    """Records disposal calls so tests can observe refused publications."""
+
+    def __init__(self) -> None:
+        """Start with an empty call log."""
+        self.calls: List[str] = []
+
+    def close(self) -> None:
+        """Record one disposal call."""
+        self.calls.append("close")
+
+
+class SpellStub:
+    """
+    Minimal stand-in for the two Spell attributes `Creations.purge` reads.
+
+    Contract:
+        Exposes `spell_id`, `existence` and `_lock` only; purge never reaches further.
+    """
+
+    def __init__(self, spell_id: str, existence: Existence) -> None:
+        """
+        Args:
+            spell_id: Slot key used by the store.
+            existence: Existence that selects the purge lock family.
+        """
+        self.spell_id: str = spell_id
+        self.existence: Existence = existence
+        self._lock: RLock = RLock()
+
+
+BLOCK_TIMEOUT_SECONDS: float = 5.0
+SHORT_WAIT_SECONDS: float = 0.2
+
+
+@pytest.fixture()
+def creations() -> Creations:
+    """Build one scoped store for direct unit checks."""
+    return Creations(owner_conduit_id="conduit-normal", id="scope-a")
+
+
+def _run_in_thread(target: object) -> Thread:
+    """
+    Start a daemon thread for a zero-argument callable.
+
+    Args:
+        target: Callable to run.
+
+    Returns:
+        Thread: The started thread.
+    """
+    thread = Thread(target=target, daemon=True)
+    thread.start()
+    return thread
+
+
+def test_slot_guard_is_stable_per_spell_id_and_distinct_across_ids(creations: Creations) -> None:
+    """A slot keeps one guard; different slots never share one."""
+    first = creations.slot_guard("spell-a")
+
+    assert creations.slot_guard("spell-a") is first
+    assert creations.slot_guard("spell-b") is not first
+
+
+def test_slot_guard_survives_reusable_clear(creations: Creations) -> None:
+    """Guards are per spell id, not per store generation, so clearing keeps them."""
+    guard = creations.slot_guard("spell-a")
+    creations.add_creation("spell-a", object())
+
+    creations.clear_all()
+
+    assert creations.slot_guard("spell-a") is guard
+
+
+def test_slot_guard_is_reentrant_for_door_then_root_step(creations: Creations) -> None:
+    """The door and the root plan step take the same guard on one thread."""
+    guard = creations.slot_guard("spell-a")
+
+    with guard:
+        with creations.slot_guard("spell-a"):
+            creations.add_creation("spell-a", "built")
+
+    assert creations.get_creation("spell-a") == "built"
+
+
+def test_holding_a_slot_guard_does_not_block_other_slots_publishing(creations: Creations) -> None:
+    """The store lock is not held by a guard holder, so other slots publish freely."""
+    published = Event()
+
+    def publish_other_slot() -> None:
+        creations.add_creation("spell-b", "other")
+        published.set()
+
+    with creations.slot_guard("spell-a"):
+        thread = _run_in_thread(publish_other_slot)
+        assert published.wait(BLOCK_TIMEOUT_SECONDS)
+    thread.join(BLOCK_TIMEOUT_SECONDS)
+
+    assert creations.get_creation("spell-b") == "other"
+
+
+@pytest.mark.parametrize(
+    "existence",
+    [
+        Existence.unique_per_conduit,
+        Existence.unique_per_spell_space,
+        Existence.unique_per_conduit_lineage,
+        Existence.unique_per_conduit_cluster,
+    ],
+)
+def test_purge_waits_for_an_in_flight_build_of_the_same_slot(
+        creations: Creations,
+        existence: Existence,
+) -> None:
+    """Purge of a slotted existence takes the slot guard, so it cannot retire a half-built slot."""
+    spell = SpellStub("spell-a", existence)
+    purged: List[int] = []
+
+    def purge() -> None:
+        purged.append(creations.purge(spell))
+
+    with creations.slot_guard("spell-a"):
+        thread = _run_in_thread(purge)
+        thread.join(SHORT_WAIT_SECONDS)
+        assert thread.is_alive(), "purge did not wait for the in-flight build"
+        creations.add_creation("spell-a", "built")
+    thread.join(BLOCK_TIMEOUT_SECONDS)
+
+    assert purged == [1]
+    assert creations.get_creation("spell-a") is None
+
+
+def test_purge_of_unique_uses_the_spell_lock_not_the_slot_guard(creations: Creations) -> None:
+    """`unique` keeps Spell._lock as its build lock; its store guard plays no part."""
+    spell = SpellStub("spell-u", Existence.unique)
+    creations.add_creation("spell-u", "built")
+
+    with creations.slot_guard("spell-u"):
+        assert creations.purge(spell) == 1
+
+
+def test_clear_all_does_not_wait_for_an_in_flight_build(creations: Creations) -> None:
+    """A reusable clear swaps the registries under the leaf lock without waiting for builders."""
+    cleared = Event()
+
+    def clear() -> None:
+        creations.clear_all()
+        cleared.set()
+
+    creations.add_creation("spell-old", "old")
+    with creations.slot_guard("spell-a"):
+        thread = _run_in_thread(clear)
+        assert cleared.wait(BLOCK_TIMEOUT_SECONDS)
+        creations.add_creation("spell-a", "built-after-clear")
+    thread.join(BLOCK_TIMEOUT_SECONDS)
+
+    assert creations.get_creation("spell-old") is None
+    assert creations.get_creation("spell-a") == "built-after-clear"
+
+
+def test_add_creation_into_cleaned_store_disposes_and_raises(creations: Creations) -> None:
+    """A build that finishes after cleanup is refused and its object disposed."""
+    probe = DisposalProbe()
+    creations.cleanup()
+
+    with pytest.raises(RuntimeError, match="was cleaned while creation 'spell-a'"):
+        creations.add_creation("spell-a", probe, has_disposal_methods=True, disposal_methods=["close"])
+
+    assert probe.calls == ["close"]
+
+
+def test_add_many_creations_into_cleaned_store_disposes_and_raises(creations: Creations) -> None:
+    """The many append refuses a cleaned store the same way."""
+    probe = DisposalProbe()
+    creations.cleanup()
+
+    with pytest.raises(RuntimeError, match="was cleaned while creation 'spell-m'"):
+        creations.add_many_creations("spell-m", probe, has_disposal_methods=True, disposal_methods=["close"])
+
+    assert probe.calls == ["close"]
+
+
+def test_refused_publication_without_disposal_methods_disposes_nothing(creations: Creations) -> None:
+    """Objects that declared no disposal methods are not touched, only refused."""
+    probe = DisposalProbe()
+    creations.cleanup()
+
+    with pytest.raises(RuntimeError, match="not registered\\."):
+        creations.add_creation("spell-a", probe)
+
+    assert probe.calls == []
+
+
+def test_refused_publication_chains_a_failing_disposal(creations: Creations) -> None:
+    """A disposal failure during refusal is kept as the cause, not swallowed."""
+    creations.cleanup()
+
+    with pytest.raises(RuntimeError) as raised:
+        creations.add_creation("spell-a", object(), has_disposal_methods=True, disposal_methods=["close"])
+
+    assert isinstance(raised.value.__cause__, RuntimeError)
+    assert "Failed to dispose object" in str(raised.value.__cause__)
+================================================================================
+END FILE: tests/unit/melder/aether/conduit/creations/test_creations_slot_guard.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_lesser_creations.py
@@ -260377,7 +262604,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_3.py
-CONTENT SHA256: 892cd1f45e843971c1d9314c7541fd449629edc62a53d5f1fe2aaac57b4063a7
+CONTENT SHA256: b99d6994674ef39970b3acf7b7826d90a73d6d21ceb77ae8611221386583c106
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for current-surface compiler phase 3 local DAG build."""
@@ -260863,7 +263090,13 @@ def test_resolve_single_by_annotation_returns_exact_match() -> None:
     ],
 )
 def test_resolve_single_by_annotation_no_candidates(method_only: bool) -> None:
-    """Phase 3 single-resolution should fail when no valid class candidate exists."""
+    """
+    No valid class candidate yields an empty mapping instead of an error.
+
+    The caller records the parameter as an UNRESOLVED_INPUT socket that the
+    constructing meld supplies (contract since 2026-09-26; ambiguity still raises).
+    A method spell registered under the frame is not a class candidate.
+    """
     phase = CompilerPhase3()
 
     class _ServiceFrame:
@@ -260896,8 +263129,7 @@ def test_resolve_single_by_annotation_no_candidates(method_only: bool) -> None:
         target_annotation=_ServiceFrame,
     )
 
-    with pytest.raises(RuntimeError, match="no DI candidate found"):
-        phase._resolve_single_by_annotation(root_spell, spellbook, dep)
+    assert phase._resolve_single_by_annotation(root_spell, spellbook, dep) == {}
 
 
 def test_resolve_single_by_annotation_raises_on_multiple_matches() -> None:
@@ -264372,7 +266604,7 @@ END FILE: tests/unit/melder/spellbook/spell_compiler/support/compiler_test_suppo
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/spell_compiler/test_codegen_creation_compilers_core.py
-CONTENT SHA256: d731d16d33166d65a92afe5d87d724d4bbcf65c8c7b7443662e89afb7ec5c426
+CONTENT SHA256: d5630e4545ec8df3ac9e100abc89feac786f150f69064f8ead33cec18d964da4
 SOURCE ENCODING: utf-8
 ================================================================================
 """Unit tests for direct codegen_creation compiler entrypoints and helpers."""
@@ -264621,10 +266853,16 @@ def test_overrides_compiler_code_object_entrypoint_requires_code_object() -> Non
 
 
 def _make_spell(spell_id: str) -> SimpleNamespace:
-    """Build a minimal callable spell stub for schema hydration tests."""
+    """
+    Build a minimal callable spell stub for schema hydration tests.
+
+    Like a real Spell it carries its frame's SpellSystemStates; this registry holds
+    no Phase-3 topology, so solo executors bind the raw call target.
+    """
     return SimpleNamespace(
         spell_id=spell_id,
         spell_index=SimpleNamespace(selected_spell_id=spell_id),
+        _spell_system_states=SimpleNamespace(get_local_topology=lambda spell_index: None),
         spell_name=spell_id,
         existence=Existence.many,
         is_existing_creation=False,
@@ -264831,11 +267069,16 @@ class _Creations:
         ] = {}
         self._owner_conduit_id = "conduit-1"
         self._active_spellspace = None
+        self._slot_guards: dict[str, threading.RLock] = {}
 
     @property
     def owner_conduit_id(self) -> str:
         """Expose the owner conduit id used by spellspace routes."""
         return self._owner_conduit_id
+
+    def slot_guard(self, spell_id: str) -> threading.RLock:
+        """Mirror `Creations.slot_guard`: one re-entrant build guard per slot."""
+        return self._slot_guards.setdefault(spell_id, threading.RLock())
 
     def get_active_spellspace(self) -> Any:
         """Return the currently active spellspace, if any."""
@@ -301618,7 +303861,7 @@ END FILE: tests/unit/melder/spellbook/test_spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_spellbook.py
-CONTENT SHA256: 5548e59e635255473ed9208a4de8177bc39bc45fc2713d43b756da95d2b6151a
+CONTENT SHA256: 37f225f48a4d60ac738862d55978a55acb8bad1b4823719e1d04c15cdaf0a44b
 SOURCE ENCODING: utf-8
 ================================================================================
 import contextlib
@@ -301738,6 +303981,17 @@ class DummySpell:
             tuple[object, object]: Current owner conduit tuple.
         """
         return self._owner_conduit_id, self._owner_conduit_name
+
+    @property
+    def validation_result_phase4(self):
+        """
+        Purpose:
+            Mirror Spell's Phase-4 read-through; conjure reads it to report
+            unresolved inputs after the structural phases.
+        Returns:
+            Optional[SpellValidationResult]: The owned artifact's Phase-4 result.
+        """
+        return self._compiler_artifact._validation_result_phase4
 
     # Phase methods
     def run_phase_requirements(self, cancel_event):
@@ -307101,7 +309355,7 @@ END FILE: tests/unit/melder/spellbook/test_spellbook_creation_system_chunking.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py
-CONTENT SHA256: fae882a9ff633fca37dab48a30293d5ee778c1971e43aa6e16853816983e2337
+CONTENT SHA256: e67ab3ebef79edc879c6b3b277128cf8db73926758b62d3eb8a60774c6bc762d
 SOURCE ENCODING: utf-8
 ================================================================================
 import types
@@ -307778,6 +310032,7 @@ def test_prepare_spellbook_for_conjure_runs_structural_phases_without_disposal_r
             "a": types.SimpleNamespace(
                 disposal_method_names=frozenset({"cleanup"}),
                 has_disposal_methods=True,
+                validation_result_phase4=None,
             )
         },
     )
