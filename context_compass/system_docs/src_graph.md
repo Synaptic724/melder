@@ -5020,7 +5020,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/cluster_creations.py
 
-- source_sha256: `6df125a5a74225bff05fac1d0bf79ca76d833a40606db9a86e6afda935ef29f9`
+- source_sha256: `2d92c86c7b7da8cfea51a6146135b5e1c60a8dae18dd2bc9065540fa8283168d`
 - nodes: 2
 
 ### Nodes
@@ -5064,7 +5064,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/conduit_creations.py
 
-- source_sha256: `ab3b069fa9eb493799ac415ea3deff39310648370c85c57e19b3c229517088e4`
+- source_sha256: `057b8bfa51354652b21b991d32e88009896a754b3b3c423fcf09afb11b996066`
 - nodes: 2
 
 ### Nodes
@@ -5107,7 +5107,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `c5700e79f62883e208919b7fad5adfe4ec71969e6ca7ff80fd127988eb202bf7`
+- source_sha256: `013f65cb5c6efa64b518e5bd0639adbbb31a9c6e353195928cde2a4f7e5faf3f`
 - nodes: 2
 
 ### Nodes
@@ -5134,10 +5134,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - retains established Spell disposal lists through registration and in-memory transfer
   - invokes methods in list order; the first method failure stops its object while other objects continue
   - supports reusable clear/reset and terminal cleanup without clearing borrowed method lists
-  - purges a whole selected target or one supplied creation with paired registry removal, existing writer locks and shared disposal helpers; no scope discovery or authorization
-- owns_state: `_creations`, `_disposable_creations`, `_owner_conduit_id`, `_id`, `_lock`
+  - owns one re-entrant build guard per slot (slot_guard) so generated code builds each slotted object once without holding the store lock
+  - keeps the store lock a leaf around dict work; refuses (and disposes) publication into a store cleaned during the build
+  - purges a whole selected target or one supplied creation under the slot's build lock then the store lock, with paired registry removal and shared disposal helpers; no scope discovery or authorization
+- owns_state: `_creations`, `_disposable_creations`, `_slot_guards`, `_owner_conduit_id`, `_id`, `_lock`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `extract_spell_creations`, `get_creation`, `id`, `owner_conduit_id`, `purge`, `reset_for_pool`, `reset_for_pool_unlocked`, `restore_spell_creations`
+- public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `extract_spell_creations`, `get_creation`, `id`, `owner_conduit_id`, `purge`, `reset_for_pool`, `reset_for_pool_unlocked`, `restore_spell_creations` (+1 more)
 
 ### Edges out
 
@@ -5150,9 +5152,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.conduit.creations.creations.Creations` creates `RLock`
+- `melder.aether.conduit.creations.creations.Creations` creates `RuntimeError`
 - `melder.aether.conduit.creations.creations.Creations` creates `ValueError`
 - `melder.aether.conduit.creations.creations.Creations` creates `ExceptionGroup`
-- `melder.aether.conduit.creations.creations.Creations` creates `RuntimeError`
 
 <!-- END FILE: src/melder/aether/conduit/creations/creations.py -->
 
@@ -5851,7 +5853,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/bind.py
 
-- source_sha256: `94b53e7fb08862751e6fa4052642a5d0a258cf2186259259b71dec8ac32798b2`
+- source_sha256: `59486cd990b6950e5d39991b7ef5974732c77d545373e01a9c512c82551615a1`
 - nodes: 2
 
 ### Nodes
@@ -5874,6 +5876,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - validates native resolvable bool before reflection; False uses its own hash domain while True preserves legacy ids
   - admits Protocol definitions only with resolvable=False without relaxing other binding rules
   - resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement
+  - matches requested inherited disposal through first-definition MRO namespaces without invoking descriptors or expanding fingerprinted profile members
   - validates binding policy and spellframe semantics
   - checks direct public Protocol members on classes and actual supplied objects before Spell creation
   - creates canonical Spell records for Spellbook registration
@@ -7820,7 +7823,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py
 
-- source_sha256: `7794b3f6060cbbf4339ba83eb94a1ac3918cc1c1c337cab0fb9c73e0e1638363`
+- source_sha256: `6df0b2f8337e4f4e6fbe8b3a3210146e5b62cefc185dd3ac12321cd08da9e749`
 - nodes: 1
 
 ### Nodes
@@ -7834,6 +7837,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - compiles spell-bound no-overrides and overrides-only CreationContext executor templates
   - selects route-specific emitted runtime bodies for shared, spellspace, conduit, many, and existing-creation lanes
   - uses executor_code_cache to compile and reuse emitted template source
+  - emits slotted routes that hold the target store's slot guard (unique: the Spell lock) across recheck and executor, never the store lock
 - owns_state: `_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE`, `_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE`, `_NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST`, `_NO_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE_AND_FAST`
 - phases: `runtime`
 
@@ -8125,7 +8129,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
 
-- source_sha256: `b8dea64f5189f78fb3e6f10ad6c627922e23334ee8bd875fa454426a40f58caf`
+- source_sha256: `af58260eef3bc0fd34f988e974a24b3840822cca6b8861057b7ad2c35323d03c`
 - nodes: 1
 
 ### Nodes
@@ -8199,7 +8203,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py
 
-- source_sha256: `ec970ceb8308c8d0c77c21c08ef1c4b39865b74b0087bdb315b4ff7eb897209f`
+- source_sha256: `e7911b08c3bb1cdd58ff1834f23e072fba91c2e02ecb407f70caab2e41e3960e`
 - nodes: 1
 
 ### Nodes
@@ -8236,7 +8240,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py
 
-- source_sha256: `3d5a501af13b5cdcc00fbc53078eed5b6766b8b35e67a9a37ad2d12035db6ddf`
+- source_sha256: `774c5a268b30770e0517e45663b84c30d2b7bc0930c079dafeeebe2f1b1acfd0`
 - nodes: 1
 
 ### Nodes
@@ -9055,7 +9059,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_overrides_codegen_creation_compiler.py
 
-- source_sha256: `8f08411d64d8b3aae119088ac05b84ff97cb37ca6fe0ce69f3ba2bd311f6a3c4`
+- source_sha256: `1bde94e2e6e4029994f18916d1a6d7da01efbbdf568f9cccc52dd8ef68c4454e`
 - nodes: 1
 
 ### Nodes
@@ -26059,7 +26063,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `6e299c1e75265ee1bc1ae9a15c433881bc59a31f323c2e36f0a3c0a0e47995a7`
+- source_sha256: `150dd597714c45729e766da15d11d069666047b957082275e107c6d1a0770a1a`
 - nodes: 2
 
 ### Nodes

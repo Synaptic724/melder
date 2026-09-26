@@ -1,0 +1,140 @@
+# Owner-run cProfile gauntlet output, pasted into the fable_0 session on 2026-09-25 (UTC).
+# Command (owner): .venv_new\Scripts\python.exe <PyCharm pytest runner> --path
+#   benchmarks\testing_other_di\test_real_world_gauntlet_cprofile.py
+# Interpreter: 3.14 per the __pycache__ tag cpython-314-pytest-9.1.1; gil=enabled for this run.
+# Recorded verbatim by fable_0. Not run by fable_0. Caveats: profiler overhead inflates
+# Python-level call cost; pytest assertion-rewrite import hook is active (rewrite.py rows).
+# Headline: setup melder=347.620ms vs dependency-injector=28.574ms vs dishka=61.583ms.
+
+[dependency-injector] gauntlet config: gil=enabled, setup_singletons=5, iterations=25, threads=3, request_scopes=10, worker_a_scopes=25, worker_b_scopes=30, request_objects_min=630, hot_objects_per_iter_min=1880, setup=28.574ms
+[dependency-injector] gauntlet total(25)=110.58ms | avg=4.423ms | median=4.371ms | p95=4.840ms | p99=4.942ms | min=4.092ms | max=5.447ms | stdev=0.296ms | cv=6.7%
+[dependency-injector] gauntlet threaded phase per-iter | avg=3.905ms | median=3.837ms | p95=4.234ms | p99=4.391ms | min=3.691ms | max=4.537ms | stdev=0.212ms | cv=5.4%
+[dependency-injector] outer-scope whole-cycle | avg=0.037ms | median=0.032ms | p95=0.057ms | p99=0.080ms | min=0.029ms | max=0.192ms | stdev=0.013ms | cv=35.4%
+[dependency-injector] request-scope whole-cycle | avg=0.027ms | median=0.024ms | p95=0.042ms | p99=0.053ms | min=0.021ms | max=0.179ms | stdev=0.009ms | cv=33.9%
+[dependency-injector] gauntlet throughput | hot_scopes=1625, hot_scopes/s=14,696, hot_objects/s_min=425,042, cleanup=5.747ms
+[CPROFILE] dependency-injector real-world gauntlet sort=cumtime top=40
+         264649 function calls (259257 primitive calls) in 0.157 seconds
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.001    0.001    0.158    0.158 test_real_world_gauntlet.py:1483(_run_gauntlet_benchmark)
+       25    0.000    0.000    0.111    0.004 test_real_world_gauntlet.py:1186(_run_gauntlet_once)
+     1625    0.003    0.000    0.063    0.000 test_real_world_gauntlet.py:616(_run_in_two_context_scopes)
+    11486    0.032    0.000    0.049    0.000 test_real_world_gauntlet.py:597(_get)
+        1    0.000    0.000    0.029    0.029 test_real_world_gauntlet.py:1149(_build_ops)
+        1    0.000    0.000    0.028    0.028 test_real_world_gauntlet.py:571(_build_runtime_dependency_injector)
+     24/2    0.000    0.000    0.026    0.013 <frozen importlib._bootstrap>:1360(_find_and_load)
+      2/1    0.001    0.001    0.024    0.024 {built-in method _imp.exec_dynamic}
+[CPROFILE] dependency-injector sort=tottime top rows
+    11486    0.032    0.000    0.049    0.000 test_real_world_gauntlet.py:597(_get)
+  750/125    0.015    0.000    0.065    0.001 {method 'acquire' of '_thread.lock' objects}
+       75    0.010    0.000    0.108    0.001 {method 'join' of '_thread._ThreadHandle' objects}
+    29901    0.008    0.000    0.008    0.000 {built-in method _abc._abc_instancecheck}
+
+[dishka] gauntlet config: gil=enabled, setup_singletons=5, iterations=25, threads=3, request_scopes=10, worker_a_scopes=25, worker_b_scopes=30, request_objects_min=630, hot_objects_per_iter_min=1880, setup=61.583ms
+[dishka] gauntlet total(25)=136.01ms | avg=5.440ms | median=5.157ms | p95=5.698ms | p99=5.908ms | min=4.945ms | max=11.730ms | stdev=1.303ms | cv=24.0%
+[dishka] gauntlet threaded phase per-iter | avg=4.859ms | median=4.594ms | p95=5.172ms | p99=5.353ms | min=4.452ms | max=9.986ms | stdev=1.068ms | cv=22.0%
+[dishka] outer-scope whole-cycle | avg=0.046ms | median=0.038ms | p95=0.065ms | p99=0.101ms | min=0.033ms | max=2.260ms | stdev=0.078ms | cv=168.4%
+[dishka] request-scope whole-cycle | avg=0.033ms | median=0.028ms | p95=0.048ms | p99=0.067ms | min=0.023ms | max=1.229ms | stdev=0.045ms | cv=137.2%
+[dishka] gauntlet throughput | hot_scopes=1625, hot_scopes/s=11,948, hot_objects/s_min=345,567, cleanup=7.657ms
+[CPROFILE] dishka real-world gauntlet sort=cumtime top rows
+         409350 function calls (389461 primitive calls) in 0.219 seconds
+        1    0.000    0.000    0.061    0.061 test_real_world_gauntlet.py:763(_build_runtime_dishka)
+     69/1    0.000    0.000    0.052    0.052 <frozen importlib._bootstrap>:1360(_find_and_load)
+    11456    0.003    0.000    0.062    0.000 container.py:164(get)
+27744/11456    0.013    0.000    0.059    0.000 container.py:192(_get_unlocked)
+[CPROFILE] dishka sort=tottime top rows
+  750/125    0.020    0.000    0.083    0.001 {method 'acquire' of '_thread.lock' objects}
+       75    0.014    0.000    0.132    0.002 {method 'join' of '_thread._ThreadHandle' objects}
+27744/11456    0.013    0.000    0.059    0.000 container.py:192(_get_unlocked)
+       67    0.010    0.000    0.010    0.000 {built-in method _io.open_code}
+      163    0.004    0.000    0.004    0.000 {built-in method builtins.compile}
+
+[melder] gauntlet config: gil=enabled, setup_singletons=5, iterations=25, threads=3, request_scopes=10, worker_a_scopes=25, worker_b_scopes=30, request_objects_min=630, hot_objects_per_iter_min=1880, setup=347.620ms
+[melder] gauntlet total(25)=193.64ms | avg=7.746ms | median=6.837ms | p95=7.250ms | p99=7.791ms | min=6.398ms | max=29.870ms | stdev=4.526ms | cv=58.4%
+[melder] gauntlet bootstrap per-iter | avg=0.127ms | median=0.083ms | p95=0.091ms | p99=0.100ms | min=0.080ms | max=1.152ms | stdev=0.209ms | cv=164.5%
+[melder] gauntlet threaded phase per-iter | avg=7.042ms | median=6.159ms | p95=6.563ms | p99=7.232ms | min=5.869ms | max=27.327ms | stdev=4.150ms | cv=58.9%
+[melder] outer-scope create | avg=0.005ms | median=0.004ms | p95=0.009ms | p99=0.013ms | min=0.004ms | max=0.360ms | stdev=0.013ms | cv=234.1%
+[melder] outer-scope cleanup | avg=0.006ms | median=0.006ms | p95=0.008ms | p99=0.011ms | min=0.005ms | max=0.082ms | stdev=0.003ms | cv=46.2%
+[melder] outer-scope whole-cycle | avg=0.086ms | median=0.053ms | p95=0.088ms | p99=0.132ms | min=0.044ms | max=23.785ms | stdev=0.661ms | cv=769.3%
+[melder] request-scope create | avg=0.003ms | median=0.002ms | p95=0.004ms | p99=0.007ms | min=0.002ms | max=0.065ms | stdev=0.003ms | cv=102.1%
+[melder] request-scope cleanup | avg=0.004ms | median=0.004ms | p95=0.006ms | p99=0.009ms | min=0.003ms | max=0.038ms | stdev=0.002ms | cv=40.0%
+[melder] request-scope whole-cycle | avg=0.055ms | median=0.033ms | p95=0.058ms | p99=0.080ms | min=0.025ms | max=11.246ms | stdev=0.380ms | cv=697.6%
+[melder] gauntlet throughput | hot_scopes=1625, hot_scopes/s=8,392, hot_objects/s_min=242,714, cleanup=24.657ms
+[melder] lane=request | cycles=250, objects_min=15750, wall_cycles/s=1,420, active_cycles/s=9,335, outer_total[avg=0.184ms | median=0.076ms | p99=0.274ms | max=23.785ms], request_total[avg=0.107ms | median=0.050ms | p99=0.214ms | max=11.246ms]
+[melder] lane=worker_a | cycles=625, objects_min=15625, wall_cycles/s=3,550, active_cycles/s=22,995, outer_total[avg=0.067ms | median=0.053ms | p99=0.104ms | max=6.005ms], request_total[avg=0.043ms | median=0.033ms | p99=0.067ms | max=4.659ms]
+[melder] lane=worker_b | cycles=750, objects_min=15000, wall_cycles/s=4,260, active_cycles/s=21,632, outer_total[avg=0.069ms | median=0.051ms | p99=0.099ms | max=10.373ms], request_total[avg=0.046ms | median=0.031ms | p99=0.066ms | max=9.151ms]
+[CPROFILE] wrote benchmarks\testing_other_di\results\real_world_gauntlet_melder.prof
+[CPROFILE] melder real-world gauntlet sort=cumtime top=40
+         865494 function calls (854383 primitive calls) in 0.576 seconds
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.581    0.581 test_real_world_gauntlet.py:1483(_run_gauntlet_benchmark)
+        1    0.000    0.000    0.581    0.581 test_melder_gauntlet.py:295(cleanup)
+1629/1626    0.001    0.000    0.563    0.000 conduit.py:566(cleanup)
+    617/5    0.002    0.000    0.300    0.060 <frozen importlib._bootstrap>:1360(_find_and_load)
+    617/5    0.003    0.000    0.299    0.060 <frozen importlib._bootstrap>:1308(_find_and_load_unlocked)
+  1245/11    0.000    0.000    0.298    0.027 <frozen importlib._bootstrap>:483(_call_with_frames_removed)
+   615/10    0.001    0.000    0.296    0.030 <frozen importlib._bootstrap>:914(_load_unlocked)
+    477/5    0.001    0.000    0.294    0.059 <frozen importlib._bootstrap_external>:753(exec_module)
+   552/28    0.010    0.000    0.294    0.010 {built-in method builtins.exec}
+   152/13    0.000    0.000    0.284    0.022 {built-in method builtins.__import__}
+        1    0.000    0.000    0.270    0.270 __init__.py:1(<module>)
+     1626    0.002    0.000    0.268    0.000 conduit.py:606(_prepare_for_pool)
+      4/1    0.000    0.000    0.260    0.260 conduit.py:722(_permanent_cleanup)
+        1    0.000    0.000    0.260    0.260 conduit.py:863(_cleanup_normal_conduit)
+        1    0.001    0.001    0.260    0.260 spellbook.py:365(cleanup)
+       25    0.000    0.000    0.194    0.008 test_real_world_gauntlet.py:1186(_run_gauntlet_once)
+       76    0.000    0.000    0.192    0.003 threading.py:1097(join)
+       76    0.022    0.000    0.190    0.003 {method 'join' of '_thread._ThreadHandle' objects}
+    75/25    0.004    0.000    0.166    0.007 test_real_world_gauntlet.py:1229(worker)
+        1    0.000    0.000    0.144    0.144 aether.py:1(<module>)
+1625/1570    0.010    0.000    0.123    0.000 test_melder_gauntlet.py:146(_run_in_lesser_and_spellspace)
+      615    0.004    0.000    0.116    0.000 <frozen importlib._bootstrap>:1243(_find_spec)
+   157/32    0.001    0.000    0.114    0.004 threading.py:337(wait)
+  916/276    0.026    0.000    0.094    0.000 {method 'acquire' of '_thread.lock' objects}
+      477    0.003    0.000    0.094    0.000 <frozen importlib._bootstrap_external>:826(get_code)
+7610/7355    0.003    0.000    0.081    0.000 spell_space.py:455(meld)
+7610/7355    0.005    0.000    0.079    0.000 spellspace_meld.py:235(meld)
+      613    0.000    0.000    0.065    0.000 <frozen importlib._bootstrap_external>:1284(find_spec)
+        1    0.000    0.000    0.064    0.064 spellbook.py:1(<module>)
+      750    0.001    0.000    0.058    0.000 test_melder_gauntlet.py:267(worker_b_scope_cycle)
+        1    0.000    0.000    0.058    0.058 nexus.py:1(<module>)
+      630    0.004    0.000    0.053    0.000 <frozen importlib._bootstrap_external>:1357(find_spec)
+        1    0.000    0.000    0.049    0.049 spellbook_creation_system.py:1(<module>)
+      250    0.000    0.000    0.048    0.000 test_melder_gauntlet.py:211(request_scope_cycle)
+      477    0.001    0.000    0.047    0.000 <frozen importlib._bootstrap_external>:947(get_data)
+        1    0.000    0.000    0.046    0.046 spell_compiler_system.py:1(<module>)
+[CPROFILE] melder real-world gauntlet sort=tottime top=40
+      509    0.034    0.000    0.034    0.000 {built-in method marshal.loads}
+  916/276    0.026    0.000    0.094    0.000 {method 'acquire' of '_thread.lock' objects}
+     2672    0.023    0.000    0.023    0.000 {built-in method nt.stat}
+      477    0.023    0.000    0.023    0.000 {built-in method _io.open_code}
+       76    0.022    0.000    0.190    0.003 {method 'join' of '_thread._ThreadHandle' objects}
+      480    0.020    0.000    0.020    0.000 {method 'read' of '_io.BufferedReader' objects}
+       46    0.014    0.000    0.014    0.000 {built-in method builtins.compile}
+     3960    0.014    0.000    0.021    0.000 <frozen importlib._bootstrap_external>:101(_path_join)
+        1    0.014    0.014    0.014    0.014 {built-in method gc.collect}
+1625/1570    0.010    0.000    0.123    0.000 test_melder_gauntlet.py:146(_run_in_lesser_and_spellspace)
+   552/28    0.010    0.000    0.294    0.010 {built-in method builtins.exec}
+    69042    0.008    0.000    0.008    0.000 {method 'get' of 'dict' objects}
+      136    0.008    0.000    0.008    0.000 {built-in method nt.listdir}
+4455/4260    0.007    0.000    0.009    0.000 {built-in method __new__ of type object at 0x00007FFFF496D7D0}
+     5431    0.006    0.000    0.032    0.000 <creation_context_no_overrides_only_template:spellspace:0:0>:10(_creation_context_execute_no_overrides_only)
+7610/7355    0.005    0.000    0.079    0.000 spellspace_meld.py:235(meld)
+       27    0.005    0.000    0.011    0.000 statistics.py:1511(_ss)
+      750    0.005    0.000    0.007    0.000 <melder_generalized_no_overrides_step_factory>:69(_no_overrides_codegen_creation_executor)
+    47860    0.005    0.000    0.006    0.000 {built-in method builtins.isinstance}
+      625    0.005    0.000    0.006    0.000 <melder_generalized_no_overrides_step_factory>:75(_no_overrides_codegen_creation_executor)
+      615    0.004    0.000    0.116    0.000 <frozen importlib._bootstrap>:1243(_find_spec)
+     7439    0.004    0.000    0.008    0.000 {method 'join' of 'str' objects}
+      250    0.004    0.000    0.006    0.000 <melder_generalized_no_overrides_step_factory>:163(_no_overrides_codegen_creation_executor)
+      630    0.004    0.000    0.053    0.000 <frozen importlib._bootstrap_external>:1357(find_spec)
+    33662    0.004    0.000    0.004    0.000 {method 'append' of 'list' objects}
+    75/25    0.004    0.000    0.166    0.007 test_real_world_gauntlet.py:1229(worker)
+  567/555    0.004    0.000    0.031    0.000 {built-in method builtins.__build_class__}
+    25336    0.003    0.000    0.003    0.000 {method '__enter__' of '_thread.RLock' objects}
+    25336    0.003    0.000    0.003    0.000 {method '__exit__' of '_thread.RLock' objects}
+      615    0.003    0.000    0.041    0.000 rewrite.py:190(_early_rewrite_bailout)
+    27054    0.003    0.000    0.003    0.000 ulid_factory.py:75(<genexpr>)
+     4875    0.003    0.000    0.010    0.000 <creation_context_no_overrides_only_template:unique_per_conduit:0:0>:10(_creation_context_execute_no_overrides_only)
+3885/3833    0.003    0.000    0.017    0.000 conduit_meld.py:259(meld)
+      477    0.003    0.000    0.094    0.000 <frozen importlib._bootstrap_external>:826(get_code)
+25548/25546    0.003    0.000    0.003    0.000 {built-in method builtins.len}

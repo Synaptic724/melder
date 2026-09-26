@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="0.211" timestamp="2026-09-24T04:50:39.245851-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.spectrum.test_area_bootstraps" name="test_area_build_conjures_named_definitions_without_domain_instances[registration-AgentPoolsBootstrap-agent_pools-expected_names4]" time="0.012"><failure message="AssertionError: GeneralPerformancePolicy&#10;assert [] == ['cleanup']&#10;  &#10;  Right contains one more item: 'cleanup'&#10;  Use -v to get more diff">..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py:206: in test_area_build_conjures_named_definitions_without_domain_instances
+    assert spell.disposal_method_names == ["cleanup"], row["spell_name"]
+E   AssertionError: GeneralPerformancePolicy
+E   assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.component.spectrum.test_area_bootstraps" name="test_area_build_conjures_named_definitions_without_domain_instances[registration-AgentsBootstrap-agents-expected_names5]" time="0.019"><failure message="AssertionError: AsyncioThoughtStream&#10;assert [] == ['cleanup']&#10;  &#10;  Right contains one more item: 'cleanup'&#10;  Use -v to get more diff">..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py:206: in test_area_build_conjures_named_definitions_without_domain_instances
+    assert spell.disposal_method_names == ["cleanup"], row["spell_name"]
+E   AssertionError: AsyncioThoughtStream
+E   assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff</failure></testcase></testsuite></testsuites>

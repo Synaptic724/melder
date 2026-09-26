@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/bind/bind.py",
- "source_sha256": "94b53e7fb08862751e6fa4052642a5d0a258cf2186259259b71dec8ac32798b2",
+ "source_sha256": "59486cd990b6950e5d39991b7ef5974732c77d545373e01a9c512c82551615a1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.bind.bind": {
@@ -36,11 +36,11 @@
     "spell_id_inspector"
    ],
    "shape": {
-    "method_count": 18,
+    "method_count": 19,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "110f8617aa0f3754e869baa7dd932cbbf20fe67af85f7fc7f80c2ee1158bade3",
+   "span_sha256": "4c880b7f1bb1c6f0e9ca70b46b1621d4f7c80523a2eb29b953e6f9fff865c3e3",
    "role": "Spell registration gateway for one Spellbook.",
    "responsibilities": [
     "examines binding targets into canonical binding profiles",
@@ -48,6 +48,7 @@
     "validates native resolvable bool before reflection; False uses its own hash domain while True preserves legacy ids",
     "admits Protocol definitions only with resolvable=False without relaxing other binding rules",
     "resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement",
+    "matches requested inherited disposal through first-definition MRO namespaces without invoking descriptors or expanding fingerprinted profile members",
     "validates binding policy and spellframe semantics",
     "checks direct public Protocol members on classes and actual supplied objects before Spell creation",
     "creates canonical Spell records for Spellbook registration",
@@ -66,7 +67,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "5a693726333c59a8844c470f0b948d7acd62b427836aa50e3ea1eb53aea66827"
+   "semantics_authored_against": "4c880b7f1bb1c6f0e9ca70b46b1621d4f7c80523a2eb29b953e6f9fff865c3e3"
   }
  },
  "edges_out": [

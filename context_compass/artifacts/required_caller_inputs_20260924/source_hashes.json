@@ -1,0 +1,10 @@
+{
+  "src/melder/__version__.py": "c9858ee5effc8874d7c26e9ce3351f82eaf571e8bd1d24be20278e50f1a30a74",
+  "src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py": "e42b02c55242666696e5d0d02047ea612b700276a30ada399263a34b9c5b3557",
+  "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py": "7ca9959aecad1dcf8ed1c91c49fdad3ce94428201f5b0b74209ea8be05853c59",
+  "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py": "52a73a9f90becffc54cdfb60e7c0b859fbbc45cb9bd39713ef7be6c40c2dd8ac",
+  "src/melder/aether/spellbook/spell_compiler/topology/spell_local_topology.py": "67cb802e16de67043418ab1b27cf02597e48bb0fd0189272e897f912a9a70d86",
+  "src/melder/aether/spellbook/spellbook_creation_system.py": "bc9640cf903f8db701e0385435aa7f41391573d1445d6c3627e58ff73ca1965e",
+  "src/melder/aether/spellbook/bind/bind.py": "59486cd990b6950e5d39991b7ef5974732c77d545373e01a9c512c82551615a1",
+  "src/melder/aether/conduit/meld/contracts/spell_map.py": "c313170dd39456396a9a136c16efd8b1429c8ffe37353a6bfc584f04b4c98211"
+}

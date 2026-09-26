@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-24
+- Updated: 2026-09-25
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -539,8 +539,15 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 
 ## Boot and Configuration Sequence
 1) First `Aether()` boot:
-   - Creates hidden singleton support objects:
-     `AetherUtilitySystem`, `Crystallizer`, and `Nexus`.
+   - Constructs the hosted singleton-level roots under `Aether._lock`, in
+     this fixed order: `Crystallizer`, `AetherUtilitySystem`, `LoadGate`, the
+     aetheric `Mediator` plane, `MutationResearch`, then `Nexus`. Crystallizer
+     leads because MutationResearch and Nexus read it out of the host as they
+     construct. All six are EAGER. MutationResearch was lazy once and was made
+     eager by owner ruling (2026-08-03): a bare `MutationResearch()` before
+     its first touch raised instead of returning the hosted root. No
+     `AethericFrame` is constructed at boot.
+     EVIDENCE: src/melder/aether/aether.py:174-250
    - Starts with a null `SafeLogger` wrapper and no attached raw logger.
    - Requires a later explicit `attach_logger(...)` call to attach a real
      logger.
@@ -639,8 +646,20 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 ### Sequence: Conjure Conduit
 1. `Spellbook.conjure(...)`:
    - Validate/freeze `SpellbookConfiguration`, bind to Aether.
-   - Run phases 1-4, then conduit foundational phases 5-7.
-   - Run conduit plan phases 8-11 only when foundational resolution has no errors.
+   - Run structural phases 1-4 for every spell, on every conjure.
+   - Classify the creation cache BEFORE the conduit phases: the live set of
+     resolvable, non-existing-creation spell ids is compared with the cached
+     ids, giving `disabled`, `full_hit`, `mixed` or `full_miss`.
+   - Run conduit foundational phases 5-7.
+   - Run conduit plan phases 8-11 only when foundational resolution has no
+     errors AND the cache path is not `full_hit`. A full hit passes
+     `force_skip_plan_phases=True`, loads both-lane creation contexts from
+     the cache, and does not re-enforce the resolution verdict (it was
+     enforced when the bundle was built). No cache path skips phases 1-7.
+     EVIDENCE:
+     - src/melder/aether/spellbook/spellbook_creation_system.py:226-247
+     - src/melder/aether/spellbook/spellbook_creation_system.py:300-345
+     - src/melder/aether/spellbook/spellbook_creation_system.py:412-520
    - Live 8-11 mapping:
      - phase 8 analyzer
      - phase 9 processor
@@ -658,7 +677,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 3. `CreationContext` compiled execution:
    - Select no-hooks/hooks and no-overrides/overrides lanes.
    - Execute codegen-creation-backed runtime lanes and return the resolved instance.
-4. Creations registration/reuse occurs inside compiled execution per Existence.
+4. Creations registration/reuse occurs inside compiled execution per Existence. Each slotted
+   lifetime is built once under its slot's build lock (store `slot_guard`, or Spell lock for
+   unique); the store lock is only taken as a leaf around publication (2026-09-25).
 
 ### Sequence: Meld-Time Validation Gate
 1. `Meld._ensure_lineage_resolvable(...)` checks SpellSystemState validity.
@@ -817,6 +838,18 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Creation build locks (2026-09-25): build-once exclusion is per SLOT (a spell id whose Existence
+  promises one object in a store). unique_per_conduit, unique_per_spell_space, lineage and cluster
+  slots use the target store's slot guard; unique uses its Spell lock (its one slot is the owner
+  store); many has none. Doors and plan steps hold the build lock across recheck, construction and
+  publication. The store lock is a LEAF around dict work only - never held while taking another lock
+  or running user code. Build locks follow the acyclic dependency graph consumer-first, so resolution
+  cannot form a wait cycle; the former store-held builds deadlocked against unique builders and purge.
+  Purge takes the same build lock before the store lock. Cache generation 10 rejects executors emitted
+  with the previous locking. Warm meld paths take no lock, unchanged.
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.slot_guard`,
+  `Creations.add_creation`, `Creations.purge` and
+  `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:_build_no_overrides_lines`.
 - Creation-cache release compatibility (2026-09-24): generation 9 stores the canonical Melder
   release in each conduit .melc envelope. Admission requires exact release, format-generation and
   Python cache-tag agreement. A missing, malformed or different release produces the existing cold
@@ -906,7 +939,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   retirement locks, paired live/disposal-map removal and existing disposal helpers. Space purge
   stays local. Conduit many/per-conduit removal stays local; unique, lineage and cluster require
   the spell owner, lineage root and elected leader respectively. Unique retirement takes the
-  Spell lock before the store lock; other modes use their actual store lock. Disposal occurs
+  Spell lock before the store lock; the other slotted modes take the store's slot guard before
+  it (2026-09-25); many takes only the store lock. Disposal occurs
   after detachment and lock release. Definitions, contexts and scope objects remain usable.
   purge_all=True removes all retained target entries; False requires the supplied instance and
   removes only its entry. An absent entry returns zero. No reverse discovery index or qualifier
@@ -1071,6 +1105,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- A build that publishes into a Creations store cleaned during that build is refused with
+  RuntimeError after its disposal methods run (2026-09-25). A reusable clear does not wait for
+  in-flight builds; such a build publishes into the fresh store. Quiesce melds before cleanup.
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations._refuse_publish_into_cleaned_store`.
 - Named collision/acquisition failures preserve other directory owners. Soft retirement failures
   retain ownership for retry and never publish idle; failed descendants prevent ancestor return.
   Hard teardown logs frame-summary publication failure and continues disposal. Cloud/Nexus reads
@@ -1406,9 +1444,9 @@ Spellbook and binding:
   note: fluent binding adapter.
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 1226
-  loc: 1226
-  verified_at: 2026-09-22T18:41:58Z
+  end_line: 1263
+  loc: 1263
+  verified_at: 2026-09-24T11:09:19Z
   note: binding pipeline.
 - path: `src/melder/aether/spellbook/bind/scan.py`
   start_line: 1
@@ -2082,15 +2120,15 @@ Resolution and creations:
   note: SpellContract descriptor.
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 884
-  loc: 884
-  verified_at: 2026-09-21T00:25:48Z
+  end_line: 1125
+  loc: 1125
+  verified_at: 2026-09-25T23:40:00Z
   note: instance registry.
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
-  end_line: 133
-  loc: 133
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 134
+  loc: 134
+  verified_at: 2026-09-25T23:40:00Z
   note: conduit/root specialization seam over the generic creations store.
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
@@ -2154,9 +2192,9 @@ Utilities:
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 613
-  loc: 613
-  verified_at: 2026-09-24T09:38:22Z
+  end_line: 618
+  loc: 618
+  verified_at: 2026-09-25T23:40:00Z
   note: release-bound creation-cache admission and atomic envelope persistence.
 
 - path: `src/melder/utilities/general_base/cleanable.py`
@@ -2523,6 +2561,17 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-25 creation build locks moved from the store lock to per-slot guards (unique keeps its Spell
+lock). The store lock is now a leaf, removing the store/Spell lock-order deadlock between concurrent
+first melds and purge; cache generation 10 retires executors emitted with the old locking. The
+component map carries the Creations details and corrects the Meld concurrency entry.
+
+2026-09-25 boot and conjure sequences corrected from source: `Aether.__init__` builds six hosted
+roots eagerly in a fixed order (MutationResearch included, per the 2026-08-03 ruling), and conjure
+classifies the creation cache before the conduit phases, skipping only phases 8-11 on a full hit.
+Phases 1-7 run on every conjure. The component map now documents the codegen IR export seams the
+compiler already carries (a dormant, signed phase 2-5 export and consumed phase-11 step rows).
 
 2026-09-24 creation-cache generation 9 adds exact Melder release admission. Release changes,
 unstamped legacy input and other existing incompatibilities cold-reset at load; normal conjure

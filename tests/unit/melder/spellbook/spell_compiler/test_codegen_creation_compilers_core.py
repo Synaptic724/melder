@@ -454,11 +454,16 @@ class _Creations:
         ] = {}
         self._owner_conduit_id = "conduit-1"
         self._active_spellspace = None
+        self._slot_guards: dict[str, threading.RLock] = {}
 
     @property
     def owner_conduit_id(self) -> str:
         """Expose the owner conduit id used by spellspace routes."""
         return self._owner_conduit_id
+
+    def slot_guard(self, spell_id: str) -> threading.RLock:
+        """Mirror `Creations.slot_guard`: one re-entrant build guard per slot."""
+        return self._slot_guards.setdefault(spell_id, threading.RLock())
 
     def get_active_spellspace(self) -> Any:
         """Return the currently active spellspace, if any."""

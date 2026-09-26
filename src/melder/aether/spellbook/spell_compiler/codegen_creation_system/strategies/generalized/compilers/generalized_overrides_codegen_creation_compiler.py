@@ -2016,7 +2016,9 @@ def _append_overrides_step_shape_source(
                 f"root_spell_id=root_spell_id)"
             ),
             "    else:",
-            f"        with creations_{step_index}._lock:",
+            # Build-once under this slot's guard; publication takes the store
+            # lock itself as a leaf (see Creations.slot_guard).
+            f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             (
                 f"            instance_{step_index} = _get_existing_creation("
                 f"spell=spell_{step_index}, "
@@ -2140,7 +2142,9 @@ def _append_overrides_step_shape_source(
                 f"disposal_methods=disposal_methods_{step_index})"
             ),
             "    else:",
-            f"        with creations_{step_index}._lock:",
+            # Build-once under this slot's guard; publication takes the store
+            # lock itself as a leaf (see Creations.slot_guard).
+            f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             (
                 f"            instance_{step_index} = _get_existing_creation("
                 f"spell=spell_{step_index}, "
@@ -2200,8 +2204,10 @@ def _append_overrides_step_shape_source(
             ),
         ])
     else:
+        # Lineage / cluster: build-once under this slot's guard in the store the
+        # meld selected; publication takes the store lock itself as a leaf.
         lines.extend([
-            f"    with creations_{step_index}._lock:",
+            f"    with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             (
                 f"        instance_{step_index} = _get_existing_creation("
                 f"spell=spell_{step_index}, "
@@ -2405,7 +2411,7 @@ def _append_overrides_step_source(
             f"root_spell_id=root_spell_id)"
         ),
         "        else:",
-        f"            with creations_{step_index}._lock:",
+        f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         (
             f"                instance_{step_index} = _get_existing_creation("
             f"spell=spell_{step_index}, "
@@ -2477,7 +2483,7 @@ def _append_overrides_step_source(
                 f"disposal_methods=disposal_methods_{step_index})"
             ),
         "        else:",
-        f"            with creations_{step_index}._lock:",
+        f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         (
             f"                instance_{step_index} = _get_existing_creation("
             f"spell=spell_{step_index}, "

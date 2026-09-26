@@ -477,14 +477,18 @@ def test_cleanup_raises_exceptiongroup_when_disposal_fails(
 
 def test_public_methods_fail_after_cleanup(creations: Creations) -> None:
     """
-    Verify post-clean access now fails through deleted-field runtime errors.
+    Verify post-clean access fails.
+
+    Reads fail through deleted fields. Publication is refused explicitly with
+    `RuntimeError` (2026-09-25): builds hold slot guards rather than the store
+    lock, so a build can legitimately finish after cleanup and must be told.
     """
     creations.cleanup()
 
     assert not hasattr(creations, "_creations")
-    with pytest.raises(AttributeError):
+    with pytest.raises(RuntimeError):
         creations.add_creation("spell-x", object())
-    with pytest.raises(AttributeError):
+    with pytest.raises(RuntimeError):
         creations.add_many_creations("spell-x", object())
     with pytest.raises(AttributeError):
         creations.get_creation("spell-x")

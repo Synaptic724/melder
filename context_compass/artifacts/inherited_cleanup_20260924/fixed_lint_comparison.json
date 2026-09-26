@@ -1,0 +1,12 @@
+{
+  "src/melder/aether/spellbook/bind/bind.py": {
+    "baseline_findings": 33,
+    "current_findings": 33,
+    "introduced": []
+  },
+  "tests/component/melder/spellbook/test_ordered_disposal_binding.py": {
+    "baseline_findings": 5,
+    "current_findings": 5,
+    "introduced": []
+  }
+}

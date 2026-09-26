@@ -1,0 +1,46 @@
+WROTE: 595 descriptors under C:\Users\Mark\PycharmProjects\melder_private\context_compass\system_docs\graph
+  nodes=1234  specializes=458  creates-candidates=1356
+  needing semantics=8  new=0  orphaned=0  skipped=0
+  interfaces=3  aliases=2  collapse-candidates=389  package-candidates=36
+  specializes=458  implements=0
+  edge targets resolved to ids: 454/458 (99%)
+
+  SEMANTICS_STALE - source changed under authored semantics; re-verify: 183
+    melder\__architecture__.json: UNVERIFIED node melder.__architecture__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__author__.json: UNVERIFIED node melder.__author__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__components__.json: UNVERIFIED node melder.__components__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__description__.json: UNVERIFIED node melder.__description__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__graph_details__.json: UNVERIFIED node melder.__graph_details__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__graph_network__.json: UNVERIFIED node melder.__graph_network__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__license__.json: UNVERIFIED node melder.__license__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__melder_cache__\__melder_cache__.json: UNVERIFIED node melder.__melder_cache__.__melder_cache__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__version__.json: UNVERIFIED node melder.__version__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\aether\aether.json: SEMANTICS_STALE node melder.aether.aether.Aether - source changed since its semantics were written; re-verify then re-accept
+    melder\aether\aether_configuration.json: SEMANTICS_STALE node melder.aether.aether_configuration.AetherConfiguration - source changed since its semantics were written; re-verify then re-accept
+    melder\aether\aether_configuration_builder.json: SEMANTICS_STALE node melder.aether.aether_configuration_builder.AetherConfigurationBuilder - source changed since its semantics were written; re-verify then re-accept
+    melder\aether\aether_utility_system.json: SEMANTICS_STALE node melder.aether.aether_utility_system.AetherUtilitySystem - source changed since its semantics were written; re-verify then re-accept
+    melder\aether\aetheric_frame\aetheric_frame.json: SEMANTICS_STALE node melder.aether.aetheric_frame.aetheric_frame.AethericFrame - source changed since its semantics were written; re-verify then re-accept
+    melder\aether\aetheric_frame\conduit_cloud.json: SEMANTICS_STALE node melder.aether.aetheric_frame.conduit_cloud.ConduitCloud - source changed since its semantics were written; re-verify then re-accept
+    ... +168 more
+
+  UNVERIFIED - authored prose nobody has checked against source: 87
+    melder\__architecture__.json: UNVERIFIED node melder.__architecture__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__author__.json: UNVERIFIED node melder.__author__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__components__.json: UNVERIFIED node melder.__components__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__description__.json: UNVERIFIED node melder.__description__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__graph_details__.json: UNVERIFIED node melder.__graph_details__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__graph_network__.json: UNVERIFIED node melder.__graph_network__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__license__.json: UNVERIFIED node melder.__license__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__melder_cache__\__melder_cache__.json: UNVERIFIED node melder.__melder_cache__.__melder_cache__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__version__.json: UNVERIFIED node melder.__version__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\aether\aetheric_mediator\participation.json: UNVERIFIED node melder.aether.aetheric_mediator.participation - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\aether\aetheric_mediator\strategies\agent_repair_transaction_strategy.json: UNVERIFIED node melder.aether.aetheric_mediator.strategies.agent_repair_transaction_strategy - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\aether\aetheric_mediator\strategies\checkpoint_load_transaction_strategy.json: UNVERIFIED node melder.aether.aetheric_mediator.strategies.checkpoint_load_transaction_strategy - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\aether\aetheric_mediator\strategies\formation_load_transaction_strategy.json: UNVERIFIED node melder.aether.aetheric_mediator.strategies.formation_load_transaction_strategy - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\aether\aetheric_mediator\strategies\frame_create_transaction_strategy.json: UNVERIFIED node melder.aether.aetheric_mediator.strategies.frame_create_transaction_strategy - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\aether\aetheric_mediator\strategies\index_graft_transaction_strategy.json: UNVERIFIED node melder.aether.aetheric_mediator.strategies.index_graft_transaction_strategy - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    ... +72 more
+
+  census: 8 unsemantic, 183 stale, 0 orphaned
+  staleness is tracked per NODE, so one changed class does not
+  invalidate its whole module. Full report: graph_walker.py --report

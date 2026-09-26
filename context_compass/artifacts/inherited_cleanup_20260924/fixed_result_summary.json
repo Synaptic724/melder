@@ -1,0 +1,27 @@
+{
+  "receipts": {
+    "fixed_native": {
+      "collected": 416,
+      "passed": 393,
+      "failed_or_errored": 23
+    },
+    "fixed_replay_approved": {
+      "collected": 23,
+      "passed": 23,
+      "failed_or_errored": 0
+    },
+    "fixed_reproduction": {
+      "collected": 37,
+      "passed": 37,
+      "failed_or_errored": 0
+    },
+    "fixed_application": {
+      "collected": 2,
+      "passed": 2,
+      "failed_or_errored": 0
+    }
+  },
+  "unique_native_passes": 416,
+  "unresolved_native_failures": 0,
+  "unique_passes_including_minimal_reproduction_and_application": 428
+}

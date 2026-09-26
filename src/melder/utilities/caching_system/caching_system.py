@@ -96,6 +96,10 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 10: creation executors hold a per-slot build guard instead of the
+    # store lock across construction, and registration goes through the
+    # self-locking store methods (deadlock fix, 2026-09-25). Version-9 bundles
+    # carry executors emitted with the old locking and must be rebuilt.
     # Version 9: require the canonical Melder release in the cache envelope.
     # The separate generation also makes older readers reject these bundles
     # rather than ignoring the release field during a package downgrade.
@@ -136,6 +140,7 @@ class CachingSystem(Cleanable):
         7: "root_visible_family_selection",
         8: "ordinary_defaults_are_plain",
         9: "exact_melder_release_compatibility",
+        10: "creation_slot_build_guards",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"

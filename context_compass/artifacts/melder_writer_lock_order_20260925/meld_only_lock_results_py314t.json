@@ -1,0 +1,541 @@
+{
+  "python": "3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ]",
+  "gil_enabled": false,
+  "source_sha256": {
+    "src/melder/aether/conduit/creations/creations.py": "c5700e79f62883e208919b7fad5adfe4ec71969e6ca7ff80fd127988eb202bf7",
+    "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py": "7794b3f6060cbbf4339ba83eb94a1ac3918cc1c1c337cab0fb9c73e0e1638363",
+    "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py": "ec970ceb8308c8d0c77c21c08ef1c4b39865b74b0087bdb315b4ff7eb897209f",
+    "src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py": "7d3c9e9e638d9dc74ee628326cceae0acd907cbd972ae0d2cbf04d9c2bbffd76"
+  },
+  "cases": [
+    {
+      "parent_existence": "unique_per_conduit",
+      "leaf_disposal": true,
+      "same_store_for_parent_and_unique": true,
+      "A_held_store_when_requesting_svc_lock": true,
+      "C_held_svc_lock": true,
+      "C_would_block_on_store_held_by_A": true,
+      "cycle_formed": true,
+      "C_stuck_elsewhere": false,
+      "A_completed": true,
+      "A_errors": [],
+      "C_errors": [
+        "ProbeWouldBlock: store <- None"
+      ],
+      "trace": [
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-C",
+          "store",
+          "request"
+        ],
+        [
+          "meld-C",
+          "store",
+          "would_block"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ]
+      ]
+    },
+    {
+      "parent_existence": "unique_per_conduit",
+      "leaf_disposal": false,
+      "same_store_for_parent_and_unique": true,
+      "A_held_store_when_requesting_svc_lock": true,
+      "C_held_svc_lock": true,
+      "C_would_block_on_store_held_by_A": true,
+      "cycle_formed": true,
+      "C_stuck_elsewhere": false,
+      "A_completed": true,
+      "A_errors": [],
+      "C_errors": [
+        "ProbeWouldBlock: store <- None"
+      ],
+      "trace": [
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-C",
+          "store",
+          "request"
+        ],
+        [
+          "meld-C",
+          "store",
+          "would_block"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ]
+      ]
+    },
+    {
+      "parent_existence": "unique_per_conduit_lineage",
+      "leaf_disposal": true,
+      "same_store_for_parent_and_unique": true,
+      "A_held_store_when_requesting_svc_lock": true,
+      "C_held_svc_lock": true,
+      "C_would_block_on_store_held_by_A": true,
+      "cycle_formed": true,
+      "C_stuck_elsewhere": false,
+      "A_completed": true,
+      "A_errors": [],
+      "C_errors": [
+        "ProbeWouldBlock: store <- None"
+      ],
+      "trace": [
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-C",
+          "store",
+          "request"
+        ],
+        [
+          "meld-C",
+          "store",
+          "would_block"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ]
+      ]
+    },
+    {
+      "parent_existence": "unique_per_conduit_lineage",
+      "leaf_disposal": false,
+      "same_store_for_parent_and_unique": true,
+      "A_held_store_when_requesting_svc_lock": true,
+      "C_held_svc_lock": true,
+      "C_would_block_on_store_held_by_A": true,
+      "cycle_formed": true,
+      "C_stuck_elsewhere": false,
+      "A_completed": true,
+      "A_errors": [],
+      "C_errors": [
+        "ProbeWouldBlock: store <- None"
+      ],
+      "trace": [
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "request"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-C",
+          "store",
+          "request"
+        ],
+        [
+          "meld-C",
+          "store",
+          "would_block"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-C",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "svc_spell",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "request"
+        ],
+        [
+          "meld-A",
+          "store",
+          "acquired"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ],
+        [
+          "meld-A",
+          "store",
+          "released"
+        ]
+      ]
+    }
+  ],
+  "limits": "Scheduling instrumentation; C's contended store request is refused, not waited on."
+}

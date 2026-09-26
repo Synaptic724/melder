@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="10" time="0.512" timestamp="2026-09-24T04:46:53.193283-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="context_compass.artifacts.inherited_cleanup_20260924.test_inherited_cleanup_reproduction" name="test_binding_retains_available_cleanup[explicit-CleanupOwner]" time="0.005" /><testcase classname="context_compass.artifacts.inherited_cleanup_20260924.test_inherited_cleanup_reproduction" name="test_binding_retains_available_cleanup[explicit-InheritedCleanup]" time="0.004"><failure message="AssertionError: assert [] == ['cleanup']&#10;  &#10;  Right contains one more item: 'cleanup'&#10;  Use -v to get more diff">context_compass\artifacts\inherited_cleanup_20260924\test_inherited_cleanup_reproduction.py:70: in test_binding_retains_available_cleanup
+    assert spell.disposal_method_names == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff</failure></testcase><testcase classname="context_compass.artifacts.inherited_cleanup_20260924.test_inherited_cleanup_reproduction" name="test_binding_retains_available_cleanup[configured-CleanupOwner]" time="0.004" /><testcase classname="context_compass.artifacts.inherited_cleanup_20260924.test_inherited_cleanup_reproduction" name="test_binding_retains_available_cleanup[configured-InheritedCleanup]" time="0.004"><failure message="AssertionError: assert [] == ['cleanup']&#10;  &#10;  Right contains one more item: 'cleanup'&#10;  Use -v to get more diff">context_compass\artifacts\inherited_cleanup_20260924\test_inherited_cleanup_reproduction.py:70: in test_binding_retains_available_cleanup
+    assert spell.disposal_method_names == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff</failure></testcase><testcase classname="context_compass.artifacts.inherited_cleanup_20260924.test_inherited_cleanup_reproduction" name="test_runtime_calls_available_cleanup[many-CleanupOwner]" time="0.051" /><testcase classname="context_compass.artifacts.inherited_cleanup_20260924.test_inherited_cleanup_reproduction" name="test_runtime_calls_available_cleanup[many-InheritedCleanup]" time="0.007"><failure message="AssertionError: assert [] == ['cleanup']&#10;  &#10;  Right contains one more item: 'cleanup'&#10;  Use -v to get more diff">context_compass\artifacts\inherited_cleanup_20260924\test_inherited_cleanup_reproduction.py:83: in test_runtime_calls_available_cleanup
+    assert instance.calls == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff</failure></testcase><testcase classname="context_compass.artifacts.inherited_cleanup_20260924.test_inherited_cleanup_reproduction" name="test_runtime_calls_available_cleanup[unique-CleanupOwner]" time="0.006" /><testcase classname="context_compass.artifacts.inherited_cleanup_20260924.test_inherited_cleanup_reproduction" name="test_runtime_calls_available_cleanup[unique-InheritedCleanup]" time="0.007"><failure message="AssertionError: assert [] == ['cleanup']&#10;  &#10;  Right contains one more item: 'cleanup'&#10;  Use -v to get more diff">context_compass\artifacts\inherited_cleanup_20260924\test_inherited_cleanup_reproduction.py:83: in test_runtime_calls_available_cleanup
+    assert instance.calls == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff</failure></testcase><testcase classname="context_compass.artifacts.inherited_cleanup_20260924.test_inherited_cleanup_reproduction" name="test_multiple_inheritance_retains_available_cleanup" time="0.004"><failure message="AssertionError: assert [] == ['cleanup']&#10;  &#10;  Right contains one more item: 'cleanup'&#10;  Use -v to get more diff">context_compass\artifacts\inherited_cleanup_20260924\test_inherited_cleanup_reproduction.py:92: in test_multiple_inheritance_retains_available_cleanup
+    assert spell.disposal_method_names == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff</failure></testcase><testcase classname="context_compass.artifacts.inherited_cleanup_20260924.test_inherited_cleanup_reproduction" name="test_non_callable_shadow_stays_excluded" time="0.005" /></testsuite></testsuites>

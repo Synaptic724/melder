@@ -582,9 +582,11 @@ def test_native_purge_mirrors_creation_lock_family_and_order(
     purge_all: bool,
 ) -> None:
     """
-    Purpose: Verify the existing writer-lock family for all six lifetimes.
-    Contract: Unique acquires Spell then store; all others acquire only the
-        selected store lock. Restore original locks before runtime teardown.
+    Purpose: Verify the writer-lock family for all six lifetimes.
+    Contract: Unique acquires Spell then store; the other slotted lifetimes
+        acquire the store's slot guard then the store lock (the build lock
+        their creation holds since 2026-09-25); many acquires only the store
+        lock. Restore original locks before runtime teardown.
     Args:
         existence: Lifetime determining the native retirement lock family.
         purge_all: Select whole-target or single-object retirement.
@@ -605,13 +607,17 @@ def test_native_purge_mirrors_creation_lock_family_and_order(
             store.add_creation(spell_id, creation)
         spell._lock = ObservedLock("spell", trace)
         store._lock = ObservedLock("store", trace)
+        store._slot_guards[spell_id] = ObservedLock("guard", trace)
         assert store.purge(spell, purge_all=purge_all, creation=creation) == 1
         expected = ["store:enter", "store:exit"]
         if existence is Existence.unique:
             expected = ["spell:enter", *expected, "spell:exit"]
+        elif existence is not Existence.many:
+            expected = ["guard:enter", *expected, "guard:exit"]
         assert trace == expected
     finally:
         spell._lock, store._lock = original_spell_lock, original_store_lock
+        store._slot_guards.pop(spell_id, None)
         root.permanent_cleanup()
 
 
@@ -675,10 +681,14 @@ def test_purge_waits_for_the_actual_singleton_constructor_lock(
         else root._creations
     )
     spell = book._spells_by_id[spell_id]
-    lock_owner = spell if existence is Existence.unique else store
-    original_lock = lock_owner._lock
     observed = ObservedLock("writer", [])
-    lock_owner._lock = observed
+    # The constructor's build lock: Spell._lock for unique, otherwise the
+    # store's slot guard (since 2026-09-25 the store lock is only a leaf).
+    if existence is Existence.unique:
+        original_lock = spell._lock
+        spell._lock = observed
+    else:
+        store._slot_guards[spell_id] = observed
 
     def run_purge() -> int:
         """
@@ -705,7 +715,10 @@ def test_purge_waits_for_the_actual_singleton_constructor_lock(
             assert caller.meld(spell_id=spell_id) is not obj
     finally:
         finish.set()
-        lock_owner._lock = original_lock
+        if existence is Existence.unique:
+            spell._lock = original_lock
+        else:
+            store._slot_guards.pop(spell_id, None)
         space.cleanup()
         root.permanent_cleanup()
 

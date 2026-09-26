@@ -1,0 +1,255 @@
+[
+  {
+    "existence": "many",
+    "door": "conduit",
+    "sibling": false,
+    "supplied_identity_preserved": true,
+    "sibling_is_generated": null,
+    "after_meld": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer"
+    ],
+    "after_space_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer"
+    ],
+    "after_conduit_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer",
+      "dispose:generated"
+    ],
+    "supplied_disposal_count": 0
+  },
+  {
+    "existence": "many",
+    "door": "conduit",
+    "sibling": true,
+    "supplied_identity_preserved": true,
+    "sibling_is_generated": true,
+    "after_meld": [
+      "construct:generated",
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer"
+    ],
+    "after_space_cleanup": [
+      "construct:generated",
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer"
+    ],
+    "after_conduit_cleanup": [
+      "construct:generated",
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer",
+      "dispose:generated",
+      "dispose:generated"
+    ],
+    "supplied_disposal_count": 0
+  },
+  {
+    "existence": "many",
+    "door": "spellspace",
+    "sibling": false,
+    "supplied_identity_preserved": true,
+    "sibling_is_generated": null,
+    "after_meld": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer"
+    ],
+    "after_space_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer",
+      "dispose:generated"
+    ],
+    "after_conduit_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer",
+      "dispose:generated"
+    ],
+    "supplied_disposal_count": 0
+  },
+  {
+    "existence": "many",
+    "door": "spellspace",
+    "sibling": true,
+    "supplied_identity_preserved": true,
+    "sibling_is_generated": true,
+    "after_meld": [
+      "construct:generated",
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer"
+    ],
+    "after_space_cleanup": [
+      "construct:generated",
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer",
+      "dispose:generated",
+      "dispose:generated"
+    ],
+    "after_conduit_cleanup": [
+      "construct:generated",
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer",
+      "dispose:generated",
+      "dispose:generated"
+    ],
+    "supplied_disposal_count": 0
+  },
+  {
+    "existence": "unique",
+    "door": "conduit",
+    "sibling": false,
+    "supplied_identity_preserved": true,
+    "sibling_is_generated": null,
+    "after_meld": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer"
+    ],
+    "after_space_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer"
+    ],
+    "after_conduit_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer",
+      "dispose:generated"
+    ],
+    "supplied_disposal_count": 0
+  },
+  {
+    "existence": "unique",
+    "door": "conduit",
+    "sibling": true,
+    "supplied_identity_preserved": true,
+    "sibling_is_generated": true,
+    "after_meld": [
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer"
+    ],
+    "after_space_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer"
+    ],
+    "after_conduit_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer",
+      "dispose:generated"
+    ],
+    "supplied_disposal_count": 0
+  },
+  {
+    "existence": "unique_per_conduit",
+    "door": "conduit",
+    "sibling": false,
+    "supplied_identity_preserved": true,
+    "sibling_is_generated": null,
+    "after_meld": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer"
+    ],
+    "after_space_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer"
+    ],
+    "after_conduit_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer",
+      "dispose:generated"
+    ],
+    "supplied_disposal_count": 0
+  },
+  {
+    "existence": "unique_per_conduit",
+    "door": "conduit",
+    "sibling": true,
+    "supplied_identity_preserved": true,
+    "sibling_is_generated": true,
+    "after_meld": [
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer"
+    ],
+    "after_space_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer"
+    ],
+    "after_conduit_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer",
+      "dispose:generated"
+    ],
+    "supplied_disposal_count": 0
+  },
+  {
+    "existence": "unique_per_spell_space",
+    "door": "spellspace",
+    "sibling": false,
+    "supplied_identity_preserved": true,
+    "sibling_is_generated": null,
+    "after_meld": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer"
+    ],
+    "after_space_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer",
+      "dispose:generated"
+    ],
+    "after_conduit_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:SingleConsumer",
+      "dispose:generated"
+    ],
+    "supplied_disposal_count": 0
+  },
+  {
+    "existence": "unique_per_spell_space",
+    "door": "spellspace",
+    "sibling": true,
+    "supplied_identity_preserved": true,
+    "sibling_is_generated": true,
+    "after_meld": [
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer"
+    ],
+    "after_space_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer",
+      "dispose:generated"
+    ],
+    "after_conduit_cleanup": [
+      "construct:generated",
+      "construct:root",
+      "activate:PairConsumer",
+      "dispose:generated"
+    ],
+    "supplied_disposal_count": 0
+  }
+]

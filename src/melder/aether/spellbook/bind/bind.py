@@ -621,8 +621,11 @@ class Bind(Cleanable):
             Native fingerprint rules are unchanged and callback returns are ignored.
 
         Disposal contract:
-            Only names present in the existing ClassBindingProfile are retained.
-            Missing names and non-class profiles contribute nothing. Book names
+            Retain declared profile methods and requested inherited callables,
+            respecting the first class declaration in Python's MRO. Non-callable
+            shadows and hidden dunders remain excluded; descriptors are not invoked
+            during matching. The shallow profile and its fingerprint inputs do not
+            expand. Missing names and non-class profiles contribute nothing. Book names
             own overlaps in both modes and keep their configured order. Spell-only
             names keep their supplied order, before or after the book block. Each
             matching name appears once in the single result list.
@@ -688,7 +691,7 @@ class Bind(Cleanable):
                 if configured_disposal_method_names is not None:
                     for method_name in configured_disposal_method_names:
                         if (
-                                method_name in binding_profile.method_names
+                                Bind._matches_disposal_method(binding_profile, method_name)
                                 and method_name not in resolved_disposal_method_names
                         ):
                             resolved_disposal_method_names.append(method_name)
@@ -696,7 +699,7 @@ class Bind(Cleanable):
                 if disposal_method_names is not None:
                     for method_name in disposal_method_names:
                         if (
-                                method_name in binding_profile.method_names
+                                Bind._matches_disposal_method(binding_profile, method_name)
                                 and method_name not in resolved_disposal_method_names
                         ):
                             resolved_disposal_method_names.insert(spell_position, method_name)
@@ -794,6 +797,40 @@ class Bind(Cleanable):
         finally:
             if not completed:
                 self._cleanup_unpublished_spell(new_spell, spell_index)
+
+    @staticmethod
+    def _matches_disposal_method(profile: ClassBindingProfile, method_name: str) -> bool:
+        """
+        Match one disposal candidate without expanding the class binding profile.
+
+        Contract:
+            Preserve existing declared-method eligibility. For other non-dunder
+            names, inspect class namespaces in MRO order and stop at the first
+            declaration, including a non-callable shadow. A local declaration
+            excluded by the profile stays excluded. Raw inherited members use
+            the same callable test as the profile builder; properties and raw
+            classmethod descriptors remain unsupported. Never invoke descriptors
+            or admit metaclass-only members as instance disposal methods.
+
+        Args:
+            profile: Binding-time profile of the registered class.
+            method_name: Requested configured or per-spell disposal name.
+
+        Returns:
+            bool: Whether the class exposes an eligible disposal candidate.
+
+        Lifecycle / Threading:
+            Runs under the existing Bind lock before fingerprinting. Owns no
+            state, invokes no cleanup and adds no work to ordinary resolution.
+        """
+        if method_name in profile.method_names:
+            return True
+        if method_name.startswith("__") and method_name.endswith("__"):
+            return False
+        for owner in profile.original_object.__mro__:
+            if method_name in owner.__dict__:
+                return owner is not profile.original_object and callable(owner.__dict__[method_name])
+        return False
 
     #region Spell Inspector Helpers
     @staticmethod

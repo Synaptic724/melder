@@ -1,0 +1,48 @@
+{
+ "many": {
+  "root_supplied": true,
+  "root_missing": {
+   "error": "TypeError",
+   "msg": "Task.__init__() missing 1 required positional argument: 'work'",
+   "cause": null
+  },
+  "root_with_dep_missing": {
+   "error": "MeldExecutionError",
+   "msg": "[MELD] Execution failed for spell 'TaskWithDep' (dc3285e9c7af537c058dc9ff2adecab8e70f1c6fc479822e8b7179c4c05f767f): Error invoking spell 'TaskWithDep'. (inner: ",
+   "cause": "TypeError: TaskWithDep.__init__() missing 1 required positional argument: 'work'"
+  },
+  "nested_missing": {
+   "error": "MeldExecutionError",
+   "msg": "[MELD] Execution failed for spell 'Task' (610ad117f71ded84f6e0c640c9e6100809b591f420ae46d22a0e55778cfb78db): Error invoking spell 'Task'. (inner: TypeError(\"Tas",
+   "cause": "TypeError: Task.__init__() missing 1 required positional argument: 'work'"
+  },
+  "nested_other_override_only": {
+   "error": "MeldExecutionError",
+   "msg": "[MELD] Execution failed for spell 'Task' (610ad117f71ded84f6e0c640c9e6100809b591f420ae46d22a0e55778cfb78db): Error invoking spell 'Task'. (inner: TypeError(\"Tas",
+   "cause": "TypeError: Task.__init__() missing 1 required positional argument: 'work'"
+  },
+  "nested_supplied_path": true,
+  "nested_supplied_broadcast": true
+ },
+ "unique_per_conduit": {
+  "root_supplied": true,
+  "root_missing": "<__main__.Task object at 0x5ce06bc2310>",
+  "root_with_dep_missing": {
+   "error": "MeldExecutionError",
+   "msg": "[MELD] Execution failed for spell 'TaskWithDep' (0fced49ee7e55e1708fba9e21375e906128adc101254367ea96fdc2d055d275a): Error invoking spell 'TaskWithDep'. (inner: ",
+   "cause": "TypeError: TaskWithDep.__init__() missing 1 required positional argument: 'work'"
+  },
+  "nested_missing": "<__main__.Pool object at 0x5ce06bc2810>",
+  "nested_other_override_only": "<__main__.Pool object at 0x5ce06bc2950>",
+  "nested_supplied_path": {
+   "error": "MeldExecutionError",
+   "msg": "[MELD] Execution failed for spell 'Task' (0d60d0683adf8da5034b97d8620545187bb1f61dfbb6a860dd214fd22d25de25) at node 0d60d0683adf8da5034b97d8620545187bb1f61dfbb6",
+   "cause": null
+  },
+  "nested_supplied_broadcast": {
+   "error": "MeldExecutionError",
+   "msg": "[MELD] Execution failed for spell 'Task' (0d60d0683adf8da5034b97d8620545187bb1f61dfbb6a860dd214fd22d25de25) at node 0d60d0683adf8da5034b97d8620545187bb1f61dfbb6",
+   "cause": null
+  }
+ }
+}

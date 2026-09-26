@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/creations/creations.py",
- "source_sha256": "c5700e79f62883e208919b7fad5adfe4ec71969e6ca7ff80fd127988eb202bf7",
+ "source_sha256": "013f65cb5c6efa64b518e5bd0639adbbb31a9c6e353195928cde2a4f7e5faf3f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.creations.creations": {
@@ -45,25 +45,29 @@
     "purge",
     "reset_for_pool",
     "reset_for_pool_unlocked",
-    "restore_spell_creations"
+    "restore_spell_creations",
+    "slot_guard"
    ],
    "shape": {
-    "method_count": 17,
+    "method_count": 20,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6c4ece56e4b007c8a3515639aa413c00f0bd52e473fdc8c86313e8b2338ef8a7",
+   "span_sha256": "ee091bb6af8cdcf80d4cca9dec8563eaf40e133b23bc5747f550f2177243a564",
    "role": "Generic scoped live-object registry with separate disposal metadata.",
    "responsibilities": [
     "stores raw objects in one scoped live registry and cleanup entries in a separate registry",
     "retains established Spell disposal lists through registration and in-memory transfer",
     "invokes methods in list order; the first method failure stops its object while other objects continue",
     "supports reusable clear/reset and terminal cleanup without clearing borrowed method lists",
-    "purges a whole selected target or one supplied creation with paired registry removal, existing writer locks and shared disposal helpers; no scope discovery or authorization"
+    "owns one re-entrant build guard per slot (slot_guard) so generated code builds each slotted object once without holding the store lock",
+    "keeps the store lock a leaf around dict work; refuses (and disposes) publication into a store cleaned during the build",
+    "purges a whole selected target or one supplied creation under the slot's build lock then the store lock, with paired registry removal and shared disposal helpers; no scope discovery or authorization"
    ],
    "owns_state": [
     "_creations",
     "_disposable_creations",
+    "_slot_guards",
     "_owner_conduit_id",
     "_id",
     "_lock"
@@ -73,7 +77,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "dafdc54ae8a9c106dc6f04ceca52acf3d7b6011b714a2ea510fc614dff34ea65"
+   "semantics_authored_against": "ee091bb6af8cdcf80d4cca9dec8563eaf40e133b23bc5747f550f2177243a564"
   }
  },
  "edges_out": [
@@ -93,6 +97,12 @@
   },
   {
    "from": "melder.aether.conduit.creations.creations.Creations",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.creations.creations.Creations",
    "to_label": "ValueError",
    "relation": "creates",
    "confidence": "candidate"
@@ -100,12 +110,6 @@
   {
    "from": "melder.aether.conduit.creations.creations.Creations",
    "to_label": "ExceptionGroup",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.conduit.creations.creations.Creations",
-   "to_label": "RuntimeError",
    "relation": "creates",
    "confidence": "candidate"
   }

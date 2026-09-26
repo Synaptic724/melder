@@ -1,0 +1,1864 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="23" failures="0" skipped="0" tests="416" time="6.661" timestamp="2026-09-24T05:04:33.723989-06:00" hostname="DESKTOP-HCNUTDQ"><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_requested_inherited_cleanup_is_retained[general-explicit]" time="0.005" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_requested_inherited_cleanup_is_retained[general-configured]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_requested_inherited_cleanup_is_retained[detailed-explicit]" time="0.005" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_requested_inherited_cleanup_is_retained[detailed-configured]" time="0.005" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[many-CleanupBase-cleanup]" time="0.036" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[many-InheritedCleanup-cleanup]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[many-GrandchildCleanup-cleanup]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[many-MultipleCleanup-cleanup]" time="0.007" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[many-OverrideCleanup-override]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[many-MultipleOverrideCleanup-override]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[unique-CleanupBase-cleanup]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[unique-InheritedCleanup-cleanup]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[unique-GrandchildCleanup-cleanup]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[unique-MultipleCleanup-cleanup]" time="0.007" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[unique-OverrideCleanup-override]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_teardown_uses_the_winning_inherited_method[unique-MultipleOverrideCleanup-override]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_unavailable_or_unsupported_cleanup_stays_excluded[NonCallableShadow]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_unavailable_or_unsupported_cleanup_stays_excluded[InheritedShadow]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_unavailable_or_unsupported_cleanup_stays_excluded[PropertyShadow]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_unavailable_or_unsupported_cleanup_stays_excluded[MetaclassOnlyCleanup]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_unavailable_or_unsupported_cleanup_stays_excluded[ClassMethodCleanup]" time="0.005" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_unavailable_or_unsupported_cleanup_stays_excluded[InheritedClassMethodCleanup]" time="0.005" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_inherited_staticmethod_keeps_existing_callable_eligibility" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_inherited_disposal_preserves_priority_overlap_and_deduplication[False-expected0]" time="0.007" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_inherited_disposal_preserves_priority_overlap_and_deduplication[True-expected1]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_unrequested_base_callable_does_not_change_binding_identity" time="0.003" /><testcase classname="tests.component.melder.spellbook.test_inherited_disposal_binding" name="test_inactive_binding_resolves_inherited_cleanup_before_fingerprinting" time="0.005" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_binding_combines_groups_in_priority_order[False-expected0]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_binding_combines_groups_in_priority_order[True-expected1]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_empty_and_missing_groups_preserve_matching_contract[None-None-expected0]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_empty_and_missing_groups_preserve_matching_contract[book_names1-spell_names1-expected1]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_empty_and_missing_groups_preserve_matching_contract[book_names2-None-expected2]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_empty_and_missing_groups_preserve_matching_contract[book_names3-spell_names3-expected3]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_empty_and_missing_groups_preserve_matching_contract[book_names4-spell_names4-expected4]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_empty_and_missing_groups_preserve_matching_contract[book_names5-spell_names5-expected5]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_each_binding_uses_its_own_explicit_names[False]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_each_binding_uses_its_own_explicit_names[True]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_staged_binding_preserves_its_own_order_and_index_selection[False-False]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_staged_binding_preserves_its_own_order_and_index_selection[False-True]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_staged_binding_preserves_its_own_order_and_index_selection[True-False]" time="0.007" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_staged_binding_preserves_its_own_order_and_index_selection[True-True]" time="0.007" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_fluent_binder_forwards_explicit_disposal_names[False]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_fluent_binder_forwards_explicit_disposal_names[True]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_disposal_matching_stays_with_existing_class_profile[service_factory]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_disposal_matching_stays_with_existing_class_profile[target1]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_inherited_class_disposal_preserves_book_and_spell_order" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_raw_configuration_can_bind_without_disposal_name_property" time="0.003" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_resolved_order_changes_sha_but_unmatched_names_do_not" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_bound_order_reaches_real_cleanup[False-expected0]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_bound_order_reaches_real_cleanup[True-expected1]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_book_owns_shared_name_order_and_fingerprint[spell_names0-False]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_book_owns_shared_name_order_and_fingerprint[spell_names0-True]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_book_owns_shared_name_order_and_fingerprint[spell_names1-False]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_book_owns_shared_name_order_and_fingerprint[spell_names1-True]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_book_owns_shared_name_order_and_fingerprint[spell_names2-False]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_book_owns_shared_name_order_and_fingerprint[spell_names2-True]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_spell_only_block_preserves_order_and_deduplicates[False-expected0]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_spell_only_block_preserves_order_and_deduplicates[True-expected1]" time="0.006" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_rebinding_resolved_names_under_same_policy_is_idempotent[False-expected0]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_rebinding_resolved_names_under_same_policy_is_idempotent[True-expected1]" time="0.004" /><testcase classname="tests.component.melder.spellbook.test_ordered_disposal_binding" name="test_real_bind_fingerprint_is_stable_across_hash_seeds" time="1.689" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_decorator_returns_original" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_direct_returns_spell_stub" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_rejects_module" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_rejects_protocol_as_spell" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_existence_check_invalid_raises[None]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_existence_check_invalid_raises[bad]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_existence_check_invalid_raises[123]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_existing_object_with_non_unique_existence_raises" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_rejects_invalid_existence_type[None]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_rejects_invalid_existence_type[bad]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_rejects_invalid_existence_type[123]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_lambda_without_name_raises" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_with_non_unique_existence_raises" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_valid_class_binding_passes" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_valid_callable_binding_passes" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_valid_existing_object_binding_passes" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[class_profile-None-None-SPELL]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[class_profile-n-None-SPELL_WITH_BINDING_NAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[class_profile-None-frame-SPELL_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[class_profile-n-frame-SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[callable_profile-None-None-METHOD]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[callable_profile-n-None-METHOD_WITH_BINDING_NAME]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[callable_profile-None-frame-METHOD_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[callable_profile-n-frame-METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[&lt;lambda&gt;-n-None-LAMBDA_METHOD_WITH_BINDING_NAME]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[&lt;lambda&gt;-n-frame-LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[&lt;lambda&gt;-None-frame-LAMBDA_METHOD_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[instance_profile-None-None-EXISTING_CREATION]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[instance_profile-None-frame-EXISTING_CREATION_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[instance_profile-n-frame-EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type[other_profile-None-None-EXISTING_CREATION]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_is_protocol_type" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_structural_protocol_check_passes_when_members_present" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_structural_protocol_check_fails_when_missing" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_with_protocol_frame_validates_structure" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_with_protocol_frame_missing_member_raises" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_under_protocol_frame_allows" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_profile_deterministic_class" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_profile_different_profiles_yield_different_hashes" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spell_id_inspector_uses_examiner" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_cleanup_idempotent" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_usage_after_cleanup_is_inert" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spell_examiner_failure_propagates" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_existing_object_flag_only_for_instances" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spell_name_resolution_without_dunder_name" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_structural_check_rejects_non_callable_attribute" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_fallback_on_unknown_profile" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_profile_includes_parameters" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_matrix[unique-class_profile-True]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_matrix[many-class_profile-True]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_matrix[unique-callable_profile-True]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_matrix[many-callable_profile-False]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_matrix[unique-&lt;lambda&gt;-True]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_matrix[many-&lt;lambda&gt;-False]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_matrix[unique-instance_profile-True]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_matrix[many-instance_profile-False]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_lambda_requires_name_even_with_unique" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_protocol_structural_inheritance" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_protocol_missing_property_like_member" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_protocol_callable_member_with_none_impl" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_existing_object_flag_not_set_for_callable" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spell_id_stable_for_same_class" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spell_id_differs_for_different_classes" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_module_bind_error_message" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_protocol_bind_error_message" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_protocol_check_ignores_private" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_registration_guard_rejection" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_parameters_kind_affects_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_class_init_signature_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_class_source_preview_no_longer_affects_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_resolvable_preserves_the_fixed_legacy_fingerprint" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_resolvable_rejects_non_bool_policy[None]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_resolvable_rejects_non_bool_policy[0]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_resolvable_rejects_non_bool_policy[1]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_resolvable_rejects_non_bool_policy[false]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_non_resolvable_keeps_existing_shape_version_rules" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_class_annotations_order_irrelevant" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_callable_repr_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_callable_builtin_flag_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_fallback_profile_has_hash_length" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_binding_with_name_preserved" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_instance_binding_allows_binding_name" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_other_profile_spelltype_without_name" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_other_profile_spelltype_with_frame" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_existence_check_valid_values[unique]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_existence_check_valid_values[unique_per_conduit]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_existence_check_valid_values[unique_per_spell_space]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_protocol_property_vs_attribute" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_protocol_with_callable_and_attr_mix" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_examiner_called_each_bind" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spell_index_current_matches_spell_id" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_decorator_multiple_targets" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_binding_name_empty_string_treated_as_value" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_class_binding_allows_various_existence[unique_per_conduit]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_class_binding_allows_various_existence[unique_per_conduit_cluster]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_class_binding_allows_various_existence[unique_per_conduit_lineage]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_class_binding_allows_various_existence[unique_per_spell_space]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_class_binding_allows_various_existence[many]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_binding_rejects_non_unique" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_lambda_name_error_message" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spell_name_from_qualname" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_existing_object_other_profile_sets_existing" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spellframe_string_skips_protocol_checks" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_structural_check_callable_required" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_protocol_missing_sorted" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_with_protocol_and_classmethod_ok" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_rejects_protocol_as_spellframe_for_non_class" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_annotation_content_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_callable_signature_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_callable_param_default_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_callable_lambda_flag_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_instance_repr_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_hash_stability_across_reuse" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_outputs_spell_index_current_as_first_id" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_twice_same_class_same_fingerprint" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_handles_unicode_identifiers" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_long_strings_stable_length" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_examiner_error_releases_lock" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_nested_lock_with_examiner" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spelltype_matrix[instance_profile-n-None-EXISTING_CREATION]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spelltype_matrix[instance_profile-None-f-EXISTING_CREATION_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spelltype_matrix[other_profile-None-None-EXISTING_CREATION]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spellframe_empty_string" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_examiner_instantiated_once_per_bind_instance" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_protocol_attribute_access_error" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_examiner_returning_none_raises" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_examiner_returning_wrong_type_raises" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_instance_profile_under_protocol_spellframe[False-instance]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_instance_profile_under_protocol_spellframe[False-other]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_instance_profile_under_protocol_spellframe[True-instance]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_instance_profile_under_protocol_spellframe[True-other]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spelltype_matrix_callable_variants[callable_profile-None-None-METHOD]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spelltype_matrix_callable_variants[callable_profile-None-frame-METHOD_WITH_SPELLFRAME]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spelltype_matrix_callable_variants[&lt;lambda&gt;-None-None-LAMBDA_METHOD_WITH_BINDING_NAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spelltype_matrix_callable_variants[&lt;lambda&gt;-None-frame-LAMBDA_METHOD_WITH_SPELLFRAME]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spelltype_other_variants[other_profile-n-None-EXISTING_CREATION]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spelltype_other_variants[other_profile-None-f-EXISTING_CREATION_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha_changes_with_mro_diff" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha_changes_with_method_names_diff" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_registration_guard_receives_context" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_parallel_style_lock_usage" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_cleanup_nulls_lock" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile0-None-None-SPELL]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile1-n-None-SPELL_WITH_BINDING_NAME]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile2-None-f-SPELL_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile3-n-f-SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile4-None-None-METHOD]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile5-n-None-METHOD_WITH_BINDING_NAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile6-None-f-METHOD_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile7-n-f-METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile8-n-None-LAMBDA_METHOD_WITH_BINDING_NAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile9-n-f-LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile10-None-f-LAMBDA_METHOD_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile11-None-None-EXISTING_CREATION]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile12-None-f-EXISTING_CREATION_WITH_SPELLFRAME]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile13-n-f-EXISTING_CREATION_WITH_BINDING_NAME_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile14-None-None-EXISTING_CREATION]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_full_matrix[profile15-None-f-EXISTING_CREATION_WITH_SPELLFRAME]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha_changes_with_bases_diff" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha_changes_with_parameter_annotation" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_registration_guard_does_not_leak" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_permissions_and_frame_propagated" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_decorator_preserves_permissions_and_frame" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_decorator_used_multiple_times_same_class" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_decorator_lambda_with_name" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_other_profile_with_binding_name" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_other_profile_with_frame" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_nonclass_noncallable_spellframe" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha_changes_with_dataclass_flag" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha_changes_with_decorated_flag" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha_changes_with_origin_file" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_repr_and_lambda_flag_combo_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_param_default_repr_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_varargs_only_spell_type" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_frame_and_empty_binding_name" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_instance_with_binding_name_spellframe" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_unknown_profile_with_frame" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_module_error_message_contains_module" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_protocol_error_missing_members_sorted" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_lambda_requires_name_even_with_frame" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_lambda_with_name_and_frame_spelltype" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_with_binding_name_and_frame_spelltype" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_other_profile_with_binding_name_and_frame" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_binding_name_none_allowed" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_class_with_frame_spelltype" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spell_id_length" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spell_index_versions_initial_size" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_after_cleanup_lock_is_none" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_registration_guard_context_on_decorator" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_module_error_mentions_module_name" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_parameters_default_repr_affects_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_lambda_flag_affects_hash_even_with_same_signature" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_builtin_flag_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_extension_flag_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_class_method_names_order_stable_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_class_annotations_keys_change_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_instance_profile_module_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_other_profile_module_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_qualname_vs_name_changes_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_permissions_passthrough[Permissions.read]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_permissions_passthrough[Permissions.create]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_permissions_passthrough[Permissions.block]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_object_spell_name" time="0.001" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_binding_name_empty_for_class_spelltype" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_binding_name_empty_spelltype" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_callable_under_protocol_missing_members_allowed" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha_changes_with_extension_and_builtin_flags" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha_changes_with_empty_vs_varargs_only" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_spell_index_hash_differs_for_different_ids" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_registration_guard_exception_bubbles" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_registration_guard_error_leaves_lock_usable" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_class_reordering_stable" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_callable_flags_change_hash" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_instance_vs_other_profiles" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_sha256_profile_changes_with_binding_signature_existence_and_disposal" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_resolves_disposal_metadata_during_bind" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_determine_spell_type_other_named_frame" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_is_protocol_type_runtime_checkable" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_empty_name_counts_as_missing_for_lambda" time="0.014" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_exist_check_true_for_valid" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_decorator_returns_spell_stub" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_reentrant_lock_allows_nested_bind" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_string_spellframe_allowed" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_validate_binding_invalid_existence_raises_value_error" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_bind" name="test_bind_cleanup_rechecks_cleaned_state_under_lock" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_current_and_update_and_spells_in_index" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_hash_and_equality_stable" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_hash_and_equality_ignore_current_id" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_repr_includes_id_and_current" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_context_manager_acquires_and_releases" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_spells_in_index_is_copy" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_has_spell_updates_after_update" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_repr_reflects_current" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_nested_context_manager" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_cleanup_idempotent_and_nulls" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_operations_after_cleanup_raise" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_hash_equality_with_other_types" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_cleanup_then_hash_raises" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index" name="test_cleanup_rechecks_cleaned_state_under_lock" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_initial_index_is_single_member" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_update_selects_and_records_member" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_update_builds_multi_member_lineage" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_add_member_records_without_selecting" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_add_member_is_idempotent" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_add_member_then_has_spell" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_remove_member_discards_and_keeps_selected" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_remove_member_is_idempotent_for_missing" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_remove_member_does_not_touch_selected_head" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_is_sole_member_true_for_only_member" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_is_sole_member_false_when_multi" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_is_sole_member_false_for_non_member" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_is_sole_member_true_after_removing_down_to_one" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_is_empty_false_with_members" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_is_empty_true_after_removing_all_members" time="0.000" /><testcase classname="tests.unit.melder.spellbook.bind.test_spell_index_membership" name="test_membership_methods_raise_after_cleanup" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_builds_class_profile" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_builds_callable_profile" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_builds_instance_profile" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_filters_dunders_when_hidden" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_includes_dunders_when_enabled" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_includes_dataclass_init" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_detects_lambda_function" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_abstract_flag_matches_inspect" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_class_profile_fallbacks_clear_optional_source_details" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_callable_profile_falls_back_when_signature_unavailable" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_build_other_profile_and_final_fallback" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.strategies.test_binding_profile_strategy" name="test_binding_profile_strategy_decorated_class_heuristic_edges" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.profiles.test_binding_profile" name="test_spell_binding_profile_stores_and_cleans" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.profiles.test_binding_profile" name="test_class_binding_profile_copies_mutable_inputs_and_cleanup" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.profiles.test_binding_profile" name="test_callable_parameter_binding_summary_simple_storage" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.profiles.test_binding_profile" name="test_callable_binding_profile_copies_parameters_and_cleanup" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.profiles.test_binding_profile" name="test_instance_binding_profile_stores_and_cleans" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_crafter.spell_examiner.profiles.test_binding_profile" name="test_other_binding_profile_stores_and_cleans" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_processor_and_plans_retain_ordered_spell_lists[single_no-names0]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_processor_and_plans_retain_ordered_spell_lists[single_no-names1]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_processor_and_plans_retain_ordered_spell_lists[single_overrides-names0]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_processor_and_plans_retain_ordered_spell_lists[single_overrides-names1]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_processor_and_plans_retain_ordered_spell_lists[dual-names0]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_processor_and_plans_retain_ordered_spell_lists[dual-names1]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_processor_and_plans_retain_ordered_spell_lists[many_only-names0]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_processor_and_plans_retain_ordered_spell_lists[many_only-names1]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[many-False]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[many-True]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[unique-False]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[unique-True]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[unique_per_conduit-False]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[unique_per_conduit-True]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[unique_per_spell_space-False]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[unique_per_spell_space-True]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[unique_per_conduit_lineage-False]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[unique_per_conduit_lineage-True]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[unique_per_conduit_cluster-False]" time="0.000" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_solo_registration_retains_names_across_code_cache_reuse[unique_per_conduit_cluster-True]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_family_executors_register_current_lists[False-generalized]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_family_executors_register_current_lists[False-many_only]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_family_executors_register_current_lists[True-generalized]" time="0.002" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_family_executors_register_current_lists[True-many_only]" time="0.001" /><testcase classname="tests.unit.melder.spellbook.spell_compiler.test_ordered_disposal_compiler" name="test_serialized_cache_preserves_order_and_rebinds_live_lists" time="0.001" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[False-False-solo]" time="0.008" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[False-False-generalized]" time="0.008" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[False-False-many_only]" time="0.008" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[False-True-solo]" time="0.007" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[False-True-generalized]" time="0.008" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[False-True-many_only]" time="0.007" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[True-False-solo]" time="0.007" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[True-False-generalized]" time="0.010" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[True-False-many_only]" time="0.008" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[True-True-solo]" time="0.007" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[True-True-generalized]" time="0.009" /><testcase classname="tests.integration.melder.conduit.test_ordered_disposal_runtime" name="test_real_compiled_disposal_uses_established_order[True-True-many_only]" time="0.008" /><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_crystal_and_json_preserve_distinct_member_orders[False]" time="0.007"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_crystal_and_json_preserve_distinct_member_orders[True]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_cached_restore_preserves_order_and_actual_cleanup[False-False]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_cached_restore_preserves_order_and_actual_cleanup[False-True]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_cached_restore_preserves_order_and_actual_cleanup[True-False]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_cached_restore_preserves_order_and_actual_cleanup[True-True]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[fresh-False-False]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[fresh-False-True]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[fresh-True-False]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[fresh-True-True]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[merge-False-False]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[merge-False-True]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[merge-True-False]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[merge-True-True]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[merge_adopt-False-False]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[merge_adopt-False-True]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[merge_adopt-True-False]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_graft_preserves_members_and_receiving_book_order[merge_adopt-True-True]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_restore_changed_ids_preserves_anchor_and_exact_selected_member[False]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_restore_changed_ids_preserves_anchor_and_exact_selected_member[True]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_merge_does_not_adopt_a_skipped_resident_selection[False]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_merge_does_not_adopt_a_skipped_resident_selection[True]" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.integration.melder.crystallizer.test_ordered_disposal_replay" name="test_changed_id_restore_regrants_contract_details" time="0.004"><error message="failed on setup with &quot;PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'&quot;">.venv_new\Lib\site-packages\_pytest\runner.py:361: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:250: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\logging.py:858: in pytest_runtest_setup
+    yield
+.venv_new\Lib\site-packages\_pytest\capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\runner.py:170: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv_new\Lib\site-packages\_pytest\runner.py:536: in setup
+    col.setup()
+.venv_new\Lib\site-packages\_pytest\python.py:1710: in setup
+    self._request._fillfixtures()
+.venv_new\Lib\site-packages\_pytest\fixtures.py:806: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:630: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1181: in execute
+    fixturedef = request._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:726: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1232: in execute
+    result: FixtureValue = ihook.pytest_fixture_setup(
+.venv_new\Lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:1328: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\fixtures.py:998: in call_fixture_func
+    fixture_result = next(generator)
+                     ^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:300: in tmp_path
+    path = _mk_tmp(request, tmp_path_factory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:287: in _mk_tmp
+    return factory.mktemp(name, numbered=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:136: in mktemp
+    basename = self._ensure_relative_to_basetemp(basename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:117: in _ensure_relative_to_basetemp
+    if (self.getbasetemp() / basename).resolve().parent != self.getbasetemp():
+        ^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\tmpdir.py:213: in getbasetemp
+    basetemp = make_numbered_dir_with_cleanup(
+.venv_new\Lib\site-packages\_pytest\pathlib.py:420: in make_numbered_dir_with_cleanup
+    raise e
+.venv_new\Lib\site-packages\_pytest\pathlib.py:401: in make_numbered_dir_with_cleanup
+    p = make_numbered_dir(root, prefix, mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:228: in make_numbered_dir
+    max_existing = max(map(parse_num, find_suffixes(root, prefix)), default=-1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:187: in extract_suffixes
+    for entry in iter:
+                 ^^^^
+.venv_new\Lib\site-packages\_pytest\pathlib.py:175: in find_prefixed
+    for x in os.scandir(root):
+             ^^^^^^^^^^^^^^^^
+E   PermissionError: [WinError 5] Access is denied: 'C:\\Users\\Mark\\AppData\\Local\\Temp\\pytest-of-Mark'</error></testcase><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_reverse_order_regression" name="test_unique_creations_dispose_newest_first" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_reverse_order_regression" name="test_many_bucket_entries_dispose_newest_first" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_reverse_order_regression" name="test_dependent_is_disposed_before_the_dependency_it_holds" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_reverse_order_regression" name="test_clear_all_uses_the_same_reverse_order" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_registration_and_transfer_preserve_disposal_reference[False-False]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_registration_and_transfer_preserve_disposal_reference[False-True]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_registration_and_transfer_preserve_disposal_reference[True-False]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_registration_and_transfer_preserve_disposal_reference[True-True]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_reusable_clearing_keeps_borrowed_names[clear-False]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_reusable_clearing_keeps_borrowed_names[clear-True]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_reusable_clearing_keeps_borrowed_names[pool-False]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_reusable_clearing_keeps_borrowed_names[pool-True]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_reusable_clearing_keeps_borrowed_names[confined_pool-False]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_reusable_clearing_keeps_borrowed_names[confined_pool-True]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_omitted_names_keep_existing_empty_metadata_behavior[False]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_omitted_names_keep_existing_empty_metadata_behavior[True]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_disabled_disposal_does_not_attach_names[False]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_references" name="test_disabled_disposal_does_not_attach_names[True]" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_all_methods_regression" name="test_every_declared_disposal_method_is_invoked" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_all_methods_regression" name="test_disposal_follows_declared_order_not_definition_order" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_all_methods_regression" name="test_many_bucket_entries_each_invoke_every_declared_method" time="0.003" /><testcase classname="tests.unit.melder.aether.conduit.creations.test_creations_disposal_all_methods_regression" name="test_first_failing_method_ends_disposal_for_that_entry" time="0.003" /></testsuite></testsuites>

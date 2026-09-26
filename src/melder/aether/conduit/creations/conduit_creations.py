@@ -26,7 +26,8 @@ class ConduitCreations(Creations):
         this specialization a behaviour delta rather than a storage delta.
 
     Threading:
-        Inherits the base `RLock` discipline; adds no locks of its own.
+        Inherits the base discipline (leaf store lock plus per-slot build
+        guards from `slot_guard`); adds no locks of its own.
 
     Lifecycle / Cleanup:
         Created in `Conduit.__init__` and cleaned during conduit teardown.

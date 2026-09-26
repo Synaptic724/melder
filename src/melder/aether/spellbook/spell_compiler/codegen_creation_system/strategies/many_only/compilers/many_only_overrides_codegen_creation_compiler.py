@@ -2070,7 +2070,10 @@ def _append_overrides_step_source(
             f"root_spell_id=root_spell_id)"
         ),
         "        else:",
-        f"            with creations_{step_index}._lock:",
+        # Unreachable in this family (every step is `many`), kept in step with
+        # the generalized emitter: slotted builds hold the slot guard, never
+        # the store lock, across construction.
+        f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         (
             f"                instance_{step_index} = _get_existing_creation("
             f"spell=spell_{step_index}, "
@@ -2142,7 +2145,10 @@ def _append_overrides_step_source(
                 f"disposal_methods=disposal_methods_{step_index})"
             ),
         "        else:",
-        f"            with creations_{step_index}._lock:",
+        # Unreachable in this family (every step is `many`), kept in step with
+        # the generalized emitter: slotted builds hold the slot guard, never
+        # the store lock, across construction.
+        f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         (
             f"                instance_{step_index} = _get_existing_creation("
             f"spell=spell_{step_index}, "

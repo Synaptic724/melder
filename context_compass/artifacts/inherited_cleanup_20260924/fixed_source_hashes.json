@@ -1,0 +1,6 @@
+{
+  "src/melder/aether/spellbook/bind/bind.py": "59486cd990b6950e5d39991b7ef5974732c77d545373e01a9c512c82551615a1",
+  "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py": "b16044350c96c3b4bb5eaffebc0319b2c56223eb039a82d8ae940167f5ba9ec5",
+  "tests/component/melder/spellbook/test_inherited_disposal_binding.py": "33a6a24e99375c67b9c74d581371d771ea24ac6275040c13d8abd2807e54d7e5",
+  "tests/component/melder/spellbook/test_ordered_disposal_binding.py": "342a92b016eafbb970c4bdbe09ac82990b5d9dae4b06ca7e98847e312caa58cf"
+}

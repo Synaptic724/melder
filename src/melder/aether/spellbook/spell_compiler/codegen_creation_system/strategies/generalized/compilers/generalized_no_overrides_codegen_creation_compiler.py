@@ -942,10 +942,13 @@ def _append_step_resolution_source(
             Existence.unique_per_conduit,
             Existence.unique_per_spell_space,
     ):
+        # Build-once under this slot's guard; the store lock is only taken as a
+        # leaf inside `add_creation`. Holding the store lock across the build
+        # deadlocked against unique dependencies (see Creations.slot_guard).
         lines.extend([
             f"    instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"    if instance_{step_index} is None:",
-            f"        with creations_{step_index}._lock:",
+            f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             f"            instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"            if instance_{step_index} is None:",
         ])
@@ -977,9 +980,11 @@ def _append_step_resolution_source(
             # so compute it here (cold) instead of on every warm meld.
             f"        use_spell_lock_{step_index} = True",
             f"        if use_spell_lock_{step_index}:",
+            # `unique` has one slot (its owner store), so Spell._lock is its
+            # slot guard. The recheck is a plain dict read and `add_creation`
+            # takes the store lock itself as a leaf.
             f"            with spell_{step_index}._lock:",
-            f"                with creations_{step_index}._lock:",
-            f"                    instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
+            f"                instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"                if instance_{step_index} is None:",
         ])
         _emit_construct_instance(
@@ -989,16 +994,15 @@ def _append_step_resolution_source(
             indent="                    ",
             instance_index_by_key=instance_index_by_key,
         )
-        lines.append(f"                    with creations_{step_index}._lock:")
         _append_step_register_source(
             lines=lines,
             step_index=step_index,
-            indent="                        ",
+            indent="                    ",
             existence=existence,
         )
         lines.extend([
             "        else:",
-            f"            with creations_{step_index}._lock:",
+            f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             f"                instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
             f"                if instance_{step_index} is None:",
         ])
@@ -1025,7 +1029,7 @@ def _append_step_resolution_source(
     lines.extend([
         f"    instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
         f"    if instance_{step_index} is None:",
-        f"        with creations_{step_index}._lock:",
+        f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         f"            instance_{step_index} = creations_{step_index}.get_creation(spell_id_{step_index})",
         f"            if instance_{step_index} is None:",
     ])
@@ -1063,12 +1067,13 @@ def _append_step_register_source(
         - Preserves `_register_spell_instance_prebound(...)` routing semantics.
         - Emits direct creations method calls to avoid per-registration helper
           dispatch and existence branching at runtime.
-        - Singleton / spellspace branches assume the caller has already emitted
-          the required creations lock around this registration.
+        - Singleton / spellspace branches run inside the caller-emitted build
+          lock (the slot guard, or Spell._lock for unique). `add_creation`
+          takes the store lock itself as a leaf around the dict writes.
         - The `many` branch is emitted ONLY for disposal-bearing `many` steps
           (the caller gates on disposal at compile time), so it registers
-          unconditionally under the creations lock with no runtime disposal
-          check. The caller must NOT pre-emit a lock for the `many` branch.
+          unconditionally with no runtime disposal check. `add_many_creations`
+          takes the store lock itself; the caller must NOT pre-emit a lock.
         - Binds `has_disposal_methods_{step_index}` / `disposal_methods_{step_index}`
           here (cold construct/register path) so warm reuse melds never pay for
           those per-step lookups.
@@ -1106,8 +1111,9 @@ def _append_step_register_source(
         # The caller gates this branch on disposal at COMPILE time, so it is
         # emitted only for disposal-bearing `many` steps -- registration is
         # unconditional here, with no runtime `if has_disposal_methods_N`.
-        # `many` is transient (a new instance per meld, never cached), so the
-        # append is lockless -- matching the solo / many_only families.
+        # `many` is transient (a new instance per meld, never cached), so no
+        # build guard is needed; `add_many_creations` takes the store lock as a
+        # leaf around the bucket append.
         lines.extend([
             f"{indent}spell_id_{step_index} = step_spell_ids[{step_index}]",
             f"{indent}creations_{step_index}.add_many_creations(",

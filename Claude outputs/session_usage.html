@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session Token Usage</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --track: #f0efec;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --series-1: #2a78d6;
+    --tip-bg: #0b0b0b;
+    --tip-fg: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --track: #2a2a28;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --series-1: #3987e5;
+      --tip-bg: #ffffff;
+      --tip-fg: #0b0b0b;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --track: #2a2a28;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --series-1: #3987e5;
+    --tip-bg: #ffffff;
+    --tip-fg: #0b0b0b;
+  }
+  body {
+    margin: 0;
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 18px; margin: 0 0 4px; font-weight: 600; }
+  .sub { color: var(--text-secondary); margin: 0 0 20px; font-size: 13px; }
+  .row { display: grid; grid-template-columns: 1fr; gap: 6px; margin-bottom: 16px; position: relative; }
+  .label { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+  .label .val { color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .track { height: 18px; background: var(--track); border-radius: 4px; position: relative; cursor: default; }
+  .bar { height: 100%; background: var(--series-1); border-radius: 0 4px 4px 0; }
+  .tip {
+    position: absolute; top: -34px; left: 0; padding: 4px 8px; border-radius: 4px;
+    background: var(--tip-bg); color: var(--tip-fg); font-size: 12px; white-space: nowrap;
+    opacity: 0; pointer-events: none; transition: opacity .12s;
+  }
+  .track:hover + .tip, .track:focus + .tip { opacity: 1; }
+  .foot { color: var(--text-secondary); font-size: 12px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Where this session's tokens went</h1>
+  <p class="sub">Share of effective usage (cache reads x0.1, cache writes x2, output x5). About 2.25M effective tokens across 66 model calls.</p>
+
+  <div class="row">
+    <div class="label"><span>Your computer (reading repo files)</span><span class="val">64% &middot; ~1.44M</span></div>
+    <div class="track" tabindex="0" aria-label="Your computer: 64 percent, about 1.44 million effective tokens"><div class="bar" style="width:64.1%"></div></div>
+    <div class="tip">1,439,897 effective tokens (64.1%)</div>
+  </div>
+
+  <div class="row">
+    <div class="label"><span>Claude's instructions</span><span class="val">33% &middot; ~0.75M</span></div>
+    <div class="track" tabindex="0" aria-label="Claude's instructions: 33 percent, about 0.75 million effective tokens"><div class="bar" style="width:33.2%"></div></div>
+    <div class="tip">746,110 effective tokens (33.2%)</div>
+  </div>
+
+  <div class="row">
+    <div class="label"><span>Everything else (chat, replies, tool lookups)</span><span class="val">3% &middot; ~0.06M</span></div>
+    <div class="track" tabindex="0" aria-label="Everything else: 3 percent, about 0.06 million effective tokens"><div class="bar" style="width:2.7%"></div></div>
+    <div class="tip">60,291 effective tokens (2.7%)</div>
+  </div>
+
+  <p class="foot">No subagents, web research, Chrome, or other connectors were used. Figures are approximate.</p>
+</div>
+</body>
+</html>

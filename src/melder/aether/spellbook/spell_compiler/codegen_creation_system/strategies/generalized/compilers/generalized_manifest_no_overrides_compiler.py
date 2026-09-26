@@ -330,7 +330,9 @@ def _append_step_resolution_source(
         )
         if has_disposal_methods:
             # `many` is transient (a new instance per meld, never cached), so
-            # the append is lockless -- matching the solo / many_only families.
+            # there is no build guard. The append goes through
+            # `add_many_creations`, which takes the store lock as a leaf (the
+            # former lockless inline append could lose a first-use bucket).
             _append_register_source(
                 lines=lines,
                 step_index=step_index,
@@ -347,9 +349,9 @@ def _append_step_resolution_source(
     if existence in (
             Existence.unique_per_conduit,
             Existence.unique_per_spell_space,
-            # cluster/lineage are CALLER + creations_lock now (meld supplies the
-            # leader / lineage-root store as caller_creations), so they take the
-            # same reuse-read + creations-lock path as unique_per_conduit -- which
+            # cluster/lineage are CALLER-routed (meld supplies the leader /
+            # lineage-root store as caller_creations), so they take the same
+            # reuse-read + slot-guard path as unique_per_conduit -- which
             # correctly threads key_to_step_index for locals mode. (The fall-
             # through 'plain' branch below does not, and is unreachable.)
             Existence.unique_per_conduit_cluster,
@@ -361,7 +363,9 @@ def _append_step_resolution_source(
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
             ),
             f"    if instance_{step_index} is None:",
-            f"        with creations_{step_index}._lock:",
+            # Build-once under this slot's guard; `add_creation` takes the
+            # store lock itself as a leaf (see Creations.slot_guard).
+            f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             (
                 f"            instance_{step_index} = "
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
@@ -401,10 +405,12 @@ def _append_step_resolution_source(
             f"    if instance_{step_index} is None:",
             f"        use_spell_lock_{step_index} = True",
             f"        if use_spell_lock_{step_index}:",
+            # `unique` has one slot (its owner store), so Spell._lock is its
+            # slot guard; the recheck is a plain dict read and `add_creation`
+            # takes the store lock itself as a leaf.
             f"            with spell_{step_index}._lock:",
-            f"                with creations_{step_index}._lock:",
             (
-                f"                    instance_{step_index} = "
+                f"                instance_{step_index} = "
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
             ),
             f"                if instance_{step_index} is None:",
@@ -417,17 +423,16 @@ def _append_step_resolution_source(
             key_to_step_index=key_to_step_index,
             row=row,
         )
-        lines.append(f"                    with creations_{step_index}._lock:")
         _append_register_source(
             lines=lines,
             step_index=step_index,
-            indent="                        ",
+            indent="                    ",
             existence=existence,
             has_disposal_methods=has_disposal_methods,
         )
         lines.extend([
             "        else:",
-            f"            with creations_{step_index}._lock:",
+            f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             (
                 f"                instance_{step_index} = "
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
@@ -461,7 +466,7 @@ def _append_step_resolution_source(
             f"creations_{step_index}._creations.get(spell_id_{step_index})"
         ),
         f"    if instance_{step_index} is None:",
-        f"        with creations_{step_index}._lock:",
+        f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         (
             f"            instance_{step_index} = "
             f"creations_{step_index}._creations.get(spell_id_{step_index})"
@@ -647,24 +652,34 @@ def _append_register_source(
         has_disposal_methods: bool,
 ) -> None:
     """
-    Append inline registration stores specialized for one existence mode.
+    Append registration calls specialized for one existence mode.
 
     Contract:
-        - Emits direct `_creations` / `_disposable_creations` stores instead
-          of `add_creation` / `add_many_creations` calls. The store methods
-          are lock-free with caller-held locking, and every branch inside
-          them is decided by fingerprint-stable facts (existence, disposal),
-          so the call is pure dispatch overhead on this path.
-        - The legacy duplicate-key guard is intentionally not emitted: every
-          caller registers under `creations._lock` immediately after a locked
-          re-check found no live entry, and disposal/live slots are co-written
-          only by this path, so duplicates are structurally impossible here.
-        - The `many` slot is always a list for this spell id because existence
-          is fingerprint-stable; the legacy non-list slot guard is likewise
-          structurally unreachable.
+        - Callers hold only the slot's build lock (slot guard, or Spell._lock
+          for unique) around this block, never the store lock. (Before
+          2026-09-25 the caller held the store lock across the whole build,
+          and the disposal-bearing `many` append ran with no lock at all.)
+        - Singleton entries WITHOUT disposal methods publish with one direct
+          `_creations` store: the build lock excludes every other publisher of
+          the key and a single dict store is atomic, so no store lock and no
+          duplicate check are needed (the same reasoning as the lock-free
+          branch of `Creations.add_creation`; measured to matter on the cold
+          path). A store retired by `cleanup()` fails on its missing registry.
+        - Singleton entries WITH disposal methods, and every disposal-bearing
+          `many` append, go through `add_creation` / `add_many_creations`,
+          which take the store lock as a LEAF so the live and disposal writes
+          land together, and refuse a store cleaned during the build.
         - Both storage shapes retain the bound Spell disposal list directly,
           matching Creations registration without allocating a copied policy.
     """
+    disposal_arguments = (
+        [
+            f"{indent}    has_disposal_methods=True,",
+            f"{indent}    disposal_methods=disposal_methods_{step_index},",
+        ]
+        if has_disposal_methods
+        else []
+    )
     if existence in (
             Existence.unique,
             Existence.unique_per_conduit,
@@ -672,47 +687,29 @@ def _append_register_source(
             Existence.unique_per_conduit_lineage,
             Existence.unique_per_spell_space,
     ):
-        lines.append(
-            f"{indent}creations_{step_index}._creations"
-            f"[spell_id_{step_index}] = instance_{step_index}"
-        )
-        if has_disposal_methods:
+        if not has_disposal_methods:
             lines.append(
-                f"{indent}creations_{step_index}._disposable_creations"
-                f"[spell_id_{step_index}] = "
-                f"(instance_{step_index}, disposal_methods_{step_index})"
+                f"{indent}creations_{step_index}._creations"
+                f"[spell_id_{step_index}] = instance_{step_index}"
             )
+            return
+        lines.extend([
+            f"{indent}creations_{step_index}.add_creation(",
+            f"{indent}    spell_id_{step_index},",
+            f"{indent}    instance_{step_index},",
+            *disposal_arguments,
+            f"{indent})",
+        ])
         return
 
     if existence is Existence.many:
         # Callers emit this block only when disposal truth is present.
         lines.extend([
-            (
-                f"{indent}many_live_{step_index} = "
-                f"creations_{step_index}._creations.get(spell_id_{step_index})"
-            ),
-            f"{indent}if many_live_{step_index} is None:",
-            f"{indent}    many_live_{step_index} = []",
-            (
-                f"{indent}    creations_{step_index}._creations"
-                f"[spell_id_{step_index}] = many_live_{step_index}"
-            ),
-            f"{indent}many_live_{step_index}.append(instance_{step_index})",
-            (
-                f"{indent}many_disposable_{step_index} = "
-                f"creations_{step_index}._disposable_creations"
-                f".get(spell_id_{step_index})"
-            ),
-            f"{indent}if many_disposable_{step_index} is None:",
-            f"{indent}    many_disposable_{step_index} = []",
-            (
-                f"{indent}    creations_{step_index}._disposable_creations"
-                f"[spell_id_{step_index}] = many_disposable_{step_index}"
-            ),
-            (
-                f"{indent}many_disposable_{step_index}.append("
-                f"(instance_{step_index}, disposal_methods_{step_index}))"
-            ),
+            f"{indent}creations_{step_index}.add_many_creations(",
+            f"{indent}    spell_id_{step_index},",
+            f"{indent}    instance_{step_index},",
+            *disposal_arguments,
+            f"{indent})",
         ])
         return
 

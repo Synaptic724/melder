@@ -159,7 +159,9 @@ class ClusterCreations(Cleanable):
         Purpose:
             Hand the meld front door the concrete leader store so the door can
             run the same get-or-create-once block the lineage route uses,
-            locking the real store's `_lock`. The facade itself carries no lock;
+            holding the real store's `slot_guard(spell_id)` across the build
+            (the store's `_lock` is only a leaf around publish). The facade
+            itself carries no lock;
             safety while a leader is bound/unbound comes from the
             `elect_/unelect_conduit_cluster_leader` transaction quiesce, not from
             this facade.
