@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-stabilize-function-spell-ids-across-processes
 - Story: none (follow-up of TASK-2026-09-26-fix-inspect-signature-nameerror-on-type-checking-annotations)
-- Status: in_progress
+- Status: review
 - Owner: user
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-09-26T10:27:30Z
-- Updated: 2026-09-26T10:38:29Z
+- Updated: 2026-09-26T11:22:15Z
 
 ## Objective
 A function (and other callable) spell's id changes every process because its bind fingerprint hashes the
@@ -47,17 +47,20 @@ crystallizer records, restore, Nexus), and propose a stable fingerprint with its
 - from_state: blocked
 - to_state: in_progress
 - transition_reason: Owner approved option 1 plus the cache fix (DECISION 2026-09-26T10:38:29Z).
+- from_state: in_progress
+- to_state: review
+- transition_reason: Fix on the device tree; VM-copy suites green; docs, patch docs, graph and assets current (2026-09-26T11:22:15Z).
 
 ## Steps / Checklist
 - [x] Reproduce: same function spell, two fresh processes, different ids; record the differing input.
 - [x] Read Bind.sha256_profile and the callable binding-profile path; list every fingerprint input.
 - [x] Inventory consumers of spell ids across processes (cache, crystallizer, restore, Nexus).
 - [x] Propose the stable fingerprint and migration (DECISION_REQUEST).
-- [ ] Implement with regression tests after approval; validate on the device tree.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Implement with regression tests after approval; validate on the device tree.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Evidence and probes under artifacts/function_spell_ids_20260926/; a fix proposal; after approval, the
@@ -72,7 +75,10 @@ crystallizer records, restore, Nexus), and propose a stable fingerprint with its
 - src/melder/utilities/caching_system/caching_system.py
 
 ## Validation
-- Not run.
+- Agent runs (VM copy synced from the device tree, Python 3.14.7t, -X gil=0): tests/unit 8594 passed;
+  tests/component 2109 passed; tests/integration 1925 passed (one run also hit the known pre-existing
+  concurrency flake, which passes alone); build_assets + llm_support unit 144 passed.
+- Owner machine: Not run.
 - Recommended commands:
   - python -X gil=0 -m pytest -q tests/unit tests/component tests/integration
 
@@ -88,11 +94,11 @@ crystallizer records, restore, Nexus), and propose a stable fingerprint with its
 - [ ] No behavior claim cited only to a document or a one-line search hit.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
@@ -343,9 +349,157 @@ crystallizer records, restore, Nexus), and propose a stable fingerprint with its
   NEXT: Add the regression tests in the VM copy, then run unit, component and integration suites there.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T10:50:57Z
+  TYPE: MEASURE
+  CLAIM: VM-copy suites with the change (device tree re-synced, 3.14.7t): tests/unit 8594 passed (13 new);
+    tests/component 2108 passed, 1 failed. The failure is expected and wanted: fable_0's
+    test_executor_signatures_are_equal_across_interpreter_processes[probe_contract_payload_book_signatures]
+    is xfail(strict=True) because a class whose constructor default is a SpellContract with an object payload
+    had a process-local id (SpellContract repr renders the payload's address inside init_signature); it now
+    XPASSes. Consumed mailbox F0-4 (fable_0 ACK: none of bind.py, spellbook_creation_system.py,
+    caching_system.py or the generation is in their plan; the re-stage composes with their gate) and F0-5
+    (the same class-default case; "remove the marker then"). New tests fail on the original tree
+    (14 of 15 unit, the cross-process test, 3 of 4 restage cases; the passing ones are guards).
+  EVIDENCE:
+  - tests/component/melder/spellbook/test_codegen_signature_determinism.py:494-522
+  - tests/component/melder/spellbook/test_conjure_cache_restage.py:1-204
+  IMPACT: One edit in fable_0's test file (drop the strict xfail marker, as fable_0 asked), then integration.
+  NEXT: Drop the marker in the VM copy, rerun component and integration, then patch the device.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T10:57:49Z
+  TYPE: MEASURE
+  CLAIM: VM copy after dropping fable_0's strict xfail: tests/component 2109 passed. tests/integration run 1:
+    12 failed = 11 cases of test_cache_schema_version_integration.py, which pins CACHE_VERSION_HISTORY (the
+    generation-12 entry must be added there, as melder_0 did for 10 and 11) + 1 intermittent
+    test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_instance ("Cannot build
+    CreationContext before spell_codegen_creation exists"), which passes 3/3 alone and 4/4 as a file and is
+    the pre-existing flake recorded by two earlier lanes on pre-change sources. After adding 12 to the pinned
+    history: integration run 2 = 1925 passed, 3 skipped, 7 xfailed, 1 xpassed, 0 failed.
+  EVIDENCE:
+  - tests/integration/melder/spellbook/test_cache_schema_version_integration.py:12-24
+  - tickets/tasks/completed/2026-09-25_implement_creation_slot_build_guards_task.md:290-300
+  - tickets/tasks/completed/2026-09-26_implement_missing_dependency_sockets_task.md:648-656
+  IMPACT: Ready to patch the device: 6 src files (base hashes re-verified unchanged), 3 new tests, 2 test edits
+    (fable_0's marker, the pinned history).
+  NEXT: Apply the scripts to the device tree, copy the new tests (CRLF), verify hashes equal the VM copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T10:58:23Z
+  TYPE: FACT
+  CLAIM: Device tree patched in place with the same scripts (per-anchor CRLF/LF kept): inspector_utility.py
+    (stable_repr, strip_memory_addresses, class pattern), binding_profile.py (fingerprint_repr on three
+    profiles, default_fingerprint_repr on the parameter summary), binding_profile_strategy.py (fills them),
+    bind.py (sha256_profile hashes address-free repr, default, signature and init_signature text; two helpers),
+    spellbook_creation_system.py (_stage_spell_payloads_at_conjure_end: remove all, re-stage sorted live ids,
+    flag emit on removal), caching_system.py (generation 12). Tests: 3 new (CRLF); fable_0's strict xfail
+    dropped per F0-5; generation 12 added to the pinned history test. All 11 files hash-equal to the validated
+    VM copy; focused re-run on the copy: 1245 passed (bind, spell_crafter, new tests, annotation guard,
+    determinism, cache history). spellbook.py untouched.
+  EVIDENCE:
+  - context_compass/artifacts/function_spell_ids_20260926/results/commit_manifest.txt:1-11
+  - src/melder/aether/spellbook/bind/bind.py:892-1048
+  IMPACT: Code done; docs, graph and asset rebuild remain.
+  NEXT: Promote to src_components/src_architecture/tests_components, refresh the graph, rebuild assets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T11:03:59Z
+  TYPE: FACT
+  CLAIM: Canonical docs promoted and read back. src_components: Binding Pipeline "Process-stable
+    fingerprints" block, Spellbook Core generation-12 bullet, Spell Examination Profiles fingerprint-text
+    bullet. src_architecture: Operational Invariant "Process-stable spell ids and complete cache bundles" plus
+    a handoff entry. tests_components: the new unit test in the Spellbook Runtime And Binding Unit Cluster,
+    the two new component tests in its Component Cluster, plus a handoff entry. All three indexes --check OK
+    (9341, 2825, 1626 lines). Process note: the tests_components edit was made after the compaction but
+    before REONBOARD (disclosed in the attestation); it was read back after re-certification and is as intended.
+  EVIDENCE:
+  - system_docs/src_components.md:600-616
+  - system_docs/src_components.md:368-375
+  - system_docs/src_components.md:4241-4244
+  - system_docs/src_architecture.md:849-856
+  - system_docs/tests_components.md:717-717
+  - system_docs/tests_components.md:775-776
+  - system_docs/tests_components.md:1595-1597
+  IMPACT: Documentation promotion is complete apart from the patch-doc wording updates.
+  NEXT: Update patch docs (architecture Invariant 4; signature/init_signature stripping in the binding
+    pipeline component patch), then refresh the graph for the six src files.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T11:04:44Z
+  TYPE: FACT
+  CLAIM: Patch docs amended to the implemented behaviour. architecture_patch.md: non-goal and Invariant 4 now
+    say already-stable ids do not move, while a class whose constructor default renders an address in its
+    init_signature changes once; rollout step 2 names the signature/init_signature stripping; rollback
+    trigger and validation evidence (15 shapes, A/B/B/B) updated. component_patch_binding_pipeline.md: the
+    after-behaviour records the signature/init_signature stripping and why.
+  EVIDENCE:
+  - system_docs/patches/active/stable_callable_spell_ids_2026_09_26/architecture_patch.md:16-20
+  - system_docs/patches/active/stable_callable_spell_ids_2026_09_26/architecture_patch.md:49-50
+  - system_docs/patches/active/stable_callable_spell_ids_2026_09_26/component_patch_binding_pipeline.md:17-26
+  IMPACT: Patch lane matches the code and the canonical docs; it can be archived at closure.
+  NEXT: Graph refresh: extract the six changed src files into a scratch descriptor copy with --strict, copy
+    back only this lane's descriptors, re-read and accept, assemble.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T11:08:50Z
+  TYPE: MEASURE
+  CLAIM: Graph refreshed for this lane only. Extracted with 3.14.7t --strict into a scratch copy (no skips);
+    the six descriptors' old source_sha256 equal the pre-patch base hashes and the new ones equal the
+    committed hashes, so their only delta is this lane. Prose updated for Bind (address-free fingerprint),
+    InspectorUtility (stable_repr, strip_memory_addresses), the parameter summary and callable, instance and
+    other profiles (fingerprint fields in responsibilities and owns_state), BindingProfileStrategy (fills
+    them), SpellbookCreationSystem (bundle rebuild) and CachingSystem (generation 12). Accepted after
+    re-reading prose against source: Bind, InspectorUtility, the four profile classes, BindingProfileStrategy
+    and the two module nodes whose stamps matched the base. NOT accepted, stale before this lane:
+    SpellbookCreationSystem and CachingSystem (stamped against spans older than the base, so other lanes'
+    changes are unverified) and the unstamped bind and caching_system module nodes. Only the six
+    descriptors were copied back (their mtimes predate the scratch copy); assemble_graph --check: 597
+    sections, 1238 nodes, all ranges verified, 28121 lines.
+  EVIDENCE:
+  - system_docs/src_graph.md:5853-5925
+  - system_docs/src_graph.md:12767-12793
+  - system_docs/src_graph.md:12913-13029
+  - system_docs/src_graph.md:13179-13227
+  - system_docs/src_graph.md:16018-16086
+  - system_docs/src_graph.md:26090-26149
+  IMPACT: Graph current for this lane; two class nodes remain SEMANTICS_STALE for pre-existing reasons.
+  NEXT: Rebuild packaged assets (_build_asset_runner.py, then --check) and LLM bundles (llm_support
+    _builder.py, then --check), then run the asset and llm_support unit tests.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T11:21:51Z
+  TYPE: MEASURE
+  CLAIM: Assets rebuilt on the device tree with 3.14.7t. _build_asset_runner.py first failed with
+    PermissionError unlinking a stale payload (delete permission did not survive the device reconnect); the
+    owner-side prompt granted delete for the melder_private folder and the rerun wrote all three families
+    (agent_documentation 454, bind_guard 634, system_documents 4 entries, v0.2.54); --check: all three
+    current. llm_support/_builder.py rewrote src 590, tests 865, other 370 files; --check: all proofs match.
+    Content diffs vs HEAD are limited to the regenerated manifests and payloads (git diff
+    --ignore-cr-at-eol). Refreshed VM copy (src, tests, llm_support, system_docs, docs synced; 3.14.7t):
+    tests/unit/melder/build_assets + tests/unit/llm_support 144 passed; tests/unit 8594 passed, 3 skipped,
+    7 xfailed; tests/component 2109 passed, 24 skipped, 1 xfailed. Integration not re-run (src/tests
+    unchanged since the 1925-passed run). Owner machine: Not run.
+  EVIDENCE:
+  - src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py:1-40
+  - llm_support/manifest.json:1-20
+  IMPACT: Exit gate met: fix on the device tree, docs, patch docs, graph and assets current.
+  NEXT: Move the task to review (status, transition, board, artifact board) and report to the owner.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
-Opened 2026-09-26T10:27:30Z on owner selection. Investigation first; no src edits until the owner approves a plan.
+Opened 2026-09-26T10:27:30Z on owner selection. In review since 2026-09-26T11:22:15Z.
+- Delivered: address-free bind fingerprints (callables, default-repr instances, classes with
+  address-rendering defaults are now process-stable; already-stable ids unchanged) and the conjure cache
+  restage (non-full-hit conjure rebuilds the bundle; generation 12), which also fixes the pre-existing
+  consumer full-hit crash after a provider id change. 6 src files, 3 new tests, 2 test edits (fable_0's
+  strict xfail removed per F0-5; generation 12 in the pinned history).
+- One-time effects: affected spell ids change once; caches cold-reset once; MutationResearch records one
+  more version per affected spell (read from source, not probed).
+- Docs: src_components, src_architecture, tests_components, graph, packaged assets and LLM bundles current.
+  Patch lane stays active until closure (promote_to_documentation, then archive).
+- Open: owner commit and owner-machine suites; closure after acceptance. SpellbookCreationSystem and
+  CachingSystem graph nodes remain SEMANTICS_STALE for pre-existing reasons (other lanes' deltas).
 Resume from the latest Notes NEXT.
 
 ## Project-Specific Additions

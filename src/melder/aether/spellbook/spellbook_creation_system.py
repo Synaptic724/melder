@@ -1155,7 +1155,7 @@ class SpellbookCreationSystem(Cleanable):
             cache_state: dict[str, Any],
     ) -> None:
         """
-        Stage cache payloads for spells the conduit cache is missing.
+        Rebuild the conduit cache bundle from this conjure's compile.
 
         Purpose:
             Make conjure the staging boundary for every constructed spell so a
@@ -1165,23 +1165,36 @@ class SpellbookCreationSystem(Cleanable):
             them permanently missing from the bundle and locks the conduit
             cache into the mixed path, recompiling phases 8-11 on every
             conjure.
+            Re-staging EVERY live spell, not only the missing ones, keeps the
+            bundle one consistent world: a consumer's cached manifest names its
+            providers' spell ids, so when a provider's id changes, a consumer
+            payload kept from the previous world would make the next full hit
+            fail at hydration ("generalized manifest references unknown
+            spell_id"). Stale ids are dropped for the same reason and so the
+            bundle cannot grow without bound (2026-09-26, generation 12).
 
         Contract:
             - Runs only on non-full-hit conjures, after phases 8-11 have built
               the compiler artifact for every constructed spell; staging is a
               metadata read for manifest-first families.
-            - Delegates to `Spellbook._emit_spell_cache`, which dedupes against
-              already-staged payloads and flags the conjure-end file emit
-              boundary on success.
-            - Payload eligibility is enforced upstream: `missing_spell_ids`
-              derives from the live set built by `_build_conjure_cache_state`,
-              which already excludes existing-creation spells.
-            - Best-effort per spell: a staging miss leaves that spell on the
-              compile path for the next conjure without failing this one.
+            - Removes every payload in the bundle, then stages every live
+              payload-eligible spell in sorted id order through
+              `Spellbook._emit_spell_cache` (unchanged: it skips spells with
+              caching disabled, refuses non-replayable plans and flags the
+              conjure-end file emit on success).
+            - Flags the conjure-end emit when anything was removed, so a pruned
+              bundle is persisted even if nothing re-staged.
+            - Payload eligibility is enforced upstream: `live_spell_ids`
+              derives from `_build_conjure_cache_state`, which already excludes
+              existing-creation and non-resolvable spells.
+            - Best-effort per spell: a staging miss leaves that spell out of
+              the bundle, so it compiles on the next conjure instead of
+              hydrating a plan from another world.
+            - No-op when caching is disabled (no cache utility in the state).
 
         Args:
             spellbook:
-                Owning Spellbook whose missing spell payloads should stage.
+                Owning Spellbook whose bundle should be rebuilt.
             cache_state:
                 Conjure cache-state summary built by
                 `_build_conjure_cache_state`.
@@ -1189,8 +1202,19 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             None.
         """
-        for spell_id in cache_state["missing_spell_ids"]:
+        caching_system = cache_state["caching_system"]
+        if caching_system is None:
+            return
+        # The cached-id view is live and this loop removes from the store it
+        # views, so iterate over a detached copy (required for correctness).
+        removed_any = False
+        for cached_spell_id in tuple(caching_system.cached_spell_ids):
+            if caching_system.remove_spell_payload(cached_spell_id):
+                removed_any = True
+        for spell_id in sorted(cache_state["live_spell_ids"]):
             spellbook._emit_spell_cache(spellbook._spell_id_pool[spell_id])
+        if removed_any:
+            spellbook._cache_emit_required = True
 
     @staticmethod
     def _emit_conduit_cache_file_at_conjure_end(

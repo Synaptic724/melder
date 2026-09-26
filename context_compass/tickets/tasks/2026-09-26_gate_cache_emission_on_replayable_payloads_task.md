@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T10:19:43Z
-- Updated: 2026-09-26T10:44:38Z
+- Updated: 2026-09-26T11:26:15Z
 
 ## Objective
 Owner option B (2026-09-26): a spell whose phase-11 step rows carry a contract payload value that the
@@ -244,11 +244,95 @@ generation bump.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-09-26T10:56:37Z
+  TYPE: CONFLICT
+  CLAIM: Owner chose option (2) (raw-value side table for in-process hydration). Reading the seam
+    before editing shows it is larger than proposed and sits inside the live override lanes: the
+    no-overrides lane binds payload values through the namespace (`step_contract_values`,
+    `_build_step_bindings` :974-1037, also the specializer `build_specialized_no_overrides_executor`
+    :1377), so a live table would fit there; but the OVERRIDES lane embeds the frozen payload items as
+    SOURCE LITERALS - `kwargs_N = {dict(contract_payload_items)!r}` in
+    `generalized_overrides_codegen_creation_compiler.py` :1385-1398, emitted through
+    `emit_overrides_codegen_creation_executor_shape_source` :236 and memoized process-wide by plan
+    signature in `generalized_manifest_overrides_runtime.py` :527-568 - so raw objects cannot ride that
+    lane without changing the emitter's binding shape. The `many_only` family hydrates payloads from
+    rows the same way (`many_only_no_overrides_codegen_creation_compiler.py` :479-483). Those emitters
+    are the files updater_0/updater_1 have review-stage proposals on and melder_0's override design
+    targets. A no-overrides-only (2) would leave the two lanes constructing the same spell with
+    different values, which is worse than today.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py:1348-1398
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_overrides_runtime.py:527-568
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:974-1037
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:163-410
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_rows.py:187-264
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:454-500
+  IMPACT: (2) as a coherent change = both lanes of both families plus the manifest/lazy-door plumbing,
+    i.e. the override emitters mid-flight. Compliant paths: (1) fail fast at phase 9 now - in
+    `_normalize_contract_override_payload`, raise `MeldExecutionError` naming consumer, parameter and
+    value type for any value that is not a freeze fixed point; breaks nothing that works today, since
+    every such value is already corrupted; one file in the compiler phases, no lane collision; then
+    (2) becomes a requirement filed into melder_0's override design (emitter binds payload values via
+    the namespace instead of literals) and the fail-fast is lifted when it lands. Or (2) now across
+    the emitters, with NOTICEs to updater_0/updater_1/melder_0 and their rebases.
+  NEXT: Owner picks; recommended (1) now + (2) as an override-design requirement. No edit until then.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T11:00:07Z
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Owner pushed back on "fail fast": the compiler was just changed so that spells absent from the
+    design are conjure WARNINGS (`validation_warnings`), not failures. Scope restated for the owner: this
+    item is not about missing spells or unresolved inputs at all - it is about the VALUES inside a
+    `SpellContract(spell_override={...})` payload that are not plain scalars (objects, dicts, lists,
+    enums, callables); manifest-first execution mangles them before the constructor sees them (silent
+    today). The non-fatal option consistent with the new mode: a Phase-4 validation WARNING
+    (`ContractProviderPresenceStrategy` already walks every SpellContract default; add issue code
+    `SPELL_CONTRACT_OVERRIDE_VALUE_NOT_REPLAYABLE`, severity warning, surfaced by
+    `conjure(validation_warnings=True)`), the task-4 gate keeps such plans out of the cache, and the
+    real fix (emitters bind payload values instead of literalizing them) is filed into the override
+    design. The predicate moves to the leaf (`CodegenSignature.is_freeze_fixed_point`) so phase 4 can
+    import it without touching the phase-11 subsystem (only `compiler_phase_11.py` imports it today).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py:72-235
+  - src/melder/aether/spellbook/spellbook_creation_system.py:300-340
+  IMPACT: No raise anywhere; nothing that conjures today stops conjuring; users learn about mangled
+    override values through the same channel as missing providers.
+  NEXT: Owner confirms the warning route (W) or leave-as-is (L); fable_0 implements W in the validation
+    lane if confirmed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T11:26:15Z
+  TYPE: DECISION
+  CLAIM: Owner direction (2026-09-26, chat): `SpellContract.spell_override` values are NOT restricted to
+    literals - "assume it could be anything and run with it"; deviating from the normal overrides path
+    "is a different problem", so contract override values ride the same path as meld overrides; rename
+    `spell_override` -> `override` "while we're at it"; check whether `SpellMap` overrides are similar.
+    The in-process side table (option 2) and the Phase-4 warning route (W) are superseded: the plan must
+    stop carrying override values in rows or generated source and resolve them live at meld. Reading
+    expansion recorded and owner-directed (read-only here): the meld overrides branch in `meld.py` and
+    `creation_context.py`, the overrides-lane emitter and runtime, `spell_map.py`, `spell_contract.py`,
+    melder_0's design v2 and melder_1's spell-id task. No src edit before a task-5 Propose -> Confirm and
+    NOTICEs to the lane owners (updater_0, updater_1, melder_0, melder_1).
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md
+  - src/melder/aether/conduit/meld/contracts/spell_contract.py:120-196
+  IMPACT: Task 4's gate stays as the cache half (still correct); the in-process half becomes task 5 under
+    a live-resolution design aligned with the override lanes, not an emitter patch in this lane.
+  NEXT: Read `spell_contract.py` and `spell_map.py` whole, then the meld overrides path by function.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 STATE 2026-09-26T10:19:43Z: opened on owner option B; investigation note recorded; G1 next.
 STATE 2026-09-26T10:28:51Z: REVIEW. Owner-run suites pending; NOTICE to melder_0 about the spellbook.py hunk.
 STATE 2026-09-26T10:42:09Z: REVIEW. Unit gate file and the caching component test passed in the owner's run; the
 object-payload component case failed on the fixture (fixed, not re-run). Decision (1)/(2) open.
+STATE 2026-09-26T10:56:37Z: REVIEW. Owner picked (2); seam read shows the overrides emitter literalizes payload values
+(CONFLICT note); asking (1)-now + (2)-via-override-design vs (2)-in-emitters. No src edit made.
+STATE 2026-09-26T11:26:15Z: REVIEW. Owner: override values may be anything, same path as meld overrides, rename to
+`override`; task-5 investigation (read-only) opens on the overrides path, SpellMap and the peer lanes' designs.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

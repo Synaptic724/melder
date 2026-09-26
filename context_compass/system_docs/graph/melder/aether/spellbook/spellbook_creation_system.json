@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook_creation_system.py",
- "source_sha256": "223274365242a1dbcc2a74d9ab2c47c40f6d0bd2a11c08723889726c577cd81a",
+ "source_sha256": "68458e1731150a4e943c338c069dab65fe5ba3292eafa1f5df353e52489d068a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook_creation_system": {
@@ -58,7 +58,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "625132afa6faf4a1fac7c5e4b870ac5b58e3f327b4b7568d17772da6be106dc3",
+   "span_sha256": "22200330ad8658374b64850958657ff950f82a0e90dba46c661696ce40e4a307",
    "role": "Conjure-only orchestration helper for Spellbook.",
    "responsibilities": [
     "prepares spellbook configuration and structural phase execution before conjure",
@@ -67,7 +67,8 @@
     "wires conduit ownership into local spells and fires conjure hooks",
     "excludes non-resolvable definitions from executable cache payload and plan-phase eligibility",
     "binds local phase cancellation arguments when units are created within the current scheduler run",
-    "when the public conjure passes validation_warnings=True, logs one WARNING grouping every Phase-4 warning by code before phase artifacts are released; otherwise logs nothing"
+    "when the public conjure passes validation_warnings=True, logs one WARNING grouping every Phase-4 warning by code before phase artifacts are released; otherwise logs nothing",
+    "on a non-full-hit conjure, rebuilds the conduit cache bundle from that compile: removes every payload and re-stages every live payload-eligible spell in sorted id order, so a full hit never hydrates a plan naming a spell id outside the live pool"
    ],
    "owns_state": [
     "_spellbook",

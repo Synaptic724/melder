@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/caching_system/caching_system.py",
- "source_sha256": "e32359722123852d8d4657d7e19fe3bb86434f0676ef3f97825f8baff31e4ac4",
+ "source_sha256": "edeea185e71d7f83018a3b0e43da2b5e7424e15eb2cfef21a2bd53812b0de0f8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.caching_system.caching_system": {
@@ -49,7 +49,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "25ec1f10f4792eb79338dd4bb2378d3c6f2dc1a24b8c367a8a3646944cd2da61",
+   "span_sha256": "e0e09095b58ea9182f5d1f1556de60a91a1fca53b4d2c0a414bc62fb0c3daf6a",
    "role": "Conduit-scoped cache persistence utility.",
    "responsibilities": [
     "owns one rooted-conduit cache file and its in-memory spell-payload dictionary",
@@ -57,7 +57,8 @@
     "supports spell-payload transfer and persistence for the spellbook/runtime cache lane",
     "requires exact Melder release, cache generation and interpreter compatibility before exposing persisted payloads",
     "preserves the accepted release stamp through normalization and subsequent emission",
-    "cache generation 11 retires executors emitted before the unresolved-input failure path"
+    "cache generation 11 retires executors emitted before the unresolved-input failure path",
+    "cache generation 12 cold-resets bundles that may hold consumer payloads from a previous world"
    ],
    "owns_state": [
     "_id",

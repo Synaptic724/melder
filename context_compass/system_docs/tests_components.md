@@ -714,6 +714,7 @@ Key Files (C1):
 - `tests/unit/melder/spellbook/configuration/test_configuration.py`
 - `tests/unit/melder/spellbook/bind/test_bind.py`
 - `tests/unit/melder/spellbook/bind/test_spell_index.py`
+- `tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py` (address-free fingerprints, 2026-09-26)
 
 ### Subcomponent: Spellbook Compiler Unit Cluster
 Parent Component: Unit Test Suite
@@ -771,6 +772,8 @@ Key Files (C1):
 - `tests/component/melder/spellbook/test_spellbook_component_spell_index.py`
 - `tests/component/melder/spellbook/test_spellbook_component_spellbook.py`
 - `tests/component/melder/spellbook/test_spellbook_component_caching_system.py`
+- `tests/component/melder/spellbook/test_conjure_cache_restage.py` (bundle rebuilt per non-full-hit conjure, 2026-09-26)
+- `tests/component/melder/spellbook/test_spell_id_process_stability.py` (spell ids in two fresh interpreters, 2026-09-26)
 
 ### Subcomponent: Spellbook Compiler Component Cluster
 Parent Component: Component Test Suite
@@ -1588,6 +1591,10 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-09-26 spell-id stability and cache restage tests: address-free fingerprint unit contracts, a
+two-interpreter id check and fresh-world cache sequences (provider change, live-set bundle, full hit,
+function provider) joined the Spellbook runtime/binding clusters.
 
 2026-09-26 annotation integrity guard: `tests/_annotation_audit_support.py` (static AST pass plus a
 subprocess dynamic pass) and `tests/unit/melder/test_annotation_integrity.py` keep every annotation in

@@ -495,29 +495,18 @@ def _run_probe_in_fresh_process(probe_name: str, hash_seed: str) -> Dict[str, An
     "probe_name",
     [
         "probe_plain_book_signatures",
-        pytest.param(
-            "probe_contract_payload_book_signatures",
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason=(
-                    "the consumer's SPELL ID is still process-local: Bind.sha256_profile hashes "
-                    "the constructor signature text, and the SpellContract default's repr carries "
-                    "the PayloadMarker's address, so root_spell_id (and with it the executor "
-                    "signature) differs per process. Remove this marker when melder_1's spell-id "
-                    "stabilization lands (tickets/tasks/2026-09-26_stabilize_function_spell_ids_"
-                    "across_processes_task.md); the codegen signature path itself is deterministic "
-                    "(unit + corpus tests)."
-                ),
-            ),
-        ),
+        # Formerly xfail(strict=True): the consumer's spell id was process-local because the
+        # SpellContract default's repr carried the PayloadMarker's address into the hashed
+        # constructor signature. The bind fingerprint hashes address-free text since 2026-09-26.
+        "probe_contract_payload_book_signatures",
     ],
 )
 def test_executor_signatures_are_equal_across_interpreter_processes(probe_name: str) -> None:
     """
     The same book yields byte-equal executor signatures in two processes with different
     hash seeds. The plain fixture guards byte-compatibility; the contract-payload fixture
-    is the proof that object payloads no longer make the signature process-local - once the
-    bind-side spell id of such a consumer is stable too (see the xfail marker).
+    is the proof that object payloads no longer make the signature, or the consumer's bind-side
+    spell id, process-local.
     """
     first = _run_probe_in_fresh_process(probe_name, "1")
     second = _run_probe_in_fresh_process(probe_name, "2")

@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T09:05:00Z
-- Updated: 2026-09-26T10:42:09Z
+- Updated: 2026-09-26T10:48:48Z
 
 ## Objective
 One implementation of `serialize_codegen_signature_part`, `hash_codegen_signature` and
@@ -79,7 +79,8 @@ determinism test plus a byte-compatibility corpus test on the gauntlet book (C-H
 - tests/component/melder/spellbook/test_codegen_signature_determinism.py (new)
 
 ## Validation
-- Not run. (VM interpreter is 3.10 against a 3.14 floor; no sandbox copy of the repository.)
+- Owner-run 2026-09-26 (3.14.7t): suites 1784 passed; the component file 5 passed + 1 xfail (bind-side
+  spell-id determinism, melder_1's lane). Details: artifacts/codegen_signature_determinism_20260926/results_2026_09_26.md.
 - Recommended commands (owner-run, 3.14t):
   - `python -m pytest -q tests/unit/melder/spellbook/spell_compiler/shared_assets/test_codegen_signature.py`
   - `python -m pytest -q tests/component/melder/spellbook/test_codegen_signature_determinism.py`
@@ -319,6 +320,27 @@ determinism test plus a byte-compatibility corpus test on the gauntlet book (C-H
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T10:48:48Z
+  TYPE: MEASURE
+  CLAIM: Re-run of the fixed component file: 5 passed, 1 failed - the object-payload cross-process case.
+    Cause read from source: `Bind.sha256_profile` fingerprints `profile.init_signature` (the constructor
+    signature TEXT), and `SpellContract.__repr__` renders `override={...}` with the `PayloadMarker`'s
+    address, so the consumer's SPELL ID differs per process; the executor signature carries
+    `root_spell_id`, hence differs. The codegen signature path itself is deterministic (unit + corpus
+    tests pass). This is melder_1's bind-side lane (M1-11: spell ids hashing address-bearing repr
+    text); their list names function/lambda/partial and instance SPELLS - the constructor-default case
+    is the same defect and is sent to them (F0-5). The case is `xfail(strict=True)` until it lands.
+  EVIDENCE:
+  - src/melder/aether/spellbook/bind/bind.py:890-960
+  - src/melder/aether/conduit/meld/contracts/spell_contract.py:318-342
+  - tests/component/melder/spellbook/test_codegen_signature_determinism.py:449-475
+  - artifacts/codegen_signature_determinism_20260926/results_2026_09_26.md:1-52
+  IMPACT: Task 2's own claim (byte-compatible, deterministic signature path) is proved by the passing
+    unit, corpus and plain cross-process tests; the object-payload proof waits on stable spell ids.
+  NEXT: Owner acceptance; melder_1 removes the xfail when their fix lands (strict marker flags it).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 STATE 2026-09-26T09:05:00Z: ready; opens after task 1 (patch docs) is in review and U1 is confirmed.
 STATE 2026-09-26T09:29:36Z: U1 confirmed; U2 in progress (leaf module + facade delegations).
@@ -328,6 +350,8 @@ STATE 2026-09-26T10:03:08Z: REVIEW. Owner-run suites pending; owner ruling pendi
 limit (RISK note 10:01:13Z). Successor: task 3 H1.
 STATE 2026-09-26T10:42:09Z: REVIEW. Suites owner-run: 1784 passed; 3 fixture/assertion failures in the new component
 file fixed (not re-run). In-process projection finding handed to task 4 / owner.
+STATE 2026-09-26T10:48:48Z: REVIEW. Component file re-run: 5 passed, object-payload case xfail (spell id process-local;
+melder_1). Awaiting acceptance.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

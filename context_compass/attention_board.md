@@ -82,8 +82,6 @@ Message alert rules
 - NEW MESSAGE for updater_0 (from melder_0, 2026-09-26T00:22:42Z)
 - NEW MESSAGE for workflows_0 (from melder_0, 2026-09-26T00:22:42Z)
 - NEW MESSAGE for updater_1 (from fable_0, 2026-09-26T09:08:43Z)
-- NEW MESSAGE for melder_0 (from fable_0, 2026-09-26T10:30:30Z)
-- NEW MESSAGE for melder_1 (from fable_0, 2026-09-26T10:44:38Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -108,12 +106,12 @@ Message alert rules
 | ir_phase_survey_seam | review | handoff | claude | fable_0 | none | Owner reviews the survey records (summary.md first); no design decisions are asked in this lane. | Cache mechanics, key composition, invalidation surface and summary.md (D3, D4, D5; D1-D6 consolidated). | Owner accepts the records (Milestone 1, closure sync) or redirects scope. | tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md | 2026-09-26T07:38:41Z | REQUIRED |
 | ir_phase_cost_model | review | handoff | claude | fable_0 | none | Owner reviews cost_model.md (counted rows, measured rows, owner-run command). | Per-stage cost model for phases 1-11 with two owner-run measurement sources. | Owner accepts the cost model or redirects scope. | tickets/tasks/2026-09-26_model_phase_pipeline_costs_task.md | 2026-09-26T08:13:27Z | REQUIRED |
 | ir_phase_improvement_plan | review | handoff | claude | fable_0 | none | Owner confirms closure of the plan story (T1 decided: C-H + C-A; C-B deferred). | Thirteen ranked candidates; T1 decided by the owner. | Owner confirms acceptance; closure sync follows. | tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md | 2026-09-26T09:08:28Z | REQUIRED |
-| sig_serializer_unify | review | handoff | claude | fable_0 | none | Suites: 1784 passed; owner re-runs the fixed component file (test_codegen_signature_determinism.py). | One CodegenSignature implementation, oracle, 15 tests, patch docs amended (commit 6fc9af345). | Owner reports suites and rules A/B/C; closure with the story. | tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md | 2026-09-26T10:42:09Z | REQUIRED |
-| sig_determinism_phase8 | review | handoff | claude | fable_0 | none | AFTER filed; owner runs BEFORE with build/_fable_stage/...BEFORE.py (stale .git/index.lock broke the stash). | Pool-wide rows hashed once per pass; None-first skip; root rows built once. | Owner reports results; closure with the story. | tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md | 2026-09-26T10:42:09Z | REQUIRED |
-| cache_payload_gate | review | handoff | claude | fable_0 | none | Owner picks (1) fail-fast or (2) raw-value side table for the in-process projection; gate stays as the cache half. | Non-replayable contract payloads never enter the .melc (owner option B); rows unchanged. | Owner reports results; closure with the story. | tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md | 2026-09-26T10:42:09Z | REQUIRED |
-| override_design_melder | in_progress | discovery | claude | melder_0 | none | Owner discusses P2/P3 (runtime reuse vs override rules) from the joint alpha read. | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T10:32:04Z | REQUIRED |
+| sig_serializer_unify | review | handoff | claude | fable_0 | none | Owner accepts: suites green, component file 5 passed + 1 xfail (bind-side spell id, melder_1's lane). | One CodegenSignature implementation, oracle, 15 tests, patch docs amended (commit 6fc9af345). | Owner reports suites and rules A/B/C; closure with the story. | tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md | 2026-09-26T10:48:48Z | REQUIRED |
+| sig_determinism_phase8 | review | handoff | claude | fable_0 | none | Owner accepts: M7 -34% conjure at N=300 (BEFORE/AFTER filed); M5 inside noise at 29 spells. | Pool-wide rows hashed once per pass; None-first skip; root rows built once. | Owner reports results; closure with the story. | tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md | 2026-09-26T10:48:48Z | REQUIRED |
+| cache_payload_gate | review | discovery | claude | fable_0 | none | Read the meld-overrides path, SpellMap and the peer designs; then propose task 5 (live override values, rename to `override`). | Gate stays (cache half); override values ride the meld-overrides path per owner ruling. | Task-5 Propose -> Confirm accepted by the owner. | tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md | 2026-09-26T11:26:43Z | REQUIRED |
+| override_design_melder | review | handoff | claude | melder_0 | none | Owner reviews design_v2.md and prototype_results.md; answers Q1-Q5. | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T11:23:09Z | REQUIRED |
 | caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
-| function_spell_ids | in_progress | implementation | claude | melder_1 | none | Patch lane, then fingerprint + cache fix in a VM copy with tests. | Stable function spell ids with an approved fingerprint and migration. | Fix validated on the device tree, docs/graph/assets updated; task in review. | tickets/tasks/2026-09-26_stabilize_function_spell_ids_across_processes_task.md | 2026-09-26T10:38:29Z | REQUIRED |
+| function_spell_ids | review | handoff | claude | melder_1 | none | Owner commits the lane's files, runs suites, accepts or redirects. | Process-stable spell ids and complete cache bundles (generation 12); docs, graph, assets current. | Owner acceptance; closure sync and patch-lane archive follow. | tickets/tasks/2026-09-26_stabilize_function_spell_ids_across_processes_task.md | 2026-09-26T11:22:15Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -191,7 +189,8 @@ Message alert rules
   RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
   tickets/stories/2026-09-26_signature_determinism_and_phase8_digest_story.md ->
   tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md. Patch docs as above.
-- cache_payload_gate: SWITCH_TRIGGER is the owner's suite report or an owner redirect (option B, 2026-09-26).
+- cache_payload_gate: SWITCH_TRIGGER is the owner's acceptance of the task-5 proposal (override values ride the
+  meld-overrides path; rename to `override`; owner ruling 2026-09-26) or an owner redirect.
   RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
   tickets/stories/2026-09-26_signature_determinism_and_phase8_digest_story.md ->
   tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md. Patch docs as above
@@ -208,7 +207,7 @@ Message alert rules
   tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md.
 - caller_input_strictness: SWITCH_TRIGGER is the responsible commit plus before/after runs.
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md.
-- function_spell_ids: SWITCH_TRIGGER is the fix validated on the device tree with docs, graph and assets updated.
+- function_spell_ids: SWITCH_TRIGGER is owner acceptance (suites on the owner machine) or an owner redirect.
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_stabilize_function_spell_ids_across_processes_task.md.
 ### Agent Message-Pass Protocol (melder_0 <-> melder_1; owner-set 2026-09-25)
 - Channel: `mailbox_board.md` `## Messages` plus one alert line under `## Message Alerts` here,

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 658f450d9ba49036676ef6e2b74d94ecad697841849a40310543a71176dff657
+SOURCE FINGERPRINT: 86dbe417b8ba52cb32f11342cdf6479e9be9f3474c7ccea652b3e9571e463347
 FILE COUNT: 590
 
 ================================================================================
@@ -66293,7 +66293,7 @@ END FILE: src/melder/aether/conduit/spell_space/spell_space_thread_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/bind/bind.py
-CONTENT SHA256: cdf493d031cf2d671fb8a5709b253a538964d6ef771ceefd43717f7616d1391b
+CONTENT SHA256: 740ac95b969b5a89e82ebaf5f0953c7c00eb253229fde8f46da90311757a3242
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -66412,9 +66412,11 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_prof
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     ClassBindingProfile,
     CallableBindingProfile,
+    CallableParameterBindingSummary,
     InstanceBindingProfile,
     OtherBindingProfile,
 )
+from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
 
 
 #region Bind
@@ -67207,6 +67209,13 @@ class Bind(Cleanable):
         Contract:
             - Fingerprints normalized bind-time metadata only, not transient
               runtime object identity.
+            - Repr-derived inputs (callable/instance/other repr and callable parameter
+              defaults) are address-free: the profile's `fingerprint_repr` /
+              `default_fingerprint_repr` when present, otherwise the display text with every
+              " at 0x<hex>" removed. The same object content therefore gets the same id in
+              every process (2026-09-26). The class init_signature and callable
+              signature texts are hashed with addresses removed too (a default such as
+              object() renders its address inside the signature).
             - Uses the explicit `v4-binding` schema prefix for omitted/True and
               `v4-binding-non-resolvable` for False, preserving all remaining inputs so future
               fingerprint-shape changes can version cleanly. v4 replaced the
@@ -67241,20 +67250,20 @@ class Bind(Cleanable):
                 ",".join(sorted(profile.mro)),
                 ",".join(sorted(profile.annotations.keys())),
                 ",".join(sorted(profile.method_names)),
-                profile.init_signature or "",
+                InspectorUtility.strip_memory_addresses(profile.init_signature or ""),
             ]
         elif isinstance(profile, CallableBindingProfile):
             param_parts = [
-                f"{p.name}:{p.kind}={p.default_repr}"
+                f"{p.name}:{p.kind}={Bind._fingerprint_default_text(p)}"
                 for p in (profile.parameters or ())
             ]
             parts += [
                 profile.name,
                 profile.qualname or "",
                 profile.module or "",
-                profile.signature or "",
+                InspectorUtility.strip_memory_addresses(profile.signature or ""),
                 ",".join(param_parts),
-                (profile.repr_string or "").strip(),
+                Bind._fingerprint_repr_text(profile),
                 profile.type_name,
                 "lambda" if profile.lambda_function else "",
                 "builtin" if profile.builtin_module else "",
@@ -67264,13 +67273,13 @@ class Bind(Cleanable):
             parts += [
                 profile.type_name,
                 profile.module or "",
-                (profile.repr_string or "").strip(),
+                Bind._fingerprint_repr_text(profile),
                 ]
         elif isinstance(profile, OtherBindingProfile):
             parts += [
                 profile.type_name,
                 profile.module or "",
-                (profile.repr_string or "").strip(),
+                Bind._fingerprint_repr_text(profile),
                 ]
         else:
             # Absolute fallback – should effectively never happen.
@@ -67290,6 +67299,50 @@ class Bind(Cleanable):
 
         key = "::".join(parts)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _fingerprint_repr_text(
+            profile: Union[CallableBindingProfile, InstanceBindingProfile, OtherBindingProfile],
+    ) -> str:
+        """
+        Return the address-free representation text a binding profile contributes to its fingerprint.
+
+        Contract:
+            - Prefers `fingerprint_repr` (full repr, addresses removed, built by the binding
+              strategy); strips surrounding whitespace like the display text always was.
+            - Falls back to `repr_string` with memory addresses removed for profiles built without
+              it (direct constructions); that text may still be truncated display text.
+
+        Args:
+            profile: Callable, instance or other binding profile.
+
+        Returns:
+            str: Text hashed into the fingerprint.
+        """
+        if profile.fingerprint_repr is not None:
+            return profile.fingerprint_repr.strip()
+        return InspectorUtility.strip_memory_addresses((profile.repr_string or "").strip())
+
+    @staticmethod
+    def _fingerprint_default_text(parameter: CallableParameterBindingSummary) -> Optional[str]:
+        """
+        Return the address-free default-value text one callable parameter contributes to the fingerprint.
+
+        Contract:
+            - Prefers `default_fingerprint_repr`; otherwise `default_repr` with memory addresses
+              removed; None when the parameter has no default (rendered as "None", unchanged).
+
+        Args:
+            parameter: Parameter summary from a callable binding profile.
+
+        Returns:
+            Optional[str]: Default text hashed into the fingerprint, or None.
+        """
+        if parameter.default_fingerprint_repr is not None:
+            return parameter.default_fingerprint_repr
+        if parameter.default_repr is None:
+            return None
+        return InspectorUtility.strip_memory_addresses(parameter.default_repr)
 
     @staticmethod
     def _validate_resolvable(resolvable: bool) -> None:
@@ -75933,7 +75986,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/cod
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.py
-CONTENT SHA256: dd423d7847283ff355b6b83ef98285d07456a8cea70c28398fa076ac019ec59e
+CONTENT SHA256: f01ef0b318f745542fa9922dd51f506b51d5b94878572316fc60cc18b5edc850
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -75952,7 +76005,9 @@ Purpose:
     per-conduit runtime object is ever frozen into the cache.
 
 Contract:
-    - `build_package(spell)` returns a marshal-safe dict (primitives, tuples,
+    - `build_package(spell)` returns `None` for a plan whose contract payload
+      values cannot replay from the frozen rows (owner option B, 2026-09-26);
+      otherwise it returns a marshal-safe dict (primitives, tuples,
       dicts, and one `CodeType`) covering both lanes.
     - `load_creation_context(spell, package, publish=...)` rebuilds both inner
       executors against the live Spellbook + live phase-5 path registry, wraps
@@ -76034,14 +76089,21 @@ _NO_OVERRIDES_STEP_SOURCE_NAME = (
 # Build (emit)
 # ---------------------------------------------------------------------------
 
-def build_package(spell: Any) -> Dict[str, Any]:
+def build_package(spell: Any) -> Optional[Dict[str, Any]]:
     """
     Build the marshal-safe both-lane cache package for one constructed spell.
 
     Contract:
         - Requires constructed-spell phase-11 output (creation + plan + model).
-        - Returns a dict of primitives/tuples/dicts plus the inner no_overrides
-          `CodeType`. The override lane is row-only (no code object).
+        - Returns `None` - nothing to persist - when
+          `CodegenCreationSchemaHelpers.spell_codegen_plan_is_replayable` rejects
+          the plan: a contract payload value that is not `None`/`bool`/`int`/
+          `float`/`str` (or a tuple of those) would hydrate from its frozen row
+          into something other than the value the contract carried (owner
+          option B, 2026-09-26).
+        - Otherwise returns a dict of primitives/tuples/dicts plus the inner
+          no_overrides `CodeType`. The override lane is row-only (no code
+          object).
 
     Raises:
         RuntimeError:
@@ -76057,6 +76119,8 @@ def build_package(spell: Any) -> Dict[str, Any]:
     spell_codegen_model = artifact._spell_codegen_model
     if spell_codegen_model is None:
         raise RuntimeError("cache export requires a spell_codegen_model.")
+    if not SharedCompilerExecutions.spell_codegen_plan_is_replayable(spell_codegen_plan):
+        return None
 
     package = {
         "package_version": PACKAGE_VERSION,
@@ -77530,7 +77594,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py
-CONTENT SHA256: 86ff8ffd72b8ec0ff8dd7f46d576f0715afc7b6cdcd51419410534a39ade0bce
+CONTENT SHA256: 5c0364605c2a54862e2aa86ad4010933d15d79533baa1527b93761b57f61df1d
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import Any, Dict, Optional, Sequence, Tuple
@@ -77629,6 +77693,113 @@ class CodegenCreationSchemaHelpers:
             Any: A deterministic, hashable projection of `value`.
         """
         return CodegenSignature.freeze_phase11_schema_value(value)
+
+    @staticmethod
+    def is_replayable_contract_payload_value(value: Any) -> bool:
+        """
+        Return whether one contract payload value survives the creation cache unchanged.
+
+        Purpose:
+            Decide, from the RAW value on a live plan step, whether the frozen
+            projection the step rows carry hydrates back into the identical
+            constructor argument. Manifest-first executors bind the row values
+            both in-process and after a cache hit; the creation cache refuses
+            spells that fail this test (owner option B, 2026-09-26).
+
+        Contract:
+            - True for `None` and for values whose EXACT type is `bool`, `int`,
+              `float` or `str`, and for an exact `tuple` whose items are all
+              replayable: these are the values `freeze_phase11_schema_value`
+              returns unchanged, the row hydration passes through as-is, and
+              `marshal` persists.
+            - False for everything else. `list` and `set` thaw as tuples, `dict`
+              as a sorted tuple of pairs, plain enum members and classes as
+              `repr` text, callables and default-`repr` instances as marker
+              tuples - none of them is the value the SpellContract carried;
+              subclasses of the scalar types (an `IntEnum` member, a `str`
+              subclass) pass through freeze but are not marshallable, so they
+              are refused as well.
+            - Pure; never raises.
+
+        Args:
+            value:
+                Raw payload value taken from `step.contract_payload`.
+
+        Returns:
+            bool: True when the cache path reproduces `value` exactly.
+        """
+        if value is None:
+            return True
+        value_type = type(value)
+        if value_type is bool or value_type is int or value_type is float or value_type is str:
+            return True
+        if value_type is tuple:
+            for item in value:
+                if not CodegenCreationSchemaHelpers.is_replayable_contract_payload_value(item):
+                    return False
+            return True
+        return False
+
+    @staticmethod
+    def plan_contract_payloads_are_replayable(plan: Any) -> bool:
+        """
+        Return whether every contract payload value of a lane plan is cache-replayable.
+
+        Contract:
+            - Walks `plan.steps` and each step's `contract_payload` (`None` or a
+              dict whose values are the raw payload values; a positional payload
+              sits under `__args__` as a tuple and is judged item by item through
+              the tuple rule).
+            - A plan without steps, or whose steps carry no payload, is
+              replayable.
+            - Pure; the plan and its steps are never mutated.
+
+        Args:
+            plan:
+                Lane plan exposing `steps`; each step exposes `contract_payload`.
+
+        Returns:
+            bool: True when `build_package` may persist this lane; False when
+            the spell must stay on the in-process compile path.
+        """
+        for step in plan.steps:
+            contract_payload = step.contract_payload
+            if not contract_payload:
+                continue
+            for value in contract_payload.values():
+                if not CodegenCreationSchemaHelpers.is_replayable_contract_payload_value(value):
+                    return False
+        return True
+
+    @staticmethod
+    def spell_codegen_plan_is_replayable(spell_codegen_plan: Optional[Any]) -> bool:
+        """
+        Return whether a spell's phase-10 plan may be persisted into the creation cache.
+
+        Contract:
+            - `None` (no plan published for the spell) is NOT replayable: without
+              the raw payload values there is nothing to judge, and a package
+              built blind could hydrate wrong values, so the emitter skips it.
+            - Otherwise both lanes are judged with
+              `plan_contract_payloads_are_replayable`; a lane that is `None`
+              (no override lane) does not count against the spell.
+            - Pure; nothing is mutated.
+
+        Args:
+            spell_codegen_plan:
+                `SpellCodegenPlan` from `artifact._spell_codegen_plan`, or None.
+
+        Returns:
+            bool: True when every lane's contract payload values are replayable.
+        """
+        if spell_codegen_plan is None:
+            return False
+        for lane_plan in (spell_codegen_plan.no_overrides_plan, spell_codegen_plan.overrides_plan):
+            if lane_plan is None:
+                continue
+            if not CodegenCreationSchemaHelpers.plan_contract_payloads_are_replayable(lane_plan):
+                return False
+        return True
 
     @staticmethod
     def normalize_instance_key(
@@ -79218,7 +79389,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.py
-CONTENT SHA256: b20baf981ff6c22178eea35d1422a10fffabe11b6f58261d41f9b9c0efc4a123
+CONTENT SHA256: 547fba1ba984efed4f01074ff47c979eeb1b96052390c0354e09689815dbd9fb
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -79240,14 +79411,21 @@ schema and hydration; this module only routes.
 
 Contract:
     - `build_package(spell)` is family-agnostic: it exports whatever manifest
-      the producing family stored on the creation artifact.
+      the producing family stored on the creation artifact - unless the spell's
+      lane plans carry a contract payload value the cache path cannot replay,
+      in which case it returns `None` and the spell stays on the in-process
+      compile path (owner option B, 2026-09-26).
     - `load_creation_context_lazy(...)` dispatches on `family_id` with an
       explicit branch per supported family. Unknown families raise, so cache
       payloads from newer/unknown builds degrade to a cold-load skip in the
       conjure orchestration's best-effort loop.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
+    CodegenCreationSchemaHelpers,
+)
 
 MANIFEST_METADATA_KEY = "codegen_creation_manifest"
 PACKAGE_VERSION = 2
@@ -79257,9 +79435,22 @@ SOLO_FAMILY_ID = "solo_codegen_creation"
 MANY_ONLY_FAMILY_ID = "many_only_codegen_creation"
 
 
-def build_package(spell: Any) -> Dict[str, Any]:
+def build_package(spell: Any) -> Optional[Dict[str, Any]]:
     """
     Build the marshal-safe cache package for one manifest-first spell.
+
+    Contract:
+        - Returns `None` - nothing to persist - when
+          `CodegenCreationSchemaHelpers.spell_codegen_plan_is_replayable` rejects
+          the spell's phase-10 plan: a contract payload value that is not
+          `None`/`bool`/`int`/`float`/`str` (or a tuple of those) hydrates from
+          its frozen row projection into something other than the value the
+          contract carried, so such a spell is never persisted (the in-process
+          projection of the same value is an open owner decision).
+          The plan must be live for the verdict; a spell without a published
+          plan is refused rather than packaged blind.
+        - Otherwise exports the family manifest exactly as the producing family
+          stored it.
 
     Raises:
         RuntimeError:
@@ -79282,6 +79473,10 @@ def build_package(spell: Any) -> Dict[str, Any]:
     family_id = manifest.get("family_id")
     if not isinstance(family_id, str) or not family_id:
         raise RuntimeError("manifest is missing a family_id.")
+    if not CodegenCreationSchemaHelpers.spell_codegen_plan_is_replayable(
+            artifact._spell_codegen_plan
+    ):
+        return None
     return {
         "package_version": PACKAGE_VERSION,
         "family_id": family_id,
@@ -114484,7 +114679,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py
-CONTENT SHA256: 636f65819f390154e8b2468933b76ec324bac3e97fe151df418cf0db585d60a2
+CONTENT SHA256: b8efb9c4397fb7a15c11335781b806bd4d262bf3394349e2bdc0113f7f2ea67f
 SOURCE ENCODING: utf-8
 ================================================================================
 import hashlib
@@ -114701,14 +114896,15 @@ class CodegenSignature:
             - Recurses into nested containers, so the whole structure is
               order-canonical and hashable.
             - Deterministic, not lossless: the phase-11 row builder stores the
-              frozen payload values in the persisted step rows, and the
-              cache-load path hydrates plan steps from those rows, so after a
-              cache hit the FROZEN form is what a contract payload value
-              contributes to the constructor call, while the in-process path
-              uses the raw value. Payload values that are not `None`, `bool`,
-              `int`, `float` or `str` therefore construct differently across
-              that boundary (an owner ruling on refusing cache emission for
-              such spells is pending as of 2026-09-26).
+              frozen payload values in the step rows, and every manifest-first
+              executor - hydrated in-process at first meld or from a cache hit
+              - binds those row values as constructor arguments (only the
+              legacy plan compiler binds the raw values). A contract payload
+              value that is not `None`, `bool`, `int`, `float`, `str` or a
+              tuple of those therefore reaches the constructor as its frozen
+              projection. The creation cache refuses such spells (owner option
+              B, 2026-09-26); the in-process projection is an open owner
+              decision recorded on the tranche's tickets.
 
         Args:
             value:
@@ -115448,7 +115644,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyz
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
-CONTENT SHA256: 7003cdb7770ec3f10fd1e0c8117decf3e26d757de1e1f1d738289da25c3cc03f
+CONTENT SHA256: 9f8fa324e92827b89eedebad053a1339ae64974d9ec89041d7f39b7c47bb229e
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -115587,7 +115783,15 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             - Validates that the artifact is live before any work begins.
             - Computes the graph-side fast key and input signature directly in
               this strategy instead of reaching back into old Phase 8 helper
-              methods.
+              methods. The pool-wide rows (spell walk, topology, contracted
+              routing, system state) are hashed ONCE per pass into a memoized
+              digest (`_get_pool_digest`); each root keys and signs only its own
+              blueprint rows plus that digest, so per-root key work is
+              proportional to the root's blueprint, not to the spell pool.
+            - Reads the retained analysis slot FIRST and compares key and
+              signature only when an analysis is retained: phase 5's attach
+              nulls the slot on every conjure pass, so the cold path never
+              attempts a comparison that cannot succeed.
             - Replaces the prior graph artifact atomically and best-effort
               cleans the superseded analysis object.
             - Leaves order, instance, and contract artifacts untouched.
@@ -115626,22 +115830,38 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             spell_system_states=spell._spell_system_states,
             analysis_pass_cache=analysis_pass_cache,
         )
-        fast_key = self._build_occurrence_graph_fast_key(
-            root_blueprint=root_blueprint,
+        # The pool-wide rows are identical for every root analyzed in one
+        # pass, so they are hashed once into a pass-memoized digest; the root
+        # then contributes only its own blueprint rows, built once and shared
+        # by the fast key and the input signature (owner-approved C-A,
+        # 2026-09-26).
+        pool_digest = self._get_pool_digest(
             spell_rows=spell_rows,
             graph_shape=graph_shape,
+            analysis_pass_cache=analysis_pass_cache,
+        )
+        root_rows = None
+        if pool_digest is not None:
+            root_rows = self._build_root_blueprint_rows(root_blueprint)
+        fast_key = self._build_occurrence_graph_fast_key(
+            root_blueprint=root_blueprint,
+            root_rows=root_rows,
+            pool_digest=pool_digest,
         )
         input_signature = self._build_occurrence_graph_input_signature(
             root_blueprint=root_blueprint,
-            spell_rows=spell_rows,
-            graph_shape=graph_shape,
+            root_rows=root_rows,
+            pool_digest=pool_digest,
         )
+        # Analysis slot first: phase 5's attach nulls it on every conjure
+        # pass, so the key comparison is only worth making when an analysis
+        # is actually retained (warm JIT reuse and local reruns).
         if (
-                fast_key is not None
-                and artifact._occurrence_analysis_fast_key == fast_key
+                artifact._occurrence_graph_analysis is not None
+                and fast_key is not None
                 and input_signature is not None
+                and artifact._occurrence_analysis_fast_key == fast_key
                 and artifact._occurrence_analysis_input_signature == input_signature
-                and artifact._occurrence_graph_analysis is not None
         ):
             return
 
@@ -115722,44 +115942,41 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             self,
             *,
             root_blueprint: "RootResolutionBlueprint",
-            spell_rows: Optional[Tuple[Any, ...]],
-            graph_shape: Optional[Tuple[Any, ...]],
+            root_rows: Optional[Tuple[Tuple[Any, ...], int, Tuple[Any, ...]]],
+            pool_digest: Optional[str],
     ) -> Optional[Tuple[Any, ...]]:
         """
         Build a lightweight deterministic key for graph-analysis reuse.
 
         Contract:
-            - Returns `None` when required inputs are unavailable.
-            - Root-specific blueprint rows are computed here (cheap, own
-              subtree only); the graph-wide rows arrive pre-built in
-              `graph_shape` (pass-memoized; see `_build_graph_shape_rows`).
+            - Returns `None` when any input is unavailable (forces the rebuild
+              path).
+            - Key shape: `(root_spell_id, ordered_node_ids, id(path_registry),
+              blueprint_socket_rows, pool_digest)`. The root-specific rows are
+              built once by the caller (`_build_root_blueprint_rows`) and the
+              pool-wide rows are represented by their pass digest, so the key
+              holds no pool-sized tuple and compares in time proportional to
+              the root's own blueprint.
+            - `id(path_registry)` stays the deliberate process-local part: it
+              scopes reuse to one blueprint object.
         """
-        if root_blueprint is None or spell_rows is None or graph_shape is None:
-            return None
-
-        root_rows = self._build_root_blueprint_rows(root_blueprint)
-        if root_rows is None:
+        if root_blueprint is None or root_rows is None or pool_digest is None:
             return None
         ordered_node_ids, path_registry_identity, blueprint_socket_rows = root_rows
-        topology_rows, contracted_rows, system_state = graph_shape
-
         return (
             root_blueprint.root_spell_id,
             ordered_node_ids,
             path_registry_identity,
             blueprint_socket_rows,
-            spell_rows,
-            topology_rows,
-            system_state,
-            contracted_rows,
+            pool_digest,
         )
 
     def _build_occurrence_graph_input_signature(
             self,
             *,
             root_blueprint: "RootResolutionBlueprint",
-            spell_rows: Optional[Tuple[Any, ...]],
-            graph_shape: Optional[Tuple[Any, ...]],
+            root_rows: Optional[Tuple[Tuple[Any, ...], int, Tuple[Any, ...]]],
+            pool_digest: Optional[str],
     ) -> Optional[str]:
         """
         Build a deterministic graph-analysis input signature.
@@ -115771,30 +115988,73 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             unchanged.
 
         Contract:
-            - Returns `None` when required inputs are unavailable, forcing a
-              rebuild.
-            - Hashes exactly the same row layout the fast key tracks; the
-              graph-wide rows arrive pre-built in `graph_shape`.
+            - Returns `None` when any input is unavailable, forcing a rebuild.
+            - Hashes exactly the five parts the fast key tracks, in the same
+              order; the pool-wide rows enter through `pool_digest`, so the
+              per-root hash covers only the root's own rows plus one 64-char
+              digest (hash of a hash of the same inputs the old layout hashed
+              flat).
+            - Artifact-local only: the value is reset with the artifact and is
+              never persisted, so its byte layout carries no cache-generation
+              consequence.
         """
-        if root_blueprint is None or spell_rows is None or graph_shape is None:
-            return None
-
-        root_rows = self._build_root_blueprint_rows(root_blueprint)
-        if root_rows is None:
+        if root_blueprint is None or root_rows is None or pool_digest is None:
             return None
         ordered_node_ids, path_registry_identity, blueprint_socket_rows = root_rows
-        topology_rows, contracted_rows, system_state = graph_shape
-
         return SharedCompilerExecutions.hash_codegen_signature(
             root_blueprint.root_spell_id,
             ordered_node_ids,
             path_registry_identity,
             blueprint_socket_rows,
+            pool_digest,
+        )
+
+    def _get_pool_digest(
+            self,
+            *,
+            spell_rows: Optional[Tuple[Any, ...]],
+            graph_shape: Optional[Tuple[Any, ...]],
+            analysis_pass_cache: Optional[Dict[str, Any]],
+    ) -> Optional[str]:
+        """
+        Return the pass-invariant digest of the pool-wide signature rows.
+
+        Purpose:
+            The spell walk rows, topology rows, contracted routing rows and the
+            system state are identical for every root analyzed in one pass;
+            hashing them per root made the phase-8 key path O(spells^2). With
+            a pass cache they are hashed once per pass.
+
+        Contract:
+            - Returns `None` when `spell_rows` or `graph_shape` is unavailable
+              (callers treat that as "force the rebuild path"); a `None` input
+              never consults or populates the memo.
+            - Digest = `hash_codegen_signature(spell_rows, topology_rows,
+              system_state, contracted_rows)` - the same rows in the same order
+              the old flat signature carried after the root parts.
+            - Memoized in `analysis_pass_cache["phase8_pool_digest"]`, which
+              dies with the pass units exactly like `phase8_spell_walk` and
+              `phase8_graph_shape_rows`; concurrent unit workers may race to
+              build it, which is benign (identical values, last write wins).
+            - Without a pass cache the digest is computed per root (the cost
+              the old layout paid on every root).
+        """
+        if spell_rows is None or graph_shape is None:
+            return None
+        if analysis_pass_cache is not None:
+            shared_digest = analysis_pass_cache.get("phase8_pool_digest")
+            if shared_digest is not None:
+                return shared_digest
+        topology_rows, contracted_rows, system_state = graph_shape
+        pool_digest = SharedCompilerExecutions.hash_codegen_signature(
             spell_rows,
             topology_rows,
             system_state,
             contracted_rows,
         )
+        if analysis_pass_cache is not None:
+            analysis_pass_cache["phase8_pool_digest"] = pool_digest
+        return pool_digest
 
     @staticmethod
     def _build_root_blueprint_rows(
@@ -115806,6 +116066,8 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         Contract:
             - Cost is proportional to the root's own blueprint, never to the
               full spell pool.
+            - Built ONCE per root by `analyze` and handed to both key builders
+              as `root_rows`.
             - Returns `None` on any extraction failure (callers treat that as
               "force the rebuild path").
         """
@@ -115838,7 +116100,9 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         Purpose:
             Topology rows and contracted provider routing rows are identical
             for every spell analyzed in one pass; building them per spell made
-            phase 8 O(spells^2). With a pass cache they are built once.
+            phase 8 O(spells^2). With a pass cache they are built once, and
+            `_get_pool_digest` hashes them once more into the pass-memoized
+            `phase8_pool_digest` slot so no root hashes them again.
 
         Contract:
             - Returns `(topology_rows, contracted_rows, system_state)` or
@@ -119316,10 +119580,11 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/c
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py
-CONTENT SHA256: 4e67296c15c90c9c106f483733aba4428c75213f2444786745dad58e901b5240
+CONTENT SHA256: 32c9224f6e8dada5a1d454742d66416db4f90ec9c1a458f7be78f5635cf64a4f
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
+import re
 from typing import Any, Optional, ClassVar
 
 
@@ -119343,6 +119608,9 @@ class InspectorUtility:
         - The utility does not own any mutable runtime state.
     """
     __slots__ = ()
+    # CPython's default reprs embed the object's address as " at 0x<hex>"; it changes per process.
+    _MEMORY_ADDRESS_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r" at 0x[0-9a-fA-F]+")
+
     @staticmethod
     def safe_repr(obj: Any, max_len: int = 120) -> str:
         """
@@ -119379,6 +119647,55 @@ class InspectorUtility:
         except Exception:
             # If repr() fails for any reason, return a placeholder indicating the type
             return f"<unrepr-able {type(obj).__name__}>"
+
+    @staticmethod
+    def stable_repr(obj: Any) -> str:
+        """
+        Return the complete repr() of an object with every CPython memory address removed.
+
+        Purpose:
+            Give the bind fingerprint a representation that is identical in every process for the
+            same object content. CPython's default reprs embed the object's address
+            (`<function f at 0x...>`, `<C object at 0x...>`, `functools.partial(<function f at
+            0x...>, ...)`), which differs between processes and would give the same spell a new id
+            every run.
+
+        Contract:
+            - Removes every " at 0x<hex>" fragment from the full repr() text.
+            - Never truncates: cutting after the removal would still depend on how many digits
+              the removed addresses had, so the whole text is kept.
+            - Never raises; a failing repr() yields the same placeholder as `safe_repr`.
+            - Addresses printed in any other form (a custom __repr__ showing hex ids) are left
+              untouched; they are that object's own identity text.
+
+        Args:
+            obj: Object to represent.
+
+        Returns:
+            str: Address-free, untruncated representation text.
+        """
+        try:
+            text = repr(obj)
+        except Exception:
+            # Same best-effort placeholder as safe_repr: a broken repr must not fail binding.
+            return f"<unrepr-able {type(obj).__name__}>"
+        return InspectorUtility.strip_memory_addresses(text)
+
+    @staticmethod
+    def strip_memory_addresses(text: str) -> str:
+        """
+        Remove every CPython " at 0x<hex>" memory-address fragment from a representation text.
+
+        Contract:
+            - Pure and deterministic; only the fragment is removed, the rest of the text is kept.
+
+        Args:
+            text: Representation text, possibly containing addresses.
+
+        Returns:
+            str: The text without memory addresses.
+        """
+        return InspectorUtility._MEMORY_ADDRESS_PATTERN.sub("", text)
 
     @staticmethod
     def is_extension_module(module: Optional[object]) -> bool:
@@ -120153,7 +120470,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/p
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py
-CONTENT SHA256: 8d1de3e23e88284800032f840d31b94c457b9b3f705226b3cdcb54194fb3674f
+CONTENT SHA256: 78e65eb19b8a92f2b24bcb0a9e70bb1c6eecd512d16ccff3ab53069f6f311e34
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -120393,7 +120710,7 @@ class CallableParameterBindingSummary:
     """
     Minimal binding-time view of a single callable parameter (for fingerprint/diagnostics).
     """
-    __slots__ = ["name", "kind", "default_repr", "annotation_repr"]
+    __slots__ = ["name", "kind", "default_repr", "annotation_repr", "default_fingerprint_repr"]
 
     def __init__(
             self,
@@ -120401,6 +120718,7 @@ class CallableParameterBindingSummary:
             kind: str,
             default_repr: Optional[str],
             annotation_repr: Optional[str],
+            default_fingerprint_repr: Optional[str] = None,
     ) -> None:
         """
         Initialize one minimal callable-parameter binding summary.
@@ -120414,6 +120732,9 @@ class CallableParameterBindingSummary:
                 Optional default-value representation.
             annotation_repr:
                 Optional annotation representation.
+            default_fingerprint_repr:
+                Optional address-free, untruncated default repr used only by the bind
+                fingerprint. None means the fingerprint derives it from `default_repr`.
 
         Returns:
             None.
@@ -120422,6 +120743,7 @@ class CallableParameterBindingSummary:
         self.kind: str = kind
         self.default_repr: Optional[str] = default_repr
         self.annotation_repr: Optional[str] = annotation_repr
+        self.default_fingerprint_repr: Optional[str] = default_fingerprint_repr
 
 
 class CallableBindingProfile(SpellBindingProfile):
@@ -120441,6 +120763,7 @@ class CallableBindingProfile(SpellBindingProfile):
         "object_id",
         "type_name",
         "repr_string",
+        "fingerprint_repr",
         "signature",
         "parameters",
         "builtin_module",
@@ -120466,6 +120789,7 @@ class CallableBindingProfile(SpellBindingProfile):
             extension_module: bool = False,
             lambda_function: bool = False,
             abstract: bool = False,
+            fingerprint_repr: Optional[str] = None,
     ) -> None:
         """
         Initialize one callable binding profile.
@@ -120499,6 +120823,10 @@ class CallableBindingProfile(SpellBindingProfile):
                 Whether the callable is a lambda.
             abstract:
                 Whether the callable appears abstract.
+            fingerprint_repr:
+                Optional address-free, untruncated repr used only by the bind fingerprint
+                (`InspectorUtility.stable_repr`). None means the fingerprint derives the text
+                from `repr_string` with memory addresses removed.
 
         Returns:
             None.
@@ -120516,6 +120844,7 @@ class CallableBindingProfile(SpellBindingProfile):
         self.extension_module: bool = extension_module
         self.lambda_function: bool = lambda_function
         self.abstract: bool = abstract
+        self.fingerprint_repr: Optional[str] = fingerprint_repr
 
     def cleanup(self) -> None:
         """
@@ -120541,6 +120870,7 @@ class CallableBindingProfile(SpellBindingProfile):
         del self.extension_module
         del self.lambda_function
         del self.abstract
+        del self.fingerprint_repr
 
         super().cleanup()
 
@@ -120553,6 +120883,7 @@ class InstanceBindingProfile(SpellBindingProfile):
         "type_name",
         "module",
         "repr_string",
+        "fingerprint_repr",
     ]
 
     def __init__(
@@ -120563,6 +120894,7 @@ class InstanceBindingProfile(SpellBindingProfile):
             type_name: str,
             module: str,
             repr_string: str,
+            fingerprint_repr: Optional[str] = None,
     ) -> None:
         """
         Initialize one instance binding profile.
@@ -120578,6 +120910,10 @@ class InstanceBindingProfile(SpellBindingProfile):
                 Declaring module name.
             repr_string:
                 Detached representation string.
+            fingerprint_repr:
+                Optional address-free, untruncated repr used only by the bind fingerprint
+                (`InspectorUtility.stable_repr`). None means the fingerprint derives the text
+                from `repr_string` with memory addresses removed.
 
         Returns:
             None.
@@ -120586,6 +120922,7 @@ class InstanceBindingProfile(SpellBindingProfile):
         self.type_name: str = type_name
         self.module: str = module
         self.repr_string: str = repr_string
+        self.fingerprint_repr: Optional[str] = fingerprint_repr
 
     def cleanup(self) -> None:
         """
@@ -120600,6 +120937,7 @@ class InstanceBindingProfile(SpellBindingProfile):
         del self.type_name
         del self.module
         del self.repr_string
+        del self.fingerprint_repr
 
         super().cleanup()
 
@@ -120616,6 +120954,7 @@ class OtherBindingProfile(SpellBindingProfile):
         "type_name",
         "module",
         "repr_string",
+        "fingerprint_repr",
     ]
 
     def __init__(
@@ -120626,6 +120965,7 @@ class OtherBindingProfile(SpellBindingProfile):
             type_name: str,
             module: str,
             repr_string: str,
+            fingerprint_repr: Optional[str] = None,
     ) -> None:
         """
         Initialize one fallback binding profile.
@@ -120641,6 +120981,10 @@ class OtherBindingProfile(SpellBindingProfile):
                 Declaring module name.
             repr_string:
                 Detached representation string.
+            fingerprint_repr:
+                Optional address-free, untruncated repr used only by the bind fingerprint
+                (`InspectorUtility.stable_repr`). None means the fingerprint derives the text
+                from `repr_string` with memory addresses removed.
 
         Returns:
             None.
@@ -120649,6 +120993,7 @@ class OtherBindingProfile(SpellBindingProfile):
         self.type_name: str = type_name
         self.module: str = module
         self.repr_string: str = repr_string
+        self.fingerprint_repr: Optional[str] = fingerprint_repr
 
     def cleanup(self) -> None:
         """
@@ -120662,6 +121007,7 @@ class OtherBindingProfile(SpellBindingProfile):
         del self.type_name
         del self.module
         del self.repr_string
+        del self.fingerprint_repr
         super().cleanup()
 ================================================================================
 END FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py
@@ -121716,7 +122062,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examin
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
-CONTENT SHA256: 49db36ea4f11a7fd8b7881517369583290e16bef3e4843fd36a22a6dfa2eb418
+CONTENT SHA256: 37f9f9d30f17eafbc9e0a3535b081907f8d51ad880720742472f6f6d0314ed32
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -121874,6 +122220,9 @@ class BindingProfileStrategy:
         signature without invoking the callable or dropping its parameters. The
         signature text and annotation reprs render those names as source text so
         they never embed an object address.
+        `fingerprint_repr` and each parameter's `default_fingerprint_repr` carry the
+        address-free, untruncated repr the bind fingerprint hashes; `repr_string` and
+        `default_repr` stay the truncated display text.
         """
         effective = InspectorUtility.unwrap_callable(fn)
         module = inspect.getmodule(effective)
@@ -121893,8 +122242,10 @@ class BindingProfileStrategy:
             parameter_summaries: List[CallableParameterBindingSummary] = []
             for parameter in signature.parameters.values():
                 default_repr = None
+                default_fingerprint_repr = None
                 if parameter.default is not inspect.Parameter.empty:
                     default_repr = InspectorUtility.safe_repr(parameter.default, self.max_repr)
+                    default_fingerprint_repr = InspectorUtility.stable_repr(parameter.default)
                 annotation_repr = None
                 if parameter.annotation is not inspect.Parameter.empty:
                     annotation_repr = InspectorUtility.safe_repr(parameter.annotation, self.max_repr)
@@ -121905,6 +122256,7 @@ class BindingProfileStrategy:
                         kind=parameter.kind.name,
                         default_repr=default_repr,
                         annotation_repr=annotation_repr,
+                        default_fingerprint_repr=default_fingerprint_repr,
                     )
                 )
         except (ValueError, TypeError):
@@ -121923,6 +122275,7 @@ class BindingProfileStrategy:
             object_id=id(effective),
             type_name=type(effective).__name__,
             repr_string=InspectorUtility.safe_repr(effective, self.max_repr),
+            fingerprint_repr=InspectorUtility.stable_repr(effective),
             signature=signature_str,
             parameters=parameter_summaries,
             builtin_module=builtin_module,
@@ -121934,6 +122287,9 @@ class BindingProfileStrategy:
     def _build_instance_profile(self, obj: Any) -> InstanceBindingProfile:
         """
         Build the binding-time profile for one existing instance candidate.
+
+        The display `repr_string` is truncated; `fingerprint_repr` is the full repr with memory
+        addresses removed, so a default-repr object gets the same spell id in every process.
         """
         type_name = type(obj).__name__
         module = getattr(type(obj), "__module__", "<unknown>")
@@ -121944,11 +122300,14 @@ class BindingProfileStrategy:
             type_name=type_name,
             module=module,
             repr_string=InspectorUtility.safe_repr(obj, self.max_repr),
+            fingerprint_repr=InspectorUtility.stable_repr(obj),
         )
 
     def _build_other_profile(self, obj: Any) -> OtherBindingProfile:
         """
         Build the fallback binding profile for unsupported candidate shapes.
+
+        Carries the same address-free `fingerprint_repr` as the instance profile.
         """
         type_name = type(obj).__name__
         module = getattr(type(obj), "__module__", "<unknown>")
@@ -121959,6 +122318,7 @@ class BindingProfileStrategy:
             type_name=type_name,
             module=module,
             repr_string=InspectorUtility.safe_repr(obj, self.max_repr),
+            fingerprint_repr=InspectorUtility.stable_repr(obj),
         )
 
     @staticmethod
@@ -134421,7 +134781,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: b58c03182f2229711fd5d2968a7bcfeb3cc4f509172dbfa7917770af815fb845
+CONTENT SHA256: be39b808ed4e2c4c6f8b395a7145d9c233e10ed421a3f82ca076d535f79d2ac9
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -135390,6 +135750,12 @@ class Spellbook(Cleanable):
             - Requires the spell to belong to this Spellbook.
             - Stages the current phase-11 artifact cache payload.
             - Hands the payload to the Spellbook-owned `CachingSystem`.
+            - Stages nothing and returns False when the package builder returns
+              `None`: the spell's plan carries a contract payload value that
+              cannot replay from the persisted rows (owner option B,
+              2026-09-26), so the spell stays on the in-process compile path
+              and the conduit classifies `mixed` on the next process. One info
+              log per skipped spell per conjure.
 
         Args:
             spell:
@@ -135442,6 +135808,18 @@ class Spellbook(Cleanable):
                     f"Failed to stage cache payload for spell_id={spell.spell_id}: {exc}",
                     "_emit_spell_cache",
                     exc_info=True,
+                )
+            return False
+        if spell_payload is None:
+            # Not an error: the builder refused a plan whose contract payload
+            # values cannot replay from the frozen rows (owner option B,
+            # 2026-09-26). The spell recompiles phases 8-11 in-process on every
+            # conjure instead of full-hitting from a lossy persisted row.
+            if self._logger is not None:
+                self._logger.info(
+                    f"Cache emission skipped for spell_id={spell.spell_id}: a contract "
+                    "payload value is not replayable from the persisted rows.",
+                    "_emit_spell_cache",
                 )
             return False
         caching_system.upsert_spell_payload(spell.spell_id, spell_payload)
@@ -141648,7 +142026,7 @@ END FILE: src/melder/aether/spellbook/spellbook.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook_creation_system.py
-CONTENT SHA256: 923d673e33d8a2026ccc972153e5776d8dbad9a81898e5acbca25d6b97aba60c
+CONTENT SHA256: a2aca665aae795505859a30996e039531152d9a2ad195d99e3c03b6883e2b7d0
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -142808,7 +143186,7 @@ class SpellbookCreationSystem(Cleanable):
             cache_state: dict[str, Any],
     ) -> None:
         """
-        Stage cache payloads for spells the conduit cache is missing.
+        Rebuild the conduit cache bundle from this conjure's compile.
 
         Purpose:
             Make conjure the staging boundary for every constructed spell so a
@@ -142818,23 +143196,36 @@ class SpellbookCreationSystem(Cleanable):
             them permanently missing from the bundle and locks the conduit
             cache into the mixed path, recompiling phases 8-11 on every
             conjure.
+            Re-staging EVERY live spell, not only the missing ones, keeps the
+            bundle one consistent world: a consumer's cached manifest names its
+            providers' spell ids, so when a provider's id changes, a consumer
+            payload kept from the previous world would make the next full hit
+            fail at hydration ("generalized manifest references unknown
+            spell_id"). Stale ids are dropped for the same reason and so the
+            bundle cannot grow without bound (2026-09-26, generation 12).
 
         Contract:
             - Runs only on non-full-hit conjures, after phases 8-11 have built
               the compiler artifact for every constructed spell; staging is a
               metadata read for manifest-first families.
-            - Delegates to `Spellbook._emit_spell_cache`, which dedupes against
-              already-staged payloads and flags the conjure-end file emit
-              boundary on success.
-            - Payload eligibility is enforced upstream: `missing_spell_ids`
-              derives from the live set built by `_build_conjure_cache_state`,
-              which already excludes existing-creation spells.
-            - Best-effort per spell: a staging miss leaves that spell on the
-              compile path for the next conjure without failing this one.
+            - Removes every payload in the bundle, then stages every live
+              payload-eligible spell in sorted id order through
+              `Spellbook._emit_spell_cache` (unchanged: it skips spells with
+              caching disabled, refuses non-replayable plans and flags the
+              conjure-end file emit on success).
+            - Flags the conjure-end emit when anything was removed, so a pruned
+              bundle is persisted even if nothing re-staged.
+            - Payload eligibility is enforced upstream: `live_spell_ids`
+              derives from `_build_conjure_cache_state`, which already excludes
+              existing-creation and non-resolvable spells.
+            - Best-effort per spell: a staging miss leaves that spell out of
+              the bundle, so it compiles on the next conjure instead of
+              hydrating a plan from another world.
+            - No-op when caching is disabled (no cache utility in the state).
 
         Args:
             spellbook:
-                Owning Spellbook whose missing spell payloads should stage.
+                Owning Spellbook whose bundle should be rebuilt.
             cache_state:
                 Conjure cache-state summary built by
                 `_build_conjure_cache_state`.
@@ -142842,8 +143233,19 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             None.
         """
-        for spell_id in cache_state["missing_spell_ids"]:
+        caching_system = cache_state["caching_system"]
+        if caching_system is None:
+            return
+        # The cached-id view is live and this loop removes from the store it
+        # views, so iterate over a detached copy (required for correctness).
+        removed_any = False
+        for cached_spell_id in tuple(caching_system.cached_spell_ids):
+            if caching_system.remove_spell_payload(cached_spell_id):
+                removed_any = True
+        for spell_id in sorted(cache_state["live_spell_ids"]):
             spellbook._emit_spell_cache(spellbook._spell_id_pool[spell_id])
+        if removed_any:
+            spellbook._cache_emit_required = True
 
     @staticmethod
     def _emit_conduit_cache_file_at_conjure_end(
@@ -261433,7 +261835,7 @@ END FILE: src/melder/utilities/caching_system/asset_cache.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/caching_system/caching_system.py
-CONTENT SHA256: ecd45049db3135e0ff4d1204f715182bbcc26475c60929209e8275c63ba89c38
+CONTENT SHA256: d12f3cae048f29a63cd2d2dfc4c8c9e3897970dc097c2fbe70d571ce57df469b
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -261534,6 +261936,10 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 12: a non-full-hit conjure rebuilds the whole bundle from its own
+    # compile and drops ids that are no longer live (2026-09-26). Earlier
+    # bundles can hold a consumer plan naming a provider spell id from an older
+    # world, which fails hydration on the next full hit, so they cold-reset.
     # Version 11: a typed parameter with no registered provider compiles as an
     # UNRESOLVED_INPUT socket instead of failing conjure, and every executor
     # family routes constructor failures through the helper that raises
@@ -261585,6 +261991,7 @@ class CachingSystem(Cleanable):
         9: "exact_melder_release_compatibility",
         10: "creation_slot_build_guards",
         11: "unresolved_input_sockets",
+        12: "complete_bundle_restage",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"

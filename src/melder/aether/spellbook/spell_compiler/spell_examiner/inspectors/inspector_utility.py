@@ -1,4 +1,5 @@
 import inspect
+import re
 from typing import Any, Optional, ClassVar
 
 
@@ -22,6 +23,9 @@ class InspectorUtility:
         - The utility does not own any mutable runtime state.
     """
     __slots__ = ()
+    # CPython's default reprs embed the object's address as " at 0x<hex>"; it changes per process.
+    _MEMORY_ADDRESS_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r" at 0x[0-9a-fA-F]+")
+
     @staticmethod
     def safe_repr(obj: Any, max_len: int = 120) -> str:
         """
@@ -58,6 +62,55 @@ class InspectorUtility:
         except Exception:
             # If repr() fails for any reason, return a placeholder indicating the type
             return f"<unrepr-able {type(obj).__name__}>"
+
+    @staticmethod
+    def stable_repr(obj: Any) -> str:
+        """
+        Return the complete repr() of an object with every CPython memory address removed.
+
+        Purpose:
+            Give the bind fingerprint a representation that is identical in every process for the
+            same object content. CPython's default reprs embed the object's address
+            (`<function f at 0x...>`, `<C object at 0x...>`, `functools.partial(<function f at
+            0x...>, ...)`), which differs between processes and would give the same spell a new id
+            every run.
+
+        Contract:
+            - Removes every " at 0x<hex>" fragment from the full repr() text.
+            - Never truncates: cutting after the removal would still depend on how many digits
+              the removed addresses had, so the whole text is kept.
+            - Never raises; a failing repr() yields the same placeholder as `safe_repr`.
+            - Addresses printed in any other form (a custom __repr__ showing hex ids) are left
+              untouched; they are that object's own identity text.
+
+        Args:
+            obj: Object to represent.
+
+        Returns:
+            str: Address-free, untruncated representation text.
+        """
+        try:
+            text = repr(obj)
+        except Exception:
+            # Same best-effort placeholder as safe_repr: a broken repr must not fail binding.
+            return f"<unrepr-able {type(obj).__name__}>"
+        return InspectorUtility.strip_memory_addresses(text)
+
+    @staticmethod
+    def strip_memory_addresses(text: str) -> str:
+        """
+        Remove every CPython " at 0x<hex>" memory-address fragment from a representation text.
+
+        Contract:
+            - Pure and deterministic; only the fragment is removed, the rest of the text is kept.
+
+        Args:
+            text: Representation text, possibly containing addresses.
+
+        Returns:
+            str: The text without memory addresses.
+        """
+        return InspectorUtility._MEMORY_ADDRESS_PATTERN.sub("", text)
 
     @staticmethod
     def is_extension_module(module: Optional[object]) -> bool:

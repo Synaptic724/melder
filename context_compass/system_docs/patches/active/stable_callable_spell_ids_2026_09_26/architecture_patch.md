@@ -5,7 +5,7 @@
 - Status: active
 - Owner: user (writer: melder_1)
 - Created: 2026-09-26T10:42:41Z
-- Updated: 2026-09-26T10:42:41Z
+- Updated: 2026-09-26T11:04:31Z
 
 ## Patch Scope and Non-Goals
 - Objective: a spell's id is the same in every process for the same bound object and binding metadata,
@@ -14,7 +14,10 @@
   payloads built in one compile, so a changed provider id can never leave a consumer's cached plan
   pointing at an id that no longer exists.
 - Non-goals:
-  - No change to the class fingerprint (class ids do not move) or to the "v4-binding" schema prefix.
+  - No change to the class fingerprint's parts or order, or to the "v4-binding" schema prefix. Class ids
+    that were already stable do not move; a class whose constructor default renders an address in its
+    init_signature (object(), a SpellContract with an object payload) was process-local and changes once
+    (amended 2026-09-26 after implementation: signature texts carry addresses too).
   - No body/bytecode identity for functions (owner chose signature-shaped identity, like classes).
   - No change to displayed reprs (binding profile repr_string, Nexus descriptors), to hydration, to the
     payload replayability gate (fable_0) or to Spellbook._emit_spell_cache.
@@ -43,26 +46,29 @@
 - Invariant 3: after a non-full-hit conjure, every payload in the bundle was built by that conjure's
   compile (or by a later meld-time stage in the same world); a full hit therefore never hydrates a plan
   that references a spell id outside the live pool.
-- Invariant 4: class spell ids are unchanged.
+- Invariant 4: spell ids that were already process-stable are unchanged (every class without an
+  address-rendering constructor default, and every other shape whose inputs held no address).
 
 ## Migration and Rollout Order
 1. Profiles + InspectorUtility (fields and helper), strategy fills them.
-2. Bind.sha256_profile hashes them (fallback: address-stripped display text).
+2. Bind.sha256_profile hashes them (fallback: address-stripped display text) and strips addresses from
+   the callable signature and class init_signature texts it hashes.
 3. Conjure-end re-stage + prune; CachingSystem generation 12.
 4. Tests: unit (helper, fingerprint), component (in-process distinct-object equality, provider-change
    A/B/B cache sequence, bundle size bounded), one cross-process id check.
 5. Promote to src_components/src_architecture, graph, asset rebuild.
 
 ## Rollback Strategy
-- Rollback trigger: class ids move, or any suite failure attributable to these files.
+- Rollback trigger: an already-stable id moves, or any suite failure attributable to these files.
 - Rollback steps: restore the six modified modules; delete the new tests; generation 12 bundles are then
   rejected by generation 11 readers and cold-reset (safe).
 - Post-rollback verification: unit/component suites; asset --check.
 
 ## Validation Expectations and Evidence Plan
 - Before evidence: artifacts/function_spell_ids_20260926/results (10 of 14 shapes unstable; bundle growth;
-  stale consumer crash). After: all 14 shapes stable across processes; A/B/B melds succeed; bundle stays
-  at the live count.
+  stale consumer crash). After (measured in a VM copy, 2026-09-26): all 15 shapes (14 plus a class with an
+  object() default) stable across processes, the 4 already-stable ids unchanged; A/B/B/B melds succeed;
+  the bundle stays at the live count.
 
 ## Ticket Coverage Map
 - Epic: none
@@ -77,5 +83,5 @@
 
 ## Context / Handoff Summary
 - What changed: see component patches and the code description patch.
-- What remains: implementation, validation, promotion, asset rebuild.
+- What remains: graph refresh and asset rebuild (implementation, validation and promotion done).
 - Next entrypoint: the task ticket's latest Notes NEXT.

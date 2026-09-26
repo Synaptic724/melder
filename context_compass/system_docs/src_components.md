@@ -365,6 +365,14 @@ Release-bound creation cache (2026-09-24):
   remains independent. An older generation-8 creation-cache reader rejects a new generation-9 file.
 - Generation 10 (2026-09-25) keeps this envelope unchanged. The bump alone rejects cached executors
   emitted before slot build guards, so they are rebuilt with the current locking on next conjure.
+- Generation 12 (2026-09-26): a non-full-hit conjure rebuilds the bundle from its own compile.
+  _stage_spell_payloads_at_conjure_end removes every payload, stages every live payload-eligible spell in
+  sorted id order through the unchanged Spellbook._emit_spell_cache, and flags the conjure-end emit when
+  anything was removed. It used to stage only missing ids: after a provider's id changed, the consumer kept
+  a manifest naming the old provider id and the next full hit failed at its first meld ("generalized
+  manifest references unknown spell_id"), and ids no longer live stayed in the bundle forever. Full-hit
+  conjures are unchanged and do not rewrite the file; the bump cold-resets bundles that may hold such plans.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._stage_spell_payloads_at_conjure_end`.
 EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem`,
 `src/melder/aether/spellbook/spellbook.py:Spellbook._emit_cache_file_if_required` and
 `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`.
@@ -588,6 +596,23 @@ binding or emit post. Post failure does not undo already-published state or arbi
 effects. Native identity rules and later application-object creation hooks remain unchanged.
 EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind.capture_hooks`, `Bind._bind_logic`,
 `Bind._cleanup_unpublished_spell` and `src/melder/aether/spellbook/spellbook.py:Spellbook.bind`.
+
+Process-stable fingerprints (2026-09-26):
+- Bind.sha256_profile hashes no memory address. Callable, instance and other profiles carry
+  `fingerprint_repr` (the full repr from InspectorUtility.stable_repr with every " at 0x<hex>" removed,
+  never truncated) and each callable parameter carries `default_fingerprint_repr`; the callable signature
+  and class init_signature texts are hashed with addresses removed too. Profiles built without these
+  fields fall back to their display text minus addresses. Display reprs (repr_string, default_repr, Nexus
+  payloads) keep the address.
+- Function, lambda, method, partial, callable-instance and default-repr instance spells, and classes whose
+  constructor defaults render an address, now get the same id in every process. Those ids changed once;
+  ids that were already stable did not move, and the v4-binding prefix is unchanged.
+- Identity stays signature-shaped, as for classes: editing a function body keeps its id, and a second object
+  with identical fingerprint content under the same binding metadata gets the same id, which Spellbook
+  rejects as a collision (it already shared the lookup key).
+- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind.sha256_profile`, `Bind._fingerprint_repr_text`,
+  `Bind._fingerprint_default_text`;
+  `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py:InspectorUtility.stable_repr`.
 
 Native resolution capability (S2 foundation, 2026-09-19):
 - Bind validates resolvable as a strict bool before reflection; independent hash/inspector calls do
@@ -4213,6 +4238,10 @@ Invariants/Guarantees:
   - src/melder/utilities/helpers/signature_reflection.py:52-190
   - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:106-114
   - src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py:150-175
+- Binding profiles carry the fingerprint text beside the display text (2026-09-26): `fingerprint_repr` on
+  callable, instance and other profiles and `default_fingerprint_repr` on each callable parameter summary,
+  built with `InspectorUtility.stable_repr` (full repr, memory addresses removed). `repr_string` and
+  `default_repr` stay truncated display text that still shows addresses.
 
 Failure Modes:
 - `SpellExaminer.create_profile(...)` raises `ValueError` when the requested
@@ -4243,6 +4272,7 @@ Key Files (C1):
 - `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py`
 - `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py`
 - `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py`
 - `src/melder/utilities/helpers/signature_reflection.py`
 
 
@@ -5828,7 +5858,7 @@ Key Files (C1):
 2. CachingSystem._load_or_initialize_from_disk unmarshals the envelope and calls
    _normalize_loaded_cache_data; version 9 requires an exact canonical melder_version match.
 3. Rejection installs _build_empty_cache_data. _build_conjure_cache_state then selects a cache miss.
-4. Normal plan phases run. _stage_spell_payloads_at_conjure_end stages new payloads and
+4. Normal plan phases run. _stage_spell_payloads_at_conjure_end rebuilds the bundle from this compile and
    _emit_cache_file_if_required writes the stamped envelope through CachingSystem.emit.
 5. A subsequent compatible run follows the existing cache-hit and context-hydration paths.
 
@@ -8899,6 +8929,7 @@ sequenceDiagram
 
 ## Information Sources
 - `src/melder/utilities/caching_system/caching_system.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py`
 - `src/melder/utilities/helpers/signature_reflection.py`
 - `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
@@ -9094,6 +9125,12 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 process-stable spell ids and complete cache bundles: the bind fingerprint hashes address-free
+text, so callable and default-repr instance spells keep one id across processes (promoted into Binding
+Pipeline and Spell Examination Profiles). A non-full-hit conjure rebuilds the whole conduit bundle and drops
+ids that are no longer live (generation 12, Spellbook Core), which fixes consumer melds failing on a full hit
+after a provider's id changed.
 
 2026-09-26 TYPE_CHECKING annotation reflection: Melder no longer raises NameError when it reads an
 annotation naming a type unbound at runtime. Defaults-only readers (ConduitWard contract keys, the phase-8

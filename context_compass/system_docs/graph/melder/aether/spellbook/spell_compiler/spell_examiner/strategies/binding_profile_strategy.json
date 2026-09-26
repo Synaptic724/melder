@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py",
-  "source_sha256": "36bd8dcee32772471d8d8f03f4e9eb6dce1ba640a231464dfd76c98c69bec2d9",
+  "source_sha256": "ecbe7c3cbf210784845fb9822791ab23c9852a58dddd62874cc5d1e678683fcf",
   "generator": "tools/system_documents/python/extract_graph.py",
   "nodes": {
     "melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy": {
@@ -30,18 +30,19 @@
         "has_bases": false,
         "trivial": false
       },
-      "span_sha256": "49537b22805e671dedefa54ad9e5609163cbe12dfce2aa88cbf6c08a046c28e3",
+      "span_sha256": "3e920e856ba77f88fee2dc44d1bc08d7f3c4f6864c674a7f2ab6de4a06520ddb",
       "role": "Strategy building binding profiles from raw candidates.",
       "responsibilities": [
         "builds the correct binding-profile variant from a raw candidate surface",
         "captures Python 3.14 signatures with unresolved annotation names retained as ForwardRefs",
-        "renders init_signature and callable signature fingerprint text with unresolved names as source text, keeping spell ids stable across processes"
+        "renders init_signature and callable signature fingerprint text with unresolved names as source text, keeping spell ids stable across processes",
+        "fills fingerprint_repr and each parameter's default_fingerprint_repr with InspectorUtility.stable_repr beside the truncated display reprs"
       ],
       "phases": [
         "validation",
         "runtime"
       ],
-      "semantics_authored_against": "49537b22805e671dedefa54ad9e5609163cbe12dfce2aa88cbf6c08a046c28e3"
+      "semantics_authored_against": "3e920e856ba77f88fee2dc44d1bc08d7f3c4f6864c674a7f2ab6de4a06520ddb"
     }
   },
   "edges_out": [],

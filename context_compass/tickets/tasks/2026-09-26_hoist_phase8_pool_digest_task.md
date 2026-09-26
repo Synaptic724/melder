@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T09:05:00Z
-- Updated: 2026-09-26T10:42:09Z
+- Updated: 2026-09-26T10:48:48Z
 
 ## Objective
 In `SpellOccurrenceGraphAnalyzerStrategy.analyze`: test `artifact._occurrence_graph_analysis is None`
@@ -71,7 +71,9 @@ proportional to the root's own blueprint (C-A).
 - tests (unit tests for the strategy's key path)
 
 ## Validation
-- Not run. (VM interpreter is 3.10 against a 3.14 floor.)
+- Owner-run 2026-09-26 (3.14.7t): unit file green in the suite run; harness and probe before/after
+  filed in artifacts/codegen_signature_determinism_20260926/results_2026_09_26.md (M5 inside noise at 29
+  spells; M7 -34% conjure at N=300).
 - Recommended commands (owner-run, 3.14t):
   - `python -m pytest -q tests/unit/melder/spellbook/spell_compiler/test_spell_occurrence_analyzer_strategy.py`
   - `python -m pytest -q tests/unit/melder/spellbook/spell_compiler tests/component/melder/spellbook`
@@ -243,6 +245,26 @@ proportional to the root's own blueprint (C-A).
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T10:48:48Z
+  TYPE: MEASURE
+  CLAIM: BEFORE/AFTER filed (owner-run, 3.14.7t, same session; BEFORE = HEAD bytes of the strategy file
+    copied over the working file). Probe (forest, workers 1, repeats 5): N=300 162.632 -> 106.690 ms
+    median (-34.4%; mins 144.978 -> 96.591), per-spell 542 -> 356 us; N=27 10.967 -> 9.773 ms (-10.9%);
+    N=99 medians disturbed by outliers (max 234 / 391 ms), mins 38.448 -> 29.883 (-22%). BEFORE per-spell
+    cost rises with N (the quadratic term), AFTER is flat 27..300. Harness (29 classes, repeats 15):
+    plan_group wall 12.882 -> 12.132 ms at workers=1 (-5.8%), 4.123 -> 3.749 ms at workers=5 (-9.1%),
+    busy 12.504 -> 12.761 / 16.439 -> 14.246 ms - all inside the harness noise band (identical-code
+    runs differed 12.1 vs 19.4 ms), so at 29 spells: no measurable change, structural change verified
+    by M7. Full tables: results_2026_09_26.md.
+  EVIDENCE:
+  - artifacts/codegen_signature_determinism_20260926/results_2026_09_26.md:1-52
+  - artifacts/codegen_signature_determinism_20260926/measurement_plan.md:51-70
+  IMPACT: C-A does what it says: the cold path lost its O(spells^2) key-path term; the gain is invisible
+    at 29 spells and 34% of conjure at 300 independent triples.
+  NEXT: Owner acceptance of task 3; promotion text for `src_components.md` at story closure.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 STATE 2026-09-26T09:05:00Z: ready; opens after task 2 is in review (or on owner direction) and H1 is confirmed.
 STATE 2026-09-26T10:06:13Z: task 2 in review; H1 proposal recorded (note 10:06:13Z) and put to the owner; H2
@@ -252,6 +274,7 @@ STATE 2026-09-26T10:16:28Z: REVIEW. Owner-run: unit file, compiler suites, break
 (M5/M6). Successor: task 4 (cache-faithful payload gate).
 STATE 2026-09-26T10:42:09Z: REVIEW. AFTER numbers filed (note 2026-09-26T10:42:09Z); BEFORE still owed (stale index.lock broke the
 stash); unit file passed in the owner's suite run.
+STATE 2026-09-26T10:48:48Z: REVIEW with BEFORE/AFTER filed: M7 -34% at N=300, M5 inside noise at 29. Awaiting acceptance.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

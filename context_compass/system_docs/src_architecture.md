@@ -846,6 +846,14 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Process-stable spell ids and complete cache bundles (2026-09-26): bind fingerprint inputs contain no
+  memory address - repr, parameter-default, signature and init_signature text are hashed address-free and
+  untruncated - so every spell, callables and default-repr instances included, keeps one id across
+  processes; display reprs are unchanged. A non-full-hit conjure rebuilds the conduit cache bundle from its
+  own compile and drops non-live ids (generation 12), so a full hit never hydrates a plan naming a spell id
+  outside the live pool.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind.sha256_profile` and
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._stage_spell_payloads_at_conjure_end`.
 - Annotation reflection (2026-09-26): Melder reads user and library annotations without evaluating
   names that are unbound at runtime (a `TYPE_CHECKING`-only import; Python 3.14 evaluates annotations
   when they are read). Code that needs only parameters or defaults reads signatures in
@@ -2623,6 +2631,11 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 process-stable spell ids: function, method, lambda, partial, callable-instance and default-repr
+instance spells used to get a new id per process because the fingerprint hashed "at 0x..." repr text; with
+any such spell a book never reached a cache full hit and its bundle grew every run. A pre-existing defect
+also made consumer melds fail on a full hit after a provider's id changed. Both fixed; cache generation 12.
 
 2026-09-26 TYPE_CHECKING annotation reflection: Melder's readers of signatures and annotations no longer
 raise NameError on names unbound at runtime - which had broken late binding in dynamic worlds, detailed

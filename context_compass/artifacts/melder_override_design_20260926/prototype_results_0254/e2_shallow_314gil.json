@@ -1,0 +1,330 @@
+{
+ "python": "3.14.7 (main, Sep  1 2026, 14:18:09) [Clang 22.1.3 ]",
+ "gil_enabled": true,
+ "graph": "shallow",
+ "verified": {
+  "normal/current": "ok",
+  "normal/v2": "ok",
+  "empty_dict/current": "ok",
+  "empty_dict/v2": "ok",
+  "empty_tuple/current": "ok",
+  "empty_tuple/v2": "ok",
+  "root_one_reused/current": "ok",
+  "root_one_reused/v2": "ok",
+  "root_one_fresh/current": "ok",
+  "root_one_fresh/v2": "ok",
+  "root_all_reused/current": "ok",
+  "root_all_reused/v2": "ok",
+  "root_args_tuple/current": "MeldExecutionError: [MELD] Execution failed for spell 'ShallowRootAB' (e3ab6aee504bb605cd216e4da2091833747cef74a86e1bce985a8db2e472f7ad): Er",
+  "root_args_tuple/v2": "ok",
+  "python_root_only/lower_bound": "ok",
+  "original_override/current": "ok",
+  "original_override/v2": "ok"
+ },
+ "rows": [
+  {
+   "graph": "shallow",
+   "case": "normal",
+   "variant": "current",
+   "median_ns": 319.30304391217567,
+   "min_ns": 315.95494011976047,
+   "max_ns": 335.86927811044575,
+   "samples_ns": [
+    319.30304391217567,
+    335.86927811044575,
+    322.024500998004,
+    323.2224218230206,
+    315.95494011976047,
+    318.2109115103127,
+    316.60008316699935
+   ],
+   "iterations": 60120,
+   "percent_of_current_normal": 100.0
+  },
+  {
+   "graph": "shallow",
+   "case": "normal",
+   "variant": "v2",
+   "median_ns": 299.1405436245538,
+   "min_ns": 294.0246064719995,
+   "max_ns": 305.05512317865293,
+   "samples_ns": [
+    297.93978582714027,
+    303.46721575282345,
+    299.1405436245538,
+    298.1120603897244,
+    294.0246064719995,
+    305.05512317865293,
+    302.15501199602085
+   ],
+   "iterations": 68356,
+   "percent_of_current_normal": 106.74014295866476
+  },
+  {
+   "graph": "shallow",
+   "case": "empty_dict",
+   "variant": "current",
+   "median_ns": 403.8256422454805,
+   "min_ns": 398.0021774134524,
+   "max_ns": 416.3697394422894,
+   "samples_ns": [
+    398.0021774134524,
+    407.19790675547097,
+    416.3697394422894,
+    400.22954329210273,
+    401.1064004976945,
+    408.54867159481813,
+    403.8256422454805
+   ],
+   "iterations": 54652,
+   "percent_of_current_normal": 79.06953162673989
+  },
+  {
+   "graph": "shallow",
+   "case": "empty_dict",
+   "variant": "v2",
+   "median_ns": 388.43689356481656,
+   "min_ns": 383.4277296553775,
+   "max_ns": 471.04596825160786,
+   "samples_ns": [
+    388.3294732146176,
+    383.4277296553775,
+    471.04596825160786,
+    397.33688984720624,
+    386.94154057771664,
+    394.79543849213724,
+    388.43689356481656
+   ],
+   "iterations": 53798,
+   "percent_of_current_normal": 82.20203827237516
+  },
+  {
+   "graph": "shallow",
+   "case": "empty_tuple",
+   "variant": "current",
+   "median_ns": 1495.5090631675312,
+   "min_ns": 1459.114861153494,
+   "max_ns": 1694.1759536161123,
+   "samples_ns": [
+    1545.8703692401587,
+    1459.114861153494,
+    1680.691730241074,
+    1486.1299969484285,
+    1477.524321025328,
+    1694.1759536161123,
+    1495.5090631675312
+   ],
+   "iterations": 16385,
+   "percent_of_current_normal": 21.35079296917684
+  },
+  {
+   "graph": "shallow",
+   "case": "empty_tuple",
+   "variant": "v2",
+   "median_ns": 596.6995725164907,
+   "min_ns": 584.8468703111288,
+   "max_ns": 754.1353792146759,
+   "samples_ns": [
+    596.6995725164907,
+    617.305863035416,
+    754.1353792146759,
+    595.5040341986808,
+    591.6160009059253,
+    617.7002236503129,
+    584.8468703111288
+   ],
+   "iterations": 35323,
+   "percent_of_current_normal": 53.5115255011099
+  },
+  {
+   "graph": "shallow",
+   "case": "root_one_reused",
+   "variant": "current",
+   "median_ns": 1325.9954125742515,
+   "min_ns": 1287.820561077457,
+   "max_ns": 1771.5659001352703,
+   "samples_ns": [
+    1350.7015820737518,
+    1337.4530376992295,
+    1771.5659001352703,
+    1325.9954125742515,
+    1291.3388225607246,
+    1287.820561077457,
+    1308.258954302182
+   ],
+   "iterations": 17003,
+   "percent_of_current_normal": 24.080252532117694
+  },
+  {
+   "graph": "shallow",
+   "case": "root_one_reused",
+   "variant": "v2",
+   "median_ns": 419.6821883105133,
+   "min_ns": 416.5864044876048,
+   "max_ns": 655.3061503508454,
+   "samples_ns": [
+    419.6821883105133,
+    419.06059874942196,
+    655.3061503508454,
+    426.50917827774094,
+    420.5811970967288,
+    417.0532601483805,
+    416.5864044876048
+   ],
+   "iterations": 49737,
+   "percent_of_current_normal": 76.08210517524527
+  },
+  {
+   "graph": "shallow",
+   "case": "root_one_fresh",
+   "variant": "current",
+   "median_ns": 1324.8533941814032,
+   "min_ns": 1318.4337706788363,
+   "max_ns": 1880.5135767256133,
+   "samples_ns": [
+    1391.7127780946948,
+    1324.0338277239018,
+    1880.5135767256133,
+    1360.2228750713064,
+    1318.4337706788363,
+    1323.5657159155733,
+    1324.8533941814032
+   ],
+   "iterations": 17530,
+   "percent_of_current_normal": 24.10100961468765
+  },
+  {
+   "graph": "shallow",
+   "case": "root_one_fresh",
+   "variant": "v2",
+   "median_ns": 452.33219470538,
+   "min_ns": 444.26122971818955,
+   "max_ns": 513.1616994022203,
+   "samples_ns": [
+    447.0995730145175,
+    449.2540563620837,
+    472.5840520922289,
+    480.5640264730999,
+    444.26122971818955,
+    452.33219470538,
+    513.1616994022203
+   ],
+   "iterations": 46840,
+   "percent_of_current_normal": 70.59038636861766
+  },
+  {
+   "graph": "shallow",
+   "case": "root_all_reused",
+   "variant": "current",
+   "median_ns": 1749.800822737472,
+   "min_ns": 1709.5495138369483,
+   "max_ns": 2737.738369483919,
+   "samples_ns": [
+    1789.367090501122,
+    1775.8474195961107,
+    2737.738369483919,
+    1742.95976065819,
+    1730.0970830216904,
+    1709.5495138369483,
+    1749.800822737472
+   ],
+   "iterations": 13370,
+   "percent_of_current_normal": 18.247965126261786
+  },
+  {
+   "graph": "shallow",
+   "case": "root_all_reused",
+   "variant": "v2",
+   "median_ns": 404.7346539638279,
+   "min_ns": 396.2531272994849,
+   "max_ns": 522.0333255876999,
+   "samples_ns": [
+    404.812865497076,
+    411.4355950582859,
+    522.0333255876999,
+    401.32270245149294,
+    404.7346539638279,
+    400.0391929049998,
+    396.2531272994849
+   ],
+   "iterations": 51642,
+   "percent_of_current_normal": 78.89194581808964
+  },
+  {
+   "graph": "shallow",
+   "case": "root_args_tuple",
+   "variant": "v2",
+   "median_ns": 547.3990457493601,
+   "min_ns": 539.3324718570613,
+   "max_ns": 652.5639521880669,
+   "samples_ns": [
+    546.2405755324172,
+    540.3565766258293,
+    652.5639521880669,
+    556.9619790760667,
+    539.3324718570613,
+    547.3990457493601,
+    551.1049178698343
+   ],
+   "iterations": 40241,
+   "percent_of_current_normal": 58.33094638940535
+  },
+  {
+   "graph": "shallow",
+   "case": "python_root_only",
+   "variant": "lower_bound",
+   "median_ns": 102.83427,
+   "min_ns": 100.4624,
+   "max_ns": 106.47032,
+   "samples_ns": [
+    105.08276,
+    104.23598,
+    101.47863,
+    106.47032,
+    101.78635,
+    102.83427,
+    100.4624
+   ],
+   "iterations": 100000,
+   "percent_of_current_normal": 310.502562922045
+  },
+  {
+   "graph": "shallow",
+   "case": "original_override",
+   "variant": "current",
+   "median_ns": 1329.509018819456,
+   "min_ns": 1319.9090858323561,
+   "max_ns": 1450.795945719551,
+   "samples_ns": [
+    1320.3097671301725,
+    1329.509018819456,
+    1450.795945719551,
+    1326.5990953258502,
+    1355.7476405874797,
+    1432.6314848941754,
+    1319.9090858323561
+   ],
+   "iterations": 17907,
+   "percent_of_current_normal": 24.016613606405045
+  },
+  {
+   "graph": "shallow",
+   "case": "original_override",
+   "variant": "v2",
+   "median_ns": 449.83656718021444,
+   "min_ns": 442.67874256000346,
+   "max_ns": 500.9628053890286,
+   "samples_ns": [
+    483.3151765186188,
+    442.67874256000346,
+    447.0915576183416,
+    449.83656718021444,
+    500.9628053890286,
+    447.2596961688047,
+    450.2950428672726
+   ],
+   "iterations": 46539,
+   "percent_of_current_normal": 70.98201151447428
+  }
+ ]
+}

@@ -6,7 +6,7 @@
 - Status: active
 - Owner: user (writer: melder_1)
 - Created: 2026-09-26T10:42:41Z
-- Updated: 2026-09-26T10:42:41Z
+- Updated: 2026-09-26T11:04:31Z
 
 ## Component Purpose and Boundary
 - Current boundary: Bind.sha256_profile turns a binding profile plus binding metadata into the spell id.
@@ -16,11 +16,15 @@
 - Before: callable, instance and other branches hash repr_string and each default_repr as displayed, so
   ids of 10 of 14 measured shapes change every process.
 - After: those branches hash fingerprint_repr / default_fingerprint_repr; when a profile lacks them the
-  display text is used with " at 0x<hex>" removed. Class branch, prefix, metadata parts and order unchanged.
+  display text is used with " at 0x<hex>" removed. The callable signature text and the class
+  init_signature text are hashed with addresses removed as well, because str(signature) renders default
+  reprs (found during implementation: a class with an object() default was process-local). Prefix,
+  metadata parts and part order unchanged.
 
 ## Interface Deltas
 - Inputs/outputs: none (same signature, same hex digest shape).
-- Behaviour: affected ids change once to process-stable values.
+- Behaviour: affected ids (including classes with address-rendering constructor defaults) change once
+  to process-stable values; already-stable ids do not move.
 
 ## State and Lifecycle Deltas
 - None.

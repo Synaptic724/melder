@@ -6,12 +6,12 @@
 - Task ID: TASK-2026-09-26-design-override-and-caller-input-execution
 - Epic: EPIC-2026-09-24-override-execution-performance
 - Story: none (epic-level design task)
-- Status: in_progress
+- Status: review
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T00:14:30Z
-- Updated: 2026-09-26T10:47:11Z
+- Updated: 2026-09-26T11:23:09Z
 
 ## Objective
 Produce a source-grounded design that (1) lets a constructor declare parameters the caller always
@@ -47,6 +47,15 @@ Compare it against joint_alpha_proposal.md and recommend one path with tradeoffs
 - to_state: in_progress
 - transition_reason: Owner reopened the override performance lane ("go back to the real overrides issue ...
   overrides are 20% of the speed of normal resolution ... make a sound structural strategy"), 2026-09-26T08:58:44Z.
+- from_state: in_progress
+- to_state: review
+- transition_reason: design_v2.md written after the owner's "ok go ahead and get started"; Q1-Q5 raised, 2026-09-26T11:06:53Z.
+- from_state: review
+- to_state: in_progress
+- transition_reason: Owner approved the E1-E4 prototype experiment ("yeah sure go ahead give it a go"), 2026-09-26T11:11:51Z.
+- from_state: in_progress
+- to_state: review
+- transition_reason: E1-E4 prototype results written (prototype_results.md); Q1-Q5 still open, 2026-09-26T11:23:09Z.
 
 ## Steps / Checklist
 - [x] Read joint_alpha_proposal.md, structural_plan.md, compact_structure_proposal.md,
@@ -62,7 +71,9 @@ Compare it against joint_alpha_proposal.md and recommend one path with tradeoffs
 - [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
-- artifacts/melder_override_design_20260926/design.md
+- artifacts/melder_override_design_20260926/design.md (superseded from "The design" onward)
+- artifacts/melder_override_design_20260926/design_v2.md
+- artifacts/melder_override_design_20260926/prototype_results.md (E1-E4; prototype v2_prototype.py, v2_experiment.py)
 
 ## Files / Paths Impacted
 - None in src/ or tests/. This ticket and its artifact directory only.
@@ -529,12 +540,276 @@ Compare it against joint_alpha_proposal.md and recommend one path with tradeoffs
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T10:53:16Z
+  TYPE: FACT
+  CLAIM: Re-onboarded after compaction; certified melder_0. Mailbox F0-3 consumed (fable_0, NOTICE, no ACK):
+    owner-approved emission gate (option B) landed - `Spellbook._emit_spell_cache` stages nothing and returns
+    False when either `build_package` returns None; both builders now return `Optional[Dict]`; three pure
+    helpers on `CodegenCreationSchemaHelpers`. (Message deleted before this copy was written; content is
+    reproduced here in full.)
+  EVIDENCE: tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md
+  IMPACT: Design v2's caching section must build on the gated emission path: a per-key-set plan that holds
+    non-replayable payloads must not be emitted to the .melc, and any override implementation touching
+    `_emit_spell_cache` rebases on fable_0's hunk.
+  NEXT: Record the Phase-9 physical-graph reads.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T10:53:16Z
+  TYPE: FACT
+  CLAIM: Phase 9 already holds the compact physical graph design v2 needs, keyed exactly as a root-input plan
+    wants. (1) Instances: a shared existence gets one key (spell_id, None) with a canonical occurrence (min by
+    (spell_id, path)); many gets one key per occurrence path. (2) Injection: per instance key, one
+    SpellInjectionParamSource per parameter - kind dependency (dependency_keys already mapped to instance
+    keys, override_key = param name, is_collection from Phase-3 topology), unresolved_input / override_required
+    (no dependency keys, override_key = param name, position and parameter_kind kept), contract payloads
+    merged. A shared instance takes its edges from the canonical occurrence only. (3) Override targeting is
+    the path-expanded part: it iterates Phase-5 root_blueprint.socket_refs (one ref per logical path per
+    socket), keys each by its formatted path (specificity 3), and maps both "**name" (1) and "*name" (2) to
+    every ref with that name, so UNIQUE and BROADCAST share one target tuple and the unique-count check is
+    left to call time.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_instance_processor_strategy.py:131-215
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py:119-301
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_override_targeting_processor_strategy.py:43-123
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_override_targeting_analysis.py:6-142
+  IMPACT: A root key "a" resolves to (root_instance_key, "a") in injection_shape with no path machinery, and
+    its dependency_keys are the cut candidates. Nested/broadcast/unique selectors can be resolved by walking
+    named edges over the same rows; the logical-path targeting section is only needed by today's runtime
+    targeting and is the conjure-time cost to retire.
+  NEXT: Read the runtime targeting parser (bare-key meaning, path format) and the Phase-10 plan builders.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T10:54:48Z
+  TYPE: FACT
+  CLAIM: The override call chain today, end to end (many_only; read in full). ConduitMeld.meld normalizes the
+    payload (dict as-is, list/tuple -> {"__args__": [...]}, so override=() is a non-None payload), then calls
+    creation_context._overrides_executor(meld, map)[0] on the no-hooks lane; CreationContext only adds the
+    dynamic-mode gate ticket. The finalize step's execute_with_overrides closure splits "__args__" (root
+    positional values), runs targeting, then looks up an executor by (plan_signature, socket_shape,
+    root_positional_arity) with a one-slot last-shape cell compared by tuple IDENTITY. Targeting parses each
+    raw key with TargetSpec.parse: "**n" broadcast, "*n" unique, anything else a PATH of param names from
+    the root, so a bare "a" is the root parameter a and "a>b" is param b of a's provider. Unknown PATH keys,
+    zero/multiple UNIQUE matches and zero BROADCAST matches raise RuntimeError, wrapped in
+    MeldExecutionError("Failed to apply overrides."). Equal-rank conflicts compare values with `!=`.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/conduit_meld.py:259-578
+  - src/melder/aether/conduit/meld/meld.py:1506-1575
+  - src/melder/aether/conduit/meld/creation_context/creation_context.py:238-309
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_finalize_creation_context_step.py:243-560
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/artifacts/spell_override_targeting_codegen_creation.py:210-427
+  - src/melder/aether/spellbook/spell_compiler/dag/target_spec.py:66-129
+  IMPACT: The public contract design v2 must preserve is small: the payload forms, the three key grammars
+    (bare/`>` path from the root, `*`, `**`), PATH > UNIQUE > BROADCAST, the three not-found errors and the
+    equal-rank conflict. All of it is a function of the KEY SET plus value equality for conflicts, so it can
+    be decided once per key set; only the equal-rank `!=` check needs the values (item 5 (c)).
+  NEXT: Read the Phase-10 plan data (many_only plan, generalized lane plan) and family selection.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T10:58:17Z
+  TYPE: MEASURE
+  CLAIM: Captured today's emitted executors (0.2.54 + today's src, 3.14.7t, VM copy, caching off; new probe
+    wraps both compile seams - many_only/solo use executor_code_cache, generalized uses executor_factory_cache).
+    (1) The NORMAL many-only lowering is already the target shape: `v0 = t0(); v1 = t1(); v2 = t2(v0, v1)`,
+    positional, no dicts. (2) The many-only OVERRIDE executor for {"a"} is 95 lines: builds A and B, then
+    `if single_override_socket_2.param_name != 'a'` at run time, kwargs dict, instance_results dict, KeyError
+    guards. (3) Generalized normal: shared site is inline hit + guarded miss, but its many child X is built
+    BEFORE the hit check, so a warm meld builds X and discards it. (4) Constructor counts: many_shallow {"a"}
+    builds A anyway; gen_mixed {"s"} builds X (S's only child) with S supplied; {"a"} builds A; gen_diamond
+    {"l"} builds L; "l>s" on a stored S reuses S for R and passes the value to L.
+  EVIDENCE:
+  - artifacts/melder_override_design_20260926/codegen_capture_v2.py:1-200
+  - artifacts/melder_override_design_20260926/capture_v2_0254_314t/000_many_shallow_normal.py:1-17
+  - artifacts/melder_override_design_20260926/capture_v2_0254_314t/002_many_shallow_override_a.py:1-95
+  - artifacts/melder_override_design_20260926/capture_v2_0254_314t/003_gen_mixed_normal_cold.py:1-53
+  - artifacts/melder_override_design_20260926/capture_v2_0254_314t/005_gen_mixed_override_s.py:1-150
+  - artifacts/melder_override_design_20260926/capture_v2_0254_314t/capture.json
+  IMPACT: Design v2 does not need a new lowering style: an override plan is the normal lowering run over a
+    pruned step list with literal operands (`t2(ov["a"], v1)`), plus consumer-first placement of many
+    children under shared miss branches (fixes the ordinary X waste too).
+  NEXT: Read caching (creation cache/manifests) for how override executors persist, then write design_v2.md.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-26T11:00:39Z
+  TYPE: FACT
+  CLAIM: Three facts the design depends on. (1) Persistence: the .melc manifest (package v2) stores the
+    override lane as plan_rows, plan_signature, empty_shape_key and the PATH-EXPANDED targets_by_spec plus
+    specificity_by_spec; per-shape override executors are never persisted - they are compiled in-process at
+    first meld and held in closure dicts. fable_0's gate returns None for non-replayable contract payloads.
+    Cache generation is 11. (2) P2 precisely: `_raise_override_on_existing_instance` raises when the stored
+    site is the root and the payload is non-None ("root spell that already exists"), or when the stored site
+    has targeted overrides ("spell instance that already exists"). (3) MEASURE: root positional overrides
+    over DI-injected parameters fail today - Root(a: A, b: B) melded with (s,), [s] or {"__args__": (s,),
+    "b": s} raises MeldExecutionError from TypeError "got multiple values for argument 'a'", because the
+    executor passes `*args` plus the dependency kwargs for the same parameters.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.py:1-146
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py:1-137
+  - src/melder/utilities/caching_system/caching_system.py:138-151
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py:2717-2751
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_overrides_codegen_creation_compiler.py:1587-1675
+  - artifacts/melder_override_design_20260926/root_args_probe.py:1-32
+  IMPACT: Design v2 changes the manifest's override section (drop targets_by_spec, add the selector index)
+    under cache generation 12, keeps per-key-set executors in-process, keeps both P2 messages, and treats
+    root `__args__` as supplying the first N positional parameters (a fix for a path that errors today).
+  NEXT: Write artifacts/melder_override_design_20260926/design_v2.md.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T11:02:24Z
+  TYPE: FACT
+  CLAIM: The Phase-5 overlay emits one SocketRef per Phase-3 topology socket at every (node, path) it
+    reaches, so EVERY constructor parameter is targetable, not only DI edges. Probe (3.14t): Root(a: A,
+    timeout: int = 5, *, name: str = "x") accepts {"timeout": 9}, {"name": "y"}, {"*timeout": 9} and
+    {"**name": "z"}; {"nosuch": 1} and {"a>nosuch": 1} raise MeldExecutionError("Failed to apply overrides.")
+    wrapping "No sockets found for override path". Collection members share one path id under their socket
+    (visited key is (target_id, socket_path_id)), and targeting stores one ref per path string, so a PATH
+    through a collection keeps only the last member ref (UNKNOWN whether any test covers this).
+    Other readers of socket_refs (located by search, not yet read): Phase-6 socket_ref_sanity_strategy,
+    the Phase-8 occurrence analyzer (:435) and shared_compiler_executions (:156, :296).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py:435-500
+  - src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py:5-60
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_override_targeting_processor_strategy.py:43-123
+  - artifacts/melder_override_design_20260926/plain_param_probe.py:1-27
+  IMPACT: The site graph's per-site parameter table must come from the Phase-3 topology sockets (all
+    parameters, with position and kind), not from injection param_sources (DI kinds only). Retiring the
+    Phase-5 overlay is a separate later step gated on those three readers.
+  NEXT: Write design_v2.md.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T11:06:53Z
+  TYPE: DECISION
+  CLAIM: design_v2.md written (455 lines). Recommendation: a site graph per root built from Phase-9 rows
+    (every constructor parameter from the Phase-3 topology, a name index, DP path counts; no path lists);
+    one plan per override key set compiled on first use (parse, resolve, rank, static cuts, demand,
+    unresolved inputs and P2 marks decided at compile; no value checks); one lowering for normal and
+    override melds (only demanded sites, literal `ov["a"]` reads, shared sites as inline hit + out-of-line
+    miss under the existing slot guards, children only inside the miss); per call `plans.get(tuple(ov))`.
+    No claim protocol (P3). Cache generation 12. Build order S1 site graph + oracle -> S2 normal lane
+    (parity gate) -> S3 key-set plans, retire ~8.1k lines of override emitters -> S4 unresolved inputs in
+    the plan -> S5 retire the Phase-5 overlay -> S6 qualification, each behind a patch lane.
+  EVIDENCE: artifacts/melder_override_design_20260926/design_v2.md:1-455
+  IMPACT: Addresses all eight current defects in section 2 of the design with one mechanism; the
+    behavior changes the owner must accept are listed as B1-B8.
+  NEXT: Owner reviews design_v2.md and answers Q1-Q5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T11:06:53Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Q1 confirm P2 (rule on a stored shared site keeps today's error) and P3 (operands fixed per key
+    set; no claim protocol). Q2 confirm K1 (key names validated once per key set; no value checks).
+    Q3 accept B2 (ordinary melds stop building children of stored shared objects; cold-build constructor
+    order changes). Q4 accept B5 (root positional payloads over DI parameters work) and B7 (a PATH through
+    a collection applies to every member). Q5 approve the build order and open the S1 patch lane.
+  EVIDENCE: artifacts/melder_override_design_20260926/design_v2.md:447-455
+  IMPACT: Q1-Q2 fix the semantics S1/S3 implement; Q3-Q4 are the user-visible changes; Q5 starts code work.
+  NEXT: Owner answers Q1-Q5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T11:09:56Z
+  TYPE: PLAN
+  CLAIM: Owner asked whether design v2 was run. It was not: the evidence is captures and probes of CURRENT
+    behavior plus prior partial results (Codex emission-only prototype: normal-style lowering with every
+    constructor kept reached 41.8/53.3/41.6/95.3% of normal on shallow/wide/diamond/deep through public
+    meld; wide all-root input still 7.377us public vs 1.260us executor, i.e. front-end cost). v2's
+    throughput, pruning and nested-guard behavior are UNKNOWN until measured. Proposed prototype
+    (artifact-only, VM copy, no src edits): E1 generate v2 plans from a live conjured root's plan steps
+    and install the dispatcher in the context's override slot at run time; E2 throughput on the existing
+    experiment graphs (normal / current override / v2 for one root key, all root keys, empty tuple;
+    3.14t and GIL, 7 repeats); E3 constructor counts and result identity on the capture graphs and the
+    epic examples; E4 threaded cold melds through nested shared misses (one construction per slot, no
+    deadlock). Root keys and conduit-store shared sites first; outlier selectors after.
+  EVIDENCE:
+  - artifacts/override_emission_prototype_20260924/findings.md:8-30
+  - artifacts/override_emission_prototype_20260924/findings.md:95-106
+  - artifacts/melder_override_design_20260926/design_v2.md:420-431
+  IMPACT: Q1-Q5 can be answered with measured behavior instead of targets.
+  NEXT: Owner go-ahead for the E1-E4 prototype.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T11:23:09Z
+  TYPE: FACT
+  CLAIM: E1 built: v2_prototype.py (564 lines, artifact-only) builds the site graph from a live conjured
+    root (Phase-9 model + Phase-10 steps), compiles one plan per key set (PATH walk, `*` via DP path
+    counts, `**` via name index, root `__args__`, P1 cut fixpoint, P2 hit errors, E1 guard, static
+    unresolved-input raise) and emits consumer-first code with out-of-line shared misses under the
+    existing slot guards; SlotSwitch swaps the spell's CreationContext slots at run time. Scope: many and
+    unique_per_conduit sites, many root. v2_experiment.py runs E2-E4 against today's executors.
+  EVIDENCE:
+  - artifacts/melder_override_design_20260926/v2_prototype.py:1-564
+  - artifacts/melder_override_design_20260926/v2_experiment.py:1-436
+  IMPACT: design_v2's core claims can be measured through the public meld without touching src/.
+  NEXT: Record E3/E2/E4 results.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T11:23:09Z
+  TYPE: MEASURE
+  CLAIM: E3 (40 calls, 7 graphs, today vs v2 in fresh worlds; identical on 3.14t and GIL): every difference
+    is a predicted change. Supplied branches never built (epic_five 3-of-5 supplied: 6 -> 3 objects; tree4
+    both halves: 15 -> 1); X no longer built under a stored S (B2); positional payloads work (B5); the
+    Codex leak is gone ({"p": o, "p>d>x": v}: today builds P and gives q's D x=v; v2 does neither, B3);
+    unresolved inputs raise before anything is built (B6); supplying Task with an unresolved input works
+    (today builds Task anyway and fails). Unchanged: bad-key errors, UNIQUE "matched 2 sockets", P2 errors.
+  EVIDENCE:
+  - artifacts/melder_override_design_20260926/prototype_results.md:31-61
+  - artifacts/melder_override_design_20260926/prototype_results_0254/e3_314t.json
+  - artifacts/melder_override_design_20260926/prototype_results_0254/e3_314gil.json
+  IMPACT: B1-B7 are observed behavior now, not predictions; Q3/Q4 can be answered from these rows.
+  NEXT: Record E2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T11:23:09Z
+  TYPE: MEASURE
+  CLAIM: E2 (public meld, 7-repeat medians, % of today's normal; 3.14t / GIL): root-key overrides 76-88%
+    (one key) and 79-106% (all keys) on shallow/wide/diamond vs today's 9-25%; deep 8-level path 97/94%
+    vs 23/22%; deep one root key 190/185%, both 5780/4998% (0.44/0.40 us vs 111/91 us); normal melds
+    101-107% on small graphs, 136/138% with a stored shared child, but deep normal 98/95% (R5, cause
+    UNKNOWN). Remaining small-graph gap (shallow 452 vs 334 ns) is outside the plan: the override door
+    skips the fast door (~65 ns) and dispatch costs ~76 ns (plan direct 111 ns < normal plan 134 ns).
+    `override=()` 54-67% on small graphs (normalization + arity wrapper). First-use compile: deep normal
+    plan 8.45 ms, key-set plan 4.27 ms; small graphs under 0.2 ms.
+  EVIDENCE:
+  - artifacts/melder_override_design_20260926/prototype_results.md:62-149
+  - artifacts/melder_override_design_20260926/prototype_results_0254/e2_deep_314t.json
+  - artifacts/melder_override_design_20260926/prototype_door_breakdown.py:1-36
+  IMPACT: The structural design meets the epic's goal on these graphs; the rest of the gap is door and
+    dispatch cost (an override fast door and (keys, arity) dispatch are follow-ups, not design changes).
+  NEXT: Record E4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-09-26T11:23:09Z
+  TYPE: MEASURE
+  CLAIM: E4: 200 rounds x 8 threads per variant and build, fresh lesser conduit each round, P and Q shared
+    with slow constructors, nested misses (Root -> P -> Q) racing Root2 (Q only) and cut calls ({"p"}):
+    0 failures for today and v2 on 3.14t and GIL (no duplicate construction, one P/Q identity, no thread
+    alive after 20 s). Median round 3.41 vs 3.35 ms (3.14t), 0.93 vs 1.04 ms (GIL). A spy run confirmed v2
+    plans served the threads. Hold-time cost at scale (R2) is not measured.
+  EVIDENCE:
+  - artifacts/melder_override_design_20260926/prototype_results.md:120-138
+  - artifacts/melder_override_design_20260926/prototype_results_0254/e4_314t.json
+  - artifacts/melder_override_design_20260926/prototype_e4_slot_check.py:1-22
+  IMPACT: No evidence of deadlock or double construction from consumer-first nested guards; supports P3
+    without a claim protocol for these shapes.
+  NEXT: Owner reviews prototype_results.md with design_v2.md and answers Q1-Q5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Reopened 2026-09-26 for a deep read of the epic and joint alpha (notes from 10:27Z on). Codex probes re-run
-on current source: their recorded defects all still reproduce. The architecture choice turns on P2/P3 in
-the latest DECISION_REQUEST (runtime reuse vs override rules). design.md (09-26) predates this read; its D2
-matches the P3 "active" option, its D3 is withdrawn in favor of the owner-recorded item 5 (c).
-Validation: probes only (VM copy); no production code.
+State (2026-09-26T11:23:09Z): in review. design_v2.md is the current proposal (design.md superseded from "The design"
+onward); prototype_results.md holds the E1-E4 measurements of an artifact-only prototype
+(v2_prototype.py, v2_experiment.py) run through the public meld in the VM copy on 3.14t and GIL.
+Results: supplied branches never built; root-key overrides 76-106% of normal on small graphs (today 9-25%);
+deep supplied subtrees faster than normal; normal melds equal or faster except deep (-2 to -5%, R5); no
+threading failures in 200x8 rounds. Remaining small-graph gap is door/dispatch cost (follow-ups).
+Open: Q1-Q5 (last DECISION_REQUEST). Next on approval: open the S1 patch lane.
+Validation: probes and prototype only; no production code changed.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -114,9 +114,11 @@ from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_prof
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
     ClassBindingProfile,
     CallableBindingProfile,
+    CallableParameterBindingSummary,
     InstanceBindingProfile,
     OtherBindingProfile,
 )
+from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
 
 
 #region Bind
@@ -909,6 +911,13 @@ class Bind(Cleanable):
         Contract:
             - Fingerprints normalized bind-time metadata only, not transient
               runtime object identity.
+            - Repr-derived inputs (callable/instance/other repr and callable parameter
+              defaults) are address-free: the profile's `fingerprint_repr` /
+              `default_fingerprint_repr` when present, otherwise the display text with every
+              " at 0x<hex>" removed. The same object content therefore gets the same id in
+              every process (2026-09-26). The class init_signature and callable
+              signature texts are hashed with addresses removed too (a default such as
+              object() renders its address inside the signature).
             - Uses the explicit `v4-binding` schema prefix for omitted/True and
               `v4-binding-non-resolvable` for False, preserving all remaining inputs so future
               fingerprint-shape changes can version cleanly. v4 replaced the
@@ -943,20 +952,20 @@ class Bind(Cleanable):
                 ",".join(sorted(profile.mro)),
                 ",".join(sorted(profile.annotations.keys())),
                 ",".join(sorted(profile.method_names)),
-                profile.init_signature or "",
+                InspectorUtility.strip_memory_addresses(profile.init_signature or ""),
             ]
         elif isinstance(profile, CallableBindingProfile):
             param_parts = [
-                f"{p.name}:{p.kind}={p.default_repr}"
+                f"{p.name}:{p.kind}={Bind._fingerprint_default_text(p)}"
                 for p in (profile.parameters or ())
             ]
             parts += [
                 profile.name,
                 profile.qualname or "",
                 profile.module or "",
-                profile.signature or "",
+                InspectorUtility.strip_memory_addresses(profile.signature or ""),
                 ",".join(param_parts),
-                (profile.repr_string or "").strip(),
+                Bind._fingerprint_repr_text(profile),
                 profile.type_name,
                 "lambda" if profile.lambda_function else "",
                 "builtin" if profile.builtin_module else "",
@@ -966,13 +975,13 @@ class Bind(Cleanable):
             parts += [
                 profile.type_name,
                 profile.module or "",
-                (profile.repr_string or "").strip(),
+                Bind._fingerprint_repr_text(profile),
                 ]
         elif isinstance(profile, OtherBindingProfile):
             parts += [
                 profile.type_name,
                 profile.module or "",
-                (profile.repr_string or "").strip(),
+                Bind._fingerprint_repr_text(profile),
                 ]
         else:
             # Absolute fallback – should effectively never happen.
@@ -992,6 +1001,50 @@ class Bind(Cleanable):
 
         key = "::".join(parts)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _fingerprint_repr_text(
+            profile: Union[CallableBindingProfile, InstanceBindingProfile, OtherBindingProfile],
+    ) -> str:
+        """
+        Return the address-free representation text a binding profile contributes to its fingerprint.
+
+        Contract:
+            - Prefers `fingerprint_repr` (full repr, addresses removed, built by the binding
+              strategy); strips surrounding whitespace like the display text always was.
+            - Falls back to `repr_string` with memory addresses removed for profiles built without
+              it (direct constructions); that text may still be truncated display text.
+
+        Args:
+            profile: Callable, instance or other binding profile.
+
+        Returns:
+            str: Text hashed into the fingerprint.
+        """
+        if profile.fingerprint_repr is not None:
+            return profile.fingerprint_repr.strip()
+        return InspectorUtility.strip_memory_addresses((profile.repr_string or "").strip())
+
+    @staticmethod
+    def _fingerprint_default_text(parameter: CallableParameterBindingSummary) -> Optional[str]:
+        """
+        Return the address-free default-value text one callable parameter contributes to the fingerprint.
+
+        Contract:
+            - Prefers `default_fingerprint_repr`; otherwise `default_repr` with memory addresses
+              removed; None when the parameter has no default (rendered as "None", unchanged).
+
+        Args:
+            parameter: Parameter summary from a callable binding profile.
+
+        Returns:
+            Optional[str]: Default text hashed into the fingerprint, or None.
+        """
+        if parameter.default_fingerprint_repr is not None:
+            return parameter.default_fingerprint_repr
+        if parameter.default_repr is None:
+            return None
+        return InspectorUtility.strip_memory_addresses(parameter.default_repr)
 
     @staticmethod
     def _validate_resolvable(resolvable: bool) -> None:

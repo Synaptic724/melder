@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T09:05:00Z
-- Updated: 2026-09-26T10:42:09Z
+- Updated: 2026-09-26T11:26:43Z
 
 ## User Narrative
 As the Melder owner, I want the compiler's signature path to be one implementation that is deterministic
@@ -162,6 +162,9 @@ measurable with the existing breakdown harness.
   recommended send it"): refuse cache emission for spells whose rows would not replay their payload
   faithfully. Task 4 opens under this story; the boundary extends to the emission seam.
 - 2026-09-26 (owner): task 3 H1 confirmed in the same message.
+- 2026-09-26 (owner): `SpellContract` override values may be anything (not literals only); they must ride
+  the same path as meld overrides, not a side table; rename `spell_override` -> `override`; SpellMap to
+  be checked for the same treatment. Task 5 opens read-only on the overrides path and the peer designs.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -303,6 +306,12 @@ STATE 2026-09-26T10:21:00Z: task 3 in REVIEW; task 4 opened (in_progress, G1 don
 STATE 2026-09-26T10:30:30Z: tasks 2, 3 and 4 in REVIEW; waiting on owner-run suites, harness (M5/M6), M7 probe and acceptance.
 STATE 2026-09-26T10:42:09Z: suites run (1784 passed; component fixture fixed, re-run owed); AFTER numbers filed; BEFORE owed;
 in-process projection decision (1)/(2) open with the owner.
+STATE 2026-09-26T10:48:48Z: BEFORE/AFTER filed (results_2026_09_26.md): M7 -34% at N=300, M5 inside noise; component file
+5 passed + 1 xfail (bind-side spell id, melder_1); decision (1)/(2) still open.
+STATE 2026-09-26T10:56:37Z: owner picked (2); the overrides emitter literalizes payload values (task 4 CONFLICT note), so the
+choice is re-asked: (1) now + (2) as an override-design requirement, or (2) in the emitters now.
+STATE 2026-09-26T11:26:43Z: owner rules override values may be anything and must ride the meld-overrides path (rename to
+`override`); tasks 2-4 stay in review; task-5 investigation (read-only) opens; design after the reads.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

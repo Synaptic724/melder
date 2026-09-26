@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28113
-CONTENT_SHA256 = '2fa973f42374087e4a12397ced19098d6399fb303fe267b997a402042a3836f6'
+LINE_COUNT = 28121
+CONTENT_SHA256 = 'e07b111cc308f206cd94718f96e9375997c6eff0b31dc0c8a121b2fd8e5b672a'
 
 TEXT = """# src_graph
 
@@ -5873,7 +5873,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/bind/bind.py
 
-- source_sha256: `59486cd990b6950e5d39991b7ef5974732c77d545373e01a9c512c82551615a1`
+- source_sha256: `cf6a77a17fa6f23e3c9dc81c4af8c956bb3457a3a4646f2b3fb59dada074e087`
 - nodes: 2
 
 ### Nodes
@@ -5887,12 +5887,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Bind` (class)
 
 - id: `melder.aether.spellbook.bind.bind.Bind`
-- defined at: `src/melder/aether/spellbook/bind/bind.py:124`
+- defined at: `src/melder/aether/spellbook/bind/bind.py:126`
 - extends: `Cleanable`
 - role: Spell registration gateway for one Spellbook.
 - responsibilities:
   - examines binding targets into canonical binding profiles
-  - fingerprints binding metadata into structural spell ids
+  - fingerprints binding metadata into structural spell ids with no memory address in any input (address-free repr, default, signature and init_signature text), so the same object content gets one id in every process
   - validates native resolvable bool before reflection; False uses its own hash domain while True preserves legacy ids
   - admits Protocol definitions only with resolvable=False without relaxing other binding rules
   - resolves ordered disposal once at bind; book names own overlaps and priority selects front or back placement
@@ -12787,7 +12787,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py
 
-- source_sha256: `d1750d656a19537148d0b26a3ba0ab28168291e9e8d4a353d87b1e15cefb5a09`
+- source_sha256: `4b666206e327cb3d0d599c1232cab9bd8fd7c7c58b5ec184c0d659de355f9916`
 - nodes: 2
 
 ### Nodes
@@ -12801,12 +12801,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `InspectorUtility` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py:10`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py:11`
 - role: Shared low-level helper surface for the spell examiner inspectors.
 - responsibilities:
   - provides safe repr, extension-module detection, and best-effort callable unwrapping
+  - provides stable_repr and strip_memory_addresses: the full repr text with CPython ' at 0x<hex>' fragments removed, hashed by the bind fingerprint
 - phases: `validation`, `runtime`
-- public methods: `is_extension_module`, `safe_repr`, `unwrap_callable`
+- public methods: `is_extension_module`, `safe_repr`, `stable_repr`, `strip_memory_addresses`, `unwrap_callable`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py -->
 
@@ -12932,7 +12933,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py
 
-- source_sha256: `33591ccb54c50aeb6f05d0d03b6ef9b3c496675ceb6e3ca80b309d438d150b52`
+- source_sha256: `e6b070157c4334abc967463d0891c5048f64bff859f4f0b50abed9f26afe5de0`
 - nodes: 8
 
 ### Nodes
@@ -12987,43 +12988,47 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - role: The minimal binding-time view of one callable parameter, for fingerprinting and diagnostics.
 - responsibilities:
   - record the parameter's name, kind, default repr and annotation repr
-- owns_state: `name`, `kind`, `default_repr`, `annotation_repr`
+  - carry default_fingerprint_repr, the address-free untruncated default repr the bind fingerprint hashes
+- owns_state: `name`, `kind`, `default_repr`, `annotation_repr`, `default_fingerprint_repr`
 - phases: `bind`
 
 #### `CallableBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.CallableBindingProfile`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:269`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:274`
 - extends: `SpellBindingProfile`
 - role: Binding-time view of a function, method or lambda spell candidate.
 - responsibilities:
   - store callable identity, signature and the shallow parameter summaries
   - avoid deeper runtime-resolution detail, which belongs to later profile phases
-- owns_state: `name`, `qualname`, `module`, `object_id`, `type_name`, `repr_string`, `signature`
+  - carry fingerprint_repr, the address-free untruncated repr the bind fingerprint hashes; repr_string stays truncated display text
+- owns_state: `name`, `qualname`, `module`, `object_id`, `type_name`, `repr_string`, `signature`, `fingerprint_repr`
 - phases: `bind`
 - public methods: `cleanup`
 
 #### `InstanceBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.InstanceBindingProfile`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:390`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:403`
 - extends: `SpellBindingProfile`
 - role: Binding-time view of an already-constructed object bound as an EXISTING_CREATION spell.
 - responsibilities:
   - record the instance's type name, module and repr
-- owns_state: `type_name`, `module`, `repr_string`
+  - carry fingerprint_repr, the address-free untruncated repr the bind fingerprint hashes, so a default-repr object keeps one spell id across processes
+- owns_state: `type_name`, `module`, `repr_string`, `fingerprint_repr`
 - phases: `bind`
 - public methods: `cleanup`
 
 #### `OtherBindingProfile` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.OtherBindingProfile`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:449`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py:470`
 - extends: `SpellBindingProfile`
 - role: Fallback profile for candidates that fit none of the normal shapes.
 - responsibilities:
   - store only the minimum detached identity and representation surface
-- owns_state: `type_name`, `module`, `repr_string`
+  - carry the same address-free fingerprint_repr as the instance profile
+- owns_state: `type_name`, `module`, `repr_string`, `fingerprint_repr`
 - phases: `bind`
 - public methods: `cleanup`
 
@@ -13194,7 +13199,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
 
-- source_sha256: `36bd8dcee32772471d8d8f03f4e9eb6dce1ba640a231464dfd76c98c69bec2d9`
+- source_sha256: `ecbe7c3cbf210784845fb9822791ab23c9852a58dddd62874cc5d1e678683fcf`
 - nodes: 2
 
 ### Nodes
@@ -13214,6 +13219,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - builds the correct binding-profile variant from a raw candidate surface
   - captures Python 3.14 signatures with unresolved annotation names retained as ForwardRefs
   - renders init_signature and callable signature fingerprint text with unresolved names as source text, keeping spell ids stable across processes
+  - fills fingerprint_repr and each parameter's default_fingerprint_repr with InspectorUtility.stable_repr beside the truncated display reprs
 - phases: `validation`, `runtime`
 - public methods: `build_profile`
 
@@ -16032,7 +16038,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook_creation_system.py
 
-- source_sha256: `223274365242a1dbcc2a74d9ab2c47c40f6d0bd2a11c08723889726c577cd81a`
+- source_sha256: `68458e1731150a4e943c338c069dab65fe5ba3292eafa1f5df353e52489d068a`
 - nodes: 2
 
 ### Nodes
@@ -16057,6 +16063,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - excludes non-resolvable definitions from executable cache payload and plan-phase eligibility
   - binds local phase cancellation arguments when units are created within the current scheduler run
   - when the public conjure passes validation_warnings=True, logs one WARNING grouping every Phase-4 warning by code before phase artifacts are released; otherwise logs nothing
+  - on a non-full-hit conjure, rebuilds the conduit cache bundle from that compile: removes every payload and re-stages every live payload-eligible spell in sorted id order, so a full hit never hydrates a plan naming a spell id outside the live pool
 - owns_state: `_spellbook`, `_policy`, `_dynamic`, `_name`, `_conduit_logger`, `_phase_scheduler_cls`, `_validation_warnings`, `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `check_system_state`, `cleanup`, `cleanup_phase_artifacts_after_resolution`, `conjure`, `define_conduit_into_spells`, `fire_conjure_hooks`, `get_conjure_hook_map`, `phase_change_control_factory`, `phase_execution_plan_factory`, `phase_injection_plan_factory`, `phase_local_frame_factory`, `phase_occurrence_plan_factory` (+15 more)
@@ -26103,7 +26110,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `e32359722123852d8d4657d7e19fe3bb86434f0676ef3f97825f8baff31e4ac4`
+- source_sha256: `edeea185e71d7f83018a3b0e43da2b5e7424e15eb2cfef21a2bd53812b0de0f8`
 - nodes: 2
 
 ### Nodes
@@ -26130,6 +26137,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - requires exact Melder release, cache generation and interpreter compatibility before exposing persisted payloads
   - preserves the accepted release stamp through normalization and subsequent emission
   - cache generation 11 retires executors emitted before the unresolved-input failure path
+  - cache generation 12 cold-resets bundles that may hold consumer payloads from a previous world
 - owns_state: `_id`, `_lock`, `_frame_name`, `_conduit_name`, `_cache_root_path`, `_bundle_path`, `_cache_data`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bundle_path`, `cached_spell_ids`, `cleanup`, `conduit_name`, `emit`, `get_spell_payload`, `has_spell_payload`, `remove_spell_payload`, `spell_payloads`, `transfer_spell_payload_to`, `upsert_spell_payload`

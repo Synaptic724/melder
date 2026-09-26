@@ -96,6 +96,10 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 12: a non-full-hit conjure rebuilds the whole bundle from its own
+    # compile and drops ids that are no longer live (2026-09-26). Earlier
+    # bundles can hold a consumer plan naming a provider spell id from an older
+    # world, which fails hydration on the next full hit, so they cold-reset.
     # Version 11: a typed parameter with no registered provider compiles as an
     # UNRESOLVED_INPUT socket instead of failing conjure, and every executor
     # family routes constructor failures through the helper that raises
@@ -147,6 +151,7 @@ class CachingSystem(Cleanable):
         9: "exact_melder_release_compatibility",
         10: "creation_slot_build_guards",
         11: "unresolved_input_sockets",
+        12: "complete_bundle_restage",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"

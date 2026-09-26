@@ -10,8 +10,8 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | ccfdc78094e089b42168f14e7d07fa2fdb449582cddccb8ce12ec8aa406e6f6e |
-| bundle_sha256 | 16df8b8c44c058eb8a37ca6e569aa06cc26216041928548e7d89c38a340561c1 |
+| source_fingerprint | 4ad0c7aa8a80d1def67d4a17d9ced916fae59dc9fe64991a9ba851002c2b1105 |
+| bundle_sha256 | 0e329234ccd0de946b93acb597aebe9e80e621be6c6ad732105a73062ac023be |
 | bundle_line_count | 69405 |
 | bundle_line_ending | lf |
 | files | 370 |
@@ -305,7 +305,7 @@ Line numbers are 1-based and inclusive.
 | 54555-55215 | 54560-55212 | 22263 | utf-8 | abd84c14e6aff146eb58a904b94ae0be74a366f17c4ebb7f43cb058c8fa4e835 | benchmarks/testing_other_di/test_multithreading_di.py |
 | 55216-55988 | 55221-55985 | 22651 | utf-8 | 5a8adde1490e7a084768ec364f4310d54c8c2373a64ad884abc303b5b1af9fff | benchmarks/testing_other_di/test_overrides_all.py |
 | 55989-56835 | 55994-56832 | 31891 | utf-8 | 413ae6045e3d9f45c81aef773fb7295c3795a6d043d8f281a0c6f447053c8c4b | benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py |
-| 56836-58861 | 56841-58858 | 79556 | utf-8 | 83aaf8362392d878d49e2a99f95fa1adb5ac80845b9d4ccfb622fdcd28451fa2 | benchmarks/testing_other_di/test_real_world_gauntlet.py |
+| 56836-58861 | 56841-58858 | 79555 | utf-8 | 030cc6c0da6635c515335c489c68c33e9982a7003865a0524d8d1a768a6c69ee | benchmarks/testing_other_di/test_real_world_gauntlet.py |
 | 58862-58933 | 58867-58930 | 2072 | utf-8 | 9fa0217039115330bdc6ccb77ca6c5505996ae4b869698751da4c1f6b9da0c91 | benchmarks/testing_other_di/test_real_world_gauntlet_cprofile.py |
 | 58934-60997 | 58939-60994 | 65601 | utf-8 | e854922e9ea33a80df7c6eeb9e0a33662f7c21a218507aceaff68a11f349c52d | benchmarks/testing_other_di/test_shallow_all.py |
 | 60998-61477 | 61003-61474 | 14692 | utf-8 | fd9bd411f3e4693742030feb2360f6a277a9a309847f2ea9ab6f5b67e0cf723f | benchmarks/testing_other_di/test_shallow_all_diagnostics.py |
