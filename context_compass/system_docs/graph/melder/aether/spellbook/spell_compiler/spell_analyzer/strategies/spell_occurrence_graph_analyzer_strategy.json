@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
- "source_sha256": "72e5d6f07f20cc0b12a1a2e83f08db9c22cbd4e091cae2e785d362df632354db",
+ "source_sha256": "c13674064dbca9f40ff98022dee507670df38e9d82835514628bfc1f28f29a5e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy": {
@@ -19,7 +19,7 @@
    "label": "SpellOccurrenceGraphAnalyzerStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
-   "lineno": 50,
+   "lineno": 46,
    "bases": [
     "SpellAnalyzerStrategy"
    ],
@@ -33,7 +33,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6c44841a6a0b6aaaf876786d144bd383dd5c31a2058c66b5f9d5fdf640e8c47d",
+   "span_sha256": "d76b1c4755ec5badbea169216bf0875a6f1f1e6bf8cc09fa42b5acd779e3e7dc",
    "role": "Occurrence-graph analyzer strategy for phase-8 analysis.",
    "responsibilities": [
     "expands rooted blueprint truth plus topology and contract context into an occurrence graph",
@@ -45,7 +45,7 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "51fceb8d651119297e54d178cd2d053ac771b97ec822b3fdba71871cb285364c"
+   "semantics_authored_against": "d76b1c4755ec5badbea169216bf0875a6f1f1e6bf8cc09fa42b5acd779e3e7dc"
   }
  },
  "edges_out": [
@@ -116,8 +116,6 @@
   "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
   "Spell": "melder.aether.spellbook.spell.Spell",
   "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-  "DagIndex": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
-  "SocketRef": "melder.aether.spellbook.spell_compiler.dag.dag_index.SocketRef",
   "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
   "Spellbook": "melder.aether.spellbook.spellbook.Spellbook"
  },

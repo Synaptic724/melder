@@ -458,10 +458,10 @@ Responsibilities:
   CONDUIT admits the transaction, calling `mediator.start_transaction(...)`
   itself and calling in here inside the held window.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:3464, 3515 (`_notch_spell` -> `_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:3655, 3688 (`_add_to_spell_index` -> `_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:3831, 3863 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
-  - src/melder/aether/spellbook/spellbook.py:3684 (states the Conduit admits it)
+  - src/melder/aether/spellbook/spellbook.py:3644, 3695 (`_notch_spell` -> `_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:3835, 3868 (`_add_to_spell_index` -> `_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:4011, 4043 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:3680 (states the Conduit admits it)
 - Run phase pipelines before conjure.
 - Conjure exactly one Conduit per Spellbook instance.
 - Provide SpellBinder fluent adapter.
@@ -526,19 +526,19 @@ Concurrency/Threading:
     ordering on each other". They do. That wording invited exactly the inversion
     described above.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6295-6306 (`_run_structural_phases`
-    at :6295; the caller-held-lock precondition is stated at :6306)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1972 (the only
+  - src/melder/aether/spellbook/spellbook.py:7016-7027 (`_run_structural_phases`
+    at :7016; the caller-held-lock precondition is stated at :7027)
+  - src/melder/aether/spellbook/spellbook_creation_system.py:2000 (the only
     `_phase_run_lock` acquisition, reached from that path)
 - `_run_structural_phases` documents a CALLER-HELD precondition rather than
   taking a lock itself: the caller must hold the Spellbook lock for
   deterministic conjure ordering. That is a contract the type cannot enforce,
   which is why it is written down here.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:265 (`_phase_run_lock` created)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1944-1972
+  - src/melder/aether/spellbook/spellbook.py:286 (`_phase_run_lock` created)
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1972-2000
     (`_run_scheduler_with_phases` - the only acquisition, with its rationale)
-  - src/melder/aether/spellbook/spellbook.py:6279-6288 (policy flags under `_lock`)
+  - src/melder/aether/spellbook/spellbook.py:1053-1063 (the cache-emit flag re-checked and set under `_lock`)
 
 Invariants/Guarantees:
 - Conjure allowed once per Spellbook instance, tracked by the `_conjured` flag
@@ -557,9 +557,9 @@ Failure Modes:
   separating a spell that is the SOLE member of its source index (use
   `cleanup_spell` to dispose it instead).
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:3480-3520 (`_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:3653-3676 (`_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:3828-3856 (`_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:3695-3833 (`_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:3868-3962 (`_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:4043-4128 (`_apply_remove_from_index`)
 
 Observability:
 - `SafeLogger` on the Spellbook instance, used at `error` level on the failure
@@ -569,7 +569,7 @@ Observability:
   There is no info/debug narration of the happy path; absence of log output is
   the normal state, not a sign that nothing ran.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:5255-5260
+  - src/melder/aether/spellbook/spellbook.py:5601-5607
 
 Extension Points:
 - Conduit lifecycle hooks pulled from `SpellbookConfiguration`.
@@ -2465,7 +2465,7 @@ Failure Modes:
 - TypeError if `link` target is not a `Conduit`. This is a CONCRETE isinstance
   check, not a structural one: a conduit-shaped object that is not a `Conduit`
   subclass is rejected with "Expected Conduit-compatible object, got {type}".
-  EVIDENCE: src/melder/aether/conduit/conduit.py:4342-4344.
+  EVIDENCE: src/melder/aether/conduit/conduit.py:5024-5026.
 - RuntimeError if `link` target lacks a valid creation context.
 - RuntimeError if `transfer_spell_ownership` is called in non-dynamic mode.
 - Meld calls block while the local `CreationGate` is disabled.
@@ -3044,8 +3044,8 @@ Concurrency/Threading:
 - CORRECTED 2026-09-25: the Meld instance `RLock` does NOT serialise resolution.
   It guards cleanup, lazy SpellCompilerSystem creation and hook-map changes only;
   two melds on one conduit run concurrently. Earlier text here claimed otherwise.
-  EVIDENCE: src/melder/aether/conduit/meld/meld.py:304-345 and
-  src/melder/aether/conduit/meld/meld.py:1245-1470 (every `self._lock` site).
+  EVIDENCE: src/melder/aether/conduit/meld/meld.py:322-363 and
+  src/melder/aether/conduit/meld/meld.py:1364-1589 (every `self._lock` site).
 - Build-once exclusion is per slot: generated doors and plan steps hold the target
   store's `slot_guard(spell_id)` (or `Spell._lock` for unique) across recheck ->
   construct -> publish, and take the store lock only as a leaf. All locks involved
@@ -3114,8 +3114,8 @@ Observability:
   spell should never have compiled, and `TypeError`/`ValueError`/`KeyError` mean
   the caller's request was malformed. Reading only the message loses that split.
   EVIDENCE:
-  - src/melder/aether/conduit/meld/meld.py:20-21
-  - src/melder/aether/conduit/meld/meld.py:781-795
+  - src/melder/aether/conduit/meld/meld.py:24-27
+  - src/melder/aether/conduit/meld/meld.py:1054-1068
 
 Extension Points:
 - Hook maps from `SpellbookConfiguration`, resolved per spellbook id. A hook
@@ -3448,11 +3448,11 @@ Codegen IR export seams (2026-09-25):
   full-hit conjures never run it.
 - EVIDENCE:
   - `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py:78-146`
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:34-137`
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:266-376`
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:503-565`
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1024-1106`
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1290-1462`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:35-106`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:198-298`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:402-463`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:923-1003`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1189-1360`
   - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py:179-184`
   - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:300-345`
   - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_10.py:44-48`
@@ -3618,7 +3618,7 @@ Invariants/Guarantees:
   providers annotate `TYPE_CHECKING`-only types; before 2026-09-26 this read raised NameError
   (PhaseExecutionError in `occurrence_plan_local`).
   EVIDENCE:
-  - src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:995-1037
+  - src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:1082-1124
   - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:219-258
 
 Failure Modes:
@@ -3690,19 +3690,19 @@ Dirty terminology guardrail for this pipeline:
   for some time while still looking authoritative):
   - `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py:146`,
     `:203`, `:322` - the IR-freshness bit itself
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1367`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1266`
     (`capture_phase8_11_codegen_ir`)
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1457-1477`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1355-1376`
     (dirty-bit set/flush)
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1460`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1358`
     (`capture_phase8_11_codegen_ir_if_dirty`)
-  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1502`
+  - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:1400`
     (`reset_phase8_11_codegen_ir`)
   - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:535-546`
     (`run_phase_change_control_local`)
   - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:1595`
     (`is_root_dirty` - NOT :1403-1475, which does not contain it)
-  - `src/melder/aether/conduit/meld/meld.py:760`
+  - `src/melder/aether/conduit/meld/meld.py:1033`
     (`_gated_validation_required` - NOT :502-532)
 
 PhaseScheduler coordinates these phases using persistent worker threads and a fresh cancellation
@@ -4939,13 +4939,13 @@ Purpose:
   switching and member movement between indices.
 Contract/Interface:
 - `Conduit.notch_spell(...)` opens the `notch` transaction at
-  `src/melder/aether/conduit/conduit.py:4464`, then calls `Spellbook._notch_spell(...)`, which delegates
+  `src/melder/aether/conduit/conduit.py:5147`, then calls `Spellbook._notch_spell(...)`, which delegates
   the member-store switch to the seam `_apply_notch(...)`.
 - `Conduit.add_to_spell_index(spell=, target_index=)` opens `add_to_index` at
-  `src/melder/aether/conduit/conduit.py:4537`, then calls `Spellbook._add_to_spell_index(...)`, which
+  `src/melder/aether/conduit/conduit.py:5220`, then calls `Spellbook._add_to_spell_index(...)`, which
   delegates the move-in to `_apply_add_to_index(...)`.
 - `Conduit.remove_from_spell_index(spell=, source_index=)` opens
-  `remove_from_index` at `src/melder/aether/conduit/conduit.py:4608`, then calls
+  `remove_from_index` at `src/melder/aether/conduit/conduit.py:5291`, then calls
   `Spellbook._remove_from_spell_index(...)`, which delegates the split to
   `_apply_remove_from_index(...)`.
   THE SPLIT OF OWNERSHIP IS THE POINT: the Conduit admits the transaction
@@ -4955,11 +4955,11 @@ Contract/Interface:
   DO NOT TRUST THE CONDUIT DOCSTRINGS HERE. All three say "Delegates to the
   owning Spellbook, WHICH ADMITS the [...] change-control transaction". That is
   false in all three, and the same three methods call
-  `mediator.start_transaction(...)` a few lines further down. `src/melder/aether/spellbook/spellbook.py:3684`
+  `mediator.start_transaction(...)` a few lines further down. `src/melder/aether/spellbook/spellbook.py:3680`
   states it correctly. Raised on TASK-2026-08-02-stale-source-docstrings.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:4392, 4482, 4560 (public verbs)
-  - src/melder/aether/spellbook/spellbook.py:3510, 3683, 3858 (applied seams)
+  - src/melder/aether/conduit/conduit.py:5075, 5165, 5243 (public verbs)
+  - src/melder/aether/spellbook/spellbook.py:3695, 3868, 4043 (applied seams)
 Data Structures:
 - Transaction metadata carrying spellbook/conduit ids, binding key, member id,
   and source/target SpellIndex ids.
@@ -6383,8 +6383,8 @@ These flows describe concrete method sequences for core behaviors.
      resolution errors and the cache path is not `full_hit`; a full hit sets
      `force_skip_plan_phases=True`, loads both-lane creation contexts from the
      cache, and skips `_enforce_conduit_resolution_valid`.
-     EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:236-257`,
-     `src/melder/aether/spellbook/spellbook_creation_system.py:504-612`.
+     EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:242-260`,
+     `src/melder/aether/spellbook/spellbook_creation_system.py:616-723`.
    - Live 8-11 output contract:
      - phase 8 `_occurrence_graph_analysis`
      - phase 9 `_spell_codegen_model`
@@ -7618,9 +7618,9 @@ future expansion of a `Key Files (C1)` list must land here in the same pass.
   verified_at: 2026-08-02T16:29:16Z
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
-  end_line: 1430
-  loc: 1430
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 1435
+  loc: 1435
+  verified_at: 2026-09-26T20:40:10Z
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
   start_line: 1
   end_line: 384
@@ -9116,7 +9116,7 @@ completed epics/stories of 2026-07-11/12).
 - Restore: crystal_loader_system/graft_runner.py - GraftRunner
   (single-use, Cleanable): RecordVersion gate + graft_kind refusal ->
   unconjured-host refusal (public `Spellbook.conduit` accessor,
-  `src/melder/aether/spellbook/spellbook.py:5954`; the patch-lane copy cited
+  `src/melder/aether/spellbook/spellbook.py:6434`; the patch-lane copy cited
   :5412) -> per-member overlap rule via
   `host_frame.find_index_for_spell`
   (`src/melder/aether/aetheric_frame/aetheric_frame.py:841`; resident member

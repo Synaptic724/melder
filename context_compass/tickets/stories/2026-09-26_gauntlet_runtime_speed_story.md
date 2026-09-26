@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T19:43:17Z
+- Updated: 2026-09-26T20:35:11Z
 
 ## User Narrative
 As the Melder owner, I want Melder's per-scope-cycle runtime on the real-world gauntlet (free-threaded, three
@@ -101,6 +101,7 @@ weakens a cleanup or concurrency guarantee is out.
   every form by the owner, opt-in flag included; the prototype stays in artifacts as research only.
 - 2026-09-26T17:32:38Z: owner go-ahead for clean levers, each gated by VM A/B, suites on 3.14t (gil 0/1) and
   the GIL build, a 30k soak, a NOTICE to the file owner and a byte-identical apply.
+- 2026-09-26T20:35:11Z: owner direction: optimize code, not the benchmark; pools and their shells are created when they are today (no prewarming). Conjure-time hydration withdrawn; levers must remove work.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -152,6 +153,25 @@ weakens a cleanup or concurrency guarantee is out.
   IMPACT: The gauntlet's positional gain now belongs to melder_0's lowering. melder_2's next levers are the scope
     lifecycle and pools, both files in this lane.
   NEXT: Land P4; then take the owner's Windows gauntlet run and the scope-check decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:29:19Z
+  TYPE: FACT
+  CLAIM: State after the owner's Windows runs on 0.2.68-0.2.70 (19:31Z to 20:05Z).
+    - hot_scopes/s is 0.86-0.88x dishka, up from 0.78x in the morning. The SpellSpace window is at parity on the
+      request and worker_b lanes.
+    - The tail is attributed: Melder's only specific spike is turn 0's first-use hydration and compile, and no GC
+      fires in the loop.
+    - The remaining average gap, about 0.2 ms per iteration, is half in the worker lanes' cycles and half in
+      thread-exit cost outside them. On 3.14t that cost grows with state built on worker threads, which Melder's
+      lazy first use leaves behind.
+    - Conjure-time hydration is the shared next lever, pending the owner's pick.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md:245-369
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:793-816
+  IMPACT: The next implementation task opens on the owner's pick; P1 waits for closure and P4 for acceptance.
+  NEXT: Owner decisions, per the tail task's DECISION_REQUEST.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 

@@ -77,7 +77,8 @@ Message alert rules
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T19:15:40Z)
 - NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T19:15:40Z)
 - NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T20:00:17Z)
-- NEW MESSAGE for melder_2 (from melder_0, 2026-09-26T20:00:17Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T20:47:28Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T20:47:28Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -88,10 +89,10 @@ Message alert rules
 | override_many_collection_fix | review | handoff | claude | melder_0 | none | Owner reviews the collection-member fix (member paths, cache 13). | Each collection member builds its own many dependencies. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_fix_collection_member_many_sharing_task.md | 2026-09-26T12:29:50Z | REQUIRED |
 | override_site_plan_lowering | in_progress | implementation | claude | melder_0 | none | S6: read the authoring instructions, map patch sections to canonical docs, promote; graph, assets. | Key-set plans for overrides and normal melds on one lowering; unresolved inputs decided before construction; conjure linear; targeting surface and old normal emitters retired (R1, R2; 0.2.70). | S6 done and the story walked through with the owner. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T20:02:19Z | REQUIRED |
 | caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
-| gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Size the next lever on the VM copy (scope create/cleanup call chain); owner decision pending on the SpellSpace scope RISK. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T19:14:52Z | REQUIRED |
-| gauntlet_p1_positional_args | review | validation | claude | melder_2 | none | Owner decides P1 with melder_0's S2b-3: P1's emitter is off the normal path since S2b-2, whose lowering passes operands positionally. | Generated plans pass dependency values positionally (-11% to -21% per scope cycle on the VM). | Owner-run gauntlet filed; owner accepts or retires P1 with S2b-3; closure sync. | tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md | 2026-09-26T19:14:52Z | REQUIRED |
-| gauntlet_p4_spellspace_warm_lane | review | validation | claude | melder_2 | none | Owner runs the Windows gauntlet (0.2.68: melder_0's lowering + P4); compare same-run ratios with owner_run_20260926.txt. | SpellSpace.meld serves warm id melds from the door's fast-door entry (about -17% per cached space meld, -2% to -3% per gauntlet cycle on the VM). | Device tree byte-identical to the validated copy; owner-run gauntlet; owner accepts. | tickets/tasks/2026-09-26_spellspace_meld_warm_id_lane_task.md | 2026-09-26T19:27:00Z | REQUIRED |
-| gauntlet_tail_spikes | in_progress | discovery | claude | melder_2 | none | Owner: one Windows run with GAUNTLET_GC_PROBE=1 GAUNTLET_PER_TURN_GC=1, and a pick among the fix candidates (turn-0 hydration: prewarm / cached code / harness warm-up). | The rare Melder-only multi-ms cycle spikes attributed with evidence and ranked fix candidates. | Attribution filed; DECISION_REQUEST to the owner. | tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md | 2026-09-26T19:50:01Z | REQUIRED |
+| gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner: Windows run of probe_steps3.py (melder and dishka, worker_a, 1 and 3 threads); then pick a structural lever for concurrency (sharded root pool, single-lock link/detach). | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T20:57:04Z | REQUIRED |
+| gauntlet_p1_positional_args | review | validation | claude | melder_2 | none | Owner closes P1: R2 retired its emitter (0.2.70) and its rule lives on in the lowering (P5). | Generated plans pass dependency values positionally (-11% to -21% per scope cycle on the VM). | Owner accepts or retires P1; closure sync. | tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md | 2026-09-26T20:29:32Z | REQUIRED |
+| gauntlet_p4_spellspace_warm_lane | review | validation | claude | melder_2 | none | Owner accepts P4: Windows runs on 0.2.68-0.2.70 show the SpellSpace window at parity on request and worker_b. | SpellSpace.meld serves warm id melds from the door's fast-door entry (about -17% per cached space meld, -2% to -3% per gauntlet cycle on the VM). | Owner accepts; closure sync. | tickets/tasks/2026-09-26_spellspace_meld_warm_id_lane_task.md | 2026-09-26T20:29:32Z | REQUIRED |
+| gauntlet_tail_spikes | review | handoff | claude | melder_2 | none | Owner accepts the attribution (turn-0 first use, no GC); optional 200k run with GAUNTLET_TREND_WINDOWS=20. | The rare Melder-only multi-ms cycle spikes attributed with evidence and ranked fix candidates. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md | 2026-09-26T20:35:11Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -136,8 +137,8 @@ Message alert rules
   is off the normal path since S2b-2) and the owner's Windows gauntlet run.
   RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md.
-- gauntlet_tail_spikes: SWITCH_TRIGGER is an evidence-backed attribution of the slow cycles (VM mechanisms plus
-  an owner Windows run with the harness instruments). RESUME_HIERARCHY:
+- gauntlet_tail_spikes: SWITCH_TRIGGER is the owner's acceptance of the attribution (turn-0 first use, no GC);
+  conjure-time hydration withdrawn by owner direction (optimize code, not the benchmark). RESUME_HIERARCHY:
   tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md.
 - gauntlet_p4_spellspace_warm_lane: SWITCH_TRIGGER is the byte-identical device apply, then the owner's Windows

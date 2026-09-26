@@ -431,14 +431,14 @@ External interfaces are Python APIs:
   CORRECTED 2026-08-02: this document previously said the Conduit "delegates to
   the owning Spellbook, WHICH ADMITS the change-control transaction". It does
   not. That wording was inherited from the Conduit docstrings, which say the
-  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3684`, which states the
+  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3680`, which states the
   opposite correctly. The code settles it.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:4392, 4464 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:4482, 4537 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:4560, 4608 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:3655 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:3688 (`_apply_add_to_index` seam)
+  - src/melder/aether/conduit/conduit.py:5075, 5147 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5165, 5220 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:5243, 5291 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:3835 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:3868 (`_apply_add_to_index` seam)
 - `Spellbook.conjure(...)` for building a root Conduit.
 - `Conduit.meld(...)` for resolving instances.
 - `Conduit.create_lesser_conduit(...)` for child scopes.
@@ -497,7 +497,7 @@ the member-store work is IMPLEMENTED behind the `_apply_notch`,
 inside the held transaction window. Notch is currently OWNER-SIDE ONLY:
 contracted borrowers are not fanned out, so a notch on a shared index does not
 yet update borrowers' contracted maps.
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:3695-3833.
 
 ## Entrypoints and Runtime Guardrails
 - `melder/__init__.py` warns on Python < 3.14 and on GIL-enabled builds
@@ -671,9 +671,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
      the cache, and does not re-enforce the resolution verdict (it was
      enforced when the bundle was built). No cache path skips phases 1-7.
      EVIDENCE:
-     - src/melder/aether/spellbook/spellbook_creation_system.py:236-257
-     - src/melder/aether/spellbook/spellbook_creation_system.py:411-438
-     - src/melder/aether/spellbook/spellbook_creation_system.py:504-612
+     - src/melder/aether/spellbook/spellbook_creation_system.py:242-260
+     - src/melder/aether/spellbook/spellbook_creation_system.py:517-544
+     - src/melder/aether/spellbook/spellbook_creation_system.py:616-723
    - Live 8-11 mapping:
      - phase 8 analyzer
      - phase 9 processor
@@ -786,9 +786,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
    so borrowers of a SHARED index keep stale contracted maps until the
    cross-conduit slice lands.
    EVIDENCE:
-   - src/melder/aether/spellbook/spellbook.py:3480-3520
-   - src/melder/aether/spellbook/spellbook.py:3653-3676
-   - src/melder/aether/spellbook/spellbook.py:3828-3856
+   - src/melder/aether/spellbook/spellbook.py:3695-3833
+   - src/melder/aether/spellbook/spellbook.py:3868-3962
+   - src/melder/aether/spellbook/spellbook.py:4043-4128
 
 ### Sequence: Change-Control Revalidation
 1. `ChangeControlManager.revalidate_dirty_roots(conduit_id, ...)`:
@@ -845,7 +845,7 @@ check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
 THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
 conduit-shaped object that is not a `Conduit` subclass is rejected outright.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:4341-4343 (the check and the raise -
+  - src/melder/aether/conduit/conduit.py:5024-5026 (the check and the raise -
     cited as :4342-4344 in the patch lane, which was off by one)
   - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
   - src/melder/nexus/rift/rift_space/event_system/rift_event.py
@@ -1128,9 +1128,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   slots, which is why a cleaned Spellbook cannot be re-conjured rather than
   merely refusing to be: the state that would answer the question is gone.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:246 (`_conjured` initialised)
-  - src/melder/aether/spellbook/spellbook.py:642 (ownership check reads it)
-  - src/melder/aether/spellbook/spellbook.py:678 (deleted on cleanup)
+  - src/melder/aether/spellbook/spellbook.py:267 (`_conjured` initialised)
+  - src/melder/aether/spellbook/spellbook.py:665 (ownership check reads it)
+  - src/melder/aether/spellbook/spellbook.py:723 (deleted on cleanup)
 - `SpellbookConfiguration` must be frozen before Conduit creation.
 - Disposal order is established at bind: both groups contribute and book order owns shared
   names. `enforce_priority_disposal_methods=False` puts the book block last; True puts it first.
@@ -1174,17 +1174,17 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:5992-6032
-    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6019-6031,
-    effective-mode return :6032)
-  - src/melder/aether/spellbook/spellbook.py:6148
+  - src/melder/aether/spellbook/spellbook.py:6502-6542
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6529-6541,
+    effective-mode return :6542)
+  - src/melder/aether/spellbook/spellbook.py:6637
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:645-694
     (`bind_frame_configuration` unfrozen branch: the twelve-value copy plus
     `frame_configuration.cleanup()` on the donor, then freeze with
     `origin_frame_name`)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1232-1279
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1253-1292
     (`SpellbookCreationSystem.check_system_state`: missing-posture refusal and
     the non-dynamic default-policy-only rule)
 - SpellSpace can only meld when it is the active spellspace for a Conduit.
@@ -1203,7 +1203,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
   ask.
   EVIDENCE:
   - src/melder/aether/spellbook/configuration/system_state.py:32-49
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1232-1279
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1253-1292
 - Method/lambda spells must use `Existence.unique`, because a method or lambda
   has no stable identity to share: two resolutions of a non-unique existence
   would have to return the same object, and there is no object to return until
@@ -1713,9 +1713,9 @@ SpellCompiler and validation:
   note: DI shape classification.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
   start_line: 1
-  end_line: 1430
-  loc: 1430
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 1435
+  loc: 1435
+  verified_at: 2026-09-26T20:40:10Z
   note: key-set plan lowering: site graph from steps, placement, emission, call shape.
 - path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
   start_line: 1

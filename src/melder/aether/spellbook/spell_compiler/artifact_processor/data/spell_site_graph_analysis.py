@@ -258,15 +258,18 @@ class SpellSiteGraphAnalysis(Cleanable):
         when a caller runs `SpellSiteGraphProcessorStrategy` on the model.
 
     System Context:
-        Built at the first override meld of a root by `SitePlanOverrideRuntime`
-        (design v2 S3), which resolves override keys against it; conjure does
-        not build it (2026-09-26).
+        Built by `SitePlanOverrideRuntime` (through
+        `SitePlanLowering.build_site_graph`) when a root of the many_only or
+        generalized family is hydrated at its first meld, normal or override
+        (since S2b-2); plans are placed and override keys resolved against it.
+        Conjure does not build it (2026-09-26).
 
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
         access: internal. Physical site graph of one root: sites parents-first, parameter
-        rows, name index and logical path counts. Input to override key resolution.
+        rows, name index and logical path counts. Input to override key resolution
+        and site-plan placement.
     """
 
     __slots__ = Cleanable.__slots__ + [

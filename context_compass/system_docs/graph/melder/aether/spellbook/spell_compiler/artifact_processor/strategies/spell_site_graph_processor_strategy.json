@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py",
- "source_sha256": "dd9c420f057caedc3c87afdf972ba3fd21c3edbe57fb46578a3c513614adeeba",
+ "source_sha256": "af0b12de5c823907a5cae46b55959e13764ed8b6c435c6b6685306f41e37c8fb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy": {
@@ -9,7 +9,16 @@
    "label": "spell_site_graph_processor_strategy",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Builder of a root's site graph from injection sources and Phase-3 topologies.",
+   "responsibilities": [
+    "hosts SpellSiteGraphProcessorStrategy"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
@@ -31,7 +40,19 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "34ee96c5c645bedb00b2a57bef9d2d5438cd254e681b3e0f78aaffea642fb178"
+   "span_sha256": "1802d80dee2fed87b6ea03d1708f848d7febc0b2a10dba877ce3cf03d7174a38",
+   "include": true,
+   "role": "Builds a root's site graph from injection sources and live Phase-3 topologies; not registered in the default Phase-9 chain.",
+   "responsibilities": [
+    "orders reachable instance keys parents first with an iterative DFS",
+    "builds one parameter row per topology socket, falling back to the injection source",
+    "accumulates logical path counts parents first",
+    "fits model.site_graph_shape when a caller runs it as a processor strategy"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "1802d80dee2fed87b6ea03d1708f848d7febc0b2a10dba877ce3cf03d7174a38"
   }
  },
  "edges_out": [
@@ -96,5 +117,18 @@
   "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy",
   "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
   "label": "SpellSiteGraphProcessorStrategy"
- }
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
+   "relation": "creates",
+   "why": "build_site_graph returns a new section; the caller (the site-plan runtime, or the model when run as a processor) owns its cleanup.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
 }

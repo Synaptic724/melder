@@ -1,4 +1,4 @@
-# Melder 0.2.70
+# Melder 0.2.71
 
 **Unreleased**
 
@@ -534,7 +534,17 @@ stay valid.
   opt-in conjure warning report, process-stable spell ids, cache generation 12, caller-supplied container
   parameters, the `override` descriptor keyword with live payload values, the single
   codegen-signature implementation, melding a shared spell while another conduit revalidates it, and the
-  conjure validation report.
+  conjure validation report. They also cover override key-set plans and the site plans normal melds now
+  share with them, unresolved inputs decided before construction, the structural snapshot that lets a warm
+  conjure skip phases 1-4, self-referencing constructors and cycle consumers in the conjure report, and
+  class binding-profile annotations. The retired override-targeting internals and normal-meld emitters no
+  longer appear, and the graph documents drop the modules this release deletes.
 - `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
   raised and caught, but it cannot be bound as a spell.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.70.
+- The internal-registration guard drops the 27 internal classes this release removes (among them
+  `SpellOverrider`, `DagIndex`, `SocketRefSanityStrategy` and both families' old creation steps) and adds
+  `StructuralSnapshot`, so it lists 619 classes (645 before).
+- Docstrings of the site-plan lowering and runtime, the site-graph analysis and its processor, and both
+  family hydrators now say the site graph is built when a root is hydrated and serves normal melds as well
+  as override melds.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.71.

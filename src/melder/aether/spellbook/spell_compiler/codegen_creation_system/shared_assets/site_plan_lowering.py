@@ -67,7 +67,8 @@ class SitePlanStep(Cleanable):
         Input rows of `SitePlanLowering`, built by the family hydrators.
 
     System Context:
-        Phase-11 override lane (design v2 step S3).
+        Phase-11 normal and override lanes of the many_only and generalized
+        families (design v2 S2/S3).
 
     AGENT_ACCESS: internal
 
@@ -282,7 +283,8 @@ class SitePlanRuntimeHelpers:
         Referenced by `SitePlanLowering` emission namespaces.
 
     System Context:
-        Phase-11 override lane (design v2 step S3).
+        Phase-11 normal and override lanes of the many_only and generalized
+        families (design v2 S2/S3).
 
     AGENT_ACCESS: internal
 
@@ -449,8 +451,9 @@ class SitePlanLowering:
     Build the site graph from steps, compute demand and emit one key-set plan.
 
     Purpose:
-        The shared lowering of design v2 for the override lane: given the
-        lane's no-overrides steps and one resolved key set, emit Python that
+        The shared lowering of design v2 for normal and override melds: given
+        the lane's no-overrides steps and one resolved key set (empty for the
+        normal plan), emit Python that
         builds only the demanded steps and reads supplied values by literal key
         (`ov["a"]`, `args[0]`). A shared site is an inline hit read plus an
         out-of-line miss function, and the sites only it needs are built inside
@@ -486,13 +489,14 @@ class SitePlanLowering:
         Used by `SitePlanOverrideRuntime` (shared_assets).
 
     System Context:
-        Phase-11 override lane (design v2 step S3).
+        Phase-11 normal and override lanes of the many_only and generalized
+        families (design v2 S2/S3).
 
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
         access: internal. Site graph from steps, demand walk and key-set plan source emission
-        for override melds.
+        for normal and override melds.
     """
 
     __slots__ = ()
@@ -762,7 +766,8 @@ class SitePlanEmission(Cleanable):
         Private worker of `SitePlanLowering`.
 
     System Context:
-        Phase-11 override lane (design v2 step S3).
+        Phase-11 normal and override lanes of the many_only and generalized
+        families (design v2 S2/S3).
 
     AGENT_ACCESS: internal
 

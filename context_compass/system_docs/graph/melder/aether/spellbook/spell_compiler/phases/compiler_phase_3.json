@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
- "source_sha256": "58ae1b3c599dfcd6b90fa5df613f28c5c867f29101d19014221fc411510566b9",
+ "source_sha256": "1b9717f35b552cd08dde3090af3fdb189b404af3e608b953493d3a43a65eeb8e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3": {
@@ -22,7 +22,7 @@
    "label": "CompilerPhase3",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py",
-   "lineno": 55,
+   "lineno": 52,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -33,7 +33,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "243f2568dcc214684f111c49a31611ae471878c1119b0e5a9ca76cab8e1d39fc",
+   "span_sha256": "1778eecb95fccfae0c1407d10b4b6c7063ffeccd0845fb51a0e6c20a4f4fa4d0",
    "role": "Compiler-owned phase-3 local-frame and DAG build surface.",
    "responsibilities": [
     "resolves symbolic constructor sockets into concrete dependency spell ids",
@@ -55,12 +55,6 @@
   {
    "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3",
    "to_label": "SpellLocalTopology",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3",
-   "to_label": "DirectedAcyclicWorkGraph",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -104,7 +98,6 @@
   "get_origin": "typing.get_origin",
   "SharedCompilerExecutions": "melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions",
   "CompilerPhaseUtility": "melder.aether.spellbook.spell_compiler.phases.utility.CompilerPhaseUtility",
-  "DirectedAcyclicWorkGraph": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
   "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
   "SpellResolutionFrame": "melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionFrame",
   "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",

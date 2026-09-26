@@ -1,0 +1,104 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py",
+ "source_sha256": "739b6fce1b25ff86d0ca253c6eacf1dceba83bfa7f01d9abdcbc9c2b39cd80f2",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot": {
+   "id": "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot",
+   "label": "structural_snapshot",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py",
+   "lineno": 1
+  },
+  "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot": {
+   "id": "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot",
+   "label": "StructuralSnapshot",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py",
+   "lineno": 34,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "annotation_refs",
+    "bind_time_requirements",
+    "build_payload",
+    "capture_at_conjure_end",
+    "classify",
+    "hydrate_full_hit",
+    "payload_well_formed",
+    "pool_replayable",
+    "rebuild_topology",
+    "structural_key",
+    "type_refs",
+    "world_stamp"
+   ],
+   "shape": {
+    "method_count": 13,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "88b23aaddbc9fed6a4d0f5c723bc755a1963d92babe7fa34159227a5ef5be67c"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot",
+   "to_label": "SpellLocalTopology",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot",
+   "to_label": "SpellSocketDescriptor",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot",
+   "to_label": "KeyError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Sequence": "typing.Sequence",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "Union": "typing.Union",
+  "get_args": "typing.get_args",
+  "get_origin": "typing.get_origin",
+  "SpellState": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state.SpellState",
+  "SpellStateChangeReason": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason.SpellStateChangeReason",
+  "SpellValidity": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity.SpellValidity",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+  "CompilerPhase3": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3",
+  "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
+  "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
+  "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor",
+  "SpellSystemStates": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "Spellbook": "melder.aether.spellbook.spellbook.Spellbook",
+  "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
+  "CachingSystem": "melder.utilities.caching_system.caching_system.CachingSystem"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot",
+  "class": "melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot.StructuralSnapshot",
+  "label": "StructuralSnapshot"
+ }
+}

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/compilers/solo_overrides_codegen_creation_compiler.py",
- "source_sha256": "b443d959e96f9d7178598aac48dc8b059862acfd59e31605105bc76a7b23c655",
+ "source_sha256": "e40ab2e561cc381b3edb06a127bd50328515c7400203f3824ab87d1d1de1d4cb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler": {
@@ -14,11 +14,13 @@
    "responsibilities": [
     "emits deterministic root-only overrides executor source for the solo family",
     "hydrates callable override executors from emitted source against one root spell",
-    "uses the process-wide emitted-source code-object cache for solo overrides executors"
+    "uses the process-wide emitted-source code-object cache for solo overrides executors",
+    "calls the root through the no-overrides compiler's decided call target, so an unsupplied unresolved input raises before the constructor runs"
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   }
  },
  "edges_out": [],

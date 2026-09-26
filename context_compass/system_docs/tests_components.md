@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-06-13
+- Updated: 2026-09-26
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references

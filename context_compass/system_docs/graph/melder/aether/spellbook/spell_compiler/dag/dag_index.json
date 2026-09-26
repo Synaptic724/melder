@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/dag/dag_index.py",
- "source_sha256": "fad5147aa84998eb98641583624d0a511c0ea13213cbe2e62d2d0aca944798d4",
+ "source_sha256": "c5a189f89cbb7e0e63808fa77a1db8263dde9cdac71ec0450147dfaf6bdcb5d1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.dag.dag_index": {
@@ -11,15 +11,15 @@
    "file": "src/melder/aether/spellbook/spell_compiler/dag/dag_index.py",
    "lineno": 1,
    "include": true,
-   "role": "The targeting surface: interned parameter paths, stable socket references, and the index over them.",
-   "semantics_authored_against": "585794c001eec41f7a14d976c1a60df479eec7d1efee7adf8855f9f4f78de6df"
+   "role": "Interned root-relative parameter paths (PathRegistry) that Phase 8 mints into; the socket references and DAG index were retired (R1).",
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry": {
    "id": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry",
    "label": "PathRegistry",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/dag/dag_index.py",
-   "lineno": 26,
+   "lineno": 12,
    "bases": [
     "Cleanable"
    ],
@@ -40,10 +40,10 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f97d7f794a12c91098bafaf498fefd2fe1cd0338ca11f644d3b2fdfb3f616d39",
+   "span_sha256": "b87de2dcdae9b086ec76fc7b55b3f02ab1cb4b5e94dc0f4b13792045b0fe3ac3",
    "role": "Registry interning parameter paths into stable path ids.",
    "responsibilities": [
-    "interns and resolves root-relative parameter paths for override targeting"
+    "interns and resolves root-relative parameter paths into stable path ids that Phase 8 mints for instance keys"
    ],
    "owns_state": [
     "_child_ids",
@@ -57,8 +57,48 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "bc6de21e9bc33f8e5d35b9525b803e67fe5a04873221323629020b15ec2d9b1a"
+   "semantics_authored_against": "b87de2dcdae9b086ec76fc7b55b3f02ab1cb4b5e94dc0f4b13792045b0fe3ac3"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry",
+   "to_label": "Cleanable",
+   "relation": "specializes",
+   "to": "melder.utilities.general_base.cleanable.Cleanable"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry",
+   "to_label": "PathRegistry",
+   "relation": "creates",
+   "confidence": "candidate"
   },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Sequence": "typing.Sequence",
+  "Tuple": "typing.Tuple",
+  "Optional": "typing.Optional",
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+ },
+ "collapse_candidate": null,
+ "nodes_retired": {
   "melder.aether.spellbook.spell_compiler.dag.dag_index.SocketRef": {
    "id": "melder.aether.spellbook.spell_compiler.dag.dag_index.SocketRef",
    "label": "SocketRef",
@@ -88,7 +128,8 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "5feefd61c23954fecf59f44e28d616f4fecf302adaa2d711b58d04aa522881c7"
+   "semantics_authored_against": "5feefd61c23954fecf59f44e28d616f4fecf302adaa2d711b58d04aa522881c7",
+   "retired_reason": "gone from source"
   },
   "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex": {
    "id": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
@@ -131,7 +172,8 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "0172fa322770197a1c51c9cf46edecd3027fa6a2d491ff77e7568b75c5eb255f"
+   "semantics_authored_against": "0172fa322770197a1c51c9cf46edecd3027fa6a2d491ff77e7568b75c5eb255f",
+   "retired_reason": "gone from source"
   },
   "melder.aether.spellbook.spell_compiler.dag.dag_index.DagTargetingEngine": {
    "id": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagTargetingEngine",
@@ -164,7 +206,8 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "e253323d7fb576e559a0b5cf467c4e9387a8fd42d300f7184056c02454268f0a"
+   "semantics_authored_against": "e253323d7fb576e559a0b5cf467c4e9387a8fd42d300f7184056c02454268f0a",
+   "retired_reason": "gone from source"
   },
   "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndexBuilder": {
    "id": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndexBuilder",
@@ -191,105 +234,10 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "b70064abff059be63f1d9dd8e787cd5c0cb6dd3051748e26c75d8dc8990b0244"
+   "semantics_authored_against": "b70064abff059be63f1d9dd8e787cd5c0cb6dd3051748e26c75d8dc8990b0244",
+   "retired_reason": "gone from source"
   }
  },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagTargetingEngine",
-   "to_label": "Cleanable",
-   "relation": "specializes",
-   "to": "melder.utilities.general_base.cleanable.Cleanable"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry",
-   "to_label": "PathRegistry",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
-   "to_label": "PathRegistry",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagTargetingEngine",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagTargetingEngine",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndexBuilder",
-   "to_label": "DagIndex",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndexBuilder",
-   "to_label": "ValueError",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndexBuilder",
-   "to_label": "SocketRef",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "dataclass": "dataclasses.dataclass",
-  "field": "dataclasses.field",
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Dict": "typing.Dict",
-  "List": "typing.List",
-  "Iterable": "typing.Iterable",
-  "Callable": "typing.Callable",
-  "Sequence": "typing.Sequence",
-  "Tuple": "typing.Tuple",
-  "Optional": "typing.Optional",
-  "ClassVar": "typing.ClassVar",
-  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
-  "TargetSpecKind": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpecKind",
-  "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
-  "TargetSpec": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpec"
- },
- "collapse_candidate": null,
  "edges_authored": [
   {
    "from": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",

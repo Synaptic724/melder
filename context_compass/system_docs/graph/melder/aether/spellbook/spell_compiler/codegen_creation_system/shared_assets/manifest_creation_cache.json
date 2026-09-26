@@ -64,17 +64,6 @@
   },
   {
    "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache",
-   "relation": "uses",
-   "why": "manifest_creation_cache routes lazy reload into the concrete family caches that rebuild CreationContext from manifest packages.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "borrowed"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
    "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan",
    "relation": "uses",
    "why": "manifest_creation_cache dispatches generalized lane-plan reload through the cached phase-11 row and transient-plan surfaces on SpellGeneralizedCodegenLanePlan.",

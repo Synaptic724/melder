@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py",
- "source_sha256": "476935ea7d3bbbb4eb626d98e1986a7536e7563ca50924ae75ef9509a245dca4",
+ "source_sha256": "8933de0f73418eb5009cf946e506cbef9778c6668ca8babe69726498f1eac4d5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime": {
@@ -9,7 +9,16 @@
    "label": "site_plan_override_runtime",
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py",
-   "lineno": 1
+   "lineno": 1,
+   "include": true,
+   "role": "Per-root site-plan runtime of the many_only and generalized families.",
+   "responsibilities": [
+    "hosts SitePlanOverrideRuntime"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime",
@@ -25,11 +34,35 @@
     "cleanup"
    ],
    "shape": {
-    "method_count": 8,
+    "method_count": 9,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "7bf00a0004baa9dfa42888d3964765583a013b8ecd9d7fedd85bf0cc520b553d"
+   "span_sha256": "bbeb72444b038fd9246dbf9fb0094b90d602b83e173f09c59bb0058016e0dc5f",
+   "include": true,
+   "role": "Owns one root's normal plan and its per-key-set override plans for the many_only and generalized families.",
+   "responsibilities": [
+    "builds the site graph and compiles the normal plan at construction (hydration)",
+    "serves override melds from a plan table keyed by the payload's key tuple, lock-free on hits",
+    "compiles a missing key set under _compile_lock, evicting the oldest at MAX_PLANS",
+    "dispatches __args__ key sets by arity and wraps key errors as 'Failed to apply overrides.'",
+    "cleans its plans, the site graph and every owned step"
+   ],
+   "owns_state": [
+    "execute_with_overrides",
+    "execute_normal",
+    "_steps",
+    "_plans",
+    "_compile_lock",
+    "_site_graph",
+    "_owned_masked_steps"
+   ],
+   "phases": [
+    "init",
+    "runtime",
+    "cleanup"
+   ],
+   "semantics_authored_against": "bbeb72444b038fd9246dbf9fb0094b90d602b83e173f09c59bb0058016e0dc5f"
   }
  },
  "edges_out": [
@@ -85,5 +118,64 @@
   "module": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime",
   "class": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime",
   "label": "SitePlanOverrideRuntime"
- }
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
+   "relation": "owns_lifecycle_of",
+   "why": "Built once at construction from the steps and cleaned in cleanup(); the resolver and every emission read it.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "init",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep",
+   "relation": "owns_lifecycle_of",
+   "why": "Receives the hydrator's steps and every masked copy an emission returns, and cleans all of them.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime",
+    "cleanup"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering",
+   "relation": "uses",
+   "why": "Calls build_site_graph once and emit for the normal plan and each key set.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolver",
+   "relation": "uses",
+   "why": "Resolves each key set once under the compile lock; key errors become 'Failed to apply overrides.' and are not stored.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime",
+   "to": "melder.aether.spellbook.spell.Spell",
+   "relation": "borrows",
+   "why": "Reads the root spell's name, selected id and its Spellbook's Phase-3 topologies; never cleans it.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

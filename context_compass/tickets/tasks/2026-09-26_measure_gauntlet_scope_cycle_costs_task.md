@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T19:27:22Z
+- Updated: 2026-09-26T20:57:04Z
 
 ## Objective
 A per-scope-cycle cost map for Melder on the real-world gauntlet - where the time and the calls go in outer and
@@ -105,6 +105,7 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
 - ARTIFACT_PATHS:
   - artifacts/gauntlet_runtime_speed_20260926/owner_run_20260926.txt
   - artifacts/gauntlet_runtime_speed_20260926/vm_environment.txt
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/
 - DISPOSITION: retain_as_reference
 - CLEANUP_TRIGGER: task closure; the owner confirms retention.
 
@@ -815,6 +816,272 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-26T20:28:57Z
+  TYPE: FACT
+  CLAIM: The average gap after P4, from the owner's 19:40Z (200k) and 20:05Z (30k) runs, is about 0.2 ms per
+    iteration against dishka (hot_scopes/s 0.86-0.87x). About half of it sits in the worker lanes' outer cycles,
+    at +2 to +3 us per cycle. worker_a is the only lane below dishka inside the SpellSpace window (0.86-0.91x). The
+    other half lies outside the timed cycles. There the tail task measured a thread-exit cost that grows with state
+    built on worker threads: Melder's world has the largest on the VM, and first use on the main thread cuts it.
+    Evidence and numbers are in the tail task.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md:245-334
+  - tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md:336-369
+  IMPACT: Two levers for the average gap: conjure-time hydration, which it shares with the tail fix, and the
+    worker lanes' in-cycle cost, starting with worker_a's operation mix.
+  NEXT: The owner picks. Then either prototype conjure-time hydration on the VM, or break down worker_a's cycle
+    step by step against dishka, as was done for the request lane at 15:50Z.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:38:41Z
+  TYPE: DECISION
+  CLAIM: Owner (~20:37Z): "well you can look into 1 because the other guy has been working on that shit for like 2
+    hours". melder_2 takes lever 1: the worker lanes' per-cycle cost. Compile caching (lever 2) stays in melder_0's
+    area. Plan:
+    - Take a fresh VM copy of the device tree at 0.2.70 (tree_0270, caches excluded).
+    - Step-by-step breakdown of the worker_a and worker_b cycles for Melder and dishka on one worker thread, with the
+      root build separated from the group build.
+    - Find which step carries the gap, read that path in full, then prototype and A/B.
+    Gates, as before: VM A/B, suites on 3.14t and GIL, a 30k soak, a NOTICE to the file owner, patch docs if the
+    change is system-impacting. Also the owner's rules: a lever must remove work, and pools and their shells stay
+    created when they are today.
+  EVIDENCE:
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:261-311
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:824-926
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:1040-1165
+  IMPACT: Work stays in melder_2's lane (scope lifecycle and SpellSpace path). No tree edit until a measured win.
+  NEXT: Run the step breakdown on tree_0270.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:39:53Z
+  TYPE: MEASURE
+  CLAIM: Step breakdown of the worker lanes. VM, tree_0270 (0.2.70), one worker thread, 4000 cycles, two
+    interleaved rounds, medians. Per cycle, worker_a: Melder 6.9-7.1 us, dishka 5.9 us. worker_b: Melder 6.7 us,
+    dishka 6.2 us.
+    - Melder builds objects faster than dishka:
+      - root build: worker_a 1.30-1.31 us vs 1.83-1.84; worker_b 1.22-1.24 vs 2.23-2.25;
+      - group build: 0.59-0.60 vs 0.72 (a), 0.48 vs 0.56 (b);
+      - session build: 0.85-0.88 vs 0.99-1.00.
+    - Melder loses on the scope lifecycle: lesser create 0.78-0.81 us vs 0.39-0.40; lesser cleanup 0.85-0.87 vs
+      0.10; spellspace exit 0.54-0.58 vs 0.27-0.31; spellspace enter 0.23-0.24 vs 0.34. The lifecycle totals about
+      2.4-2.5 us against 1.1-1.2 us, i.e. +1.3 us per cycle.
+    - Smaller losses:
+      - first build of the one-object scoped marker: 0.65-0.66 vs 0.40 us;
+      - each cached meld: 0.25-0.35 vs 0.18-0.20 us (three per cycle).
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/steps_worker_lanes_vm.txt:1-9
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/probe_steps2.py:1-84
+  IMPACT: On one thread, Melder already wins on object construction. Per cycle it loses +1.3 us in the lifecycle,
+    +0.26 us on the first meld in a fresh scope, and about +0.25 us on cached melds. The lifecycle is in melder_2's
+    lane and is the largest target, starting with cleanup (0.86 vs 0.10 us). This does not reproduce the Windows
+    in-window loss on worker_a (0.86-0.91x): on the VM, Melder is slightly faster inside the window. Whether the
+    Windows loss comes from three threads on separate cores is UNKNOWN.
+  NEXT: Profile lesser cleanup, lesser create and spellspace exit on a worker thread (calls and time per function),
+    then read those paths in full.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T20:41:53Z
+  TYPE: FACT
+  CLAIM: The scope-lifecycle path on tree_0270 was re-read in full. It is unchanged since the 16:33:35Z FACT, and
+    alone it costs 1.88 us per cycle on a worker thread. Per anonymous cycle it does:
+    - five RLock pairs: the root Conduit lock and the root ward lock on link, which every thread shares; then the
+      lesser's Conduit lock, its Creations lock and its ward lock on cleanup;
+    - three threading.local reads: stack push, pop_expected and drain;
+    - two deque pops and two appends, on the lesser pool and the spellspace pool;
+    - one insert and one pop on the root ward's _lesser_conduits dict. The pop runs under the child's ward lock.
+    Redundant work in the root case: create_lesser_conduit checks root_conduit for None and normal state when the
+    root is self, and _link_lesser_conduit resolves and checks the root again. Under cProfile (inflated), the
+    cumulative time per cycle is cleanup 4.3 us, create 3.2, spellspace exit 2.1 and enter 1.1.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:566-643
+  - src/melder/aether/conduit/conduit.py:672-705
+  - src/melder/aether/conduit/conduit.py:1201-1234
+  - src/melder/aether/conduit/conduit.py:2539-2792
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:382-424
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:1176-1218
+  - src/melder/aether/conduit/creations/creations.py:1046-1104
+  - src/melder/aether/conduit/spell_space/spell_space.py:233-363
+  - src/melder/aether/conduit/spell_space/spell_space_pool.py:185-288
+  - src/melder/aether/conduit/spell_space/spell_space_thread_state.py:187-289
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/lifecycle_cprofile_vm.txt:1-47
+  IMPACT: The lifecycle's cost is bookkeeping that other contracts depend on: pooling, the parent registry for
+    cleanup cascades, locks for shared lessers, and per-thread scope stacks. conduit.py is melder_0's file (NOTICE
+    first). Which pieces can shrink without a contract change is UNKNOWN until each is sized.
+  NEXT: Time each lifecycle piece and the primitives (RLock pair, threading.local read, deque, dict) on a worker
+    thread to size what a contract-preserving trim can reach.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:45:59Z
+  TYPE: MEASURE
+  CLAIM: What each piece of the anonymous scope lifecycle costs, and whether concurrency widens the gap. VM,
+    tree_0270, worker thread, empty stores, ns, two runs each.
+    - Lesser create, 718-753 ns total:
+      - link under lock 429-431 (root Conduit lock, root ward lock, dict insert, child-ward fields, logger
+        check);
+      - pool pop 72-75, state sets 76-88, check_cleaned 30.
+    - Lesser cleanup, 726 ns total:
+      - detach 206-211, spellspaces-for-pool 103-107, pool return 101-103, creations reset 87-90;
+      - state and hooks 63-64, the lesser's lock 56-59.
+    - Spellspace enter plus exit, about 330 ns: push 85-91, pop_expected 88-91, acquire 54-59, release 55-56,
+      reset 39-44.
+    - Primitives: RLock pair 64, threading.local read 35, method call 28, deque pop+append 53, dict set+pop
+      67-72, logger.is_attached property 46.
+    - Two concurrent threads (probe_contention.py) raise per-cycle CPU for both libraries alike: Melder 7.1 ->
+      10.0-10.2 us, dishka 5.8-6.0 -> 9.0-9.1 us. On the VM the gap does not grow with concurrency (+1.2 ->
+      +1.0-1.1 us).
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/lifecycle_parts_vm.txt:1-51
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/probe_parts.py:1-113
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/contention_worker_a_vm.txt:1-9
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/probe_contention.py:1-75
+  IMPACT: Nearly every piece carries a contract: pooling, the parent registry that lets a root clean its active
+    scopes, the locks that keep a shared lesser safe, and the per-thread scope stacks. Removing redundant checks
+    and one duplicate root lookup would save about 50-150 ns per cycle (1-2%) with no contract change. The larger
+    step is the lock structure of anonymous link and detach: 3 lock pairs, 2 of them on shared root objects. That
+    needs a design change with patch docs. The Windows in-window loss on worker_a does not reproduce on the VM
+    with 1 or 2 threads; only a Windows run of the step probes can locate it.
+  NEXT: DECISION_REQUEST to the owner: Windows step runs first, then decide on the lock change.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T20:45:59Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Lever 1 options for the owner.
+    (1) Windows step runs, recommended first: probe_steps2.py (melder and dishka, worker_a) and probe_contention.py
+        (worker_a, 1 and 3 threads). They show whether worker_a's Windows loss sits in one step or appears only
+        under concurrency.
+    (2) Lock simplification for anonymous scopes. Link and detach would run under the root ward's lock only, with
+        a closed flag that root cleanup sets under that same lock. That takes the root Conduit lock off the
+        per-cycle path, and the parent's _lesser_conduits dict would no longer be mutated under the child's lock.
+        Estimated -60 to -130 ns per cycle single-threaded; the effect under multi-core contention is UNKNOWN.
+        Needs patch docs, a NOTICE to melder_0 (conduit.py) and the full suites.
+    (3) Contract-free trims: redundant root checks and the duplicate root resolution, 1-2%. Low value, not
+        recommended on its own.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:885-948
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:306-330
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:382-424
+  - src/melder/aether/conduit/conduit.py:2723-2792
+  IMPACT: The owner picks. No tree edit happens before a pick and a measured win.
+  NEXT: Report to the owner with the Windows commands.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T20:54:48Z
+  TYPE: MEASURE
+  CLAIM: Owner Windows runs of the step probes (tree 0.2.70, ~20:50Z).
+    - One worker thread, worker_a, medians in ns. Windows perf_counter ticks every 100 ns, so every value is a
+      multiple of 100. Melder / dishka:
+      - root build 1800 / 2700, group 800 / 1000, session 1100 / 1400;
+      - lesser create 1000 / 500, cleanup 1100 / 200, spellspace exit 700 / 400, enter 300 / 500;
+      - first marker 900 / 600;
+      - cycle sum 9.2 / 8.6 us.
+      This is the VM's pattern: Melder builds faster and loses on lifecycle bookkeeping. Inside the request window
+      Melder is faster on one thread (about 5.6 vs 6.2 us).
+    - The 3-thread contention runs have no usable resolution. On Windows thread_time advances in 15.625 ms ticks,
+      so each 3000-cycle block reads as 2 or 3 ticks (10,417 or 15,625 ns per cycle).
+  EVIDENCE: artifacts/gauntlet_runtime_speed_20260926/lever1/owner_windows_steps_contention_20260926_2050.txt:1-16
+  IMPACT: On one thread Melder wins inside the request window on Windows too, while the gauntlet's 3-thread worker_a
+    window loses (0.86-0.91x dishka). The loss therefore appears with concurrency. Which steps inflate under 3
+    threads is UNKNOWN until a probe with Windows-usable timing runs.
+  NEXT: Write probe_steps3.py: T concurrent threads, per-step trimmed means (quantization averages out) and wall
+    time per cycle, then validate it on the VM with 1 and 2 threads.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T20:56:57Z
+  TYPE: MEASURE
+  CLAIM: With two concurrent threads, Melder's request window goes from faster than dishka's to slower, and the
+    extra cost sits in the steps that touch shared root objects. VM, probe_steps3.py, worker_a, 2 vCPUs, 95%
+    trimmed means per step, two rounds.
+    - Request window: 1 thread Melder 4.26 us vs dishka 4.35-4.39 us; 2 threads 5.67-5.98 vs 5.50-5.59 us.
+    - Lifecycle: 1 thread 2.58-2.65 vs 1.17-1.18 us; 2 threads 3.43-3.58 vs 1.46-1.49 us.
+    - Growth from 1 to 2 threads per step, Melder vs dishka (ns):
+      - lesser cleanup +440 vs +48; first marker meld +356 vs +208; spellspace exit +158 vs +30;
+      - lesser create +212 vs +130; cached melds +93 to +120 vs +38 to +106;
+      - construction steps grow alike: root +462 vs +489, session +493 vs +530, group +174 vs +158.
+      In total Melder grows about 0.84 us more per cycle than dishka, so the per-cycle gap nearly doubles (+0.97
+      -> +1.81 us).
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/steps_concurrency_worker_a_vm.txt:1-9
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/probe_steps3.py:1-105
+  IMPACT: This matches the Windows picture: Melder wins inside the window on one thread (VM and Windows) and loses
+    it under concurrency (gauntlet, 3 threads). The Melder-specific growth is in the lifecycle, which touches the
+    root's shared locks, children dict and pool deque every cycle. It also writes shared ConduitState enum members
+    into state fields, so every thread does atomic refcount traffic on the same few objects; that part is a
+    HYPOTHESIS, not measured separately. Cached and first melds also grow more; they read shared kernel objects
+    (spells, contexts, the spellbook). Candidate structural levers, all needing a design and the owner's pick: a
+    sharded root pool created with the root, a single lock for anonymous link/detach, a sharded children registry.
+    The owner's Windows run with 1 and 3 threads decides which steps matter there.
+  NEXT: Owner runs probe_steps3.py on Windows (melder and dishka, worker_a, 1 and 3 threads).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T20:57:15Z
+  TYPE: FACT
+  CLAIM: Consumed M0-46 (melder_0, 20:47:28Z). melder_0's S6 moves __version__ from 0.2.70 to 0.2.71 and rebuilds
+    the assets (_agent_documentation, _bind_guard, _system_documents manifests). Its src edits are docstring-only,
+    in its own lane's files (site-plan modules, site-graph analysis and processor, both family hydrators), with
+    graph descriptors re-authored. Any melder_2 change that lands after this notches above 0.2.71.
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md:2888-2925
+  IMPACT: tree_0270 differs from the device only by docstrings and assets in melder_0's files, so lever-1
+    measurements on it stand. A future lever-1 apply takes the next notch after 0.2.71.
+  NEXT: Owner runs probe_steps3.py on Windows (1 and 3 threads).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T21:06:36Z
+  TYPE: MEASURE
+  CLAIM: Owner Windows run of probe_steps3.py (~21:05Z, worker_a, 1 and 3 threads, 95% trimmed means). It
+    overturns the VM's contention reading.
+    - On Windows Melder's lifecycle does not grow with 3 threads (4,524 -> 4,563 ns); dishka's grows 1,481 -> 1,824.
+      With threads the window grows +983 ns for Melder and +1,662 for dishka.
+    - Windows' problem is single-thread cost. One thread, Melder / dishka:
+      - wall 14.5 / 9.7 us per cycle; lifecycle 4.52 / 1.48 us (create 1,478 / 489, cleanup 1,587 / 144, exit
+        1,020 / 406);
+      - first marker meld 1,111 / 569; cached melds 402-454 / 273-279;
+      - root build 2,246 / 2,617.
+      At 3 threads: window 8,089 / 7,667 ns (Melder +5.5%), wall 15.3-15.9 / 13.2-13.7 us.
+    - Melder's lifecycle steps carry a heavy tail on Windows: these means are about 1.45x the 20:50Z medians (create
+      1,000, cleanup 1,100, exit 700). dishka's means match its medians.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/owner_windows_steps3_20260926_2105.txt:1-12
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/owner_windows_steps_contention_20260926_2050.txt:1-16
+  IMPACT: The Windows target is Melder's single-thread lifecycle: about +3 us per cycle, half of it a frequent
+    slow tail. It is not contention, so the sharded pool and the single lock are not supported by Windows data. What
+    makes the lifecycle slow and heavy-tailed on Windows is UNKNOWN. HYPOTHESES: the elastic pool policy
+    occasionally evicting or rebuilding shells; delayed frees of dict tables in stores that other threads have
+    touched; OS memory calls.
+  NEXT: Read AbstractElasticPool (the pool policy behind create and cleanup), then build a Windows parts probe that
+    reports p50/p90/mean per lifecycle piece.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T21:08:15Z
+  TYPE: FACT
+  CLAIM: The elastic pool policy cannot explain a steady-state tail. AbstractElasticPool.release evicts only when
+    the idle deque exceeds _target_idle. The target starts at baseline_idle=20 and changes only after a miss
+    (stretch) or an overflow (decay). A single-thread cycle keeps at most one idle shell, so nothing is evicted or
+    rebuilt. probe_parts2.py times every lifecycle piece with p50, p90 and mean, with the stores populated. On the
+    VM the distributions are tight (p90/p50 about 1.1-1.2):
+    - public calls: create 813, enter 238, exit 345, cleanup 838 ns (p50);
+    - heaviest pieces: link under lock 519, detach 254, creations reset with entries 190, spaces-for-pool 149,
+      pool return 136 ns (p50, timer included).
+  EVIDENCE:
+  - src/melder/utilities/general_base/abstract_elastic_pool.py:290-345
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/parts2_vm.txt:1-21
+  - artifacts/gauntlet_runtime_speed_20260926/lever1/probe_parts2.py:1-107
+  IMPACT: Whether Windows has a real heavy tail in one piece, or the 21:05Z means caught machine noise (the Melder
+    runs rewrite the creation cache after the 0.2.71 notch, which the dishka runs do not), is UNKNOWN until
+    probe_parts2.py runs on Windows. That same run gives the Windows per-piece costs.
+  NEXT: Ask the owner for two Windows runs of probe_parts2.py.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Attribution is done: the cost map is in Notes, from 15:50Z to 16:43Z. Levers, in order:
 - P1, positional constructor calls: in the tree since 16:16Z. melder_0's S2b-2 lowering took over the normal
@@ -826,8 +1093,9 @@ Attribution is done: the cost map is in Notes, from 15:50Z to 16:43Z. Levers, in
 Open owner decisions:
 - The SpellSpace active-scope RISK: enforce the check, or correct the documents.
 - The system_document_view lazy-index race (RISK in the P4 task): which lane fixes it.
-Next lever candidates after the owner's Windows gauntlet run: the scope create/cleanup call chain, and
-thread-affine pools.
+Next lever candidates (owner, 2026-09-26: levers must remove work; pools and shells are created when they are
+today): worker_a's in-cycle mix and the scope create/cleanup call chain. Thread-affine pools need the owner's
+view under that rule. Conjure-time hydration is withdrawn (tail task).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

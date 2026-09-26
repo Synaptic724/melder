@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 33e61e9c635fbe50be45753e4fdc77f499c123e0afb839c847ace2a3c9b7b1b5
+SOURCE FINGERPRINT: 9e086373c292ea90691157e5cf046182ff37054d7fa1709110c9ab256383f5ed
 FILE COUNT: 370
 
 ================================================================================
@@ -27548,6 +27548,692 @@ def test_probe_book_scan_binds_a_module_and_keeps_the_lifecycles():
     print("module scan pinned: 2 spell ids, lifecycles intact")
 ================================================================================
 END FILE: UX_and_AIX_experiences/pytest_examples/test_intermediate_probes.py
+================================================================================
+================================================================================
+BEGIN FILE: agents.md
+CONTENT SHA256: 772064ce4cbeedce0dda17910ba66d7552d0f5855ed8dc938ccbd922725d283d
+SOURCE ENCODING: utf-8
+================================================================================
+If you are an agent actively developing this repo. Please ignore this document and proceed to context_compass onboarding with the agents.md inside it.
+If you are NOT an agent actively developing this repo please enter the agents directory and read MELDER_AGENT_OPERATIONS.md.
+================================================================================
+END FILE: agents.md
+================================================================================
+================================================================================
+BEGIN FILE: agents/MELDER_AGENT_OPERATIONS.md
+CONTENT SHA256: 9ac23bc211dbe7dfa1bd9452a80fc1e57e3c68f3b1de0286332ff52e6eb73b23
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder — Agent Operating Cheat Sheet
+
+> **Target:** `melder==0.2.50` · Python **3.14+**, preferably free-threaded · Reviewed **2026-09-26**.  
+> **Source pin:** `Synaptic724/melder`, commit `9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9` (`prod`).  
+> **Evidence:** operational sections of `src_architecture.md` and `src_components.md`, checked against public implementation and executable-example source. **Source-reviewed and Python-syntax-checked; not runtime-tested here.** This environment has Python 3.13 and blocked repository/package downloads; source was read through connected GitHub access, not a completed local clone. Matching version labels do not establish wheel/source byte equivalence. [A], [C], [V]
+
+## 0. Read first — the operating contract
+
+**Use this file as a task router, not as permission to access a world.** `HOST` means trusted application/bootstrap code. `AGENT` means an operator confined to its granted Rift/handles. Never acquire additional authority through `Aether`, private maps, deep imports, or relaxed ACLs merely because an operation is refused.
+
+1. **Identify** package version, target `frame_name`, conduit, binding/ID, room mode, and ownership before acting. Do not silently apply these recipes to another version.
+2. **Discover** the actual room: `rift.space.command_system.list_supported_command_methods()`. Advertised method, authorized target, and activated subsystem are three separate requirements.
+3. **Inspect before creating.** `meld()` can run constructors and retain objects. Use viewer records or `has_live_creation` / `describe_live_creation_status` to observe without construction.
+4. **Choose the narrowest action.** `bind → conjure once → meld`; child scope for a job; SpellSpace for request-local state; dynamic links for inter-conduit sharing; codegen only when needed.
+5. **Before a structural change:** inspect current selection, dependents, sharing, source drift, and an actual recovery route. A checkpoint saves structure, not arbitrary object state or external effects.
+6. **Use public operations.** Structural verbs own their admission/coordination. Do not mutate registries, compiler caches, selected pointers, or internal transaction strategies yourself.
+7. **Verify the result, not just the return.** Check payload flags, identity/selection, an application invariant, and affected consumers. After an exception, inspect before retrying: some failures occur after publication or disposal.
+8. **Release only what you own.** End scopes; discard disposed/pooled handles. Report what changed, what was tested, remaining shortfalls, and the next safe action.
+
+**Fast routing:** [Core](#core) · [Bindings/DI](#bindings) · [Scopes](#scopes) · [Sharing](#sharing) · [Agent rooms](#rooms) · [Codegen](#codegen) · [Research/change](#research) · [Persistence](#persistence) · [Failures](#failures) · [Source lookup](#source-lookup).
+
+<a id="core"></a>
+
+## 1. Core runtime in one screen
+
+| Object | What the operator needs to know |
+|---|---|
+| `Aether` | Process root; owns isolated runtime frames and hosted support subsystems. Usually leave it to bootstrap. |
+| `AethericFrame` | World boundary: posture, registries, conduit cloud, and DevOps control plane. |
+| `Spellbook` | Registers definitions and configuration; conjures **one** normal/root Conduit. |
+| `Spell` / `SpellIndex` | One definition/version / stable lineage identity selecting its current active member. Neither is the application instance. |
+| `SpellCompiler` | Structural work in phases 1–4; resolution/execution planning in phases 5–11; changed graphs can revalidate lazily. |
+| `Conduit → Meld → Creations` | Scope/authority → resolve/construct → retain and dispose objects according to lifetime. |
+| `SpellSpace` | Narrow request-local resolution scope, entered from a Conduit. |
+| `Nexus → Rift → space` | Policy root → one agent workspace → viewer, workstation, commands, optional codegen. |
+| `Crystallizer` / `MutationResearch` | Structural/source recording and replay / version history, lanes, comparisons, and impact. |
+
+**Four distinctions:** definition ≠ instance; world ≠ room; current live selection ≠ historical version; source materialization ≠ binding. Normal application code uses `import melder as md` and public facades. [A], [C]
+
+## 2. Install and obtain a first object
+
+Run inside an environment whose `python` is Python 3.14+:
+
+```bash
+python -m pip install "melder==0.2.50"
+python -c "import sys, melder as md; print(sys.version); print(md.__version__); print('GIL enabled:', sys._is_gil_enabled())"
+```
+
+A GIL-enabled build warns; do not mistake it for a free-threaded test. For a reproducible source checkout instead of PyPI, these are **instructions for the receiving environment**, not a claim that a clone was completed during this review:
+
+```bash
+git clone --branch prod https://github.com/Synaptic724/melder.git melder
+git -C melder checkout 9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9
+python -m pip install -e ./melder
+```
+
+**HOST · standalone starter.** Define classes before registering them; required annotations establish dependency edges.
+
+```python
+import melder as md
+
+class Settings:
+    def __init__(self) -> None:
+        self.region = "local"
+
+class Worker:
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+
+book = md.Spellbook(aetheric_frame="starter")
+root = None
+try:
+    settings_id = book.bind(spell=Settings, existence="unique")
+    worker_id = book.bind(spell=Worker, existence="many")
+    root = book.conjure(name="starter-root")
+    first = root.meld(spell_id=worker_id)
+    second = root.meld("Worker")
+    assert first is not second
+    assert first.settings is second.settings
+    assert root.meld(spell_id=settings_id).region == "local"
+finally:
+    if root is not None:
+        root.cleanup()
+    book.cleanup()
+```
+
+`Spellbook.bind()` returns a **spell ID**, not a `Spell` or instance. `conjure()` returns the root; `meld()` returns the application object. Do not call `conjure()` again to get another instance. Ordinary missing/ambiguous dependencies and cycles can fail graph validation; intentional late contracts and later structural changes also have meld-time gates. [C], [E]
+
+<a id="bindings"></a>
+
+## 3. Addressing, binding, and dependency injection
+
+### Select deliberately
+
+| Need | Public shape |
+|---|---|
+| Human registered name | `root.meld("Worker")` |
+| Exact machine ID lane | `root.meld(spell_id=worker_id)` — never pass a SHA as an ordinary name string. |
+| Category + role | `root.meld(spellframe="storage", binding_name="primary")` |
+| Register class | `book.bind(spell=Store, existence="unique", spellframe="storage", binding_name="primary")` |
+| Register existing value | `book.bind(spell=value, existence="unique")`; lookup normally uses its type name, not the Python variable name. |
+| Register function/factory | `book.bind(spell=make_settings, existence="unique")`; meld runs the factory and reuses its product. |
+| Observe definitions | `book.describe_spells_in_spellbook()`; active inventory is not parked-version inventory. |
+| Observe live presence | `root.has_live_creation(spell_id=sid)` / `root.describe_live_creation_status(spell_id=sid)` |
+
+`spellframe` classifies definitions **inside** a world; `aetheric_frame` selects the world. Binding names normalize case; do not use capitalization as an isolation strategy. Use IDs or complete selectors after discovery. [C: Binding / Meld][C], [E]
+
+**Collision rules:** duplicate binding fingerprints/keys are refused. Runtime spell IDs are process-wide; a different world name alone does not make an identical registration unique. Give separate-world bindings deliberate distinct identities. Within one visible graph, do not assume rebinding the same named class under different binding names/categories will pass validation; the documented working pattern is distinctly named role subclasses, e.g. `PrimaryStore(Store)` and `ArchiveStore(Store)`. Do not alter `__name__` or private registries to evade this. [NAMES]
+
+### Constructor decision table
+
+| Parameter | Meaning |
+|---|---|
+| `store: Store` without a default | Infer a required provider. |
+| `store: Store = ordinary_value` | Keep the Python default; **ordinary defaults suppress inferred DI**. |
+| `store = md.SpellMap(Store)` | Explicit local DI selector. |
+| `store = md.SpellMap(spellframe=StoreProtocol, binding_name="primary")` | Explicit category/role; exactly one provider must match. |
+| `handlers: list[HandlerProtocol]` | Collection DI over matching providers; do not invent an ordering guarantee. |
+| `store = md.SpellContract(spellframe=StoreProtocol, binding_name="primary")` | Intentional late socket, for a dynamic world; wire provider/link/grant before using it. |
+
+`SpellMap` / `SpellContract` require at least `spell` or `spellframe`. Protocol-as-category checks are limited to directly declared public members/presence/callability; they are **not complete signature, inherited-member, or field conformance proofs**. Test the actual interface behavior. [C: DI Descriptors / Binding][C]
+
+### Native capability versus staging
+
+`bind(..., resolvable=False)` registers a **non-executable definition/reference**. It is independent of permissions, active/parked membership, and validity. Application Protocol definitions require this flag when they are themselves the bind target. Direct meld and reuse reject non-resolvable registrations, even if an existing value can be described. A required consumer input referencing one must be supplied through the ordinary override path; registration does not provide its value. `bind_inactive(...)`, in contrast, parks a version in an index. **Do not substitute one mechanism for the other.** [C]
+
+### Optional registration conveniences
+
+`@md.scan_bind(...)` stores declaration metadata only; `book.scan(module)` performs registration later and returns IDs. Imports alone do not register those declarations. `SpellBinder` is the fluent adapter; inspect its current surface instead of guessing chained setters. Bind classes for fresh populations: function/method/lambda and prebuilt-object bindings are unique-only; modules and guarded Melder internals are not application spells. [C], [E]
+
+<a id="scopes"></a>
+
+## 4. Lifetimes, scopes, and memory
+
+| `existence` | Reuse boundary | Operating rule |
+|---|---|---|
+| `unique` | One object for that binding in its owning runtime world | Shared consumers can receive the same object; not a process-wide singleton by Python class. |
+| `many` | New instance per meld | Bound resources may be retained for disposal; fresh does not mean automatically short-lived. |
+| `unique_per_conduit` | One per Conduit | Use child scopes for job/session state. |
+| `unique_per_conduit_lineage` | Shared within the lineage tree | A child is not necessarily isolated from its root's state. |
+| `unique_per_spell_space` | One per SpellSpace | Resolve through the Space, not an ordinary Conduit door. |
+| `unique_per_conduit_cluster` | Shared cluster store | Needs dynamic cluster setup, links, and an elected leader. |
+
+**Scope recipes** — assume `root` already exists and the relevant definitions are registered:
+
+```python
+child = root.create_lesser_conduit(name="job-42")
+try:
+    job_state = child.meld("SessionState")
+finally:
+    child.cleanup()
+
+with root.enter_spellspace() as request:
+    request_state = request.meld("RequestState")
+    assert request.meld("RequestState") is request_state
+```
+
+Register `SessionState` as `unique_per_conduit` and `RequestState` as `unique_per_spell_space` for the intended behavior. Direct manual `enter_spellspace()` handles also exist; managed `with` is the easier cleanup discipline. Managed stacks are thread-local, not a promise of asyncio task-local isolation. Do not interleave scope exits out of order or share a request handle across unrelated tasks/threads. [C: Creations / SpellSpace Thread State][C], [PURGE]
+
+**Named scopes:** nonempty names are frame-wide unique across roots and active named lessers. Naming does not create a new Book or grant root authority. A pooled ID/name identifies a current use, not a durable lease. A returned handle may become stale when its owner cleans/recycles it. Keep application ownership explicit; discover again after lifecycle changes. [A], [NAMED]
+
+## 5. Cleanup, purge, and hooks
+
+### Disposal is registered behavior
+
+```python
+resource_id = book.bind(
+    spell=Connection,
+    existence="unique",
+    disposal_method_names=["close", "shutdown"],
+)
+```
+
+Methods are matched once at binding. Missing names are omitted; duplicates run once. Matching uses declared class-profile methods, not an automatic cleanup protocol for inherited-only methods, factory products, or prebuilt values. Explicitly arrange ownership/cleanup for those cases. Book-level method names own overlaps; default order is spell-only block then Book block, reversed by `with_enforce_priority_disposal_methods(True)`. [C: Binding][C]
+
+Cleanup walks retained disposal keys/buckets newest-first, not a promised total chronological order across all scopes. A failing method stops the remaining methods for that object; other objects are attempted and failures can aggregate into `ExceptionGroup`. Dropping your Python variable does not free an object still retained by Melder or a workstation. [C: Creations][C]
+
+### Retire instances without deleting their definition
+
+```python
+removed_one = root.purge(instance, purge_all=False)
+removed_all = root.purge("Connection")  # default purge_all=True
+replacement = root.meld("Connection")
+```
+
+`purge_all=False` requires an actual instance; a selector alone is insufficient. Return value is the number removed; absent/unretained entries give zero. Qualified registrations may require explicit selectors—do not assume an instance can recover an unknown qualifier. A SpellSpace purges only its local supported lifetimes; a Conduit can purge local `many`/per-conduit stores, while unique/lineage/cluster stores require the owning scope/root/leader. Disposal occurs **after detachment**; a cleanup failure does not restore the removed entries. Existing application references still point to disposed objects: stop using them. [PURGE], [C]
+
+### Registration hooks are not construction hooks
+
+`book.add_bind_hooks(pre=[...], activation=[...], post=[...])` appends callbacks; normal Conduits expose the same facade. Configuration seeds use `configuration.with_bind_hooks(...)`. Lesser scopes cannot edit the borrowed Book's hooks.
+
+| Stage | Input | Failure meaning |
+|---|---|---|
+| `pre` | Original supplied reference | Refusal creates no Spell. |
+| `activation` | New, not-yet-published `md.Spell` | Failure retires the unpublished allocation. |
+| `post` | Actual published active **or parked** `md.Spell` | Publication already occurred; do not assume rollback. |
+
+Return values are ignored. In-flight binds keep their captured callback sequence. `clear_bind_hooks()` clears **all** future stages, not just your callback; never use it to remove one hook from a shared application. Bind post is not an outer-transaction commit callback. Instance-construction hooks and Conduit/Meld lifecycle hooks are separate surfaces. Pool-local hook overlays are reset after owned creations are disposed; do not retain pooled handles or mutate frozen configuration to change runtime hooks. [HOOKS], [C]
+
+## 6. Overrides — construction input, not automatic rollback
+
+```python
+worker = root.meld("Worker", override={"settings": supplied_settings})
+pipeline = root.meld(
+    "MailPipeline", override={"transport>credentials": supplied_credentials},
+)
+```
+
+Paths traverse **constructor parameter names** from the melded root, not class names. Dict/list/tuple are supported payload families; use the simple dictionary form unless the task needs positional/deeper forms. Unmatched deep paths refuse. Inspect the actual signature and graph before composing wildcards/broadcasts. [C: Meld][C], [OVERRIDE]
+
+**Lifetime wins:** an override can construct a canonical singleton around the supplied value, so the substitution survives the call. Making only the outer object `many` does not isolate shared inner singletons. Use isolated/scoped bindings for fixtures and verify every affected lifetime. Nor is an override a promise to rewrite an already-created singleton; check live presence and choose explicit authorized replacement/purge only when appropriate. [OVERRIDE]
+
+<a id="sharing"></a>
+
+## 7. Dynamic composition and permissions
+
+**Mode belongs to the frame.** On an unsettled world, `conjure(dynamic=True)` settles dynamic posture. Later roots inherit settled posture—even a contradictory flag does not convert an existing world. Configure posture before binding/conjuring when required. Automatic worlds permit only the default policy; link, sever, ownership transfer, and lesser-to-normal upgrade require dynamic posture. Frame-level operation-disable policy can still refuse a dynamic operation. [A], [C], [CONDUIT]
+
+**Same-world sharing is a pull:**
+
+```python
+# owner_book and borrower_book belong to the same unsettled/dynamic frame.
+shared_id = owner_book.bind(spell=SharedService, existence="unique", permissions="create")
+owner = owner_book.conjure(dynamic=True, name="owner")
+borrower = borrower_book.conjure(name="borrower")
+owner.link(borrower)
+borrower.add_spell_to_contract(
+    spell_id=shared_id, conduit=owner, permissions="create",
+)
+shared = borrower.meld(spell_id=shared_id)
+```
+
+The **borrower** requests from the **owner**, after both normal roots exist and are linked. A link alone does not grant every spell. No self-link, lesser peer-link, or cross-`aetheric_frame` link. For `SpellContract`, assemble each edge in provider → consumer → link → borrower grant → consumer meld order. An unresolved intentional contract is not permission to execute a broken graph. [CONDUIT], [C]
+
+`create` authorizes construction/resolution across the contract; `read` is reuse/resolve-only without granting borrower construction rights; `block` blocks sharing. Owner policy, link policy, and effective grants remain relevant. A read grant does **not** imply a cold instance will appear: inspect live status or have the owner create it. [PERMISSIONS]
+
+For sever/ownership transfer/upgrade, discover the exact public signature on the installed Conduit and inspect all affected consumers first. An upgraded lesser gets a **new empty Book** and its selected configuration; old definitions and local hook overrides do not automatically transfer. Same Conduit identity does not imply the same registry. [A], [C]
+
+### Cluster recipe
+
+Assumes dynamic normal `owner` and `member`, with a class bound on owner as `unique_per_conduit_cluster`, `permissions="create"`:
+
+```python
+owner.link(member)
+cloud = owner.get_conduit_cloud()
+cloud.create_cluster("workers")
+cloud.add_conduit_to_cluster(owner, "workers")
+cloud.get_cluster("workers").elect_leader(owner.id)
+cloud.add_conduit_to_cluster(member, "workers")
+assert owner.meld("ClusterBus") is member.meld("ClusterBus")
+```
+
+Link first; elect the owner/leader before additional members join. A cluster name without the links/leader is not working shared storage. [CLUSTER]
+
+## 8. Bootstrap order and configuration ownership
+
+For a recorded, agent-enabled world, configure in this order:
+
+**Aether/utility → Crystallizer → MutationResearch → Nexus → frame posture → Book → Conduit.**
+
+Enable recording/research **before the events you want recorded**; later activation does not backfill an earlier application world. Inactive recording seams are no-ops. A finalized configuration, an activated configuration, and an activated subsystem are different states. Do not interchange `.finalize()` and `.activate()` by analogy across builders. Nexus's activation flow differs from the root configuration ladders. [A], [PERSIST], [RESEARCH]
+
+**HOST · optional recording/research setup, before the room bootstrap below:**
+
+```python
+import melder as md
+
+recorder = md.Crystallizer()
+recorder.activate(md.CrystallizerConfigurationBuilder().with_defaults().activate())
+
+research = md.MutationResearch()
+research_config = research.create_configuration()
+research_config.with_defaults().finalize()
+research_config.activate()
+research.activate(research_config)
+```
+
+These are process-hosted services; do not repeat activation in an existing application without understanding its configuration ownership. Shared frame-wide Book configuration means shared frozen **policy**, not a shared Book/registry/lifecycle. Configure logging explicitly when operational logs are required; no output does not prove inactivity or success. [A], [C]
+
+<a id="rooms"></a>
+
+## 9. Open an agent room — HOST bootstrap
+
+**Illustrative dedicated world, not a production least-privilege ACL policy.** Host must choose explicit target/command/codegen permissions before exposing the Rift. Existing applications should recover authorized frames/rooms rather than recreate or overwrite their process configuration. [ROOMS], [BUILD]
+
+```python
+import melder as md
+
+FRAME = "agent-ops"
+
+nexus = md.Nexus()
+nexus_config = nexus.create_configuration()
+nexus_config.with_rift_creation_enabled(True)
+nexus_config.with_allowed_target_frame_names([FRAME])
+nexus.activate(nexus_config)
+
+book_config = md.SpellbookConfiguration(FRAME).with_defaults().finalize()
+book = md.Spellbook(aetheric_frame=FRAME, configuration=book_config)
+book.configure_aether_frame(
+    system_state="dynamic",
+    disposal=None,
+    disposal_method_names=None,
+    rift_enabled=True,
+    ai_native=True,
+)
+root = book.conjure(name="ops-root")
+
+rift_config = nexus.create_rift_configuration()
+rift_config.with_space_type("codegen")  # choose static/capability when enough
+rift = nexus.create_rift(configuration=rift_config, rift_name="operator")
+rift.mark_active()
+rift.create_frame_link(FRAME)
+
+space = rift.space
+viewer = space.frame_viewer
+workstation = space.workstation
+commands = space.command_system
+# Own this session's lifetime: rift.cleanup(), then root/book cleanup when done.
+```
+
+A Rift owns exactly **one** space. Each Rift needs a fresh configuration object; a bare Rift may have no attached frames. Target attachment requires published descriptor truth, target opt-in, Nexus permission, and the applicable room posture. Static observation needs `rift_enabled`; dynamic agent access also needs dynamic and AI-native posture. `create_nexus_frame(...)` is strict-create and returns a rooted Conduit; `get_nexus_frame(...)` is recovery. Neither returns the underlying frame object. [C: AR Runtime][C]
+
+| Room | Actual operating surface |
+|---|---|
+| `static` | Permitted already-live spell views/reuse paths; no direct creating `meld`, raw conduit exposure, or topology mutation. |
+| `capability` | Broad manual runtime/object commands plus research reads; no codegen. |
+| `codegen` | Selected runtime helper subset, codegen, and research authoring. **Not a guaranteed superset of capability commands.** |
+
+View, command, and codegen ACLs are separate concerns. A method being listed does not authorize all frames/objects. AST validation and room policies are application controls, **not an OS sandbox**; hostile/untrusted Python requires an appropriately isolated execution environment outside this library. Already-granted Python handles are not continuously re-policed by acquisition ACLs. [COMMANDS], [ROOMS]
+
+## 10. First minute inside a room — AGENT
+
+```python
+commands = rift.space.command_system
+viewer = rift.space.frame_viewer
+
+supported = commands.list_supported_command_methods()
+assigned = rift.list_assigned_frame_names()
+visible = viewer.list_frame_names()
+onboarding_json = viewer.describe_agent_onboarding_json()
+method_surface = viewer.describe_viewer_method_surface()
+
+# Pick an explicitly authorized FRAME from assigned/visible, not an invented name.
+frame_view = viewer.get_view_frame(frame_name=FRAME)
+conduit_view = viewer.get_view_conduit(frame_name=FRAME)
+spell_view = viewer.get_view_spell(frame_name=FRAME)
+```
+
+Frame-local viewer operations require an explicit frame; `get_view_multiframe()` is host-scoped. The helpers read current Rift projection truth, **not necessarily all newly published runtime IDs**. An empty view can mean unattached, unauthorized, unpublished, or not-yet-live—not that the application has no definitions. Ask the viewer's missing-surface/description APIs through its advertised surface before escalating. [VIEWER], [C]
+
+**When supported and authorized**, acquire a normal root through the command boundary:
+
+```python
+root_handle = commands.get_conduit_by_name("ops-root", frame_name=FRAME)
+```
+
+That raw handle is meaningful authority; use it only for the host-approved task. Do not reach around the command boundary to find a denied root. With capability-room named child creation:
+
+```python
+job = commands.create_lesser_conduit(root_handle.id, frame_name=FRAME, name="job-42")
+rift.refresh_runtime_projections(frame_names=(FRAME,))  # outside the creation command
+assert commands.get_conduit_by_name("job-42", frame_name=FRAME) is job
+```
+
+New/deleted IDs require explicit projection refresh. Same-ID named pool reuse replaces descriptor values and can retain already-compiled membership; reacquire/verify the current name and ownership. Never assume descriptor and Cloud reads form one atomic snapshot. [NAMED]
+
+**Workstation:** store only approved handles. `bind_object(name, value)` does not register a Spell. `set_target(name)` selects a handle; `call_target(...)` requires a callable target. For a method, keep the method handle alive or use the discovered method-binding surface—not `call_target()` on an arbitrary service instance. Strong bindings retain objects; weak bindings can disappear. `workstation.cleanup()` drops its bindings, **not the lifetime of the underlying objects**. [C: Workstation][C]
+
+<a id="codegen"></a>
+
+## 11. Codegen — validate → materialize → import → bind → meld
+
+Prerequisites: codegen room, eligible target, relevant ACLs, and explicit approval for the change. Use one bounded source unit and unique module/binding names. Generated execution can have ordinary Python/application effects. Keep secrets out of generated source and command payloads that may be recorded. [COMMANDS], [BUILD]
+
+**AGENT validation/materialization; HOST or explicitly authorized Python executor for import/bind.** This follows the public example's split; it does not assume an unadvertised `commands.bind()`.
+
+```python
+source = '''class GeneratedCounter:
+    def __init__(self) -> None:
+        self.total = 0
+
+    def add(self, amount: int) -> int:
+        self.total += amount
+        return self.total
+'''
+
+verdict = commands.validate_codegen(source, frame_name=FRAME)
+if verdict.get("accepted") is not True:
+    raise RuntimeError(f"Codegen rejected: {verdict}")
+
+published = commands.materialize_codegen(
+    source, module_name="agent_counter_v1", frame_name=FRAME,
+)
+if published.get("materialized") is not True:
+    raise RuntimeError(f"Materialization failed: {published}")
+
+# Host side, or an execution environment explicitly allowed these operations:
+import importlib
+GeneratedCounter = importlib.import_module("agent_counter_v1").GeneratedCounter
+counter_id = root.bind(
+    spell=GeneratedCounter, existence="many",
+    permissions="create", binding_name="counter-v1",
+)
+one = root.meld(spell_id=counter_id)
+two = root.meld(spell_id=counter_id)
+assert one is not two
+assert one.add(3) == 3 and two.total == 0
+```
+
+For ephemeral computation, `commands.execute_codegen(source, frame_name=FRAME)` returns an execution payload. Inspect the complete status/error information before trusting `result`; a returned dictionary alone is not success. Do not invent a universal `success` key shared by every command. [BUILD]
+
+Typical generated namespace names are `viewer`, `workstation`, `target`, `command`, `codegen`; imports/builtins/reflection still depend on the compiled policy. Relevant codegen policy fields include `imports_enabled`, `allowed_import_module_roots`, `denied_builtin_names`, `unsafe_reflection_allowed`, `dunder_access_allowed`, and `recursive_codegen_allowed`. Ask the host to author policy; do not enable a denied facility to make a snippet pass. [COMMANDS], [C]
+
+**What each step does not do:** validation does not prove safety; execution does not necessarily retain a module; materialization gives a module address but not a registered Spell; binding is the custody/version entry; melding constructs/returns an object. Generated source can be retained even without a file. Ordinary Python/module caching and duplicate-name checks still matter; a new materialization is not an automatic in-place rewrite of existing objects. [BUILD], [PERSIST]
+
+<a id="research"></a>
+
+## 12. Research — inspect before changing
+
+Research must already be active. Host/direct authorized access is `root.mutation_research` or `md.MutationResearch()`; the old `get_mutation_research()` accessor is not the current route. Room users discover `research_*` commands; capability rooms have reads, codegen rooms add authoring, static rooms do not expose this family. [C], [COMMANDS], [RESEARCH]
+
+| Question | Direct research surface / room family |
+|---|---|
+| What just happened? | Room `research_recent`, history/walk/heads/campaign reads. |
+| What is live/parked/stored? | `residency_view(spell_id)` / `research_residency`. |
+| What would be affected? | `impact_view(spell_id=...)` / `research_impact`. |
+| What source is available? | `source_view`, `module_view`, `parts_view`, `part_view`; room `research_source/module/parts/part`. |
+| What depends on a module? | `module_graph_view` / `research_module_graph`. |
+| Did the file change outside recording? | `source_drift_view` / `research_source_drift`. |
+| What differs between recorded versions? | `diff_research` / `research_diff`: source, structural, or parts strategy. |
+| What would proposed code do structurally? | `preview_candidate(code, against_spell_id=...)` / codegen-only `research_preview`. |
+| Can donor parts be composed? | `synthesize_candidate` / `research_synthesize`; preview/composition, not automatic deployment. |
+| What is the subsystem-sized impact? | Group view/diff/impact/footprint/drift/history families. |
+
+Use discovery/help for each less-common verb's selector and return schema; these names are a routing map, not interchangeable signatures. `source_view` can fall back to current disk with a drift marker; **version comparisons use recorded material, not today's file for both sides**. Missing custody is not “no changes.” A part-level diff still has module-grain impact. [C: Workstation / MutationResearch][C]
+
+```python
+# HOST or explicitly granted research handle; no code executes in this preview.
+research = root.mutation_research
+residency = research.residency_view(current_id)
+impact = research.impact_view(spell_id=current_id)
+preview = research.preview_candidate(candidate_source, against_spell_id=current_id)
+# Review parse/validation findings, recorded-vs-live evidence, and affected consumers.
+```
+
+A `ResearchSet` is an independent organization of history, not a runtime frame or persistence profile. `research.create_research_set("change-review")` creates one; `research.research_set(name)` accesses one. A lane's **state** is open/joined/archived; **type** is development/experiment/production/test. Type enforcement is an explicit policy. Lane attachment/joining changes research organization; it does **not** by itself notch the live implementation. Grouped compositions pin members and are informational, not another executable Spell. [RESEARCH], [C]
+
+Campaigns (`set_active_campaign` / `clear_active_campaign`) and staged ancestry are ambient recording context. Set/clear deliberately, especially around concurrent work; next-entry ancestry is one-shot, not a permanent override. Do not infer a completed automatic promotion/quarantine controller merely from enum names—the architecture records incomplete producer/runtime seams. [A], [C]
+
+## 13. Stage, select, verify, and revert
+
+**Public verbs:** `root.bind_inactive(...)`, `root.notch_spell(spell_index=..., spell=...)`, `root.add_to_spell_index(...)`, `root.remove_from_spell_index(...)`. The Conduit owns admission; do not call private Book mutation seams. [CONDUIT]
+
+**Critical lookup trap:** `get_spell_by_id()` / `find_spell_by_id()` can resolve a parked lineage ID to the **currently selected** member. They are not a reliable exact parked-object lookup. `notch_spell` requires the actual candidate `Spell`, not its ID or the application class. Never fabricate it or read `_inactive_spells` to obtain it. [NOTCH]
+
+### Host-controlled exact-handle pattern
+
+The older notch lesson stops at this lookup boundary. The newer public post-bind hooks deliver the actual registered active **and parked** `Spell`. A host can capture those handles at registration, and promote only after the bind itself returns successfully. The following is a **source-derived composition of public APIs, syntax-checked but not runtime-executed here**; validate it in a disposable 0.2.50 world before deployment. It installs its own hook on its own Book, not on a shared production Book. [HOOKS][C: Spellbook][C], [CONDUIT]
+
+```python
+import melder as md
+
+class PriceV1:
+    def quote(self) -> int:
+        return 100
+
+class PriceV2:
+    def quote(self) -> int:
+        return 125
+
+versions: dict[str, md.Spell] = {}
+
+def capture(spell: md.Spell) -> None:
+    versions[spell.spell_id] = spell
+
+book = md.Spellbook(aetheric_frame="version-lab")
+root = None
+try:
+    book.add_bind_hooks(post=[capture])
+    old_id = book.bind(spell=PriceV1, existence="unique", permissions="create")
+    root = book.conjure(dynamic=True, name="version-root")
+    old_spell = versions[old_id]
+    index = old_spell.spell_index
+
+    new_id = root.bind_inactive(
+        spell=PriceV2, spell_index=index,
+        existence="unique", permissions="create", binding_name="v2",
+    )
+    candidate = versions[new_id]  # exact object from the successful bind's hook
+    assert candidate.spell_id == new_id
+    assert index.selected_spell_id == old_id
+
+    root.notch_spell(spell_index=index, spell=candidate)
+    try:
+        assert index.selected_spell_id == new_id
+        assert root.meld(spell_id=new_id).quote() == 125
+    except Exception:
+        root.notch_spell(spell_index=index, spell=old_spell)
+        raise
+
+    # Deliberate revert demonstration, not undo of arbitrary external effects.
+    root.notch_spell(spell_index=index, spell=old_spell)
+    assert index.selected_spell_id == old_id
+    assert root.meld(spell_id=old_id).quote() == 100
+finally:
+    if root is not None:
+        root.cleanup()
+    book.cleanup()
+    versions.clear()
+```
+
+**Operational limits:**
+- Selection parks the outgoing version; it is not automatic disposal, resource retirement, or a rewrite of already-held application objects. Retire versions explicitly after consumers no longer need them.
+- The architecture's “owner-side only” warning describes an internal seam, not the whole current public operation. The inspected `Conduit.notch_spell` performs the local transaction, then deactivates stale borrowed copies and emits an index-notch notification for index-linked receivers. **Do not assume all borrowers automatically gain the new version**, or that the post-transaction fan-out is one indivisible action. Re-read grants, selection, and affected consumer behavior. [CONDUIT]
+- On a notch exception, inspect the selected ID and consumer state before retrying: the owner switch may already have occurred. Preserve both failure and recovery reports; a recovery failure must not be labeled success.
+- Moving/separating active index members is refused; first select another member. Separating the sole member is not the retirement route. No manual edits of `selected_spell_id`.
+- Class-version fingerprints do not cover every method-body edit. Do not assume a source edit creates a new Spell ID; verify IDs, selected membership, recorded source, and behavior. Use deliberate version identities. [C: Binding][C]
+
+<a id="persistence"></a>
+
+## 14. Checkpoint and restore
+
+**Four different operations:**
+
+| Operation | What it establishes |
+|---|---|
+| `recorder.create_checkpoint(description=...)` | Checkpoint in the in-process ledger. |
+| `recorder.flush_checkpoint(checkpoint_id)` | Local sealed cache; optional remote delivery is a separate guarantee. |
+| `recorder.reload_cached_checkpoint(checkpoint_id)` | Recorded data loaded back into the ledger, not a live world. |
+| `recorder.load_checkpoint(checkpoint_id)` | Attempts structural replay through public operations. |
+
+```python
+checkpoint_id = recorder.create_checkpoint(description="before-approved-change")
+record_summary = recorder.describe_checkpoint(checkpoint_id)
+flushed_ids = recorder.flush_checkpoint(checkpoint_id)
+if checkpoint_id not in recorder.list_cached_checkpoint_ids():
+    raise RuntimeError("Required checkpoint is not present in the local cache")
+```
+
+**A successful local flush does not prove remote receipt.** Default remote handling is lenient; use your persistence handler's independent acknowledgment/verification. Local cache is FIFO-bounded; another flush may evict older data. Preserve and verify the required **chain**, not just one latest ID. Profiles partition recording windows; changing the active profile does not copy previous content, and checkpoint ID listing is a process-wide ledger read. [RESTORE], [CACHE], [PERSIST]
+
+**Controlled replay:** quiesce application work and ordinary lesser/SpellSpace acquisition/cleanup; retire conflicting live roots only with host authorization. Keep the recorder alive for in-memory replay, or configure storage and reload the complete required chain after a process restart. Do not unconditionally destroy a production world just because load reports a collision.
+
+```python
+# PRECONDITION: authorized, quiescent target; required record chain already loaded.
+report = recorder.load_checkpoint(checkpoint_id)
+if report.get("status") != "complete":
+    raise RuntimeError(f"Restore not complete: {report}")
+identity_map = report["identity_map"]
+# Inspect built counts/shortfalls, reacquire handles, then run application tests.
+```
+
+Fresh structural ULIDs are expected; use the report's old→new map and reacquire all room/conduit handles. Stable spell hashes require equivalent binding inputs/policy; do not assume every old identifier survives. Named lesser topology and required unnamed ancestors can replay; prior application object contents do not. Callback code, external resources, and other unreplayable material must appear as shortfalls or require host participation. An all-or-nothing build rollback is not undo of every possible external effect. [NAMED], [RESTORE], [A]
+
+`CrystallizerBootstrap().with_profile("default").bootstrap()` is the one-shot cold-start facade; configure external persistence first when needed, then inspect activation, reloaded material, restored checkpoint, restore report, and shortfalls. Melder does not supply your database/cloud SDK; handler durability, access control, and acknowledgments are your responsibility. Do not disable drift/preflight blockers to force a green status. [A], [RESTORE]
+
+## 15. Concurrency and advanced change discipline
+
+Use separate Rifts/workstations for independent agents; one room's commands/workstation have their own locks. Distinct rooms do not make shared application objects race-free. Choose per-worker lifetimes or synchronize application state explicitly. Free-threaded Python removes a safety illusion, not the need for locks. [C]
+
+Structural operations are coordinated by scope claims; runtime resolution uses creation/validity machinery rather than entering the structural transaction plane. Leave admission, dirty-root invalidation, recompilation, and gates to the public operations. Disjoint structural changes may proceed concurrently; shared scope changes may wait/refuse. A timeout requires identifying conflicting work/scope, not turning off the gate. [A], [C]
+
+For shutdown, restore, or multi-step governance, quiesce the relevant application work yourself. Do not assume a transaction freezes every business method or every ordinary pool cycle. Internal failure postures such as `UNWIND` versus `LEAVE_BROKEN` are not universal rollback promises; inspect any recorded residue/incident before continuing. [A], [RESTORE]
+
+<a id="failures"></a>
+
+## 16. Failure routing
+
+| Symptom | Inspect / next safe action |
+|---|---|
+| Import/runtime warning | Check Python floor, GIL mode, installed Melder version; do not claim tested compatibility from syntax alone. |
+| Duplicate name/key/ID | Reuse existing registration or choose explicit distinct role/version identities; inspect both local and process-wide collisions. |
+| Missing/ambiguous provider or `SpellbookValidationError` | Read validation issues and constructor selectors; distinguish local DI from intentional late `SpellContract`. |
+| Non-resolvable registration refusal | Supply the consumer input or select a legitimately resolvable definition; changing metadata/permissions is not the fix. |
+| Request-local dependency refused at Conduit door | Resolve through the proper `enter_spellspace()` scope; do not bypass scope checks. |
+| `HookExecutionError` | Read phase, callback, chained cause. Especially after `post`, inspect whether the binding is already published before retrying. |
+| Meld invalid/gated/dirty | Inspect graph validity, contracts, prior failed structural change, and revalidation report; don't clear flags manually. |
+| Dynamic action refused | Check settled frame posture and operation-disable policy, then normal-root ownership. Repeating `dynamic=True` is not conversion. |
+| Static/capability/codegen method missing | Query supported commands; codegen is not capability parity. Ask host for a justified different room, not a bypass. |
+| Empty/incomplete viewer | Check assigned frame, publication, ACL visibility, live-only filtering, and explicit projection refresh. |
+| Codegen rejected or returned errors | Inspect verdict/payload and allowed namespace. Revise the requested operation; do not relax policy silently. |
+| Parked ID lookup returns old version | That lookup follows active selection. Use a host-provided exact candidate handle, not a private-map workaround. |
+| Notch failed | Re-read selected ID and borrower/index-link state; distinguish local commit from later fan-out and application verification. |
+| Purge/cleanup `ExceptionGroup` | Entries may already be detached and resources partially closed. Inspect each failure; don't use or blindly re-dispose old handles. |
+| History/source absent | Check recording activation timing, custody policy, profile/set, and drift. “Unavailable” is not “unchanged.” |
+| Flush succeeded but backup missing | Verify local cache retention and remote acknowledgment separately. |
+| Restore returns but world incomplete | Require `status == "complete"`, then inspect counts, shortfalls, ID translations, and application checks. |
+
+**Agent completion record:** `version; frame/conduit; requested action; exact public call/selector; before→after IDs/selection; payload verdict; invariant tests; disposal/ownership changes; remaining shortfalls; recovery status`. Never report “rolled back” solely because a revert was attempted.
+
+<a id="source-lookup"></a>
+
+## 17. Expand context without dumping the repository
+
+The package ships addressable documents **before any world is conjured**:
+
+```python
+import melder as md
+
+architecture = md.__architecture__
+components = md.__components__
+network = md.__graph_network__
+details = md.__graph_details__
+
+if not components.available or not components.verify():
+    raise RuntimeError(f"Component document unavailable/unverified: {components.reason}")
+
+# Find headings cheaply, choose a bounded section, then read it.
+sections = components.find("Meld Resolution Runtime")
+for section in sections:
+    print(section.key, section.line_count)
+# After selecting a real returned key:
+# text = components.get(key)
+# citation = components.cite(key)
+```
+
+`addressing` tells whether keys are heading paths or source paths. `keys()/groups(depth)/index()` survey cost; `find()` matches keys; `search(needle, limit=...)` searches bodies with previews. `section(key)` gives line cost; `get(key)` reads one section; `reader(key, line_target=...)` pages that section. `verify()` checks content against its index, **not that every prose claim is current code truth**. Avoid unbounded `render_markdown()` and whole-repository ingestion. [DOCS]
+
+**Escalation order:** this guide → installed method surface → relevant architecture/component section → exact public method implementation and current example/test. Host-side `inspect.signature()` or `help()` can verify uncertain calls; an agent in a reflection-denied room uses its advertised description surface or requests host-supplied API information instead.
+
+| Need to investigate | Source owner / component heading |
+|---|---|
+| Binding, identities, config | `src/melder/aether/spellbook/{spellbook.py,bind/bind.py,bind/spell_index.py}`; “Spellbook Core”, “Binding Pipeline”, “DI Descriptors”. |
+| Root/child/link/notch | `src/melder/aether/conduit/conduit.py`; “Conduit Runtime”, “ConduitWard and Contracts”. |
+| Overrides/live probes/lifetimes | `src/melder/aether/conduit/meld/{meld.py,conduit_meld.py,spellspace_meld.py}`; “Meld Resolution Runtime”. |
+| Disposal/scopes | `src/melder/aether/conduit/{creations,spell_space}/`; “Creations and SpellSpace”, “SpellSpace Thread State”. |
+| Validation/recompile | `src/melder/aether/spellbook/spell_compiler/`; “SpellCompiler and Validation Pipeline”. |
+| Admissions/incidents | `src/melder/aether/aetheric_frame/dev_ops/`; “DevOps Control Plane”, “Transaction Admission Plane”. |
+| Frame/room/ACL/view | `src/melder/nexus/`; “AR Runtime Surface”, “Nexus Descriptor And ACL Managers”. |
+| Actual agent commands | `src/melder/nexus/rift/command_system/`; inspect the **room-specific** class, not a merged imagined API. |
+| Code validation/execution | `src/melder/nexus/rift/codegen_system/`; “Codegen Internal Engine”. |
+| Checkpoint/restore/graft | `src/melder/crystallizer/`; “Crystallizer Root, Persistence Record, And Module-World Surfaces”. |
+| Versions/compositions | Public `md.MutationResearch`; locate its source through “MutationResearch Root” / “MutationResearch ResearchSet Package”. |
+
+This is a navigation map, not permission to drive internals. In prose/code conflicts, inspect the **whole public call chain**: a statement about `_apply_notch` is not automatically true of `Conduit.notch_spell` and its post-call work. Old names such as `SpellCrafter`, generic `Configuration`, `MutationContract`, `get_mutation_research()`, and imagined public Spellbook index-mutation verbs are not a fallback API. [A], [C], [CONDUIT]
+
+## 18. Evidence and verification boundary
+
+Primary source documents are much larger than this guide: their pinned indices report **2,646 architecture lines** and **8,957 component lines**. This guide extracts operational material, not every internal class or historical patch narrative. Document integrity hashes and package archive hashes were **not independently rechecked**; no wheel/sdist was installed here. All Python fences were parsed for syntax on the available Python 3.13 interpreter; that does not check imports, runtime signatures, free-threading, disposal, permissions, or restore behavior. Treat assertions as checks to execute in an authorized disposable Python 3.14+ world.
+
+Most recipes follow upstream example source. The exact parked-handle promotion pattern is explicitly identified as a new composition of public hooks and notching, not an upstream-tested end-to-end example. Before production use, test cold/warm resolution, lifetime reuse, refusal paths, hook publication failures, borrower behavior, cleanup, and complete replay under the installed build. Do not promote historical example headers saying “run green” into evidence that this review ran them.
+
+**Reference key:** `[C: …]` means the named section in the component document; `[A]` is architecture. Section-qualified component links point to `[C]`; use the named heading inside it. All GitHub references are pinned to the reviewed commit; hosted `/latest/` and PyPI are moving publication surfaces.
+
+[A]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/context_compass/system_docs/src_architecture.md
+[C]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/context_compass/system_docs/src_components.md
+[V]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/src/melder/__version__.py
+[E]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/docs/catalog.toml
+[CONDUIT]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/src/melder/aether/conduit/conduit.py
+[COMMANDS]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/src/melder/nexus/rift/command_system/codegen_command_system.py
+[ROOMS]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/docs/expert/agent-rooms.md
+[BUILD]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/04_expert/36_an_agent_builds_a_working_system.py
+[NAMES]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/01_beginner/24_same_class_many_names.py
+[PERMISSIONS]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/02_intermediate/22_permissions_create_vs_read.py
+[PURGE]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/02_intermediate/39_purge_unneeded_objects.py
+[HOOKS]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/02_intermediate/40_bind_lifecycle_hooks.py
+[OVERRIDE]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/03_advanced/01_deep_spell_override_paths.py
+[CLUSTER]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/02_intermediate/25_clusters_unique_per_cluster.py
+[VIEWER]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/03_advanced/13_the_frame_viewer_facade.py
+[NOTCH]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/04_expert/17_notch_swapping_a_live_object.py
+[RESEARCH]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/04_expert/03_research_sets_lanes_and_residency.py
+[PERSIST]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/docs/expert/persistence.md
+[RESTORE]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/docs/expert/restore.md
+[CACHE]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/03_advanced/18_loading_it_back.py
+[NAMED]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/04_expert/38_named_scopes_in_nexus_and_restore.py
+[DOCS]: https://github.com/Synaptic724/melder/blob/9c3ca5ff527903f5cb83f0b7ff8ad7033abb0ef9/UX_and_AIX_experiences/04_expert/18_the_package_reads_itself_to_you.py
+
+Publication entry points: <https://pypi.org/project/melder/0.2.50/> · <https://melder.readthedocs.io/en/latest/>. For source development, consult the pinned repository's `CONTRIBUTING.md` rather than inventing test/build commands.
+================================================================================
+END FILE: agents/MELDER_AGENT_OPERATIONS.md
 ================================================================================
 ================================================================================
 BEGIN FILE: architecture_and_design/01_overview/capability_ladder.md
@@ -55215,12 +55901,13 @@ END FILE: benchmarks/testing_other_di/test_multithreading_di.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_overrides_all.py
-CONTENT SHA256: 5a8adde1490e7a084768ec364f4310d54c8c2373a64ad884abc303b5b1af9fff
+CONTENT SHA256: c1cce89c9e01e56399999f381c9ce80cf3bfaa3afafdb6009c519080c45c84fe
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
 
 import gc
+import importlib
 import inspect
 import os
 import threading
@@ -55314,10 +56001,19 @@ class _NoDeps:
 
 
 # ---- SOLO ---------------------------------------------------------------------------
+# One object per step: the root's only input is the override, so every library builds the root alone with
+# the supplied leaf (a melder override targets constructor parameters; a root with none has nothing to override).
 
 
-class SoloRootA(_NoDeps):
+class SoloLeafA(_NoDeps):
     __slots__ = ()
+
+
+class SoloRootA:
+    __slots__ = ("leaf",)
+
+    def __init__(self, leaf: SoloLeafA) -> None:
+        self.leaf = leaf
 
 
 # ---- SHALLOW ------------------------------------------------------------------------
@@ -55479,8 +56175,7 @@ class _OverrideGraphSpec:
     classes: tuple[type, ...]
     override_target: type
     override_accessor: Callable[[Any], tuple[Any, ...]]
-    melder_override_key: str | None
-    melder_override_mode: str
+    melder_override_key: str
 
 
 def _override_graphs() -> list[_OverrideGraphSpec]:
@@ -55488,11 +56183,10 @@ def _override_graphs() -> list[_OverrideGraphSpec]:
         _OverrideGraphSpec(
             name="solo",
             root_type=SoloRootA,
-            classes=(SoloRootA,),
-            override_target=SoloRootA,
-            override_accessor=lambda root: (root,),
-            melder_override_key=None,
-            melder_override_mode="existing",
+            classes=(SoloLeafA, SoloRootA),
+            override_target=SoloLeafA,
+            override_accessor=lambda root: (root.leaf,),
+            melder_override_key="leaf",
         ),
         _OverrideGraphSpec(
             name="shallow",
@@ -55501,7 +56195,6 @@ def _override_graphs() -> list[_OverrideGraphSpec]:
             override_target=ShallowLeafA,
             override_accessor=lambda root: (root.a,),
             melder_override_key="a",
-            melder_override_mode="payload",
         ),
         _OverrideGraphSpec(
             name="wide",
@@ -55520,7 +56213,6 @@ def _override_graphs() -> list[_OverrideGraphSpec]:
             override_target=Wide8Leaf0,
             override_accessor=lambda root: (root.leaves[0],),
             melder_override_key="l0",
-            melder_override_mode="payload",
         ),
         _OverrideGraphSpec(
             name="diamond",
@@ -55529,7 +56221,6 @@ def _override_graphs() -> list[_OverrideGraphSpec]:
             override_target=DiamondSharedLeaf,
             override_accessor=lambda root: (root.left.leaf, root.right.leaf),
             melder_override_key="**leaf",
-            melder_override_mode="payload",
         ),
         _OverrideGraphSpec(
             name="deep",
@@ -55538,7 +56229,6 @@ def _override_graphs() -> list[_OverrideGraphSpec]:
             override_target=Depth9LeafA,
             override_accessor=lambda root: (_deep_left_leaf(root),),
             melder_override_key="left>left>left>left>left>left>left>left",
-            melder_override_mode="payload",
         ),
     ]
 
@@ -55780,21 +56470,15 @@ def _build_override_melder(g: _OverrideGraphSpec) -> _OverrideOps:
 
     override_instance = g.override_target()
 
-    if g.melder_override_mode == "existing":
-        root_id = spellbook.bind(spell=override_instance, existence=Existence.unique, permissions="create")
-    else:
-        ids: dict[type, str] = {}
-        for cls in g.classes:
-            ids[cls] = spellbook.bind(spell=cls, existence=Existence.many, permissions="create")
-        root_id = ids[g.root_type]
+    ids: dict[type, str] = {}
+    for cls in g.classes:
+        ids[cls] = spellbook.bind(spell=cls, existence=Existence.many, permissions="create")
+    root_id = ids[g.root_type]
 
     conduit = spellbook.conjure(name="di-overrides")
 
     def get_root() -> Any:
-        if g.melder_override_mode == "existing":
-            root = conduit.meld(spell_id=root_id)
-        else:
-            root = conduit.meld(spell_id=root_id, override={g.melder_override_key: override_instance})
+        root = conduit.meld(spell_id=root_id, override={g.melder_override_key: override_instance})
         if not isinstance(root, g.root_type):
             raise AssertionError("Melder: root resolve returned wrong type")
         return root
@@ -55832,6 +56516,41 @@ def _build_override_ops(lib: str, g: _OverrideGraphSpec) -> _OverrideOps:
     raise AssertionError(f"Unknown lib: {lib}")
 
 
+# Modules each builder imports, per library. `_preload_all_libraries` imports all of them before the
+# first case so every case runs with the same process heap: a collection walks every tracked object,
+# `import melder` alone adds ~57k, and a library timed before another was imported would otherwise be
+# measured against a smaller heap.
+_LIBRARY_MODULES: dict[str, tuple[str, ...]] = {
+    "dependency-injector": ("dependency_injector", "dependency_injector.providers"),
+    "lagom": ("lagom",),
+    "injector": ("injector",),
+    "dishka": ("dishka",),
+    "melder": (
+        "melder",
+        "melder.aether.aether",
+        "melder.aether.conduit.conduit",
+        "melder.aether.spellbook.existence.existence",
+        "melder.aether.spellbook.spellbook",
+    ),
+}
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _preload_all_libraries() -> None:
+    """
+    Import every supported library before the first case, whatever DI_LIBS selects, then collect once.
+
+    A library that is not installed is left to its builder's importorskip.
+    """
+    for module_names in _LIBRARY_MODULES.values():
+        for module_name in module_names:
+            try:
+                importlib.import_module(module_name)
+            except ImportError:
+                break
+    gc.collect()
+
+
 # ======================================================================================
 # Stress config + tests (benchmark-style loop)
 # ======================================================================================
@@ -55845,8 +56564,13 @@ class _OverrideStressConfig:
         DI_OVERRIDE_DURATION_S       default 15.0
         DI_OVERRIDE_VALIDATE_EVERY   default 200 (0 disables)
         DI_OVERRIDE_WARMUP_ITERS     default 50
-        DI_OVERRIDE_GC_EVERY         default 2000
-        DI_OVERRIDE_GC_MODE          periodic | disabled | none (default periodic)
+        DI_OVERRIDE_GC_EVERY         default 2000 (periodic mode only)
+        DI_OVERRIDE_GC_MODE          disabled | periodic | none (default disabled)
+            disabled: automatic GC is off for the timed window and each case collects once
+                      when it ends (its cleanup), so no collection is timed.
+            periodic: gc.collect() every DI_OVERRIDE_GC_EVERY steps inside the window.
+            none:     automatic GC stays on; no explicit collections.
+    Every supported library is imported before the first case (`_preload_all_libraries`).
         DI_OVERRIDE_RUN_PER_GRAPH    default 1
     """
     threads: int
@@ -55864,7 +56588,7 @@ class _OverrideStressConfig:
             validate_every=_env_int_nonneg("DI_OVERRIDE_VALIDATE_EVERY", 200),
             warmup_iters=_env_int_nonneg("DI_OVERRIDE_WARMUP_ITERS", 50),
             gc_every=_env_int_nonneg("DI_OVERRIDE_GC_EVERY", 2000),
-            gc_mode=_env_str("DI_OVERRIDE_GC_MODE", "periodic").lower(),
+            gc_mode=_env_str("DI_OVERRIDE_GC_MODE", "disabled").lower(),
         )
 
 
@@ -55915,36 +56639,28 @@ def test_overrides_all(lib: str, graph_name: str) -> None:
 
     def _run_worker(ix: int) -> None:
         try:
-            was_enabled = gc.isenabled()
-            if cfg.gc_mode == "disabled" and was_enabled:
-                gc.disable()
+            start_barrier.wait()
+            stop_at = stop_time_holder[0]
+            local_i = 0
+            local_stats = stats[ix]
 
-            try:
-                start_barrier.wait()
-                stop_at = stop_time_holder[0]
-                local_i = 0
-                local_stats = stats[ix]
+            while not stop_event.is_set() and time.perf_counter() < stop_at:
+                root = ops.get_root()
+                local_stats.steps += 1
+                local_i += 1
 
-                while not stop_event.is_set() and time.perf_counter() < stop_at:
-                    root = ops.get_root()
-                    local_stats.steps += 1
-                    local_i += 1
+                if cfg.validate_every > 0 and (local_i % cfg.validate_every) == 0:
+                    observed = g.override_accessor(root)
+                    for value in observed:
+                        if value is not ops.override_instance:
+                            raise AssertionError(
+                                f"{ops.name}:{g.name} override did not apply "
+                                f"({value!r} is not override instance)"
+                            )
 
-                    if cfg.validate_every > 0 and (local_i % cfg.validate_every) == 0:
-                        observed = g.override_accessor(root)
-                        for value in observed:
-                            if value is not ops.override_instance:
-                                raise AssertionError(
-                                    f"{ops.name}:{g.name} override did not apply "
-                                    f"({value!r} is not override instance)"
-                                )
-
-                    if cfg.gc_mode == "periodic" and cfg.gc_every > 0:
-                        if (local_i % cfg.gc_every) == 0:
-                            gc.collect()
-            finally:
-                if cfg.gc_mode == "disabled" and was_enabled:
-                    gc.enable()
+                if cfg.gc_mode == "periodic" and cfg.gc_every > 0:
+                    if (local_i % cfg.gc_every) == 0:
+                        gc.collect()
 
         except BaseException as e:
             stats[ix].errors += 1
@@ -55958,14 +56674,25 @@ def test_overrides_all(lib: str, graph_name: str) -> None:
         t.start()
 
     def _run_timed() -> None:
-        start_barrier.wait()
-        start_t = time.perf_counter()
-        stop_time_holder[0] = start_t + cfg.duration_s
+        # GC is switched once, by this thread, around the whole window (workers toggling the
+        # process-global flag raced with threads > 1). The case collects at its end, in cleanup.
+        gc_was_enabled = gc.isenabled()
+        if cfg.gc_mode == "disabled":
+            gc.disable()
+        try:
+            # The stop time is stored before the barrier releases the workers, which read it right
+            # after the barrier (storing it afterwards let a worker read 0.0 and run zero steps).
+            start_t = time.perf_counter()
+            stop_time_holder[0] = start_t + cfg.duration_s
+            start_barrier.wait()
 
-        for t in threads_list:
-            t.join()
+            for t in threads_list:
+                t.join()
 
-        elapsed_s = time.perf_counter() - start_t
+            elapsed_s = time.perf_counter() - start_t
+        finally:
+            if gc_was_enabled:
+                gc.enable()
         if errors:
             raise errors[0]
 
@@ -56835,7 +57562,7 @@ END FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_real_world_gauntlet.py
-CONTENT SHA256: 027989359cae325015c551c77ff961615814f71f0a1dffecfdada0650122e885
+CONTENT SHA256: 610c991293adcb84af0d26cde72696e9338d5a7e5d1f17b630fc3d464ce3cafc
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -57289,7 +58016,7 @@ class _GauntletConfig:
     @staticmethod
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
-            iterations=_env_int("DI_GAUNTLET_ITERS", 15_000),
+            iterations=_env_int("DI_GAUNTLET_ITERS", 30_000),
             threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
@@ -62185,369 +62912,6 @@ def test_shallow_graph_phase11_diagnostics(graph: object) -> None:
         assert metrics.preferred_route == exp_route
 ================================================================================
 END FILE: benchmarks/testing_other_di/test_shallow_diagnostics.py
-================================================================================
-================================================================================
-BEGIN FILE: benchmarks/testing_other_di/test_unroll_locals_microbench.py
-CONTENT SHA256: fd37689f9434810fae37ddb92fb3c41ac31f08b615baf480be293ac1d742e141
-SOURCE ENCODING: utf-8
-================================================================================
-"""
-Focused A/B micro-benchmark for the generalized "unrolled locals" executor.
-
-What it measures
-----------------
-The warm per-meld cost of a `many`-root-over-`unique`-singletons graph at several
-depths, comparing the two emitted executor shapes on IDENTICAL graphs in the same
-process:
-
-  - dict path  : results published into an `instance_results` dict; deps read via
-                 dict lookups (the prior behavior).
-  - unroll path : results kept in straight-line `instance_{i}` locals; deps read
-                 those locals; no dict (the new behavior).
-
-The A/B is done by monkeypatching `_all_steps_inlinable` to force the dict path
-for the baseline run, then restoring it for the unrolled run. Both runs compile a
-fresh executor (separate spellbook/conjure per run), so they exercise the two
-shapes on the same dependency graph.
-
-Why this shape: a `many` root means the door calls the inner executor on EVERY
-meld (no singleton short-circuit), so the warm loop actually runs the
-inner executor each iteration -- which is exactly where the unroll lives. The
-`unique` deps are built once and reused, so each warm meld constructs the root and
-walks the (present) singleton deps.
-
-Run it (from repo root):
-  pytest -s -k test_unroll_locals_warm_microbench benchmarks/testing_other_di/test_unroll_locals_microbench.py
-
-Pin to P-cores (recommended on hybrid Intel) by setting the env first:
-  DI_PIN_P_CORES=1 pytest -s -k test_unroll_locals_warm_microbench benchmarks/testing_other_di/test_unroll_locals_microbench.py
-(or it always attempts a pin via pin_current_process_to_p_cores below)
-"""
-
-import gc
-import time
-from typing import Dict, List, Tuple, Type
-
-import pytest
-
-from melder.aether.aether import Aether
-from melder.aether.conduit.conduit import Conduit
-from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spellbook import Spellbook
-from tests.mocks.spellbook.deep_layers import (
-    get_depth_3_classes,
-    get_depth_5_classes,
-    get_depth_7_classes,
-    get_depth_9_classes,
-)
-from benchmarks.p_core_affinity.p_core_affinity import (
-    pin_current_process_to_p_cores,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers import (
-    generalized_no_overrides_codegen_creation_compiler as GEN,
-)
-
-
-def _reset_aether() -> None:
-    """Rebind a fresh Aether singleton so each case is isolated."""
-    Aether._reset_singleton_for_tests()
-    aether = Aether()
-    Spellbook._aether = aether
-    Conduit._aether = aether
-
-
-def _bind_many_root_over_singletons(
-    spellbook: Spellbook,
-    classes: Tuple[Type, ...],
-    root_cls: Type,
-) -> Dict[Type, str]:
-    """Bind the root as `many` (transient) and every dependency as `unique`."""
-    spell_ids: Dict[Type, str] = {}
-    for cls in classes:
-        existence = Existence.many if cls is root_cls else Existence.unique
-        spell_ids[cls] = spellbook.bind(
-            spell=cls,
-            existence=existence,
-            permissions="create",
-        )
-    return spell_ids
-
-
-def _warm_per_meld_us(
-    depth: int,
-    classes: Tuple[Type, ...],
-    root_cls: Type,
-    *,
-    force_dict: bool,
-    iterations: int,
-    repeats: int,
-    warmup: int,
-) -> float:
-    """Return the best (least-noisy) warm per-meld time in microseconds."""
-    original = GEN._all_steps_inlinable
-    if force_dict:
-        GEN._all_steps_inlinable = lambda steps: False  # force the dict path
-    samples: List[float] = []
-    try:
-        for _ in range(repeats):
-            _reset_aether()
-            label = "dict" if force_dict else "unroll"
-            spellbook = Spellbook(aetheric_frame=f"unroll-mb-d{depth}-{label}")
-            spellbook.get_configuration().set_property(
-                "phase_scheduler_workers_per_spellbook", 1
-            )
-            spell_ids = _bind_many_root_over_singletons(spellbook, classes, root_cls)
-            root_id = spell_ids[root_cls]
-            conduit = spellbook.conjure(name=f"unroll-mb-d{depth}-{label}")
-            try:
-                conduit.meld(spell_id=root_id)  # cold: compiles the executor + builds deps
-                for _ in range(warmup):
-                    conduit.meld(spell_id=root_id)
-                gc.collect()
-                gc.disable()
-                try:
-                    start = time.perf_counter()
-                    for _ in range(iterations):
-                        conduit.meld(spell_id=root_id)
-                    elapsed = time.perf_counter() - start
-                finally:
-                    gc.enable()
-                samples.append((elapsed / iterations) * 1_000_000.0)
-            finally:
-                conduit.cleanup()
-        return min(samples)
-    finally:
-        GEN._all_steps_inlinable = original
-
-
-@pytest.mark.parametrize(
-    "depth_name",
-    ["3", "5", "7", "9"],
-)
-def test_unroll_locals_warm_microbench(depth_name: str) -> None:
-    """
-    Print warm per-meld dict-vs-unroll for a many-root-over-singletons graph.
-
-    No threshold is asserted (timings are machine-dependent); this prints numbers
-    for local comparison. A positive delta means the unroll path is faster.
-    """
-    pin = pin_current_process_to_p_cores(strict=False)
-
-    cases = {
-        "3": (3, get_depth_3_classes()),
-        "5": (5, get_depth_5_classes()),
-        "7": (7, get_depth_7_classes()),
-        "9": (9, get_depth_9_classes()),
-    }
-    depth, classes = cases[depth_name]
-    root_cls = classes[-1]  # DepthNRoot is last in dependency order
-    step_count = len(classes)
-
-    iterations = 100_000
-    repeats = 4
-    warmup = 3_000
-
-    dict_us = _warm_per_meld_us(
-        depth, classes, root_cls,
-        force_dict=True, iterations=iterations, repeats=repeats, warmup=warmup,
-    )
-    unroll_us = _warm_per_meld_us(
-        depth, classes, root_cls,
-        force_dict=False, iterations=iterations, repeats=repeats, warmup=warmup,
-    )
-    delta_pct = (dict_us - unroll_us) / dict_us * 100.0 if dict_us else 0.0
-
-    print(
-        "\n[unroll micro-bench] many-root-over-singletons "
-        f"depth={depth} steps={step_count} "
-        f"(best of {repeats} x {iterations} warm melds, single-thread)\n"
-        f"  dict path   : {dict_us:8.3f} us/meld  ({1e6 / dict_us:,.0f} melds/s)\n"
-        f"  unroll path : {unroll_us:8.3f} us/meld  ({1e6 / unroll_us:,.0f} melds/s)\n"
-        f"  delta       : {delta_pct:+.1f}%  "
-        f"({'unroll faster' if delta_pct > 0 else 'dict faster'})\n"
-        f"  p-core pin  : applied={pin.get('applied')} "
-        f"reason={pin.get('reason')} cpus={pin.get('selected_affinity')}"
-    )
-
-    # Soft sanity only: both paths must produce a usable instance and time.
-    assert dict_us > 0.0 and unroll_us > 0.0
-================================================================================
-END FILE: benchmarks/testing_other_di/test_unroll_locals_microbench.py
-================================================================================
-================================================================================
-BEGIN FILE: benchmarks/testing_other_di/test_unroll_path_diagnostic.py
-CONTENT SHA256: dedd7934b0c6ddbd5869bc8b0c1a120ca948ad5183c3dd7de73c6b6c76faf82a
-SOURCE ENCODING: utf-8
-================================================================================
-"""
-Diagnostic: which compiled executors does each binding shape actually produce?
-
-Goal: stop guessing about lane routing. For several bindings of the SAME deep
-graph we capture EVERY emitted executor source via `builtins.compile` (robust --
-catches compiles regardless of which module triggers them, unlike wrapping one
-module's `get_or_compile_executor_code` reference) and print each `source_name`.
-
-The `source_name` reveals the lane/shape, e.g.:
-  <melder_no_overrides_codegen_creation_step_executor...>      generalized step-plan
-  <melder_no_overrides_codegen_creation_transient_executor>    transient unrolled
-  <solo_no_overrides_codegen_creation:...>                     solo family
-  <creation_context_no_overrides_only_template:...>            door template
-
-We also flag whether each source contains `instance_results` (dict path) and run
-each shape twice -- once with the real `_all_steps_inlinable` and once forcing it
-False -- to see whether forcing the dict path changes anything (if it doesn't, the
-generalized unroll never applies to that shape).
-
-Run (fresh process so nothing is pre-cached):
-  pytest -s -k test_lane_routing_diagnostic benchmarks/testing_other_di/test_unroll_path_diagnostic.py
-"""
-
-import sys
-from pathlib import Path
-
-# benchmarks/ has no conftest and pyproject does not add src/ to the path, so a
-# plain-terminal pytest cannot import `melder` (PyCharm adds source roots, a bare
-# shell does not). Put repo-root/src + repo-root on sys.path so this runs anywhere.
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]
-for _candidate in (str(_PROJECT_ROOT / "src"), str(_PROJECT_ROOT)):
-    if _candidate not in sys.path:
-        sys.path.insert(0, _candidate)
-
-import builtins
-from typing import Dict, List, Tuple, Type
-
-import pytest
-
-from melder.aether.aether import Aether
-from melder.aether.conduit.conduit import Conduit
-from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spellbook import Spellbook
-from tests.mocks.spellbook.deep_layers import get_depth_5_classes
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers import (
-    generalized_no_overrides_codegen_creation_compiler as GEN,
-)
-
-
-def _reset_aether() -> None:
-    Aether._reset_singleton_for_tests()
-    aether = Aether()
-    Spellbook._aether = aether
-    Conduit._aether = aether
-
-
-def _capture_compiles(
-    classes: Tuple[Type, ...],
-    root_cls: Type,
-    *,
-    existence_of,
-    force_dict: bool,
-) -> List[Tuple[str, str]]:
-    """Build the graph once; capture every emitted executor source."""
-    captured: List[Tuple[str, str]] = []
-    original_compile = builtins.compile
-    original_inlinable = GEN._all_steps_inlinable
-
-    def _cap(source, filename, mode, *args, **kwargs):
-        if (
-            isinstance(filename, str)
-            and isinstance(source, str)
-            and filename.startswith("<")
-            and ("executor" in filename or "creation" in filename or "melder" in filename)
-        ):
-            captured.append((filename, source))
-        return original_compile(source, filename, mode, *args, **kwargs)
-
-    builtins.compile = _cap
-    if force_dict:
-        GEN._all_steps_inlinable = lambda steps: False
-    try:
-        _reset_aether()
-        spellbook = Spellbook(aetheric_frame=f"lane-diag-{int(force_dict)}")
-        spellbook.get_configuration().set_property(
-            "phase_scheduler_workers_per_spellbook", 1
-        )
-        # Disable system caching so each case compiles fresh. Otherwise the
-        # process-wide manifest/executor cache leaks across cases (reusing one
-        # case's manifest for another's spells -> "unknown spell_id"), and an A/B
-        # second run just reuses the first run's cached executor.
-        spellbook.configure_aether_frame(
-            system_state=None,
-            disposal=None,
-            disposal_method_names=None,
-            system_caching_enabled=False,
-        )
-        spell_ids: Dict[Type, str] = {}
-        for cls in classes:
-            spell_ids[cls] = spellbook.bind(
-                spell=cls, existence=existence_of(cls), permissions="create"
-            )
-        conduit = spellbook.conjure(name="lane-diag")
-        try:
-            conduit.meld(spell_id=spell_ids[root_cls])
-        finally:
-            conduit.cleanup()
-    finally:
-        builtins.compile = original_compile
-        GEN._all_steps_inlinable = original_inlinable
-    return captured
-
-
-def _print_capture(tag: str, captured: List[Tuple[str, str]]) -> None:
-    # de-dup by source text
-    seen = set()
-    rows = []
-    for name, src in captured:
-        if src in seen:
-            continue
-        seen.add(src)
-        rows.append((name, src))
-    print(f"\n--- {tag}: {len(rows)} distinct executor source(s) ---")
-    for name, src in rows:
-        marker = "DICT(instance_results)" if "instance_results" in src else "no-dict"
-        print(
-            f"  {marker:24s} lines={src.count(chr(10)) + 1:4d}  {name}"
-        )
-
-
-@pytest.mark.parametrize(
-    "shape",
-    [
-        "all_unique",
-        "all_many",
-        "many_root_unique_deps",
-        "all_many_one_singleton",     # mostly many + ONE singleton leaf (your steer)
-        "singleton_root_many_deps",   # one singleton root over many deps
-    ],
-)
-def test_lane_routing_diagnostic(shape: str) -> None:
-    classes = get_depth_5_classes()
-    root_cls = classes[-1]
-    first_leaf = classes[0]  # a leaf node
-
-    if shape == "all_unique":
-        existence_of = lambda cls: Existence.unique
-    elif shape == "all_many":
-        existence_of = lambda cls: Existence.many
-    elif shape == "many_root_unique_deps":
-        existence_of = lambda cls: (
-            Existence.many if cls is root_cls else Existence.unique
-        )
-    elif shape == "all_many_one_singleton":
-        existence_of = lambda cls: (
-            Existence.unique if cls is first_leaf else Existence.many
-        )
-    else:  # singleton_root_many_deps
-        existence_of = lambda cls: (
-            Existence.unique if cls is root_cls else Existence.many
-        )
-
-    print(f"\n========== shape = {shape} (depth 5, root={root_cls.__name__}) ==========")
-    real = _capture_compiles(classes, root_cls, existence_of=existence_of, force_dict=False)
-    forced = _capture_compiles(classes, root_cls, existence_of=existence_of, force_dict=True)
-    _print_capture("real _all_steps_inlinable", real)
-    _print_capture("forced _all_steps_inlinable=False", forced)
-================================================================================
-END FILE: benchmarks/testing_other_di/test_unroll_path_diagnostic.py
 ================================================================================
 ================================================================================
 BEGIN FILE: codecov.yml
@@ -69138,10 +69502,10 @@ END FILE: release_docs/0.2.50.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 0bc1bc5ff0786a9532cda9f0b76d5f4dd6bb790a4121fd91ab95cb3f471d23af
+CONTENT SHA256: b23c6ba89d96a5d547d45bb2acf691cee77d1d2d6beb217057e42bf760e16b1b
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.56
+# Melder 0.2.71
 
 **Unreleased**
 
@@ -69183,10 +69547,60 @@ meld and on every later run that loads the creation cache.
   references for everything else, so a plan is valid in any process that binds the same book.
 - **Existing creation caches keep working.** Cache entries for books whose payload values are all
   scalars are byte-identical; a book with a non-scalar payload value compiles new plans once.
-- **One path still renders values the old way.** A meld that passes its own `override` payload builds
-  through a separate executor that still writes the descriptor's payload values into generated code.
-  That executor is being replaced. Until then, pass such values in `meld(override=...)` itself, which
-  always delivers them by identity.
+
+## Overrides build only what you did not supply
+
+An override meld now runs a plan compiled for its set of override keys the first time that set is used.
+The plan builds only what the call still needs, so a dependency you supply, and everything that only it
+needed, is never constructed.
+
+- **Supplied dependencies are no longer built and discarded.** Before, an override meld built the root's
+  whole graph and then swapped your values in, so a supplied dependency's own dependencies were
+  constructed anyway, and a supplied shared dependency was built and stored. A supplied dependency that
+  is itself missing an input no longer fails the meld.
+- **A stored shared object skips its dependencies.** Once a shared dependency (any existence except
+  `many`) is stored, an override meld reuses it without building the objects only it needs; before, those
+  were built on every call and dropped. Construction order changes with it: a shared object's own
+  dependencies are built just before it, and only when it is missing. Normal melds do the same (see
+  "Faster warm melds").
+- **Positional payloads cover injected parameters.** `meld(spell_id=..., override=(obj,))` supplies the
+  root's leading parameters even when they are injected dependencies; it used to raise.
+- **A path through a list parameter reaches every member**, not only the last one.
+- **Empty payloads are ordinary melds.** `override=()` and `override={}` run at normal meld speed.
+- **Descriptor payloads behave the same on override melds.** `SpellMap` and `SpellContract` payload
+  values reach their providers as the objects you gave, as they do on plain melds.
+- **Unchanged:** the key grammar, the errors for unknown keys and their text, the error for a rule on a
+  shared object that is already stored, and supplied objects are passed as given, never registered or
+  checked.
+- **Faster.** On three benchmark graphs override melds ran 22-44% faster, and 4.6 times faster on a
+  deep graph with 511 transient sites. Warm override melds with a dict payload now also take the fast
+  lane plain melds use. Cold conjure of that deep graph takes about a quarter less time, because override
+  executors are no longer compiled at conjure.
+- **Creation caches refresh once.** The cache format advances to generation 14; older caches are rebuilt
+  on first use.
+
+## Faster warm melds
+
+- **Stored shared objects skip their dependencies on every meld.** Normal melds now run the same compiled
+  plan as override melds (the plan for an empty override set). Once a shared dependency is stored, the
+  objects only it needs are no longer built and dropped on each call: warm melds on our test graphs with
+  shared objects ran 3-27% faster (more when more sits under the shared object), and graphs without them
+  run at the same speed. Those
+  dependencies are built just before their shared object, only when it is missing, so construction order
+  changes. No cache refresh is needed for this.
+- **Positional calls only where they are equivalent.** Compiled melds pass dependency values
+  positionally, the faster call on Python 3.14, when the target is a plain class (default metaclass
+  call, no custom `__new__`, a plain `__init__`), a plain function or a bound method. A class whose
+  `__new__` or metaclass `__call__` sees the call, or a function behind a `*args, **kwargs` wrapper,
+  receives the values by name, as the keyword calls of earlier releases gave it. Values you pass
+  with `override=(...)` stay positional.
+- **Id melds on an automatic conduit** - `conduit.meld(spell_id=...)` - are served from the warm fast
+  lane directly, about 100 ns less per call (free-threaded 3.14, main thread).
+- **Id melds on a SpellSpace** - `space.meld(spell_id=...)` - are served from the same warm fast lane
+  without entering the spellspace's meld door, about 40 ns less per call (free-threaded 3.14, worker
+  thread). Results, errors and hooks are unchanged.
+- **A bound existing object** is returned by a warm meld without entering its generated creation code,
+  about 10-15% faster on free-threaded and GIL builds.
 
 ## Faster conjure on large books
 
@@ -69196,6 +69610,31 @@ O(spells^2) step on the cold conjure path. It now hashes them once per conjure. 
 
 - **No change in what gets compiled.** The analysis is rebuilt exactly when it was before, and creation
   caches are not invalidated.
+- **Phase 3 no longer builds a per-spell graph object.** The local frame of every spell (its resolved
+  dependencies, ascending by id, then the spell itself) is computed as id rows; the per-spell
+  `DirectedAcyclicWorkGraph` that carried the same information, with its lock, node objects and sort, is
+  gone. Phase 3 is about a third faster per conjure on the 29-spell benchmark. `Spell.dependency_graph`
+  is now always `None` (kept for shape); `Spell.dependencies`, `Spell.resolution_frame` and the
+  registered local topology carry the frame. The Phase-4 warning `MISSING_DEPENDENCY_GRAPH` is retired.
+- **A warm conjure skips the structural phases.** At the end of conjure the cache bundle now stores, beside
+  every executor payload, a small value-only row set describing the spell's resolved dependencies, its
+  constructor sockets and its validation verdict, keyed by the spell id and the types its parameters match
+  on and stamped with the book's pool and posture. The next process that conjures the same book replays
+  those rows instead of running phases 1-4, provided every spell still matches; any change to the pool, a
+  spell's constructor, its parameter types or the frame posture runs the phases as before, and so does
+  `validation_warnings=True`. Melds after a replayed conjure behave exactly as after a cold one. On a
+  29-spell book a warm conjure took about a quarter less time. The cache format is now generation 15;
+  caches from earlier releases are rebuilt once on first use. Bundles grow by a few hundred bytes per spell.
+- **Restored worlds keep their recorded cache posture.** A frame rebuilt by a crystallizer restore (or any
+  first posture bind) now inherits the recorded `system_caching_enabled` flag and cache root; before, both
+  silently fell back to the defaults, so a restored world never found the conjure cache it had written.
+- **Shared dependencies no longer multiply conjure time.** Phase 5 used to walk every route from each
+  spell down through its dependencies and record every parameter along each one, so a dependency reached by
+  several routes was visited once per route, and on graphs with repeated sharing the work doubled with each
+  layer. Nothing needed those records, and the walk is gone. On a chain where every class takes the next
+  class twice, conjure of 15 classes took 117 ms before and 7 ms after (13 classes: 33 ms to 6 ms), and
+  layered many-to-many graphs conjured 2-4 times faster; books without repeated sharing see no change.
+  Meld results and construction order are unchanged.
 
 ## Creation-cache signatures are the same in every process
 
@@ -69256,7 +69695,11 @@ when Task is built as a dependency, or bind a provider for Package.
 - **`UnresolvedInputError` is a `MeldExecutionError`**, so existing handlers keep catching it. Import
   it from `melder`; `param_name`, `expected_type` and `unresolved_params` name what was missing.
 - **`resolvable=False` registrations are unchanged.** They remain a separate, discoverable feature.
-- **Successful melds do no extra work.** The check runs only after a constructor call has failed.
+- **The error comes before anything is built.** A meld's compiled plan already knows which unresolved
+  inputs it leaves out, so it raises before constructing the object or any of its dependencies, and the
+  error no longer chains Python's `TypeError`. The same holds for an object with no dependencies of its
+  own, melded directly: its constructor is not called without the value. Objects without unresolved inputs
+  do no extra work; one that has them checks the supplied names once per construction.
 - **Creation caches rebuild once.** The creation-cache format advances to generation 11 so executors
   compiled before this change are not reused.
 - **Defaults and collections are unchanged.** A parameter with a default keeps using it, and a
@@ -69317,8 +69760,10 @@ operations = conduit.meld(spell=Operations, override={"ops": {"build": build_op}
 - **These parameters are caller inputs.** Supply them through `override` when melding, as for any other
   required parameter Melder does not inject. A plain data class registered as a spell works the same way.
 - **The hint moved, it did not disappear.** `conjure(validation_warnings=True)` lists such a parameter as
-  `REQUIRED_HOLE`, and the message now says that Melder injects collections only as `list[T]`.
-- **`Any` is never injected.** `list[Any]` now draws the same "not a DI type" warning as `list[int]`.
+  `REQUIRED_HOLE`; when the container holds one of your classes, as in `dict[str, Operation]`, the message
+  says that Melder injects collections only as `list[T]`. Plain data such as `dict[str, Any]` gets no hint.
+- **`Any` is never injected.** `list[Any]`, like `list[int]` or `list[str]`, is plain data you supply; it
+  draws no list warning.
 - **The `UNSUPPORTED_COLLECTION_SHAPE` validation code is no longer emitted.** Code that looked for it in
   validation results can look for `REQUIRED_HOLE`, which reports these parameters when they have no default.
 
@@ -69377,6 +69822,11 @@ before, its fingerprint carried a memory address.
 
 - **No change for annotations that resolve.** Rendered signatures match Python's own text whenever
   every name in them can be resolved.
+- **Class fields annotated this way now count in the spell id.** A class whose class-level annotations
+  named such a type was bound with no annotations at all, so adding or removing one of its annotated
+  fields kept the same spell id, and Nexus showed no fields for it. The annotations are now kept, each
+  unavailable name as written. These classes get a new spell id once and their creation plans rebuild on
+  the next conjure; classes whose annotations all resolve keep their ids.
 - **Your own introspection of Melder's API is unchanged.** Calling `inspect.signature` or
   `typing.get_type_hints` with default settings on a Melder class or function that names such a type
   still raises `NameError`. Pass `annotation_format=annotationlib.Format.FORWARDREF` to
@@ -69406,6 +69856,109 @@ no longer block each other, and no thread holds a scope's store lock while waiti
   flight lets that build land in the fresh scope.
 - **Creation caches rebuild once.** The creation-cache format advances to generation 10 so plans
   compiled with the previous locking are not reused.
+
+## Melding a shared spell while another conduit revalidates it no longer fails
+
+In dynamic worlds a spell shared between conduits (through links, contracts or clusters) has one
+compiled plan and one creation context. The first time a conduit melds such a spell, Melder
+revalidates it for that conduit and rebuilds the plan. A thread melding the same spell at that
+moment could fail with `RuntimeError: Cannot build CreationContext before spell_codegen_creation
+exists`, or with an `AttributeError` because the context was cleaned while it was in use. The
+failure was intermittent and depended on thread timing.
+
+A rebuild now pauses new melds of that spell, waits for the melds already running to finish,
+rebuilds, and then lets them continue with the new plan. Melds of other spells are not affected.
+
+- **No API change.** Revalidation runs exactly as before; only its interaction with running melds
+  changes.
+- **Warm melds are unaffected.** Measured within noise; automatic worlds take no new path.
+- **A meld can wait briefly** while another conduit rebuilds the same spell, typically the first
+  meld through a new link, contract or cluster.
+- **A failed context build is reported, not waited on.** Threads that were waiting for it raise
+  with the original cause instead of waiting forever.
+- **No creation-cache rebuild.** Compiled plans are unchanged, so existing caches stay valid.
+- **Limitation:** a constructor that melds its own spell through a conduit that must first rebuild
+  that spell waits on itself and fails after 30 seconds.
+
+## Clearer errors when conjure refuses spells
+
+When `conjure` refused spells, `SpellbookValidationError` printed every check that had run on them -
+warnings included, each followed by a dump of its details - with 64-character spell ids, internal phase
+names, and cycles written as ids. Some refusals printed no reason at all. The message now says which spells
+failed, why, and what to change, by name:
+
+```text
+Spellbook validation failed. Broken spells: Holder.
+Holder:
+  - Spell 'Holder' (unique) depends on 'Leaf' (unique_per_spell_space), which lives for a shorter scope,
+    so 'Holder' would keep a stale 'Leaf' after that scope ends. Give 'Holder' the same or a shorter
+    existence (or many), or give 'Leaf' a longer one. [scope_ordering_violation]
+```
+
+A cycle between two spells used to take 15 lines: each spell's 64-character id twice, the cycle reported
+twice for each spell (once as spell ids, once as binding keys) and a dump of each check's details. It now
+reads:
+
+```text
+Spellbook validation failed. Broken spells: CycleA, CycleB.
+CycleA:
+  - Spell 'CycleA' is part of a dependency cycle: 'CycleA' -> 'CycleB' -> 'CycleA'. Melder cannot build
+    any spell in the cycle; remove one of these constructor dependencies or give that parameter a default.
+    [CIRCULAR_DEPENDENCY]
+CycleB:
+  - Spell 'CycleB' is part of a dependency cycle: 'CycleB' -> 'CycleA' -> 'CycleB'. Melder cannot build
+    any spell in the cycle; remove one of these constructor dependencies or give that parameter a default.
+    [CIRCULAR_DEPENDENCY]
+```
+
+- **Errors only.** Each broken spell gets one block listing its errors, each with what to change and its
+  code in brackets. Warnings never block conjure, so they are only counted, in a closing line such as
+  `2 warnings not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.`
+- **No more reasonless refusals.** A refusal found while resolving the conduit (scope ordering, a dependency
+  the book cannot see, a cycle) used to print "(none recorded)"; its reason is now in the message. Errors
+  that belong to no single spell are listed under "Whole-graph errors".
+- **Names, not ids.** Cycles read `'CycleA' -> 'CycleB' -> 'CycleA'`, reported once per spell; a
+  spell id appears, shortened, only where Melder has no name for it.
+- **Internal errors are marked.** Checks of Melder's own bookkeeping are shown as `[internal]`, with a note
+  to report them: they are Melder bugs, not problems in your code.
+- **Follow-on errors are left out.** `root_not_viable` and `broken_spell_in_dag`, which only say that a
+  spell cannot be built because something it depends on is broken, appear only when nothing else explains
+  the refusal. A cycle found by two checks is reported by one.
+- **Only spells with an error are named.** A refusal that belongs to the whole graph opens with
+  `Spellbook validation failed. The dependency graph has errors.` and lists its errors under "Whole-graph
+  errors", instead of naming every spell in the book as broken. `broken_spells` is unchanged.
+- **Frames are named only when set.** A spell bound under a spellframe is labelled with it, for example
+  `Holder (frame 'cache')`; a spell in the default frame shows only its name, where the old text printed
+  `frame=None`.
+- **Meld reports the same way.** When `meld` refuses a spell, the message has the same layout and carries
+  the reason when one was recorded; otherwise it says that the spell's validity is invalid, gated or
+  disabled.
+- **`*args: Any` and `**kwargs: Any` no longer break a spell.** A constructor accepting anything through
+  variadic parameters annotated `Any` was refused as "variadic DI"; `Any` is never injected, so it now
+  conjures.
+- **Same exception, same data.** `SpellbookValidationError` and its `broken_spells` are unchanged, and it
+  gains an optional keyword, `system_diagnostics`. The first line still starts with
+  `Spellbook validation failed.` and contains `Broken spells:` whenever it names a spell. Validation codes
+  are unchanged; their messages are reworded.
+- **A constructor that takes its own class is reported too.** `Node(parent: Node)` used to stop conjure
+  with `PhaseExecutionError` ("DagNode cannot depend on itself"), or raise a bare `ValueError` when bound
+  after conjure in a dynamic world. It now appears in this report as
+  `Spell 'Node' depends on itself: its constructor parameter 'parent' resolves to this same spell. Remove
+  that parameter or give it a default. [SELF_DEPENDENCY]`. A default (`parent: Optional[Node] = None`)
+  makes the parameter plain, and the spell conjures.
+- **A spell that only uses a cycle is told so.** Every spell that needs a cycle, directly or through other
+  spells, is refused with it, but it read as a member of the cycle. `Consumer(a: CycleA)` now reads
+  `Spell 'Consumer' cannot be built: it needs 'CycleA', which is part of a dependency cycle: 'CycleA' ->
+  'CycleB' -> 'CycleA'. Break that cycle (remove one of those constructor dependencies or give that parameter
+  a default); 'Consumer' itself is not part of that cycle.` A spell reaching the cycle through another spell
+  names that spell ("which depends on a dependency cycle"), and one that needs `Node(parent: Node)` reads
+  `it needs 'Node', which depends on itself ('Node' -> 'Node'). Fix 'Node' (...)`. Members read as before.
+
+### Upgrading
+
+- **Tests or log filters that matched the old text** - `one or more spells are broken`, `Phase 4 issues`,
+  `Phase 6 diagnostics`, `(id=`, `[error] CODE (source=...)` - need updating. Match the code in brackets
+  that ends every error line, such as `[scope_ordering_violation]`.
 
 ## Automatic creation-cache refresh after a Melder update
 
@@ -69446,16 +69999,62 @@ could be silently omitted from the disposal list and never run during scope tear
 - **Unrelated binding IDs remain stable.** The class profile is unchanged. Bindings whose resolved
   disposal list now includes an inherited method receive an updated fingerprint when rebound.
 
+## Retired override-targeting internals
+
+The per-path targeting machinery that override melds used before this release's key-set plans is
+removed. Nothing in Melder used it any more, so no meld result, error message or conjure output
+changes.
+
+- **Removed internal modules.** `melder.aether.conduit.meld.overrides.spell_overrider`
+  (`SpellOverrider`) and the Phase-6 `socket_ref_sanity_strategy` are deleted, and
+  `spell_compiler.dag.dag_index` now holds only `PathRegistry` (`DagIndex`, `SocketRef`,
+  `DagTargetingEngine` and `DagIndexBuilder` are gone). None of these was exported from `melder`;
+  code that imported the internal paths directly now gets an `ImportError`.
+- **Blueprints own their path registry.** `RootResolutionBlueprint` takes `path_registry=` and
+  exposes `path_registry`; its socket-reference API (`socket_refs`, `add_socket_ref`,
+  `dag_index`, `replace_dag_index`, `ensure_dag_index_built`) is removed.
+- **One less conjure check.** Phase-6 system validation no longer runs the socket-reference sanity
+  check, which had nothing to inspect once blueprints stopped recording socket references.
+
+## Retired normal-meld emitters
+
+Since this release, normal melds of classes with dependencies run the same site plans as override
+melds. The code generators they used before are removed. Nothing in Melder called them any more, so
+no meld result, error message, cache file or conjure output changes, and existing creation caches
+stay valid.
+
+- **Removed internal functions.** The generalized family's step and transient source emitters and
+  their compile entry points (`compile_no_overrides_codegen_creation_executor`,
+  `emit_step_plan_source`, `hydrate_no_overrides_executor` and their helpers), the many_only family's
+  equivalents, three unused re-exports of the generalized runtime library, and the many_only
+  `ManyOnlyNoOverridesCodegenCreationStep` are deleted. None was exported from `melder`; code that
+  imported the internal paths directly now gets an `ImportError` or `AttributeError`.
+- **What stays.** The opt-in singleton specialization
+  (`generalized_singleton_specialization_enabled`) and the row helpers it shares with hydration are
+  unchanged. The many_only manifest now builds its executor signature itself, with the same inputs in
+  the same order, so signatures do not change.
+
 ## Packaging and documentation
 
 - The packaged system documents (`melder.__architecture__`, `__components__`, `__graph_network__` and
   `__graph_details__`) are regenerated and describe unresolved inputs, `UnresolvedInputError`, the
   opt-in conjure warning report, process-stable spell ids, cache generation 12, caller-supplied container
-  parameters, the `override` descriptor keyword with live payload values, and the single
-  codegen-signature implementation.
+  parameters, the `override` descriptor keyword with live payload values, the single
+  codegen-signature implementation, melding a shared spell while another conduit revalidates it, and the
+  conjure validation report. They also cover override key-set plans and the site plans normal melds now
+  share with them, unresolved inputs decided before construction, the structural snapshot that lets a warm
+  conjure skip phases 1-4, self-referencing constructors and cycle consumers in the conjure report, and
+  class binding-profile annotations. The retired override-targeting internals and normal-meld emitters no
+  longer appear, and the graph documents drop the modules this release deletes.
 - `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
   raised and caught, but it cannot be bound as a spell.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.56.
+- The internal-registration guard drops the 27 internal classes this release removes (among them
+  `SpellOverrider`, `DagIndex`, `SocketRefSanityStrategy` and both families' old creation steps) and adds
+  `StructuralSnapshot`, so it lists 619 classes (645 before).
+- Docstrings of the site-plan lowering and runtime, the site-graph analysis and its processor, and both
+  family hydrators now say the site graph is built when a root is hydrated and serves normal melds as well
+  as override melds.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.71.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

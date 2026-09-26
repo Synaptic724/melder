@@ -2687,6 +2687,286 @@ the empty key set; the normal lane switches to it only when it meets the parity 
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T20:19:20Z
+  TYPE: MEASURE
+  CLAIM: S6 docs promotion done (apply_s6_docs_edits.py; the tests_components part applied separately with --only tc
+    because the SC/SA anchors do not match twice). src_components 9789 lines: SpellCompiler blocks "Site-plan runtime
+    for normal and override melds" and "Compiler paths after the overlay retirement", 3 new Key Files, Meld Runtime
+    fast-door block, override flow and diagram, unresolved-input text decided before construction, C1 map 3 new + 36
+    re-measured, inventory without the 20 deleted modules plus 5 new (PARTIAL UPDATE note). src_architecture 3012:
+    glossary, meld sequence, key-set invariant, failure modes, diagram, C1 3 new + 29 re-measured. tests_components
+    1646: 2 new Key Files, 2 C1 entries + 24 re-measured, test_dag_index.py annotated. All three indexes --check
+    current. Preservation diff (sorted line multisets, before -> after): removed lines are only the deleted-module
+    inventory and Key File lines, replaced interim failure-path, socket-reference and legacy-override prose, re-measured
+    C1 fields, the old unresolved-input diagram edge, and fence counts. Portability: install-path markers 8/6/3 before
+    and after (none added; the old ones sit in Indexing and older handoff text). Rubric scoring waits for the graph
+    rebuild (Join integrity reads Key Files against src_graph_index.md). Process: at 20:16Z, after the compaction, one
+    read-only graph_walker.py --report ran before REONBOARD (disclosed in the attestation); earlier in S6 one
+    `git show` ran on the device without GIT_OPTIONAL_LOCKS=0 (no index.lock was left).
+  EVIDENCE:
+  - context_compass/system_docs/src_components.md:3499-3561
+  - context_compass/system_docs/src_components.md:2973-2993
+  - context_compass/system_docs/src_architecture.md:869-880
+  - context_compass/system_docs/tests_components.md:732-794
+  - context_compass/artifacts/melder_override_design_20260926/s6_staging/apply_s6_docs_edits.py:1-641
+  IMPACT: The canonical docs describe the final tree; the graph and assets are what remain before closure.
+  NEXT: Archive the 20 stranded graph descriptors into the patch lane (mv), then author the new nodes from source.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:21:09Z
+  TYPE: PLAN
+  CLAIM: S6 graph. Findings: 20 descriptors are stranded (source deleted by S3b-2, R1, R2; 42 nodes, all authored);
+    10 authored edges in 8 live descriptors still point at their nodes (builders, hydrators, runtime library and
+    manifest cache "use" deleted modules; the codegen model "owns" the deleted targeting analysis) - false since the
+    deletions, and assemble would render them; 6 other authored edges to unknown ids predate this lane (left alone).
+    Steps: (1) mv the 20 descriptors, keeping their paths, under the patch lane's retired_graph_descriptors/ (prose
+    kept, archived with the lane; no rm); (2) move the 10 edges out of the live descriptors into
+    retired_graph_descriptors/retired_edges.json with their source descriptor named; (3) extract --strict (writes the
+    mechanical tier for every file); (4) census the files this lane created or changed: author UNSEMANTIC nodes and
+    re-read SEMANTICS_STALE ones from source, correcting prose where it is wrong, then --accept; (5) assemble, index
+    check, Key Files join for the three docs; then rubric scores.
+    Live descriptors edited in step 2 (under context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/):
+    - artifact_processor/spell_artifact_processor_strategy_builder.json
+    - artifact_processor/spell_codegen_model.json
+    - codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.json
+    - codegen_creation_system/shared_assets/manifest_creation_cache.json
+    - codegen_creation_system/spell_codegen_strategy_builder.json
+    - codegen_creation_system/strategies/generalized/compilers/generalized_runtime_library.json
+    - codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.json
+    - codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.json
+  EVIDENCE:
+  - context_compass/tools/system_documents/python/graph_walker.py:65-118
+  - context_compass/system_docs/graph/melder/aether/conduit/meld/overrides/spell_overrider.json:1-147
+  IMPACT: The assembled graph stops rendering deleted modules and relationships; no authored prose is destroyed.
+  NEXT: Steps 1 and 2 by script (dry run first).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:25:00Z
+  TYPE: FACT
+  CLAIM: Graph steps 1-3 done. The 20 stranded descriptors are under the patch lane's retired_graph_descriptors/ (moved
+    with os.replace, emptied graph folders pruned) and the 10 edges into them sit in its retired_edges.json with their
+    descriptor named; the 8 live descriptors changed only by those removals (byte form reproduced: indent 1 or 2 as
+    written). extract_graph.py --strict (3.14.7): rc 0, nothing skipped; census 26 unsemantic, 218 stale, 5 orphaned
+    (the R1 dag_index nodes retained under nodes_retired, not rendered). In the 41 files this lane created or changed
+    (~/work/s6g/lane_files.txt): 16 UNSEMANTIC (site graph analysis and processor, key resolver, lowering, runtime),
+    36 SEMANTICS_STALE (24 stamped with moved spans, 12 module nodes never stamped), 29 AUTHORED. The other stale and
+    unsemantic nodes belong to other lanes (e.g. codegen_signature, structural_snapshot, nexus) and are left to them.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/override_site_plan_2026_09_26/retired_graph_descriptors/retired_edges.json:1-143
+  - context_compass/tools/system_documents/python/graph_walker.py:91-118
+  IMPACT: Step 4 is 52 nodes to author or re-read from source before assembly.
+  NEXT: Read the five new modules in full and author their 16 nodes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:26:29Z
+  TYPE: FACT
+  CLAIM: The five new modules read in full for the graph. Facts for their nodes: SitePlanOverrideRuntime builds the site
+    graph and the normal plan at construction (hydration, first meld of any kind), owns and cleans the site graph and
+    every step (built or masked), borrows the root spell, dispatches override key sets lock-free and compiles misses
+    under _compile_lock (FIFO 256); SitePlanLowering.build_site_graph turns steps into temporary injection specs and
+    calls SpellSiteGraphProcessorStrategy.build_site_graph, then cleans them; emit creates and cleans one
+    SitePlanEmission; OverrideKeyResolver is pure over SpellSiteGraphAnalysis. Stale docstrings in this lane's code:
+    SpellSiteGraphAnalysis and the processor strategy still say the graph is built "at the first override meld" (since
+    S2b-2 at hydration, via SitePlanLowering.build_site_graph), and four System Context lines plus two purpose lines in
+    site_plan_lowering.py / site_plan_override_runtime.py call the lowering the override lane only (it has served
+    normal melds since S2b-2).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:28-384
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:447-704
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py:226-282
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py:33-76
+  IMPACT: Node prose is written from these facts; the stale docstrings would otherwise contradict the graph.
+  NEXT: PLAN below.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:26:29Z
+  TYPE: PLAN
+  CLAIM: (1) Author the 16 new nodes (role, responsibilities, owns_state, phases, include) and their authored edges from
+    the facts above by script (~/work/s6g/author_semantics.py, descriptor byte form kept), then --accept each. (2)
+    Docstring-only corrections, folded into the S6 notch (no behavior change, no patch-doc section): the two "first
+    override meld" lines and the override-only System Context / purpose lines named above. Files:
+    - src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py
+    - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py
+    - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
+    - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py
+    (3) Then the 36 stale nodes of this lane's files, one file group at a time.
+  EVIDENCE: context_compass/tools/system_documents/python/graph_walker.py:91-118
+  IMPACT: New nodes stop being UNSEMANTIC; code and graph say the same thing.
+  NEXT: Docstring edits by anchored script (--check first), then extract and author.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:30:58Z
+  TYPE: FACT
+  CLAIM: Docstring corrections applied (apply_s6_docstring_edits.py, --check then apply; 4 files, 8 edits, CRLF kept on
+    the two CRLF files; the four files parse; lowering unit tests + key-set component tests 133 passed on a work copy
+    whose src and tests equal the device). Extract rerun (rc 0). The 16 new nodes are authored from the source read at
+    the previous note (role, responsibilities, owns_state, phases, include) with 15 authored edges (runtime owns the
+    site graph and steps, uses the lowering and resolver, borrows the root spell; lowering uses the processor's builder
+    and owns the emission; emission uses the helpers; resolver borrows the site graph), and all 16 were --accept'ed.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s6_staging/apply_s6_docstring_edits.py:1-125
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:28-110
+  IMPACT: The lane's new modules are described in the graph; 36 stale nodes of changed files remain.
+  NEXT: Re-read the stale nodes group by group (meld layer first) against source.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T20:35:10Z
+  TYPE: FACT
+  CLAIM: 19 stale nodes re-read and accepted (meld layer 4; compiler registries, model and many_only plan strategy 5;
+    hydrators, manifests, lazy doors, binding resolvers, family state and helpers 10). Method: every owns_state field
+    and identifier in the prose checked against the node's source span (~/work/s6g/verify_prose.py), and the code this
+    lane changed re-read. Corrected where false: registries no longer load override-targeting, fallback or
+    generalized_cache strategies; the model owns site_graph_shape (not override_targeting_shape); the many_only plan
+    strategy builds only the no-overrides lane; manifests carry no override section (version 4); helpers and family
+    state lost their override parts; binding resolvers no longer resolve a path registry; hydrators build one
+    SitePlanOverrideRuntime per root. Added the fast-door facts (four readers, existing-object flag). Two authored edges
+    were false and are retired with reasons (discovery builder -> generalized_cache, generalized_hydrator ->
+    generalized_runtime_library); three edges re-worded. Further stale docstrings found in this lane's code:
+    generalized_hydrator's module docstring (resolver returns no path registry; the specializer body no longer comes
+    from the retired step emitter) and many_only_hydrator's hydrate contract (phase-5 path registry, legacy finalize
+    step).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:1-20
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py:197-215
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.py:1-16
+  IMPACT: The authored tier of these files matches the tree; two more docstring fixes join the S6 docstring pass.
+  NEXT: Compiler modules (generalized/many_only/solo no-overrides compilers, runtime library, executor_code_cache).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:46:11Z
+  TYPE: MEASURE
+  CLAIM: Graph and docs are current. (1) The remaining 17 stale nodes (compiler modules, blueprint, PathRegistry,
+    phase 6, shared executions, occurrence analyzer, root builder, Spellbook, creation system, caching, both errors)
+    re-read and accepted, with false prose corrected (e.g. module nodes still describing the retired emitters, which
+    never go stale because module nodes carry no span hash; Spellbook's owns_state named a missing _spell_validator)
+    and 8 more false edges retired with reasons; all 81 nodes of the lane's 41 files are AUTHORED. (2) Second docstring
+    pass (apply_s6_docstring_edits_2.py: both hydrators; path registry and retired emitter references), 171 lowering,
+    key-set and disposal tests pass. (3) extract --strict rc 0 (census 10 unsemantic, 199 stale overall, all outside
+    this lane); assemble rc 0 and --check clean: 584 sections, 1211 nodes, 1394 edges, no section for a deleted
+    module. Join: 567 src paths cited in src_components and 176 in src_architecture all exist and all are rows of
+    src_graph_index. (4) Citations: 4 out-of-bounds and 45 in-bounds-but-drifted line citations into this lane's files
+    remapped by symbol or by diff against the version they were written for; every one now lands on the cited symbol
+    (checked line by line); the two C1 entries of site_plan_lowering.py re-measured (1435). tests_components Updated
+    date corrected. Indexes regenerated and --check clean.
+  EVIDENCE:
+  - context_compass/system_docs/src_components.md:3445-3455
+  - context_compass/system_docs/src_architecture.md:430-441
+  - context_compass/artifacts/melder_override_design_20260926/s6_staging/apply_s6_docstring_edits_2.py:1-84
+  - context_compass/system_docs/patches/active/override_site_plan_2026_09_26/retired_graph_descriptors/retired_edges.json:1-295
+  IMPACT: Graph step of S6 done; the docs can be scored.
+  NEXT: Rubric scores (below), then the owner-approved asset rebuild.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:46:11Z
+  TYPE: MEASURE
+  CLAIM: Rubric scores from the files on disk after the index rebuild (system_document_quality_rubric weights
+    30/15/15/15/15/10). src_architecture 82 (B): Fidelity 4 (lane citations re-verified; others carried, e.g.
+    aether.py:100 at src_architecture.md:1122), Contract 5, Depth 4, Addressability 5, Join 4 (all paths resolve;
+    non-lane ranges carried forward), Mirror 2 (tests_architecture.md Updated 2026-06-13). src_components 77 (B):
+    Fidelity 4 (as above, e.g. aether.py:398-401 at src_components.md:1091), Contract 4 (inventory PARTIAL UPDATE note
+    at src_components.md:7660), Depth 4, Addressability 3 (container heading at src_components.md:206), Join 4, Mirror
+    4. tests_components 74 (C): Fidelity 4, Contract 4, Depth 3 (most cluster entries do not name the behaviour they
+    protect), Addressability 3 (container at tests_components.md:169), Join 4 (24 entries re-measured this pass,
+    others carried), Mirror 4. Weak criterion carried by the next reader: tests-side mirror (tests_architecture not
+    touched since June) and Depth of test cluster entries.
+  EVIDENCE:
+  - context_compass/agent_onboarding/default/design_engineer/policies/system_document_quality_rubric.md:47-54
+  - context_compass/system_docs/tests_architecture.md:8-8
+  IMPACT: All three above the 60 refusal threshold; tests_components is C: refresh before high-risk test-suite work.
+  NEXT: Asset rebuild on a work copy, then on the device.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:47:16Z
+  TYPE: PLAN
+  CLAIM: Asset rebuild (owner-approved, DECISION 18:22:40Z). The runner's read-only --check reports all three assets
+    stale (_agent_documentation, _bind_guard, _system_documents; expected v0.2.70). S6 is its own change, so first
+    notch 0.2.70 -> 0.2.71 (__version__, release-note header, LLM-bundle line) with an S6 release entry (packaged
+    docs describe key-set plans and the retired internals; bind guard drops the deleted classes; docstring
+    corrections), then run the runner on a work copy that carries context_compass/system_docs (the system-documents
+    builder ingests it), run tests/unit/melder/test_package_version_metadata.py and the build_assets suite there, then
+    run the runner on the device and verify the three manifests byte-equal the work copy's. NOTICEs to fable_0,
+    melder_1 and melder_2 before the notch (shared version literal and committed manifests).
+    FILES:
+    - src/melder/__version__.py
+    - release_docs/next_version_release.md
+    - src/melder/_build_assets/_agent_documentation/manifest/ (generated)
+    - src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py (generated)
+    - src/melder/_build_assets/_system_documents/manifest/ (generated)
+  EVIDENCE: src/melder/_build_assets/_build_asset_runner.py:1-100
+  IMPACT: The stamp test turns green and the packaged docs match the canonical docs.
+  NEXT: Send the three NOTICEs, then notch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:55:47Z
+  TYPE: DECISION
+  CLAIM: Re-certified after the second compaction. The owner certified "melder_2", which is the active gauntlet agent
+    (mailbox row, four board rows, M0-46 addressed to it); asked, the owner answered "yeah ok" to keeping melder_0.
+    Owner turn-in, verbatim: "turn in all that shit, I trust your work its fine add your release notes and close your
+    tickets and rebuild assets sure yea go ahead". Taken as acceptance of this task, the story, melder_0's three review
+    tasks (design, collection fix, caller-input trace) and the epic (every story done), after the asset rebuild,
+    the release entry and the patch-lane closure. Pre-REONBOARD: one read-only device command (llm_support README and
+    manifest keys), disclosed in the attestation.
+  EVIDENCE:
+  - context_compass/attention_board.md:89-92
+  - context_compass/mailbox_board.md:90-90
+  IMPACT: S6 finishes and the lane closes without a separate walkthrough; the owner waived it explicitly.
+  NEXT: Verify the 0.2.71 notch, then rebuild the assets on the work copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:58:58Z
+  TYPE: MEASURE
+  CLAIM: Asset rebuild on the work copy (~/work/melder_s2b: device src/tests plus context_compass/system_docs; Python
+    3.14.7, GIL disabled). Runner rc 0: agent documentation 460 entries, bind guard 619, system documents 4, all
+    v0.2.71; --check OK on all three. It rewrites 5 manifests and 3 document payloads. Bind guard (last built for
+    0.2.56, 645 entries): drops 27 classes whose source is gone (SpellOverrider, the override-targeting analysis,
+    processor and artifacts, the finalize/no-overrides/overrides steps of both families, the fallback no-overrides
+    strategy, GeneralizedCodegenCreationState, SpellGeneralizedManyOnlyCodegenPlanStrategy, ManyOnlyCodegenPlanTargetKind,
+    DagIndex, DagIndexBuilder, DagTargetingEngine, SocketRef, SocketRefSanityStrategy) and adds StructuralSnapshot
+    (fable_0's lane). Tests (version metadata, build_assets, system documents and views, registration guard, public
+    surface, concurrent document view): 254 passed, 1 skipped, 1 failed. The failure,
+    test_bind_rejects_internal_class ("Nexus must be initialized with an Aether instance"), passes alone (3 passed)
+    and fails in the same selection with the old manifests too (14 failed there), so it is an order dependence in
+    that selection, not the rebuild; raised, not fixed. Device manifests and payloads are CRLF in the working tree
+    (git index LF); the builders write LF on Linux.
+  EVIDENCE:
+  - src/melder/_build_assets/_build_asset_runner.py:1-100
+  - tests/unit/melder/test_melder_registration_guard.py:32-39
+  IMPACT: The rebuilt assets are good; the device apply keeps CRLF to match its neighbours.
+  NEXT: Back up the device _build_assets (done), run the runner on the device, convert the 8 outputs to CRLF, compare
+    with the work copy after newline normalisation, --check on the device.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T21:04:25Z
+  TYPE: MEASURE
+  CLAIM: Assets rebuilt on the device. (1) Build assets: backup of _build_assets at ~/work/s6a/device_before/; runner
+    rc 0 on the device tree; its 8 outputs were byte-identical to the work copy's (diff -rq empty), then converted to
+    CRLF to match the working tree (git index LF, autocrlf); runner --check OK on all three. The CRLF files copied back
+    to the work copy pass the same selection (252 passed, 1 skipped; registration guard file alone 3 passed).
+    (2) LLM bundles (llm_support/_builder.py, tracked-only, GIT_OPTIONAL_LOCKS=0; backup ~/work/s6a/llm_support_before.tgz):
+    all three corpora were stale; the owner's commit 87e739aa5 (20:12Z) already carries the src deletions, the 25
+    missing tracked paths are all under context_compass/ (in no corpus) and nothing is untracked outside it, so the
+    normal build applied: src 576, tests 1015, other 370 files; --check OK; no index.lock left. The src index no
+    longer lists spell_overrider.py and lists site_plan_lowering.py.
+  EVIDENCE:
+  - src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:16-19
+  - llm_support/README.md:57-83
+  IMPACT: The release note's asset line is true for 0.2.71; the asset-stamp test is green.
+  NEXT: Release note: extend the packaging bullet and add the S6 entry.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Committed: S3a/S3b, S2a, the override fast door, the id-lane trim, the existing-object fast path (0.2.59 in
 86993dce8) and S2b-1/S2b-2 (1c3dc8580). Uncommitted in the device tree: S4a, S5a (conjure linear in sites), S4b

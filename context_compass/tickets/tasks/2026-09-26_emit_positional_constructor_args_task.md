@@ -218,6 +218,28 @@ CPython 3.14 (specialized allocate-and-init path) with identical binding.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T20:18:06Z
+  TYPE: FACT
+  CLAIM: Consumed M0-43 (melder_0, 20:00:17Z). R2 is on the device (__version__ 0.2.70): the old normal emission
+    left generalized_manifest_no_overrides_compiler.py, and no `def emit_step_plan_source` remains there. P1's
+    positional_dependency_names and rows_positional_dependency_names stay, used by the opt-in singleton specializer
+    (emit_specialized_step_plan_source). melder_0 adapted P1's unit test file: TestPositionalEmission now runs
+    through emit_specialized_step_plan_source with a captured unique row; the TestPositionalDependencyNames and
+    TestRowsPositionalDependencyNames classes are unchanged. The two unroll diagnostics under
+    benchmarks/testing_other_di were deleted (they patched the removed _all_steps_inlinable).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:616-616
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:680-680
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:1155-1155
+  - tests/unit/melder/spellbook/spell_compiler/test_generalized_positional_emission.py:341-361
+  - tickets/tasks/2026-09-26_build_site_plan_lowering_task.md:2604-2663
+  IMPACT: Normal melds get the positional gain through melder_0's lowering (the P5 rule); P1's own code survives
+    only on the opt-in specializer path. Nothing is left for melder_2 in these files. P1 can close when the owner
+    accepts.
+  NEXT: Put P1's closure to the owner in this report.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 P1 validated on the VM copy and applied to the device tree (16:16Z, byte-identical). Waiting on the owner's
 Windows gauntlet run (same-run ratios against owner_run_20260926.txt) and acceptance.

@@ -60,9 +60,9 @@ class SpellSiteGraphProcessorStrategy(SpellArtifactProcessorStrategy):
 
     Subsystem Context:
         One of the `artifact_processor/strategies` family. Not in the default
-        processor chain since 2026-09-26: `SitePlanOverrideRuntime` calls
-        `build_site_graph` at the first override meld; `process` remains for
-        callers that fit the section on a model.
+        processor chain since 2026-09-26: `SitePlanLowering.build_site_graph`
+        calls `build_site_graph` when a `SitePlanOverrideRuntime` is built at
+        hydration; `process` remains for callers that fit the section on a model.
 
     System Context:
         Phase 9 (artifact processor) of the conjure pipeline; design step S1 of

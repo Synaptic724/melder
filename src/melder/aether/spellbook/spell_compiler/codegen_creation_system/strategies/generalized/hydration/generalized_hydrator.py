@@ -7,7 +7,7 @@ cache codec publishes lazy doors over it. Both produce identical hot doors at
 first meld, so cache loads can never drift from live builds.
 
 Hydration shape:
-    1. Resolve live identity (spells, path registry) through the resolver.
+    1. Resolve the live spells through the resolver.
     2. Hydrate the manifest's no-overrides rows into site-plan steps.
     3. Build `SitePlanOverrideRuntime` over them (2026-09-26, S2b-2): its
        normal plan (the empty key set) is the inner no-overrides executor, and
@@ -15,8 +15,9 @@ Hydration shape:
     4. Wrap both lanes in the shared route-keyed CreationContext doors (the
        override door is compiled at the first override meld).
     5. Optionally (configuration flag) install the singleton warm-tail
-       specializer; its body comes from the family's old step emitter and it
-       deopts to the normal plan.
+       specializer; its body comes from the specializer emitter in
+       `generalized_manifest_no_overrides_compiler` and it deopts to the
+       normal plan.
 """
 
 import threading

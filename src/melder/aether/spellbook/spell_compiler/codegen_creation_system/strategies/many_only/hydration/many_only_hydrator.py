@@ -204,11 +204,11 @@ def hydrate_many_only_creation_executors(
     root spell.
 
     Contract:
-        - Requires phases 1-7 live (phase-5 path registry) and ownership
-          wiring (`spell._owner_creations`), which first-meld gates guarantee.
-        - The no-overrides door mirrors the legacy many_only finalize step:
-          the door-level fast-transient flag stays False because transient
-          unrolling is the inner executor's concern in this family.
+        - Requires phases 1-7 live (the site graph reads the live Phase-3
+          topologies) and ownership wiring (`spell._owner_creations`), which
+          first-meld gates guarantee.
+        - The door-level fast-transient flag stays False: the inner executor
+          is the site-plan runtime's normal plan.
     """
     validate_many_only_manifest(manifest)
     route_key = manifest["route_key"]

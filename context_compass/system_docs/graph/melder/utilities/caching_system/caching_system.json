@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/caching_system/caching_system.py",
- "source_sha256": "458a574fe2f50a63412efa62bb3221f67e06e9c01debe7952d11c88e86fe95ea",
+ "source_sha256": "138732c435edc526936956f2de8bd1ae4958df93c968e74f56618c07ab29aa80",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.caching_system.caching_system": {
@@ -34,22 +34,28 @@
    "public_methods": [
     "bundle_path",
     "cached_spell_ids",
+    "cached_structural_spell_ids",
     "cleanup",
     "conduit_name",
     "emit",
     "get_spell_payload",
+    "get_structural_payload",
     "has_spell_payload",
+    "has_structural_payload",
     "remove_spell_payload",
+    "remove_structural_payload",
     "spell_payloads",
+    "structural_payloads",
     "transfer_spell_payload_to",
-    "upsert_spell_payload"
+    "upsert_spell_payload",
+    "upsert_structural_payload"
    ],
    "shape": {
-    "method_count": 16,
+    "method_count": 22,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b315e7c13f0869bcfb998551b554bce3a798e60add8bf77420dddcf43b811906",
+   "span_sha256": "fe28b0c20fffa859f6b07dd2955afcf0f037f1f81db4d32966e8e8c7f7e4dd8b",
    "role": "Conduit-scoped cache persistence utility.",
    "responsibilities": [
     "owns one rooted-conduit cache file and its in-memory spell-payload dictionary",
@@ -58,7 +64,8 @@
     "requires exact Melder release, cache generation and interpreter compatibility before exposing persisted payloads",
     "preserves the accepted release stamp through normalization and subsequent emission",
     "cache generation 11 retires executors emitted before the unresolved-input failure path",
-    "cache generation 12 cold-resets bundles that may hold consumer payloads from a previous world"
+    "cache generation 12 cold-resets bundles that may hold consumer payloads from a previous world",
+    "cache generation 13 gives each collection member its own compiler path; 14 retires bundles whose manifests carried override lanes"
    ],
    "owns_state": [
     "_id",
@@ -75,7 +82,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "3f118e41ef1dcd6eda7a2307baf5c61f56dde36d35263e69e988960443cf6f17"
+   "semantics_authored_against": "fe28b0c20fffa859f6b07dd2955afcf0f037f1f81db4d32966e8e8c7f7e4dd8b"
   }
  },
  "edges_out": [

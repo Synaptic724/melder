@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-attribute-gauntlet-tail-spikes
 - Story: STORY-2026-09-26-gauntlet-runtime-speed
-- Status: in_progress
+- Status: review
 - Owner: user
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T19:43:02Z
-- Updated: 2026-09-26T19:50:01Z
+- Updated: 2026-09-26T20:35:11Z
 
 ## Objective
 Name the event behind Melder's rare scope-cycle spikes in the gauntlet, and prove it with measurements. In
@@ -37,17 +37,17 @@ with evidence and a fix candidate for each confirmed cause. Fixes are their own 
 - Out of scope: changing the harness or src in this task; the average-cost levers (measure task).
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: The owner's runs show the Melder-specific tail, and the owner asked for it to be investigated
-  before the averages.
+- from_state: in_progress
+- to_state: review
+- transition_reason: The tail is attributed on the VM and confirmed on Windows (turn-0 first use, no GC in the
+  loop); the fix candidates went to the owner as a DECISION_REQUEST, and the owner's picks remain.
 
 ## Steps / Checklist
 - [x] VM: harness GC instruments (probe, per-turn slowest turns with gc_during, GC disabled A/B).
 - [x] VM: probe for the non-GC candidates (audit-hook compile/exec events, cache-emit calls, root-lock waits) with
       per-cycle timestamps, correlated with the slow cycles.
-- [ ] Owner run on Windows with the harness instruments; compare with the VM.
-- [ ] Attribution note plus ranked fix candidates; DECISION_REQUEST.
+- [x] Owner run on Windows with the harness instruments; compare with the VM.
+- [x] Attribution note plus ranked fix candidates; DECISION_REQUEST.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
@@ -242,11 +242,172 @@ with evidence and a fix candidate for each confirmed cause. Fixes are their own 
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T20:22:10Z
+  TYPE: MEASURE
+  CLAIM: Two owner Windows runs, filed verbatim, confirm the VM attribution.
+    - 30k with GAUNTLET_GC_PROBE=1 and GAUNTLET_PER_TURN_GC=1 (20:05Z, tree 0.2.70). No collection fired in any
+      library: collections=0, gc.get_stats delta +0, turns_with_collection 0/30000. gen0_live stayed flat: DI 17312,
+      dishka 11006, melder 2547 (2498 at turn 0). Melder's slowest turn is turn 0: 10.172 ms total, 8.818 ms
+      threaded, gc_during no. Its other 14 slowest turns are 2.90-3.78 ms, the same band as DI (2.90-3.55) and
+      dishka (2.57-4.90). Melder's cycle maxima (outer 6.444, request window 4.775 ms) are therefore turn-0 first
+      cycles, as on the VM.
+    - 200k, no instruments (19:40Z, tree 0.2.69). Every library ran slower than in the 30k runs: iteration avg DI
+      1.315 -> 1.603 ms, dishka 1.226 -> 1.604, melder 1.431 -> 1.836. The maxima hit all three: iteration max DI
+      234.0, dishka 188.4, melder 99.4 ms; outer-cycle max 72.1 / 83.3 / 24.2 ms. In this run Melder's tail was the
+      smallest.
+    - Same-run ratios hold: hot_scopes/s melder/dishka 0.873 (200k) and 0.857 (30k); melder/DI 0.873 and 0.919.
+      Active cycles/s melder/dishka: request 0.995 / 1.035, worker_a 0.858 / 0.905, worker_b 1.009 / 1.073.
+    - Where the average gap sits. Per iteration, melder minus dishka is +0.232 ms (200k) and +0.205 ms (30k). The
+      threaded phase carries +0.204 and +0.179 ms of it, bootstrap +0.005. Each iteration runs 10 request, 25
+      worker_a and 30 worker_b cycles. Lane outer-cycle averages at 200k are melder 0.020 / 0.015 / 0.015 ms and
+      dishka 0.018 / 0.012 / 0.012 ms (30k: melder 0.020 / 0.015 / 0.014). The longest lane, worker_b, accounts
+      for about +0.06 to +0.09 ms. The remaining ~+0.11 to +0.12 ms of the threaded gap, in both runs, falls
+      outside the timed cycles: thread wake, the lane loop, thread exit and join. The averages are printed to
+      1 us, so each lane figure is uncertain by about +-0.015 ms on worker_b.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/tail/owner_run_20260926_2005_30k_gcprobe.txt:1-113
+  - artifacts/gauntlet_runtime_speed_20260926/tail/owner_run_20260926_1940_200k.txt:1-59
+  - artifacts/gauntlet_runtime_speed_20260926/tail/owner_runs_1940_2005_ratios.txt:1-22
+  IMPACT: The tail question is answered on Windows. GC never fires; the only Melder-specific spike is turn 0's
+    first-use hydration and compile. The 200k maxima are machine events shared by all three libraries. The
+    persistent average gap is ~0.2 ms per iteration: roughly half is inside worker_b's cycles and half lies
+    outside the timed cycles.
+  NEXT: Read the harness's trend-window instrument and the threaded-phase boundaries.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T20:22:10Z
+  TYPE: FACT
+  CLAIM: What the harness already measures.
+    - GAUNTLET_TREND_WINDOWS=N splits a run into N equal windows. For each window it prints the iteration median,
+      p99 and max, the threaded p99 and max, collections fired, gc.get_count() and the window's wall time. That is
+      throughput per window, the slope question. It has no RSS column.
+    - Per-turn gen0_live is gc.get_count()[0], i.e. tracked objects created minus freed since the last
+      collection. Flat means no net growth during the loop; it is not heap size.
+    - The threaded phase runs from start_event.set() to the last join(). Beyond the timed cycles it includes each
+      thread's wake-up, the lane loop (rng, six list appends per cycle), thread exit and join. Each iteration
+      spawns 3 new threads.
+  EVIDENCE:
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:1561-1566
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:1621-1667
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:1679-1713
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:1244-1345
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:1040-1092
+  IMPACT: The long-run slope question needs no harness change: one 200k run with GAUNTLET_TREND_WINDOWS=20
+    answers it within a single machine state. Only RSS would need an addition. The ~0.11 ms outside the cycles is
+    per-iteration thread overhead, which a server with a thread pool would not pay per request.
+  NEXT: VM test of one mechanism for that overhead: thread start, first use and exit cost after `import melder`
+    against a bare interpreter and against dishka and dependency_injector.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T20:27:51Z
+  TYPE: MEASURE
+  CLAIM: Thread exit cost on free-threaded CPython accounts for most of the threaded phase beyond the timed cycles,
+    and it is larger in Melder's world. VM runs of probe_threads*.py (3.14.7t -X gil=0, no src change, 1500
+    iterations per process, medians):
+    - A short-lived thread's exit+join slows down as live objects allocated by already-exited threads accumulate.
+      Bare interpreter: 98-100 us. With 100k or 300k live instances created on the main thread: unchanged. When a
+      worker thread creates 100k live instances and exits, every later thread takes 650-654 us; at 300k, 4.2 ms.
+    - After each library's gauntlet world is built (setup plus 2 threaded turns), one short-lived thread's
+      exit+join takes: DI 338-347 us, dishka 500-514 us, Melder 659-677 us. `import melder` alone changes
+      nothing (103-113 us).
+    - Running every lane and variant once on the main thread first lowers it: Melder 372-486 us, dishka 342-355,
+      DI 324-328.
+    - Gauntlet shape (3 threads per iteration, trivial work), threaded phase: bare 324 us, DI 411, dishka 571,
+      Melder 745, and 544 for Melder with first use on the main thread.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/tail/probe_threads_vm.txt:1-22
+  - artifacts/gauntlet_runtime_speed_20260926/tail/probe_threads.py:1-90
+  - artifacts/gauntlet_runtime_speed_20260926/tail/probe_threads2.py:1-87
+  IMPACT: The gauntlet starts 3 new threads per iteration, so each iteration pays this exit cost. The cost grows
+    with how much of a library's long-lived state was built on worker threads. Melder builds its executors at
+    first meld and its pooled shells on whichever thread needs one, so in the gauntlet these objects outlive the
+    turn-0 threads. This fits Windows in direction and size: +0.11 to +0.12 ms of Melder's threaded gap lies
+    outside the timed cycles, against +174 us over dishka in the VM's 3-thread shape. It is a cost of the benchmark's
+    shape (a thread pool pays it rarely), but it is real on 3.14t. Doing first use on the owning thread removes
+    much of it, which strengthens candidate 1a (hydrate at conjure). The CPython mechanism is UNKNOWN; mimalloc's
+    handling of abandoned pages at thread exit is the likely path. On Windows the effect is UNKNOWN until an owner
+    run of probe_threads.py.
+  NEXT: DECISION_REQUEST to the owner with the updated candidates and the Windows probe commands.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T20:28:34Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Updated owner decisions. This supersedes the 19:50:01Z request, whose item 3 (the Windows run) is done.
+    (1) One lever for the turn-0 spike and the thread-exit cost: hydrate every resolvable spell's executors at
+        conjure, on the conjuring thread, behind a SpellbookConfiguration flag or a public call (recommended).
+        - It removes the turn-0 spike (VM warm-up: first cycles 0.03-0.04 ms).
+        - The executors stop living in memory owned by exited worker threads. On the VM, first use on the main
+          thread cut Melder's thread exit+join from 659-677 us to 372-486 us.
+        - The cost moves into setup, about 15 ms on the VM.
+        - Next step: a VM prototype with no tree edit to size it, then patch docs and a NOTICE to melder_0, whose
+          lane owns hydration.
+        Alternatives:
+        (b) Persist compiled code in the creation cache. This cuts compile time only, not the thread-exit part.
+        (c) Warm up every library in the harness. That is the owner's call, because it changes what the benchmark
+            measures.
+    (2) Long-run slope: one 200k run with GAUNTLET_TREND_WINDOWS=20. No harness change is needed. An RSS column
+        would be a harness change, the owner's call.
+    (3) Windows check of the thread-exit mechanism: probe_threads.py with world_dishka, world_melder and
+        mainwarm_melder, 3 threads each.
+    (4) Import footprint (D3, which sets the GC pause size): stays parked unless the owner reopens it.
+    Still pending from earlier:
+    - P1 closure (R2 has landed).
+    - P4 acceptance.
+    - The SpellSpace active-scope RISK.
+    - Who fixes the system_document_view race.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md:175-194
+  - tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md:245-334
+  - artifacts/gauntlet_runtime_speed_20260926/tail/probe_threads_vm.txt:1-22
+  IMPACT: The owner's picks set the next task. (1) needs a prototype before any patch docs. (2) and (3) are owner
+    runs.
+  NEXT: Report to the owner. On a yes to (1), prototype conjure-time hydration on the VM copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T20:35:11Z
+  TYPE: DECISION
+  CLAIM: Owner direction, replying to the DECISION_REQUEST: "we're not trying to win a benchmark here we're literally
+    just trying to optimize code, and my pools should exist when the root makes them and not any other time".
+    Consequences:
+    - Candidate (1a), hydrating executors at conjure, is withdrawn. It removes no work: it moves the same code
+      generation and compile from the first meld to conjure, and would also run for spells that are never melded.
+      Lazy hydration is the documented design (zero hydration work at build time; hydrate once at first meld).
+    - Pools: the ConduitPool is built in the normal root's constructor, and a SpellSpacePool in every conduit's
+      constructor. The shells inside them are built on demand by the thread that needs one when none is idle, then
+      reused. Read as a rule: no lever changes when pools or their shells are created, so no prewarming.
+      prewarm_spellspaces stays an owner-chosen public call; the harness does not use it.
+    - The thread-exit cost is a CPython 3.14t effect that the gauntlet's three new threads per iteration amplify.
+      It is not per-request work in Melder, so it gets no fix.
+    - Levers that remove work stay:
+      - the worker lanes' in-cycle cost (+2-3 us per cycle), starting with worker_a's mix;
+      - compile at first meld, through a compiled-code cache that works across processes (melder_0's lane, a
+        handoff if the owner wants it);
+      - import size (parked).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:161-258
+  - src/melder/aether/conduit/conduit.py:347-361
+  - src/melder/aether/conduit/conduit_pool.py:106-121
+  - src/melder/aether/conduit/conduit.py:2643-2652
+  - src/melder/aether/conduit/spell_space/spell_space_pool.py:118-145
+  - src/melder/aether/conduit/conduit.py:1236-1262
+  IMPACT: Supersedes items (1) and (3) of the 20:28:34Z DECISION_REQUEST. The tail work ends with the attribution;
+    what remains open for the owner is (2), the 200k trend run, if wanted. The next lever is real per-cycle work in
+    the scope lifecycle.
+  NEXT: Once the owner agrees, break down the worker_a cycle step by step against dishka on the VM (no tree edit).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-VM attribution done. Melder's big cycle spikes are the one-time lazy hydration and compilation of executors at
-first meld in turn 0 (a warm-up removes them). No GC fires in the gauntlet loop. A collection, when an application
-triggers one, costs about 2x dishka's, because importing melder pulls in ~576 modules. The DECISION_REQUEST lists
-the fix candidates. Waiting on the owner's Windows run with the harness instruments and the owner's pick.
+Attribution is done and confirmed on Windows. No collection fires in the gauntlet loop, and Melder's only specific
+spike is turn 0's first-use hydration and compile (10.2 ms); its other slow turns match DI and dishka. Side
+finding: on 3.14t a thread's exit cost grows with live objects left by exited threads, which the gauntlet's three
+new threads per iteration amplify. Owner direction (last note): optimize code, not the benchmark; pools and their
+shells are created when they are today. Conjure-time hydration is withdrawn. Open for the owner: an optional 200k
+run with GAUNTLET_TREND_WINDOWS=20. Next lever (measure task): the worker lanes' per-cycle cost.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

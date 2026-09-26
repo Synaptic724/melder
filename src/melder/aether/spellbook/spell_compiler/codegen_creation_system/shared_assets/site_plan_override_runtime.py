@@ -80,14 +80,14 @@ class SitePlanOverrideRuntime(Cleanable):
         `generalized_hydrator._build_site_plan_runtime`.
 
     System Context:
-        Phase-11 override lane (design v2 step S3); CreationContext override
+        Phase-11 normal and override lanes (design v2 S2/S3); CreationContext
         slots and doors are unchanged.
 
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: internal. Key-set dispatcher for override melds: lazily compiled
-        per-key-set plans over the lane's no-overrides steps.
+        access: internal. Owns a root's normal plan (the family's inner executor)
+        and its lazily compiled per-key-set override plans over the lane's steps.
     """
 
     __slots__ = Cleanable.__slots__ + [

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
- "source_sha256": "99585b4f671458dbefee96e61d5f27102fe20dec7baec9e26f9fa90bcd2f01f9",
+ "source_sha256": "2eec71c6dea459db2f1c9bb1f92fa6a1157c964725cc1d72befe534e01daa300",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler": {
@@ -11,52 +11,24 @@
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
    "lineno": 1,
    "include": true,
-   "role": "Spell-scoped no-overrides compiler for the many-only family, plus its compiler-local target-kind and call-mode vocabulary.",
+   "role": "Codegen IR helpers of the many_only family: call-mode labels, the transient schema and manifest row hydration.",
    "responsibilities": [
-    "hydrates many-only no-overrides executors from plan objects or schema rows",
-    "builds transient unrolled or emitted step-plan source for many-only no-overrides execution",
-    "uses the process-wide executor code cache for emitted no-overrides executors",
-    "routes constructor failures through one helper that raises UnresolvedInputError before the generic MeldExecutionError"
+    "defines ManyOnlyCodegenPlanCallMode for the Phase-10 transient schema",
+    "builds the manifest's transient schema as data (_build_many_only_unrolled_schema_from_plan)",
+    "hydrates manifest step rows and resolves the root instance key for the hydrator"
    ],
-   "owns_state": [
-    "_TRANSIENT_SCHEMA_SEQUENCE_FIELDS"
-   ],
+   "owns_state": [],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "fda2acddafc04f632c39e37fafbba57eb373cff4b1a50a0cd65d7f5697b49291"
-  },
-  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind": {
-   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind",
-   "label": "ManyOnlyCodegenPlanTargetKind",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
-   "lineno": 56,
-   "bases": [],
-   "markers": [],
-   "public_methods": [],
-   "shape": {
-    "method_count": 0,
-    "has_bases": false,
-    "trivial": true
-   },
-   "span_sha256": "3444f6ba507ad36eca9c3c858e4bffdc52282befc25ed7ff5d309868b3db736f",
-   "include": true,
-   "role": "Compiler-local target-kind labels for the many-only no-overrides compiler.",
-   "responsibilities": [
-    "name the target kinds this compiler emits, scoped to the compiler rather than shared vocabulary"
-   ],
-   "phases": [
-    "compile"
-   ],
-   "semantics_authored_against": "3444f6ba507ad36eca9c3c858e4bffdc52282befc25ed7ff5d309868b3db736f"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanCallMode": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanCallMode",
    "label": "ManyOnlyCodegenPlanCallMode",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
-   "lineno": 67,
+   "lineno": 20,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -83,37 +55,47 @@
  "imports": {
   "SimpleNamespace": "types.SimpleNamespace",
   "Any": "typing.Any",
-  "Callable": "typing.Callable",
-  "Collection": "typing.Collection",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
   "Sequence": "typing.Sequence",
   "Tuple": "typing.Tuple",
-  "Union": "typing.Union",
-  "CodegenCreationSchemaHelpers": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
-  "get_or_compile_executor_code": "melder.aether.spellbook.spell_compiler.executor_code_cache.get_or_compile_executor_code",
-  "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
-  "UnresolvedInputError": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
-  "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError"
+  "CodegenCreationSchemaHelpers": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers"
  },
  "collapse_candidate": null,
+ "nodes_retired": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind",
+   "label": "ManyOnlyCodegenPlanTargetKind",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py",
+   "lineno": 56,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "3444f6ba507ad36eca9c3c858e4bffdc52282befc25ed7ff5d309868b3db736f",
+   "include": true,
+   "role": "Compiler-local target-kind labels for the many-only no-overrides compiler.",
+   "responsibilities": [
+    "name the target kinds this compiler emits, scoped to the compiler rather than shared vocabulary"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "3444f6ba507ad36eca9c3c858e4bffdc52282befc25ed7ff5d309868b3db736f",
+   "retired_reason": "gone from source"
+  }
+ },
  "edges_authored": [
   {
    "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
    "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanCallMode",
    "relation": "uses",
    "why": "many_only_no_overrides_codegen_creation_compiler mirrors ManyOnlyCodegenPlanCallMode when compiling many-only no-overrides executor shapes.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "borrowed"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
-   "to": "melder.aether.spellbook.spell_compiler.executor_code_cache",
-   "relation": "uses",
-   "why": "many_only_no_overrides_codegen_creation_compiler uses the process-wide executor code cache for emitted no-overrides executors.",
    "cardinality": "one_to_one",
    "phase": [
     "runtime"
