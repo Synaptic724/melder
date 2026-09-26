@@ -20,10 +20,10 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.2.54"
-SOURCE_SHA256 = "beb5f0c7c36eb26f36f2f31598719303104478c44a1a67e3193f7fc47ba17e06"
-MARKED_COUNT = 453
+SOURCE_SHA256 = "142459b216eb746e1f67343f5e471e6c4aa12b6f5e1e12352ca3a25108fa72fc"
+MARKED_COUNT = 454
 EXEMPT_COUNT = 163
-PENDING_COUNT = 16
+PENDING_COUNT = 17
 
 AGENT_METADATA = {
     ('melder.aether.aether', 'Aether'): ('public', 'access: public. The global singleton root. `Aether()` returns the process-wide instance and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates ZERO frames - the first Spellbook births the frame it names. Use create_configuration()/configure()/activate() for root logger policy, attach_logger(...) to install one directly.'),
@@ -189,6 +189,7 @@ AGENT_METADATA = {
     ('melder.aether.spellbook.spell_compiler.profiles.resolution_profile', 'SpellSymbolicNode'): ('internal', 'access: internal. Symbolic dependency-graph node: node_id, kind, metadata bag. Placeholder-level tagged node in the resolution_profile symbolic model.'),
     ('melder.aether.spellbook.spell_compiler.profiles.resolution_profile', 'SpellValidationIssue'): ('internal', 'access: internal. One validation issue in the profile family: code, message, details. Distinct from validation/SpellValidationIssue.'),
     ('melder.aether.spellbook.spell_compiler.profiles.resolution_profile', 'SpellValidationResult'): ('internal', 'access: internal. Phase-4 readiness summary in the profile family: is_valid plus errors/warnings lists of the profile SpellValidationIssue. Distinct from validation/SpellValidationResult.'),
+    ('melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature', 'CodegenSignature'): ('internal', 'access: internal. One deterministic serializer/hash/freeze implementation for codegen signatures; both compiler facades delegate here. Byte-compatible with the previous facade bodies for every input that was already deterministic.'),
     ('melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis', 'SpellExistenceOccurrence'): ('internal', 'access: internal. One Phase-8 value row: spell_id + its Existence + has_disposal_methods. Frozen value object captured during the spell walk.'),
     ('melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis', 'SpellExistenceOccurrenceAnalysis'): ('internal', 'access: internal. Phase-8 existence-occurrence payload: root_existence, total_spell_count, spell_existence_rows, existence_counts, and disposal counts. Immutable, no live spell refs.'),
     ('melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis', 'SpellOccurrenceGraphAnalysis'): ('internal', 'access: internal. Phase-8 occurrence-graph artifact: owns the expanded occurrence_graph and cheap metrics (occurrence/edge/dependency counts, shared_collapse flag) plus the existence analysis. Borrows path_registry (does not clean it).'),
@@ -662,6 +663,7 @@ PENDING = (
     ('melder.utilities.helpers.class_surface_ast_describer', 'ClassSurfaceDescription'),
     ('melder.utilities.helpers.class_surface_ast_describer', 'InheritedAgentPurposeDescription'),
     ('melder.utilities.helpers.package', 'Package'),
+    ('melder.utilities.helpers.signature_reflection', 'SignatureReflection'),
     ('melder.utilities.interfaces.ichannellogger', 'IChannelLogger'),
     ('melder.utilities.interfaces.icleanable', 'ICleanable'),
 )

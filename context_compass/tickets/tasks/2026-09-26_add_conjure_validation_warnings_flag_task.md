@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-add-conjure-validation-warnings-flag
 - Story: none (standalone follow-up to STORY-2026-09-26-unresolved-input-sockets, completed)
-- Status: in_progress
+- Status: review
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T09:17:00Z
-- Updated: 2026-09-26T09:17:00Z
+- Updated: 2026-09-26T09:38:26Z
 
 ## Objective
 Give the public `Spellbook.conjure` an opt-in `validation_warnings: bool = False` keyword. When True,
@@ -48,15 +48,18 @@ frame creation, crystallizer restore, upgrade_to_normal) keep the default and ne
 - from_state: draft
 - to_state: in_progress
 - transition_reason: Owner approved the flag design in chat, 2026-09-26; lane opened 09:17:00Z.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Flag implemented, tested, documented, assets rebuilt; awaiting owner acceptance, 2026-09-26T09:38:26Z.
 
 ## Steps / Checklist
-- [ ] Re-read the conjure call chain and the reporter in source; record findings.
-- [ ] Write architecture_patch.md and component_patch_spellbook_conjure.md; record consumption mapping.
-- [ ] Implement the flag (spellbook.py, spellbook_creation_system.py).
-- [ ] Update/add tests: default silent; True logs grouped warnings; internal routes silent.
-- [ ] Run touched suites on 3.14t and GIL; run the full unit suite on 3.14t.
-- [ ] Update src_architecture/src_components (+ indexes), graph descriptors, release note.
-- [ ] Rebuild build assets and LLM bundles (coordinate with melder_1); run --check.
+- [x] Re-read the conjure call chain and the reporter in source; record findings.
+- [x] Write architecture_patch.md and component_patch_spellbook_conjure.md; record consumption mapping.
+- [x] Implement the flag (spellbook.py, spellbook_creation_system.py).
+- [x] Update/add tests: default silent; True logs grouped warnings; internal routes silent.
+- [x] Run touched suites on 3.14t and GIL; run the full unit suite on 3.14t.
+- [x] Update src_architecture/src_components (+ indexes), graph descriptors, release note.
+- [x] Rebuild build assets and LLM bundles (coordinate with melder_1); run --check.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
@@ -74,7 +77,7 @@ frame creation, crystallizer restore, upgrade_to_normal) keep the default and ne
 - release_docs/next_version_release.md
 
 ## Validation
-- Not run.
+- Run (VM copy): touched suites 3.14t + GIL green; full unit/component/integration 3.14t - see MEASURE notes.
 - Recommended commands:
   - python -m pytest tests/component/melder/spellbook -q
   - python -m pytest tests/unit -q
@@ -209,8 +212,71 @@ frame creation, crystallizer restore, upgrade_to_normal) keep the default and ne
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T09:32:40Z
+  TYPE: MEASURE
+  CLAIM: Tests (VM copy, rsynced from the mount). Probe: conjure(validation_warnings=True) with Consumer
+    (unresolved), Counted(count: int) and Untyped(thing) logs "Conjure validation warnings (3):" /
+    "UNRESOLVED_INPUT (1): Consumer.value -> Unregistered" / "REQUIRED_HOLE (2): Counted.count; Untyped.thing";
+    default logs nothing. Touched suites (unit spellbook + component spellbook + component conduit): 3431
+    passed, 1 skipped on 3.14.7t and on 3.14.7 GIL. Full unit 3.14t: 8072 passed, 21 failed - all
+    environmental/baseline (18 architecture-docs-tool, 2 system-documents-builder, 1 llm_support test needing
+    .github/workflows absent from the VM copy); tests/unit/github_workflows ignored (no yaml). Component 3.14t:
+    2069 passed, 44 skipped. Integration 3.14t: 1920 passed, 4 failed, all in
+    test_conduit_integration_concurrency.py; that file is flaky on the BASELINE sources too (6 runs with the
+    pre-change spellbook files: 3,4,5,1,1,0 failures; current: 0,0,0,0,2,0), so it is pre-existing.
+  EVIDENCE:
+  - tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py:723-827
+  - tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py:274-335
+  - tests/integration/melder/conduit/test_conduit_integration_concurrency.py:548-685
+  - tests/integration/melder/conduit/test_conduit_integration_concurrency.py:1188-1361
+  IMPACT: Flag behaves as specified; no regression attributable to this change.
+  NEXT: Update release_docs/next_version_release.md, then rebuild build assets and LLM bundles.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T09:32:40Z
+  TYPE: RISK
+  CLAIM: Docs/graph side findings. (1) src_architecture/src_components cite spellbook.py by line numbers that
+    were already stale before this change (e.g. _settle_or_inherit_conjure_mode cited :5992-6032, actually
+    def at :6499; _add_to_spell_index cited :3655, actually :3832); only spellbook_creation_system.py
+    citations moved by this change and were remapped (236-257, 411-438, 504-612, 1232-1279, 1944-1972,
+    1972). (2) Graph: Spellbook and SpellbookCreationSystem nodes were SEMANTICS_STALE before this change;
+    the authored prose touched here is accurate, but the nodes were not --accept'ed because the whole class
+    prose was not re-read. (3) conduit.py changed at 09:14Z by the owner (confirmed in chat); its descriptor was left alone.
+  EVIDENCE:
+  - context_compass/system_docs/src_architecture.md:1079-1082
+  - src/melder/aether/spellbook/spellbook.py:6499-6540
+  - src/melder/aether/spellbook/spellbook.py:3832-3864
+  IMPACT: Pre-existing citation drift in spellbook.py is outside this task's scope; owner may want a remap.
+  NEXT: Raise both to the owner in the handoff; do not fix without approval.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T09:38:26Z
+  TYPE: MEASURE
+  CLAIM: Release note updated in place (0.2.54 is unreleased, so the INFO line never shipped): example
+    comment, behavior-change bullet and Upgrading bullet now point at conjure(validation_warnings=True);
+    new section "Opt-in conjure report of validation warnings"; packaging bullet mentions the report.
+    Build assets rebuilt (agent documentation 454 entries, bind guard 634, system documents 4; runner --check
+    OK for all three). The bind-guard manifest also picked up two in-flight classes from other lanes
+    (shared_assets.codegen_signature.CodegenSignature, utilities.helpers.signature_reflection.
+    SignatureReflection); fable_0 and melder_1 notified (M0-16, M0-17). LLM bundles rebuilt (src 588,
+    tests 857, other 370 files); --check OK. src_architecture/src_components indexes regenerated (--check
+    OK); graph reassembled (596 sections, 1236 nodes, 1459 edges, ranges verified).
+  EVIDENCE:
+  - release_docs/next_version_release.md:1-91
+  - src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:1-19
+  - llm_support/manifest.json
+  IMPACT: All deliverables in place; task ready for owner review.
+  NEXT: Owner reviews; on acceptance archive the patch docs and close the task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-Lane opened. Next: re-read source, write patch docs, implement. Override design lane paused behind this.
+In review. Spellbook.conjure(validation_warnings=False) implemented on the main conjure only; default silent,
+True logs one grouped WARNING of every Phase-4 warning. Tests, docs, graph, release note, assets and LLM
+bundles done. On owner acceptance: archive patch docs to system_docs/patches/completed/ and close. Then resume
+the paused override design lane (executor/targeting split probe).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

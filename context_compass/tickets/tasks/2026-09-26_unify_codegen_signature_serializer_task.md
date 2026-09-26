@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-unify-codegen-signature-serializer
 - Story: STORY-2026-09-26-signature-determinism-phase8-digest
-- Status: ready
+- Status: in_progress
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T09:05:00Z
-- Updated: 2026-09-26T09:05:00Z
+- Updated: 2026-09-26T09:29:36Z
 
 ## Objective
 One implementation of `serialize_codegen_signature_part`, `hash_codegen_signature` and
@@ -43,9 +43,12 @@ determinism test plus a byte-compatibility corpus test on the gauntlet book (C-H
 - to_state: ready
 - transition_reason: Created with the story; moves to in_progress after task 1 is in review and the
   owner confirms the file/symbol proposal.
+- from_state: ready
+- to_state: in_progress
+- transition_reason: Owner confirmed the proposal ("go ahead and start doing shit", 2026-09-26); U1 done.
 
 ## Steps / Checklist
-- [ ] U1: Propose -> Confirm (files/symbols, the freeze rule, the set rule) and owner confirmation.
+- [x] U1: Propose -> Confirm (files/symbols, the freeze rule, the set rule) and owner confirmation.
 - [ ] U2: create the leaf module (docstrings per `docstrings.md`; no module-level constants; typing per
       `typing.md`); make both facades delegate; keep public names and signatures.
 - [ ] U3: tests - unit (tags, freeze cases, set handling, delegation identity) and component (two
@@ -130,8 +133,35 @@ determinism test plus a byte-compatibility corpus test on the gauntlet book (C-H
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T09:29:36Z
+  TYPE: DECISION
+  CLAIM: U1 confirmed by the owner. Design fixed for U2: (1) new leaf `spell_compiler/shared_assets/
+    codegen_signature.py` holding class `CodegenSignature` (slot-only staticmethods, stdlib imports only;
+    the package tree uses namespace packages, no `__init__.py` needed). (2) Byte-compatibility rule
+    refined from the patch draft: freeze canonicalizes ONLY values whose old `repr` carried an address
+    (functions, methods, builtin callables -> ("__callable__", module, qualname); instances whose type
+    uses `object.__repr__` -> ("__object__", module, qualname)); classes, enums, dataclasses and every
+    other deterministic `repr` keep their bytes. Top-level `set`/`frozenset` parts are frozen (sorted)
+    before pickling; `frozenset` joins the sorted freeze branch (it fell to `repr` before). Nested
+    containers are NOT walked, because rebuilding containers changes pickle memo bytes for previously
+    deterministic inputs; the existing contract (callers pre-freeze) stands. (3) Both facades keep
+    their staticmethods and docstrings and delegate; unused `hashlib`/`pickle` imports are dropped.
+    (4) Files on disk are CRLF; edits preserve CRLF. (5) The new class is absent from the bind-guard
+    manifest until the owner regenerates build assets (registration only; no runtime effect).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:58-137
+  - src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:397-424
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:23-158
+  - tests/component/melder/spellbook/spell_compiler_runtime_test_support.py:23-93
+  IMPACT: The change is provably byte-compatible for every deterministic input, so no cache generation
+    bump; the patch docs' Interface delta 2 is amended to this rule in the same pass.
+  NEXT: U2: write the leaf module and the two facade delegations.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 STATE 2026-09-26T09:05:00Z: ready; opens after task 1 (patch docs) is in review and U1 is confirmed.
+STATE 2026-09-26T09:29:36Z: U1 confirmed; U2 in progress (leaf module + facade delegations).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

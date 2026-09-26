@@ -161,6 +161,18 @@ annotation in src/melder that raises when evaluated even with every TYPE_CHECKIN
   NEXT: Report to the owner; propose fixes and whether to keep the tool as a repository guard.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+- DATETIME: 2026-09-26T09:25:17Z
+  TYPE: DECISION
+  CLAIM: Owner approved ("yeah ok go fix this shit please"): fix the audit findings (TYPE_CHECKING imports
+    for FrameACLRuleSet/FrameACLViewProfile/FrameACLProfileBuilder replacing the nonexistent
+    IFrameACLProfileBuilder, Any in frame_acl_configuration_chain, Meld in creation_context, the three
+    WeakConcurrentDict unions as Union[...]), add the audit as a repository test guard, and resume the
+    approved SignatureReflection fix minus conduit.py (already fixed by the owner).
+  EVIDENCE: context_compass/artifacts/annotation_integrity_audit_20260926/results/report_src_melder.txt:1-78
+  IMPACT: Both lanes move to implementation; writer melder_1 (melder_0 confirmed no overlap, M0-15).
+  NEXT: Re-hash planned files on the device and apply edits to current bytes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
 Tool built and run: 3 latent string unions (weak_concurrent_dict), 21 owners in 5 modules whose

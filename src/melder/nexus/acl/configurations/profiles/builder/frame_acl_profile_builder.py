@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Optional, Protocol, TypeVar, ClassVar
+from typing import TYPE_CHECKING, Dict, List, Optional, Protocol, TypeVar, ClassVar
 
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
@@ -24,6 +24,9 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+
+if TYPE_CHECKING:
+    from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 
 class _NamedCleanableProfile(Protocol):

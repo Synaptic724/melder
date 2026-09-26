@@ -1,5 +1,6 @@
 import inspect
 import threading
+from annotationlib import Format
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -2496,6 +2497,10 @@ class ConduitWard(Cleanable):
                 an empty set when no contracts are declared or the signature cannot
                 be inspected.
 
+        Contract:
+            - Preserves unresolved Python 3.14 annotation names as ForwardRefs;
+              checking defaults must not evaluate TYPE_CHECKING-only imports.
+
         Threading:
             - Read-only; no internal locks are acquired here.
 
@@ -2508,7 +2513,10 @@ class ConduitWard(Cleanable):
         except AttributeError:
             return set()
         try:
-            signature = inspect.signature(call_target)
+            # FORWARDREF: only defaults are read here, and a VALUE-format read
+            # raises NameError when an annotation names a TYPE_CHECKING-only type
+            # (Python 3.14 lazy annotations). Mirrors Meld._iter_spell_contract_defaults.
+            signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
         except (TypeError, ValueError):
             return set()
 

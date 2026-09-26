@@ -1,4 +1,5 @@
 import inspect
+from annotationlib import Format
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
 
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
@@ -224,6 +225,11 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
         Existing provider occurrences have no constructor contracts or nested
         contract override payloads. Preserve their incoming consumer edges and
         leave ordinary class/factory contract discovery unchanged.
+
+        When the Phase-1 requirements have been released (they are after conjure),
+        the callable signature is read in FORWARDREF format: only defaults are
+        inspected, and a VALUE-format read raises NameError when an annotation
+        names a TYPE_CHECKING-only type (Python 3.14 lazy annotations).
         """
         contracts: List[Tuple[str, SpellContract]] = []
         if spell.is_existing_creation:
@@ -236,7 +242,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
                         contracts.append((parameter.name, parameter.default_value))
             return contracts
 
-        signature = inspect.signature(spell.spell)
+        signature = inspect.signature(spell.spell, annotation_format=Format.FORWARDREF)
         for param_name, parameter in signature.parameters.items():
             if param_name in ("self", "cls"):
                 continue

@@ -1,5 +1,3 @@
-import hashlib
-import pickle
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 if TYPE_CHECKING:
@@ -12,6 +10,9 @@ if TYPE_CHECKING:
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
+    CodegenSignature,
+)
 
 class SharedCompilerExecutions:
     """
@@ -65,8 +66,13 @@ class SharedCompilerExecutions:
                 Avoid expensive mega-`repr(...)` materialization on large nested
                 IR payloads while preserving deterministic signature behaviour.
             Contract:
+                - Delegates to `CodegenSignature.serialize_codegen_signature_part`,
+                  the single implementation shared with the phase-11 helper
+                  surface; the two facades can no longer drift apart.
                 - Uses typed fastpaths for common scalar values.
-                - Uses direct `pickle` fallback for container and unsupported values.
+                - Uses direct `pickle` fallback for container and unsupported values;
+                  a top-level `set`/`frozenset` part is frozen (sorted) first so its
+                  bytes do not depend on the process hash seed.
                 - Falls back to `repr(...).encode(...)` for non-picklable values.
             Args:
                 part:
@@ -75,40 +81,7 @@ class SharedCompilerExecutions:
                 bytes:
                     Deterministic encoded bytes for hashing.
         """
-        part_type = type(part)
-        if (
-                part_type is dict
-                or part_type is tuple
-                or part_type is list
-                or part_type is set
-                or part_type is frozenset
-        ):
-            try:
-                encoded_part_from_collection: bytes = pickle.dumps(part, protocol=5)
-                return encoded_part_from_collection
-            except (pickle.PickleError, TypeError, AttributeError):
-                return repr(part).encode("utf-8")
-        if part is None:
-            return b"N"
-        if part_type is bool:
-            return b"B1" if part else b"B0"
-        if part_type is int:
-            return b"I" + str(part).encode("ascii")
-        if part_type is float:
-            return b"F" + repr(part).encode("ascii")
-        if part_type is str:
-            part_str: str = part
-            return b"S" + part_str.encode("utf-8")
-        if part_type is bytes:
-            part_bytes: bytes = part
-            return b"Y" + part_bytes
-        if part_type is bytearray:
-            return b"Y" + bytes(part)
-        try:
-            encoded_part_from_object: bytes = pickle.dumps(part, protocol=5)
-            return encoded_part_from_object
-        except (pickle.PickleError, TypeError, AttributeError):
-            return repr(part).encode("utf-8")
+        return CodegenSignature.serialize_codegen_signature_part(part)
 
     @staticmethod
     def hash_codegen_signature(*parts: Any) -> str:
@@ -119,6 +92,8 @@ class SharedCompilerExecutions:
                 Produce stable fingerprints for phase-exported IR slices so
                 codegen-creation compilation can skip unchanged payloads.
             Contract:
+                - Delegates to `CodegenSignature.hash_codegen_signature` (single
+                  implementation shared with the phase-11 helper surface).
                 - Signature is deterministic for equal-ordered inputs.
                 - Does not depend on process-randomized object identity.
             Args:
@@ -128,13 +103,7 @@ class SharedCompilerExecutions:
                 str:
                     SHA256 hex digest for the supplied parts.
         """
-        digest = hashlib.sha256()
-        for part in parts:
-            digest.update(
-                SharedCompilerExecutions.serialize_codegen_signature_part(part)
-            )
-            digest.update(b"|")
-        return digest.hexdigest()
+        return CodegenSignature.hash_codegen_signature(*parts)
 
     @staticmethod
     def socket_row_sort_key(
@@ -384,9 +353,13 @@ class SharedCompilerExecutions:
                 Convert nested payload values into primitive/tuple structures so
                 Phase11 IR rows can be serialized without leaking live objects.
             Contract:
+                - Delegates to `CodegenSignature.freeze_phase11_schema_value`
+                  (single implementation shared with the phase-11 helper surface).
                 - Primitive values are returned as-is.
-                - Dict/list/tuple/set values are recursively normalized.
-                - Non-primitive objects are represented by deterministic repr text.
+                - Dict/list/tuple/set values are recursively normalized; sets sort.
+                - Callables and instances whose `repr` would carry a memory address
+                  are rendered as process-independent marker tuples; every other
+                  non-primitive object keeps its deterministic repr text.
             Args:
                 value:
                     Raw value captured from plan metadata.
@@ -394,34 +367,7 @@ class SharedCompilerExecutions:
                 Any:
                     Deterministic schema-safe value.
         """
-        if value is None or isinstance(value, (bool, int, float, str)):
-            return value
-        if isinstance(value, dict):
-            return tuple(
-                sorted(
-                    (
-                        key,
-                        SharedCompilerExecutions.freeze_phase11_schema_value(item),
-                    )
-                    for key, item in value.items()
-                )
-            )
-        if isinstance(value, (list, tuple)):
-            return tuple(
-                SharedCompilerExecutions.freeze_phase11_schema_value(item)
-                for item in value
-            )
-        if isinstance(value, set):
-            return tuple(
-                sorted(
-                    (
-                        SharedCompilerExecutions.freeze_phase11_schema_value(item)
-                        for item in value
-                    ),
-                    key=repr,
-                )
-            )
-        return repr(value)
+        return CodegenSignature.freeze_phase11_schema_value(value)
 
     @staticmethod
     def normalize_instance_key(

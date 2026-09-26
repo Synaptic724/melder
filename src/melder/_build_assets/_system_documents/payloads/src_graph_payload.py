@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28072
-CONTENT_SHA256 = '3752088d0ebce638413834c6db381db7820e8f086652e2c4ef8b9b11ae9671a3'
+LINE_COUNT = 28073
+CONTENT_SHA256 = '42c960723df474cfeec2a426aaa5af129887e82ed50708304b7ad55e50e84943'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `f882fd13b66f058944bf687e2d93f2ebea73d6c0bb0479ee3892517aafff1644`
+- source_sha256: `63cc562a955c9f1a860661e8fff1203dd292d01e69d7b4ddbbbcbc2ab69046e8`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `b067619c74e5d95abf38a4f2c4545d3f13c2c39b6c07056e189ff5745db2f29d`
+- source_sha256: `00cbe31130b3501afe73ea204b9dfa8d952751590546e0c091b5bc648be2b83c`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `6e33a022dd30ccdc6754eafd974402a8ec7b5c3684fa54077a11f0a06bd6d5f8`
+- source_sha256: `9e6eea89ff29461604f13b5ba8727b0b24fb41c43049976b3cc64cf95679be3b`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `d51591e53f7d211b6cdc4b5e70daf4eb8d71fc98284452d0575049b76911c61c`
+- source_sha256: `72e9dfe80d7d2b9be5764ada543ccc3a4624953cbb84ed327c3af68ee68e4be6`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `4ea485782e129de0fb41949434928595dca3bdcfbb46eac425df4e2ccb319aa2`
+- source_sha256: `8f0fcd19fc49e02644552b66a44603f97da569e21e1801b027ee3f87ca9854b8`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `379087ced02e8f8f5696d4792bf23a09fa4e5516244c10ab7a8072d40e18fc24`
+- source_sha256: `8baf6f679964338fc4f3b541e7d55c6a0c0a3d734dc2c1fc2a70a4bd222a03c4`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `4dee12d09acd54d517b9e7be8f93e8755c5cea9e6cb17d122f752ee7aa04e9fe`
+- source_sha256: `000eaae0d70d08a00e6ab3acd7b3ecbe4e725c19c623267b844aff89243e16ab`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `da311708b4ca87af1522ca7b299fb5255df1b990a537c3b9bf707377e4113c8d`
+- source_sha256: `003343dbfa2e9d594c335d4bfacac5c8f78c1bc0ccc95390feb7fc70a9ee2da9`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `fcf12f37086563e386c89c22d6565f476e9570fbb00ffbaa7b1a7cdc7d3da12f`
+- source_sha256: `c59cde814655df17a7b4a5cc227e8dafc3bdc50332da8ad5d7bb12cc6ee147c4`
 - nodes: 1
 
 ### Nodes
@@ -15925,7 +15925,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `94c4b05d037dbd079094b8deb7af950d7f571a9b13c657471dcac21da9867874`
+- source_sha256: `895257a46d48dd39d2e8c113bc97c88dd6eb19214f7fb2b076b26333f5e73314`
 - nodes: 2
 
 ### Nodes
@@ -15955,6 +15955,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - refreshes complete recorded Book twins with value-only bind-stage markers and explicitly cleans Bind during teardown
   - preserves same-identity name admission during existing-conduit conjure
   - records owning Book and frame twins when public frame setup already locked configuration before conjure
+  - offers beginners an opt-in conjure report of Phase-4 validation warnings (validation_warnings=True); the default and internal conjure routes are silent
 - owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_spell_validator`, `_configuration`, `_conduit`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
@@ -16024,7 +16025,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook_creation_system.py
 
-- source_sha256: `c957d7979942160da7bf1d89116171b9fc9900bac516b835913892a0b046da5d`
+- source_sha256: `223274365242a1dbcc2a74d9ab2c47c40f6d0bd2a11c08723889726c577cd81a`
 - nodes: 2
 
 ### Nodes
@@ -16048,8 +16049,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - wires conduit ownership into local spells and fires conjure hooks
   - excludes non-resolvable definitions from executable cache payload and plan-phase eligibility
   - binds local phase cancellation arguments when units are created within the current scheduler run
-  - logs one conjure INFO line listing unresolved inputs from the Phase-4 warnings before phase artifacts are released
-- owns_state: `_spellbook`, `_policy`, `_automatic`, `_conduit_cls`, `_phase_scheduler_cls`
+  - when the public conjure passes validation_warnings=True, logs one WARNING grouping every Phase-4 warning by code before phase artifacts are released; otherwise logs nothing
+- owns_state: `_spellbook`, `_policy`, `_dynamic`, `_name`, `_conduit_logger`, `_phase_scheduler_cls`, `_validation_warnings`, `_lock`
 - phases: `runtime`, `cleanup`
 - public methods: `check_system_state`, `cleanup`, `cleanup_phase_artifacts_after_resolution`, `conjure`, `define_conduit_into_spells`, `fire_conjure_hooks`, `get_conjure_hook_map`, `phase_change_control_factory`, `phase_execution_plan_factory`, `phase_injection_plan_factory`, `phase_local_frame_factory`, `phase_occurrence_plan_factory` (+15 more)
 

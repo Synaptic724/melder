@@ -1,6 +1,8 @@
-import hashlib
-import pickle
 from typing import Any, Dict, Optional, Sequence, Tuple
+
+from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
+    CodegenSignature,
+)
 
 
 class CodegenCreationSchemaHelpers:
@@ -16,6 +18,10 @@ class CodegenCreationSchemaHelpers:
         - Owns only phase-11 helper behavior used by codegen creation.
         - Does not own runtime state or lifecycle.
         - Returns only deterministic primitive/tuple structures.
+        - The serializer, hash and freeze helpers delegate to
+          `CodegenSignature` under `spell_compiler/shared_assets/`, the single
+          implementation also used by the phase-side `SharedCompilerExecutions`;
+          this subsystem still never imports the phase helper surface itself.
     """
 
     __slots__ = ()
@@ -26,12 +32,14 @@ class CodegenCreationSchemaHelpers:
         Serialize one signature part into deterministic bytes.
 
         Contract:
+            Delegates to `CodegenSignature.serialize_codegen_signature_part`.
             Type-dispatched with a stable one-byte tag per primitive
             (N/B/I/F/S/Y) so distinct types never collide on the same payload.
             Collections and unrecognized objects fall to pickle (protocol 5),
-            with a `repr()` fallback if pickling raises. Callers that need
-            canonical ordering across dict/set inputs must pre-freeze via
-            `freeze_phase11_schema_value`; this helper does not reorder.
+            with a `repr()` fallback if pickling raises; a top-level set or
+            frozenset is frozen (sorted) first. Callers that need canonical
+            ordering across NESTED dict/set inputs must still pre-freeze via
+            `freeze_phase11_schema_value`; this helper does not walk containers.
 
         Args:
             part:
@@ -40,40 +48,7 @@ class CodegenCreationSchemaHelpers:
         Returns:
             bytes: Deterministic encoding of `part`.
         """
-        part_type = type(part)
-        if (
-                part_type is dict
-                or part_type is tuple
-                or part_type is list
-                or part_type is set
-                or part_type is frozenset
-        ):
-            try:
-                encoded_part_from_collection: bytes = pickle.dumps(part, protocol=5)
-                return encoded_part_from_collection
-            except (pickle.PickleError, TypeError, AttributeError):
-                return repr(part).encode("utf-8")
-        if part is None:
-            return b"N"
-        if part_type is bool:
-            return b"B1" if part else b"B0"
-        if part_type is int:
-            return b"I" + str(part).encode("ascii")
-        if part_type is float:
-            return b"F" + repr(part).encode("ascii")
-        if part_type is str:
-            part_str: str = part
-            return b"S" + part_str.encode("utf-8")
-        if part_type is bytes:
-            part_bytes: bytes = part
-            return b"Y" + part_bytes
-        if part_type is bytearray:
-            return b"Y" + bytes(part)
-        try:
-            encoded_part_from_object: bytes = pickle.dumps(part, protocol=5)
-            return encoded_part_from_object
-        except (pickle.PickleError, TypeError, AttributeError):
-            return repr(part).encode("utf-8")
+        return CodegenSignature.serialize_codegen_signature_part(part)
 
     @staticmethod
     def hash_codegen_signature(*parts: Any) -> str:
@@ -81,10 +56,10 @@ class CodegenCreationSchemaHelpers:
         Build a deterministic SHA256 signature over ordered IR parts.
 
         Contract:
-            Each part is encoded via `serialize_codegen_signature_part` and
-            followed by a `|` separator byte, so ordering and grouping are
-            significant - two different partitions of the same values never
-            collide.
+            Delegates to `CodegenSignature.hash_codegen_signature`. Each part is
+            encoded via `serialize_codegen_signature_part` and followed by a `|`
+            separator byte, so ordering and grouping are significant - two
+            different partitions of the same values never collide.
 
         Args:
             *parts:
@@ -93,13 +68,7 @@ class CodegenCreationSchemaHelpers:
         Returns:
             str: Hex SHA256 digest over the encoded parts.
         """
-        digest = hashlib.sha256()
-        for part in parts:
-            digest.update(
-                CodegenCreationSchemaHelpers.serialize_codegen_signature_part(part)
-            )
-            digest.update(b"|")
-        return digest.hexdigest()
+        return CodegenSignature.hash_codegen_signature(*parts)
 
     @staticmethod
     def freeze_phase11_schema_value(value: Any) -> Any:
@@ -107,12 +76,15 @@ class CodegenCreationSchemaHelpers:
         Normalize an arbitrary value into a deterministic schema-safe form.
 
         Contract:
+            Delegates to `CodegenSignature.freeze_phase11_schema_value`.
             Primitives (None/bool/int/float/str) pass through unchanged. Dicts
             become sorted `(key, frozen-value)` tuples; lists and tuples become
-            order-preserving frozen tuples; sets become repr-sorted frozen
-            tuples. Anything else collapses to `repr(value)`. Recurses into
-            nested containers so the whole structure is order-canonical and
-            hashable.
+            order-preserving frozen tuples; sets and frozensets become
+            repr-sorted frozen tuples. Callables and instances whose `repr` would
+            carry a memory address become process-independent marker tuples;
+            anything else collapses to `repr(value)` exactly as before. Recurses
+            into nested containers so the whole structure is order-canonical
+            and hashable.
 
         Args:
             value:
@@ -121,34 +93,7 @@ class CodegenCreationSchemaHelpers:
         Returns:
             Any: A deterministic, hashable projection of `value`.
         """
-        if value is None or isinstance(value, (bool, int, float, str)):
-            return value
-        if isinstance(value, dict):
-            return tuple(
-                sorted(
-                    (
-                        key,
-                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item),
-                    )
-                    for key, item in value.items()
-                )
-            )
-        if isinstance(value, (list, tuple)):
-            return tuple(
-                CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item)
-                for item in value
-            )
-        if isinstance(value, set):
-            return tuple(
-                sorted(
-                    (
-                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item)
-                        for item in value
-                    ),
-                    key=repr,
-                )
-            )
-        return repr(value)
+        return CodegenSignature.freeze_phase11_schema_value(value)
 
     @staticmethod
     def normalize_instance_key(

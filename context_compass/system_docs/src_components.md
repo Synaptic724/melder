@@ -337,6 +337,17 @@ Key Files (C1):
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ### Component: Spellbook Core (Binding and Conjure)
+Conjure validation warnings (2026-09-26): `conjure(..., validation_warnings=False)` is the only public
+opt-in. `_conjure_within_transaction_window` threads it into `SpellbookCreationSystem`, whose
+`_prepare_spellbook_for_conjure` calls `_report_validation_warnings` after the structural phases only when
+True: one WARNING event through the Book logger, a `Conjure validation warnings (N):` header, then one
+`CODE (n): entry; entry` line per Phase-4 warning code in first-seen order. Entries read
+`Spell.param -> ExpectedType` for UNRESOLVED_INPUT, `Spell.param` when the issue names a parameter, else
+`Spell`. The default logs nothing; Nexus frame creation, restore and `_conjure_existing_conduit` never pass
+True. Reporting only: validity, phase results and conjure success are unchanged.
+EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.conjure` and
+`src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._report_validation_warnings`.
+
 Release-bound creation cache (2026-09-24):
 - The Book owns one CachingSystem for its selected frame/conduit cache path when caching is enabled.
   Generation 9 stores version, melder_version, python, frame_name, conduit_name and nested-marshal
@@ -481,7 +492,7 @@ Concurrency/Threading:
   EVIDENCE:
   - src/melder/aether/spellbook/spellbook.py:6295-6306 (`_run_structural_phases`
     at :6295; the caller-held-lock precondition is stated at :6306)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1922 (the only
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1972 (the only
     `_phase_run_lock` acquisition, reached from that path)
 - `_run_structural_phases` documents a CALLER-HELD precondition rather than
   taking a lock itself: the caller must hold the Spellbook lock for
@@ -489,7 +500,7 @@ Concurrency/Threading:
   which is why it is written down here.
   EVIDENCE:
   - src/melder/aether/spellbook/spellbook.py:265 (`_phase_run_lock` created)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1894-1922
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1944-1972
     (`_run_scheduler_with_phases` - the only acquisition, with its rationale)
   - src/melder/aether/spellbook/spellbook.py:6279-6288 (policy flags under `_lock`)
 
@@ -3132,8 +3143,9 @@ Unresolved inputs (2026-09-26):
   DAG node, edge, target or dependency id. Empty collection, SpellMap, contract and PLAIN results are unchanged.
 - Phase 4: `RequiredHolesStrategy` adds one UNRESOLVED_INPUT warning per socket (parameter, position, kind,
   expected type from the Phase-1 annotation, dependency key). `BindingResolutionCycleStrategy` skips these
-  sockets as it skips OVERRIDE_REQUIRED. Conjure logs one INFO line listing `Spell.param -> ExpectedType`
-  from those warnings right after the structural phases, before Phase 1-4 artifacts are released.
+  sockets as it skips OVERRIDE_REQUIRED. `conjure(validation_warnings=True)` lists them as
+  `Spell.param -> ExpectedType` in its grouped WARNING report right after the structural phases, before
+  Phase 1-4 artifacts are released; the default conjure logs nothing.
 - Phase 8 graph-shape rows carry the socket kind, so a socket changing kind changes the occurrence
   signature. Phase 9 emits an "unresolved_input" source (override_key only) and both injection row
   exporters append its position and kind. The planners and emitters need no kind-specific branch.
@@ -3143,7 +3155,7 @@ Unresolved inputs (2026-09-26):
 - Cache generation 11 (`unresolved_input_sockets`) retires executors emitted with the previous except blocks.
 - EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`, `CompilerPhase3._build_local_topology`,
   `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy`,
-  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._report_unresolved_inputs`,
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._report_validation_warnings`,
   `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
 
 Phase-5 publication authority (2026-09-19):
@@ -4478,7 +4490,9 @@ Purpose:
 - Run phases 1-4 plus conduit resolution phases 5-11 (with 8-11 gated on
   foundational success), then build a Conduit and wire ownership into spells.
 Contract/Interface:
-- `conjure(policy, dynamic, name, conduit_logger)`.
+- `conjure(policy, dynamic, name, conduit_logger, validation_warnings=False)`.
+- `validation_warnings=True` logs one grouped WARNING of the Phase-4 warnings after the structural phases;
+  the default and every internal conjure route log nothing.
 - `_conjure_existing_conduit` mirrors normal setup for a prepared existing target using its ID.
   It owns attachment and normal activation; Conduit owns structural promotion and gate preparation.
 Data Structures:
@@ -5952,6 +5966,8 @@ These flows describe concrete method sequences for core behaviors.
    - Binds `SpellbookConfiguration` to Aether frame.
    - Runs phases 1-4 via PhaseScheduler (`_prepare_spellbook_for_conjure` ->
      `run_structural_phases`), on every conjure.
+   - Only when `validation_warnings=True`: `_report_validation_warnings` logs the Phase-4 warnings once,
+     grouped by code, before the phase artifacts are released.
    - Classifies the creation cache (`_build_conjure_cache_state`): live
      resolvable, non-existing-creation spell ids vs cached ids ->
      `disabled` | `full_hit` | `mixed` | `full_miss`.
@@ -5960,8 +5976,8 @@ These flows describe concrete method sequences for core behaviors.
      resolution errors and the cache path is not `full_hit`; a full hit sets
      `force_skip_plan_phases=True`, loads both-lane creation contexts from the
      cache, and skips `_enforce_conduit_resolution_valid`.
-     EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:226-247`,
-     `src/melder/aether/spellbook/spellbook_creation_system.py:454-562`.
+     EVIDENCE: `src/melder/aether/spellbook/spellbook_creation_system.py:236-257`,
+     `src/melder/aether/spellbook/spellbook_creation_system.py:504-612`.
    - Live 8-11 output contract:
      - phase 8 `_occurrence_graph_analysis`
      - phase 9 `_spell_codegen_model`
@@ -6010,8 +6026,9 @@ These flows describe concrete method sequences for core behaviors.
    `_build_local_frame_dag(...)` records the socket key and `_build_local_topology(...)` marks it
    `SocketKind.UNRESOLVED_INPUT` with its `dependency_key`.
 2. `SpellSystemStates._extract_collection_frame_keys(...)` registers the consumer under that frame key.
-3. `RequiredHolesStrategy.validate(...)` stores a Phase-4 UNRESOLVED_INPUT warning and
-   `SpellbookCreationSystem._report_unresolved_inputs(...)` logs the conjure INFO line from it.
+3. `RequiredHolesStrategy.validate(...)` stores a Phase-4 UNRESOLVED_INPUT warning;
+   `SpellbookCreationSystem._report_validation_warnings(...)` lists it in the grouped conjure WARNING
+   only when `conjure(validation_warnings=True)`.
 4. `SpellInjectionProcessorStrategy` emits an "unresolved_input" param source; the Phase-10 planners treat
    it as an override target that is omitted unless supplied.
 5. At meld a supplied value reaches the constructor by identity. A missing one fails argument binding with
@@ -6163,9 +6180,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7205
-  loc: 7205
-  verified_at: 2026-09-23T12:28:41Z
+  end_line: 7219
+  loc: 7219
+  verified_at: 2026-09-26T09:26:45Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 870
@@ -8753,7 +8770,7 @@ Runtime argument enforcement and persisted replay of required-input policy remai
 ```text
 typed parameter -> Phase 3: no provider -> UNRESOLVED_INPUT socket (no edge; frame key watched)
                                   |                              |
-                 Phase 4 warning + conjure INFO     Phase 9 "unresolved_input" source
+                 Phase 4 warning (opt-in report)    Phase 9 "unresolved_input" source
                                                                  |
 meld: value supplied -> constructor receives it      missing -> TypeError -> UnresolvedInputError
 later bind of a matching provider -> watcher -> next meld re-resolves -> NORMAL edge
@@ -8762,7 +8779,7 @@ later bind of a matching provider -> watcher -> next meld re-resolves -> NORMAL 
 ```mermaid
 flowchart LR
   P[Phase 3: no registered provider] --> U[UNRESOLVED_INPUT socket]
-  U --> W[Phase 4 warning and conjure INFO line]
+  U --> W[Phase 4 warning; conjure report only with validation_warnings=True]
   U --> S[Phase 9 unresolved_input source]
   S --> M{Meld supplies value?}
   M -->|Yes| C[Constructor receives it by identity]
@@ -9037,6 +9054,11 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 conjure validation warnings are promoted into the Spellbook Core entry, the conjure pipeline
+subcomponent, the conjure and unresolved-input flows and the SpellCompiler unresolved-input block. The
+0.2.54 per-conjure INFO line is gone; `conjure(validation_warnings=True)` logs every Phase-4 warning once,
+grouped by code, and internal routes never ask for it.
 
 2026-09-26 unresolved inputs are promoted into the DI descriptor, SpellCompiler, Meld runtime and
 SpellSystemStates entries, with a C1 flow and a diagram. A single typed parameter no registered spell

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 1672d5d46a5384df8c7df8ce2587b62bd2219c8136adc4c2558799d273e56f27
+SOURCE FINGERPRINT: 90bcdb76ae20066f477a9ed51c9f095b888dcd2e1d1918b0fb4e5b1653db9f6a
 FILE COUNT: 588
 
 ================================================================================
@@ -42209,7 +42209,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: 4f9a70fcb52342ac6f3abea234023f9d1561db18d61605f7f36977149b9ed5f9
+CONTENT SHA256: 81c7195e52ba0ba59ceb9d43b6549b7d0bc843293cd0aa47463bb55bf29e4f99
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -48948,7 +48948,7 @@ class Conduit(Cleanable):
     #region Hooks
     def _resolve_peer_conduit_for_contract_hooks(
             self,
-            conduit: "Conduit" | None,
+            conduit: Optional["Conduit"],
             conduit_id: str | None,
             aetheric_frame: str,
     ) -> Optional["Conduit"]:
@@ -50674,11 +50674,12 @@ END FILE: src/melder/aether/conduit/conduit_state/conduit_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/conduit_ward.py
-CONTENT SHA256: cb30b7d679c5cfb29fb8ea4d9146633cc8e216249c07d0e1dccecbc0fb447af8
+CONTENT SHA256: 84ce45bffad2a0ba9a6e9ef84a586ed76ce51e0ead8357ca28d629650aa35b65
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
 import threading
+from annotationlib import Format
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -53175,6 +53176,10 @@ class ConduitWard(Cleanable):
                 an empty set when no contracts are declared or the signature cannot
                 be inspected.
 
+        Contract:
+            - Preserves unresolved Python 3.14 annotation names as ForwardRefs;
+              checking defaults must not evaluate TYPE_CHECKING-only imports.
+
         Threading:
             - Read-only; no internal locks are acquired here.
 
@@ -53187,7 +53192,10 @@ class ConduitWard(Cleanable):
         except AttributeError:
             return set()
         try:
-            signature = inspect.signature(call_target)
+            # FORWARDREF: only defaults are read here, and a VALUE-format read
+            # raises NameError when an annotation names a TYPE_CHECKING-only type
+            # (Python 3.14 lazy annotations). Mirrors Meld._iter_spell_contract_defaults.
+            signature = inspect.signature(call_target, annotation_format=Format.FORWARDREF)
         except (TypeError, ValueError):
             return set()
 
@@ -60954,7 +60962,7 @@ END FILE: src/melder/aether/conduit/meld/contracts/spell_map.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/creation_context/creation_context.py
-CONTENT SHA256: 26a734f01c443c9433f07709c8c82fbfb2635167f47bd9ef3367bcc0fd6e72d8
+CONTENT SHA256: 23633afe6926d2630c4d9e943beca4cafb68c85666947e5e876a36192da32eb8
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional
@@ -60963,6 +60971,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
     from melder.aether.conduit.creations.creations import Creations
+    from melder.aether.conduit.meld.meld import Meld
     from melder.aether.spellbook.spell import Spell
     from melder.utilities.synchronization.creation_gate import CreationGate
 
@@ -61195,7 +61204,7 @@ class CreationContext(Cleanable):
 
     def execute(
             self,
-            meld: "Meld",
+            meld: Meld,
             overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
         """
@@ -61232,7 +61241,7 @@ class CreationContext(Cleanable):
 
     def execute_no_hooks(
             self,
-            meld: "Meld",
+            meld: Meld,
             overrides: Optional[dict[str, Any]] = None,
     ) -> Any:
         """
@@ -74398,10 +74407,11 @@ END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategi
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py
-CONTENT SHA256: 7aa34e8a3d3369142f4730c590568bc38b7fe60d4218c5b0c113f8d3960b675e
+CONTENT SHA256: c7df0c37f7967261c2c1cdf61b95c598351468c1a095ac4a65d1a3a5e682dff0
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
+from annotationlib import Format
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
 
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
@@ -74627,6 +74637,11 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
         Existing provider occurrences have no constructor contracts or nested
         contract override payloads. Preserve their incoming consumer edges and
         leave ordinary class/factory contract discovery unchanged.
+
+        When the Phase-1 requirements have been released (they are after conjure),
+        the callable signature is read in FORWARDREF format: only defaults are
+        inspected, and a VALUE-format read raises NameError when an annotation
+        names a TYPE_CHECKING-only type (Python 3.14 lazy annotations).
         """
         contracts: List[Tuple[str, SpellContract]] = []
         if spell.is_existing_creation:
@@ -74639,7 +74654,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
                         contracts.append((parameter.name, parameter.default_value))
             return contracts
 
-        signature = inspect.signature(spell.spell)
+        signature = inspect.signature(spell.spell, annotation_format=Format.FORWARDREF)
         for param_name, parameter in signature.parameters.items():
             if param_name in ("self", "cls"):
                 continue
@@ -77515,12 +77530,14 @@ END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/sha
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py
-CONTENT SHA256: 3e48f5724239c826006fec5e63b72d9fe48040868ca758d3751d43a759e94fb4
+CONTENT SHA256: 86ff8ffd72b8ec0ff8dd7f46d576f0715afc7b6cdcd51419410534a39ade0bce
 SOURCE ENCODING: utf-8
 ================================================================================
-import hashlib
-import pickle
 from typing import Any, Dict, Optional, Sequence, Tuple
+
+from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
+    CodegenSignature,
+)
 
 
 class CodegenCreationSchemaHelpers:
@@ -77536,6 +77553,10 @@ class CodegenCreationSchemaHelpers:
         - Owns only phase-11 helper behavior used by codegen creation.
         - Does not own runtime state or lifecycle.
         - Returns only deterministic primitive/tuple structures.
+        - The serializer, hash and freeze helpers delegate to
+          `CodegenSignature` under `spell_compiler/shared_assets/`, the single
+          implementation also used by the phase-side `SharedCompilerExecutions`;
+          this subsystem still never imports the phase helper surface itself.
     """
 
     __slots__ = ()
@@ -77546,12 +77567,14 @@ class CodegenCreationSchemaHelpers:
         Serialize one signature part into deterministic bytes.
 
         Contract:
+            Delegates to `CodegenSignature.serialize_codegen_signature_part`.
             Type-dispatched with a stable one-byte tag per primitive
             (N/B/I/F/S/Y) so distinct types never collide on the same payload.
             Collections and unrecognized objects fall to pickle (protocol 5),
-            with a `repr()` fallback if pickling raises. Callers that need
-            canonical ordering across dict/set inputs must pre-freeze via
-            `freeze_phase11_schema_value`; this helper does not reorder.
+            with a `repr()` fallback if pickling raises; a top-level set or
+            frozenset is frozen (sorted) first. Callers that need canonical
+            ordering across NESTED dict/set inputs must still pre-freeze via
+            `freeze_phase11_schema_value`; this helper does not walk containers.
 
         Args:
             part:
@@ -77560,40 +77583,7 @@ class CodegenCreationSchemaHelpers:
         Returns:
             bytes: Deterministic encoding of `part`.
         """
-        part_type = type(part)
-        if (
-                part_type is dict
-                or part_type is tuple
-                or part_type is list
-                or part_type is set
-                or part_type is frozenset
-        ):
-            try:
-                encoded_part_from_collection: bytes = pickle.dumps(part, protocol=5)
-                return encoded_part_from_collection
-            except (pickle.PickleError, TypeError, AttributeError):
-                return repr(part).encode("utf-8")
-        if part is None:
-            return b"N"
-        if part_type is bool:
-            return b"B1" if part else b"B0"
-        if part_type is int:
-            return b"I" + str(part).encode("ascii")
-        if part_type is float:
-            return b"F" + repr(part).encode("ascii")
-        if part_type is str:
-            part_str: str = part
-            return b"S" + part_str.encode("utf-8")
-        if part_type is bytes:
-            part_bytes: bytes = part
-            return b"Y" + part_bytes
-        if part_type is bytearray:
-            return b"Y" + bytes(part)
-        try:
-            encoded_part_from_object: bytes = pickle.dumps(part, protocol=5)
-            return encoded_part_from_object
-        except (pickle.PickleError, TypeError, AttributeError):
-            return repr(part).encode("utf-8")
+        return CodegenSignature.serialize_codegen_signature_part(part)
 
     @staticmethod
     def hash_codegen_signature(*parts: Any) -> str:
@@ -77601,10 +77591,10 @@ class CodegenCreationSchemaHelpers:
         Build a deterministic SHA256 signature over ordered IR parts.
 
         Contract:
-            Each part is encoded via `serialize_codegen_signature_part` and
-            followed by a `|` separator byte, so ordering and grouping are
-            significant - two different partitions of the same values never
-            collide.
+            Delegates to `CodegenSignature.hash_codegen_signature`. Each part is
+            encoded via `serialize_codegen_signature_part` and followed by a `|`
+            separator byte, so ordering and grouping are significant - two
+            different partitions of the same values never collide.
 
         Args:
             *parts:
@@ -77613,13 +77603,7 @@ class CodegenCreationSchemaHelpers:
         Returns:
             str: Hex SHA256 digest over the encoded parts.
         """
-        digest = hashlib.sha256()
-        for part in parts:
-            digest.update(
-                CodegenCreationSchemaHelpers.serialize_codegen_signature_part(part)
-            )
-            digest.update(b"|")
-        return digest.hexdigest()
+        return CodegenSignature.hash_codegen_signature(*parts)
 
     @staticmethod
     def freeze_phase11_schema_value(value: Any) -> Any:
@@ -77627,12 +77611,15 @@ class CodegenCreationSchemaHelpers:
         Normalize an arbitrary value into a deterministic schema-safe form.
 
         Contract:
+            Delegates to `CodegenSignature.freeze_phase11_schema_value`.
             Primitives (None/bool/int/float/str) pass through unchanged. Dicts
             become sorted `(key, frozen-value)` tuples; lists and tuples become
-            order-preserving frozen tuples; sets become repr-sorted frozen
-            tuples. Anything else collapses to `repr(value)`. Recurses into
-            nested containers so the whole structure is order-canonical and
-            hashable.
+            order-preserving frozen tuples; sets and frozensets become
+            repr-sorted frozen tuples. Callables and instances whose `repr` would
+            carry a memory address become process-independent marker tuples;
+            anything else collapses to `repr(value)` exactly as before. Recurses
+            into nested containers so the whole structure is order-canonical
+            and hashable.
 
         Args:
             value:
@@ -77641,34 +77628,7 @@ class CodegenCreationSchemaHelpers:
         Returns:
             Any: A deterministic, hashable projection of `value`.
         """
-        if value is None or isinstance(value, (bool, int, float, str)):
-            return value
-        if isinstance(value, dict):
-            return tuple(
-                sorted(
-                    (
-                        key,
-                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item),
-                    )
-                    for key, item in value.items()
-                )
-            )
-        if isinstance(value, (list, tuple)):
-            return tuple(
-                CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item)
-                for item in value
-            )
-        if isinstance(value, set):
-            return tuple(
-                sorted(
-                    (
-                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item)
-                        for item in value
-                    ),
-                    key=repr,
-                )
-            )
-        return repr(value)
+        return CodegenSignature.freeze_phase11_schema_value(value)
 
     @staticmethod
     def normalize_instance_key(
@@ -112467,11 +112427,9 @@ END FILE: src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_9.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py
-CONTENT SHA256: df3b5a2ebbede1d09e61dbcb6318fb60f1ab63a2c447a3ce6e1a3804af781109
+CONTENT SHA256: 8176492eef81d7c9f437a4fa0f46e463227cd8930d4ba51706d251764e9febf7
 SOURCE ENCODING: utf-8
 ================================================================================
-import hashlib
-import pickle
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 if TYPE_CHECKING:
@@ -112484,6 +112442,9 @@ if TYPE_CHECKING:
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
+    CodegenSignature,
+)
 
 class SharedCompilerExecutions:
     """
@@ -112537,8 +112498,13 @@ class SharedCompilerExecutions:
                 Avoid expensive mega-`repr(...)` materialization on large nested
                 IR payloads while preserving deterministic signature behaviour.
             Contract:
+                - Delegates to `CodegenSignature.serialize_codegen_signature_part`,
+                  the single implementation shared with the phase-11 helper
+                  surface; the two facades can no longer drift apart.
                 - Uses typed fastpaths for common scalar values.
-                - Uses direct `pickle` fallback for container and unsupported values.
+                - Uses direct `pickle` fallback for container and unsupported values;
+                  a top-level `set`/`frozenset` part is frozen (sorted) first so its
+                  bytes do not depend on the process hash seed.
                 - Falls back to `repr(...).encode(...)` for non-picklable values.
             Args:
                 part:
@@ -112547,40 +112513,7 @@ class SharedCompilerExecutions:
                 bytes:
                     Deterministic encoded bytes for hashing.
         """
-        part_type = type(part)
-        if (
-                part_type is dict
-                or part_type is tuple
-                or part_type is list
-                or part_type is set
-                or part_type is frozenset
-        ):
-            try:
-                encoded_part_from_collection: bytes = pickle.dumps(part, protocol=5)
-                return encoded_part_from_collection
-            except (pickle.PickleError, TypeError, AttributeError):
-                return repr(part).encode("utf-8")
-        if part is None:
-            return b"N"
-        if part_type is bool:
-            return b"B1" if part else b"B0"
-        if part_type is int:
-            return b"I" + str(part).encode("ascii")
-        if part_type is float:
-            return b"F" + repr(part).encode("ascii")
-        if part_type is str:
-            part_str: str = part
-            return b"S" + part_str.encode("utf-8")
-        if part_type is bytes:
-            part_bytes: bytes = part
-            return b"Y" + part_bytes
-        if part_type is bytearray:
-            return b"Y" + bytes(part)
-        try:
-            encoded_part_from_object: bytes = pickle.dumps(part, protocol=5)
-            return encoded_part_from_object
-        except (pickle.PickleError, TypeError, AttributeError):
-            return repr(part).encode("utf-8")
+        return CodegenSignature.serialize_codegen_signature_part(part)
 
     @staticmethod
     def hash_codegen_signature(*parts: Any) -> str:
@@ -112591,6 +112524,8 @@ class SharedCompilerExecutions:
                 Produce stable fingerprints for phase-exported IR slices so
                 codegen-creation compilation can skip unchanged payloads.
             Contract:
+                - Delegates to `CodegenSignature.hash_codegen_signature` (single
+                  implementation shared with the phase-11 helper surface).
                 - Signature is deterministic for equal-ordered inputs.
                 - Does not depend on process-randomized object identity.
             Args:
@@ -112600,13 +112535,7 @@ class SharedCompilerExecutions:
                 str:
                     SHA256 hex digest for the supplied parts.
         """
-        digest = hashlib.sha256()
-        for part in parts:
-            digest.update(
-                SharedCompilerExecutions.serialize_codegen_signature_part(part)
-            )
-            digest.update(b"|")
-        return digest.hexdigest()
+        return CodegenSignature.hash_codegen_signature(*parts)
 
     @staticmethod
     def socket_row_sort_key(
@@ -112856,9 +112785,13 @@ class SharedCompilerExecutions:
                 Convert nested payload values into primitive/tuple structures so
                 Phase11 IR rows can be serialized without leaking live objects.
             Contract:
+                - Delegates to `CodegenSignature.freeze_phase11_schema_value`
+                  (single implementation shared with the phase-11 helper surface).
                 - Primitive values are returned as-is.
-                - Dict/list/tuple/set values are recursively normalized.
-                - Non-primitive objects are represented by deterministic repr text.
+                - Dict/list/tuple/set values are recursively normalized; sets sort.
+                - Callables and instances whose `repr` would carry a memory address
+                  are rendered as process-independent marker tuples; every other
+                  non-primitive object keeps its deterministic repr text.
             Args:
                 value:
                     Raw value captured from plan metadata.
@@ -112866,34 +112799,7 @@ class SharedCompilerExecutions:
                 Any:
                     Deterministic schema-safe value.
         """
-        if value is None or isinstance(value, (bool, int, float, str)):
-            return value
-        if isinstance(value, dict):
-            return tuple(
-                sorted(
-                    (
-                        key,
-                        SharedCompilerExecutions.freeze_phase11_schema_value(item),
-                    )
-                    for key, item in value.items()
-                )
-            )
-        if isinstance(value, (list, tuple)):
-            return tuple(
-                SharedCompilerExecutions.freeze_phase11_schema_value(item)
-                for item in value
-            )
-        if isinstance(value, set):
-            return tuple(
-                sorted(
-                    (
-                        SharedCompilerExecutions.freeze_phase11_schema_value(item)
-                        for item in value
-                    ),
-                    key=repr,
-                )
-            )
-        return repr(value)
+        return CodegenSignature.freeze_phase11_schema_value(value)
 
     @staticmethod
     def normalize_instance_key(
@@ -115234,10 +115140,11 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/spell_analyz
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
-CONTENT SHA256: 63feacab0f73ed488301f95e019b8fdbd60b0e377f6f310452afd3e661a5d83a
+CONTENT SHA256: 7003cdb7770ec3f10fd1e0c8117decf3e26d757de1e1f1d738289da25c3cc03f
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
+from annotationlib import Format
 from collections import deque
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
@@ -116239,6 +116146,11 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         Existing creations are already supplied values and have no constructor
         contracts to discover. Returning no contracts leaves the consumer's
         incoming dependency edge intact; class/factory discovery is unchanged.
+
+        When the Phase-1 requirements have been released (they are after conjure),
+        the callable signature is read in FORWARDREF format: only defaults are
+        inspected, and a VALUE-format read raises NameError when an annotation
+        names a TYPE_CHECKING-only type (Python 3.14 lazy annotations).
         """
         contracts: List[Tuple[str, SpellContract]] = []
         if spell.is_existing_creation:
@@ -116252,7 +116164,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                         contracts.append((param.name, param.default_value))
             return contracts
 
-        signature = inspect.signature(spell.spell)
+        signature = inspect.signature(spell.spell, annotation_format=Format.FORWARDREF)
         for param_name, parameter in signature.parameters.items():
             if param_name in ("self", "cls"):
                 continue
@@ -118463,7 +118375,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_compiler_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py
-CONTENT SHA256: b465e0f7eda9c038e7823b43b2e65350756368e4a3eaeedf7c85e6be5e49ace3
+CONTENT SHA256: 03f5489cf217c4ed828d4dad10914ec63b7e98643a142530788868ee26d23625
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -118475,6 +118387,7 @@ from typing import Any, Dict, Type, ClassVar
 # Melder imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.signature_reflection import SignatureReflection
 
 
 #region ClassInspector
@@ -118596,8 +118509,9 @@ class ClassInspector(Cleanable):
                 "id": id(c), # Memory address (unique identifier)
                 "decorated": self._is_probably_decorated() or hasattr(c, "_decorated") or hasattr(c, "_marked"),
                 "bases": [b.__name__ for b in getattr(c, "__bases__", ())], # Names of base classes
-                # eval_str=True resolves forward references if possible
-                "annotations": inspect.get_annotations(c, eval_str=True, globals=getattr(module, '__dict__', None)),
+                # eval_str=True resolves forward references if possible; see
+                # _class_annotations for the unavailable-name case.
+                "annotations": self._class_annotations(c, module),
                 "metaclass": type(c).__name__, # Name of the metaclass
                 "mro": [m.__name__ for m in inspect.getmro(c)], # Method Resolution Order (class names)
                 "slots": getattr(c, "__slots__", None), # Value of __slots__ if defined
@@ -118612,6 +118526,32 @@ class ClassInspector(Cleanable):
                 "dynamic_access": dynamic_flags,
             }
         )
+
+    def _class_annotations(self, c: Type, module: Any) -> Dict[str, Any]:
+        """
+        Return the class-level annotations of `c` for the header record.
+
+        Contract:
+            - Evaluates with `inspect.get_annotations(..., eval_str=True)` against
+              the class's module so string annotations resolve where possible.
+            - When an annotation names something unbound at runtime (a
+              TYPE_CHECKING-only import under Python 3.14 lazy annotations), that
+              evaluation raises NameError; the annotations are then read without
+              evaluating those names (`SignatureReflection.class_annotations`), so
+              an unavailable name appears as its source text instead of failing
+              the whole inspection.
+
+        Args:
+            c: Class being inspected.
+            module: Module object the class belongs to, or None.
+
+        Returns:
+            Dict[str, Any]: Attribute name to annotation value.
+        """
+        try:
+            return inspect.get_annotations(c, eval_str=True, globals=getattr(module, '__dict__', None))
+        except NameError:
+            return SignatureReflection.class_annotations(c)
 
     def _source(self) -> None:
         """
@@ -118713,7 +118653,7 @@ class ClassInspector(Cleanable):
                 try:
                     # Use the member as-is for signature (primary view == wrapper if any)
                     # Keep wrapper; do not unwrap here for primary signature
-                    sig = inspect.signature(self._resolve_signature_target(obj))
+                    sig = SignatureReflection.display_signature(self._resolve_signature_target(obj))
                     info["signature"] = str(sig)
                     info["parameters"] = [
                         {
@@ -118736,7 +118676,7 @@ class ClassInspector(Cleanable):
                     signature_target = self._resolve_signature_target(obj)
                     if u_target is not signature_target:
                         try:
-                            u_sig = inspect.signature(u_target)
+                            u_sig = SignatureReflection.display_signature(u_target)
                             info["original_signature"] = str(u_sig)
                             info["original_parameters"] = [
                                 {
@@ -119196,7 +119136,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/i
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py
-CONTENT SHA256: 3697d332c7581c3878694359fae0c7a340a9f7e309b91cb751f334287c55e9ea
+CONTENT SHA256: 11d6557f99244ce833cd812573bb59820a0140cb7f8d98d9a684f9ba978aba35
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -119208,6 +119148,7 @@ from typing import Any, Dict, Callable, ClassVar
 # Melder imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.signature_reflection import SignatureReflection
 
 
 #region MethodInspector
@@ -119372,11 +119313,15 @@ class MethodInspector(Cleanable):
 
         Contract:
             - Sets `uninspectable=True` when signature extraction fails.
+            - An annotation naming something unbound at runtime (a
+              TYPE_CHECKING-only import under Python 3.14 lazy annotations) is
+              reported as its source text rather than making the callable
+              uninspectable.
             - Otherwise populates a normalized parameter payload suitable for
               downstream profile serialization.
         """
         try:
-            sig = inspect.signature(f_eff)
+            sig = SignatureReflection.display_signature(f_eff)
             self.data["signature"] = str(sig)
             self.data["parameters"] = [
                 {
@@ -121463,7 +121408,7 @@ END FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examin
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
-CONTENT SHA256: 164114ee5db49d7abdc4f2c3f95dc83b20c02cc4ccaad03b757dcdba2af414bc
+CONTENT SHA256: 49db36ea4f11a7fd8b7881517369583290e16bef3e4843fd36a22a6dfa2eb418
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -121474,6 +121419,7 @@ from typing import TYPE_CHECKING, Any, List, ClassVar, Optional
 
 # Melder Imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
+from melder.utilities.helpers.signature_reflection import SignatureReflection
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import ClassBindingProfile, \
     SpellBindingKind, CallableBindingProfile, CallableParameterBindingSummary, \
     InstanceBindingProfile, OtherBindingProfile
@@ -121540,6 +121486,12 @@ class BindingProfileStrategy:
         Constructor signatures preserve unresolved annotation names as Python
         3.14 ForwardRefs. TYPE_CHECKING-only imports must not erase the cached
         signature; known annotation objects and default values remain intact.
+
+        The `init_signature` text feeds the bind fingerprint (spell id). A
+        ForwardRef's repr embeds its owner, including a memory address, so the
+        text renders those names as source text
+        (`SignatureReflection.stabilize_signature`) and stays identical across
+        processes; the cached signature object keeps the ForwardRefs.
         """
         module = inspect.getmodule(cls)
 
@@ -121567,7 +121519,9 @@ class BindingProfileStrategy:
         init_signature_object: Optional[Any] = None
         try:
             init_signature_object = inspect.signature(cls, annotation_format=Format.FORWARDREF)
-            init_signature: Optional[str] = str(init_signature_object)
+            init_signature: Optional[str] = str(
+                SignatureReflection.stabilize_signature(init_signature_object, cls)
+            )
         except Exception:
             init_signature_object = None
             init_signature = None
@@ -121609,7 +121563,9 @@ class BindingProfileStrategy:
         Build the shallow binding-time profile for one callable candidate.
 
         Partial annotation evaluation retains TYPE_CHECKING-only names in the
-        signature without invoking the callable or dropping its parameters.
+        signature without invoking the callable or dropping its parameters. The
+        signature text and annotation reprs render those names as source text so
+        they never embed an object address.
         """
         effective = InspectorUtility.unwrap_callable(fn)
         module = inspect.getmodule(effective)
@@ -121621,7 +121577,10 @@ class BindingProfileStrategy:
         extension_module = InspectorUtility.is_extension_module(module)
 
         try:
-            signature = inspect.signature(effective, annotation_format=Format.FORWARDREF)
+            signature = SignatureReflection.stabilize_signature(
+                inspect.signature(effective, annotation_format=Format.FORWARDREF),
+                effective,
+            )
             signature_str = str(signature)
             parameter_summaries: List[CallableParameterBindingSummary] = []
             for parameter in signature.parameters.values():
@@ -134154,7 +134113,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: 103331ae1242466ef64ccfd3fdca7a6b18ce94d45870fa74fa27eac8a28190f1
+CONTENT SHA256: b58c03182f2229711fd5d2968a7bcfeb3cc4f509172dbfa7917770af815fb845
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -140703,6 +140662,7 @@ class Spellbook(Cleanable):
             dynamic: bool = False,
             name: str | None = None,
             conduit_logger: Any | None = None,
+            validation_warnings: bool = False,
     ) -> Conduit:
         """
         Public API
@@ -140726,6 +140686,14 @@ class Spellbook(Cleanable):
                 An optional name for the conduit.
             conduit_logger (Any, optional):
                 An optional logger instance to attach to the conduit for logging purposes.
+            validation_warnings (bool, optional):
+                If True, log this Spellbook's validation warnings once, grouped by
+                warning code, at WARNING level through the Spellbook logger. Warnings
+                never stop conjure; they flag things that may fail later, such as a
+                typed parameter no registered spell provides (UNRESOLVED_INPUT, which
+                the meld that constructs that spell must supply). Useful while
+                learning or debugging a new graph. Defaults to False, which logs
+                nothing.
 
         Returns:
             Conduit: The newly created Conduit instance.
@@ -140784,6 +140752,7 @@ class Spellbook(Cleanable):
                 dynamic=self._settle_or_inherit_conjure_mode(dynamic),
                 name=name,
                 conduit_logger=conduit_logger,
+                validation_warnings=validation_warnings,
             )
         finally:
             mediator.end_transaction_for_identity(
@@ -141026,6 +140995,7 @@ class Spellbook(Cleanable):
             dynamic: bool,
             name: str | None,
             conduit_logger: Any | None,
+            validation_warnings: bool,
     ) -> Conduit:
         """
         Internal
@@ -141044,6 +141014,8 @@ class Spellbook(Cleanable):
               mode when public frame setup already locked it, and binds the frame
               posture. Rich values stay frozen; the recorded world receives its
               Book and settled frame twins, including Rift visibility policy.
+            - Passes `validation_warnings` to the creation system unchanged; only
+              the public `conjure()` supplies it.
         Threading:
             - The CONJURE embargo is acquired by `conjure()` BEFORE this method
               takes the Spellbook lock, preserving embargo-then-lock ordering so
@@ -141120,6 +141092,7 @@ class Spellbook(Cleanable):
                 name=name,
                 conduit_logger=conduit_logger,
                 phase_scheduler_cls=PhaseScheduler,
+                validation_warnings=validation_warnings,
             )
             try:
                 return spellbook_creation_system.conjure()
@@ -141367,7 +141340,7 @@ END FILE: src/melder/aether/spellbook/spellbook.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook_creation_system.py
-CONTENT SHA256: c3a7756b82c6d8e210946c1ccfc06339019f1a8099dc2063e6ff27d5dbd6c572
+CONTENT SHA256: 923d673e33d8a2026ccc972153e5776d8dbad9a81898e5acbca25d6b97aba60c
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -141499,6 +141472,7 @@ class SpellbookCreationSystem(Cleanable):
         "_phase_scheduler_cls",
         "_policy",
         "_spellbook",
+        "_validation_warnings",
     ]
 
     def __init__(
@@ -141510,6 +141484,7 @@ class SpellbookCreationSystem(Cleanable):
             name: str | None,
             conduit_logger: Any | None,
             phase_scheduler_cls: type[PhaseScheduler],
+            validation_warnings: bool = False,
     ) -> None:
         """
         Purpose:
@@ -141526,6 +141501,11 @@ class SpellbookCreationSystem(Cleanable):
             conduit_logger: Optional conduit logger.
             phase_scheduler_cls:
                 Scheduler class used for structural and resolution phases.
+            validation_warnings:
+                When True, `conjure()` logs this book's Phase-4 validation
+                warnings once, grouped by code. Only the public
+                `Spellbook.conjure` passes True; every internal route keeps
+                the default False and logs nothing.
         Returns:
             None.
         Raises:
@@ -141538,6 +141518,7 @@ class SpellbookCreationSystem(Cleanable):
         self._name: str | None = name
         self._conduit_logger = conduit_logger
         self._phase_scheduler_cls: type[PhaseScheduler] = phase_scheduler_cls
+        self._validation_warnings: bool = validation_warnings
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
@@ -141570,6 +141551,7 @@ class SpellbookCreationSystem(Cleanable):
             del self._name
             del self._conduit_logger
             del self._phase_scheduler_cls
+            del self._validation_warnings
 
     def conjure(self) -> Conduit:
         """
@@ -141594,6 +141576,7 @@ class SpellbookCreationSystem(Cleanable):
         SpellbookCreationSystem._prepare_spellbook_for_conjure(
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,
+            validation_warnings=self._validation_warnings,
         )
         # Classify cache posture before plan phases so a full hit can skip the
         # phase-8-to-11 compile and load the runtime lanes from cache instead.
@@ -141663,6 +141646,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             phase_scheduler_cls: type[PhaseScheduler],
+            validation_warnings: bool = False,
     ) -> None:
         """
         Purpose:
@@ -141670,12 +141654,15 @@ class SpellbookCreationSystem(Cleanable):
         Contract:
             - Freezes and binds configuration when not already locked.
             - Executes structural phases before conduit construction.
-            - Reports unresolved inputs once, right after the structural phases,
-              while their Phase-4 results still exist (they are released after
-              resolution).
+            - When `validation_warnings` is True, reports the Phase-4 validation
+              warnings once, right after the structural phases, while their
+              results still exist (they are released after resolution). The
+              default False reports nothing; internal conjure routes (such as
+              the existing-conduit route used by upgrade_to_normal) rely on it.
         Args:
             spellbook: Owning Spellbook instance.
             phase_scheduler_cls: Scheduler class used for phase execution.
+            validation_warnings: Opt-in for the grouped warning report.
         Returns:
             None.
         Raises:
@@ -141689,45 +141676,81 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,
         )
-        SpellbookCreationSystem._report_unresolved_inputs(spellbook=spellbook)
+        if validation_warnings:
+            SpellbookCreationSystem._report_validation_warnings(spellbook=spellbook)
 
     @staticmethod
-    def _report_unresolved_inputs(*, spellbook: Spellbook) -> None:
+    def _report_validation_warnings(*, spellbook: Spellbook) -> None:
         """
         Purpose:
-            Make unresolved inputs visible at conjure. A typed parameter that no
-            registered spell provides no longer fails conjure; it must be supplied
-            by the meld that constructs its spell. Without this line a forgotten
-            binding would first surface as an UnresolvedInputError at meld.
+            Show a beginner what Phase 4 flagged without failing conjure. Warnings
+            never stop conjure; an unresolved input, for example, first surfaces
+            as an UnresolvedInputError at meld unless the caller reads this report.
         Contract:
-            - Reads the UNRESOLVED_INPUT warnings Phase 4 stored on this book's
-              active spells; emits nothing when there are none.
-            - Emits one INFO line per conjure listing `Spell.param -> ExpectedType`.
-            - Reporting only; conjure continues either way.
+            - Reads the warning-severity issues Phase 4 stored on this book's
+              owned spells, in book order and then issue order; errors are not
+              reported here (they already fail conjure).
+            - Groups them by issue code, codes in first-seen order, and emits ONE
+              WARNING event: a header "Conjure validation warnings (N):" and one
+              line per code, "  CODE (n): entry; entry".
+            - Emits nothing when there are no warnings.
+            - Reporting only; never changes validity, phase results or conjure.
         Args:
             spellbook: Owning Spellbook whose structural phases just ran.
         Returns:
             None.
         """
-        entries: list[str] = []
+        grouped: dict[str, list[str]] = {}
+        total = 0
         for spell in spellbook._spells.values():
             result = spell.validation_result_phase4
             if result is None:
                 continue
-            for issue in result.issues:
-                if issue.code != "UNRESOLVED_INPUT":
-                    continue
-                entries.append(
-                    f"{spell.spell_name}.{issue.details['parameter_name']} -> "
-                    f"{issue.details['expected_type']}"
+            for issue in result.warnings:
+                grouped.setdefault(issue.code, []).append(
+                    SpellbookCreationSystem._render_validation_warning_entry(
+                        spell_name=spell.spell_name,
+                        code=issue.code,
+                        details=issue.details,
+                    )
                 )
-        if not entries:
+                total += 1
+        if not grouped:
             return
-        spellbook._logger.info(
-            f"Conjure: {len(entries)} unresolved input(s) have no registered provider and must be "
-            f"supplied by the meld that constructs them (or given a provider): {', '.join(entries)}.",
-            "_report_unresolved_inputs",
-        )
+        lines = [f"Conjure validation warnings ({total}):"]
+        for code, entries in grouped.items():
+            lines.append(f"  {code} ({len(entries)}): {'; '.join(entries)}")
+        spellbook._logger.warning("\n".join(lines), "_report_validation_warnings")
+
+    @staticmethod
+    def _render_validation_warning_entry(
+            *,
+            spell_name: str,
+            code: str,
+            details: Mapping[str, Any],
+    ) -> str:
+        """
+        Purpose:
+            Render one Phase-4 warning as a short entry for the grouped report.
+        Contract:
+            - UNRESOLVED_INPUT renders `Spell.param -> ExpectedType`, the same
+              names UnresolvedInputError uses at meld.
+            - Any other issue carrying `details["parameter_name"]` renders
+              `Spell.param`; an issue without one renders the spell name.
+            - Pure; reads only the arguments.
+        Args:
+            spell_name: Name of the spell the issue belongs to.
+            code: The issue's machine-readable code.
+            details: The issue's structured details.
+        Returns:
+            str: The entry text.
+        """
+        parameter_name = details.get("parameter_name")
+        if parameter_name is None:
+            return spell_name
+        if code == "UNRESOLVED_INPUT":
+            return f"{spell_name}.{parameter_name} -> {details['expected_type']}"
+        return f"{spell_name}.{parameter_name}"
 
     @staticmethod
     def _prepare_resolution_for_conjure(
@@ -194286,11 +194309,11 @@ END FILE: src/melder/nexus/acl/configurations/frame_acl_view_configuration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py
-CONTENT SHA256: 18311e3262d19a11b59d8cd7ed4b541343d9a026ca6de8eaeca7f4f0be70db9c
+CONTENT SHA256: dcc2161a61e2286f7b534f1a950042ff6edc0ae8317ce46ea5153d0fd749006f
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
-from typing import Dict, List, Optional, Protocol, TypeVar, ClassVar
+from typing import TYPE_CHECKING, Dict, List, Optional, Protocol, TypeVar, ClassVar
 
 from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
@@ -194315,6 +194338,9 @@ from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+
+if TYPE_CHECKING:
+    from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 
 class _NamedCleanableProfile(Protocol):
@@ -200032,7 +200058,7 @@ END FILE: src/melder/nexus/acl/frame_acl_compiled_access_surface.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/frame_acl_compiler.py
-CONTENT SHA256: 87c47341ccc87338be186fd335fc3ac7660d7f5e8e3938b3d79feab8deed4008
+CONTENT SHA256: ee153ffe4bc1614b1aa447253c9746327fa9f101eebddea94eb460790fe31465
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -200050,6 +200076,13 @@ from melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile 
 from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile import FrameACLCommandProfile
 
 from melder.nexus.frame_descriptor.spell_record import SpellRecord
+
+if TYPE_CHECKING:
+    from melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
+        FrameACLProfileBuilder,
+    )
+    from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
+    from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import FrameACLViewProfile
 
 class FrameACLCompiler(Cleanable):
     """
@@ -200107,7 +200140,7 @@ class FrameACLCompiler(Cleanable):
         "_profile_builder",
     ]
 
-    def __init__(self, profile_builder: IFrameACLProfileBuilder) -> None:
+    def __init__(self, profile_builder: FrameACLProfileBuilder) -> None:
         """
         Initialize one ACL compiler.
 
@@ -200124,7 +200157,7 @@ class FrameACLCompiler(Cleanable):
             raise TypeError("profile_builder cannot be None.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._profile_builder: IFrameACLProfileBuilder = profile_builder
+        self._profile_builder: FrameACLProfileBuilder = profile_builder
 
     def cleanup(self) -> None:
         """
@@ -201978,11 +202011,11 @@ END FILE: src/melder/nexus/acl/frame_acl_configuration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/frame_acl_configuration_chain.py
-CONTENT SHA256: 1fc062b49fca4b7d7b23435bee816b181fc846641aa6e23098395be4e30919bc
+CONTENT SHA256: da1b94bc2dae27abac7fb21d1d913cf8399d1327988c1440e38e8a3161c92458
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -204067,7 +204100,7 @@ END FILE: src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibili
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py
-CONTENT SHA256: e0ee3434220be0653b6699dd382d704acdacfc951318e087c6038de511eb873a
+CONTENT SHA256: b365518d4b69245fde1a0c989785c5bd065fdfe79a80aa53453394002b8ff4e6
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -204088,6 +204121,12 @@ from melder.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
+
+if TYPE_CHECKING:
+    from melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
+        FrameACLProfileBuilder,
+    )
+    from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 class FrameACLSetCompatibilityValidator(Cleanable):
     """
@@ -204150,7 +204189,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
     def __init__(
             self,
             frame_name: str,
-            profile_builder: IFrameACLProfileBuilder,
+            profile_builder: FrameACLProfileBuilder,
     ) -> None:
         """
         Initialize one frame-scoped ACL set compatibility validator.
@@ -204179,7 +204218,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
-        self._profile_builder: IFrameACLProfileBuilder = profile_builder
+        self._profile_builder: FrameACLProfileBuilder = profile_builder
         self._last_report: Optional[FrameACLSetCompatibilityReport] = None
 
     def cleanup(self) -> None:
@@ -256671,13 +256710,14 @@ END FILE: src/melder/utilities/ai_native_support_tools/agent_text_reader.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/ai_native_support_tools/protocol_crafter.py
-CONTENT SHA256: f99e3f8ddeb88db96114cce0c3bdaacb23282713c36764d07491cd02043cee7c
+CONTENT SHA256: 6f7f348d6359501bf8512a6b135435cbb02da838dde72b0939767c546fc8f988
 SOURCE ENCODING: utf-8
 ================================================================================
 import ast
 import inspect
 import re
 import threading
+from annotationlib import ForwardRef, Format, get_annotations
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import (
@@ -257281,7 +257321,11 @@ class ProtocolCrafter(Cleanable):
             include_inheritance=include_inheritance,
         )
         for current_class in classes_to_scan:
-            annotations = getattr(current_class, "__annotations__", {})
+            # FORWARDREF: class `__annotations__` evaluates in VALUE format and
+            # raises NameError when an annotation names a TYPE_CHECKING-only type
+            # (Python 3.14 lazy annotations). Unavailable names stay ForwardRefs
+            # and `_render_annotation` renders them by name.
+            annotations = get_annotations(current_class, format=Format.FORWARDREF)
             for attribute_name, annotation in annotations.items():
                 if self._is_ignored_member_name(attribute_name):
                     continue
@@ -257411,10 +257455,14 @@ class ProtocolCrafter(Cleanable):
             function_object:
                 Function object to render.
 
+        Contract:
+            Reads the signature in FORWARDREF format so a TYPE_CHECKING-only
+            annotation name renders by name instead of raising NameError.
+
         Returns:
             str: Rendered signature text including the return annotation.
         """
-        signature = inspect.signature(function_object)
+        signature = inspect.signature(function_object, annotation_format=Format.FORWARDREF)
         parameters = list(signature.parameters.values())
         rendered_parameters: list[str] = []
         saw_var_positional = False
@@ -257493,11 +257541,18 @@ class ProtocolCrafter(Cleanable):
             annotation:
                 Annotation object or reflected type hint.
 
+        Contract:
+            A ForwardRef left by a FORWARDREF-format read for a name that is
+            unavailable at runtime (it carries an owner) renders as the quoted
+            name, matching how class annotations are rendered.
+
         Returns:
             str: Rendered annotation text.
         """
         if annotation is inspect._empty:
             return "Any"
+        if isinstance(annotation, ForwardRef) and annotation.__owner__ is not None:
+            return f"\"{annotation.__forward_arg__}\""
         if annotation is None or annotation is type(None):
             return "None"
         if isinstance(annotation, str):
@@ -257593,12 +257648,19 @@ class ProtocolCrafter(Cleanable):
             property_object:
                 Property descriptor to inspect.
 
+        Contract:
+            Reads the getter signature in FORWARDREF format, so a TYPE_CHECKING-only
+            return annotation comes back as a ForwardRef instead of raising.
+
         Returns:
             object: Reflected return annotation or `Any`.
         """
         if property_object.fget is None:
             return Any
-        return inspect.signature(property_object.fget).return_annotation
+        return inspect.signature(
+            property_object.fget,
+            annotation_format=Format.FORWARDREF,
+        ).return_annotation
 
     def _unwrap_method_candidate(
             self,
@@ -263210,7 +263272,7 @@ END FILE: src/melder/utilities/custom_exceptions/unresolved_input_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py
-CONTENT SHA256: 2bab82e6adb11ee2390e333d2f2ecee4edf661d964c669ef3420fdf45db66b99
+CONTENT SHA256: 33d1f2a2a546df255d4a533102d8a7e3152080c09aae29e2a895dcd399f98f2f
 SOURCE ENCODING: utf-8
 ================================================================================
 import functools
@@ -264833,7 +264895,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
     def __or__(
             self,
-            other: "WeakConcurrentDict[_K, _V]" | Mapping[_K, _V] | Iterable[Tuple[_K, _V]],
+            other: Union[WeakConcurrentDict[_K, _V], Mapping[_K, _V], Iterable[Tuple[_K, _V]]],
     ) -> "WeakConcurrentDict[_K, _V]":
         """
         Merge this dict with another mapping or iterable into a new weak dict.
@@ -264869,7 +264931,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
     def __ior__(
             self,
-            other: "WeakConcurrentDict[_K, _V]" | Mapping[_K, _V] | Iterable[Tuple[_K, _V]],
+            other: Union[WeakConcurrentDict[_K, _V], Mapping[_K, _V], Iterable[Tuple[_K, _V]]],
     ) -> "WeakConcurrentDict[_K, _V]":
         """
         In-place merge (`|=`) with another mapping or iterable.
@@ -264897,7 +264959,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
     def __ror__(
             self,
-            other: "WeakConcurrentDict[_K, _V]" | Mapping[_K, _V] | Iterable[Tuple[_K, _V]],
+            other: Union[WeakConcurrentDict[_K, _V], Mapping[_K, _V], Iterable[Tuple[_K, _V]]],
     ) -> "WeakConcurrentDict[_K, _V]":
         """
         Right-hand merge to support ``mapping | WeakConcurrentDict`` (PEP 584 style).
@@ -270899,16 +270961,18 @@ END FILE: src/melder/utilities/helpers/init_helpers.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/helpers/package.py
-CONTENT SHA256: 1ea6590ff6184394fab55dfcab8b67a4a39e37cfc107510729f605f10e652ea3
+CONTENT SHA256: 9d99c743c75d5193dffceb40a47d4e45b69f94d909c986adb29d1090c7577ff7
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
 import types
+from annotationlib import Format
 from functools import update_wrapper
 from threading import RLock
 from types import SimpleNamespace
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.signature_reflection import SignatureReflection
 from melder.utilities.helpers.ulid_factory import new_ulid
 from typing import (
     Callable,
@@ -271214,6 +271278,14 @@ class Package(Cleanable, Generic[P, R]):
         """
         Provides a human-readable description of the wrapped callable and its signature.
 
+        Contract:
+            - The signature text is the default `inspect.signature` rendering when
+              every annotation name is available. An annotation naming a type that
+              is unbound at runtime (a TYPE_CHECKING-only import under Python 3.14
+              lazy annotations) is rendered as its source text instead of raising.
+            - Callables without an inspectable signature render as
+              `(uninspectable)`.
+
         Returns:
             A string describing the function's name and parameters.
         """
@@ -271226,7 +271298,7 @@ class Package(Cleanable, Generic[P, R]):
             qual_name = getattr(func, '__qualname__', func_name)
 
             try:
-                sig = inspect.signature(func)
+                sig = SignatureReflection.display_signature(func)
                 params_str = str(sig)
             except (ValueError, TypeError):
                 params_str = "(uninspectable)"
@@ -271784,7 +271856,9 @@ class Package(Cleanable, Generic[P, R]):
         """
         with self._lock:
             if self._signature_cache is None:
-                sig = inspect.signature(self._wrapped_func)
+                # FORWARDREF: only proves the callable has a signature; a VALUE read
+                # raises NameError on TYPE_CHECKING-only annotation names.
+                sig = inspect.signature(self._wrapped_func, annotation_format=Format.FORWARDREF)
                 arg_map = {}
                 for i, value in enumerate(self._args):
                     arg_map[f"arg{i}"] = value

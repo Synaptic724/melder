@@ -2,6 +2,7 @@ import ast
 import inspect
 import re
 import threading
+from annotationlib import ForwardRef, Format, get_annotations
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import (
@@ -605,7 +606,11 @@ class ProtocolCrafter(Cleanable):
             include_inheritance=include_inheritance,
         )
         for current_class in classes_to_scan:
-            annotations = getattr(current_class, "__annotations__", {})
+            # FORWARDREF: class `__annotations__` evaluates in VALUE format and
+            # raises NameError when an annotation names a TYPE_CHECKING-only type
+            # (Python 3.14 lazy annotations). Unavailable names stay ForwardRefs
+            # and `_render_annotation` renders them by name.
+            annotations = get_annotations(current_class, format=Format.FORWARDREF)
             for attribute_name, annotation in annotations.items():
                 if self._is_ignored_member_name(attribute_name):
                     continue
@@ -735,10 +740,14 @@ class ProtocolCrafter(Cleanable):
             function_object:
                 Function object to render.
 
+        Contract:
+            Reads the signature in FORWARDREF format so a TYPE_CHECKING-only
+            annotation name renders by name instead of raising NameError.
+
         Returns:
             str: Rendered signature text including the return annotation.
         """
-        signature = inspect.signature(function_object)
+        signature = inspect.signature(function_object, annotation_format=Format.FORWARDREF)
         parameters = list(signature.parameters.values())
         rendered_parameters: list[str] = []
         saw_var_positional = False
@@ -817,11 +826,18 @@ class ProtocolCrafter(Cleanable):
             annotation:
                 Annotation object or reflected type hint.
 
+        Contract:
+            A ForwardRef left by a FORWARDREF-format read for a name that is
+            unavailable at runtime (it carries an owner) renders as the quoted
+            name, matching how class annotations are rendered.
+
         Returns:
             str: Rendered annotation text.
         """
         if annotation is inspect._empty:
             return "Any"
+        if isinstance(annotation, ForwardRef) and annotation.__owner__ is not None:
+            return f"\"{annotation.__forward_arg__}\""
         if annotation is None or annotation is type(None):
             return "None"
         if isinstance(annotation, str):
@@ -917,12 +933,19 @@ class ProtocolCrafter(Cleanable):
             property_object:
                 Property descriptor to inspect.
 
+        Contract:
+            Reads the getter signature in FORWARDREF format, so a TYPE_CHECKING-only
+            return annotation comes back as a ForwardRef instead of raising.
+
         Returns:
             object: Reflected return annotation or `Any`.
         """
         if property_object.fget is None:
             return Any
-        return inspect.signature(property_object.fget).return_annotation
+        return inspect.signature(
+            property_object.fget,
+            annotation_format=Format.FORWARDREF,
+        ).return_annotation
 
     def _unwrap_method_candidate(
             self,

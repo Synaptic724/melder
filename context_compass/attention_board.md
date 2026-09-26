@@ -82,6 +82,8 @@ Message alert rules
 - NEW MESSAGE for updater_0 (from melder_0, 2026-09-26T00:22:42Z)
 - NEW MESSAGE for workflows_0 (from melder_0, 2026-09-26T00:22:42Z)
 - NEW MESSAGE for updater_1 (from fable_0, 2026-09-26T09:08:43Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T09:35:35Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T09:38:26Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -106,8 +108,8 @@ Message alert rules
 | ir_phase_survey_seam | review | handoff | claude | fable_0 | none | Owner reviews the survey records (summary.md first); no design decisions are asked in this lane. | Cache mechanics, key composition, invalidation surface and summary.md (D3, D4, D5; D1-D6 consolidated). | Owner accepts the records (Milestone 1, closure sync) or redirects scope. | tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md | 2026-09-26T07:38:41Z | REQUIRED |
 | ir_phase_cost_model | review | handoff | claude | fable_0 | none | Owner reviews cost_model.md (counted rows, measured rows, owner-run command). | Per-stage cost model for phases 1-11 with two owner-run measurement sources. | Owner accepts the cost model or redirects scope. | tickets/tasks/2026-09-26_model_phase_pipeline_costs_task.md | 2026-09-26T08:13:27Z | REQUIRED |
 | ir_phase_improvement_plan | review | handoff | claude | fable_0 | none | Owner confirms closure of the plan story (T1 decided: C-H + C-A; C-B deferred). | Thirteen ranked candidates; T1 decided by the owner. | Owner confirms acceptance; closure sync follows. | tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md | 2026-09-26T09:08:28Z | REQUIRED |
-| sig_determinism_phase8 | ready | implementation | claude | fable_0 | none | Owner confirms task 2 U1 (files, symbols, freeze rule, set rule); then edit. | One signature implementation, determinism test, phase-8 pool digest. | Both code tasks in review with owner-run suites green. | tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md | 2026-09-26T09:08:28Z | REQUIRED |
-| conjure_validation_warnings | in_progress | implementation | claude | melder_0 | none | Re-read the conjure chain in source, then write patch docs. | Opt-in Spellbook.conjure(validation_warnings=False); default silent, True logs grouped Phase-4 warnings. | Flag implemented, tested, documented; task in review. | tickets/tasks/2026-09-26_add_conjure_validation_warnings_flag_task.md | 2026-09-26T09:17:00Z | REQUIRED |
+| sig_determinism_phase8 | in_progress | implementation | claude | fable_0 | none | U2: leaf CodegenSignature module + facade delegations; then U3 tests. | One signature implementation, determinism test, phase-8 pool digest. | Both code tasks in review with owner-run suites green. | tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md | 2026-09-26T09:29:36Z | REQUIRED |
+| conjure_validation_warnings | review | handoff | claude | melder_0 | none | Owner reviews the flag, tests, docs and rebuilt assets. | Opt-in Spellbook.conjure(validation_warnings=False); default silent, True logs grouped Phase-4 warnings. | Owner accepts; patch docs archived and task closed. | tickets/tasks/2026-09-26_add_conjure_validation_warnings_flag_task.md | 2026-09-26T09:38:26Z | REQUIRED |
 | override_design_melder | in_progress | discovery | claude | melder_0 | none | Paused for conjure_validation_warnings; resume with the executor/targeting split probe. | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T09:09:11Z | REQUIRED |
 | caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
 | inspect_signature_nameerror | blocked | handoff | claude | melder_1 | annotation audit first (owner) | Fold the audit findings in, then apply the approved src edits. | Tested fix for TYPE_CHECKING-annotation NameErrors, docs and rebuilt assets. | Audit reported, then fix applied with tests and assets. | tickets/tasks/2026-09-26_fix_inspect_signature_nameerror_on_type_checking_annotations_task.md | 2026-09-26T09:17:15Z | REQUIRED |
@@ -193,7 +195,7 @@ Message alert rules
   tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md ->
   tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md. Strategy and recovery protocol:
   the epic's Context / Handoff Summary, section DISCOVERY STRATEGY AND RECOVERY (2026-09-26).
-- conjure_validation_warnings: SWITCH_TRIGGER is the flag implemented, tested and documented (task in review).
+- conjure_validation_warnings: SWITCH_TRIGGER is owner acceptance (then patch-doc archive and closure).
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_add_conjure_validation_warnings_flag_task.md. Patch docs:
   system_docs/patches/active/conjure_validation_warnings_2026_09_26/.
 - override_design_melder: SWITCH_TRIGGER is the design artifact plus owner decision requests.

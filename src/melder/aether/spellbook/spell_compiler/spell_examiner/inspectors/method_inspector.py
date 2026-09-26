@@ -7,6 +7,7 @@ from typing import Any, Dict, Callable, ClassVar
 # Melder imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.signature_reflection import SignatureReflection
 
 
 #region MethodInspector
@@ -171,11 +172,15 @@ class MethodInspector(Cleanable):
 
         Contract:
             - Sets `uninspectable=True` when signature extraction fails.
+            - An annotation naming something unbound at runtime (a
+              TYPE_CHECKING-only import under Python 3.14 lazy annotations) is
+              reported as its source text rather than making the callable
+              uninspectable.
             - Otherwise populates a normalized parameter payload suitable for
               downstream profile serialization.
         """
         try:
-            sig = inspect.signature(f_eff)
+            sig = SignatureReflection.display_signature(f_eff)
             self.data["signature"] = str(sig)
             self.data["parameters"] = [
                 {

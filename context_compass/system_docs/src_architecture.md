@@ -650,8 +650,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 1. `Spellbook.conjure(...)`:
    - Validate/freeze `SpellbookConfiguration`, bind to Aether.
    - Run structural phases 1-4 for every spell, on every conjure.
-   - Log one INFO line listing unresolved inputs (typed parameters no registered spell provides) when
-     any exist, before the Phase 1-4 artifacts are released (2026-09-26).
+   - Only for `conjure(validation_warnings=True)`: log one WARNING event listing the Phase-4
+     validation warnings grouped by code (unresolved inputs included), before the Phase 1-4 artifacts
+     are released. The default logs nothing; internal conjure routes never pass True (2026-09-26).
    - Classify the creation cache BEFORE the conduit phases: the live set of
      resolvable, non-existing-creation spell ids is compared with the cached
      ids, giving `disabled`, `full_hit`, `mixed` or `full_miss`.
@@ -662,9 +663,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
      the cache, and does not re-enforce the resolution verdict (it was
      enforced when the bundle was built). No cache path skips phases 1-7.
      EVIDENCE:
-     - src/melder/aether/spellbook/spellbook_creation_system.py:226-247
-     - src/melder/aether/spellbook/spellbook_creation_system.py:361-388
-     - src/melder/aether/spellbook/spellbook_creation_system.py:454-562
+     - src/melder/aether/spellbook/spellbook_creation_system.py:236-257
+     - src/melder/aether/spellbook/spellbook_creation_system.py:411-438
+     - src/melder/aether/spellbook/spellbook_creation_system.py:504-612
    - Live 8-11 mapping:
      - phase 8 analyzer
      - phase 9 processor
@@ -1085,7 +1086,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
     (`bind_frame_configuration` unfrozen branch: the twelve-value copy plus
     `frame_configuration.cleanup()` on the donor, then freeze with
     `origin_frame_name`)
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1182-1229
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1232-1279
     (`SpellbookCreationSystem.check_system_state`: missing-posture refusal and
     the non-dynamic default-policy-only rule)
 - SpellSpace can only meld when it is the active spellspace for a Conduit.
@@ -1104,7 +1105,7 @@ each entry in `src_components.md`; this list is the set that crosses components.
   ask.
   EVIDENCE:
   - src/melder/aether/spellbook/configuration/system_state.py:32-49
-  - src/melder/aether/spellbook/spellbook_creation_system.py:1182-1229
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1232-1279
 - Method/lambda spells must use `Existence.unique`, because a method or lambda
   has no stable identity to share: two resolutions of a non-unique existence
   would have to return the same object, and there is no object to return until
@@ -1455,9 +1456,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7205
-  loc: 7205
-  verified_at: 2026-09-23T12:28:41Z
+  end_line: 7219
+  loc: 7219
+  verified_at: 2026-09-26T09:26:45Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
@@ -2363,7 +2364,8 @@ inputs use existing execution, Nexus exposes references, and durable replay pres
 
 ### Unresolved Input Resolution
 ```text
-conjure: typed parameter, no provider -> UNRESOLVED_INPUT socket -> INFO line (conjure succeeds)
+conjure: typed parameter, no provider -> UNRESOLVED_INPUT socket -> Phase-4 warning (conjure succeeds;
+         listed only by conjure(validation_warnings=True))
 meld:    value supplied -> constructor receives it
          value missing  -> TypeError at binding -> UnresolvedInputError (a MeldExecutionError)
 bind:    matching provider added later -> consumer re-resolves -> normal dependency edge
@@ -2372,7 +2374,7 @@ bind:    matching provider added later -> consumer re-resolves -> normal depende
 ```mermaid
 flowchart LR
   C[Conjure: no registered provider] --> U[UNRESOLVED_INPUT socket]
-  U --> I[One INFO line; conjure continues]
+  U --> I[Phase-4 warning; reported only with validation_warnings=True; conjure continues]
   U --> M{Meld supplies the value?}
   M -->|Yes| K[Constructor receives it]
   M -->|No| E[UnresolvedInputError]
@@ -2605,6 +2607,11 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 conjure validation warnings: `Spellbook.conjure(validation_warnings=False)` is an opt-in for
+beginners. When True, conjure logs every Phase-4 validation warning once, grouped by code, at WARNING
+level; the default logs nothing, replacing the 0.2.54 per-conjure INFO line about unresolved inputs.
+Nexus frame creation, crystallizer restore and upgrade_to_normal keep the default.
 
 2026-09-26 unresolved inputs: a single typed constructor parameter that no registered spell provides no
 longer fails conjure. It compiles as an UNRESOLVED_INPUT socket, the constructing meld supplies it by

@@ -15,7 +15,7 @@ class Task:
         self.work = work
 
 book.bind(spell=Task, existence="many")
-conduit = book.conjure()  # succeeds and logs one INFO line: Task.work -> Package
+conduit = book.conjure()  # succeeds
 task = conduit.meld(spell=Task, override={"work": package})
 assert task.work is package
 ```
@@ -32,8 +32,8 @@ when Task is built as a dependency, or bind a provider for Package.
 
 - **Behavior change: conjure no longer fails for a missing provider.** A single typed parameter with
   no matching registration used to raise "no DI candidate found" at conjure. It now surfaces at the
-  first meld that builds the object, and conjure lists every unresolved input in one INFO log line.
-  Two or more matching providers still fail conjure, as before.
+  first meld that builds the object; `conjure(validation_warnings=True)` lists it beforehand (see the
+  next section). Two or more matching providers still fail conjure, as before.
 - **Matching rules are unchanged.** A parameter annotated with an interface is still not satisfied
   by a provider bound only under its concrete class or under a different spellframe. Such a
   parameter is now an unresolved input rather than a conjure error: bind the provider under that
@@ -61,9 +61,33 @@ when Task is built as a dependency, or bind a provider for Package.
 ### Upgrading
 
 - **Checks that relied on conjure to catch a forgotten binding** now pass conjure. Meld the affected
-  object once in a smoke test, or watch for the conjure INFO line that lists unresolved inputs.
+  object once in a smoke test, or conjure with `validation_warnings=True` to list unresolved inputs.
 - **Tests asserting the old "no DI candidate found" conjure error** should assert that conjure succeeds
   and that the meld raises `UnresolvedInputError`, or supply the value through `override`.
+
+## Opt-in conjure report of validation warnings
+
+`Spellbook.conjure` takes a new `validation_warnings` keyword. With `validation_warnings=True`, conjure
+logs the book's validation warnings once, grouped by kind, at WARNING level through the Spellbook's
+logger:
+
+```python
+conduit = book.conjure(validation_warnings=True)
+```
+
+```text
+Conjure validation warnings (3):
+  UNRESOLVED_INPUT (1): Task.work -> Package
+  REQUIRED_HOLE (2): Counter.count; Loader.source
+```
+
+- **Off by default.** A plain `conjure()` logs nothing about warnings. Warnings never stop conjure;
+  they flag things that may fail later, such as an unresolved input or a parameter Melder can never
+  inject and that has no default (`REQUIRED_HOLE`).
+- **Every warning kind is included**, not only unresolved inputs. Each entry names the spell and,
+  where one applies, the parameter.
+- **Only the conjure you call reports.** Frames created through Nexus, crystallizer restores and
+  `upgrade_to_normal` never turn it on.
 
 ## Concurrent first-time melds no longer deadlock
 
@@ -132,7 +156,8 @@ could be silently omitted from the disposal list and never run during scope tear
 ## Packaging and documentation
 
 - The packaged system documents (`melder.__architecture__`, `__components__`, `__graph_network__` and
-  `__graph_details__`) are regenerated and describe unresolved inputs and `UnresolvedInputError`.
+  `__graph_details__`) are regenerated and describe unresolved inputs, `UnresolvedInputError` and the
+  opt-in conjure warning report.
 - `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
   raised and caught, but it cannot be bound as a spell.
 - Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.54.

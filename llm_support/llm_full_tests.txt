@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 9eafb423745b6b3fa5dc96080a48ccffbe9721eb28c05c350d62f27751a4e962
+SOURCE FINGERPRINT: 6ba5275e7244979b9fd799f10da6c2bb53ffa001b281cba12a118d61c349b3fe
 FILE COUNT: 857
 
 ================================================================================
@@ -53413,7 +53413,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_spellbook.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_unresolved_input.py
-CONTENT SHA256: 7dfffa594f1ecf001a2724d07fbc58bd3df771924cb7279c35a326c9a7eb158f
+CONTENT SHA256: 10e1bf8fb70572243e64a1fc9839df30fa7239fa7258686f8248dfeb5c2d7c8e
 SOURCE ENCODING: utf-8
 ================================================================================
 """Compiler contracts for typed parameters that no registered spell provides (UNRESOLVED_INPUT)."""
@@ -53494,6 +53494,14 @@ class KeywordConsumer:
     def __init__(self, *, value: Unregistered) -> None:
         """Retain the supplied value."""
         self.value = value
+
+
+class CountedConsumer:
+    """A plain `int` without a default is a REQUIRED_HOLE warning, not an unresolved input."""
+
+    def __init__(self, count: int) -> None:
+        """Retain the caller's count."""
+        self.count = count
 
 
 @pytest.fixture
@@ -53681,30 +53689,68 @@ def test_injection_source_and_rows_carry_the_unresolved_input(compiler_book: Spe
         compiler.cleanup()
 
 
-def test_conjure_reports_unresolved_inputs_once(caplog: pytest.LogCaptureFixture) -> None:
-    """Conjure succeeds and logs one INFO line listing Spell.param -> ExpectedType."""
+@pytest.fixture
+def reporting_book() -> Iterator[tuple[Spellbook, logging.Logger]]:
+    """Own one isolated world whose book logs through a dedicated stdlib logger."""
     Aether._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
-    logger = logging.getLogger("melder.tests.unresolved_input_report")
-    book = Spellbook(aetheric_frame="unresolved-input-report", logger=logger)
+    logger = logging.getLogger("melder.tests.conjure_validation_warnings")
+    book = Spellbook(aetheric_frame="conjure-validation-warnings", logger=logger)
     book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
     book._aetheric_frame_configuration.with_system_caching_enabled(False)
     try:
-        book.bind(spell=Consumer, existence="many")
-        with caplog.at_level(logging.INFO, logger=logger.name):
-            conduit = book.conjure()
-        lines = [record.getMessage() for record in caplog.records if "unresolved input" in record.getMessage()]
-        assert len(lines) == 1
-        assert "Consumer.value -> Unregistered" in lines[0]
-        conduit.cleanup()
+        yield book, logger
     finally:
         book.cleanup()
         Aether._reset_singleton_for_tests()
         aether = Aether()
         Spellbook._aether = aether
         Conduit._aether = aether
+
+
+def test_default_conjure_logs_no_validation_report(
+    reporting_book: tuple[Spellbook, logging.Logger], caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Without the flag, conjure says nothing about warnings at any level, unresolved inputs included."""
+    book, logger = reporting_book
+    book.bind(spell=Consumer, existence="many")
+    book.bind(spell=CountedConsumer, existence="many")
+    with caplog.at_level(logging.DEBUG, logger=logger.name):
+        conduit = book.conjure()
+    try:
+        messages = [record.getMessage() for record in caplog.records]
+        assert not [m for m in messages if "validation warnings" in m or "unresolved input" in m]
+    finally:
+        conduit.cleanup()
+
+
+def test_conjure_validation_warnings_logs_one_grouped_warning(
+    reporting_book: tuple[Spellbook, logging.Logger], caplog: pytest.LogCaptureFixture,
+) -> None:
+    """With the flag, conjure succeeds and logs every warning once, grouped by code in first-seen order."""
+    book, logger = reporting_book
+    book.bind(spell=Consumer, existence="many")
+    book.bind(spell=CountedConsumer, existence="many")
+    book.bind(spell=KeywordConsumer, existence="many")
+    with caplog.at_level(logging.DEBUG, logger=logger.name):
+        conduit = book.conjure(validation_warnings=True)
+    try:
+        reports = [
+            record for record in caplog.records
+            if record.getMessage().startswith("Conjure validation warnings")
+        ]
+        assert len(reports) == 1
+        assert reports[0].levelno == logging.WARNING
+        assert reports[0].getMessage().split("\n") == [
+            "Conjure validation warnings (3):",
+            "  UNRESOLVED_INPUT (2): Consumer.value -> Unregistered; KeywordConsumer.value -> Unregistered",
+            "  REQUIRED_HOLE (1): CountedConsumer.count",
+        ]
+        assert not [m for m in (r.getMessage() for r in caplog.records) if "unresolved input(s)" in m]
+    finally:
+        conduit.cleanup()
 
 
 @pytest.mark.parametrize("consumer_type", [Consumer, OptionalConsumer])
@@ -309355,7 +309401,7 @@ END FILE: tests/unit/melder/spellbook/test_spellbook_creation_system_chunking.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py
-CONTENT SHA256: e67ab3ebef79edc879c6b3b277128cf8db73926758b62d3eb8a60774c6bc762d
+CONTENT SHA256: d060f88cc97430dae34d376a08d4acedd3b2662809c1461a704f1797a5438630
 SOURCE ENCODING: utf-8
 ================================================================================
 import types
@@ -309373,6 +309419,12 @@ from melder.utilities.custom_exceptions.spellbook_validation_error import (
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
+)
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
+    SpellValidationIssue,
+)
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
+    SpellValidationResult,
 )
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 
@@ -309499,8 +309551,8 @@ class _StubLogger:
     Purpose:
         Provide minimal logger surface for fallback-path compatibility.
     Contract:
-        - Accepts `.error(...)` calls from tested code paths.
-        - Stores error invocations for optional assertions.
+        - Accepts `.error(...)` and `.warning(...)` calls from tested code paths.
+        - Stores error and warning invocations for optional assertions.
     Lifecycle:
         - Test-only helper with append-only call log.
     """
@@ -309510,11 +309562,12 @@ class _StubLogger:
         Purpose:
             Initialize logger call capture storage.
         Contract:
-            - Starts with an empty error call list.
+            - Starts with empty error and warning call lists.
         Returns:
             None.
         """
         self.error_calls: List[tuple[Any, ...]] = []
+        self.warning_calls: List[tuple[Any, ...]] = []
 
     def error(self, *args: Any, **kwargs: Any) -> None:
         """
@@ -309529,6 +309582,20 @@ class _StubLogger:
             None.
         """
         self.error_calls.append(args + (kwargs,))
+
+    def warning(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Purpose:
+            Capture logger warning calls issued by the tested code.
+        Contract:
+            - Appends call payload for later inspection.
+        Args:
+            *args: Positional logger arguments.
+            **kwargs: Keyword logger arguments.
+        Returns:
+            None.
+        """
+        self.warning_calls.append(args + (kwargs,))
 
 
 class _StubCachingSystem:
@@ -309896,6 +309963,7 @@ def test_creation_system_cleanup_is_idempotent_and_clears_fields() -> None:
     assert not hasattr(system, "_spellbook")
     assert not hasattr(system, "_policy")
     assert not hasattr(system, "_dynamic")
+    assert not hasattr(system, "_validation_warnings")
     assert system._lock is not None
 
 
@@ -310056,6 +310124,113 @@ def test_prepare_spellbook_for_conjure_runs_structural_phases_without_disposal_r
     assert calls == [(spellbook, _SchedulerProbe)]
     assert spellbook._spells["a"].disposal_method_names == frozenset({"cleanup"})
     assert spellbook._spells["a"].has_disposal_methods is True
+
+
+def _phase4_spell(spell_name: str, issues: Optional[List[SpellValidationIssue]]) -> types.SimpleNamespace:
+    """Build an owned-spell stub whose Phase-4 result carries `issues` (None means no result)."""
+    result = None
+    if issues is not None:
+        result = SpellValidationResult(spell_id=f"{spell_name}-id", spell_name=spell_name, issues=issues)
+    return types.SimpleNamespace(spell_name=spell_name, validation_result_phase4=result)
+
+
+def _warning(code: str, **details: Any) -> SpellValidationIssue:
+    """Build one warning-severity Phase-4 issue."""
+    return SpellValidationIssue(severity="warning", code=code, message=f"{code} message", details=details)
+
+
+def _prepare_with_spells(
+        monkeypatch: pytest.MonkeyPatch,
+        spells: Dict[str, types.SimpleNamespace],
+        **kwargs: Any,
+) -> _StubLogger:
+    """Run conjure preparation over stub spells with structural phases stubbed; return the logger."""
+    logger = _StubLogger()
+    spellbook = types.SimpleNamespace(
+        is_configuration_locked=lambda: True, _spells=spells, _logger=logger,
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "run_structural_phases",
+        staticmethod(lambda *, spellbook, phase_scheduler_cls: None),
+    )
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+        spellbook=spellbook, phase_scheduler_cls=_SchedulerProbe, **kwargs,
+    )
+    return logger
+
+
+def _warning_spells() -> Dict[str, types.SimpleNamespace]:
+    """Three owned spells: mixed warnings plus an error, no result, and a detail-less warning."""
+    return {
+        "a": _phase4_spell("A", [
+            _warning("UNRESOLVED_INPUT", parameter_name="value", expected_type="Package"),
+            SpellValidationIssue(severity="error", code="DANGLING_DEPENDENCY", message="error message"),
+            _warning("REQUIRED_HOLE", parameter_name="count"),
+        ]),
+        "b": _phase4_spell("B", None),
+        "c": _phase4_spell("C", [
+            _warning("NO_SPELLBOOK_FOR_DEPENDENCY_CHECK"),
+            _warning("UNRESOLVED_INPUT", parameter_name="work", expected_type="Task"),
+        ]),
+    }
+
+
+@pytest.mark.parametrize("kwargs", [{}, {"validation_warnings": False}])
+def test_prepare_spellbook_for_conjure_does_not_report_warnings_by_default(
+        monkeypatch: pytest.MonkeyPatch, kwargs: Dict[str, Any],
+) -> None:
+    """Internal routes omit the flag (upgrade_to_normal) or pass False; neither logs the report."""
+    logger = _prepare_with_spells(monkeypatch, _warning_spells(), **kwargs)
+
+    assert logger.warning_calls == []
+
+
+def test_prepare_spellbook_for_conjure_reports_grouped_warnings_when_asked(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One WARNING call: codes in first-seen order, book then issue order, errors excluded."""
+    logger = _prepare_with_spells(monkeypatch, _warning_spells(), validation_warnings=True)
+
+    assert logger.warning_calls == [(
+        "Conjure validation warnings (4):\n"
+        "  UNRESOLVED_INPUT (2): A.value -> Package; C.work -> Task\n"
+        "  REQUIRED_HOLE (1): A.count\n"
+        "  NO_SPELLBOOK_FOR_DEPENDENCY_CHECK (1): C",
+        "_report_validation_warnings",
+        {},
+    )]
+
+
+def test_prepare_spellbook_for_conjure_reports_nothing_without_warnings(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Errors alone, empty results and missing results produce no report even when asked."""
+    spells = {
+        "a": _phase4_spell("A", [
+            SpellValidationIssue(severity="error", code="DANGLING_DEPENDENCY", message="error message"),
+        ]),
+        "b": _phase4_spell("B", []),
+        "c": _phase4_spell("C", None),
+    }
+
+    logger = _prepare_with_spells(monkeypatch, spells, validation_warnings=True)
+
+    assert logger.warning_calls == []
+
+
+@pytest.mark.parametrize(("code", "details", "expected"), [
+    ("UNRESOLVED_INPUT", {"parameter_name": "work", "expected_type": "Package"}, "Task.work -> Package"),
+    ("SPELL_CONTRACT_MISSING_PROVIDER", {"parameter_name": "billing", "contract_key": "k"}, "Task.billing"),
+    ("MISSING_DEPENDENCY_GRAPH", {}, "Task"),
+])
+def test_render_validation_warning_entry_names_spell_and_parameter(
+        code: str, details: Dict[str, Any], expected: str,
+) -> None:
+    """Unresolved inputs name the expected type; other issues name the parameter, else the spell."""
+    assert SpellbookCreationSystem._render_validation_warning_entry(
+        spell_name="Task", code=code, details=details,
+    ) == expected
 
 
 def test_run_resolution_phases_rejects_empty_conduit_id() -> None:

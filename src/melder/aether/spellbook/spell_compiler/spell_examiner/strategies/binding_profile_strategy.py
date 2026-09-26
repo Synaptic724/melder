@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, List, ClassVar, Optional
 
 # Melder Imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
+from melder.utilities.helpers.signature_reflection import SignatureReflection
 from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import ClassBindingProfile, \
     SpellBindingKind, CallableBindingProfile, CallableParameterBindingSummary, \
     InstanceBindingProfile, OtherBindingProfile
@@ -72,6 +73,12 @@ class BindingProfileStrategy:
         Constructor signatures preserve unresolved annotation names as Python
         3.14 ForwardRefs. TYPE_CHECKING-only imports must not erase the cached
         signature; known annotation objects and default values remain intact.
+
+        The `init_signature` text feeds the bind fingerprint (spell id). A
+        ForwardRef's repr embeds its owner, including a memory address, so the
+        text renders those names as source text
+        (`SignatureReflection.stabilize_signature`) and stays identical across
+        processes; the cached signature object keeps the ForwardRefs.
         """
         module = inspect.getmodule(cls)
 
@@ -99,7 +106,9 @@ class BindingProfileStrategy:
         init_signature_object: Optional[Any] = None
         try:
             init_signature_object = inspect.signature(cls, annotation_format=Format.FORWARDREF)
-            init_signature: Optional[str] = str(init_signature_object)
+            init_signature: Optional[str] = str(
+                SignatureReflection.stabilize_signature(init_signature_object, cls)
+            )
         except Exception:
             init_signature_object = None
             init_signature = None
@@ -141,7 +150,9 @@ class BindingProfileStrategy:
         Build the shallow binding-time profile for one callable candidate.
 
         Partial annotation evaluation retains TYPE_CHECKING-only names in the
-        signature without invoking the callable or dropping its parameters.
+        signature without invoking the callable or dropping its parameters. The
+        signature text and annotation reprs render those names as source text so
+        they never embed an object address.
         """
         effective = InspectorUtility.unwrap_callable(fn)
         module = inspect.getmodule(effective)
@@ -153,7 +164,10 @@ class BindingProfileStrategy:
         extension_module = InspectorUtility.is_extension_module(module)
 
         try:
-            signature = inspect.signature(effective, annotation_format=Format.FORWARDREF)
+            signature = SignatureReflection.stabilize_signature(
+                inspect.signature(effective, annotation_format=Format.FORWARDREF),
+                effective,
+            )
             signature_str = str(signature)
             parameter_summaries: List[CallableParameterBindingSummary] = []
             for parameter in signature.parameters.values():

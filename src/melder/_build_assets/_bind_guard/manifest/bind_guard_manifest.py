@@ -15,8 +15,8 @@ Regenerate with:
 
 MANIFEST_VERSION = "2.0.0"
 BUILT_FOR_VERSION = "0.2.54"
-SOURCE_SHA256 = "beb5f0c7c36eb26f36f2f31598719303104478c44a1a67e3193f7fc47ba17e06"
-ENTRY_COUNT = 632
+SOURCE_SHA256 = "142459b216eb746e1f67343f5e471e6c4aa12b6f5e1e12352ca3a25108fa72fc"
+ENTRY_COUNT = 634
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -293,6 +293,7 @@ ENTRIES = (
     ('melder.aether.spellbook.spell_compiler.profiles.resolution_profile', 'SpellSymbolicNode'),
     ('melder.aether.spellbook.spell_compiler.profiles.resolution_profile', 'SpellValidationIssue'),
     ('melder.aether.spellbook.spell_compiler.profiles.resolution_profile', 'SpellValidationResult'),
+    ('melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature', 'CodegenSignature'),
     ('melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis', 'SpellExistenceOccurrence'),
     ('melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis', 'SpellExistenceOccurrenceAnalysis'),
     ('melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_occurrence_graph_analysis', 'SpellOccurrenceGraphAnalysis'),
@@ -634,6 +635,7 @@ ENTRIES = (
     ('melder.utilities.helpers.id_builder', 'IDBuilder'),
     ('melder.utilities.helpers.init_helpers', 'InitHelpers'),
     ('melder.utilities.helpers.package', 'Package'),
+    ('melder.utilities.helpers.signature_reflection', 'SignatureReflection'),
     ('melder.utilities.helpers.ulid_factory', 'ULID_Factory'),
     ('melder.utilities.interfaces.ichannellogger', 'IChannelLogger'),
     ('melder.utilities.interfaces.icleanable', 'ICleanable'),

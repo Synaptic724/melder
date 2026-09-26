@@ -1,10 +1,12 @@
 import inspect
 import types
+from annotationlib import Format
 from functools import update_wrapper
 from threading import RLock
 from types import SimpleNamespace
 
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.signature_reflection import SignatureReflection
 from melder.utilities.helpers.ulid_factory import new_ulid
 from typing import (
     Callable,
@@ -310,6 +312,14 @@ class Package(Cleanable, Generic[P, R]):
         """
         Provides a human-readable description of the wrapped callable and its signature.
 
+        Contract:
+            - The signature text is the default `inspect.signature` rendering when
+              every annotation name is available. An annotation naming a type that
+              is unbound at runtime (a TYPE_CHECKING-only import under Python 3.14
+              lazy annotations) is rendered as its source text instead of raising.
+            - Callables without an inspectable signature render as
+              `(uninspectable)`.
+
         Returns:
             A string describing the function's name and parameters.
         """
@@ -322,7 +332,7 @@ class Package(Cleanable, Generic[P, R]):
             qual_name = getattr(func, '__qualname__', func_name)
 
             try:
-                sig = inspect.signature(func)
+                sig = SignatureReflection.display_signature(func)
                 params_str = str(sig)
             except (ValueError, TypeError):
                 params_str = "(uninspectable)"
@@ -880,7 +890,9 @@ class Package(Cleanable, Generic[P, R]):
         """
         with self._lock:
             if self._signature_cache is None:
-                sig = inspect.signature(self._wrapped_func)
+                # FORWARDREF: only proves the callable has a signature; a VALUE read
+                # raises NameError on TYPE_CHECKING-only annotation names.
+                sig = inspect.signature(self._wrapped_func, annotation_format=Format.FORWARDREF)
                 arg_map = {}
                 for i, value in enumerate(self._args):
                     arg_map[f"arg{i}"] = value

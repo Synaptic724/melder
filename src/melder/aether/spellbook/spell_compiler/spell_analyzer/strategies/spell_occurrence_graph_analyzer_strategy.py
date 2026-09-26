@@ -1,4 +1,5 @@
 import inspect
+from annotationlib import Format
 from collections import deque
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
@@ -1000,6 +1001,11 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         Existing creations are already supplied values and have no constructor
         contracts to discover. Returning no contracts leaves the consumer's
         incoming dependency edge intact; class/factory discovery is unchanged.
+
+        When the Phase-1 requirements have been released (they are after conjure),
+        the callable signature is read in FORWARDREF format: only defaults are
+        inspected, and a VALUE-format read raises NameError when an annotation
+        names a TYPE_CHECKING-only type (Python 3.14 lazy annotations).
         """
         contracts: List[Tuple[str, SpellContract]] = []
         if spell.is_existing_creation:
@@ -1013,7 +1019,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
                         contracts.append((param.name, param.default_value))
             return contracts
 
-        signature = inspect.signature(spell.spell)
+        signature = inspect.signature(spell.spell, annotation_format=Format.FORWARDREF)
         for param_name, parameter in signature.parameters.items():
             if param_name in ("self", "cls"):
                 continue
