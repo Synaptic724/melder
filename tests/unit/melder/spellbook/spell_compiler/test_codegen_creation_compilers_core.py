@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler as no_overrides_compiler_module
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler as many_only_compiler_module
 import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_no_overrides_codegen_creation_compiler as solo_no_overrides_compiler_module
 import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.compilers.solo_overrides_codegen_creation_compiler as solo_overrides_compiler_module
 from melder.aether.spellbook.existence.existence import Existence
@@ -13,51 +14,23 @@ from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutio
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 
 
-def test_no_overrides_compiler_requires_ir_payload() -> None:
-    """The no-overrides compiler should reject a missing IR payload."""
-    with pytest.raises(ValueError, match="codegen_ir must not be None"):
-        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
-            codegen_ir=None,
-        )
-
-
-def test_no_overrides_compiler_returns_none_when_no_steps_exist() -> None:
-    """The no-overrides compiler should no-op when the IR has no step rows."""
-    assert no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
-        codegen_ir={},
-        spell_lookup={},
-    ) is None
-
-
-def test_no_overrides_compiler_from_plan_validates_plan_and_empty_steps() -> None:
-    """The plan entrypoint should reject None and no-op on empty plans."""
-    with pytest.raises(ValueError, match="plan must not be None"):
-        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor_from_plan(
-            plan=None,
-        )
-
-    assert no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor_from_plan(
-        plan=SimpleNamespace(steps=[]),
-    ) is None
-
-
-def test_no_overrides_compiler_resolves_root_instance_key_preferentially() -> None:
+def test_many_only_row_hydration_resolves_root_instance_key_preferentially() -> None:
     """Root instance resolution should prefer the canonical `(spell_id, None)` row and then fall back."""
-    canonical = no_overrides_compiler_module._resolve_root_instance_key(
+    canonical = many_only_compiler_module._resolve_root_instance_key(
         steps=(
             SimpleNamespace(instance_key=("root", 5)),
             SimpleNamespace(instance_key=("root", None)),
         ),
         root_spell_id="root",
     )
-    fallback = no_overrides_compiler_module._resolve_root_instance_key(
+    fallback = many_only_compiler_module._resolve_root_instance_key(
         steps=(
             SimpleNamespace(instance_key=("root", 5)),
             SimpleNamespace(instance_key=("dep", 2)),
         ),
         root_spell_id="root",
     )
-    missing = no_overrides_compiler_module._resolve_root_instance_key(
+    missing = many_only_compiler_module._resolve_root_instance_key(
         steps=(
             SimpleNamespace(instance_key=("dep", 2)),
         ),
@@ -67,119 +40,6 @@ def test_no_overrides_compiler_resolves_root_instance_key_preferentially() -> No
     assert canonical == ("root", None)
     assert fallback == ("root", 5)
     assert missing is None
-
-
-def test_no_overrides_compiler_supports_transient_unrolled_only_for_many_non_registering_steps() -> None:
-    """Transient unrolled support should stay restricted to pure transient-many steps."""
-    good = (
-        SimpleNamespace(existence=Existence.many, must_register=False),
-        SimpleNamespace(existence=Existence.many, must_register=False),
-    )
-    bad_existence = (
-        SimpleNamespace(existence=Existence.unique, must_register=False),
-    )
-    bad_register = (
-        SimpleNamespace(existence=Existence.many, must_register=True),
-    )
-
-    assert no_overrides_compiler_module._supports_transient_unrolled_plan(good) is True
-    assert no_overrides_compiler_module._supports_transient_unrolled_plan(bad_existence) is False
-    assert no_overrides_compiler_module._supports_transient_unrolled_plan(bad_register) is False
-
-
-def test_no_overrides_compiler_normalizes_transient_schema_and_rejects_bad_lengths() -> None:
-    """Transient schema normalization should coerce sequences to tuples and reject bad lengths."""
-    normalized = no_overrides_compiler_module._normalize_transient_schema(
-        transient_schema={
-            "step_count": 1,
-            "root_step_index": 0,
-            "call_modes": [0],
-            "dep1": [-1],
-            "dep2a": [-1],
-            "dep2b": [-1],
-            "dep3a": [-1],
-            "dep3b": [-1],
-            "dep3c": [-1],
-            "dep4a": [-1],
-            "dep4b": [-1],
-            "dep4c": [-1],
-            "dep4d": [-1],
-            "dep5a": [-1],
-            "dep5b": [-1],
-            "dep5c": [-1],
-            "dep5d": [-1],
-            "dep5e": [-1],
-            "dep6a": [-1],
-            "dep6b": [-1],
-            "dep6c": [-1],
-            "dep6d": [-1],
-            "dep6e": [-1],
-            "dep6f": [-1],
-            "dep7a": [-1],
-            "dep7b": [-1],
-            "dep7c": [-1],
-            "dep7d": [-1],
-            "dep7e": [-1],
-            "dep7f": [-1],
-            "dep7g": [-1],
-            "dep8a": [-1],
-            "dep8b": [-1],
-            "dep8c": [-1],
-            "dep8d": [-1],
-            "dep8e": [-1],
-            "dep8f": [-1],
-            "dep8g": [-1],
-            "dep8h": [-1],
-        }
-    )
-
-    assert normalized["call_modes"] == (0,)
-    assert normalized["dep8h"] == (-1,)
-
-    with pytest.raises(RuntimeError, match="length must equal step_count"):
-        no_overrides_compiler_module._normalize_transient_schema(
-            transient_schema={
-                "step_count": 1,
-                "root_step_index": 0,
-                "call_modes": [0, 1],
-                "dep1": [-1],
-                "dep2a": [-1],
-                "dep2b": [-1],
-                "dep3a": [-1],
-                "dep3b": [-1],
-                "dep3c": [-1],
-                "dep4a": [-1],
-                "dep4b": [-1],
-                "dep4c": [-1],
-                "dep4d": [-1],
-                "dep5a": [-1],
-                "dep5b": [-1],
-                "dep5c": [-1],
-                "dep5d": [-1],
-                "dep5e": [-1],
-                "dep6a": [-1],
-                "dep6b": [-1],
-                "dep6c": [-1],
-                "dep6d": [-1],
-                "dep6e": [-1],
-                "dep6f": [-1],
-                "dep7a": [-1],
-                "dep7b": [-1],
-                "dep7c": [-1],
-                "dep7d": [-1],
-                "dep7e": [-1],
-                "dep7f": [-1],
-                "dep7g": [-1],
-                "dep8a": [-1],
-                "dep8b": [-1],
-                "dep8c": [-1],
-                "dep8d": [-1],
-                "dep8e": [-1],
-                "dep8f": [-1],
-                "dep8g": [-1],
-                "dep8h": [-1],
-            }
-        )
 
 
 def _make_spell(spell_id: str) -> SimpleNamespace:
@@ -336,7 +196,7 @@ def test_solo_overrides_compiler_emits_compiled_code_and_preserves_override_beha
 
 
 def _make_no_overrides_step_row(spell_id: str) -> dict[str, object]:
-    """Build a minimal schema row accepted by the no-overrides compiler hydration."""
+    """Build a minimal schema row accepted by the generalized row hydration."""
     return {
         "instance_key": (spell_id, None),
         "spell_id": spell_id,
@@ -353,273 +213,46 @@ def _make_no_overrides_step_row(spell_id: str) -> dict[str, object]:
     }
 
 
-class _Spellspace:
-    """Active spellspace stub used by spellspace-creation tests."""
-
-    def __init__(self, spellspace_id: str, owner_conduit_id: str) -> None:
-        """Store the active spellspace identity."""
-        self.id = spellspace_id
-        self.owner_conduit_id = owner_conduit_id
-
-
-class _Creations:
-    """Creations stub used by emitted no-overrides execution semantics tests."""
-
-    def __init__(self) -> None:
-        """Build empty direct stores and a shared lock surface."""
-        self._lock = threading.RLock()
-        self._creations: dict[str, Any] = {}
-        self._disposable_creations: dict[str, Any] = {}
-        self._many: list[tuple[str, Any]] = []
-        self._spellspace: dict[tuple[str, str], Any] = {}
-        self._disposable_spellspace: dict[
-            tuple[str, str],
-            tuple[Any, tuple[str, ...]],
-        ] = {}
-        self._owner_conduit_id = "conduit-1"
-        self._active_spellspace = None
-        self._slot_guards: dict[str, threading.RLock] = {}
-
-    @property
-    def owner_conduit_id(self) -> str:
-        """Expose the owner conduit id used by spellspace routes."""
-        return self._owner_conduit_id
-
-    def slot_guard(self, spell_id: str) -> threading.RLock:
-        """Mirror `Creations.slot_guard`: one re-entrant build guard per slot."""
-        return self._slot_guards.setdefault(spell_id, threading.RLock())
-
-    def get_active_spellspace(self) -> Any:
-        """Return the currently active spellspace, if any."""
-        return self._active_spellspace
-
-    def get_creation(self, spell_id: str) -> Any:
-        """Return direct or disposable shared creation entries."""
-        entry = self._creations.get(spell_id)
-        if entry is not None and not isinstance(entry, list):
-            return entry
-        entry = self._disposable_creations.get(spell_id)
-        if isinstance(entry, tuple):
-            return entry[0]
-        return None
-
-    def add_creation(
-            self,
-            spell_id: str,
-            instance: Any,
-            *,
-            has_disposal_methods: bool,
-            disposal_methods: Any,
-    ) -> None:
-        """Register one shared creation entry."""
-        if has_disposal_methods:
-            self._disposable_creations[spell_id] = (
-                instance,
-                tuple(disposal_methods),
-            )
-            return
-        self._creations[spell_id] = instance
-
-    def add_many_creations(
-            self,
-            spell_id: str,
-            instance: Any,
-            *,
-            has_disposal_methods: bool,
-            disposal_methods: Any,
-    ) -> None:
-        """Register one many-creation entry."""
-        if has_disposal_methods:
-            self._many.append((spell_id, instance))
-            self._disposable_creations.setdefault(spell_id, []).append(
-                (instance, tuple(disposal_methods)),
-            )
-            return
-        self._creations.setdefault(spell_id, []).append(instance)
-
-    def register_spellspace_creation(
-            self,
-            spellspace_id: str,
-            spell_id: str,
-            instance: Any,
-            *,
-            has_disposal_methods: bool,
-            disposal_methods: Any,
-    ) -> None:
-        """Register one spellspace-scoped creation entry."""
-        if has_disposal_methods:
-            self._disposable_spellspace[(spellspace_id, spell_id)] = (
-                instance,
-                tuple(disposal_methods),
-            )
-            return
-        self._spellspace[(spellspace_id, spell_id)] = instance
-
-    def get_spellspace_creation(self, spellspace_id: str, spell_id: str) -> Any:
-        """Return one spellspace-scoped creation entry."""
-        entry = self._spellspace.get((spellspace_id, spell_id))
-        if entry is not None:
-            return entry
-        entry = self._disposable_spellspace.get((spellspace_id, spell_id))
-        if entry is None:
-            return None
-        return entry[0]
-
-
-class _ExplodingLock:
-    """Lock stub that fails if the runtime tries to acquire it."""
-
-    def __enter__(self) -> "_ExplodingLock":
-        """Fail on entry to prove a lock path was skipped."""
-        raise AssertionError("lock should not be acquired for this path")
-
-    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
-        """No-op exit path."""
-        return None
-
-
 def test_no_overrides_compiler_requires_spell_lookup_for_schema_rows() -> None:
-    """Schema-row no-overrides compile should fail fast when spell lookup is missing."""
+    """Manifest row hydration should fail fast when spell lookup is missing."""
     with pytest.raises(RuntimeError, match="require spell_lookup"):
-        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
-            codegen_ir={
-                "steps_rows": (_make_no_overrides_step_row("root"),),
-                "root_spell_id": "root",
-            },
+        no_overrides_compiler_module._hydrate_steps_from_rows(
+            steps_rows=(_make_no_overrides_step_row("root"),),
             spell_lookup=None,
         )
 
 
 def test_no_overrides_compiler_rejects_schema_rows_missing_required_field() -> None:
-    """Schema-row no-overrides compile should fail fast for missing required row fields."""
+    """Manifest row hydration should fail fast for missing required row fields."""
     row = _make_no_overrides_step_row("root")
     row.pop("instance_key")
 
     with pytest.raises(RuntimeError, match="missing required field 'instance_key'"):
-        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
-            codegen_ir={
-                "steps_rows": (row,),
-                "root_spell_id": "root",
-            },
+        no_overrides_compiler_module._hydrate_steps_from_rows(
+            steps_rows=(row,),
             spell_lookup={"root": _make_spell("root")},
         )
 
 
 def test_no_overrides_compiler_rejects_unknown_spell_id_in_schema_rows() -> None:
-    """Schema-row no-overrides compile should fail when spell lookup cannot resolve a row spell id."""
+    """Manifest row hydration should fail when spell lookup cannot resolve a row spell id."""
     with pytest.raises(RuntimeError, match="unknown spell_id 'root'"):
-        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
-            codegen_ir={
-                "steps_rows": (_make_no_overrides_step_row("root"),),
-                "root_spell_id": "root",
-            },
+        no_overrides_compiler_module._hydrate_steps_from_rows(
+            steps_rows=(_make_no_overrides_step_row("root"),),
             spell_lookup={},
         )
 
 
 def test_no_overrides_compiler_rejects_unknown_existence_name() -> None:
-    """Schema-row no-overrides compile should fail for unknown existence enum names."""
+    """Manifest row hydration should fail for unknown existence enum names."""
     row = _make_no_overrides_step_row("root")
     row["existence"] = "not_an_existence"
 
     with pytest.raises(RuntimeError, match="unknown existence"):
-        no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
-            codegen_ir={
-                "steps_rows": (row,),
-                "root_spell_id": "root",
-            },
+        no_overrides_compiler_module._hydrate_steps_from_rows(
+            steps_rows=(row,),
             spell_lookup={"root": _make_spell("root")},
         )
-
-
-def test_no_overrides_compiler_supports_schema_rows_execution() -> None:
-    """Schema-row no-overrides compile path should emit a callable executor that executes."""
-    spell = _make_spell("root")
-    executor = no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
-        codegen_ir={
-            "steps_rows": (_make_no_overrides_step_row("root"),),
-            "root_spell_id": "root",
-            "transient_schema": None,
-        },
-        spell_lookup={"root": spell},
-    )
-
-    assert callable(executor)
-    assert executor.__code__.co_filename == "<melder_no_overrides_codegen_creation_step_executor>"
-    caller_creations = SimpleNamespace(
-        _lock=threading.RLock(),
-        get_creation=lambda spell_id: None,
-        add_creation=lambda *args, **kwargs: None,
-        add_many_creations=lambda *args, **kwargs: None,
-        get_active_spellspace=lambda: None,
-        register_spellspace_creation=lambda *args, **kwargs: None,
-        get_spellspace_creation=lambda *args, **kwargs: None,
-        owner_conduit_id="conduit-1",
-    )
-    assert executor(_meld_for(caller_creations)) == "value:root"
-
-
-def test_no_overrides_compiler_uses_emitted_step_source_when_transient_source_unavailable(
-        monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Transient-source misses should still compile through emitted step source."""
-    monkeypatch.setattr(
-        no_overrides_compiler_module,
-        "_build_no_overrides_codegen_executor_source",
-        lambda transient_schema: None,
-    )
-
-    executor = no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
-        codegen_ir={
-            "steps_rows": (_make_no_overrides_step_row("root"),),
-            "root_spell_id": "root",
-            "transient_schema": {
-                "step_count": 1,
-                "root_step_index": 0,
-                "call_modes": (0,),
-                "dep1": (-1,),
-                "dep2a": (-1,),
-                "dep2b": (-1,),
-                "dep3a": (-1,),
-                "dep3b": (-1,),
-                "dep3c": (-1,),
-                "dep4a": (-1,),
-                "dep4b": (-1,),
-                "dep4c": (-1,),
-                "dep4d": (-1,),
-                "dep5a": (-1,),
-                "dep5b": (-1,),
-                "dep5c": (-1,),
-                "dep5d": (-1,),
-                "dep5e": (-1,),
-                "dep6a": (-1,),
-                "dep6b": (-1,),
-                "dep6c": (-1,),
-                "dep6d": (-1,),
-                "dep6e": (-1,),
-                "dep6f": (-1,),
-                "dep7a": (-1,),
-                "dep7b": (-1,),
-                "dep7c": (-1,),
-                "dep7d": (-1,),
-                "dep7e": (-1,),
-                "dep7f": (-1,),
-                "dep7g": (-1,),
-                "dep8a": (-1,),
-                "dep8b": (-1,),
-                "dep8c": (-1,),
-                "dep8d": (-1,),
-                "dep8e": (-1,),
-                "dep8f": (-1,),
-                "dep8g": (-1,),
-                "dep8h": (-1,),
-            },
-        },
-        spell_lookup={"root": _make_spell("root")},
-    )
-
-    assert callable(executor)
-    assert executor.__code__.co_filename == "<melder_no_overrides_codegen_creation_step_executor>"
 
 
 def test_no_overrides_compiler_build_kwargs_contract_payload_only_returns_copy() -> None:
@@ -798,63 +431,3 @@ def test_no_overrides_compiler_construct_spell_instance_accepts_tuple_positional
     assert captured["kwargs"] == {}
 
 
-def test_no_overrides_compiler_spellspace_route_reuses_existing_spellspace_singleton() -> None:
-    """The no-overrides compiler should reuse an existing spellspace creation instead of reconstructing it."""
-    creations = _Creations()
-    creations._active_spellspace = _Spellspace("space-1", creations.owner_conduit_id)
-    call_counter = {"value": 0}
-
-    def _build_root() -> str:
-        call_counter["value"] += 1
-        return "root-instance"
-
-    spell = _make_spell("root")
-    spell.existence = Existence.unique_per_spell_space
-    spell.spell = _build_root
-    row = _make_no_overrides_step_row("root")
-    row["existence"] = "unique_per_spell_space"
-    row["creations_target_kind"] = 3
-    row["must_register"] = True
-
-    executor = no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
-        codegen_ir={
-            "steps_rows": (row,),
-            "root_spell_id": "root",
-            "transient_schema": None,
-        },
-        spell_lookup={"root": spell},
-    )
-
-    assert executor(_meld_for(creations)) == "root-instance"
-    assert executor(_meld_for(creations)) == "root-instance"
-    assert call_counter["value"] == 1
-
-
-def test_no_overrides_compiler_existing_hit_skips_locks() -> None:
-    """Existing shared-instance hits should skip both spell and creations lock acquisition."""
-    creations = _Creations()
-    creations._lock = _ExplodingLock()
-    creations._creations["root"] = "existing-root"
-    spell = _make_spell("root")
-    spell.existence = Existence.unique
-    spell._lock = _ExplodingLock()
-    # `unique` is the one route whose store is the binding owner's
-    # `spell._owner_creations` (read off the spell, frame-wide), not a slot on
-    # the resolving meld. Point it at the probe holding the existing instance.
-    spell._owner_creations = creations
-    row = _make_no_overrides_step_row("root")
-    row["existence"] = "unique"
-    row["creations_target_kind"] = 1
-    row["use_spell_lock_hint"] = True
-    row["must_register"] = True
-
-    executor = no_overrides_compiler_module.compile_no_overrides_codegen_creation_executor(
-        codegen_ir={
-            "steps_rows": (row,),
-            "root_spell_id": "root",
-            "transient_schema": None,
-        },
-        spell_lookup={"root": spell},
-    )
-
-    assert executor(_meld_for(creations)) == "existing-root"

@@ -297,7 +297,10 @@ Dependencies include:
 - ParameterDIShape: Phase 1 classification of how a parameter should resolve.
 - Unresolved input: a single typed constructor parameter that no registered spell provides. It compiles as
   an UNRESOLVED_INPUT socket; the constructing meld supplies it by override, and `UnresolvedInputError`
-  names it when a construction goes without it (2026-09-26).
+  names it when a construction would go without it (2026-09-26).
+- Key-set plan: the code one override key set compiles to in a `SitePlanOverrideRuntime`; it builds only what
+  the payload does not supply. The empty key set is the normal plan of the many_only and generalized
+  families (2026-09-26).
 
 RE-ABSORBED 2026-08-02. This section was moved to the patch lane during the
 2026-08-01 recomposition on the reading that the Required Section Contract was a
@@ -688,13 +691,17 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3480-3520.
 3. `CreationContext` compiled execution:
    - Select no-hooks/hooks and no-overrides/overrides lanes.
    - Execute codegen-creation-backed runtime lanes and return the resolved instance.
+   - many_only and generalized roots run one site-plan runtime: normal melds its normal plan, override melds
+     the plan compiled for their key set, which builds only what the payload does not supply (2026-09-26).
+     Warm automatic id melds, override payloads and existing objects included, use the fast meld door.
    - Dynamic spells: the door takes the spell-index CreationGate ticket BEFORE it reads the context and
      holds it until the executor returns, calling the executor slots itself (2026-09-26).
 4. Creations registration/reuse occurs inside compiled execution per Existence. Each slotted
    lifetime is built once under its slot's build lock (store `slot_guard`, or Spell lock for
    unique); the store lock is only taken as a leaf around publication (2026-09-25).
-5. A constructor call that lacks an unresolved input fails argument binding; the failure path raises
-   `UnresolvedInputError` naming the consumer, parameter, expected type and override keys (2026-09-26).
+5. A meld that would construct a spell without one of its unresolved inputs raises `UnresolvedInputError`
+   naming the consumer, parameter, expected type and override keys, before anything under it is built
+   (2026-09-26).
 
 ### Sequence: Meld-Time Validation Gate
 1. `Meld._ensure_lineage_resolvable(...)` checks SpellSystemState validity.
@@ -859,6 +866,18 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Override key-set plans and the site-plan runtime (2026-09-26): each hydrated root of the many_only and
+  generalized families owns one `SitePlanOverrideRuntime`. Its normal plan (the empty key set) is the family's
+  inner no-overrides executor; an override meld runs the plan compiled for its payload's key tuple, which
+  builds only the sites the unsupplied parameters demand, so a supplied dependency and everything only it needs
+  is never constructed. Plans are compiled once per key set under the runtime's compile lock and read lock-free
+  after. A shared site is read lock-free where it is placed and built in an out-of-line miss that builds its
+  children first and then takes its slot guard, so a plan never holds one build lock across another site's
+  constructor and a stored shared site's children are not rebuilt. Operands depend on the key set only; supplied
+  values are never inspected beyond the equal-rank conflict guard. Operands go positionally only where the
+  receiving code binds that position to that name. Key errors keep their texts and are not cached.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:SitePlanOverrideRuntime`
+  and `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission`.
 - Shared context rebuild windows (2026-09-26): a dynamic spell's CreationContext and phase-11 plan are shared
   by every conduit that melds it, and a conduit-local rebuild (structural 1-4, resolution 5-11, deferred
   8-11) replaces them. Each such rebuild runs inside a CreationContextRebuild window that freezes and drains
@@ -881,8 +900,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   are a hash surface: a `SpellContract`/`SpellMap` `override` value (renamed from `spell_override`; any
   object is allowed) is written as itself only when it is a scalar, otherwise as a value-only reference to
   the consumer's descriptor that the no-overrides hydration resolves to the live object at meld. Phase 8
-  hashes the pool-invariant rows once per pass. The override lanes keep their earlier rows until the
-  override site-plan lowering replaces them.
+  hashes the pool-invariant rows once per pass. Override melds read the same resolved rows through the
+  key-set plans (2026-09-26).
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py:CodegenSignature`
   and `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:CodegenCreationSchemaHelpers.resolve_contract_override_ref`.
 - Phase 1 decides injection (2026-09-26): only a single class-like annotation or `list[T]` is injected; a
@@ -1072,12 +1091,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
   SINGLE_BY_ANNOTATION parameter of a resolvable spell with no matching registration at all; ambiguity
   still fails. The socket adds no DAG edge, dependency id or construction step and keeps its frame key for
   the existing watcher. The parameter is omitted unless the call supplies it, by identity, with None
-  counting as supplied. A later matching bind re-resolves it into a NORMAL edge. The named error comes only
-  from the constructor-failure path of the object that owns the socket; a stored object never demands the
+  counting as supplied. A later matching bind re-resolves it into a NORMAL edge. The named error is decided
+  before constructing the object that owns the socket (key-set plans and the solo call target, 2026-09-26);
+  a stored object never demands the
   input, including a consumer stored before its provider's spell was cleaned up (owner decision). Conjure
   never refuses these parameters. Cache generation 11 retires executors emitted before this wiring.
   EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
-  and `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.from_failed_construction`.
+  and `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.for_unsupplied`.
 - Phase-5 dependency visibility is broader than canonical artifact publication. Conduit-wide
   resolution publishes to the book's owned Spells; local resolution publishes only to its target.
   Borrowed and unselected dependency Spells retain their executable artifacts and creation contexts.
@@ -1233,12 +1253,17 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Direct meld and reuse-only resolution of a non-resolvable registration raise MeldExecutionError
   with its selected name/id and caller-supply guidance. Observational lookup remains available.
   EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._raise_non_resolvable_registration`.
-- A meld that constructs a spell without one of its unresolved inputs raises `UnresolvedInputError`, a
-  `MeldExecutionError` exported at the package root, chained from the binding TypeError. It names the
-  consumer, parameter, expected type and override keys, and lists every missing input. A TypeError with
-  every unresolved input supplied keeps the existing error. Since 2026-09-26 conjure no longer raises for a
+- A meld that would construct a spell without one of its unresolved inputs raises `UnresolvedInputError`, a
+  `MeldExecutionError` exported at the package root, before anything under that spell is built and with no
+  `__cause__` (2026-09-26; until then it was raised from the binding TypeError). It names the consumer,
+  parameter, expected type and override keys, and lists every missing input. A TypeError from a constructor
+  body with every unresolved input supplied keeps the existing error. Since 2026-09-26 conjure no longer raises for a
   typed parameter with no provider; two or more providers still fail Phase 3.
   EVIDENCE: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError`.
+- An override key that names no socket, a UNIQUE key that matches more than one, or equal-rank keys with
+  different values raise `MeldExecutionError("Failed to apply overrides.")` chained from the key error; a key
+  that targets a stored shared instance raises "already exists". Texts are unchanged by the 2026-09-26
+  key-set plans; a failed key set is not cached.
 - Duplicate binding keys or spell id collisions raise RuntimeError.
 - Conjure raises SpellbookValidationError when broken spells exist. Since 2026-09-26 the message names each
   broken spell and lists only its errors, each with what to change; the conduit verdict's reasons (scope
@@ -1501,16 +1526,16 @@ Package root:
     committed manifest via an accelerator cache.
 - path: `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
   start_line: 1
-  end_line: 633
-  loc: 633
-  verified_at: 2026-08-02T16:30:22Z
+  end_line: 667
+  loc: 667
+  verified_at: 2026-09-26T20:10:34Z
   note: GENERATED DURABLE BUILD ASSET holding `ENTRIES`; committed, do not
     edit by hand.
 - path: `src/melder/_build_assets/_bind_guard/_builder.py`
   start_line: 1
-  end_line: 368
-  loc: 368
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 387
+  loc: 387
+  verified_at: 2026-09-26T20:10:34Z
   note: package scanner and asset writer; build-time only, never imported at
     runtime.
 - path: `src/melder/_build_assets/_build_asset_runner.py`
@@ -1521,9 +1546,9 @@ Package root:
   note: explicit regeneration entrypoint.
 - path: `src/melder/system_document.py`
   start_line: 1
-  end_line: 395
-  loc: 395
-  verified_at: 2026-08-02T16:30:22Z
+  end_line: 403
+  loc: 403
+  verified_at: 2026-09-26T20:10:34Z
   note: immutable hardcopy system-document carrier used by package-root
     agent-facing docs.
 - path: `src/melder/__architecture__.py`
@@ -1555,9 +1580,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7219
-  loc: 7219
-  verified_at: 2026-09-26T09:26:45Z
+  end_line: 7222
+  loc: 7222
+  verified_at: 2026-09-26T20:10:34Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
@@ -1567,9 +1592,9 @@ Spellbook and binding:
   note: fluent binding adapter.
 - path: `src/melder/aether/spellbook/bind/bind.py`
   start_line: 1
-  end_line: 1263
-  loc: 1263
-  verified_at: 2026-09-24T11:09:19Z
+  end_line: 1316
+  loc: 1316
+  verified_at: 2026-09-26T20:10:34Z
   note: binding pipeline.
 - path: `src/melder/aether/spellbook/bind/scan.py`
   start_line: 1
@@ -1586,9 +1611,9 @@ Spellbook and binding:
     selected spell.
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 1690
-  loc: 1690
-  verified_at: 2026-09-19T19:57:57Z
+  end_line: 1717
+  loc: 1717
+  verified_at: 2026-09-26T20:10:34Z
   note: spell metadata and hooks.
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
@@ -1607,15 +1632,15 @@ Configuration and hooks:
 
 - path: `src/melder/aether/aether_configuration.py`
   start_line: 1
-  end_line: 771
-  loc: 771
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 885
+  loc: 885
+  verified_at: 2026-09-26T20:10:34Z
   note: root logger-policy configuration for Aether.
 - path: `src/melder/aether/aether_configuration_builder.py`
   start_line: 1
-  end_line: 289
-  loc: 289
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 286
+  loc: 286
+  verified_at: 2026-09-26T20:10:34Z
   note: fluent builder for Aether root configuration.
 - path: `src/melder/crystallizer/configuration/crystallizer_configuration.py`
   start_line: 1
@@ -1686,20 +1711,38 @@ SpellCompiler and validation:
   loc: 70
   verified_at: 2026-08-02T13:00:45Z
   note: DI shape classification.
+- path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
+  start_line: 1
+  end_line: 1430
+  loc: 1430
+  verified_at: 2026-09-26T20:10:34Z
+  note: key-set plan lowering: site graph from steps, placement, emission, call shape.
+- path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
+  start_line: 1
+  end_line: 384
+  loc: 384
+  verified_at: 2026-09-26T20:10:34Z
+  note: per-root site-plan runtime: normal plan and one plan per override key set.
+- path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py`
+  start_line: 1
+  end_line: 334
+  loc: 334
+  verified_at: 2026-09-26T20:10:34Z
+  note: override key grammar, ranks, P1 cuts and conflicts over a site graph.
 
 Aether and frames:
 
 - path: `src/melder/aether/aether.py`
   start_line: 1
-  end_line: 2057
-  loc: 2057
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 2456
+  loc: 2456
+  verified_at: 2026-09-26T20:10:34Z
   note: global singleton and frame registry.
 - path: `src/melder/aether/aether_utility_system.py`
   start_line: 1
-  end_line: 459
-  loc: 459
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 460
+  loc: 460
+  verified_at: 2026-09-26T20:10:34Z
   note: process-wide utility/logging provider host.
 - path: `src/melder/crystallizer/crystallizer.py`
   start_line: 1
@@ -1735,9 +1778,9 @@ Aether and frames:
   note: live in-memory module embodiment for crystallized code.
 - path: `src/melder/mutation_research/mutation_research.py`
   start_line: 1
-  end_line: 3934
-  loc: 3934
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 3990
+  loc: 3990
+  verified_at: 2026-09-26T20:10:34Z
   note: hosted mutation-research root owned by Aether (ResearchSet registry +
     composition emission; the old conduit/frame facades are GONE, 2026-07-11).
   (directory description carried forward) the formal research record: ResearchSet facade, ResearchLane, ResearchNode, TransitionEntry, ResearchJournal, ResidenceRegistry, NetworkVersioner. NOTE: this text described the DIRECTORY entry `src/melder/mutation_research/research_set/`, which was expanded into the eight modules below because a directory cannot carry a line range.
@@ -1791,18 +1834,18 @@ Aether and frames:
   note: expanded from the directory entry `src/melder/mutation_research/research_set/`
 - path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
   start_line: 1
-  end_line: 1126
-  loc: 1126
-  verified_at: 2026-09-23T11:33:20Z
+  end_line: 1136
+  loc: 1136
+  verified_at: 2026-09-26T20:10:34Z
   note: per-frame state and control plane.
 
 Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
 
 - path: `src/melder/aether/aetheric_mediator/mediator.py`
   start_line: 1
-  end_line: 881
-  loc: 881
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1217
+  loc: 1217
+  verified_at: 2026-09-26T20:10:34Z
   note: plane root; constructed, owned, and cleaned by Aether and live for
     frame creation.
 - path: `src/melder/aether/aetheric_mediator/claim_table.py`
@@ -1819,27 +1862,27 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: serialized admission decision point.
 - path: `src/melder/aether/aetheric_mediator/transaction_session.py`
   start_line: 1
-  end_line: 819
-  loc: 819
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1035
+  loc: 1035
+  verified_at: 2026-09-26T20:10:34Z
   note: live transaction span, joins, inverses, outcome policy.
 - path: `src/melder/aether/aetheric_mediator/information_registry.py`
   start_line: 1
-  end_line: 472
-  loc: 472
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1057
+  loc: 1057
+  verified_at: 2026-09-26T20:10:34Z
   note: fact baselines plus live activity indexes.
 - path: `src/melder/aether/aetheric_mediator/strategy_builder.py`
   start_line: 1
-  end_line: 213
-  loc: 213
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 310
+  loc: 310
+  verified_at: 2026-09-26T20:10:34Z
   note: transaction type to strategy class registry.
 - path: `src/melder/aether/aetheric_mediator/transaction_strategy.py`
   start_line: 1
-  end_line: 193
-  loc: 193
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 212
+  loc: 212
+  verified_at: 2026-09-26T20:10:34Z
   note: the per-family dispatch ABC; owns scope proportionality.
 - path: `src/melder/aether/aetheric_mediator/identity.py`
   start_line: 1
@@ -1861,9 +1904,9 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: canonical scope-key builders over the `ScopePrefix` vocabulary.
 - path: `src/melder/aether/aetheric_mediator/transaction_type.py`
   start_line: 1
-  end_line: 78
-  loc: 78
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 94
+  loc: 94
+  verified_at: 2026-09-26T20:10:34Z
   note: closed transaction vocabulary (PROVISIONAL membership).
 - path: `src/melder/aether/aetheric_mediator/transaction_request.py`
   start_line: 1
@@ -2017,9 +2060,9 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: broad manual non-codegen room type.
 - path: `src/melder/nexus/rift/rift_space/workstation.py`
   start_line: 1
-  end_line: 945
-  loc: 945
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 947
+  loc: 947
+  verified_at: 2026-09-26T20:10:34Z
   note: room-local binding canvas.
 - path: `src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py`
   start_line: 1
@@ -2180,9 +2223,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6834
-  loc: 6834
-  verified_at: 2026-09-23T12:28:41Z
+  end_line: 6897
+  loc: 6897
+  verified_at: 2026-09-26T20:10:34Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
@@ -2192,9 +2235,9 @@ Conduit runtime:
   note: conduit state enum.
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
-  end_line: 3780
-  loc: 3780
-  verified_at: 2026-09-23T11:33:20Z
+  end_line: 3788
+  loc: 3788
+  verified_at: 2026-09-26T20:10:34Z
   note: contracts and lineage.
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
   start_line: 1
@@ -2219,27 +2262,27 @@ Resolution and creations:
 
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 1890
-  loc: 1890
-  verified_at: 2026-09-22T19:45:23Z
+  end_line: 2009
+  loc: 2009
+  verified_at: 2026-09-26T20:10:34Z
   note: meld orchestration.
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
-  end_line: 309
-  loc: 309
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 310
+  loc: 310
+  verified_at: 2026-09-26T20:10:34Z
   note: compiled execution lanes and runtime dispatch.
 - path: `src/melder/aether/conduit/meld/contracts/spell_map.py`
   start_line: 1
-  end_line: 344
-  loc: 344
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 351
+  loc: 351
+  verified_at: 2026-09-26T20:10:34Z
   note: SpellMap descriptor.
 - path: `src/melder/aether/conduit/meld/contracts/spell_contract.py`
   start_line: 1
-  end_line: 343
-  loc: 343
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 344
+  loc: 344
+  verified_at: 2026-09-26T20:10:34Z
   note: SpellContract descriptor.
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
@@ -2255,9 +2298,9 @@ Resolution and creations:
   note: conduit/root specialization seam over the generic creations store.
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
-  end_line: 589
-  loc: 589
-  verified_at: 2026-09-22T19:45:23Z
+  end_line: 650
+  loc: 650
+  verified_at: 2026-09-26T20:10:34Z
   note: spellspace scoping.
 
 Control plane:
@@ -2315,16 +2358,16 @@ Utilities:
 
 - path: `src/melder/utilities/caching_system/caching_system.py`
   start_line: 1
-  end_line: 624
-  loc: 624
-  verified_at: 2026-09-26T08:22:34Z
+  end_line: 806
+  loc: 806
+  verified_at: 2026-09-26T20:10:34Z
   note: release-bound creation-cache admission and atomic envelope persistence.
 
 - path: `src/melder/utilities/general_base/cleanable.py`
   start_line: 1
-  end_line: 301
-  loc: 301
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 420
+  loc: 420
+  verified_at: 2026-09-26T20:10:34Z
   note: cleanup contract.
 - path: `src/melder/utilities/synchronization/phase_scheduler.py`
   start_line: 1
@@ -2340,9 +2383,9 @@ Utilities:
   note: logger adapter.
 - path: `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
   start_line: 1
-  end_line: 2710
-  loc: 2710
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 2733
+  loc: 2733
+  verified_at: 2026-09-26T20:10:34Z
   note: protocol generation and bounded interface-file maintenance utility.
 - path: `src/melder/utilities/helpers/id_builder.py`
   start_line: 1
@@ -2466,7 +2509,7 @@ inputs use existing execution, Nexus exposes references, and durable replay pres
 conjure: typed parameter, no provider -> UNRESOLVED_INPUT socket -> Phase-4 warning (conjure succeeds;
          listed only by conjure(validation_warnings=True))
 meld:    value supplied -> constructor receives it
-         value missing  -> TypeError at binding -> UnresolvedInputError (a MeldExecutionError)
+         value missing  -> UnresolvedInputError (a MeldExecutionError) before construction
 bind:    matching provider added later -> consumer re-resolves -> normal dependency edge
 ```
 
@@ -2476,9 +2519,27 @@ flowchart LR
   U --> I[Phase-4 warning; reported only with validation_warnings=True; conjure continues]
   U --> M{Meld supplies the value?}
   M -->|Yes| K[Constructor receives it]
-  M -->|No| E[UnresolvedInputError]
+  M -->|No| E[UnresolvedInputError before construction]
   B[Later matching bind] --> R[Re-resolve to a normal edge]
   U --> R
+```
+
+### Override Key-Set Plans
+```text
+meld(override) -> key tuple -> stored plan? -> plan(meld, ov)
+                               no -> resolver -> demand (skip supplied subtrees) -> emit, compile, store
+normal meld   -> normal plan (empty key set) of the same runtime
+```
+
+```mermaid
+flowchart LR
+  O[Override meld] --> K[Key tuple]
+  K --> C{Plan stored?}
+  C -->|No| R[Resolve keys, demand, emit, compile]
+  R --> P[Plan]
+  C -->|Yes| P
+  P --> B[Build only unsupplied sites]
+  N[Normal meld] --> Q[Normal plan of the same runtime]
 ```
 
 ### ASCII Context Diagram (C4)
@@ -2590,6 +2651,9 @@ without rewriting the original record or existing live IDs.
 
 ## Information Sources
 - `src/melder/utilities/caching_system/caching_system.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py`
 - `src/melder/utilities/helpers/signature_reflection.py`
 - `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
@@ -2707,6 +2771,13 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 override site-plan lane: override melds of the many_only and generalized families run one compiled
+plan per override key set that never builds a supplied dependency; normal melds of those families run the same
+runtime's normal plan, and unresolved inputs are decided before construction in every family. The Phase-5
+per-path overlay, the override-targeting surface and the old emitters are retired, so conjure no longer grows
+with logical paths. The meld sequence, the operational invariants, the failure modes, the diagrams and the code
+map carry it; the component map carries the mechanics.
 
 2026-09-26 structural snapshot: a warm conjure over an unchanged book replays the phase 3-4 results recorded in
 the conduit cache bundle instead of running phases 1-4; the conjure sequence, the pipeline diagram and the

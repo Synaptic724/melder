@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T19:14:12Z
+- Updated: 2026-09-26T19:43:17Z
 
 ## User Narrative
 As the Melder owner, I want Melder's per-scope-cycle runtime on the real-world gauntlet (free-threaded, three
@@ -64,6 +64,7 @@ weakens a cleanup or concurrency guarantee is out.
 - [ ] Task: TASK-2026-09-26-measure-gauntlet-scope-cycle-costs - reproduce, attribute, rank candidates (no code).
 - [ ] Task: TASK-2026-09-26-emit-positional-constructor-args - P1, positional constructor arguments.
 - [ ] Task: TASK-2026-09-26-spellspace-meld-warm-id-lane - P4, SpellSpace.meld warm id lane.
+- [ ] Task: TASK-2026-09-26-attribute-gauntlet-tail-spikes - Melder-only multi-millisecond cycle spikes.
 - [ ] Task: one task per candidate the owner picks, each behind patch docs and a gauntlet gate.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.

@@ -90,6 +90,7 @@ Disposition values
 | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | artifacts/gauntlet_runtime_speed_20260926/ | measurement_baseline | active | retain_as_reference | Owner baseline, VM runs, probes, P3 research (dropped) and the lever measurements; P4 runs under vm_runs/. | 2026-09-26T19:14:52Z | REQUIRED |
 | tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md | artifacts/gauntlet_runtime_speed_20260926/p1_positional_args/ | apply_script_and_tests | active | retain_as_reference | Apply script, diff and the two new test files for P1. | 2026-09-26T16:15:41Z | REQUIRED |
 | tickets/tasks/2026-09-26_spellspace_meld_warm_id_lane_task.md | artifacts/gauntlet_runtime_speed_20260926/p4_spellspace_warm_lane/ | apply_script_and_tests | active | retain_as_reference | Apply script, validated diff and the new component test for P4; runs under vm_runs/p4_*. | 2026-09-26T19:14:52Z | REQUIRED |
+| tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md | artifacts/gauntlet_runtime_speed_20260926/tail/ | tail_attribution | active | retain_as_reference | VM runs and probes attributing the Melder-only cycle spikes; owner runs filed beside them. | 2026-09-26T19:43:17Z | REQUIRED |
 <!-- END USER-DEFINED: active_artifacts -->
 
 ## Recently Cleared Artifacts

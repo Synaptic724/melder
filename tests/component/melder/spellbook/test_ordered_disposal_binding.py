@@ -362,3 +362,31 @@ with configured_book(["flush", "close"]) as book:
         records.append(json.loads(result.stdout))
     assert records[0] == records[1] == records[2]
     assert records[0][1] == ["stop", "flush", "close"]
+class OrderedDisposalConsumer:
+    """Consume one disposal-bearing service, so a site plan (not the solo lane) builds the service."""
+
+    def __init__(self, service: OrderedDisposalService) -> None:
+        """Keep the injected service."""
+        self.service = service
+
+
+@pytest.mark.parametrize("service_existence", ["many", "unique_per_conduit"])
+@pytest.mark.parametrize("priority,expected", [
+    (False, ["stop", "flush", "close"]),
+    (True, ["flush", "close", "stop"]),
+])
+def test_plan_families_dispose_dependencies_in_bound_order(
+        service_existence: str,
+        priority: bool,
+        expected: list[str],
+) -> None:
+    """A dependency built by a site plan (many_only when all-many, generalized otherwise) disposes in bound order."""
+    with configured_book(["flush", "close"], priority) as book:
+        book.bind(
+            spell=OrderedDisposalService, existence=service_existence, disposal_method_names=["close", "stop"],
+        )
+        consumer_id = book.bind(spell=OrderedDisposalConsumer, existence="many")
+        conduit = book.conjure()
+        consumer = conduit.meld(spell_id=consumer_id)
+        conduit.permanent_cleanup()
+        assert consumer.service.calls == expected

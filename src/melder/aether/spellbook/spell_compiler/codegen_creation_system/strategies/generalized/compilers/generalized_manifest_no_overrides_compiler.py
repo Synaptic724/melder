@@ -1,12 +1,16 @@
 """
-Family-owned no-overrides lane compiler for the generalized family.
+Opt-in singleton specializer and shared row helpers for the generalized family.
 
-This module owns the no-overrides lane end to end:
-    - row-driven source emission (manifest rows in, factory source out;
-      no live spells touched during emission),
-    - executor bindings construction (flat arrays + slotted runtime rows),
-    - hydration through the process-wide executor factory cache (one compile
-      plus one exec per source shape per process; one factory call per spell).
+Normal melds run the site-plan runtime's normal plan since S2b-2; the row-driven step and
+transient emitters this module owned were retired on 2026-09-26 (R2). What remains:
+    - the opt-in singleton warm-tail specializer
+      (`generalized_singleton_specialization_enabled`): `select_specializable_step_indexes`,
+      `emit_specialized_step_plan_source` and `build_specialized_no_overrides_executor`
+      (row-driven source, hydrated through the process-wide executor factory cache; it deopts
+      to the site-plan normal plan);
+    - row helpers the hydrator and the specializer share: `resolve_contract_payload_rows`,
+      `resolve_root_instance_key_from_rows`, `row_inlinable_common_shape` and the positional
+      prefix helpers (`positional_dependency_names`, P1).
 
 Emission semantics are a faithful port of the legacy step-plan emitter with
 one deliberate hot-path improvement: reuse reads are inlined as direct
@@ -31,9 +35,7 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library import (
     SpellGeneralizedCodegenPlanTargetKind,
-    build_transient_no_overrides_source,
     construct_spell_instance,
-    normalize_transient_schema,
     raise_meld_construction_error,
     register_spell_instance,
     register_spell_instance_prebound,
@@ -53,29 +55,6 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
     SpellSpaceScopeError,
 )
 
-EXECUTOR_NAME = "_no_overrides_codegen_creation_executor"
-
-_STEP_FACTORY_SOURCE_NAME = (
-    "<melder_generalized_no_overrides_step_factory>"
-)
-_TRANSIENT_FACTORY_SOURCE_NAME = (
-    "<melder_generalized_no_overrides_transient_factory>"
-)
-
-_STEP_BINDING_NAMES = (
-    "steps",
-    "step_spells",
-    "step_spell_ids",
-    "step_disposal_methods",
-    "step_existences",
-    "step_instance_keys",
-    "step_dep_keys",
-    "step_owner_creations",
-    "step_targets",
-    "step_contract_values",
-    "step_positional_args",
-    "root_instance_key",
-)
 
 _STEP_STATIC_NAMESPACE = {
     "MeldExecutionError": MeldExecutionError,
@@ -87,229 +66,15 @@ _STEP_STATIC_NAMESPACE = {
     "_register_spell_instance": register_spell_instance,
 }
 
-_TRANSIENT_STATIC_NAMESPACE = {
-    "MeldExecutionError": MeldExecutionError,
-    "_raise_meld_construction_error": raise_meld_construction_error,
-}
-
-_TRANSIENT_SCHEMA_SEQUENCE_FIELDS = (
-    "dep1",
-    "dep2a", "dep2b",
-    "dep3a", "dep3b", "dep3c",
-    "dep4a", "dep4b", "dep4c", "dep4d",
-    "dep5a", "dep5b", "dep5c", "dep5d", "dep5e",
-    "dep6a", "dep6b", "dep6c", "dep6d", "dep6e", "dep6f",
-    "dep7a", "dep7b", "dep7c", "dep7d", "dep7e", "dep7f", "dep7g",
-    "dep8a", "dep8b", "dep8c", "dep8d", "dep8e", "dep8f", "dep8g", "dep8h",
-)
-
 
 # ---------------------------------------------------------------------------
 # Public hydration entrypoint
 # ---------------------------------------------------------------------------
 
-def hydrate_no_overrides_executor(
-        *,
-        rows: Sequence[Dict[str, Any]],
-        transient_schema: Optional[Dict[str, Any]],
-        root_instance_key: Optional[Tuple[str, Optional[int]]],
-        root_spell_id: Optional[str],
-        spell_lookup: Dict[str, Any],
-) -> Callable[..., Any]:
-    """
-    Hydrate the inner no-overrides executor from manifest rows.
-
-    Contract:
-        - Contract override payload references in the rows are resolved to the
-          consumer's LIVE descriptor values first (`resolve_contract_payload_rows`),
-          so every binding and runtime row below carries the object itself, by
-          identity, in-process and after a cache load alike (2026-09-26).
-        - Emission is a pure function of rows/schema plus each step's
-          positional-dependency prefix. Live spells are touched only by
-          bindings construction and by `rows_positional_dependency_names`,
-          which reads each step target's construction path, never its
-          annotations.
-        - Transient unrolled emission is used exactly under the legacy rule:
-          schema present, every step `many`, no step registering, and all
-          call modes supported by the unrolled builder.
-        - One compile + one exec per source shape per process via the factory
-          cache; one factory call here.
-
-    Raises:
-        RuntimeError:
-            When rows are invalid or the root instance key is unresolvable.
-    """
-    rows = resolve_contract_payload_rows(rows=rows, spell_lookup=spell_lookup)
-    runtime_rows = build_runtime_rows(
-        rows=rows,
-        spell_lookup=spell_lookup,
-    )
-
-    if transient_schema is not None and _rows_support_transient(rows):
-        normalized_schema = normalize_transient_schema(
-            transient_schema=transient_schema,
-        )
-        transient_source = build_transient_no_overrides_source(
-            transient_schema=normalized_schema,
-        )
-        if transient_source is not None:
-            bindings = _build_transient_bindings(
-                normalized_schema=normalized_schema,
-                runtime_rows=runtime_rows,
-            )
-            factory_source = build_executor_factory_source(
-                inner_source=transient_source,
-                binding_names=tuple(bindings.keys()),
-                executor_name=EXECUTOR_NAME,
-            )
-            factory = get_or_build_executor_factory(
-                factory_source=factory_source,
-                source_name=_TRANSIENT_FACTORY_SOURCE_NAME,
-                static_namespace=_TRANSIENT_STATIC_NAMESPACE,
-            )
-            return factory(bindings)
-
-    resolved_root_instance_key = resolve_root_instance_key_from_rows(
-        rows=rows,
-        explicit_root_instance_key=root_instance_key,
-        root_spell_id=root_spell_id,
-    )
-    inner_source = emit_step_plan_source(
-        rows=rows,
-        root_instance_key=resolved_root_instance_key,
-        positional_dependency_names=rows_positional_dependency_names(
-            rows=rows,
-            spell_lookup=spell_lookup,
-        ),
-    )
-    bindings = _build_step_bindings(
-        rows=rows,
-        runtime_rows=runtime_rows,
-        root_instance_key=resolved_root_instance_key,
-    )
-    factory_source = build_executor_factory_source(
-        inner_source=inner_source,
-        binding_names=_STEP_BINDING_NAMES,
-        executor_name=EXECUTOR_NAME,
-    )
-    factory = get_or_build_executor_factory(
-        factory_source=factory_source,
-        source_name=_STEP_FACTORY_SOURCE_NAME,
-        static_namespace=_STEP_STATIC_NAMESPACE,
-    )
-    return factory(bindings)
-
 
 # ---------------------------------------------------------------------------
 # Row-driven emission (owned)
 # ---------------------------------------------------------------------------
-
-def emit_step_plan_source(
-        *,
-        rows: Sequence[Dict[str, Any]],
-        root_instance_key: Tuple[str, Any],
-        positional_dependency_names: Optional[Tuple[Tuple[str, ...], ...]] = None,
-) -> str:
-    """
-    Emit the inner no-overrides step-plan executor source from manifest rows.
-
-    Contract:
-        - Pure function of row data plus the root key's POSITION (the emitted
-          source embeds step indices only, never identity values, so factory
-          sharing across same-shape spells is preserved) and, when supplied,
-          each step's positional-dependency prefix.
-        - POSITIONAL PREFIX: `positional_dependency_names` holds one tuple per
-          row (built by `rows_positional_dependency_names`). A step passes the
-          named dependency values positionally, in that order, ahead of its
-          remaining keyword arguments; every value still binds to the
-          parameter it was resolved for. `None` keeps every argument keyword,
-          which is what a caller without live spells gets. A tuple whose
-          length differs from `rows` raises RuntimeError.
-        - Faithful port of the legacy step-plan emission semantics (existence
-          routing, lock disciplines, registration stores, inlined common-shape
-          constructors) with reuse reads inlined as direct `_creations.get`
-          dict reads.
-        - LOCALS MODE: when every step is inlinable and every dependency key
-          resolves to an emitted step, step results live in per-step local
-          variables and dependency reads compile to direct local loads - no
-          `instance_results` dict, no tuple-key hashing, and no runtime root
-          presence check (root assignment is statically guaranteed).
-        - DICT MODE: any generic-constructor step falls back to the
-          `instance_results` dict so `_construct_spell_instance` keeps its
-          full recipe surface.
-    """
-    _require_positional_names_per_row(
-        rows=rows,
-        positional_dependency_names=positional_dependency_names,
-    )
-    key_to_step_index: Dict[Any, int] = {}
-    for step_index, row in enumerate(rows):
-        key_to_step_index[tuple(row["instance_key"])] = step_index
-
-    locals_mode = True
-    normalized_root_key = (root_instance_key[0], root_instance_key[1])
-    if normalized_root_key not in key_to_step_index:
-        locals_mode = False
-    if locals_mode:
-        for row in rows:
-            inlinable_params = row_inlinable_common_shape(row)
-            if inlinable_params is None:
-                locals_mode = False
-                break
-            for _param_name, dependency_keys in inlinable_params:
-                for dependency_key in dependency_keys:
-                    dependency_key_tuple = (
-                        dependency_key[0],
-                        dependency_key[1],
-                    )
-                    if dependency_key_tuple not in key_to_step_index:
-                        locals_mode = False
-                        break
-                if not locals_mode:
-                    break
-            if not locals_mode:
-                break
-
-    # Step-constant aliases execute ONCE at factory-call time (per
-    # hydration) and reach the executor as CLOSURE CELLS: zero per-call
-    # setup, LOAD_DEREF at use sites, and - decisive under free-threading -
-    # no per-call incref/decref sweep over shared spells/stores the way
-    # signature defaults are filled. Probe-measured: the default-param form
-    # of this hoist was a wash (fill cost == removed bytecode).
-    lines = _step_alias_hoist_lines(
-        rows=rows,
-        locals_mode=locals_mode,
-    )
-    lines.append(f"def {EXECUTOR_NAME}(meld):")
-    if not locals_mode:
-        lines.append("    instance_results = {}")
-    for step_index, row in enumerate(rows):
-        _append_step_resolution_source(
-            lines=lines,
-            step_index=step_index,
-            row=row,
-            key_to_step_index=key_to_step_index if locals_mode else None,
-            positional_names=(
-                positional_dependency_names[step_index]
-                if positional_dependency_names is not None
-                else ()
-            ),
-        )
-    if locals_mode:
-        lines.append(
-            f"    return instance_{key_to_step_index[normalized_root_key]}"
-        )
-    else:
-        lines.extend([
-            "    if root_instance_key not in instance_results:",
-            "        raise MeldExecutionError(",
-            "            spell_id=root_instance_key[0],",
-            "            spell_name=root_instance_key[0],",
-            "            message=f\"No-overrides codegen root instance '{root_instance_key[0]}' is missing.\",",
-            "        )",
-            "    return instance_results[root_instance_key]",
-        ])
-    return "\n".join(lines)
 
 
 def _append_step_resolution_source(
@@ -921,7 +686,7 @@ def rows_positional_dependency_names(
     Compute each row's positional-dependency prefix from its live target.
 
     Contract:
-        - One tuple per row, in row order, for `emit_step_plan_source` and
+        - One tuple per row, in row order, for
           `emit_specialized_step_plan_source`.
         - Non-inlinable rows (generic constructor, existing creation), rows
           with no dependency parameters and rows whose call carries a
@@ -1309,62 +1074,6 @@ def _build_step_bindings(
     }
 
 
-def _build_transient_bindings(
-        *,
-        normalized_schema: Dict[str, Any],
-        runtime_rows: Tuple[CodegenStepRuntimeRow, ...],
-) -> Dict[str, Any]:
-    """
-    Build transient-lane bindings from the normalized schema plus live targets.
-
-    Raises:
-        RuntimeError:
-            When schema step count mismatches rows or a step is not callable.
-    """
-    step_count = normalized_schema["step_count"]
-    if step_count != len(runtime_rows):
-        raise RuntimeError(
-            "generalized transient schema step_count does not match rows."
-        )
-    transient_targets = []
-    for step_index, runtime_row in enumerate(runtime_rows):
-        spell = runtime_row.spell
-        if not (
-                spell.is_class_spell
-                or spell.is_method_spell
-                or spell.is_lambda_spell
-        ):
-            raise RuntimeError(
-                "generalized transient lane requires callable steps; "
-                f"step {step_index} is not callable."
-            )
-        transient_targets.append(spell.spell)
-
-    bindings: Dict[str, Any] = {
-        "transient_root_index": normalized_schema["root_step_index"],
-        "transient_targets": tuple(transient_targets),
-        "steps": runtime_rows,
-    }
-    for field_name in _TRANSIENT_SCHEMA_SEQUENCE_FIELDS:
-        bindings[f"transient_{field_name}"] = normalized_schema[field_name]
-    return bindings
-
-
-def _rows_support_transient(rows: Sequence[Dict[str, Any]]) -> bool:
-    """
-    Row-driven port of the transient-support rule.
-
-    Contract:
-        - True only when every row is Existence.many and no row registers.
-    """
-    for row in rows:
-        if row["existence"] != Existence.many.name:
-            return False
-        if row["must_register"]:
-            return False
-    return True
-
-
 def resolve_root_instance_key_from_rows(
         *,
         rows: Sequence[Dict[str, Any]],
@@ -1457,7 +1166,8 @@ def emit_specialized_step_plan_source(
         Replace each captured `unique` step's warm walk (spell tuple load +
         `_owner_creations` attr read + shared `_creations` dict get + None
         branch) with one frame-local int compare, while emitting every
-        non-captured step exactly as the generic emitter does.
+        non-captured step through the shared per-step emitters, exactly as
+        the retired generic step emitter did (R2, 2026-09-26).
 
     Contract:
         - Pure function of rows plus capture POSITIONS: the source embeds step
@@ -1496,8 +1206,8 @@ def emit_specialized_step_plan_source(
             Resolved root instance key for the lane.
         positional_dependency_names:
             Optional per-row positional-dependency prefixes (see
-            `emit_step_plan_source`); non-captured steps receive theirs so
-            they compile exactly as in the generic body.
+            `positional_dependency_names`); non-captured steps receive theirs
+            so their direct calls pass the P1-safe positional prefix.
 
     Returns:
         str: Identity-free specialized executor source (one `def` statement).
@@ -1527,8 +1237,9 @@ def emit_specialized_step_plan_source(
                 f"'{rows[step_index]['existence']}'."
             )
 
-    # Mirror the generic emitter's locals-mode decision exactly so the
-    # non-captured steps compile identically in both bodies.
+    # Locals mode follows the rule the retired generic step emitter used (the
+    # root key is a step and every row's dependency keys resolve to steps), so
+    # non-captured steps compile exactly as they did before R2.
     key_to_step_index: Dict[Any, int] = {}
     for step_index, row in enumerate(rows):
         key_to_step_index[tuple(row["instance_key"])] = step_index

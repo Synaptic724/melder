@@ -161,3 +161,47 @@
 
 ### Rollback
 - Restore the solo guard and the hook; plans are unaffected.
+
+## R2: the old normal emitters are retired (2026-09-26)
+
+### Before
+- Since S2b-2 normal melds run the site-plan runtime, but the old normal emission stayed in the tree: the
+  generalized compiler's step and transient source and compile entry points (26 symbols), the generalized manifest
+  compiler's `emit_step_plan_source`, `hydrate_no_overrides_executor` and transient bindings (10), the runtime
+  library's re-exports `build_transient_no_overrides_source`, `get_existing_creation` and
+  `normalize_transient_schema`, the many_only compiler's emission (22), `ManyOnlyCodegenCreationHelpers.freeze_value`
+  and `build_override_step_row`, and `ManyOnlyNoOverridesCodegenCreationStep` (never instantiated; the manifest
+  called its static signature builder). A reachability pass from `melder` (r2_reach.py) found no live caller.
+
+### After
+- All of it is removed. What remains: the generalized compiler keeps row hydration, the generic construction helper
+  and kwargs builder, the construction-failure raise and the registration helpers the specializer's source calls;
+  the generalized manifest compiler keeps the opt-in singleton specializer and the row helpers it shares with the
+  hydrator (P1's positional helpers included); the many_only compiler keeps the call-mode labels, the manifest's
+  transient-schema builder, row hydration and root-key resolution.
+  `many_only_manifest.build_many_only_executor_signature` replaces the step's static builder and hashes the same six
+  parts in the same order.
+
+### Interface / State Deltas
+- Internal only; nothing removed is exported at the package root. Manifest formats, `transient_schema` and executor
+  signatures are unchanged: no cache generation. Module docstrings describe what remains.
+
+### Behavior Deltas
+- None.
+
+### Validation Expectations
+- All suites on 3.14t and GIL, and a collected-test diff: only tests of removed code leave. Live contracts move to
+  the code that still carries them: positional-prefix, collection, shareability and payload emission through the
+  specializer; row validation through `_hydrate_steps_from_rows`; the root-key helper through many_only; the
+  signature through the manifest builder. New coverage for what the removed executor tests pinned: each Spell's live
+  ordered disposal list reaches registration in site plans, a stored `unique` is read without a lock, and plan
+  families dispose in bound order through real cleanup. Two owner benchmarks that monkeypatched the removed
+  `_all_steps_inlinable` are deleted.
+
+### Rollback
+- Restore the removed symbols and the step module from git. Rolling back S2b-2 (hydrators on the old inner
+  executors) now needs them first.
+
+### Mapping
+- After -> apply_r2_edits.py (seven src files, the step module deleted) -> apply_r2_test_edits.py (eight test files,
+  two benchmarks deleted) and the suites (task note 2026-09-26T19:59:55Z).

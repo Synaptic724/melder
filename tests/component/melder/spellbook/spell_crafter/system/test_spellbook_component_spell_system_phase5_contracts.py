@@ -230,11 +230,11 @@ def test_component_phase5_contract_dependencies_span_borrower_blueprint() -> Non
         Validate a borrower's root blueprint spans the contracted dependency graph.
     Contract:
         - Root blueprints include the contracted dependency DAG.
-        - No SocketRef is recorded (Phase 8 mints the deep paths).
+        - No path is minted here (Phase 8 mints the deep paths).
     Returns:
         None.
     Raises:
-        AssertionError: If DAG nodes are missing or socket refs appear.
+        AssertionError: If DAG nodes are missing or a path is minted.
     """
     configuration = _make_dynamic_configuration()
     owner_book = Spellbook(configuration=configuration)
@@ -304,7 +304,6 @@ def test_component_phase5_contract_dependencies_span_borrower_blueprint() -> Non
             leaf_a_id,
             leaf_b_id,
         }
-        assert blueprint.socket_refs == []
         assert blueprint.path_registry.resolve_path_id(("root",)) is None
     finally:
         if borrower is not None:

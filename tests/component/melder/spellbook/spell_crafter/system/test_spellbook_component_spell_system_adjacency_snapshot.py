@@ -240,11 +240,11 @@ def test_component_snapshot_topologies_mint_no_blueprint_paths() -> None:
         Validate a snapshot with topologies builds the dependency DAG and no socket refs.
     Contract:
         - The DAG holds the root and its dependency.
-        - Topology sockets are not copied into SocketRefs and mint no path.
+        - Topology sockets mint no path here.
     Returns:
         None.
     Raises:
-        AssertionError: If socket refs are recorded or the DAG is incomplete.
+        AssertionError: If a path is minted or the DAG is incomplete.
     """
     frame = AethericFrame(Aether(), "component-snapshot-topology-blueprint")
     states = frame._spell_system_states
@@ -276,7 +276,6 @@ def test_component_snapshot_topologies_mint_no_blueprint_paths() -> None:
             root_id
         ]
         assert set(blueprint.dag.nodes) == {root_id, dep_id}
-        assert blueprint.socket_refs == []
         assert blueprint.path_registry.resolve_path_id(("dep",)) is None
     finally:
         frame.cleanup()

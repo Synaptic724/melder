@@ -1,8 +1,8 @@
 """
 Component tests for deep meld overrides across layered dependency graphs.
 
-These tests exercise SpellOverrider through Conduit.meld to validate
-deep path targeting, wildcard rules, precedence, and error handling.
+These tests exercise override key-set plans through Conduit.meld to
+validate deep path targeting, wildcard rules, precedence, and error handling.
 """
 from contextlib import contextmanager
 from typing import Iterator

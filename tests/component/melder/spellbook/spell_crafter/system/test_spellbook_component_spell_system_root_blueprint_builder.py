@@ -40,11 +40,11 @@ def test_component_root_blueprint_builder_mints_no_paths_from_state_topologies()
         Validate the root blueprint builder builds the DAG from state and walks no paths.
     Contract:
         - The DAG holds the full chain and the root is ordered last.
-        - No SocketRef is recorded and no path is minted (Phase 8 mints paths).
+        - No path is minted here (Phase 8 mints paths).
     Returns:
         None.
     Raises:
-        AssertionError: If the DAG is incomplete or socket refs appear.
+        AssertionError: If the DAG is incomplete or a path is minted.
     """
     frame = AethericFrame(Aether(), "component-root-blueprints")
     states = frame._spell_system_states
@@ -94,7 +94,6 @@ def test_component_root_blueprint_builder_mints_no_paths_from_state_topologies()
         blueprints = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
         blueprint = blueprints[root_id]
         assert set(blueprint.dag.nodes) == {root_id, mid_id, leaf_id}
-        assert blueprint.socket_refs == []
         assert blueprint.path_registry.resolve_path_id(("mid",)) is None
         assert blueprint.ordered_node_ids[-1] == root_id
     finally:
@@ -106,7 +105,7 @@ def test_component_root_blueprint_builder_keeps_spells_without_topology() -> Non
     Purpose:
         Validate a missing topology does not shorten the DAG.
     Contract:
-        - No SocketRef is recorded.
+        - No path is minted here.
         - DAG still contains the full dependency chain.
     Returns:
         None.
@@ -146,7 +145,7 @@ def test_component_root_blueprint_builder_keeps_spells_without_topology() -> Non
         blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)[
             root_id
         ]
-        assert blueprint.socket_refs == []
+        assert blueprint.path_registry.resolve_path_id(("mid",)) is None
         assert set(blueprint.dag.nodes) == {root_id, mid_id, leaf_id}
     finally:
         frame.cleanup()
@@ -234,11 +233,11 @@ def test_component_root_blueprint_builder_ignores_empty_target_sockets() -> None
         Validate a socket with no target spell ids leaves a root-only blueprint.
     Contract:
         - The DAG holds only the root.
-        - No SocketRef is recorded.
+        - No path is minted here.
     Returns:
         None.
     Raises:
-        AssertionError: If socket refs are recorded or the DAG grows.
+        AssertionError: If a path is minted or the DAG grows.
     """
     frame = AethericFrame(Aether(), "component-root-blueprints-empty-target")
     states = frame._spell_system_states
@@ -268,7 +267,7 @@ def test_component_root_blueprint_builder_ignores_empty_target_sockets() -> None
             root_id
         ]
         assert set(blueprint.dag.nodes) == {root_id}
-        assert blueprint.socket_refs == []
+        assert blueprint.path_registry.resolve_path_id(("config",)) is None
     finally:
         frame.cleanup()
 

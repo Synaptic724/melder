@@ -132,43 +132,6 @@ class SharedCompilerExecutions:
         )
 
     @staticmethod
-    def build_phase5_socket_rows(
-            artifact: SpellCompilerArtifact,
-    ) -> Tuple[Tuple[Any, ...], ...]:
-        """
-        Build deterministic schema rows for Phase5 socket references.
-
-        Purpose:
-            Export explicit socket routing data from the root blueprint into
-            phase2-5 IR without leaking live socket objects.
-        Contract:
-            - Returns only primitive tuple rows.
-            - Ignores malformed socket objects that do not expose required
-              fields.
-            - Output row order is deterministic.
-        Returns:
-            Tuple[Tuple[Any, ...], ...]:
-                Rows `(node_id, param_name, param_path_id, socket_kind)`.
-        """
-        if artifact._root_blueprint_phase5 is None:
-            return ()
-        rows: List[Tuple[Any, ...]] = []
-        for socket_ref in artifact._root_blueprint_phase5.socket_refs:
-            try:
-                rows.append(
-                    (
-                        socket_ref.node_id,
-                        socket_ref.param_name,
-                        socket_ref.param_path_id,
-                        socket_ref.socket_kind.value,
-                    )
-                )
-            except AttributeError:
-                continue
-        rows.sort(key=SharedCompilerExecutions.socket_row_sort_key)
-        return tuple(rows)
-
-    @staticmethod
     def build_phase5_dag_edge_rows(
             artifact: SpellCompilerArtifact,
     ) -> Tuple[Tuple[Any, ...], ...]:
@@ -281,8 +244,6 @@ class SharedCompilerExecutions:
         phase5_root_spell_id: Optional[str] = None
         phase5_root_lineage_id: Optional[str] = None
         phase5_root_ordered_node_ids: Tuple[str, ...] = ()
-        phase5_socket_ref_count = 0
-        phase5_socket_rows: Tuple[Tuple[Any, ...], ...] = ()
         phase5_dag_edge_rows: Tuple[Tuple[Any, ...], ...] = ()
         if artifact._root_blueprint_phase5 is not None:
             phase5_root_spell_id = artifact._root_blueprint_phase5.root_spell_id
@@ -292,10 +253,6 @@ class SharedCompilerExecutions:
                 phase5_root_lineage_id = None
             phase5_root_ordered_node_ids = tuple(
                 artifact._root_blueprint_phase5.ordered_node_ids
-            )
-            phase5_socket_ref_count = len(artifact._root_blueprint_phase5.socket_refs)
-            phase5_socket_rows = SharedCompilerExecutions.build_phase5_socket_rows(
-                artifact
             )
             phase5_dag_edge_rows = SharedCompilerExecutions.build_phase5_dag_edge_rows(
                 artifact
@@ -317,8 +274,6 @@ class SharedCompilerExecutions:
             phase5_root_spell_id,
             phase5_root_lineage_id,
             phase5_root_ordered_node_ids,
-            phase5_socket_ref_count,
-            phase5_socket_rows,
             phase5_dag_edge_rows,
             phase5_index_spell_ids,
         )
@@ -333,8 +288,6 @@ class SharedCompilerExecutions:
             "phase5_root_spell_id": phase5_root_spell_id,
             "phase5_root_lineage_id": phase5_root_lineage_id,
             "phase5_root_ordered_node_ids": phase5_root_ordered_node_ids,
-            "phase5_socket_ref_count": phase5_socket_ref_count,
-            "phase5_socket_rows": phase5_socket_rows,
             "phase5_dag_edge_rows": phase5_dag_edge_rows,
             "phase5_index_spell_ids": phase5_index_spell_ids,
             "signature": phase2_5_signature,

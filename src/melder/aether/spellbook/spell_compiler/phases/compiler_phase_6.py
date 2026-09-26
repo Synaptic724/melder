@@ -95,9 +95,6 @@ from melder.aether.spellbook.spell_compiler.system.validation.root_viability_str
 from melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy import (
     ScopeOrderingStrategy,
 )
-from melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy import (
-    SocketRefSanityStrategy,
-)
 from melder.aether.spellbook.spell_compiler.system.validation.topology_dependency_mismatch_strategy import (
     TopologyDependencyMismatchStrategy,
 )
@@ -328,7 +325,6 @@ class CompilerPhase6:
             ContractGraphCycleStrategy(),
             RootScaleLimitStrategy(),
             RootViabilityStrategy(),
-            SocketRefSanityStrategy(),
         ]
 
     def run_frame_wide(

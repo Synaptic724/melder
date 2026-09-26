@@ -84,10 +84,8 @@ def test_component_processor_and_planner_build_real_codegen_outputs() -> None:
     artifact._root_blueprint_phase5 = SimpleNamespace(
         root_spell_id="root",
         ordered_node_ids=("root",),
-        socket_refs=(),
         path_registry=path_registry,
         dag=_DagProbe(),
-        ensure_dag_index_built=lambda: None,
     )
     artifact._occurrence_graph_analysis = SpellOccurrenceGraphAnalysis(
         root_spell_id="root",

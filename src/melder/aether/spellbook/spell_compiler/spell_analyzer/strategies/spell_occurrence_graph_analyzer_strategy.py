@@ -34,10 +34,6 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
         RootResolutionBlueprint,
     )
-    from melder.aether.spellbook.spell_compiler.dag.dag_index import (
-        DagIndex,
-        SocketRef,
-    )
     from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
         SpellCompilerArtifact,
     )
@@ -293,7 +289,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             self,
             *,
             root_blueprint: "RootResolutionBlueprint",
-            root_rows: Optional[Tuple[Tuple[Any, ...], int, Tuple[Any, ...]]],
+            root_rows: Optional[Tuple[Tuple[Any, ...], int]],
             pool_digest: Optional[str],
     ) -> Optional[Tuple[Any, ...]]:
         """
@@ -303,22 +299,22 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             - Returns `None` when any input is unavailable (forces the rebuild
               path).
             - Key shape: `(root_spell_id, ordered_node_ids, id(path_registry),
-              blueprint_socket_rows, pool_digest)`. The root-specific rows are
-              built once by the caller (`_build_root_blueprint_rows`) and the
-              pool-wide rows are represented by their pass digest, so the key
-              holds no pool-sized tuple and compares in time proportional to
-              the root's own blueprint.
+              pool_digest)`. The root-specific rows are built once by the
+              caller (`_build_root_blueprint_rows`) and the pool-wide rows are
+              represented by their pass digest, so the key holds no pool-sized
+              tuple. The pool digest covers every spell's topology sockets, so
+              no per-root socket rows are needed (the Phase-5 socket overlay
+              that produced them was retired on 2026-09-26).
             - `id(path_registry)` stays the deliberate process-local part: it
               scopes reuse to one blueprint object.
         """
         if root_blueprint is None or root_rows is None or pool_digest is None:
             return None
-        ordered_node_ids, path_registry_identity, blueprint_socket_rows = root_rows
+        ordered_node_ids, path_registry_identity = root_rows
         return (
             root_blueprint.root_spell_id,
             ordered_node_ids,
             path_registry_identity,
-            blueprint_socket_rows,
             pool_digest,
         )
 
@@ -326,7 +322,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             self,
             *,
             root_blueprint: "RootResolutionBlueprint",
-            root_rows: Optional[Tuple[Tuple[Any, ...], int, Tuple[Any, ...]]],
+            root_rows: Optional[Tuple[Tuple[Any, ...], int]],
             pool_digest: Optional[str],
     ) -> Optional[str]:
         """
@@ -340,7 +336,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
 
         Contract:
             - Returns `None` when any input is unavailable, forcing a rebuild.
-            - Hashes exactly the five parts the fast key tracks, in the same
+            - Hashes exactly the four parts the fast key tracks, in the same
               order; the pool-wide rows enter through `pool_digest`, so the
               per-root hash covers only the root's own rows plus one 64-char
               digest (hash of a hash of the same inputs the old layout hashed
@@ -351,12 +347,11 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         """
         if root_blueprint is None or root_rows is None or pool_digest is None:
             return None
-        ordered_node_ids, path_registry_identity, blueprint_socket_rows = root_rows
+        ordered_node_ids, path_registry_identity = root_rows
         return SharedCompilerExecutions.hash_codegen_signature(
             root_blueprint.root_spell_id,
             ordered_node_ids,
             path_registry_identity,
-            blueprint_socket_rows,
             pool_digest,
         )
 
@@ -410,7 +405,7 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
     @staticmethod
     def _build_root_blueprint_rows(
             root_blueprint: "RootResolutionBlueprint",
-    ) -> Optional[Tuple[Tuple[Any, ...], int, Tuple[Any, ...]]]:
+    ) -> Optional[Tuple[Tuple[Any, ...], int]]:
         """
         Build the root-specific blueprint rows shared by fast key + signature.
 
@@ -425,18 +420,9 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         try:
             ordered_node_ids = tuple(root_blueprint.ordered_node_ids)
             path_registry_identity = id(root_blueprint.path_registry)
-            blueprint_socket_rows = tuple(
-                (
-                    socket_ref.node_id,
-                    socket_ref.param_name,
-                    socket_ref.param_path_id,
-                    socket_ref.socket_kind.value,
-                )
-                for socket_ref in (root_blueprint.socket_refs or ())
-            )
         except Exception:
             return None
-        return ordered_node_ids, path_registry_identity, blueprint_socket_rows
+        return ordered_node_ids, path_registry_identity
 
     def _build_graph_shape_rows(
             self,

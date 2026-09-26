@@ -1,0 +1,33 @@
+== melder iterations=10000 setup=109.4ms gc_collections_in_loop=1 audit_events_in_loop=30
+-- slowest 12 single cycles (ms | turn | lane | cycle# in turn | window)
+     7.105 | turn      0 | worker_b | # 0 | outer   | turn events: 30 ['compile:<melder_site_plan_executor>', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line']
+     5.332 | turn      0 | request  | # 0 | outer   | turn events: 30 ['compile:<melder_site_plan_executor>', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line']
+     3.903 | turn      0 | request  | # 0 | request | turn events: 30 ['compile:<melder_site_plan_executor>', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line']
+     3.678 | turn      0 | worker_a | # 0 | outer   | turn events: 30 ['compile:<melder_site_plan_executor>', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line']
+     2.386 | turn      0 | worker_a | # 0 | request | turn events: 30 ['compile:<melder_site_plan_executor>', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line']
+     1.976 | turn      0 | worker_b | # 0 | request | turn events: 30 ['compile:<melder_site_plan_executor>', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line']
+     1.486 | turn    525 | request  | # 6 | outer   | turn events: 0 []
+     1.418 | turn    361 | request  | # 2 | outer   | turn events: 0 []
+     1.314 | turn   1414 | worker_a | # 2 | outer   | turn events: 0 []
+     1.311 | turn   9673 | request  | # 6 | outer   | turn events: 0 []
+     1.305 | turn   8246 | request  | # 5 | outer   | turn events: 0 []
+     1.283 | turn   7088 | request  | # 7 | outer   | turn events: 0 []
+-- turns whose slowest outer cycle > 1.0 ms: 332
+-- turns whose slowest outer cycle > 2.0 ms: 3
+-- turns whose slowest outer cycle > 4.0 ms: 2
+-- slowest 12 turns (turn | total | bootstrap | threaded | outside=total-boot-thr | events)
+   turn      0 |  10.838 |  0.963 |   9.132 |  0.743 | 30 ['compile:<melder_site_plan_executor>', 'exec:<code object <module> at 0x23caf596a00, file "<melder_site_plan_executor>", line']
+   turn    308 |  11.759 |  0.014 |   2.730 |  9.015 | 0 []
+   turn    505 |   3.030 |  0.021 |   2.564 |  0.445 | 0 []
+   turn    525 |   3.009 |  0.016 |   2.667 |  0.325 | 0 []
+   turn   3358 |   3.478 |  0.020 |   3.078 |  0.380 | 0 []
+   turn   3368 |   3.124 |  0.019 |   2.666 |  0.439 | 0 []
+   turn   3369 |   3.097 |  0.043 |   2.398 |  0.656 | 0 []
+   turn   6240 |   3.150 |  0.019 |   2.523 |  0.608 | 0 []
+   turn   7516 |   3.199 |  0.016 |   2.848 |  0.335 | 0 []
+   turn   7741 |   3.110 |  0.022 |   2.432 |  0.655 | 0 []
+   turn   9124 |   3.085 |  0.015 |   2.771 |  0.300 | 0 []
+   turn   9792 |   5.239 |  0.015 |   2.381 |  2.843 | 0 []
+-- outside-threaded per turn: median=0.260 p99=0.407 max=9.015 ms
+-- events by turn (first 8 turns with events): [(0, 30)]
+-- gc in loop: [(308, 8.556806, 0), (-1, 9.42811, 0)]

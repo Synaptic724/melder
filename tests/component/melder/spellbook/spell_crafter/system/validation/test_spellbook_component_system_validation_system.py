@@ -11,7 +11,6 @@ from melder.aether.spellbook.bind.spell_index import SpellIndex
 from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, SocketRef
 from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
@@ -39,9 +38,6 @@ from melder.aether.spellbook.spell_compiler.system.validation.missing_phase4_str
 )
 from melder.aether.spellbook.spell_compiler.system.validation.root_viability_strategy import (
     RootViabilityStrategy,
-)
-from melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy import (
-    SocketRefSanityStrategy,
 )
 from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
@@ -129,7 +125,6 @@ def _build_blueprint(
     *,
     root_id: str,
     dependency_id: str,
-    add_socket: bool = True,
 ) -> RootResolutionBlueprint:
     """
     Purpose:
@@ -137,11 +132,9 @@ def _build_blueprint(
     Contract:
         - DAG contains root and dependency nodes.
         - Edge is dependency -> root.
-        - Socket refs are populated when add_socket is True.
     Args:
         root_id: Root spell id.
         dependency_id: Dependency spell id.
-        add_socket: Whether to add a socket ref for the dependency edge.
     Returns:
         RootResolutionBlueprint: The constructed blueprint.
     """
@@ -159,17 +152,6 @@ def _build_blueprint(
         root_lineage_id=None,
         dag=dag,
     )
-    if add_socket:
-        blueprint.ensure_dag_index_built()
-        path_registry = blueprint.path_registry
-        path_id = path_registry.extend_path(path_registry.root_path_id, "dependency")
-        socket = SocketRef(
-            node_id=root_id,
-            param_name="dependency",
-            param_path_id=path_id,
-            socket_kind=SocketKind.NORMAL,
-        )
-        blueprint.add_socket_ref(socket)
     return blueprint
 
 
@@ -333,7 +315,6 @@ def test_component_system_validation_clean_graph_marks_valid() -> None:
             GraphConsistencyStrategy(),
             MissingPhase4Strategy(),
             RootViabilityStrategy(),
-            SocketRefSanityStrategy(),
         ]
         system = SpellSystemValidationSystem(strategies)
         try:
@@ -522,123 +503,6 @@ def test_component_system_validation_cycle_and_graph_mismatch() -> None:
         codes = {diag.code for diag in result.errors}
         assert "cycle_detected" in codes
         assert "edge_missing_from_blueprint" in codes
-
-        conduit_state = states.get_conduit_resolution_state("cid")
-        assert conduit_state is not None
-        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
-        assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
-    finally:
-        frame.cleanup()
-
-
-def test_component_system_validation_socket_ref_index_missing_entries() -> None:
-    """
-    Purpose:
-        Validate socket refs missing from the DagIndex are reported.
-    Contract:
-        - socket_ref_missing_in_index is emitted.
-        - socket_ref_missing_in_index_name is emitted.
-        - Conduit resolution validity is invalid for indexed nodes.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If socket ref diagnostics are missing.
-    """
-    root_id = "root-socket-missing"
-    dep_id = "dep-socket-missing"
-    frame, states, root_index, dep_index = _setup_states_with_dependency(
-        root_id=root_id,
-        dependency_id=dep_id,
-    )
-    try:
-        index = _build_index(
-            root_id=root_id,
-            root_index=root_index,
-            dependency_id=dep_id,
-            dependency_index=dep_index,
-            dependency_edges=[dep_id],
-        )
-        blueprint = _build_blueprint(root_id=root_id, dependency_id=dep_id)
-        blueprint.replace_dag_index(DagIndex(path_registry=blueprint.path_registry))
-        blueprint.dag_index.rebuild([])
-
-        system = SpellSystemValidationSystem([SocketRefSanityStrategy()])
-        try:
-            result = system.validate(
-                index=index,
-                blueprints={root_id: blueprint},
-                phase4_results={root_id: object(), dep_id: object()},
-                broken_spell_ids=set(),
-                spell_system_states=states,
-                conduit_id="cid",
-            )
-        finally:
-            system.cleanup()
-
-        codes = {diag.code for diag in result.errors}
-        assert "socket_ref_missing_in_index" in codes
-        assert "socket_ref_missing_in_index_name" in codes
-
-        conduit_state = states.get_conduit_resolution_state("cid")
-        assert conduit_state is not None
-        assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
-        assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
-    finally:
-        frame.cleanup()
-
-
-def test_component_system_validation_detects_orphan_dag_index_socket() -> None:
-    """
-    Purpose:
-        Validate DagIndex sockets missing from socket_refs are reported.
-    Contract:
-        - dag_index_orphan_socket is emitted.
-        - Conduit resolution validity is invalid for indexed nodes.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If orphan socket diagnostics are missing.
-    """
-    root_id = "root-orphan-socket"
-    dep_id = "dep-orphan-socket"
-    frame, states, root_index, dep_index = _setup_states_with_dependency(
-        root_id=root_id,
-        dependency_id=dep_id,
-    )
-    try:
-        index = _build_index(
-            root_id=root_id,
-            root_index=root_index,
-            dependency_id=dep_id,
-            dependency_index=dep_index,
-            dependency_edges=[dep_id],
-        )
-        blueprint = _build_blueprint(root_id=root_id, dependency_id=dep_id)
-        path_registry = blueprint.path_registry
-        orphan_path_id = path_registry.extend_path(path_registry.root_path_id, "orphan")
-        orphan = SocketRef(
-            node_id=root_id,
-            param_name="orphan",
-            param_path_id=orphan_path_id,
-            socket_kind=SocketKind.NORMAL,
-        )
-        blueprint.dag_index.add_socket(orphan)
-
-        system = SpellSystemValidationSystem([SocketRefSanityStrategy()])
-        try:
-            result = system.validate(
-                index=index,
-                blueprints={root_id: blueprint},
-                phase4_results={root_id: object(), dep_id: object()},
-                broken_spell_ids=set(),
-                spell_system_states=states,
-                conduit_id="cid",
-            )
-        finally:
-            system.cleanup()
-
-        codes = {diag.code for diag in result.errors}
-        assert "dag_index_orphan_socket" in codes
 
         conduit_state = states.get_conduit_resolution_state("cid")
         assert conduit_state is not None
@@ -929,6 +793,5 @@ def test_component_system_validation_collects_multiple_errors() -> None:
         assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
-
 
 

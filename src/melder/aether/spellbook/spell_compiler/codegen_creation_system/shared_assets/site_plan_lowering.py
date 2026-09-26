@@ -1,3 +1,4 @@
+from types import FunctionType, MethodType
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, FrozenSet, List, Optional, Set, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
@@ -502,6 +503,59 @@ class SitePlanLowering:
     VARIADIC_KINDS: ClassVar[Tuple[str, ...]] = ("VAR_POSITIONAL", "VAR_KEYWORD")
 
     @staticmethod
+    def positional_run(target: Any, names: Tuple[str, ...]) -> int:
+        """
+        Return how many leading `names` the code that receives a call of `target` binds by position.
+
+        Purpose:
+            Decide where an emitted call may pass operands positionally. Injection is by parameter
+            name, so a value goes positionally only where the receiving code provably binds that
+            position to that name; code that can observe argument names (a custom `__new__`, a
+            metaclass `__call__`, a signature-preserving `*args, **kwargs` wrapper) gets names.
+            Positional class calls are the fast path on CPython 3.14 (P1, melder_2).
+
+        Contract:
+            - A class qualifies when its metaclass keeps `type.__call__`, its `__new__` is
+              `object.__new__` and its `__init__` is a plain Python function; the receiving names
+              are that `__init__`'s positional parameters after `self`.
+            - A plain function or lambda gives its own positional parameters; a bound method of a
+              plain function gives its function's positional parameters after the bound one.
+            - Anything else receives no positional operands (returns 0).
+            - Counts the leading `names` equal, in order, to the receiving names; positional-only
+              parameters count like the others.
+            - Pure attribute reads: annotations, `__signature__` and `__wrapped__` are never read.
+
+        Args:
+            target: The step's call target (`Spell.spell`).
+            names: The call site's positional-capable parameter names in signature order.
+
+        Returns:
+            int: The length of the matching leading run (0 when `target` does not qualify).
+        """
+        receiving: Tuple[str, ...] = ()
+        if isinstance(target, type):
+            initializer = target.__init__
+            if (
+                    type(target).__call__ is type.__call__
+                    and target.__new__ is object.__new__
+                    and type(initializer) is FunctionType
+            ):
+                code = initializer.__code__
+                receiving = code.co_varnames[1:code.co_argcount]
+        elif type(target) is FunctionType:
+            code = target.__code__
+            receiving = code.co_varnames[:code.co_argcount]
+        elif type(target) is MethodType and type(target.__func__) is FunctionType:
+            code = target.__func__.__code__
+            receiving = code.co_varnames[1:code.co_argcount]
+        run = 0
+        for name, received in zip(names, receiving):
+            if name != received:
+                break
+            run += 1
+        return run
+
+    @staticmethod
     def build_site_graph(
             *,
             root_spell_id: str,
@@ -888,12 +942,16 @@ class SitePlanEmission(Cleanable):
         Return `(positional, keyword, star_args)` for a direct call, or None when not expressible.
 
         Contract:
-            Parameters are taken in signature order; operands go positionally
-            until the first omitted parameter, then by keyword. A root whose
+            Parameters are taken in signature order. An operand goes positionally
+            while positionals are open and it is either a caller's root
+            `__args__` value or bound to that position by name in the target's
+            receiving code (`SitePlanLowering.positional_run`); the first
+            operand that does not qualify, or the first omitted parameter,
+            closes positionals and the rest go by keyword. A root whose
             `__args__` is longer than its positional parameters passes `*args`
-            (extra values fail in the constructor, as today). A variadic,
-            unknown-kind or out-of-order positional-only operand is not
-            expressible.
+            (extra values fail in the constructor, as today). A variadic or
+            unknown-kind operand, or a positional-only operand that cannot go
+            positionally, is not expressible (the step uses the generic helper).
         """
         site_index = self._site_index(step)
         site = self._site_graph.sites[site_index]
@@ -913,6 +971,11 @@ class SitePlanEmission(Cleanable):
             if self._arity > len(capable):
                 star_args = True
                 positional_open = False
+        run = SitePlanLowering.positional_run(
+            step.spell.spell,
+            tuple(param.name for param in ordered if param.parameter_kind in SitePlanLowering.POSITIONAL_KINDS),
+        )
+        winners = self._winners
         for param in ordered:
             kind = param.parameter_kind
             if star_args and kind in SitePlanLowering.POSITIONAL_KINDS:
@@ -924,8 +987,10 @@ class SitePlanEmission(Cleanable):
             if kind is None or kind in SitePlanLowering.VARIADIC_KINDS:
                 return None
             if positional_open and kind in SitePlanLowering.POSITIONAL_KINDS:
-                positional.append(expression)
-                continue
+                if len(positional) < run or winners.get((site_index, param.name)) == "__args__":
+                    positional.append(expression)
+                    continue
+                positional_open = False
             if kind == "POSITIONAL_ONLY":
                 return None
             keyword.append((param.name, expression))

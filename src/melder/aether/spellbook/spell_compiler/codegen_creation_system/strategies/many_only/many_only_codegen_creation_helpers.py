@@ -1,6 +1,6 @@
 import hashlib
 import pickle
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
     CodegenSignature,
@@ -96,54 +96,6 @@ class ManyOnlyCodegenCreationHelpers:
             digest.update(b"|")
         return digest.hexdigest()
 
-    @staticmethod
-    def freeze_value(value: Any) -> Any:
-        """
-        Normalize an arbitrary value into a deterministic tuple-backed form.
-
-        Contract:
-            Primitives (None/bool/int/float/str) pass through. Dicts become
-            sorted (key, frozen-value) tuples; lists/tuples become
-            order-preserving frozen tuples; sets become repr-sorted frozen
-            tuples; anything else collapses to `repr(value)`. Recurses into
-            nested containers so the whole structure is order-canonical and
-            hashable.
-
-        Args:
-            value:
-                Value to freeze.
-
-        Returns:
-            Any: A deterministic, hashable projection of `value`.
-        """
-        if value is None or isinstance(value, (bool, int, float, str)):
-            return value
-        if isinstance(value, dict):
-            return tuple(
-                sorted(
-                    (
-                        key,
-                        ManyOnlyCodegenCreationHelpers.freeze_value(item),
-                    )
-                    for key, item in value.items()
-                )
-            )
-        if isinstance(value, (list, tuple)):
-            return tuple(
-                ManyOnlyCodegenCreationHelpers.freeze_value(item)
-                for item in value
-            )
-        if isinstance(value, set):
-            return tuple(
-                sorted(
-                    (
-                        ManyOnlyCodegenCreationHelpers.freeze_value(item)
-                        for item in value
-                    ),
-                    key=repr,
-                )
-            )
-        return repr(value)
 
     @staticmethod
     def normalize_instance_key(
@@ -221,65 +173,3 @@ class ManyOnlyCodegenCreationHelpers:
             tuple(step.spell.disposal_method_names),
         )
 
-    @staticmethod
-    def build_override_step_row(
-            step: Any,
-    ) -> Dict[str, Any]:
-        """
-        Build one many-only-local override step row.
-
-        Contract:
-            Projects the step into a schema-only dict including the override-lane
-            fields (shared_instance, override_match_prefix + length) that the
-            no-overrides signature row omits. Payload and positional-override
-            entries are projected by `CodegenSignature.project_contract_payload_entry`
-            (scalars as themselves, anything else as its phase-9 reference), so the
-            row is deterministic and never carries an object (2026-09-26).
-
-        Args:
-            step:
-                Immutable many-only plan step.
-
-        Returns:
-            Dict[str, Any]: Schema-only override step row.
-        """
-        dependency_resolution_order = tuple(
-            (
-                param_name,
-                tuple(dependency_keys),
-            )
-            for param_name, dependency_keys in step.dependency_resolution_order
-        )
-        contract_payload_items: Tuple[Any, ...] = ()
-        if step.contract_payload:
-            payload_refs = step.contract_payload_refs
-            contract_payload_items = tuple(
-                sorted(
-                    (
-                        param_name,
-                        CodegenSignature.project_contract_payload_entry(
-                            param_name, value, payload_refs,
-                        ),
-                    )
-                    for param_name, value in step.contract_payload.items()
-                )
-            )
-        return {
-            "instance_key": tuple(step.instance_key),
-            "spell_id": step.spell.spell_index.selected_spell_id,
-            "shared_instance": step.shared_instance,
-            "dependency_resolution_order": dependency_resolution_order,
-            "collection_param_names": tuple(sorted(step.collection_param_names)),
-            "uses_positional_override": step.uses_positional_override,
-            "contract_positional_override": (
-                CodegenSignature.project_contract_payload_entry(
-                    "__args__", step.contract_positional_override, step.contract_payload_refs,
-                )
-            ),
-            "has_contract_payload": step.has_contract_payload,
-            "contract_payload_items": contract_payload_items,
-            "override_match_prefix": step.override_match_prefix,
-            "override_match_prefix_len": step.override_match_prefix_len,
-            "has_disposal_methods": bool(step.spell.has_disposal_methods),
-            "disposal_method_names": tuple(step.spell.disposal_method_names),
-        }

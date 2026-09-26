@@ -206,14 +206,6 @@ def _make_keyed_fixture() -> tuple[Any, Any, Any, Any, Any]:
         root_spell_id="spell-1",
         ordered_node_ids=("dep", "spell-1"),
         path_registry=path_registry,
-        socket_refs=[
-            SimpleNamespace(
-                node_id="spell-1",
-                param_name="svc",
-                param_path_id=7,
-                socket_kind=SocketKind.NORMAL,
-            )
-        ],
     )
     return strategy, spellbook, spell_system_states, blueprint, path_registry
 
@@ -230,7 +222,7 @@ def test_occurrence_graph_analyzer_fast_key_serializes_visible_state() -> None:
     """
     The fast key carries the root's own rows plus ONE pool digest: the digest is the
     signature of exactly the pool-wide rows the old flat key carried, and the input
-    signature is the hash of the five key parts.
+    signature is the hash of the four key parts.
     """
     strategy, spellbook, spell_system_states, blueprint, path_registry = _make_keyed_fixture()
     spell_rows = _fixture_spell_rows()
@@ -267,7 +259,6 @@ def test_occurrence_graph_analyzer_fast_key_serializes_visible_state() -> None:
         "spell-1",
         ("dep", "spell-1"),
         id(path_registry),
-        (("spell-1", "svc", 7, SocketKind.NORMAL.value),),
         expected_digest,
     )
     assert input_signature == SharedCompilerExecutions.hash_codegen_signature(*fast_key)
@@ -336,8 +327,8 @@ def test_occurrence_graph_pool_digest_tracks_topology_changes() -> None:
             root_blueprint=blueprint, root_rows=root_rows, pool_digest=pool_digest,
         ))
 
-    assert keys[0][:4] == keys[1][:4]
-    assert keys[0][4] != keys[1][4]
+    assert keys[0][:3] == keys[1][:3]
+    assert keys[0][3] != keys[1][3]
     assert signatures[0] != signatures[1]
 
 

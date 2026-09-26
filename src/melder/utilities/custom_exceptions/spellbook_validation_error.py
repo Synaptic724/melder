@@ -104,7 +104,6 @@ class SpellbookValidationError(RuntimeError):
         "SPELLMAP_DEFAULT_MISSING",
         "SPELL_CONTRACT_INVALID",
         "contract_key_missing",
-        "dag_index_orphan_socket",
         "dag_orphan_node",
         "edge_mismatch_index",
         "edge_missing_from_blueprint",
@@ -120,9 +119,6 @@ class SpellbookValidationError(RuntimeError):
         "root_missing_in_dag",
         "root_missing_in_index",
         "root_not_marked_in_index",
-        "socket_ref_duplicate",
-        "socket_ref_missing_in_index",
-        "socket_ref_missing_in_index_name",
         "topology_dependency_mismatch",
     })
 

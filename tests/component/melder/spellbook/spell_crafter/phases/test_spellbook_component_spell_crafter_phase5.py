@@ -87,7 +87,7 @@ def test_component_phase5_blueprint_includes_deep_dag_without_socket_paths() -> 
     Contract:
         - The root blueprint exists for the root spell.
         - Its order holds the direct and nested dependencies and ends with the root.
-        - No SocketRef is recorded (Phase 8 mints the paths).
+        - No path is minted here (Phase 8 mints the paths).
     Returns:
         None.
     """
@@ -140,7 +140,6 @@ def test_component_phase5_blueprint_includes_deep_dag_without_socket_paths() -> 
         assert ordered[-1] == root_id
         assert repo_id in ordered
         assert logger_id in ordered
-        assert blueprint.socket_refs == []
         assert blueprint.path_registry.resolve_path_id(("repository",)) is None
     finally:
         spellbook.cleanup()

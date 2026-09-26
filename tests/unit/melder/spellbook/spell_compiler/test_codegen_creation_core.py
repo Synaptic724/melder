@@ -5,7 +5,7 @@ from typing import Any, Tuple
 
 import pytest
 
-import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step as many_only_no_overrides_step_module
+import melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.manifest.many_only_manifest as many_only_manifest_module
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation import (
     SpellCodegenCreation,
 )
@@ -24,12 +24,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy import (
     ManyOnlyCodegenCreationStrategy,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_state import (
-    ManyOnlyCodegenCreationState,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step import (
-    ManyOnlyNoOverridesCodegenCreationStep,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.solo.solo_codegen_creation_strategy import (
     SoloCodegenCreationStrategy,
@@ -276,72 +270,43 @@ def test_codegen_creation_system_build_runs_selected_strategy_chain_and_cleans_p
     assert previous_creation.cleanup_called is True
 
 
-def test_many_only_no_overrides_step_records_many_executor_and_signature(
+def test_many_only_executor_signature_hashes_the_lane_parts_in_order(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The many-only no-overrides step should use the many-only helper surface."""
-    plan = SpellCodegenPlan(
-        processor_strategy_ids=(),
-        plan_strategy_ids=(),
-        no_overrides_plan=type(
-            "LanePlanProbe",
-            (),
-            {
-                "lane_id": "many_only_no_overrides",
-                "root_spell_id": "root",
-                "root_instance_key": ("root", None),
-                "steps": (object(), object()),
-                "step_call_modes": (0, 1),
-                "root_step_index": 0,
-                "step_has_disposal_methods": (False, False),
-            },
-        )(),
-        overrides_plan=None,
-        metadata={},
-    )
-    creation = SpellCodegenCreation(
-        selected_strategy_ids=(),
-        discovery_reason=None,
-        no_overrides_executor=None,
-        overrides_executor=None,
-        metadata={},
-    )
+    """
+    The many-only manifest signs its lane from plan data only, in a fixed part order.
 
+    `build_many_only_executor_signature` was lifted from the retired eager step (R2,
+    2026-09-26) and must hash the same parts in the same order, so existing manifests keep
+    their signatures: root spell id, normalized root key, one row per step, call modes, root
+    step index, per-step disposal flags.
+    """
+    first_step, second_step = object(), object()
+    no_overrides_plan = SimpleNamespace(
+        root_spell_id="root",
+        root_instance_key=("root", None),
+        steps=(first_step, second_step),
+        step_call_modes=(0, 1),
+        root_step_index=0,
+        step_has_disposal_methods=(False, True),
+    )
+    helpers = many_only_manifest_module.ManyOnlyCodegenCreationHelpers
     monkeypatch.setattr(
-        many_only_no_overrides_step_module.ManyOnlyCodegenCreationHelpers,
-        "build_no_overrides_step_signature_row",
-        lambda step: ("step", id(step)),
+        helpers, "build_no_overrides_step_signature_row", lambda step: ("step", id(step)),
     )
     monkeypatch.setattr(
-        many_only_no_overrides_step_module.ManyOnlyCodegenCreationHelpers,
-        "normalize_instance_key",
-        lambda instance_key: instance_key,
+        helpers, "normalize_instance_key", lambda instance_key: ("normalized", instance_key),
     )
-    monkeypatch.setattr(
-        many_only_no_overrides_step_module.ManyOnlyCodegenCreationHelpers,
-        "hash_signature",
-        lambda *parts: "sig:{0}".format(len(parts)),
-    )
-    monkeypatch.setattr(
-        many_only_no_overrides_step_module,
-        "compile_no_overrides_codegen_creation_executor_from_plan",
-        lambda *, plan, return_compiled_code_object=False: (
-            ("executor", plan.lane_id),
-            "code-object",
-        ) if return_compiled_code_object else ("executor", plan.lane_id),
-    )
+    monkeypatch.setattr(helpers, "hash_signature", lambda *parts: parts)
 
-    state = ManyOnlyCodegenCreationState(
-        spell_codegen_model=object(),
-        spell_codegen_plan=plan,
-        spell_codegen_creation=creation,
+    assert many_only_manifest_module.build_many_only_executor_signature(no_overrides_plan) == (
+        "root",
+        ("normalized", ("root", None)),
+        (("step", id(first_step)), ("step", id(second_step))),
+        (0, 1),
+        0,
+        (False, True),
     )
-    ManyOnlyNoOverridesCodegenCreationStep().apply(state)
-
-    assert creation.no_overrides_executor == ("executor", "many_only_no_overrides")
-    assert state.base_no_overrides_executor == ("executor", "many_only_no_overrides")
-    assert creation.no_overrides_code_object == "code-object"
-    assert creation.metadata["no_overrides_plan_kind"] == "many_only_no_overrides"
 
 
 def test_solo_codegen_creation_strategy_builds_solo_owned_runtime_doors(

@@ -10,7 +10,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T12:29:50Z
-- Updated: 2026-09-26T19:01:11Z
+- Updated: 2026-09-26T20:02:19Z
 
 ## Objective
 Overrides run through per-key-set plans compiled from the site graph: supplied dependencies and everything
@@ -2330,17 +2330,375 @@ the empty key set; the normal lane switches to it only when it meets the parity 
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T19:15:40Z
+  TYPE: UNKNOWN
+  CLAIM: Consumed M2-7 (melder_2, 19:14:52Z). (1) melder_2's P4 adds a fourth fast-door reader in
+    SpellSpace.meld(spell_id=...) (spell_space.py) with SpellSpaceMeld.meld's guard ladder: any change to the ladder
+    or the entry tuple must update it too. (2) P3 is dropped, so M2-6's hydrator handoff is void. (3) R1 keeps
+    0.2.67; P4 notches after it. (4) Open question for this lane: P1 passed dependency values positionally only when the class
+    used type.__call__, object.__new__ and a plain-function __init__; SitePlanEmission._call_arguments passes
+    operands positionally up to the first omitted parameter with no such guard. Since S2b-2 (committed in 1c3dc8580)
+    normal melds of both plan families go through it, as override melds did since S3a. Whether a class with a
+    custom metaclass __call__ or __new__ that reads argument names now sees a different call shape (or a
+    TypeError) than before is UNKNOWN until the Phase-1 signature source and the emitter are read and probed.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md:182-205
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:883-936
+  IMPACT: A possible behavior change in committed code; it is investigated before R2.
+  NEXT: Apply R1 to the device, then read Phase 1's signature source and probe metaclass/__new__ classes on the
+    device state vs the pre-S2b tree.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T19:17:24Z
+  TYPE: FACT
+  CLAIM: R1 is on the device. Mailbox consumed first (M2-7; ACK M0-38 to melder_2, NOTICEs M0-39 to melder_1 and
+    M0-40 to fable_0); both scripts passed --check and were applied (8 src files, 18 test files); the owner-approval
+    prompt enabled deletes for this session, and the two src modules, seven test files, two bytecode caches and the
+    two emptied overrides folders were removed. Every R1 file is byte-identical to the validated work copy (the only
+    other src/test differences are melder_2's P4, which landed meanwhile). Release note section "Retired
+    override-targeting internals"; version 0.2.66 -> 0.2.67 (header and LLM-bundle line follow).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:1-281
+  - release_docs/next_version_release.md:486-502
+  - src/melder/__version__.py:12-12
+  IMPACT: The targeting surface is gone; R2 (old normal emitters) and S6 remain.
+  NEXT: Resolve the positional-call UNKNOWN (M2-7 item 4) before R2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T19:20:57Z
+  TYPE: FACT
+  CLAIM: The M2-7 question is a real call-shape change from S2b-2. Phase 1 reads parameters from
+    inspect.signature(cls); for a class whose own __init__ takes named dependencies but whose inherited __new__
+    takes (*args, **kwargs), the signature is the __init__'s, while the call still passes through that __new__
+    (an own generic __new__ or a metaclass __call__ reports (*args, **kwargs), so nothing is injected there). Probe
+    (pos_probe.py, 3.14t; the class records what its __new__ receives): generalized root (upc over a many dep) at
+    afded5ce6 (pre-S2b, with P1) received ('a' by keyword); on the device it receives one positional argument.
+    many_only (all many) received it positionally on both trees: its old transient lane passed CALLn positionally
+    with no class check, while both families' old step lanes passed keywords (P1 made the generalized step lane
+    positional only for plain classes). The lowering (override plans since S3a, normal melds since S2b-2) passes
+    operands positionally in signature order with no such check, including for functions whose wrapper takes
+    (*args, **kwargs).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:1021-1032
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:883-936
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:851-912
+  - src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:1159-1284
+  - context_compass/artifacts/melder_override_design_20260926/pos_staging/pos_probe.py:1-48
+  IMPACT: A constructor path that observes argument names (a base __new__, a signature-preserving wrapper) sees
+    positional values where the generalized family used to pass names. Plain classes and functions are unaffected.
+  NEXT: DECISION.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T19:20:57Z
+  TYPE: DECISION
+  CLAIM: The lowering adopts P1's rule for every family: an operand goes positionally only when the receiving code
+    provably binds that position to that name - a class whose metaclass keeps type.__call__, whose __new__ is
+    object.__new__ and whose __init__ is a plain function (names from __init__.__code__ after self), a plain function
+    or lambda (its __code__), or a bound method of a plain function (after self); the positional run stops at the
+    first name that does not match. Everything else goes by keyword, except a caller's root `__args__` values, which
+    stay positional as the caller gave them. A POSITIONAL_ONLY operand that cannot go positionally makes the step
+    non-direct (generic helper), as before S2b. Rationale: dependency injection is by parameter name, so any code that
+    can observe names must see names; plain targets keep the fast positional call. This restores 0.2.59's generalized
+    behavior and changes the old many_only transient lane only for the exotic shapes (it passed positionally there
+    without checking). Release note line added; reported to the owner.
+  EVIDENCE: context_compass/artifacts/melder_override_design_20260926/pos_staging/pos_probe.py:1-48
+  IMPACT: One uniform, name-safe call rule for normal and override melds; the common case is unchanged.
+  NEXT: PLAN.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T19:20:57Z
+  TYPE: PLAN
+  CLAIM: P5 (positional guard). SitePlanEmission computes, per direct step, the receiving code's positional names
+    (a static helper on SitePlanLowering, pure attribute reads, no evaluation of annotations or __signature__), and
+    _call_arguments passes an operand positionally only while it is a root `args[i]` value or its name equals the
+    next receiving name. Tests: unit contracts in test_site_plan_lowering.py (plain class positional; inherited
+    generic __new__ and a functools.wraps(*args, **kwargs) function get keywords; root __args__ stay positional;
+    positional-only on a non-qualifying target is non-direct) and a component test through meld for both families
+    and an override meld (the class sees names). Patch doc: code-description step 9 (call arguments). Release note
+    and version notch after melder_2's P4 if it has landed.
+    FILES:
+    - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
+    - tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py
+    - tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py
+    - system_docs/patches/active/override_site_plan_2026_09_26/code_description_patch_site_plan_lowering.md
+    - release_docs/next_version_release.md; src/melder/__version__.py
+  EVIDENCE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:883-936
+  IMPACT: Fixes the call-shape change before R2 deletes P1's code.
+  NEXT: Implement on ~/work/melder_s2b (refresh it from the device first).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T19:32:26Z
+  TYPE: MEASURE
+  CLAIM: P5 implemented and validated on ~/work/melder_s2b (device state with R1 and P4 + apply_p5_edits.py +
+    apply_p5_test_edits.py). The new component test (a root whose inherited __new__ records the call shape;
+    normal, plain-key and dependency-key melds; both families; fresh and cached) fails on the device state (4
+    failed) and passes with P5; the unit call-shape contracts cover plain class (positional), inherited generic
+    __new__ and metaclass __call__ (names), plain function and bound method (positional), functools.wraps wrapper
+    (names), root __args__ (positional), positional-only behind a name-reading __new__ (generic helper). A
+    module fixture keeps the file's construct(*args, **kwargs) fakes on positional calls. 3.14t: unit spellbook
+    2186, component spellbook 772, integration spellbook 583+2s+2xf+2xp, experimentation 250+4s, component aether
+    1215+1xf, conduit 268, multithreading 41 + 1 rare failure (RISK below; 5 clean reruns of the suite, 37 of the
+    test), unit aether 4053, integration aether 716, utilities 802+2s+7xf, crystallizer 565, mutation_research 66;
+    GIL the same on the first eight (multithreading 42). Owner benchmark (melder, 1 s, 3.14t) twin -> P5:
+    solo 1.11M -> 1.31M, shallow 0.93M -> 1.23M, wide 0.88M -> 0.84M, diamond 1.11M -> 1.09M, deep 37.9k ->
+    38.9k steps/s (single 1 s samples; no regression beyond noise; plain targets keep positional calls).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/pos_staging/apply_p5_edits.py:1-162
+  - context_compass/artifacts/melder_override_design_20260926/pos_staging/apply_p5_test_edits.py:1-302
+  - context_compass/system_docs/patches/active/override_site_plan_2026_09_26/code_description_patch_site_plan_lowering.md:28-35
+  IMPACT: Name-observing constructors see names again in every family; the common case is unchanged.
+  NEXT: Mailbox, --check and apply P5 to the device, verify byte-identity, release note and notch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T19:32:26Z
+  TYPE: RISK
+  CLAIM: Phase 5 iterates the live spell pool without a snapshot: run_local builds visible_spell_ids from
+    spellbook._spell_id_pool.items() (and run_frame_wide does the same), so a concurrent bind or removal can raise
+    "dictionary changed size during iteration". Seen once in the full 3.14t multithreading suite
+    (test_multithreading_live_link_unlink_and_contract_churn_cycles: PhaseExecutionError in root_blueprints_local);
+    not reproduced in 37 runs of the test or 5 of the suite, on the device state or with P5. The line dates from
+    2026-09-19 (63ef620e3) and compiler_phase_5.py has no uncommitted change, so it predates this lane; S5a made
+    Phase 5 much shorter, which may change the timing. Not fixed here (outside the declared files; engineer policy
+    10.6: raise, do not fix silently).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:617-713
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:473-560
+  IMPACT: A rare failure of conjure-time revalidation under live mutation; a snapshot of the pool (documented as
+    required for correctness) would close it.
+  NEXT: Report to the owner as a follow-up candidate.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T19:33:08Z
+  TYPE: FACT
+  CLAIM: P5 is on the device: the three target files equalled the twin, both scripts passed --check and were
+    applied, and all three are byte-identical to the validated copy. Release note bullet "Positional calls only
+    where they are equivalent" under "Faster warm melds"; version 0.2.68 (melder_2's P4) -> 0.2.69 (header and
+    LLM-bundle line follow). NOTICE M0-41 to melder_2: M2-7 item 4 resolved.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:505-556
+  - release_docs/next_version_release.md:84-90
+  - src/melder/__version__.py:12-12
+  IMPACT: The UNKNOWN of 19:15:40Z is closed; R2 can delete P1's emitter without losing its guard.
+  NEXT: R2 reference analysis (reachability of the old normal emitters from live entry points).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T19:37:12Z
+  TYPE: FACT
+  CLAIM: R2 reachability (r2_reach.py on the device-state twin: static imports from `melder`, every symbol of a live
+    non-candidate module as a root, name references resolved through import and re-export chains, methods of
+    candidate classes by name). ManyOnlyNoOverridesCodegenCreationStep is never instantiated (only the manifest
+    calls its static _build_executor_signature), so its apply is dead by reading. Still live: generalized compiler
+    7 of 33 symbols (_MISSING, _hydrate_steps_from_rows, _raise_meld_construction_error, _construct_spell_instance,
+    _build_kwargs_no_overrides, _register_spell_instance, _register_spell_instance_prebound - the lowering and the
+    opt-in specializer's namespace); generalized manifest compiler 20 of 30 (the specializer path, P1's positional
+    helpers, row contract helpers, resolve_* helpers); many_only compiler 4 of 26 (ManyOnlyCodegenPlanCallMode,
+    _build_many_only_unrolled_schema_from_plan, _hydrate_steps_from_rows, _resolve_root_instance_key);
+    ManyOnlyCodegenCreationHelpers without freeze_value and build_override_step_row. Dead: every old normal
+    emitter and compile path (step, transient, P1's emit_step_plan_source, hydrate_no_overrides_executor), the
+    step module's apply. No src module outside these files imports a dead name (executor_code_cache names one in a
+    docstring). The manifests' transient_schema and executor_signature stay: the generalized hydrator reads the
+    schema's presence for the door flag, and a format change is not part of R2.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/r2_staging/r2_reach.py:1-203
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py:48-99
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:290-305
+  IMPACT: R2 can delete about two thirds of the three compiler modules with no runtime change.
+  NEXT: PLAN.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T19:37:12Z
+  TYPE: PLAN
+  CLAIM: R2 (owner-approved retirement, second half; scope as S2b-3 option 1: old normal emission goes, the opt-in
+    specializer and every data format stay). Source, by AST removal of the named dead symbols plus orphaned imports:
+    generalized_no_overrides_codegen_creation_compiler.py (26 symbols), generalized_manifest_no_overrides_compiler.py
+    (10), many_only_no_overrides_codegen_creation_compiler.py (22), ManyOnlyCodegenCreationHelpers (2 methods);
+    generalized_runtime_library.py drops the three dead re-exports; many_only_no_overrides_codegen_creation_step.py
+    is deleted and its signature builder becomes build_many_only_executor_signature in many_only_manifest.py (the
+    manifest's own bridging note asks for this when the eager steps retire); module docstrings rewritten for what
+    remains; executor_code_cache.py docstring. Tests: files or tests whose subject is the removed emission are
+    removed, others retargeted; exact list from the suites. Release note entry and the next notch. Asset rebuild
+    stays in S6.
+    FILES (src, one per line):
+    - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py
+    - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
+    - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_library.py
+    - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py
+    - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_no_overrides_codegen_creation_step.py (delete)
+    - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py
+    - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py
+    - src/melder/aether/spellbook/spell_compiler/executor_code_cache.py
+  EVIDENCE: context_compass/artifacts/melder_override_design_20260926/r2_staging/r2_reach.py:1-203
+  IMPACT: Removes the emitters normal melds stopped using at S2b-2; no behavior, format or cache change.
+  NEXT: Write apply_r2_edits.py; apply on ~/work/melder_s2b; run suites to list the tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T19:51:04Z
+  TYPE: FACT
+  CLAIM: R2 source state after REONBOARD and re-certification. apply_r2_edits.py gained four docstring/comment edits
+    in the kept specializer (it still named the removed emit_step_plan_source and "the generic emitter"); --check is
+    clean against the device tree, and the work copy ~/work/melder_s2b was reset to device src (0.2.69) and re-applied
+    (7 files edited, the many_only step module removed). Its src differs from the device only in the R2 files; tests
+    equal the device. The lifted build_many_only_executor_signature hashes the same six parts in the same order as the
+    retired step's _build_executor_signature, so manifest signatures do not change. Test references to removed names:
+    six unit files plus two owner benchmarks that monkeypatch GEN._all_steps_inlinable (both A/B diagnostics of the
+    removed dict-vs-unroll choice; outside testpaths). Process: one read-only print of those two benchmarks ran
+    before REONBOARD (disclosed in the attestation).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/r2_staging/apply_r2_edits.py:1-426
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_no_overrides_codegen_creation_step.py:100-123
+  - benchmarks/testing_other_di/test_unroll_locals_microbench.py:1-180
+  - benchmarks/testing_other_di/test_unroll_path_diagnostic.py:1-167
+  IMPACT: The source half of R2 is final; the test list below is the rest of R2.
+  NEXT: PLAN for the tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T19:51:04Z
+  TYPE: PLAN
+  CLAIM: R2 tests (apply_r2_test_edits.py, AST removal plus anchored edits, orphan prune as in R1). Retarget, where
+    the behavior is live: TestPositionalEmission x4, TestCollectionDIEmission x2, test_same_shape_same_source and the
+    two payload emission tests move to emit_specialized_step_plan_source with a leading captured unique row (indexes
+    +1); the four row-validation tests call _hydrate_steps_from_rows directly; resolves_root_instance_key moves to
+    the many_only module's identical helper; the many_only signature test targets build_many_only_executor_signature;
+    the serialized-cache test keeps the row and marshal assertions and checks that hydrated steps carry the fresh
+    pool's live disposal lists. Remove: tests of removed code only - TestTransientBodyContract, eight
+    compile/transient/emitted-executor tests in compilers_core, test_family_executors_register_current_lists, the
+    override_row half of the many_only projection test and the freeze_value assert. New coverage for what those
+    pinned on the old executor: unit (site-plan) - registration passes each spell's live ordered disposal list; a
+    unique warm hit takes neither the Spell lock nor a slot guard; component - plan-family disposal order reaches
+    real cleanup (many_only and generalized). Delete both benchmarks (reported to the owner).
+    FILES:
+    - tests/unit/melder/spellbook/spell_compiler/test_ordered_disposal_compiler.py
+    - tests/unit/melder/spellbook/spell_compiler/test_generalized_positional_emission.py
+    - tests/unit/melder/spellbook/spell_compiler/test_generalized_emission_contracts.py
+    - tests/unit/melder/spellbook/spell_compiler/test_codegen_creation_core.py
+    - tests/unit/melder/spellbook/spell_compiler/test_codegen_creation_compilers_core.py
+    - tests/unit/melder/spellbook/spell_compiler/shared_assets/test_contract_override_refs.py
+    - tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py
+    - tests/component/melder/spellbook/test_ordered_disposal_binding.py
+    - benchmarks/testing_other_di/test_unroll_locals_microbench.py (delete)
+    - benchmarks/testing_other_di/test_unroll_path_diagnostic.py (delete)
+  EVIDENCE:
+  - tests/unit/melder/spellbook/spell_compiler/test_ordered_disposal_compiler.py:160-226
+  - tests/unit/melder/spellbook/spell_compiler/test_generalized_emission_contracts.py:237-295
+  - tests/unit/melder/spellbook/spell_compiler/test_generalized_positional_emission.py:342-411
+  - tests/unit/melder/spellbook/spell_compiler/test_codegen_creation_core.py:279-344
+  - tests/unit/melder/spellbook/spell_compiler/test_codegen_creation_compilers_core.py:16-184
+  - tests/unit/melder/spellbook/spell_compiler/test_codegen_creation_compilers_core.py:481-860
+  - tests/unit/melder/spellbook/spell_compiler/shared_assets/test_contract_override_refs.py:340-351
+  IMPACT: Live behavior keeps its tests; only tests of removed code go.
+  NEXT: Write apply_r2_test_edits.py, apply on ~/work/melder_s2b, run all suites on 3.14t and GIL.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T19:59:55Z
+  TYPE: MEASURE
+  CLAIM: R2 validated on ~/work/melder_s2b (device src 0.2.69 + apply_r2_edits.py and the step module removed; device
+    tests + apply_r2_test_edits.py and the two benchmarks removed), cold caches. 3.14t: unit spellbook 2174, component
+    spellbook 776, integration spellbook 583+2s+2xf+2xp, experimentation 250+4s, component aether 1215+1xf, conduit
+    268, multithreading 42, unit aether 4053, integration aether 716, unit utilities 802+2s+7xf, component utilities
+    21+43s, crystallizer 565/106/258+3xf, mutation_research 277/40/66, live_sim 1+1xf, root unit and build_assets 257.
+    GIL: the same counts on the first eleven. Failures only the known ones (file_backed_morph x4, the asset stamp,
+    test_system_documents_builder x2 in VM copies). Collected-test diff vs the twin over unit/component/integration
+    spellbook and unit/component aether: 14 tests of removed code gone (9 compile/transient/emitted-executor in
+    compilers_core, TestTransientBodyContract x3, test_family_executors_register_current_lists x2 params), two
+    replaced by retargets (root-key helper, many_only signature), six new (disposal order through real cleanup x4;
+    live ordered disposal lists and lock-free unique hits in site plans); the other added ids are P5's, which the
+    twin predates. Probes: the new component test reaches the many_only hydrator for an all-many graph and the
+    generalized hydrator for a unique_per_conduit service; the lock-free test raises on a cold miss (not vacuous).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/r2_staging/apply_r2_test_edits.py:1-661
+  - tests/component/melder/spellbook/test_ordered_disposal_binding.py:365-392
+  - tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py:1101-1179
+  IMPACT: R2 removes the old normal emitters with no behavior change; ready for the device.
+  NEXT: Mailbox; NOTICEs M0-42 (fable_0: contract-refs test, many_only helpers and manifest) and M0-43 (melder_2:
+    P1's emitter test file); --check and apply both scripts on the device; delete; verify byte-identity.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T20:01:22Z
+  TYPE: FACT
+  CLAIM: R2 is on the device, with a process lapse. Mailbox read first (nothing for melder_0; M0-42 to fable_0 and
+    M0-43 to melder_2 sent); both scripts passed --check and were applied (7 src files, 8 test files); the many_only
+    eager step module, its two stale .pyc files and the two unroll benchmarks were removed. Device src and tests are
+    byte-identical to the validated ~/work/melder_s2b copy (the only other difference in scope is melder_2's
+    benchmarks/testing_other_di/test_real_world_gauntlet.py). Lapse: R2's section in the component patch was not
+    written before this apply, although the REONBOARD attestation named that rule (patch_framework_gating: patch
+    docs and the section-to-implementation mapping before code). The architecture patch already carried R2 as
+    migration step 5b and the PLAN notes carried the file lists and mapping, but the component section lagged. It is
+    written now (next step), before the release note and the notch; no further code change follows from it.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/override_site_plan_2026_09_26/architecture_patch.md:57-67
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py:100-135
+  IMPACT: R2 is complete in code; the patch lane catches up before closure work.
+  NEXT: R2 section in component_patch_override_key_set_plans.md and the architecture matrix row; release note; 0.2.70.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:02:19Z
+  TYPE: FACT
+  CLAIM: R2 patch docs, release note and notch are done. component_patch_override_key_set_plans.md has an R2
+    section (before/after, deltas, validation, rollback, mapping) and the architecture patch a matrix row; release
+    note section "Retired normal-meld emitters" (no result, cache or signature change; the opt-in specializer stays);
+    `__version__` 0.2.69 -> 0.2.70 (CRLF kept), header and LLM-bundle line follow; `import melder` reports 0.2.70
+    and the version tests give 3 passed + the known asset-stamp failure. The retirement pass (R1 + R2) is complete.
+  EVIDENCE:
+  - context_compass/system_docs/patches/active/override_site_plan_2026_09_26/component_patch_override_key_set_plans.md:164-207
+  - release_docs/next_version_release.md:512-529
+  - src/melder/__version__.py:12-12
+  IMPACT: Only S6 remains in this story: canonical docs, graph, asset rebuild, release note check, patch-lane closure.
+  NEXT: S6 inventory: read the design_engineer authoring instructions (on-demand trigger: writing system documents),
+    then map every patch section to its canonical destination.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T20:04:54Z
+  TYPE: PLAN
+  CLAIM: S6 docs promotion. On-demand reads done (src_architecture_instructions, src_components_instructions; the
+    seven patch docs read in full). Content-preservation baselines captured before any edit (~/work/s6/*.before.*).
+    Mapping, patch -> canonical (edits by an anchored script, s6_staging/apply_s6_docs_edits.py):
+    key-set plans, normal plan, placement/misses, P5 call shape, S4a/S4b, R2, collection member paths, S5/R1 ->
+    src_components SpellCompiler entry (one dated block; stale lines corrected in place: override-lane row copies,
+    socket-reference internal codes, hydrate_no_overrides_executor) and C2 Phase Artifacts (PathRegistry-only
+    blueprint); fast door + existing-object flag -> Meld Resolution Runtime (dated block); unresolved-input block,
+    its evidence, failure modes, the Phase 3 -> Meld flow and the Unresolved Input diagram -> decided before
+    construction; new flow "Override Meld -> Key-Set Plan" and a key-set plan diagram; DI descriptors precedence
+    line; C1 code map (new core files measured, touched core files re-measured, dag_index), full package inventory
+    (deleted modules out, new modules in), Information Sources, handoff. src_architecture: meld sequence, override
+    and unresolved-input invariants, failure modes, unresolved-input diagram plus a key-set plan diagram, C1 map,
+    sources, glossary terms, handoff. tests_components: stale test_dag_index.py range (read
+    tests_components_instructions first). Then indexes, portability checks, preservation diff, graph
+    (extract/assemble), owner-approved asset rebuild, release-note packaging line, patch-lane closure.
+  EVIDENCE:
+  - context_compass/system_docs/src_components_index.md:1-172
+  - context_compass/system_docs/src_architecture_index.md:1-83
+  IMPACT: The canonical docs describe the final tree; the patch lane can close.
+  NEXT: Write s6_staging/apply_s6_docs_edits.py part 1 (src_components) and --check it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Committed: S3a/S3b, S2a, the override fast door, the id-lane trim, the existing-object fast path (0.2.59 in
 86993dce8) and S2b-1/S2b-2 (1c3dc8580). Uncommitted in the device tree: S4a, S5a (conjure linear in sites), S4b
-(every family raises UnresolvedInputError before construction; from_failed_construction gone) and version 0.2.66.
-Owner decision 2026-09-26T18:22:40Z: S4b option 1, one retirement pass, S6 with the asset rebuild, a notch and a
-release entry per change. In progress: R1 (targeting surface retirement, 0.2.67) - source and test scripts in
-artifacts/.../r1_staging, applied on ~/work/melder_s2b only. Then R2 (old normal emitters, 0.2.68, reference
-analysis first) and S6 (docs promotion, graph, asset rebuild, release note, patch lane closure). Known unrelated
-failures: crystallizer file_backed_morph x4; asset-stamp test until the rebuild; test_system_documents_builder x2 in
-VM copies only. VM trees: ~/work/melder_s2b = device state + R1 (work), ~/work/melder_s2bbase = device state at
-18:25Z (before S4b).
+(every family raises UnresolvedInputError before construction), R1 (targeting surface retired, 0.2.67), P5
+(positional calls only where equivalent, 0.2.69; melder_2's P4 is 0.2.68) and R2 (old normal emitters retired,
+0.2.70). Owner decision 2026-09-26T18:22:40Z: S4b option 1, one retirement pass, S6 with the asset rebuild, a notch
+and a release entry per change. Next: S6 (canonical docs promotion from the patch lane, graph descriptors and index,
+owner-approved asset rebuild, release-note check, patch-lane closure), then the story walkthrough with the owner.
+Open for the owner: the Phase-5 live-pool iteration RISK (19:32:26Z), the two deleted unroll benchmarks (R2).
+Known unrelated failures: crystallizer file_backed_morph x4; asset-stamp test until the rebuild;
+test_system_documents_builder x2 in VM copies only. VM trees: ~/work/melder_s2b = device state (R2 included),
+~/work/melder_s2bbase = device state before R2 (P5 tests missing).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

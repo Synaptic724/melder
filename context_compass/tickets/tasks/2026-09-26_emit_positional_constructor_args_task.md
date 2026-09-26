@@ -204,6 +204,20 @@ CPython 3.14 (specialized allocate-and-init path) with identical binding.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T19:50:20Z
+  TYPE: FACT
+  CLAIM: Consumed M0-41 (melder_0, 19:33:08Z), a reply to M2-7 item 4. The guard question was a real behavior
+    change. Since S2b-2 the generalized family passed dependencies positionally to a class whose inherited
+    __new__ sees the call (melder_0's pos_probe.py). melder_0 fixed it as P5 (0.2.69): the lowering now applies
+    P1's rule (type.__call__, object.__new__, a plain-function __init__), extended to plain functions and bound
+    methods (SitePlanLowering.positional_run); root __args__ values stay positional. P1's own emitter leaves with R2.
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md:2478-2491
+  IMPACT: P1 lives on as the lowering's positional rule; its code retires with melder_0's R2. The P1 task can be
+    closed when the owner accepts.
+  NEXT: Put P1's closure to the owner with the next report.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 P1 validated on the VM copy and applied to the device tree (16:16Z, byte-identical). Waiting on the owner's
 Windows gauntlet run (same-run ratios against owner_run_20260926.txt) and acceptance.

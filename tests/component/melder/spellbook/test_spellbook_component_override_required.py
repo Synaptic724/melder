@@ -351,7 +351,6 @@ def test_phase5_executable_view_excludes_definitions_but_keeps_local_topology(
         expected_roots = {anchor_id} if include_consumer else set()
         assert set(artifact._entire_dag_blueprint_phase5) == expected_roots
         if include_consumer:
-            assert artifact._root_blueprint_phase5.socket_refs == []
             socket, = compiler_book._spell_system_states.get_local_topology_by_id(anchor_id).sockets
             assert socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
     finally:

@@ -473,11 +473,11 @@ def test_component_meld_root_blueprint_order_two_node_graph() -> None:
         Validate the root blueprint for a simple root->dependency graph.
     Contract:
         - Ordered nodes include the dependency before the root.
-        - No SocketRef is recorded (Phase 8 mints the paths).
+        - No path is minted here (Phase 8 mints the paths).
     Returns:
         None.
     Raises:
-        AssertionError: If the order is wrong or socket refs appear.
+        AssertionError: If the order is wrong or a path is minted.
     """
     spellbook = _make_spellbook()
     repo_id = spellbook.bind(
@@ -502,7 +502,7 @@ def test_component_meld_root_blueprint_order_two_node_graph() -> None:
     assert service_id in ordered_ids
     assert ordered_ids[-1] == service_id
 
-    assert blueprint.socket_refs == []
+    assert blueprint.path_registry.resolve_path_id(("repo",)) is None
 
 
 def test_component_meld_root_blueprint_order_shared_dependency() -> None:
@@ -511,11 +511,11 @@ def test_component_meld_root_blueprint_order_shared_dependency() -> None:
         Validate the root blueprint for a shared dependency graph.
     Contract:
         - The shared repo is one node, ordered before both services and the root.
-        - No SocketRef is recorded (Phase 8 mints one path per branch).
+        - No path is minted here (Phase 8 mints one path per branch).
     Returns:
         None.
     Raises:
-        AssertionError: If the order is wrong or socket refs appear.
+        AssertionError: If the order is wrong or a path is minted.
     """
     spellbook = _make_spellbook()
     repo_id = spellbook.bind(
@@ -555,4 +555,4 @@ def test_component_meld_root_blueprint_order_shared_dependency() -> None:
     assert order_map[repo_id] < order_map[service_a_id]
     assert order_map[repo_id] < order_map[service_b_id]
 
-    assert blueprint.socket_refs == []
+    assert blueprint.path_registry.resolve_path_id(("service_a",)) is None

@@ -729,8 +729,9 @@ Key Files (C1):
 - `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_1.py`
 - `tests/unit/melder/spellbook/spell_compiler/phases/test_shared_compiler_executions.py`
 - `tests/unit/melder/spellbook/spell_crafter/validation/test_validation_system.py`
-- `tests/unit/melder/spellbook/spell_crafter/dag/test_dag_index.py`
+- `tests/unit/melder/spellbook/spell_crafter/dag/test_dag_index.py` (PathRegistry only since 2026-09-26)
 - `tests/unit/melder/spellbook/spell_crafter/system/test_spell_system_validation_system.py`
+- `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py` (key-set plans, 2026-09-26)
 
 ### Subcomponent: Aether Component Cluster
 Parent Component: Component Test Suite
@@ -790,6 +791,7 @@ Key Files (C1):
 - `tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py`
 - `tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py`
 - `tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py`
+- `tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py` (key-set plans, 2026-09-26)
 
 ### Subcomponent: Aether Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -971,9 +973,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/unit/melder/aether/conduit/conftest.py`
   start_line: 1
-  end_line: 443
-  loc: 443
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 445
+  loc: 445
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/spellbook/spell_compiler/support/compiler_test_support.py`
   start_line: 1
   end_line: 55
@@ -1146,9 +1148,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/mocks/crystallizer/spell_crystal_harness.py`
   start_line: 1
-  end_line: 767
-  loc: 767
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 769
+  loc: 769
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/mocks/crystallizer/synthetic_module_harness.py`
   start_line: 1
   end_line: 531
@@ -1231,14 +1233,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/unit/melder/aether/test_nexus.py`
   start_line: 1
-  end_line: 6350
-  loc: 6350
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 6368
+  loc: 6368
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/aether/test_rift_runtime_contracts.py`
   start_line: 1
-  end_line: 454
-  loc: 454
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 458
+  loc: 458
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/aether/test_workstation.py`
   start_line: 1
   end_line: 282
@@ -1251,9 +1253,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/unit/melder/crystallizer/test_crystallizer.py`
   start_line: 1
-  end_line: 187
-  loc: 187
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 197
+  loc: 197
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/crystallizer/test_crystallizer_configuration.py`
   start_line: 1
   end_line: 124
@@ -1271,9 +1273,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/unit/melder/mutation_research/test_mutation_research_root.py`
   start_line: 1
-  end_line: 859
-  loc: 859
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 944
+  loc: 944
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/mutation_research/test_mutation_research_root_matrix.py`
   start_line: 1
   end_line: 138
@@ -1281,14 +1283,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/unit/melder/spellbook/test_spellbook.py`
   start_line: 1
-  end_line: 5198
-  loc: 5198
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 5249
+  loc: 5249
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/spellbook/test_spell.py`
   start_line: 1
-  end_line: 1429
-  loc: 1429
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 1505
+  loc: 1505
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/spellbook/test_scan_bind.py`
   start_line: 1
   end_line: 334
@@ -1301,19 +1303,19 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/unit/melder/spellbook/test_cache_runtime_verification.py`
   start_line: 1
-  end_line: 643
-  loc: 643
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 608
+  loc: 608
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/spellbook/configuration/test_configuration.py`
   start_line: 1
-  end_line: 514
-  loc: 514
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 610
+  loc: 610
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/spellbook/bind/test_bind.py`
   start_line: 1
-  end_line: 1818
-  loc: 1818
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 1879
+  loc: 1879
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/spellbook/bind/test_spell_index.py`
   start_line: 1
   end_line: 296
@@ -1336,9 +1338,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/unit/melder/spellbook/spell_compiler/phases/test_shared_compiler_executions.py`
   start_line: 1
-  end_line: 94
-  loc: 94
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 65
+  loc: 65
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/spellbook/spell_crafter/validation/test_validation_system.py`
   start_line: 1
   end_line: 1314
@@ -1346,9 +1348,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/unit/melder/spellbook/spell_crafter/dag/test_dag_index.py`
   start_line: 1
-  end_line: 279
-  loc: 279
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 55
+  loc: 55
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/unit/melder/spellbook/spell_crafter/system/test_spell_system_validation_system.py`
   start_line: 1
   end_line: 742
@@ -1356,9 +1358,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
   start_line: 1
-  end_line: 153
-  loc: 153
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 156
+  loc: 156
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/component/melder/aether/test_frame_acl_component.py`
   start_line: 1
   end_line: 74
@@ -1396,9 +1398,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_configuration_core.py`
   start_line: 1
-  end_line: 225
-  loc: 225
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 251
+  loc: 251
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_contracts.py`
   start_line: 1
   end_line: 749
@@ -1411,14 +1413,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_spellbook.py`
   start_line: 1
-  end_line: 1703
-  loc: 1703
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 1705
+  loc: 1705
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_caching_system.py`
   start_line: 1
-  end_line: 602
-  loc: 602
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 675
+  loc: 675
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/component/melder/spellbook/test_spell_compiler_component_system.py`
   start_line: 1
   end_line: 798
@@ -1426,9 +1428,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/component/melder/spellbook/spell_compiler/test_spell_codegen_pipeline_component.py`
   start_line: 1
-  end_line: 159
-  loc: 159
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 157
+  loc: 157
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/component/melder/spellbook/spell_compiler/test_generalized_cache_creation_component.py`
   start_line: 1
   end_line: 76
@@ -1436,19 +1438,19 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py`
   start_line: 1
-  end_line: 483
-  loc: 483
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 292
+  loc: 292
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py`
   start_line: 1
-  end_line: 247
-  loc: 247
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 231
+  loc: 231
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py`
   start_line: 1
-  end_line: 327
-  loc: 327
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 325
+  loc: 325
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/integration/melder/aether/test_nexus_frame_surface_projection_integration.py`
   start_line: 1
   end_line: 215
@@ -1456,9 +1458,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/integration/melder/aether/test_nexus_viewer_extended_surface_integration_matrix.py`
   start_line: 1
-  end_line: 586
-  loc: 586
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 620
+  loc: 620
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/integration/melder/aether/test_frame_acl_chain_integration.py`
   start_line: 1
   end_line: 283
@@ -1481,9 +1483,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/integration/melder/spellbook/test_spellbook_integration_core.py`
   start_line: 1
-  end_line: 1427
-  loc: 1427
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 1459
+  loc: 1459
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py`
   start_line: 1
   end_line: 522
@@ -1491,9 +1493,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-08-02T15:19:19Z
 - path: `tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py`
   start_line: 1
-  end_line: 1954
-  loc: 1954
-  verified_at: 2026-08-02T15:19:19Z
+  end_line: 1968
+  loc: 1968
+  verified_at: 2026-09-26T20:11:42Z
 - path: `tests/integration/melder/spellbook/test_spellbook_integration_public_api.py`
   start_line: 1
   end_line: 259
@@ -1510,6 +1512,16 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   loc: 587
   verified_at: 2026-08-02T15:19:19Z
 
+- path: `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py`
+  start_line: 1
+  end_line: 1179
+  loc: 1179
+  verified_at: 2026-09-26T20:11:42Z
+- path: `tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py`
+  start_line: 1
+  end_line: 476
+  loc: 476
+  verified_at: 2026-09-26T20:11:42Z
 ## Diagrams
 ### ASCII Component Diagram (C3/C2)
 ```text
@@ -1591,6 +1603,14 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-09-26 override site-plan lane: `test_site_plan_lowering.py` (key-set plan lowering and runtime
+contracts: demand, placement and misses, guard order, call shape, unresolved inputs, disposal lists, lock-free
+hits) joined the Spellbook Compiler Unit Cluster and `test_spellbook_component_override_key_set_plans.py`
+(override and normal melds through real conjures, fresh and cached, both plan families) the Spellbook Compiler
+Component Cluster. `test_dag_index.py` now covers `PathRegistry` only. Tests of retired code (SpellOverrider,
+DagIndex targeting, the socket-reference sanity strategy, the old override and normal emitters) are gone. Stale
+C1 ranges across this map were re-measured.
 
 2026-09-26 spell-id stability and cache restage tests: address-free fingerprint unit contracts, a
 two-interpreter id check and fresh-world cache sequences (provider change, live-set bundle, full hit,

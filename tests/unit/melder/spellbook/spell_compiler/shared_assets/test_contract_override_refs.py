@@ -114,7 +114,6 @@ def test_replayable_values_are_the_freeze_fixed_points(value: Any) -> None:
     assert CodegenSignature.is_replayable_contract_payload_value(value) is True
     assert CodegenCreationSchemaHelpers.is_replayable_contract_payload_value(value) is True
     assert CodegenSignature.freeze_phase11_schema_value(value) == value
-    assert ManyOnlyCodegenCreationHelpers.freeze_value(value) == value
 
 
 @pytest.mark.parametrize(
@@ -338,17 +337,14 @@ def test_generalized_rows_refuse_an_object_without_a_reference() -> None:
 
 
 def test_many_only_rows_follow_the_same_projection_rule() -> None:
-    """The many-only signature and override rows write scalars as-is and objects as references."""
+    """The many-only signature row writes scalars as-is and objects as references."""
     refs = {"marker": _ref("cfg", "marker"), "__args__": (None, _ref("args_only", 1))}
     step = _step({"level": 3, "marker": _MARKER}, refs, positional=[1, _HOOK])
 
     signature_row = ManyOnlyCodegenCreationHelpers.build_no_overrides_step_signature_row(step)
-    override_row = ManyOnlyCodegenCreationHelpers.build_override_step_row(step)
 
     assert signature_row[5] == (1, refs["__args__"][1])
     assert signature_row[7] == (("level", 3), ("marker", refs["marker"]))
-    assert override_row["contract_payload_items"] == (("level", 3), ("marker", refs["marker"]))
-    assert override_row["contract_positional_override"] == (1, refs["__args__"][1])
 
 
 # ---------------------------------------------------------------------------

@@ -23,8 +23,16 @@ hot path.
    (collection -> list, one non-collection -> value, several -> list, zero-member required collection -> []).
    Steps with a contract payload are not direct calls (step 6).
 6. Emit per kept step, in step order:
-   - many: direct call `v = t(<operands>)` (positional while legal, then keywords); disposal-bearing many
-     registers with `add_many_creations` on the innermost scope store.
+   - many: direct call `v = t(<operands>)`; disposal-bearing many registers with `add_many_creations` on the
+     innermost scope store.
+   - call shape (P5, 2026-09-26): operands go positionally, in signature order, only while each is a caller's
+     root `__args__` value or bound to that position by name in the code that receives the call
+     (`SitePlanLowering.positional_run`: a class whose metaclass keeps `type.__call__`, whose `__new__` is
+     `object.__new__` and whose `__init__` is a plain function; a plain function or lambda; a bound method
+     of a plain function). The first operand that does not qualify, or an omitted parameter, closes
+     positionals; the rest go by keyword. A custom `__new__`, metaclass `__call__` or signature-preserving
+     wrapper therefore sees names, as the keyword call would give it; plain targets keep the fast
+     positional call. A positional-only operand that cannot go positionally makes the step non-direct.
    - shared: route by existence to its store; hit (`_creations.get`) -> reuse (or P2 raise if it carries a
      winning override); miss -> slot guard (per-conduit, spellspace, cluster, lineage; Spell lock for
      `unique` with the lock hint), recheck, construct, publish (`_creations[sid] = v` without disposal,

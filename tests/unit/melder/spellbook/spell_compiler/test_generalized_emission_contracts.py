@@ -1,5 +1,5 @@
 """
-Emission-contract tests for the generalized no-overrides lane.
+Emission-contract tests for the generalized singleton specializer.
 
 Purpose:
     Pin the emitted-source contracts landed in patch lane
@@ -8,9 +8,10 @@ Purpose:
     - singleton warm-tail specialization emission (guards, capture aliases,
       root-collapse, deopt tail-call),
     - collection-DI inlinable emission (list literals, flat-cursor dict mode),
-    - transient-lane body shape (per-slot factory defaults, per-step handlers,
-      no live bookkeeping),
     - factory-source shareability (identity-free emission).
+    The generic step and transient emitters were retired (R2, 2026-09-26); the
+    per-step contracts they shared are pinned through the specializer, which
+    emits every non-captured row with them.
 
 These are source-shape and small-executor tests over synthetic manifest rows;
 no Aether runtime, conjure, or live spells are involved.
@@ -23,17 +24,12 @@ from typing import Any, Dict, Sequence, Tuple
 import pytest
 
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler import (
-    EXECUTOR_NAME,
     SPECIALIZED_EXECUTOR_NAME,
     emit_specialized_step_plan_source,
-    emit_step_plan_source,
     row_inlinable_common_shape,
     select_specializable_step_indexes,
     _row_contract_call_extras,
     _row_contract_value_binding,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler import (
-    _build_no_overrides_codegen_executor_source,
 )
 from melder.aether.spellbook.spell_compiler.executor_factory_cache import (
     build_executor_factory_source,
@@ -118,38 +114,45 @@ class TestInlinableShapeContract:
 class TestCollectionDIEmission:
     """
     Collection-DI params compile to order-preserving list literals.
+
+    A captured `unique` row leads each graph, so the specializer emits every
+    other row through the shared per-step emitters these tests pin.
     """
 
     def test_locals_mode_emits_list_literal(self) -> None:
         """Locals mode compiles collection params to direct local refs."""
         rows = (
+            _row("u0", "unique"),
             _row("d1", "many"),
             _row("d2", "many"),
             _row("root", "many", [("handlers", ["d1", "d2"])]),
         )
-        source = emit_step_plan_source(
+        source = emit_specialized_step_plan_source(
             rows=rows,
+            captured_step_indexes=(0,),
             root_instance_key=("root", None),
         )
-        assert "handlers=[instance_0, instance_1]," in source
+        assert "handlers=[instance_1, instance_2]," in source
         assert "instance_results" not in source
         assert "_construct_spell_instance(plan_step" not in source
 
     def test_dict_mode_emits_flat_cursor_reads(self) -> None:
         """Dict mode compiles collection params via flattened dep-key reads."""
         rows = (
+            _row("u0", "unique"),
             _row("d1", "many"),
             _row("d2", "many"),
             _row("odd", "many", callable_spell=False),
             _row("root", "many", [("handlers", ["d1", "d2"])]),
         )
-        source = emit_step_plan_source(
+        source = emit_specialized_step_plan_source(
             rows=rows,
+            captured_step_indexes=(0,),
             root_instance_key=("root", None),
         )
         assert (
-            "handlers=[instance_results[step_dep_keys_3[0]], "
-            "instance_results[step_dep_keys_3[1]]],"
+            "handlers=[instance_results[step_dep_keys_4[0]], "
+            "instance_results[step_dep_keys_4[1]]],"
         ) in source
 
 
@@ -234,65 +237,6 @@ class TestSpecializationEmission:
             )
 
 
-class TestTransientBodyContract:
-    """
-    Transient (all-many unrolled) executor body shape contracts.
-    """
-
-    @staticmethod
-    def _schema(step_count: int, root_index: int, call_modes: Tuple[int, ...],
-                **dep_overrides: Tuple[int, ...]) -> Dict[str, Any]:
-        """Build one normalized transient schema with zeroed dep arrays."""
-        fields = [
-            "dep1", "dep2a", "dep2b", "dep3a", "dep3b", "dep3c", "dep4a",
-            "dep4b", "dep4c", "dep4d", "dep5a", "dep5b", "dep5c", "dep5d",
-            "dep5e", "dep6a", "dep6b", "dep6c", "dep6d", "dep6e", "dep6f",
-            "dep7a", "dep7b", "dep7c", "dep7d", "dep7e", "dep7f", "dep7g",
-            "dep8a", "dep8b", "dep8c", "dep8d", "dep8e", "dep8f", "dep8g",
-            "dep8h",
-        ]
-        schema: Dict[str, Any] = {
-            "step_count": step_count,
-            "root_step_index": root_index,
-            "call_modes": call_modes,
-        }
-        for field_name in fields:
-            schema[field_name] = dep_overrides.get(
-                field_name,
-                tuple(0 for _ in range(step_count)),
-            )
-        return schema
-
-    def test_targets_bind_as_per_slot_defaults(self) -> None:
-        """Constructor targets ride per-slot defaults, not per-call loads."""
-        source = _build_no_overrides_codegen_executor_source(
-            transient_schema=self._schema(2, 1, (0, 1), dep1=(0, 0)),
-        )
-        assert source is not None
-        assert "t0 = transient_targets[0]" in source
-        assert "t1 = transient_targets[1]" in source
-        assert "t0=transient_targets[0]," not in source
-        assert "def _no_overrides_codegen_creation_executor(meld):" in source
-
-    def test_no_live_step_bookkeeping(self) -> None:
-        """The happy path carries no per-step index bookkeeping stores."""
-        source = _build_no_overrides_codegen_executor_source(
-            transient_schema=self._schema(2, 1, (0, 1), dep1=(0, 0)),
-        )
-        assert source is not None
-        assert "__step_index" not in source
-
-    def test_per_step_handlers_attribute_constant_steps(self) -> None:
-        """Each step owns a handler naming its constant step index."""
-        source = _build_no_overrides_codegen_executor_source(
-            transient_schema=self._schema(2, 1, (0, 1), dep1=(0, 0)),
-        )
-        assert source is not None
-        assert source.count("except Exception as exc:") == 2
-        assert "steps[0].spell" in source
-        assert "steps[1].spell" in source
-
-
 class TestFactorySourceShareability:
     """
     Emitted sources stay identity-free so the factory cache can share shapes.
@@ -308,10 +252,12 @@ class TestFactorySourceShareability:
             _row("xxx", "unique"),
             _row("yyy", "many", [("dep", ["xxx"])]),
         )
-        source_a = emit_step_plan_source(
-            rows=rows_a, root_instance_key=("bbb", None))
-        source_b = emit_step_plan_source(
-            rows=rows_b, root_instance_key=("yyy", None))
+        source_a = emit_specialized_step_plan_source(
+            rows=rows_a, captured_step_indexes=(0,),
+            root_instance_key=("bbb", None))
+        source_b = emit_specialized_step_plan_source(
+            rows=rows_b, captured_step_indexes=(0,),
+            root_instance_key=("yyy", None))
         assert source_a == source_b
 
     def test_different_capture_sets_differ(self) -> None:
@@ -449,6 +395,7 @@ class TestContractPayloadEmission:
     def test_payload_graph_reaches_locals_mode_with_bound_constants(self) -> None:
         """Payload + positional rows emit locals-mode splat/keyword constants."""
         rows = (
+            _row("u0", "unique"),
             _row("d1", "many"),
             _payload_row(
                 "root", "many", deps=[("dep", ["d1"])],
@@ -456,24 +403,29 @@ class TestContractPayloadEmission:
                 uses_positional=True,
             ),
         )
-        source = emit_step_plan_source(
-            rows=rows, root_instance_key=("root", None),
+        source = emit_specialized_step_plan_source(
+            rows=rows, captured_step_indexes=(0,),
+            root_instance_key=("root", None),
         )
         assert "instance_results" not in source
-        assert "*positional_1," in source
-        assert "cfg=contract_values_1[0]," in source
-        assert "dep=instance_0," in source
-        assert "positional_1 = step_positional_args[1]" in source
-        assert "contract_values_1 = step_contract_values[1]" in source
+        assert "*positional_2," in source
+        assert "cfg=contract_values_2[0]," in source
+        assert "dep=instance_1," in source
+        assert "positional_2 = step_positional_args[2]" in source
+        assert "contract_values_2 = step_contract_values[2]" in source
 
     def test_payload_only_zero_dep_row_emits_keyword_call(self) -> None:
         """A zero-dep payload row calls with constants, not `target_0()`."""
-        rows = (_payload_row("solo_p", "many", payload=[("x", 42)]),)
-        source = emit_step_plan_source(
-            rows=rows, root_instance_key=("solo_p", None),
+        rows = (
+            _row("u0", "unique"),
+            _payload_row("solo_p", "many", payload=[("x", 42)]),
         )
-        assert "x=contract_values_0[0]," in source
-        assert "target_0()" not in source
+        source = emit_specialized_step_plan_source(
+            rows=rows, captured_step_indexes=(0,),
+            root_instance_key=("solo_p", None),
+        )
+        assert "x=contract_values_1[0]," in source
+        assert "target_1()" not in source
 
     def test_specialized_emitter_inlines_non_captured_payload_rows(self) -> None:
         """The specialized body compiles payload constants for live steps."""

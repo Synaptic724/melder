@@ -13,10 +13,10 @@ Contract:
       cache envelope exports it without family-specific wiring.
 
 Bridging note:
-    The unrolled-schema builder and the lane signature builders are bridged
-    from the many_only compilers/steps; they are pure functions of plan data.
-    Lift them into family-public seams when the legacy eager steps are
-    retired.
+    The unrolled-schema builder is bridged from the many_only compiler; it is a
+    pure function of plan data. The no-overrides executor signature is built
+    here (`build_many_only_executor_signature`), lifted from the retired eager
+    no-overrides step (R2, 2026-09-26).
 """
 
 from typing import Any, Dict, Tuple
@@ -31,8 +31,8 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generaliz
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler import (
     _build_many_only_unrolled_schema_from_plan as build_many_only_unrolled_schema_from_plan,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step import (
-    ManyOnlyNoOverridesCodegenCreationStep,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers import (
+    ManyOnlyCodegenCreationHelpers,
 )
 from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
     CodegenSignature,
@@ -90,13 +90,49 @@ def build_many_only_manifest(
             ),
             "steps_rows": steps_rows,
             "transient_schema": transient_schema,
-            "executor_signature": (
-                ManyOnlyNoOverridesCodegenCreationStep._build_executor_signature(
-                    no_overrides_plan=no_overrides_plan,
-                )
+            "executor_signature": build_many_only_executor_signature(
+                no_overrides_plan
             ),
         },
     }
+
+
+def build_many_only_executor_signature(no_overrides_plan: Any) -> str:
+    """
+    Build the deterministic signature of one many_only no-overrides lane.
+
+    Contract:
+        - A pure hash of plan data: the root spell id and instance key, one
+          signature row per step, the step call modes, the root step index and
+          the per-step disposal flags, in that order - the parts the retired
+          eager step hashed (lifted from
+          `ManyOnlyNoOverridesCodegenCreationStep._build_executor_signature`,
+          R2, 2026-09-26), so manifests keep their signature values.
+
+    Args:
+        no_overrides_plan:
+            The many_only no-overrides lane plan.
+
+    Returns:
+        str: The signature digest.
+    """
+    step_signature_rows = tuple(
+        ManyOnlyCodegenCreationHelpers.build_no_overrides_step_signature_row(
+            step
+        )
+        for step in no_overrides_plan.steps
+    )
+    root_instance_key = ManyOnlyCodegenCreationHelpers.normalize_instance_key(
+        no_overrides_plan.root_instance_key
+    )
+    return ManyOnlyCodegenCreationHelpers.hash_signature(
+        no_overrides_plan.root_spell_id,
+        root_instance_key,
+        step_signature_rows,
+        no_overrides_plan.step_call_modes,
+        no_overrides_plan.root_step_index,
+        no_overrides_plan.step_has_disposal_methods,
+    )
 
 
 def _build_many_only_no_overrides_row(step: Any) -> Dict[str, Any]:
@@ -219,6 +255,7 @@ __all__ = [
     "FAMILY_ID",
     "MANIFEST_METADATA_KEY",
     "MANIFEST_VERSION",
+    "build_many_only_executor_signature",
     "build_many_only_manifest",
     "coerce_manifest_sequences",
     "validate_many_only_manifest",

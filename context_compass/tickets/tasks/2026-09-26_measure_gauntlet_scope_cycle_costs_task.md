@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T17:36:01Z
+- Updated: 2026-09-26T19:27:22Z
 
 ## Objective
 A per-scope-cycle cost map for Melder on the real-world gauntlet - where the time and the calls go in outer and
@@ -43,16 +43,16 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
 
 ## Steps / Checklist
 - [x] Record the owner's 2026-09-26 runs (5,000 and 30,000 iterations) verbatim as the baseline artifact.
-- [ ] Build the VM copy: CPython 3.14t via uv, Melder's runtime dependencies, dishka, dependency-injector and
+- [x] Build the VM copy: CPython 3.14t via uv, Melder's runtime dependencies, dishka, dependency-injector and
       pytest; copy src/, benchmarks/ and pyproject.toml; smoke-run the gauntlet at reduced iterations.
-- [ ] Read the gauntlet harness (the Melder lane and the shared driver) in full; record what each reported metric
+- [x] Read the gauntlet harness (the Melder lane and the shared driver) in full; record what each reported metric
       measures (wall versus active cycles, the scope create and cleanup windows).
-- [ ] Run the gauntlet on the VM copy (threads 1, 2 and 3, repeated) and compare same-run ratios with the owner's.
+- [x] Run the gauntlet on the VM copy (threads 1, 2 and 3, repeated) and compare same-run ratios with the owner's.
 - [ ] Attribute the Melder scope cycle: call counts and time per sub-step, single-threaded first; run the existing
       probes (profile_scope_cycle_contention.py, test_melder_gauntlet_gc_probe.py) once each.
-- [ ] Read the attributed runtime code in full (pooled lesser and SpellSpace acquire and return, creations
+- [x] Read the attributed runtime code in full (pooled lesser and SpellSpace acquire and return, creations
       disposal, ID minting, per-cycle locks); record the per-cycle cost map.
-- [ ] Rank candidates with expected gain, risk, files and owning lane; DECISION_REQUEST to the owner.
+- [x] Rank candidates with expected gain, risk, files and owning lane; DECISION_REQUEST to the owner.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
@@ -790,10 +790,44 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T19:42:21Z
+  TYPE: MEASURE
+  CLAIM: Owner-run Windows gauntlet on the 0.2.68 tree (melder_0 S2-S5 + R1, P4), 10k and 30k iterations, all
+    three libraries in each run. Same-run ratios against the morning 30k baseline:
+    - hot_scopes/s, melder/dishka: 0.875 (10k), 0.859 (30k); was 0.779. melder/DI: 1.016, 0.929; was 0.976.
+    - active cycles/s (the SpellSpace window), melder/dishka at 30k: request 0.997, worker_a 0.852, worker_b
+      1.012; was 0.551, 0.634, 0.769. The 10k run: 1.071, 0.920, 1.094.
+    - wall cycles/s: 0.84 on every lane in both runs; was 0.74.
+    - Remaining average gap: outside the SpellSpace window (lesser create, lesser melds, cleanup, thread
+      spawn). Melder's outer cycle averages 2-3 us more than dishka's while the request windows are equal.
+    - Tail: Melder's single-cycle maxima stay 4-10x the competitors' in every run. Outer cycle max 9.61 / 6.11
+      ms against dishka 1.71 / 1.41 and DI 0.88 / 1.12; request window max 7.08 / 4.38 against 0.67 / 1.05 and
+      0.87 / 0.71. The p99s are equal (0.018 to 0.039 ms), so these are rare events. The iteration-level max is
+      noisier: DI also hit 14.87 ms in the 10k run.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/owner_run_20260926_1931_10k_30k.txt:1-115
+  - artifacts/gauntlet_runtime_speed_20260926/owner_run_20260926_ratios.txt:1-44
+  - artifacts/gauntlet_runtime_speed_20260926/owner_run_20260926.txt:1-92
+  IMPACT: The active-window gap is closed on two lanes, and hot_scopes/s moved from 0.78x to 0.86x dishka.
+    Two targets remain: the per-cycle scope lifecycle (average) and a rare multi-millisecond event unique to
+    Melder (tail). The owner points at the tail first.
+  NEXT: Open the tail task; run the harness's own per-turn GC attribution on the VM copy to test the GC hypothesis.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Opened 2026-09-26 on the owner's request to run the benchmarks and speed up the library. Baseline filed (owner
-runs, same-run ratios); no runs by melder_2 yet. Waiting on D1-D3; next is the 3.14t VM copy and a reduced-
-iteration smoke run, then the harness read and the per-cycle attribution.
+Attribution is done: the cost map is in Notes, from 15:50Z to 16:43Z. Levers, in order:
+- P1, positional constructor calls: in the tree since 16:16Z. melder_0's S2b-2 lowering took over the normal
+  path, so P1 is in review until the owner decides with S2b-3.
+- P3, deferred refcounting through ctypes: dropped by the owner; the research stays in artifacts.
+- Lever 1, interning: no gain, dropped.
+- Lever 2, thread-affine pools: -6% to -7% per cycle on Linux, effect on Windows unknown, needs a design.
+- P4, SpellSpace.meld warm id lane: in the tree at 0.2.68, in review (its own task).
+Open owner decisions:
+- The SpellSpace active-scope RISK: enforce the check, or correct the documents.
+- The system_document_view lazy-index race (RISK in the P4 task): which lane fixes it.
+Next lever candidates after the owner's Windows gauntlet run: the scope create/cleanup call chain, and
+thread-affine pools.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

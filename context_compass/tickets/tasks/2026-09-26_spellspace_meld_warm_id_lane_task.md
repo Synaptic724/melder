@@ -5,12 +5,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-spellspace-meld-warm-id-lane
 - Story: STORY-2026-09-26-gauntlet-runtime-speed
-- Status: in_progress
+- Status: review
 - Owner: user
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T19:13:34Z
-- Updated: 2026-09-26T19:15:24Z
+- Updated: 2026-09-26T19:27:00Z
 
 ## Objective
 A warm `space.meld(spell_id=...)` call, the scoped call shape the gauntlet uses, returns from `SpellSpace.meld`
@@ -40,17 +40,17 @@ errors, hooks and the cache-emit check stay identical to calling the door.
   guard ladder itself; thread-affine pools (lever 2); `SpellSpace.purge`.
 
 ## State Transition Event
-- from_state: draft
-- to_state: in_progress
-- transition_reason: Validated on the VM copy, then re-validated on the 19:06Z tree (suites, A/B, micro); apply
-  next.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Applied 19:15:00Z (byte-identical), notched to 0.2.68 with a release-note bullet, and the
+  combined device state (R1 + P4) passed the suites; the owner's Windows gauntlet run and acceptance remain.
 
 ## Steps / Checklist
 - [x] Prototype and A/B on the VM copy (measure task notes).
 - [x] Equivalence against the source: the door's fast path, scope checks, call shapes.
 - [x] Suites with saved logs (3.14t gil 0/1, GIL build); 30k-iteration soak; re-run on the 19:06Z tree.
 - [x] NOTICE melder_0; apply with --check first; verify byte-identity with the validated copy.
-- [ ] Version notch (next free after melder_0's R1) and one release-note bullet.
+- [x] Version notch (next free after melder_0's R1) and one release-note bullet.
 - [ ] Owner-run gauntlet on Windows; same-run ratios against owner_run_20260926.txt.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
@@ -178,11 +178,65 @@ errors, hooks and the cache-emit check stay identical to calling the door.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T19:16:21Z
+  TYPE: FACT
+  CLAIM: Consumed M0-38, melder_0's ACK of M2-7 (19:15:40Z). melder_0 records that SpellSpace.meld is the fourth
+    fast-door reader, so guard-ladder or entry-shape changes update all four. It notes that P3 is dropped. R1 is
+    0.2.67 and P4 notches after it. The positional-call guard question is recorded as UNKNOWN in melder_0's
+    ticket and will be investigated after R1 lands, before R2.
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md:2333-2351
+  IMPACT: No objection to P4; the notch order is agreed.
+  NEXT: When __version__ reads 0.2.67, take 0.2.68 and add the "Faster warm melds" bullet.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T19:26:47Z
+  TYPE: MEASURE
+  CLAIM: The notch is done and the combined device state is validated. melder_0's R1 landed at 0.2.67 (19:17Z),
+    then notch_p4.py applied at 19:20:29Z: __version__ 0.2.67 -> 0.2.68 (CRLF kept); release-note header and
+    LLM-bundle line follow; one bullet under "Faster warm melds" ("Id melds on a SpellSpace ... about 40 ns less
+    per call"). Suites on the whole device state (R1 + P4 + notch) as of 19:20:48Z:
+    - 3.14t -X gil=0: everything passed except the 3 known build-asset/version-stamp cases and one intermittent
+      failure: test_racing_every_lazy_load_at_once_is_consistent (system_document_view.py, not a P4 file). It did
+      not reproduce afterwards: the isolated test passed 12/12 and the multithreading suite 10/10, on the combined
+      copy and on the pre-R1 base alike.
+    - -X gil=1 and the 3.14.7 GIL build (spellbook x3, component aether, conduit, multithreading, unit aether):
+      all passed.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/p4_combined_suites_1920.txt:1-38
+  - artifacts/gauntlet_runtime_speed_20260926/p4_spellspace_warm_lane/notch_p4.py:1-65
+  - release_docs/next_version_release.md:75-92
+  - src/melder/__version__.py:12-12
+  IMPACT: P4 is complete in the tree; what is left is the owner's Windows gauntlet run and acceptance.
+  NEXT: Record the system_document_view race as a RISK for the owner; move P4 to review.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T19:26:47Z
+  TYPE: RISK
+  CLAIM: A pre-existing data race, outside this lane, surfaced during P4's combined-state suites.
+    SystemGraphView._index() in src/melder/utilities/ai_native_support_tools/system_document_view.py (last changed
+    4dc04d82f, 2026-08-03) publishes self._sections before self._by_key. A second thread that arrives between the
+    two stores skips the load branch and gets (sections, None). section() then fails with "argument of type
+    'NoneType' is not a container or iterable" (the traceback of the one failure). The multithreading test built
+    to race these lazy loads caught it once in 11 suite runs and not in 22 later runs, so it is timing-dependent.
+    Likely fix, not applied: store one (sections, by_key) tuple in a single slot, or assign _by_key before
+    _sections.
+  EVIDENCE:
+  - src/melder/utilities/ai_native_support_tools/system_document_view.py:351-377
+  - artifacts/gauntlet_runtime_speed_20260926/vm_runs/p4_combined_multithreading_race_traceback.txt:1-75
+  IMPACT: A free-threaded agent population reading the packaged system documents can hit this TypeError at
+    random. The fix is small, but the file is not melder_2's; the owner decides who takes it.
+  NEXT: Report to the owner with the P4 status.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Applied to the device tree at 19:15:00Z, byte-identical to the copy that passed the suites (re-validated on the
-19:06Z tree: about -17% per cached space meld, -2% to -3% per gauntlet cycle, 30k soak flat, equivalence read
-against the source). Next: version notch and release-note bullet once melder_0's R1 (0.2.67) is in; then the
-owner's Windows gauntlet run and acceptance.
+Done in the tree. Applied 19:15:00Z (byte-identical to the validated copy), notched to 0.2.68 with a "Faster warm
+melds" bullet. The combined device state (R1 + P4) passed the suites. On the VM: about -17% per cached space
+meld and -2% to -3% per gauntlet cycle; 30k soak flat; equivalence read against the source. Waiting on the owner's
+Windows gauntlet run and acceptance. Side findings for the owner: the SpellSpace active-scope RISK (measure
+task) and the system_document_view lazy-index race (RISK note here).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

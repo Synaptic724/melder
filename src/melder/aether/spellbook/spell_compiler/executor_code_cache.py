@@ -10,9 +10,9 @@ the same spell, or two different Spellbooks -- that emit the same source can
 therefore safely share a single compiled code object.
 
 This module owns one process-wide, bounded cache keyed on the SHA-256 of the
-emitted source. It is consumed by both codegen-creation compile chokepoints:
-``_compile_emitted_no_overrides_executor`` (no-overrides lane) and
-``compile_overrides_codegen_creation_executor_code_object`` (overrides lane).
+emitted source. It is consumed by every codegen-creation compile chokepoint:
+the site-plan runtime (normal and override plans), the creation-runtime door
+compiler and the solo compilers.
 
 Why source content is a safe key
 --------------------------------

@@ -1,0 +1,22 @@
+== melder mode=cold gc_tracked_objects=95,224 full_gc_collect=5.98ms
+   turn 0: total=13.678 threaded=11.949 | first cycles (ms) request:outer=5.338/req=3.926 worker_a:outer=2.948/req=2.063 worker_b:outer=9.811/req=3.875
+   turn 1: total=2.195 threaded=1.541 | first cycles (ms) request:outer=0.088/req=0.039 worker_a:outer=0.062/req=0.035 worker_b:outer=0.029/req=0.014
+   turn 2: total=1.705 threaded=1.415 | first cycles (ms) request:outer=0.039/req=0.020 worker_a:outer=0.025/req=0.014 worker_b:outer=0.037/req=0.016
+   compile executor (site plan): calls=17 total=8.105ms
+   SitePlanOverrideRuntime build (incl. compile): calls=17 total=14.078ms
+   generalized hydrate_creation_executors (incl. above): calls=17 total=15.477ms
+== dishka mode=cold gc_tracked_objects=49,052 full_gc_collect=3.16ms
+   turn 0: total=6.373 threaded=4.975 | first cycles (ms) request:outer=4.075/req=0.680 worker_a:outer=1.229/req=0.941 worker_b:outer=1.085/req=0.700
+   turn 1: total=1.790 threaded=1.471 | first cycles (ms) request:outer=0.020/req=0.011 worker_a:outer=0.018/req=0.008 worker_b:outer=0.018/req=0.010
+   turn 2: total=2.550 threaded=2.264 | first cycles (ms) request:outer=0.018/req=0.012 worker_a:outer=0.024/req=0.019 worker_b:outer=0.018/req=0.010
+== dependency-injector mode=cold gc_tracked_objects=45,431 full_gc_collect=1.89ms
+   turn 0: total=1.994 threaded=1.239 | first cycles (ms) request:outer=0.731/req=0.054 worker_a:outer=0.060/req=0.035 worker_b:outer=0.058/req=0.040
+   turn 1: total=1.499 threaded=1.275 | first cycles (ms) request:outer=0.029/req=0.019 worker_a:outer=0.029/req=0.016 worker_b:outer=0.019/req=0.012
+   turn 2: total=1.166 threaded=0.925 | first cycles (ms) request:outer=0.036/req=0.023 worker_a:outer=0.116/req=0.112 worker_b:outer=0.022/req=0.013
+== melder mode=warm gc_tracked_objects=95,224 full_gc_collect=5.25ms
+   turn 0: total=2.355 threaded=1.301 | first cycles (ms) request:outer=0.041/req=0.018 worker_a:outer=0.039/req=0.019 worker_b:outer=0.041/req=0.019
+   turn 1: total=2.769 threaded=2.495 | first cycles (ms) request:outer=0.038/req=0.015 worker_a:outer=0.031/req=0.015 worker_b:outer=0.019/req=0.011
+   turn 2: total=2.515 threaded=2.221 | first cycles (ms) request:outer=0.027/req=0.013 worker_a:outer=0.024/req=0.011 worker_b:outer=0.030/req=0.014
+   compile executor (site plan): calls=5 total=0.146ms
+   SitePlanOverrideRuntime build (incl. compile): calls=5 total=0.551ms
+   generalized hydrate_creation_executors (incl. above): calls=5 total=0.676ms

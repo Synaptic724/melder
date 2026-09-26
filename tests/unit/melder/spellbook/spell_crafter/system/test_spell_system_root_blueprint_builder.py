@@ -15,9 +15,6 @@ from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph impo
     DirectedAcyclicWorkGraph,
 )
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
-    RootResolutionBlueprint,
-)
 
 
 def _old_dependency_edges(
@@ -124,8 +121,8 @@ def test_build_single_root_dag_cleans_on_cycle(monkeypatch):
     assert captured and captured[0]._cleaned is False  # noqa: SLF001
 
 
-def test_compiled_blueprint_records_no_socket_refs_or_paths():
-    """Phase 5 keeps the dependency DAG but records no SocketRef and mints no path, whatever the topologies hold."""
+def test_compiled_blueprint_mints_no_paths():
+    """Phase 5 keeps the dependency DAG and mints no path, whatever the topologies hold."""
     deps = {"root": {"child"}, "child": {"leaf"}, "leaf": set()}
     root_top = SpellLocalTopology(
         spell_id="root",
@@ -137,20 +134,9 @@ def test_compiled_blueprint_records_no_socket_refs_or_paths():
     )
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": root_top, "child": child_top})
     blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    blueprint.ensure_dag_index_built()
 
     assert set(blueprint.dag.nodes) == {"root", "child", "leaf"}
-    assert blueprint.socket_refs == []
-    assert list(blueprint.dag_index.iter_all_sockets()) == []
     assert blueprint.path_registry.resolve_path_id(("child",)) is None
-
-
-def test_blueprint_without_topologies_has_empty_index():
-    deps = {"root": {"child"}, "child": set()}
-    snapshot = _snapshot(deps, roots={"root"}, topologies={})
-    blueprint = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    assert list(blueprint.dag_index.iter_all_sockets()) == []
-    assert blueprint.socket_refs == []
 
 
 def test_multiple_roots_returned():
@@ -159,17 +145,6 @@ def test_multiple_roots_returned():
     result = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
     assert set(result) == {"r1", "r2"}
     assert list(result.keys()) == ["r1", "r2"]
-
-
-def test_install_fresh_index_rejects_none_and_cleaned_blueprints():
-    """A missing blueprint fails on attribute access; a cleaned blueprint refuses the new index."""
-    builder = SpellSystemRootBlueprintBuilder()
-    bp = RootResolutionBlueprint("r", None, DirectedAcyclicWorkGraph())
-    with pytest.raises(AttributeError):
-        builder._install_fresh_index(None)
-    bp.cleanup()
-    with pytest.raises(RuntimeError):
-        builder._install_fresh_index(bp)
 
 
 def test_build_single_root_dag_handles_isolated_root():
@@ -334,7 +309,6 @@ def test_dependency_without_topology_still_in_dag():
     snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo_root})
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
     assert set(bp.dag.nodes.keys()) == {"root", "mid", "leaf"}
-    assert bp.socket_refs == []
 
 
 def test_shared_binary_chain_builds_without_walking_paths():
@@ -356,7 +330,6 @@ def test_shared_binary_chain_builds_without_walking_paths():
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["c0"]
     assert set(bp.dag.nodes) == set(names)
     assert bp.ordered_node_ids[-1] == "c0"
-    assert bp.socket_refs == []
     assert bp.path_registry.resolve_path_id(("a",)) is None
 
 
@@ -366,13 +339,6 @@ def test_build_root_blueprints_leaves_topologies_map_intact():
     snapshot = _snapshot(deps, roots={"root"}, topologies=topologies)
     SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)
     assert topologies == {"root": topologies["root"]}
-
-
-def test_blueprint_without_topologies_records_no_socket_refs():
-    deps = {"root": {"child"}, "child": set()}
-    snapshot = _snapshot(deps, roots={"root"})
-    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    assert bp.socket_refs == []
 
 
 def test_multiple_roots_with_shared_dependency_produce_separate_blueprints():
@@ -388,7 +354,7 @@ def test_build_root_blueprints_accepts_empty_topologies():
     deps = {"root": {"child"}, "child": set()}
     snapshot = _snapshot(deps, roots={"root"}, topologies={})
     bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
-    assert bp.dag_index.get_by_name("child") == []
+    assert set(bp.dag.nodes) == {"root", "child"}
 
 
 def test_build_root_blueprints_respects_unreachable_dependencies():
@@ -398,17 +364,3 @@ def test_build_root_blueprints_respects_unreachable_dependencies():
     assert set(bp.dag.nodes) == {"root"}
 
 
-def test_install_fresh_index_replaces_index_and_registry():
-    """A second call drops the old index and registry, so no stale path id survives."""
-    deps = {"root": set()}
-    topo = SpellLocalTopology(spell_id="root", sockets=())
-    snapshot = _snapshot(deps, roots={"root"}, topologies={"root": topo})
-    builder = SpellSystemRootBlueprintBuilder()
-    bp = builder.build_root_blueprints(snapshot)["root"]
-    old_index = bp.dag_index
-    old_registry = bp.path_registry
-    old_registry.extend_path(old_registry.root_path_id, "stale")
-    builder._install_fresh_index(bp)
-    assert bp.dag_index is not old_index
-    assert bp.path_registry is not old_registry
-    assert bp.path_registry.resolve_path_id(("stale",)) is None

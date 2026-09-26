@@ -5,7 +5,7 @@
 - Status: draft (S1 detailed; S2-S6 outlined and detailed in their own lanes before code)
 - Owner: user (implementation: melder_0)
 - Created: 2026-09-26T11:28:08Z
-- Updated: 2026-09-26T19:05:07Z
+- Updated: 2026-09-26T20:01:22Z
 
 ## Patch Scope and Non-Goals
 - Objective: implement the owner-approved override design (design v2): a site graph per root, one plan per
@@ -27,6 +27,7 @@
 | SpellCompiler and Validation Pipeline (PathRegistry, Phases 5 and 8) | fix | Collection members get their own child paths so their many dependencies are built per member (owner ruling 2026-09-26); cache generation 13 | Phase-5 overlay, Phase-8 occurrence graph |
 | SpellCompiler and Validation Pipeline (Phase-5 blueprint builder) | remove | S5: the per-path socket overlay is retired; blueprints carry no SocketRefs and Phase 8 mints the path ids; conjure stops scaling with logical paths | Phase-8 path minting |
 | SpellCompiler and Validation Pipeline (targeting surface) | remove | R1: SpellOverrider, DagIndex/SocketRef/targeting engine, SocketRefSanityStrategy, the blueprint socket API and the socket rows are deleted; the blueprint owns a PathRegistry | S5 |
+| SpellCompiler and Validation Pipeline (old normal emitters) | remove | R2: the generalized and many_only step and transient emission, three unused library re-exports and the eager many_only no-overrides step are deleted; the opt-in specializer and the shared row helpers stay | S2b-2 |
 
 ## Interface and Boundary Deltas
 - Boundary delta 1 (S1): `SpellCodegenModel` gains the processor-owned section `site_graph_shape`

@@ -74,7 +74,10 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for melder_0 (from melder_2, 2026-09-26T19:14:52Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T19:15:40Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T19:15:40Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T20:00:17Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-26T20:00:17Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -83,11 +86,12 @@ Message alert rules
 <!-- BEGIN USER-DEFINED: active_items -->
 | override_design_melder | review | handoff | claude | melder_0 | none | Owner confirms closure of the design task (design v2 approved). | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T11:30:45Z | REQUIRED |
 | override_many_collection_fix | review | handoff | claude | melder_0 | none | Owner reviews the collection-member fix (member paths, cache 13). | Each collection member builds its own many dependencies. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_fix_collection_member_many_sharing_task.md | 2026-09-26T12:29:50Z | REQUIRED |
-| override_site_plan_lowering | in_progress | implementation | claude | melder_0 | none | R1: retire the targeting surface (test edits, suites 3.14t/GIL, device apply, release note, 0.2.67); then R2, S6. | Key-set plans for overrides and normal melds on one lowering; unresolved inputs decided before construction; conjure linear (S2-S5 in tree). | R1, R2 and S6 done and the story walked through with the owner. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T19:00:36Z | REQUIRED |
+| override_site_plan_lowering | in_progress | implementation | claude | melder_0 | none | S6: read the authoring instructions, map patch sections to canonical docs, promote; graph, assets. | Key-set plans for overrides and normal melds on one lowering; unresolved inputs decided before construction; conjure linear; targeting surface and old normal emitters retired (R1, R2; 0.2.70). | S6 done and the story walked through with the owner. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T20:02:19Z | REQUIRED |
 | caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Size the next lever on the VM copy (scope create/cleanup call chain); owner decision pending on the SpellSpace scope RISK. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T19:14:52Z | REQUIRED |
 | gauntlet_p1_positional_args | review | validation | claude | melder_2 | none | Owner decides P1 with melder_0's S2b-3: P1's emitter is off the normal path since S2b-2, whose lowering passes operands positionally. | Generated plans pass dependency values positionally (-11% to -21% per scope cycle on the VM). | Owner-run gauntlet filed; owner accepts or retires P1 with S2b-3; closure sync. | tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md | 2026-09-26T19:14:52Z | REQUIRED |
-| gauntlet_p4_spellspace_warm_lane | in_progress | implementation | claude | melder_2 | none | Applied 19:15Z (byte-identical); notch and release-note bullet after melder_0's R1 (0.2.67), then owner-run gauntlet. | SpellSpace.meld serves warm id melds from the door's fast-door entry (about -17% per cached space meld, -2% to -3% per gauntlet cycle on the VM). | Device tree byte-identical to the validated copy; owner-run gauntlet; owner accepts. | tickets/tasks/2026-09-26_spellspace_meld_warm_id_lane_task.md | 2026-09-26T19:15:24Z | REQUIRED |
+| gauntlet_p4_spellspace_warm_lane | review | validation | claude | melder_2 | none | Owner runs the Windows gauntlet (0.2.68: melder_0's lowering + P4); compare same-run ratios with owner_run_20260926.txt. | SpellSpace.meld serves warm id melds from the door's fast-door entry (about -17% per cached space meld, -2% to -3% per gauntlet cycle on the VM). | Device tree byte-identical to the validated copy; owner-run gauntlet; owner accepts. | tickets/tasks/2026-09-26_spellspace_meld_warm_id_lane_task.md | 2026-09-26T19:27:00Z | REQUIRED |
+| gauntlet_tail_spikes | in_progress | discovery | claude | melder_2 | none | Owner: one Windows run with GAUNTLET_GC_PROBE=1 GAUNTLET_PER_TURN_GC=1, and a pick among the fix candidates (turn-0 hydration: prewarm / cached code / harness warm-up). | The rare Melder-only multi-ms cycle spikes attributed with evidence and ranked fix candidates. | Attribution filed; DECISION_REQUEST to the owner. | tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md | 2026-09-26T19:50:01Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -132,6 +136,10 @@ Message alert rules
   is off the normal path since S2b-2) and the owner's Windows gauntlet run.
   RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_emit_positional_constructor_args_task.md.
+- gauntlet_tail_spikes: SWITCH_TRIGGER is an evidence-backed attribution of the slow cycles (VM mechanisms plus
+  an owner Windows run with the harness instruments). RESUME_HIERARCHY:
+  tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
+  tickets/tasks/2026-09-26_attribute_gauntlet_tail_spikes_task.md.
 - gauntlet_p4_spellspace_warm_lane: SWITCH_TRIGGER is the byte-identical device apply, then the owner's Windows
   gauntlet run and acceptance.
   RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->

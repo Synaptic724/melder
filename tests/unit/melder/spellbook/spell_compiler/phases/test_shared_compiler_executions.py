@@ -1,6 +1,5 @@
 """Unit tests for current-surface `SharedCompilerExecutions` helpers."""
 
-from types import SimpleNamespace
 
 from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions import (
     SharedCompilerExecutions,
@@ -44,34 +43,6 @@ def test_hash_codegen_signature_is_deterministic_for_equal_inputs() -> None:
 
     assert signature_a == signature_b
     assert signature_a != signature_c
-
-
-def test_build_phase5_socket_rows_returns_sorted_socket_schema_rows() -> None:
-    """Phase-5 socket-row export should produce deterministic sorted primitive rows."""
-    artifact = SpellCompilerArtifact("spell-1")
-    artifact._root_blueprint_phase5 = SimpleNamespace(
-        socket_refs=[
-            SimpleNamespace(
-                node_id="root",
-                param_name="z",
-                param_path_id=3,
-                socket_kind=SimpleNamespace(value=4),
-            ),
-            SimpleNamespace(
-                node_id="dep",
-                param_name="a",
-                param_path_id=1,
-                socket_kind=SimpleNamespace(value=2),
-            ),
-        ],
-    )
-
-    rows = SharedCompilerExecutions.build_phase5_socket_rows(artifact)
-
-    assert rows == (
-        ("dep", "a", 1, 2),
-        ("root", "z", 3, 4),
-    )
 
 
 def test_reset_phase2_5_codegen_ir_clears_only_phase2_5_segment() -> None:

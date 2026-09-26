@@ -439,3 +439,38 @@ def test_concurrent_override_melds_are_correct(book: Spellbook, family: str) -> 
     for thread in threads:
         thread.join()
     assert errors == []
+
+
+class NameReadingBase:
+    """A base whose `__new__` records whether it received names or positions."""
+
+    def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+        """Record (positional count, keyword names), then allocate."""
+        instance = super().__new__(cls)
+        instance.shape = (len(args), tuple(sorted(kwargs)))
+        return instance
+
+
+class NamedRoot(NameReadingBase):
+    """Its signature is its own `__init__`'s; every call passes through the base `__new__`."""
+
+    def __init__(self, leaf: Leaf, b: B, limit: int = 3) -> None:
+        """Keep the operands."""
+        self.leaf = leaf
+        self.b = b
+        self.limit = limit
+
+
+@FAMILIES
+@CACHED
+def test_a_constructor_that_observes_names_receives_names(book: Spellbook, family: str, cached: bool) -> None:
+    """Normal and override melds pass values by name when the call passes through a custom `__new__` (P5)."""
+    shared_b = Existence.unique_per_conduit if family == "generalized" else Existence.many
+    conduit = _conjure(
+        book, [(Leaf, Existence.many), (B, shared_b), (NamedRoot, Existence.many)], NamedRoot, cached,
+    )
+    assert conduit.meld(NamedRoot).shape == (0, ("b", "leaf"))
+    assert conduit.meld(NamedRoot, override={"limit": 9}).shape == (0, ("b", "leaf", "limit"))
+    supplied = Leaf()
+    result = conduit.meld(NamedRoot, override={"leaf": supplied})
+    assert result.shape == (0, ("b", "leaf")) and result.leaf is supplied

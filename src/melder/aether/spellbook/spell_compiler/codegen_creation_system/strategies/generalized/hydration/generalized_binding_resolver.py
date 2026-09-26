@@ -9,7 +9,7 @@ Two resolvers exist because the same hydrator serves two callers:
   - `PlanBindingResolver` backs the live phase-11 path, resolving spells from
     the lane plans and runtime shape already in hand.
   - `SpellbookBindingResolver` backs the cache-load path, resolving spells
-    from the live Spellbook pool and the phase-5 root blueprint.
+    from the live Spellbook pool.
 
 Ownership:
     Resolvers REFERENCE plan/model/spell state; they own nothing. The caller
@@ -17,7 +17,7 @@ Ownership:
     and calls `cleanup()` when that pass completes.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -29,19 +29,16 @@ class PlanBindingResolver(Cleanable):
     Contract:
         - Resolves spells from the runtime-shape records first, then from lane
           plan steps.
-        - Resolves the path registry from analyzer graph-shape truth; `None`
-          is a valid result and downstream override compilation tolerates it.
 
     Lifecycle / Cleanup:
         - Owned by the phase-11 step that builds it, for one apply pass.
         - `cleanup()` is idempotent and deletes the reference maps; the spells
-          and registry are referenced, never owned.
+          are referenced, never owned.
     """
 
     __slots__ = Cleanable.__slots__ + [
         "_records_by_spell_id",
         "_spells_by_id",
-        "_path_registry",
     ]
 
     def __init__(
@@ -56,8 +53,7 @@ class PlanBindingResolver(Cleanable):
         Contract:
             Extracts - by reference, never copied - the model's runtime-shape
             `records_by_spell_id` (empty when no runtime shape), a spell-by-id
-            map harvested from both lane plans' steps (first occurrence wins),
-            and the analyzer graph-shape path registry (None when absent).
+            map harvested from both lane plans' steps (first occurrence wins).
 
         Args:
             spell_codegen_model:
@@ -88,11 +84,6 @@ class PlanBindingResolver(Cleanable):
                     spells_by_id[spell_id] = step.spell
         self._spells_by_id = spells_by_id
 
-        graph_shape = spell_codegen_model.graph_shape
-        self._path_registry = (
-            None if graph_shape is None else graph_shape.path_registry
-        )
-
     def cleanup(self) -> None:
         """
         Deterministically release this resolver's reference surface.
@@ -105,7 +96,6 @@ class PlanBindingResolver(Cleanable):
         self._cleaned = True
         del self._records_by_spell_id
         del self._spells_by_id
-        del self._path_registry
 
     def resolve_spell(self, spell_id: str) -> Any:
         """
@@ -137,20 +127,6 @@ class PlanBindingResolver(Cleanable):
             )
         return spell
 
-    def resolve_path_registry(self) -> Optional[Any]:
-        """
-        Return the phase-5 path registry, or `None` when unavailable.
-
-        Contract:
-            None is a valid result; downstream override compilation tolerates
-            it (unlike the Spellbook resolver, which raises on absence).
-
-        Returns:
-            Optional[Any]: The path registry, or None.
-        """
-        self.check_cleaned()
-        return self._path_registry
-
 
 class SpellbookBindingResolver(Cleanable):
     """
@@ -158,8 +134,6 @@ class SpellbookBindingResolver(Cleanable):
 
     Contract:
         - Resolves spells from the owning Spellbook's spell-id pool.
-        - Resolves the path registry from the live phase-5 root blueprint,
-          which conjure builds and `reset_phase_artifacts` preserves.
         - Raises with a clear message when prerequisites are not live, because
           a hydration without phases 1-7 is a sequencing bug.
 
@@ -231,34 +205,3 @@ class SpellbookBindingResolver(Cleanable):
                 f"'{spell_id}'."
             )
         return resolved_spell
-
-    def resolve_path_registry(self) -> Optional[Any]:
-        """
-        Return the live phase-5 path registry for override specialization.
-
-        Contract:
-            Requires the full live prerequisite chain (owning compiler artifact
-            and its phase-5 root blueprint); a missing link is a sequencing bug,
-            not a tolerable absence, so it raises rather than returning None.
-
-        Returns:
-            Optional[Any]: The live path registry from the phase-5 root
-            blueprint.
-
-        Raises:
-            RuntimeError: If the compiler artifact or phase-5 root blueprint is
-                not live.
-        """
-        self.check_cleaned()
-        artifact = self._spell._compiler_artifact
-        if artifact is None:
-            raise RuntimeError(
-                "Spell has no compiler artifact for manifest hydration."
-            )
-        root_blueprint = artifact._root_blueprint_phase5
-        if root_blueprint is None:
-            raise RuntimeError(
-                "Manifest hydration requires a live phase-5 root blueprint "
-                f"(spell_id={self._spell.spell_id})."
-            )
-        return root_blueprint.path_registry

@@ -15,7 +15,6 @@ from typing import (
 from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex
 from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -39,12 +38,11 @@ class SpellSystemRootBlueprintBuilder:
         * This is *purely structural*:
               - node payloads are None,
               - param_name and socket_kind on edges are left unset (None).
-        * Each blueprint gets a fresh DagIndex and PathRegistry and records no
-          SocketRefs. Phase 8 mints the root-relative path ids of its
-          occurrences into that registry. Nothing here walks logical paths, so
-          the cost follows spells and edges, never the number of paths (the
-          per-path socket overlay that ran here had no reader that needed it
-          and was retired on 2026-09-26).
+        * Each blueprint owns a fresh PathRegistry; Phase 8 mints the
+          root-relative path ids of its occurrences into it. Nothing here walks
+          logical paths, so the cost follows spells and edges, never the number
+          of paths (the per-path socket overlay that ran here had no reader
+          that needed it and was retired on 2026-09-26).
     """
     __slots__: list[str] = [
         "_reachable_by_id",
@@ -107,10 +105,7 @@ class SpellSystemRootBlueprintBuilder:
                 dag=dag,
                 ordered_node_ids=ordered_ids,  # Sequence[str] in topo order
                 requires_spellspace_request=requires_spellspace_request_by_id.get(root_spell_id, False),
-                socket_refs=None,              # compiled blueprints record no SocketRefs
-                dag_index=None,                # _install_fresh_index installs it below
             )
-            self._install_fresh_index(blueprint)
 
             result[root_spell_id] = blueprint
 
@@ -134,8 +129,8 @@ class SpellSystemRootBlueprintBuilder:
         Contract:
             - Uses the same structural semantics as build_root_blueprints.
             - The resulting DAG includes all nodes reachable from root_spell_id.
-            - The blueprint gets a fresh DagIndex and PathRegistry and records
-              no SocketRefs; Phase 8 mints the path ids it needs.
+            - The blueprint owns a fresh PathRegistry; Phase 8 mints the path
+              ids it needs.
             - Does not mutate the snapshot.
             - Produces deterministic node/edge insertion order for equivalent
               dependency graphs.
@@ -171,10 +166,7 @@ class SpellSystemRootBlueprintBuilder:
             dag=dag,
             ordered_node_ids=ordered_ids,  # Sequence[str] in topo order
             requires_spellspace_request=requires_spellspace_request_by_id.get(root_spell_id, False),
-            socket_refs=None,              # compiled blueprints record no SocketRefs
-            dag_index=None,                # _install_fresh_index installs it below
         )
-        self._install_fresh_index(blueprint)
 
         return blueprint
 
@@ -420,34 +412,3 @@ class SpellSystemRootBlueprintBuilder:
         ordered_node_ids: List[str] = dag.collect_dependency_ids()
 
         return dag, ordered_node_ids
-
-    @staticmethod
-    def _install_fresh_index(blueprint: RootResolutionBlueprint) -> None:
-        """
-        Give ``blueprint`` a fresh DagIndex and PathRegistry.
-
-        Purpose:
-            Phase 8 mints the root-relative path id of every occurrence into the
-            blueprint's PathRegistry, so each compiled blueprint needs its own
-            empty registry. Nothing else is recorded: compiled blueprints carry
-            no SocketRefs.
-
-        Contract:
-            - Replaces the blueprint's index, so a reused blueprint never keeps
-              stale path ids or socket entries.
-            - Walks no paths and records no SocketRef; the cost is constant per
-              blueprint. The per-path socket overlay that ran here until
-              2026-09-26 visited every logical path below the root (exponential
-              on shared diamonds) and no reader needed its output.
-
-        Args:
-            blueprint:
-                Blueprint just built by this builder.
-
-        Returns:
-            None.
-
-        Raises:
-            RuntimeError: If ``blueprint`` was already cleaned.
-        """
-        blueprint.replace_dag_index(DagIndex())

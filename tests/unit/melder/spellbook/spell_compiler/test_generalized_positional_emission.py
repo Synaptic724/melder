@@ -1,5 +1,5 @@
 """
-Unit tests for the positional-dependency prefix in the generalized no-overrides emitter.
+Unit tests for the positional-dependency prefix in the generalized singleton specializer's emission.
 
 Purpose:
     Pin the rule that decides which dependency values an emitted constructor call may pass
@@ -16,13 +16,12 @@ import abc
 import dataclasses
 import re
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Dict, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence, Tuple
 
 import pytest
 
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler import (
     emit_specialized_step_plan_source,
-    emit_step_plan_source,
     positional_dependency_names,
     rows_positional_dependency_names,
 )
@@ -345,56 +344,62 @@ class TestPositionalEmission:
     """
 
     ROWS = (
+        _row("single", "unique"),
         _row("d1", "many"),
         _row("d2", "many"),
         _row("root", "many", [("first", ["d1"]), ("second", ["d2"]), ("third", ["d1"])]),
     )
 
+    @classmethod
+    def _emit(cls, positional_dependency_names: Optional[Tuple[Tuple[str, ...], ...]]) -> str:
+        """
+        Emit the specializer's body with the leading unique row captured.
+
+        The generic step emitter this class used to call was retired (R2, 2026-09-26); the
+        specializer emits every non-captured row through the same per-step emitters.
+        """
+        return emit_specialized_step_plan_source(
+            rows=cls.ROWS,
+            captured_step_indexes=(0,),
+            root_instance_key=("root", None),
+            positional_dependency_names=positional_dependency_names,
+        )
+
     def test_prefix_emits_positional_arguments_before_keywords(self) -> None:
         """Prefix values are bare positional arguments in prefix order; the rest stay keywords."""
-        source = emit_step_plan_source(
-            rows=self.ROWS,
-            root_instance_key=("root", None),
-            positional_dependency_names=((), (), ("first", "second")),
-        )
-        assert _call_arguments(source, 2) == (
-            "instance_0,",
+        source = self._emit(((), (), (), ("first", "second")))
+        assert _call_arguments(source, 3) == (
             "instance_1,",
-            "third=instance_0,",
+            "instance_2,",
+            "third=instance_1,",
         )
 
     def test_none_keeps_keyword_emission_unchanged(self) -> None:
         """Without prefixes the source is byte-identical to the keyword-only emission."""
-        keyword_source = emit_step_plan_source(rows=self.ROWS, root_instance_key=("root", None))
-        assert emit_step_plan_source(
+        keyword_source = emit_specialized_step_plan_source(
             rows=self.ROWS,
+            captured_step_indexes=(0,),
             root_instance_key=("root", None),
-            positional_dependency_names=None,
-        ) == keyword_source
-        assert _call_arguments(keyword_source, 2) == (
-            "first=instance_0,",
-            "second=instance_1,",
-            "third=instance_0,",
+        )
+        assert self._emit(None) == keyword_source
+        assert _call_arguments(keyword_source, 3) == (
+            "first=instance_1,",
+            "second=instance_2,",
+            "third=instance_1,",
         )
 
     def test_length_mismatch_raises(self) -> None:
         """One prefix tuple per row is required."""
         with pytest.raises(RuntimeError, match="exactly one entry per row"):
-            emit_step_plan_source(
-                rows=self.ROWS,
-                root_instance_key=("root", None),
-                positional_dependency_names=((), ()),
-            )
+            self._emit(((), ()))
 
     def test_unknown_prefix_name_raises(self) -> None:
         """A prefix name that is not an emitted dependency of the step fails fast."""
-        with pytest.raises(RuntimeError, match="'fourth' is not an emitted dependency of step 2"):
-            emit_step_plan_source(
-                rows=self.ROWS,
-                root_instance_key=("root", None),
-                positional_dependency_names=((), (), ("first", "fourth")),
-            )
+        with pytest.raises(RuntimeError, match="'fourth' is not an emitted dependency of step 3"):
+            self._emit(((), (), (), ("first", "fourth")))
 
+    def test_specialized_emitter_threads_prefix_to_non_captured_steps(self) -> None:
+        """Non-captured steps compile with the positional prefix they are given."""
     def test_specialized_emitter_threads_prefix_to_non_captured_steps(self) -> None:
         """Non-captured steps compile with the same positional prefix as in the generic body."""
         rows = (

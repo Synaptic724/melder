@@ -1,0 +1,44 @@
+== owner_run_20260926.txt iterations=5000
+  hot_scopes/s  melder=34,745 dishka=51,514 DI=45,284 | melder/dishka=0.674 melder/DI=0.767
+  request  active melder/dishka=0.508 (m=43,746 d=86,115) | wall melder/dishka=0.667 melder/DI=0.786
+  worker_a active melder/dishka=0.576 (m=76,406 d=132,674) | wall melder/dishka=0.667 melder/DI=0.786
+  worker_b active melder/dishka=0.714 (m=81,951 d=114,811) | wall melder/dishka=0.667 melder/DI=0.786
+  iteration p99/max ms: melder 2.959/192.625 dishka 2.103/4.942 DI 2.625/18.39
+  threaded  p99/max ms: melder 2.305/66.401 dishka 1.519/4.418 DI 2.037/12.538
+  bootstrap p99/max ms: melder 0.052/0.749 dishka 0.03/0.483 DI 0.033/0.23
+  outer-cycle p99/max : melder 0.071/63.197 dishka 0.048/1.644 DI 0.079/7.646
+  request-cycle p99/max: melder 0.042/4.814 dishka 0.024/1.114 DI 0.057/7.606
+  setup ms: melder 211.003 dishka 42.329 DI 42.799 | end cleanup ms: melder 21.176 dishka 5.247 DI 5.096
+== owner_run_20260926.txt iterations=30000
+  hot_scopes/s  melder=38,175 dishka=48,979 DI=39,130 | melder/dishka=0.779 melder/DI=0.976
+  request  active melder/dishka=0.551 (m=47,304 d=85,891) | wall melder/dishka=0.739 melder/DI=0.943
+  worker_a active melder/dishka=0.634 (m=83,754 d=132,198) | wall melder/dishka=0.739 melder/DI=0.943
+  worker_b active melder/dishka=0.769 (m=87,710 d=114,126) | wall melder/dishka=0.739 melder/DI=0.943
+  iteration p99/max ms: melder 2.765/11.083 dishka 2.08/4.27 DI 2.611/5.063
+  threaded  p99/max ms: melder 2.266/9.416 dishka 1.599/3.902 DI 2.109/4.715
+  bootstrap p99/max ms: melder 0.039/0.621 dishka 0.026/0.479 DI 0.026/0.235
+  outer-cycle p99/max : melder 0.06/6.949 dishka 0.048/1.564 DI 0.093/1.396
+  request-cycle p99/max: melder 0.036/5.081 dishka 0.025/0.677 DI 0.07/1.208
+  setup ms: melder 187.519 dishka 42.09 DI 45.434 | end cleanup ms: melder 18.689 dishka 6.024 DI 6.516
+== owner_run_20260926_1931_10k_30k.txt iterations=10000
+  hot_scopes/s  melder=47,223 dishka=53,950 DI=46,472 | melder/dishka=0.875 melder/DI=1.016
+  request  active melder/dishka=1.071 (m=93,935 d=87,725) | wall melder/dishka=0.846 melder/DI=1.017
+  worker_a active melder/dishka=0.920 (m=126,136 d=137,118) | wall melder/dishka=0.846 melder/DI=1.017
+  worker_b active melder/dishka=1.094 (m=129,589 d=118,456) | wall melder/dishka=0.846 melder/DI=1.017
+  iteration p99/max ms: melder 2.215/16.399 dishka 1.978/3.538 DI 2.485/14.87
+  threaded  p99/max ms: melder 1.752/12.032 dishka 1.503/2.564 DI 1.933/6.461
+  bootstrap p99/max ms: melder 0.03/1.575 dishka 0.024/0.479 DI 0.027/0.186
+  outer-cycle p99/max : melder 0.039/9.61 dishka 0.042/1.712 DI 0.077/0.882
+  request-cycle p99/max: melder 0.018/7.081 dishka 0.022/0.674 DI 0.057/0.865
+  setup ms: melder 272.293 dishka 42.208 DI 62.378 | end cleanup ms: melder 21.479 dishka 6.001 DI 5.102
+== owner_run_20260926_1931_10k_30k.txt iterations=30000
+  hot_scopes/s  melder=46,679 dishka=54,330 DI=50,228 | melder/dishka=0.859 melder/DI=0.929
+  request  active melder/dishka=0.997 (m=91,830 d=92,083) | wall melder/dishka=0.843 melder/DI=0.927
+  worker_a active melder/dishka=0.852 (m=123,921 d=145,379) | wall melder/dishka=0.842 melder/DI=0.927
+  worker_b active melder/dishka=1.012 (m=128,309 d=126,845) | wall melder/dishka=0.843 melder/DI=0.927
+  iteration p99/max ms: melder 2.134/9.787 dishka 1.912/4.505 DI 2.244/4.286
+  threaded  p99/max ms: melder 1.692/8.299 dishka 1.484/4.099 DI 1.775/3.257
+  bootstrap p99/max ms: melder 0.03/0.953 dishka 0.023/0.466 DI 0.021/0.133
+  outer-cycle p99/max : melder 0.039/6.106 dishka 0.036/1.411 DI 0.068/1.123
+  request-cycle p99/max: melder 0.018/4.383 dishka 0.018/1.045 DI 0.051/0.711
+  setup ms: melder 281.714 dishka 38.572 DI 42.18 | end cleanup ms: melder 20.871 dishka 7.733 DI 5.781

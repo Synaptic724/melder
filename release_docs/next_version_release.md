@@ -1,4 +1,4 @@
-# Melder 0.2.66
+# Melder 0.2.70
 
 **Unreleased**
 
@@ -81,8 +81,17 @@ needed, is never constructed.
   run at the same speed. Those
   dependencies are built just before their shared object, only when it is missing, so construction order
   changes. No cache refresh is needed for this.
+- **Positional calls only where they are equivalent.** Compiled melds pass dependency values
+  positionally, the faster call on Python 3.14, when the target is a plain class (default metaclass
+  call, no custom `__new__`, a plain `__init__`), a plain function or a bound method. A class whose
+  `__new__` or metaclass `__call__` sees the call, or a function behind a `*args, **kwargs` wrapper,
+  receives the values by name, as the keyword calls of earlier releases gave it. Values you pass
+  with `override=(...)` stay positional.
 - **Id melds on an automatic conduit** - `conduit.meld(spell_id=...)` - are served from the warm fast
   lane directly, about 100 ns less per call (free-threaded 3.14, main thread).
+- **Id melds on a SpellSpace** - `space.meld(spell_id=...)` - are served from the same warm fast lane
+  without entering the spellspace's meld door, about 40 ns less per call (free-threaded 3.14, worker
+  thread). Results, errors and hooks are unchanged.
 - **A bound existing object** is returned by a warm meld without entering its generated creation code,
   about 10-15% faster on free-threaded and GIL builds.
 
@@ -483,6 +492,41 @@ could be silently omitted from the disposal list and never run during scope tear
 - **Unrelated binding IDs remain stable.** The class profile is unchanged. Bindings whose resolved
   disposal list now includes an inherited method receive an updated fingerprint when rebound.
 
+## Retired override-targeting internals
+
+The per-path targeting machinery that override melds used before this release's key-set plans is
+removed. Nothing in Melder used it any more, so no meld result, error message or conjure output
+changes.
+
+- **Removed internal modules.** `melder.aether.conduit.meld.overrides.spell_overrider`
+  (`SpellOverrider`) and the Phase-6 `socket_ref_sanity_strategy` are deleted, and
+  `spell_compiler.dag.dag_index` now holds only `PathRegistry` (`DagIndex`, `SocketRef`,
+  `DagTargetingEngine` and `DagIndexBuilder` are gone). None of these was exported from `melder`;
+  code that imported the internal paths directly now gets an `ImportError`.
+- **Blueprints own their path registry.** `RootResolutionBlueprint` takes `path_registry=` and
+  exposes `path_registry`; its socket-reference API (`socket_refs`, `add_socket_ref`,
+  `dag_index`, `replace_dag_index`, `ensure_dag_index_built`) is removed.
+- **One less conjure check.** Phase-6 system validation no longer runs the socket-reference sanity
+  check, which had nothing to inspect once blueprints stopped recording socket references.
+
+## Retired normal-meld emitters
+
+Since this release, normal melds of classes with dependencies run the same site plans as override
+melds. The code generators they used before are removed. Nothing in Melder called them any more, so
+no meld result, error message, cache file or conjure output changes, and existing creation caches
+stay valid.
+
+- **Removed internal functions.** The generalized family's step and transient source emitters and
+  their compile entry points (`compile_no_overrides_codegen_creation_executor`,
+  `emit_step_plan_source`, `hydrate_no_overrides_executor` and their helpers), the many_only family's
+  equivalents, three unused re-exports of the generalized runtime library, and the many_only
+  `ManyOnlyNoOverridesCodegenCreationStep` are deleted. None was exported from `melder`; code that
+  imported the internal paths directly now gets an `ImportError` or `AttributeError`.
+- **What stays.** The opt-in singleton specialization
+  (`generalized_singleton_specialization_enabled`) and the row helpers it shares with hydration are
+  unchanged. The many_only manifest now builds its executor signature itself, with the same inputs in
+  the same order, so signatures do not change.
+
 ## Packaging and documentation
 
 - The packaged system documents (`melder.__architecture__`, `__components__`, `__graph_network__` and
@@ -493,4 +537,4 @@ could be silently omitted from the disposal list and never run during scope tear
   conjure validation report.
 - `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
   raised and caught, but it cannot be bound as a spell.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.66.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.70.

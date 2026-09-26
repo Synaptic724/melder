@@ -1,4 +1,3 @@
-import threading
 from typing import List, Optional, Sequence, ClassVar
 
 
@@ -8,7 +7,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, PathRegistry, SocketRef
+from melder.aether.spellbook.spell_compiler.dag.dag_index import PathRegistry
 
 class RootResolutionBlueprint(Cleanable):
     """
@@ -19,17 +18,15 @@ class RootResolutionBlueprint(Cleanable):
     validate policy by itself; instead, it packages the rooted DAG, stable
     execution order, and the PathRegistry that Phase 8 mints root-relative path
     ids into, for system validation, change-control/component-of wiring, and
-    Phase 8-10 planning. Compiled blueprints record no SocketRefs (the Phase-5
-    per-path overlay was retired on 2026-09-26); the socket collection and its
-    targeting index hold only refs a caller adds through `add_socket_ref`.
+    Phase 8-10 planning. (The Phase-5 per-path socket overlay and its targeting
+    index were retired on 2026-09-26; no reader needed them.)
 
     Contract:
         - `root_spell_id` is the versioned identity of the root spell at
           blueprint-build time.
         - `root_lineage_id` is optional lineage metadata for DevOps/change-
           control use; graph semantics remain version-id-based.
-        - The blueprint owns its DAG, socket reference collection, and
-          targeting index.
+        - The blueprint owns its DAG and its PathRegistry.
         - Consumers should treat exposed list/index data as read-only, even
           when accessors return copies.
     """
@@ -39,9 +36,7 @@ class RootResolutionBlueprint(Cleanable):
         "_dag",
         "_ordered_node_ids",
         "_requires_spellspace_request",
-        "_socket_refs",
-        "_dag_index",
-        "_dag_index_build_lock",
+        "_path_registry",
     ]
 
     def __init__(
@@ -51,8 +46,7 @@ class RootResolutionBlueprint(Cleanable):
             dag: DirectedAcyclicWorkGraph,
             ordered_node_ids: Optional[Sequence[str]] = None,
             requires_spellspace_request: bool = False,
-            socket_refs: Optional[Sequence[SocketRef]] = None,
-            dag_index: Optional[DagIndex] = None,
+            path_registry: Optional[PathRegistry] = None,
     ) -> None:
         """
         Initialize a rooted deep-DAG blueprint.
@@ -68,16 +62,16 @@ class RootResolutionBlueprint(Cleanable):
             ordered_node_ids:
                 Optional precomputed topological order. Dependencies should
                 appear before the root.
-            socket_refs:
-                Optional prebuilt socket-reference collection for targeting.
-            dag_index:
-                Optional prebuilt targeting index. When omitted, a fresh empty
-                `DagIndex` is allocated.
+            requires_spellspace_request:
+                Whether the rooted graph contains spellspace-scoped work.
+            path_registry:
+                Optional PathRegistry to own. When omitted, a fresh one is
+                allocated; Phase 8 mints occurrence paths into it.
 
         Contract:
             - `root_spell_id` and `dag` are required.
             - Sequence inputs are copied into blueprint-owned lists.
-            - The blueprint always owns a non-None `DagIndex`.
+            - The blueprint always owns a non-None `PathRegistry`.
         """
         super().__init__()
 
@@ -94,12 +88,10 @@ class RootResolutionBlueprint(Cleanable):
         self._ordered_node_ids: List[str] = list(ordered_node_ids) if ordered_node_ids else []
         self._requires_spellspace_request: bool = bool(requires_spellspace_request)
 
-        # Socket metadata; Phase 5 records none, direct callers may add refs.
-        self._socket_refs: List[SocketRef] = list(socket_refs) if socket_refs else []
-
-        # Targeting index; always non-None for consumers.
-        self._dag_index: DagIndex = dag_index if dag_index is not None else DagIndex()
-        self._dag_index_build_lock: threading.Lock = threading.Lock()
+        # Root-relative path ids; Phase 8 mints occurrence paths into it.
+        self._path_registry: PathRegistry = (
+            path_registry if path_registry is not None else PathRegistry()
+        )
 
 
     # ------------------------------------------------------------------ #
@@ -112,8 +104,8 @@ class RootResolutionBlueprint(Cleanable):
 
         Behaviour:
             * Idempotent - safe to call multiple times.
-            * Cleans up the DAG and index if present.
-            * Drops references to node ids and socket refs to help GC.
+            * Cleans up the DAG and the PathRegistry.
+            * Drops references to node ids.
 
         Contract:
             Cleanup releases only blueprint-owned artifacts. It does not mutate
@@ -126,17 +118,13 @@ class RootResolutionBlueprint(Cleanable):
 
         if self._dag is not None:
             self._dag.cleanup()
-        if self._dag_index is not None:
-            self._dag_index.cleanup()
+        self._path_registry.cleanup()
 
-        self._socket_refs.clear()
         self._ordered_node_ids.clear()
 
-        del self._dag_index_build_lock
         del self._ordered_node_ids
         del self._requires_spellspace_request
-        del self._dag_index
-        del self._socket_refs
+        del self._path_registry
         del self._dag
         del self._root_spell_id
         del self._root_lineage_id
@@ -197,104 +185,14 @@ class RootResolutionBlueprint(Cleanable):
         return self._requires_spellspace_request
 
     @property
-    def socket_refs(self) -> List[SocketRef]:
-        """
-        Return the socket references recorded on this blueprint.
-
-        Compiled Phase-5 blueprints record none; the list holds only refs added
-        through `add_socket_ref`. Each ref carries a root-relative path id from
-        this blueprint's PathRegistry. The returned list is a copy.
-        """
-        self.check_cleaned()
-        return list(self._socket_refs)
-
-    @property
-    def dag_index(self) -> DagIndex:
-        """
-        Return the targeting index built over `socket_refs`.
-
-        Note:
-            The index maps are built lazily. Call ensure_dag_index_built()
-            before using the index for targeting-heavy runtime work.
-        """
-        self.check_cleaned()
-        return self._dag_index
-
-    @property
     def path_registry(self) -> PathRegistry:
         """
         Return the PathRegistry that interns root-relative parameter paths for
         this blueprint.
-        """
-        self.check_cleaned()
-        return self._dag_index.path_registry
-
-    # ------------------------------------------------------------------ #
-    # Mutators used by the Phase 5 frame compiler                        #
-    # ------------------------------------------------------------------ #
-
-    def add_socket_ref(self, socket: SocketRef) -> None:
-        """
-        Append a single socket reference and index it.
 
         Contract:
-            - SocketRef param_path_id must belong to this blueprint's registry.
-            - If the DagIndex is already built, the new socket is inserted into
-              the live index immediately.
+            Phase 8 mints the path id of every occurrence below the root into
+            this registry; the blueprint owns it and cleans it.
         """
         self.check_cleaned()
-        if socket is None:
-            raise ValueError("socket must not be None.")
-        self._socket_refs.append(socket)
-        if self._dag_index is not None and self._dag_index.is_built:
-            self._dag_index.add_socket(socket)
-
-    def ensure_dag_index_built(self) -> None:
-        """
-        Ensure the DagIndex maps are populated for override targeting.
-
-        Contract:
-            - Idempotent and thread-safe.
-            - Uses socket_refs as the source of truth.
-        """
-        self.check_cleaned()
-        if self._dag_index is None:
-            self._dag_index = DagIndex()
-        if self._dag_index.is_built:
-            return
-        if self._dag_index_build_lock is None:
-            self._dag_index_build_lock = threading.Lock()
-        with self._dag_index_build_lock:
-            if self._dag_index.is_built:
-                return
-            sockets = self._socket_refs or []
-            self._dag_index.rebuild(sockets)
-
-    def replace_dag_index(self, index: DagIndex) -> None:
-        """
-        Replace the underlying DagIndex.
-
-        Phase 5 uses it to give each compiled blueprint a fresh index and
-        PathRegistry; tests may use it too.
-
-        Contract:
-            Swaps the index reference WITHOUT rebuilding sockets - the caller is
-            responsible for ensuring the supplied index is consistent with this
-            blueprint's socket set.
-
-        Args:
-            index:
-                Replacement DagIndex; must not be None.
-
-        Raises:
-            RuntimeError: If the blueprint was already cleaned.
-            ValueError: If `index` is None.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        if index is None:
-            raise ValueError("index must not be None.")
-        # Do NOT rebuild sockets here; caller is responsible for consistency.
-        self._dag_index = index
+        return self._path_registry
