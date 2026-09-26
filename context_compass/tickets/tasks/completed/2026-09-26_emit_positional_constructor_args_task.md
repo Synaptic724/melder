@@ -3,14 +3,21 @@
 # Task: P1 - generated plans pass dependency values positionally
 
 ## Metadata
+- Completed: 2026-09-26T23:01:16Z
+- Closure Basis: owner turn-in in chat (~22:58Z): "Turn in both (Recommended)" for the nested slot-guard
+  implementation and the build-locks discovery, with P4, P1 and the tail attribution selected for turn-in in
+  the same answer; then "then please remake the assets and I'll call it".
+- Summary: Positional constructor arguments were validated and applied (16:16Z). The normal path then moved to
+  melder_0's site-plan lowering (S2b-2) and the emitter was retired (R2); the positional rule lives on
+  in the lowering (P5).
 - Task ID: TASK-2026-09-26-emit-positional-constructor-args
 - Story: STORY-2026-09-26-gauntlet-runtime-speed
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T16:15:41Z
-- Updated: 2026-09-26T16:30:38Z
+- Updated: 2026-09-26T23:01:16Z
 
 ## Objective
 The generalized no-overrides step plans (phase-11 codegen, the gauntlet's lane) construct each object with a
@@ -40,17 +47,20 @@ CPython 3.14 (specialized allocate-and-init path) with identical binding.
 - to_state: review
 - transition_reason: Applied to the device tree at 16:16Z (byte-identical to the validated copy); the owner's
   Windows gauntlet run and acceptance are what remain.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T23:01:16Z; see the Closure Basis.
 
 ## Steps / Checklist
 - [x] Prototype and measure (measure task notes).
 - [x] Production change as an anchored apply script (CRLF preserved, exact-once anchors).
 - [x] Unit tests (20) and component tests (7); full suites on 3.14t and GIL.
 - [x] Notice to melder_0; apply to the device tree with --check first; verify byte-identity.
-- [ ] Owner-run gauntlet before/after on Windows.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Owner-run gauntlet before/after on Windows.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
@@ -68,7 +78,8 @@ CPython 3.14 (specialized allocate-and-init path) with identical binding.
   component aether 1200 (1 xfailed), integration aether 716, unit crystallizer 565, integration crystallizer
   258 (3 xfailed), unit mutation_research 277 - all passed. GIL (-X gil=1): unit spellbook 2178, component
   spellbook 771, integration spellbook 581, unit aether 4145, conduit 268, multithreading 42 - all passed.
-- Owner machine: Not run.
+- Owner machine: every Windows run from 19:31Z on includes it, but it left the normal path with S2b-2,
+  so no run isolates it.
 - Recommended commands:
   - python -m pytest tests/unit/melder/spellbook tests/component/melder/spellbook -q
   - python -m pytest benchmarks/testing_other_di/test_real_world_gauntlet.py -s -q
@@ -81,22 +92,22 @@ CPython 3.14 (specialized allocate-and-init path) with identical binding.
 - Rollback: restore the pre-change module; nothing persisted depends on the emitted code.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
-- [ ] No gain claimed from a VM number alone; the owner-run number decides.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
+- [x] No gain claimed from a VM number alone; the owner-run number decides.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -240,9 +251,19 @@ CPython 3.14 (specialized allocate-and-init path) with identical binding.
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T23:01:16Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis); acceptance given.
+  EVIDENCE: tickets/tasks/completed/2026-09-26_emit_positional_constructor_args_task.md:6-12
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 P1 validated on the VM copy and applied to the device tree (16:16Z, byte-identical). Waiting on the owner's
 Windows gauntlet run (same-run ratios against owner_run_20260926.txt) and acceptance.
+Closed 2026-09-26T23:01:16Z on the owner's turn-in.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 366d737256a2c39e33563b1b89a912806b315341b8d4d907cd832ba7352546da
+SOURCE FINGERPRINT: 908f6b405929fbbbe4e097d12bd897d5c2202aef431a97a6b2851abf128c5c2e
 FILE COUNT: 370
 
 ================================================================================
@@ -57562,7 +57562,7 @@ END FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_real_world_gauntlet.py
-CONTENT SHA256: 030cc6c0da6635c515335c489c68c33e9982a7003865a0524d8d1a768a6c69ee
+CONTENT SHA256: 610c991293adcb84af0d26cde72696e9338d5a7e5d1f17b630fc3d464ce3cafc
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -58016,7 +58016,7 @@ class _GauntletConfig:
     @staticmethod
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
-            iterations=_env_int("DI_GAUNTLET_ITERS", 5_000),
+            iterations=_env_int("DI_GAUNTLET_ITERS", 30_000),
             threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),

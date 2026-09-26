@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T22:41:45Z
+- Updated: 2026-09-26T23:01:16Z
 
 ## User Narrative
 As the Melder owner, I want Melder's per-scope-cycle runtime on the real-world gauntlet (free-threaded, three
@@ -62,11 +62,11 @@ weakens a cleanup or concurrency guarantee is out.
 
 ## Tasks (Implementation Checklist)
 - [ ] Task: TASK-2026-09-26-measure-gauntlet-scope-cycle-costs - reproduce, attribute, rank candidates (no code).
-- [ ] Task: TASK-2026-09-26-emit-positional-constructor-args - P1, positional constructor arguments.
-- [ ] Task: TASK-2026-09-26-spellspace-meld-warm-id-lane - P4, SpellSpace.meld warm id lane.
-- [ ] Task: TASK-2026-09-26-attribute-gauntlet-tail-spikes - Melder-only multi-millisecond cycle spikes.
-- [ ] Task: TASK-2026-09-26-spellspace-build-locks - can spellspace-scoped first builds skip their locks.
-- [ ] Task: TASK-2026-09-26-remove-nested-slot-guard-take - door-called first builds take their build lock once.
+- [x] Task: TASK-2026-09-26-emit-positional-constructor-args - P1, positional constructor arguments.
+- [x] Task: TASK-2026-09-26-spellspace-meld-warm-id-lane - P4, SpellSpace.meld warm id lane.
+- [x] Task: TASK-2026-09-26-attribute-gauntlet-tail-spikes - Melder-only multi-millisecond cycle spikes.
+- [x] Task: TASK-2026-09-26-spellspace-build-locks - can spellspace-scoped first builds skip their locks.
+- [x] Task: TASK-2026-09-26-remove-nested-slot-guard-take - door-called first builds take their build lock once.
 - [ ] Task: one task per candidate the owner picks, each behind patch docs and a gauntlet gate.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
@@ -106,6 +106,7 @@ weakens a cleanup or concurrency guarantee is out.
 - 2026-09-26T20:35:11Z: owner direction: optimize code, not the benchmark; pools and their shells are created when they are today (no prewarming). Conjure-time hydration withdrawn; levers must remove work.
 - 2026-09-26T21:16:14Z: owner closed lever 1's lifecycle as measured and asked to look at the spellspace build locks (own discovery task).
 - 2026-09-26T21:38:55Z: owner go-ahead to implement the nested slot-guard removal, safe shape only ("just do it ... make it safe"); melder_2 implements.
+- 2026-09-26T23:01:16Z: owner turn-in of the nested slot-guard implementation, the build-locks discovery, P4, P1 and the tail attribution after the 22:47Z Windows run.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -227,14 +228,64 @@ weakens a cleanup or concurrency guarantee is out.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T22:55:40Z
+  TYPE: FACT
+  CLAIM: The owner's 22:47Z Windows run on 0.2.74 is the best same-run result against dishka so far: hot_scopes/s
+    0.919x (afternoon 0.857x-0.873x) and per-iteration time 1.09x (1.16x). DI is unchanged within its spread (0.910x).
+    The run was noisier for all three libraries, so it supports the nested slot-guard change without isolating it.
+    What is left: melder's request-scope work is at or ahead of dishka on the request and worker_b lanes and 7%
+    behind on worker_a. Whole cycles still cost Melder about 1-2 us more, in the outer scope's create and cleanup.
+    Most of the per-iteration gap (about 0.10 of 0.13 ms) is outside the measured cycles: lane wake-up, thread exit
+    and join, the tail task's thread-exit attribution.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md:472-498
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:1119-1149
+  IMPACT: The remaining gap sits where the owner has already ruled. The outer-scope lifecycle closed as measured
+    at 21:15Z (contract-bearing, trims worth about 0.1 us). The per-thread cost outside the cycles is tied to
+    first-use state, and prewarming is ruled out. Still open with measured effects: thread-affine shell pools
+    (lever 2, -6% to -7% per cycle on Linux, needs a design and the owner's view) and the small redesigns (one
+    lock for anonymous link, about 0.1 us; a single-check fast door, 0.1-0.2 us, melder_0's file).
+  NEXT: Owner acceptance and turn-ins; then the owner decides whether any open lever is worth a task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T23:01:16Z
+  TYPE: DECISION
+  CLAIM: The owner turned in five child tasks after the 22:47Z Windows run: the nested slot-guard
+    implementation, the build-locks discovery, P4, P1 and the tail attribution. All moved to
+    tickets/tasks/completed/, and the nested patch lane moved to system_docs/patches/completed/. The story
+    stays open with the measure task, which holds the cost map and the open levers.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-26_remove_nested_slot_guard_take_task.md:6-12
+  - attention_board.md:105-109
+  IMPACT: One active row remains in this story; the next step is the owner's pick among the open levers.
+  NEXT: Owner decides whether any open lever is worth a task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T23:03:00Z
+  TYPE: MEASURE
+  CLAIM: Assets remade after the turn-ins, on the owner's request ("then please remake the assets and I'll call
+    it"). Build assets: the runner ran on w73, freshly synced from the device (src, system_docs, benchmarks), and
+    the output is byte-identical to the device's 0.2.74 files (CRLF), so nothing on the device changed; --check OK
+    (v0.2.74, schema 2.0.0). LLM bundles: only the other corpus had moved. The owner's working copy of
+    benchmarks/testing_other_di/test_real_world_gauntlet.py differs from the 22:34Z bundle and matches HEAD apart
+    from CRLF endings. It was rebuilt (370 files); src and tests are unchanged, and --check is OK. No untracked file
+    exists outside context_compass. The .git/index.lock seen at 22:21Z is gone.
+  EVIDENCE:
+  - src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py:1-60
+  - llm_support/manifest.json:1-20
+  IMPACT: Tree, docs, graph, build assets and LLM bundles are consistent at 0.2.74 for the owner's commit.
+  NEXT: Standby until the owner picks a next lever or opens new work.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
-Attribution is done (measure task). In the tree, all in review:
-- P1: off the normal path since S2b-2.
-- P4: 0.2.68.
-- The nested slot-guard removal: code at 0.2.73, docs, graph, assets and LLM bundles at 0.2.74. Door-called
-  first builds take their build lock once, -3.3% to -3.6% per worker cycle on the VM.
-Dropped: P3, interning, conjure-time hydration. Lever 1's lifecycle is closed as measured. Next: the owner's Windows
-gauntlet run on 0.2.74, then turn-ins. The open owner decisions are listed in the last note.
+Attribution is done (measure task). Turned in: P1, P4, the tail attribution, the build-locks discovery and the
+nested slot-guard removal (0.2.73; docs, graph, assets and LLM bundles at 0.2.74). The owner's 22:47Z Windows
+run is the best same-run result vs dishka (hot_scopes/s 0.919x, per iteration 1.09x). Dropped: P3, interning,
+conjure-time hydration; lever 1's lifecycle closed as measured. Open: the owner's pick among thread-affine pools
+and the small redesigns, the SpellSpace active-scope RISK and the system_document_view race.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

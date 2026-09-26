@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T21:32:12Z
+- Updated: 2026-09-26T23:01:16Z
 
 ## Objective
 A per-scope-cycle cost map for Melder on the real-world gauntlet - where the time and the calls go in outer and
@@ -1148,20 +1148,33 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T23:01:16Z
+  TYPE: FACT
+  CLAIM: The owner turned in P1, P4, the tail attribution, the build-locks discovery and the nested slot-guard
+    removal after the 22:47Z Windows run (hot_scopes/s 0.919x dishka on 0.2.74). In that run most of the
+    per-iteration gap sits outside the measured cycles, and inside them in the outer scope's create and cleanup,
+    which lever 1 closed as measured.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/owner_run_20260926_2247_ratios.txt:1-63
+  - tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:1119-1149
+  IMPACT: This task keeps the cost map; the open levers wait for the owner's pick.
+  NEXT: Owner decides whether thread-affine pools or a small redesign is worth a task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Attribution is done: the cost map is in Notes, from 15:50Z to 16:43Z. Levers, in order:
-- P1, positional constructor calls: in the tree since 16:16Z. melder_0's S2b-2 lowering took over the normal
-  path, so P1 is in review until the owner decides with S2b-3.
+- P1, positional constructor calls: turned in; the site-plan lowering carries the rule (P5).
 - P3, deferred refcounting through ctypes: dropped by the owner; the research stays in artifacts.
 - Lever 1, interning: no gain, dropped.
 - Lever 2, thread-affine pools: -6% to -7% per cycle on Linux, effect on Windows unknown, needs a design.
-- P4, SpellSpace.meld warm id lane: in the tree at 0.2.68, in review (its own task).
+- P4, SpellSpace.meld warm id lane: in the tree at 0.2.68, turned in.
 Open owner decisions:
 - The SpellSpace active-scope RISK: enforce the check, or correct the documents.
 - The system_document_view lazy-index race (RISK in the P4 task): which lane fixes it.
 Levers must remove work, and pools and shells are created when they are today (owner, 2026-09-26). Lever 1's
 lifecycle is closed as measured (owner, 21:15Z; about 15 contract-bearing pieces, trims worth about 0.1 us). The
-spellspace build locks moved to their own task, now in review. Thread-affine pools need the owner's view under the
+spellspace build locks led to the nested slot-guard removal (0.2.73); both turned in. Thread-affine pools need the owner's view under the
 rule. Conjure-time hydration is withdrawn (tail task).
 
 ## Project-Specific Additions

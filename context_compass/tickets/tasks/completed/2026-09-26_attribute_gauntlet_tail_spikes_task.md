@@ -3,14 +3,21 @@
 # Task: Identify the rare multi-millisecond events in Melder's gauntlet scope cycles
 
 ## Metadata
+- Completed: 2026-09-26T23:01:16Z
+- Closure Basis: owner turn-in in chat (~22:58Z): "Turn in both (Recommended)" for the nested slot-guard
+  implementation and the build-locks discovery, with P4, P1 and the tail attribution selected for turn-in in
+  the same answer; then "then please remake the assets and I'll call it".
+- Summary: Melder-only multi-millisecond cycle spikes attributed: turn-0 first-use hydration and compile, no GC
+  in the loop; confirmed on Windows. Conjure-time hydration was withdrawn by owner direction; the
+  optional 200k trend run was not done.
 - Task ID: TASK-2026-09-26-attribute-gauntlet-tail-spikes
 - Story: STORY-2026-09-26-gauntlet-runtime-speed
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T19:43:02Z
-- Updated: 2026-09-26T20:35:11Z
+- Updated: 2026-09-26T23:01:16Z
 
 ## Objective
 Name the event behind Melder's rare scope-cycle spikes in the gauntlet, and prove it with measurements. In
@@ -41,6 +48,9 @@ with evidence and a fix candidate for each confirmed cause. Fixes are their own 
 - to_state: review
 - transition_reason: The tail is attributed on the VM and confirmed on Windows (turn-0 first use, no GC in the
   loop); the fix candidates went to the owner as a DECISION_REQUEST, and the owner's picks remain.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T23:01:16Z; see the Closure Basis.
 
 ## Steps / Checklist
 - [x] VM: harness GC instruments (probe, per-turn slowest turns with gc_during, GC disabled A/B).
@@ -48,10 +58,10 @@ with evidence and a fix candidate for each confirmed cause. Fixes are their own 
       per-cycle timestamps, correlated with the slow cycles.
 - [x] Owner run on Windows with the harness instruments; compare with the VM.
 - [x] Attribution note plus ranked fix candidates; DECISION_REQUEST.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - artifacts/gauntlet_runtime_speed_20260926/tail/ (runs, probes, attribution)
@@ -60,7 +70,8 @@ with evidence and a fix candidate for each confirmed cause. Fixes are their own 
 - context_compass/ tickets, boards and artifacts only.
 
 ## Validation
-- Not run yet.
+- Owner Windows runs: 19:40Z (200k) and 20:05Z (30k GC probe) confirmed the attribution;
+  22:47Z (0.2.74) shows the same turn-0 spike (max iteration 13.4 ms).
 - Recommended commands (owner, Windows, free-threaded venv):
   - GAUNTLET_GC_PROBE=1 GAUNTLET_PER_TURN_GC=1 python benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py
 
@@ -70,22 +81,22 @@ with evidence and a fix candidate for each confirmed cause. Fixes are their own 
 - Instrumentation can move the tail; each instrument is compared against an uninstrumented run.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
-- [ ] No cause named from a single max value; slow turns are attributed individually.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
+- [x] No cause named from a single max value; slow turns are attributed individually.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -401,6 +412,15 @@ with evidence and a fix candidate for each confirmed cause. Fixes are their own 
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T23:01:16Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis); acceptance given.
+  EVIDENCE: tickets/tasks/completed/2026-09-26_attribute_gauntlet_tail_spikes_task.md:6-12
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Attribution is done and confirmed on Windows. No collection fires in the gauntlet loop, and Melder's only specific
 spike is turn 0's first-use hydration and compile (10.2 ms); its other slow turns match DI and dishka. Side
@@ -408,6 +428,7 @@ finding: on 3.14t a thread's exit cost grows with live objects left by exited th
 new threads per iteration amplify. Owner direction (last note): optimize code, not the benchmark; pools and their
 shells are created when they are today. Conjure-time hydration is withdrawn. Open for the owner: an optional 200k
 run with GAUNTLET_TREND_WINDOWS=20. Next lever (measure task): the worker lanes' per-cycle cost.
+Closed 2026-09-26T23:01:16Z on the owner's turn-in.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

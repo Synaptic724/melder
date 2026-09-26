@@ -3,14 +3,21 @@
 # Task: Door-called first builds take their slot's build lock once, not twice
 
 ## Metadata
+- Completed: 2026-09-26T23:01:16Z
+- Closure Basis: owner turn-in in chat (~22:58Z): "Turn in both (Recommended)" for the nested slot-guard
+  implementation and the build-locks discovery, with P4, P1 and the tail attribution selected for turn-in in
+  the same answer; then "then please remake the assets and I'll call it".
+- Summary: Door-called first builds of unique_per_conduit and spellspace roots take their build lock once
+  (0.2.73): VM -3.3%/-3.6% per worker cycle, suites and soak green; docs, graph, assets and LLM bundles
+  current at 0.2.74; the owner's 22:47Z Windows run is the best same-run result vs dishka (0.919x).
 - Task ID: TASK-2026-09-26-remove-nested-slot-guard-take
 - Story: STORY-2026-09-26-gauntlet-runtime-speed
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T21:38:23Z
-- Updated: 2026-09-26T22:41:40Z
+- Updated: 2026-09-26T23:01:16Z
 
 ## Objective
 When a creation-context door builds a slotted object for the first time, it holds the slot's build lock (the
@@ -50,6 +57,9 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
 - to_state: review
 - transition_reason: (2026-09-26T22:41:40Z) The notch pipeline is complete (Notes 22:15:30Z to 22:41:30Z);
   the owner's Windows gauntlet run and acceptance remain.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T23:01:16Z; see the Closure Basis.
 
 ## Steps / Checklist
 - [x] Read the code being changed in full (site-plan lowering, site-plan runtime, family hydrators, door routes,
@@ -63,7 +73,7 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
 - [x] NOTICE melder_0; byte-identical device apply; version notch and release note.
 - [x] Promote docs (src_architecture, src_components, indexes); refresh graph descriptors; artifact disposition
       (applied at turn-in: the patch lane moves to patches/completed, the artifacts are retained).
-- [ ] Owner Windows run and acceptance.
+- [x] Owner Windows run and acceptance.
 - [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
@@ -86,7 +96,7 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
   probe_steps3 A/B -3.3% (1 thread) and -3.6% (2 threads) per worker cycle (Notes 22:03:17Z, 22:07:25Z).
 - Device tree at 0.2.74 (checksum-equal copy with the rebuilt assets): 42 suite runs green on 3.14t (gil 0 full
   set, gil 1 subset) and the GIL build (subset); build assets --check and LLM bundles --check OK (Note 22:41:30Z).
-- Not run: the owner's Windows gauntlet.
+- Owner's Windows gauntlet, 22:47Z on 0.2.74: see the MEASURE note of 22:55:20Z.
 
 ## Risks / Rollback Notes
 - A caller that reaches the door-held plan without the door's guard would lose build-once for the root.
@@ -97,28 +107,28 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
 - Rollback: restore the previous emission; the version notch cold-resets any cached payloads.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
-- [ ] No lock removed on a docstring's word: the source and concurrency tests decide.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
+- [x] No lock removed on a docstring's word: the source and concurrency tests decide.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/gauntlet_runtime_speed_20260926/nested_slot_guard/
-  - system_docs/patches/active/nested_slot_guard_2026_09_26/
+  - system_docs/patches/completed/nested_slot_guard_2026_09_26/
 - DISPOSITION: retain_as_reference (artifacts); promote_to_documentation (patch docs)
 - CLEANUP_TRIGGER: task closure; the owner confirms retention.
 
@@ -469,6 +479,43 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T22:55:20Z
+  TYPE: MEASURE
+  CLAIM: Owner Windows run at 22:47Z: 30k iterations, 3 threads, free-threaded, tree at 0.2.74 with the change in.
+    Same-run ratios, with the afternoon 30k runs on 0.2.68 and 0.2.70 in brackets:
+    - hot_scopes/s melder/dishka 0.919 (0.859, 0.857), the best so far; per-iteration time 1.09x dishka (1.16x, 1.17x).
+      melder/DI is 0.910 (0.929, 0.919), inside its afternoon range.
+    - Request-scope part of each cycle (the harness's "active" figure, request_total only), melder/dishka by lane:
+      request 1.064 (0.997, 1.035), worker_a 0.934 (0.852, 0.905), worker_b 1.134 (1.012, 1.073).
+    - Whole cycles (outer scope included; 1 us print resolution): melder 20/15/15 us, dishka 19/13/14 (afternoon
+      20/15/14 vs 18/12/12). Melder's outer-scope create and cleanup still cost more per cycle (2+2 us vs 1+0).
+    - Threaded-phase gap +0.130 ms per iteration: about +0.03 in the lane that bounds the iteration (worker_b, 30
+      cycles) and about +0.10 outside the measured cycles (lane wake-up and loop, thread exit and join), each +/-0.03.
+      Afternoon: +0.06 in cycles and +0.115 to +0.119 outside.
+    - Caveat: this run is slower and noisier for every library. Dishka's threaded phase is 1.101 ms (0.962 at
+      20:05Z) and its iteration p99 is 4.8 ms (1.9), and the outside-cycle gap, which this change cannot touch, also
+      narrowed. The run agrees with the VM's -3.3% to -3.6% per worker cycle but cannot isolate an effect that size.
+    - Melder max iteration 13.4 ms (turn-0 first use, as attributed); setup 203 ms; end cleanup 19.3 ms.
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/owner_run_20260926_2247_30k_0274.txt:41-54
+  - artifacts/gauntlet_runtime_speed_20260926/owner_run_20260926_2247_ratios.txt:1-63
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:1244-1330
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:1376-1397
+  IMPACT: The owner run supports the change and shows no regression. Most of the remaining gap to dishka sits outside
+    the scope cycles (the tail task's thread-exit attribution); inside them it is Melder's outer-scope lifecycle.
+  NEXT: Owner acceptance and turn-in of this task and the build-locks discovery task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T23:01:16Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis); acceptance given.
+  EVIDENCE: tickets/tasks/completed/2026-09-26_remove_nested_slot_guard_take_task.md:6-12
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 In review. Done: a CreationContext door keeps its root's build lock, and for unique_per_conduit and
 unique_per_spell_space roots the normal site plan it calls no longer takes that lock a second time. Other
@@ -476,9 +523,12 @@ lifetimes, child sites and override plans are unchanged. Code and tests are appl
 committed by the owner (22:17Z). __version__ went 0.2.72 -> 0.2.73, and melder_0's notch took it to 0.2.74. The
 release note has its own section. src_architecture and src_components are promoted with indexes, the graph is
 accepted and assembled, and the build assets and LLM bundles are rebuilt at 0.2.74. VM: -3.3% (1 thread) and
--3.6% (2 threads) per worker cycle, soak flat, suites green. Open: the owner's Windows gauntlet run and acceptance;
+-3.6% (2 threads) per worker cycle, soak flat, suites green. Owner's Windows run (22:47Z, 0.2.74): best same-run
+ratio vs dishka so far (hot_scopes/s 0.919x), consistent with the gain; that run was noisy. Open: owner acceptance;
 at turn-in the patch lane moves to patches/completed. RISK: an empty .git/index.lock (22:21:52Z) not made by this
 lane.
+Closed 2026-09-26T23:01:16Z on the owner's turn-in. Patch lane archived to
+system_docs/patches/completed/nested_slot_guard_2026_09_26/.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

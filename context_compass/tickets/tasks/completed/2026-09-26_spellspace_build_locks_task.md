@@ -3,14 +3,21 @@
 # Task: Can first builds of spellspace-scoped objects skip their build locks when the spellspace is thread-confined?
 
 ## Metadata
+- Completed: 2026-09-26T23:01:16Z
+- Closure Basis: owner turn-in in chat (~22:58Z): "Turn in both (Recommended)" for the nested slot-guard
+  implementation and the build-locks discovery, with P4, P1 and the tail attribution selected for turn-in in
+  the same answer; then "then please remake the assets and I'll call it".
+- Summary: Discovery answered: spellspace confinement does not cover melds from other threads, so the slot guard
+  carries build-once. The safe win, the nested take, was implemented in its own task (0.2.73); a
+  lock-free confined path would need a new thread rule and was not pursued.
 - Task ID: TASK-2026-09-26-spellspace-build-locks
 - Story: STORY-2026-09-26-gauntlet-runtime-speed
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T21:16:14Z
-- Updated: 2026-09-26T21:31:35Z
+- Updated: 2026-09-26T23:01:16Z
 
 ## Objective
 Find out, with source evidence and a measured prototype, whether the first build of a `unique_per_spell_space`
@@ -47,6 +54,9 @@ if chosen, is its own task behind patch docs and melder_0's agreement (his emiss
 - to_state: review
 - transition_reason: All three questions are answered with source evidence, including read step 3 (creations.py and
   both emitters in full). The nested-lock prototype is measured, and the updated DECISION_REQUEST is with the owner.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T23:01:16Z; see the Closure Basis.
 
 ## Steps / Checklist
 - [x] Read the spellspace confinement contract: managed and manual spaces, the per-thread stack, recycle, purge.
@@ -55,11 +65,12 @@ if chosen, is its own task behind patch docs and melder_0's agreement (his emiss
 - [ ] VM prototype (no tree edit) of a lock-free confined path; A/B with probe_steps3 (1 and 2 threads) and the
       concurrency suites. Partial: the nested-lock removal was timed at 1 and 2 threads. The lock-free confined
       path was not prototyped because it needs a new thread rule. Suites belong to an implementation task.
+      Closed incomplete: the owner picked the nested-lock removal (21:37Z), done in its own task.
 - [x] DECISION_REQUEST with a design sketch and the file owners.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - artifacts/gauntlet_runtime_speed_20260926/spellspace_build_locks/ (probes, runs, design sketch)
@@ -68,7 +79,8 @@ if chosen, is its own task behind patch docs and melder_0's agreement (his emiss
 - context_compass/ tickets, boards and artifacts only.
 
 ## Validation
-- Not run.
+- Discovery only: no suites in this task. The implementation's validation is in
+  tickets/tasks/completed/2026-09-26_remove_nested_slot_guard_take_task.md.
 
 ## Risks / Rollback Notes
 - A manual or registered spellspace might legitimately be used from more than one thread; then a lock-free path
@@ -78,22 +90,22 @@ if chosen, is its own task behind patch docs and melder_0's agreement (his emiss
 - No rollback needed: no tree edits.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
-- [ ] No lock is called removable on the strength of a docstring alone: the source and a concurrency test decide.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
+- [x] No lock is called removable on the strength of a docstring alone: the source and a concurrency test decide.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off (one step closed incomplete by the owner's pick; see Steps)
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -314,6 +326,15 @@ if chosen, is its own task behind patch docs and melder_0's agreement (his emiss
   REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T23:01:16Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis); acceptance given.
+  EVIDENCE: tickets/tasks/completed/2026-09-26_spellspace_build_locks_task.md:6-12
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 In review with the owner. Spellspace confinement covers only the managed enter/exit lane. Melds into an active space
 from another thread are neither forbidden nor checked, so the slot guard still carries build-once, and dropping it is a
@@ -323,6 +344,8 @@ root-site miss). The store lock is not taken for objects without disposal method
 root-site guard. The door-drops-guard shape is safe only in the no-hooks lanes (created-flag exactness). The code is
 melder_0's. DECISION_REQUEST (last note): who implements, and whether a spellspace thread rule is ever wanted. Not run:
 concurrency suites for a safe shape.
+Closed 2026-09-26T23:01:16Z on the owner's turn-in; the implementation is
+tickets/tasks/completed/2026-09-26_remove_nested_slot_guard_take_task.md.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

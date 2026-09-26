@@ -3,14 +3,21 @@
 # Task: P4 - SpellSpace.meld serves warm id melds from the spellspace door's fast-door entry
 
 ## Metadata
+- Completed: 2026-09-26T23:01:16Z
+- Closure Basis: owner turn-in in chat (~22:58Z): "Turn in both (Recommended)" for the nested slot-guard
+  implementation and the build-locks discovery, with P4, P1 and the tail attribution selected for turn-in in
+  the same answer; then "then please remake the assets and I'll call it".
+- Summary: SpellSpace.meld serves warm id melds from the door's fast-door entry (0.2.68): about -17% per cached
+  space meld on the VM; the owner's Windows runs show the SpellSpace window at parity with dishka on the
+  request and worker_b lanes.
 - Task ID: TASK-2026-09-26-spellspace-meld-warm-id-lane
 - Story: STORY-2026-09-26-gauntlet-runtime-speed
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T19:13:34Z
-- Updated: 2026-09-26T19:27:00Z
+- Updated: 2026-09-26T23:01:16Z
 
 ## Objective
 A warm `space.meld(spell_id=...)` call, the scoped call shape the gauntlet uses, returns from `SpellSpace.meld`
@@ -44,6 +51,9 @@ errors, hooks and the cache-emit check stay identical to calling the door.
 - to_state: review
 - transition_reason: Applied 19:15:00Z (byte-identical), notched to 0.2.68 with a release-note bullet, and the
   combined device state (R1 + P4) passed the suites; the owner's Windows gauntlet run and acceptance remain.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in, 2026-09-26T23:01:16Z; see the Closure Basis.
 
 ## Steps / Checklist
 - [x] Prototype and A/B on the VM copy (measure task notes).
@@ -51,11 +61,11 @@ errors, hooks and the cache-emit check stay identical to calling the door.
 - [x] Suites with saved logs (3.14t gil 0/1, GIL build); 30k-iteration soak; re-run on the 19:06Z tree.
 - [x] NOTICE melder_0; apply with --check first; verify byte-identity with the validated copy.
 - [x] Version notch (next free after melder_0's R1) and one release-note bullet.
-- [ ] Owner-run gauntlet on Windows; same-run ratios against owner_run_20260926.txt.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Owner-run gauntlet on Windows; same-run ratios against owner_run_20260926.txt.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - src/melder/aether/conduit/spell_space/spell_space.py
@@ -75,7 +85,9 @@ errors, hooks and the cache-emit check stay identical to calling the door.
   failures are the 3 pre-existing build-asset and version-stamp cases, identical on the base copy. -X gil=1 and
   the 3.14.7 GIL build (subset): all passed. New test: 8/8 on P4; on the base copy its 3 lane-specific cases fail
   (17:55Z run). Logs: artifacts/gauntlet_runtime_speed_20260926/vm_runs/p4_suites_1906.txt and p4_suites.txt.
-- Owner machine: Not run.
+- Owner machine: Windows runs from 19:31Z (0.2.68) to 22:47Z (0.2.74); same-run ratios in
+  owner_run_20260926_ratios.txt, tail/owner_runs_1940_2005_ratios.txt and owner_run_20260926_2247_ratios.txt
+  under artifacts/gauntlet_runtime_speed_20260926/.
 - Recommended commands:
   - python -m pytest tests/component/melder/aether tests/unit/melder/spellbook tests/component/melder/spellbook -q
   - python benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py
@@ -89,22 +101,22 @@ errors, hooks and the cache-emit check stay identical to calling the door.
 - Rollback: restore the two files and delete the test file; nothing persisted depends on this change.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
-- [ ] No gain claimed from a VM number alone; the owner-run number decides.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
+- [x] No gain claimed from a VM number alone; the owner-run number decides.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -231,12 +243,22 @@ errors, hooks and the cache-emit check stay identical to calling the door.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T23:01:16Z
+  TYPE: DECISION
+  CLAIM: Closed on the owner's turn-in (see the Closure Basis); acceptance given.
+  EVIDENCE: tickets/tasks/completed/2026-09-26_spellspace_meld_warm_id_lane_task.md:6-12
+  IMPACT: The ticket moves to its completed folder; board and artifact rows are synced in the same pass.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Done in the tree. Applied 19:15:00Z (byte-identical to the validated copy), notched to 0.2.68 with a "Faster warm
 melds" bullet. The combined device state (R1 + P4) passed the suites. On the VM: about -17% per cached space
 meld and -2% to -3% per gauntlet cycle; 30k soak flat; equivalence read against the source. Waiting on the owner's
 Windows gauntlet run and acceptance. Side findings for the owner: the SpellSpace active-scope RISK (measure
 task) and the system_document_view lazy-index race (RISK note here).
+Closed 2026-09-26T23:01:16Z on the owner's turn-in.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

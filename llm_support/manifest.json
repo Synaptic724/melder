@@ -2,12 +2,12 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2908755,
+        "bytes": 2908756,
         "lines": 70195,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "ad68daa83722c7bca9e9aea3cb6109976c55c24bbffdc0689fbe4f5ff545d3e0"
+        "sha256": "48fc1e34ec7c7a1aaa40e26d4df77b2b03d099c358e3c23bcea9763a26552020"
       },
-      "content_bytes": 2702413,
+      "content_bytes": 2702414,
       "content_lines": 67229,
       "file_count": 370,
       "files": {
@@ -1734,9 +1734,9 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_real_world_gauntlet.py": {
-          "content_bytes": 79555,
+          "content_bytes": 79556,
           "content_lines": 2018,
-          "content_sha256": "030cc6c0da6635c515335c489c68c33e9982a7003865a0524d8d1a768a6c69ee",
+          "content_sha256": "610c991293adcb84af0d26cde72696e9338d5a7e5d1f17b630fc3d464ce3cafc",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_real_world_gauntlet_cprofile.py": {
@@ -2236,9 +2236,9 @@
         "bytes": 62224,
         "lines": 392,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "9f1af0cb049279ff106a69f659ed89dadd6aadef1cf746b81dba415500a54866"
+        "sha256": "5a823ea9c7ab9f692a5e8d41d7bd3155c81823ad294f29a33d30a8fdaa396c92"
       },
-      "source_fingerprint": "366d737256a2c39e33563b1b89a912806b315341b8d4d907cd832ba7352546da"
+      "source_fingerprint": "908f6b405929fbbbe4e097d12bd897d5c2202aef431a97a6b2851abf128c5c2e"
     },
     "src": {
       "bundle": {

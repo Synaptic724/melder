@@ -1,5 +1,9 @@
 # Melder documentation improvement proposal
 
+> WITHDRAWN, 2026-09-26: The owner rejected the homepage-first direction and requested direct
+> rendered-site/guide inspection. This proposal and homepage-proposal.patch must not be applied.
+> A revised evidence-based plan will replace the proposal after that investigation.
+
 Owner-facing proposal from seo_0, 2026-09-26.
 Task: TASK-2026-09-26-review-melder-seo-starter.
 

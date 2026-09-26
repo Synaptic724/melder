@@ -3,12 +3,12 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-review-melder-seo-starter
 - Story: none; standalone discovery task
-- Status: review
+- Status: in_progress
 - Owner: codex
 - Agent Name: seo_0
 - Priority: p2
 - Created: 2026-09-26T22:22:03Z
-- Updated: 2026-09-26T22:44:02Z
+- Updated: 2026-09-26T22:55:44Z
 
 ## Objective
 Inspect the user-supplied ZIP and pasted SEO advice, explain the contents in plain language,
@@ -33,15 +33,16 @@ Evaluate the starter against the actual repository before adopting content or co
 ## Scope Boundaries
 - In scope: Inventory, static inspection, relevant repository comparison, and current primary-source
   verification of technical SEO claims where needed.
+- Also in scope: Inspect rendered local/live documentation and actual guide routes; revise the plan from concrete defects.
 - Also in scope: Assess the owner's tagline, "A runtime you can build on", and the repeated browser
   title "A runtime you can build on - Melder - A runtime you can build on"; suggest clearer wording.
 - Out of scope: Running supplied scripts, importing the starter into production docs, dependency
   installation, publishing, runtime edits, version changes, and unrelated active agents' work.
 
 ## State Transition Event
-- from_state: in_progress
-- to_state: review
-- transition_reason: Inputs and relevant source reviewed; patch applicability checked; written review delivered.
+- from_state: review
+- to_state: in_progress
+- transition_reason: Owner rejected the homepage-first proposal and requested direct site inspection and a better plan.
 
 ## Steps / Checklist
 - [x] Inventory the ZIP and read the pasted notes.
@@ -262,9 +263,83 @@ Evaluate the starter against the actual repository before adopting content or co
   NEXT: Owner selects the homepage proposal for implementation or adjusts the product positioning.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+- DATETIME: 2026-09-26T22:55:44Z
+  TYPE: ASSUMPTION_CHALLENGE
+  CLAIM: The owner rejects a homepage-first redesign plan and asks for direct repository/site
+    understanding. The previous plan overreached from title/metadata findings: the homepage already
+    has working-example routes, four learning levels, capstones, catalog, contents, and references.
+    The previous homepage patch is withdrawn pending evidence; do not apply it.
+  EVIDENCE:
+  - docs/index.md:21-142
+  - Owner correction in this chat on 2026-09-26: read the repo, understand the existing RTD site,
+    and make a better plan rather than remake a homepage that already provides guides.
+  IMPACT: Reopen discovery. Inspect the rendered site, follow representative reader journeys, read
+    actual guide content, and distinguish demonstrated defects from optional copy preferences.
+  NEXT: Open the published homepage and follow its guide/example routes; inspect local output/source too.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-09-26T22:57:00Z
+  TYPE: FACT
+  CLAIM: Direct browser inspection now reaches the live homepage and Beginner index successfully.
+    Existing cards, curriculum, walkthroughs, source links, search field, and reference navigation
+    are present. Beginner opens correctly and lists twelve chapters plus 41 runnable lessons.
+    The live site shows version 0.2.50. No homepage redesign defect is established.
+  EVIDENCE:
+  - context_compass/artifacts/melder_seo_review_20260926/site_inspection.md:1-16
+  - https://melder.readthedocs.io/en/latest/
+  - https://melder.readthedocs.io/en/latest/beginner/index.html
+  IMPACT: Withdraw the claim that new homepage navigation is the priority. Compare actual guide
+    content and build freshness next; retain the existing information architecture.
+  NEXT: Read constructor-injection, lifetimes, cleanup, and their linked examples in the browser.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-09-26T22:58:42Z
+  TYPE: FACT
+  CLAIM: Read three rendered beginner guides and followed the injection example. The full example
+    already supplies the missing snippet setup; lifetimes supplies the mode comparison and five
+    examples; cleanup explains ordering/failures and supplies four examples. A blanket guide rewrite
+    is not justified. One cleanup cross-link sends readers to GitHub instead of its Sphinx chapter.
+  EVIDENCE:
+  - context_compass/artifacts/melder_seo_review_20260926/site_inspection.md:18-41
+  - src/melder/__version__.py:1-12
+  IMPACT: Preserve the existing concept/example design. Verify narrow cross-link and metadata issues,
+    and distinguish the live 0.2.50 revision from local 0.2.74 without declaring publication failure.
+  NEXT: Read the existing capstone and advanced/expert walkthroughs and inspect their HTML metadata.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-09-26T23:00:37Z
+  TYPE: FACT
+  CLAIM: The full beginner capstone already contains the application tutorial previously proposed:
+    four modules, ordinary models, constructor injection, shared/fresh instances, typed consumption,
+    real methods/results, assertions, and shutdown. Advanced/expert walkthroughs also exist and were
+    read. The issue is not absence of complete application material.
+  EVIDENCE:
+  - context_compass/artifacts/melder_seo_review_20260926/site_inspection.md
+  - https://melder.readthedocs.io/en/latest/beginner/capstone.html
+  - https://melder.readthedocs.io/en/latest/advanced/inspection-walkthrough.html
+  - https://melder.readthedocs.io/en/latest/expert/codegen.html
+  IMPACT: Withdraw the duplicate tutorial deliverables from the earlier proposal. Check source-linked
+    precision issues, metadata coverage, discovery behavior, and deployment revision instead.
+  NEXT: Read current authored/generated guide sources and exercise catalog/search navigation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-09-26T23:03:24Z
+  TYPE: FACT
+  CLAIM: The live revision matches both local prod and origin/prod (9c3ca5ff5). Current branch is
+    codex_features2, so the 0.2.50 vs 0.2.74 difference does not establish deployment failure.
+    Catalog filtering returns 33/138 cleanup matches and hosted search returns relevant guides.
+    Six representative pages lack descriptions, but their canonicals and robots metadata are correct.
+  EVIDENCE:
+  - context_compass/artifacts/melder_seo_review_20260926/site_inspection.md
+  - README.md:459-501
+  - docs/tools/curriculum.py:155-165
+  - git branch --show-current and git for-each-ref refs/heads/prod refs/remotes/origin/prod
+  IMPACT: Preserve homepage/navigation, existing guides/examples, search, sitemap and publication
+    setup. Focus the revised plan on small SEO metadata work and source-aware cross-link correction.
+  NEXT: Verify the served robots/sitemap and finish the revised plan with exact implementation scope.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 ## Context / Handoff Summary
-The owner asked how to improve the docs after the review. Read improvement_proposal.md under
-artifacts/melder_seo_review_20260926/ for the ordered scope, then homepage-proposal.patch for the
-first concrete change. It changes docs/conf.py and docs/index.md only and passes git apply --check.
-Draft page and config copies are review artifacts; product files remain untouched. No tests or
-Sphinx build ran. Continue from the owner's choice; do not close the task without acceptance.
+Owner rejected the earlier homepage-first plan. Reopened discovery as seo_0: inspect actual rendered
+RTD/local pages and guide journeys, then revise improvement_proposal.md around evidenced defects.
+The old homepage-proposal.patch is withdrawn; do not apply it. No product files have changed.
