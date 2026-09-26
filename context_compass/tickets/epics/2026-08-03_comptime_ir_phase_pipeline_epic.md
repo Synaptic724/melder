@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T10:42:09Z
+- Updated: 2026-09-26T11:26:43Z
 - Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
@@ -375,6 +375,10 @@ on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling
   whose persisted rows cannot replay their contract payload faithfully (T1 story, task 4). The
   structural snapshot inherits the constraint: replay rows must be lossless or carry a not-cacheable
   verdict.
+- 2026-09-26 (owner): `SpellContract` override values are unrestricted (objects included) and ride the
+  meld-overrides path, never a plan row or generated literal; `spell_override` renames to `override`.
+  Task 5 under the T1 story designs it with the override lanes (melder_0 design v2); rows stay a hash
+  surface. The structural snapshot inherits: contract override values are never row material.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true

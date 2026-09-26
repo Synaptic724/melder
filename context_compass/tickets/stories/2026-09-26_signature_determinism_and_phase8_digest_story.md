@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T09:05:00Z
-- Updated: 2026-09-26T11:26:43Z
+- Updated: 2026-09-26T11:39:16Z
 
 ## User Narrative
 As the Melder owner, I want the compiler's signature path to be one implementation that is deterministic
@@ -41,6 +41,9 @@ measurable with the existing breakdown harness.
   `CodegenCreationSchemaHelpers`, `manifest_creation_cache.build_package`,
   `spell_codegen_creation_cache.build_package`, and the `Spellbook._emit_spell_cache` call site (one
   hunk). Row format, manifest schema, hydration and `caching_system.py` stay out of scope.
+  EXTENDED 2026-09-26 (owner ruling, task 5): the DI descriptors (`spell_contract.py`, `spell_map.py`), the
+  phase-9 contract processor, the step data classes, the row builder and the no-overrides hydration sites
+  of the three families; the override emitters and targeting runtime stay out (v2 S3).
 - DEPENDENCIES: artifacts/ir_phase_improvement_20260926/candidates.md (C-A, C-H);
   artifacts/ir_phase_survey_20260925/driver.md (hashing hazards); melder_0's live lane on
   `shared_compiler_executions.py` (missing_dependency_sockets) - sequence edits after their hunks land.
@@ -108,6 +111,9 @@ measurable with the existing breakdown harness.
 - [ ] Task: TASK-2026-09-26-gate-cache-emission-on-replayable-payloads - refuse creation-cache
   emission for spells whose rows cannot replay their contract payload (owner option B)
   tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md (review 2026-09-26)
+- [ ] Task: TASK-2026-09-26-live-contract-override-operands - descriptor rename `spell_override` ->
+  `override`; phase-9 refs; ref-only rows; live resolution at hydration; gate retired (owner ruling)
+  tickets/tasks/2026-09-26_live_contract_override_operands_task.md (ready 2026-09-26; P1 with the owner)
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery.
 
@@ -312,6 +318,8 @@ STATE 2026-09-26T10:56:37Z: owner picked (2); the overrides emitter literalizes 
 choice is re-asked: (1) now + (2) as an override-design requirement, or (2) in the emitters now.
 STATE 2026-09-26T11:26:43Z: owner rules override values may be anything and must ride the meld-overrides path (rename to
 `override`); tasks 2-4 stay in review; task-5 investigation (read-only) opens; design after the reads.
+STATE 2026-09-26T11:39:16Z: task 5 created (ready) with the live-operand design; waiting on the owner's P1 confirmation;
+tasks 2-4 in review. Task 4's gate is scheduled for retirement by task 5.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

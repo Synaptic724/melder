@@ -311,7 +311,7 @@ def test_occurrence_contract_processor_strategy_ports_contract_payload_intent() 
     contract = SpellContract(
         spellframe="iface",
         binding_name="primary",
-        spell_override={"cfg": "payload"},
+        override={"cfg": "payload"},
     )
     requirements = SimpleNamespace(
         parameters=(
@@ -365,7 +365,7 @@ def test_occurrence_contract_processor_strategy_allows_missing_providers_only_in
     contract = SpellContract(
         spellframe="iface",
         binding_name="primary",
-        spell_override=("x", "y"),
+        override=("x", "y"),
     )
     requirements = SimpleNamespace(
         parameters=(

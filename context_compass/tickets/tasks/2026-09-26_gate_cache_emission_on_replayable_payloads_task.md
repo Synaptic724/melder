@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T10:19:43Z
-- Updated: 2026-09-26T11:26:15Z
+- Updated: 2026-09-26T11:35:29Z
 
 ## Objective
 Owner option B (2026-09-26): a spell whose phase-11 step rows carry a contract payload value that the
@@ -324,6 +324,65 @@ generation bump.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T11:35:29Z
+  TYPE: FACT
+  CLAIM: Task-5 investigation, read from source. (1) `SpellContract` and `SpellMap` carry the same
+    `spell_override` slot (dict = kwargs, list/tuple = positional, values uninterpreted); the ONLY
+    compiler of the payload is the phase-9 contract processor, which iterates the consumer's live
+    SpellContract defaults (phase-1 `default_value`, else `inspect.signature(..., FORWARDREF)`),
+    normalizes each payload and records it against the PROVIDER's child occurrence; a shared provider
+    must see one distinct payload or `MeldExecutionError` is raised. `SpellMap.spell_override` is read
+    only by phase 3, to refuse it on a non-resolvable definition; it is never applied (dead today).
+    (2) The injection processor turns payload keys into `param_sources[kind="contract"]` of the
+    provider's instance spec (a key on a dependency parameter keeps the dependency and gains
+    `contract_key`); precedence override > contract payload > dependency; `__args__` is positional.
+    (3) The meld path: `Conduit.meld(override=...)` -> `ConduitMeld.meld(spell_override=...)`;
+    `_normalize_spell_override` (dict, or `{"__args__": [...]}`); a caller payload REPLACES
+    `Spell._mutation_override` (persistent per-spell default, same map shape); `override_map is None`
+    selects the no-overrides instance executor, otherwise `_overrides_executor(self, override_map)`;
+    `SpellOverrider.apply` maps keys (PATH `a>b>c` > UNIQUE `*p` > BROADCAST `**p`) to sockets over the
+    root blueprint's DAG index; values are arbitrary and never inspected. (4) melder_0's design v2
+    (in review) keeps "override > contract payload value > dependency", treats a contract payload
+    value as a supplied operand that cuts what it replaces, reads supplied operands as literal
+    `ov["key"]` lookups, and retires the override emitters and targeting runtime in S3; its U1 asks
+    how the normal lowering orders a contract payload against a dependency. (5) `bind.py` on the
+    device tree hashes `init_signature` address-free (`strip_memory_addresses`), so the object-payload
+    spell id is now process-stable and the strict xfail in the determinism test will XPASS.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/contracts/spell_contract.py:120-196
+  - src/melder/aether/conduit/meld/contracts/spell_map.py:122-195
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:126-260
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py:174-360
+  - src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:900-912
+  - src/melder/aether/conduit/conduit.py:4521-4566
+  - src/melder/aether/conduit/meld/conduit_meld.py:471-536
+  - src/melder/aether/conduit/meld/meld.py:1506-1575
+  - src/melder/aether/conduit/meld/overrides/spell_overrider.py:159-217
+  - src/melder/aether/spellbook/spell_compiler/dag/target_spec.py:60-129
+  - src/melder/aether/spellbook/bind/bind.py:892-1044
+  - artifacts/melder_override_design_20260926/design_v2.md:1-459
+  IMPACT: The "normal overrides path" is the supplied-operand path: the design for task 5 is to make a
+    contract payload value a LIVE supplied operand (read from the consumer's descriptor at meld) instead
+    of a compile-time constant, which fits v2 unchanged; SpellMap payloads can join the same path.
+  NEXT: Write the task-5 ticket with the design and the Propose -> Confirm; NOTICE melder_0 (v2 S2/S3
+    requirement) and melder_1 (xfail removal).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T11:35:29Z
+  TYPE: RISK
+  CLAIM: Incident: `git --no-optional-locks status --porcelain` issued from this VM at 11:34Z timed out
+    on the mount and left a stale 0-byte `.git/index.lock` that the VM cannot unlink (`Operation not
+    permitted`); `.git/index` is untouched (11:26). The owner was told to `Remove-Item .git\index.lock`
+    before the next index-writing git command. Rule tightened: no `git status` or `git diff` of any kind
+    from the VM; only `git --no-optional-locks show` and `log` reads.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md
+  IMPACT: One owner action; no repository content changed.
+  NEXT: Owner removes the lock; fable_0 continues with the task-5 ticket.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 STATE 2026-09-26T10:19:43Z: opened on owner option B; investigation note recorded; G1 next.
 STATE 2026-09-26T10:28:51Z: REVIEW. Owner-run suites pending; NOTICE to melder_0 about the spellbook.py hunk.
@@ -333,6 +392,8 @@ STATE 2026-09-26T10:56:37Z: REVIEW. Owner picked (2); seam read shows the overri
 (CONFLICT note); asking (1)-now + (2)-via-override-design vs (2)-in-emitters. No src edit made.
 STATE 2026-09-26T11:26:15Z: REVIEW. Owner: override values may be anything, same path as meld overrides, rename to
 `override`; task-5 investigation (read-only) opens on the overrides path, SpellMap and the peer lanes' designs.
+STATE 2026-09-26T11:35:29Z: REVIEW. Investigation read (descriptors, phase-9 producers, meld path, design v2, bind.py);
+next: create task 5 with the live-operand design and the Propose -> Confirm; NOTICEs to melder_0 and melder_1.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

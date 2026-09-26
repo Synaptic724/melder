@@ -95,45 +95,45 @@ def test_default_override_is_none() -> None:
     Verify default overrides are None per instance.
 
     Contract:
-        - spell_override defaults to None.
+        - override defaults to None.
 
     Raises:
         AssertionError: If defaults are not None.
     """
     first = SpellMap(spell="alpha")
     second = SpellMap(spell="beta")
-    assert first.spell_override is None
-    assert second.spell_override is None
+    assert first.override is None
+    assert second.override is None
 
 
-def test_spell_override_dict_is_preserved() -> None:
+def test_override_dict_is_preserved() -> None:
     """
     Verify dict overrides are preserved by reference.
 
     Contract:
-        - spell_override references the provided dict.
+        - override references the provided dict.
 
     Raises:
         AssertionError: If the override is copied or replaced.
     """
     override = {"x": 1}
-    mapping = SpellMap(spell="alpha", spell_override=override)
-    assert mapping.spell_override is override
+    mapping = SpellMap(spell="alpha", override=override)
+    assert mapping.override is override
 
 
-def test_spell_override_tuple_is_preserved() -> None:
+def test_override_tuple_is_preserved() -> None:
     """
     Verify tuple overrides are preserved by reference.
 
     Contract:
-        - spell_override retains tuple payloads as positional args.
+        - override retains tuple payloads as positional args.
 
     Raises:
         AssertionError: If the override is copied or replaced.
     """
     override = (1, 2)
-    mapping = SpellMap(spell="alpha", spell_override=override)
-    assert mapping.spell_override is override
+    mapping = SpellMap(spell="alpha", override=override)
+    assert mapping.override is override
 
 
 def test_cleanup_clears_dict_override_and_nulls_fields() -> None:
@@ -142,7 +142,7 @@ def test_cleanup_clears_dict_override_and_nulls_fields() -> None:
 
     Contract:
         - dict overrides are cleared.
-        - spell, spellframe, binding_name, and spell_override become None.
+        - spell, spellframe, binding_name, and override become None.
 
     Raises:
         AssertionError: If cleanup leaves state behind.
@@ -152,14 +152,14 @@ def test_cleanup_clears_dict_override_and_nulls_fields() -> None:
         spell="alpha",
         spellframe="frame",
         binding_name="primary",
-        spell_override=override,
+        override=override,
     )
     mapping.cleanup()
     assert override == {}
     assert mapping.spell is None
     assert mapping.spellframe is None
     assert mapping.binding_name is None
-    assert mapping.spell_override is None
+    assert mapping.override is None
 
 
 def test_cleanup_clears_list_override_and_nulls_fields() -> None:
@@ -168,7 +168,7 @@ def test_cleanup_clears_list_override_and_nulls_fields() -> None:
 
     Contract:
         - list overrides are cleared.
-        - spell, spellframe, binding_name, and spell_override become None.
+        - spell, spellframe, binding_name, and override become None.
 
     Raises:
         AssertionError: If cleanup leaves state behind.
@@ -176,14 +176,14 @@ def test_cleanup_clears_list_override_and_nulls_fields() -> None:
     override = [1, 2]
     mapping = SpellMap(
         spell="alpha",
-        spell_override=override,
+        override=override,
     )
     mapping.cleanup()
     assert override == []
     assert mapping.spell is None
     assert mapping.spellframe is None
     assert mapping.binding_name is None
-    assert mapping.spell_override is None
+    assert mapping.override is None
 
 
 def test_cleanup_is_idempotent() -> None:
@@ -201,7 +201,7 @@ def test_cleanup_is_idempotent() -> None:
     mapping.cleanup()
     mapping.cleanup()
     assert mapping.spell is None
-    assert mapping.spell_override is None
+    assert mapping.override is None
 
 
 def test_lookup_triplet_reflects_fields() -> None:
@@ -298,7 +298,7 @@ def test_repr_includes_fields() -> None:
         spell="alpha",
         spellframe="frame",
         binding_name="primary",
-        spell_override={"x": 1},
+        override={"x": 1},
     )
     rendered = repr(mapping)
     assert "alpha" in rendered

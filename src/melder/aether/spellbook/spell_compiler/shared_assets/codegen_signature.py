@@ -1,7 +1,7 @@
 import hashlib
 import pickle
 import types
-from typing import Any, Tuple
+from typing import Any, Tuple, Union
 
 
 class CodegenSignature:
@@ -62,6 +62,64 @@ class CodegenSignature:
     """
 
     __slots__ = ()
+
+    @staticmethod
+    def build_contract_override_ref(
+            consumer_spell_id: str,
+            param_name: str,
+            key: Union[str, int],
+    ) -> Tuple[str, str, str, Union[str, int]]:
+        """
+        Build the value-only reference to one entry of a consumer's override payload.
+
+        Purpose:
+            A `SpellContract` / `SpellMap` override payload may hold any Python
+            object. The compiled plan and the creation cache never carry such a
+            value; phase 9 records this reference instead and the codegen
+            hydration reads the live value back from the consumer's descriptor
+            (`CodegenCreationSchemaHelpers.resolve_contract_override_ref`).
+
+        Contract:
+            - Returns `("__contract_override__", consumer_spell_id, param_name, key)`,
+              a tuple of `str`/`int` only, so it is a fixed point of
+              `freeze_phase11_schema_value`, marshal-safe and byte-deterministic.
+            - `key` is the keyword name (`str`) for a dict payload entry, or the
+              positional index (`int`) for a list/tuple payload entry (including
+              the `__args__` entry of a dict payload).
+            - Pure; no validation of the consumer beyond typing.
+
+        Args:
+            consumer_spell_id: Selected spell id of the consumer declaring the descriptor.
+            param_name: The consumer's constructor parameter carrying the descriptor.
+            key: Keyword name or positional index inside the payload.
+
+        Returns:
+            Tuple[str, str, str, Union[str, int]]: The reference tuple.
+        """
+        return ("__contract_override__", consumer_spell_id, param_name, key)
+
+    @staticmethod
+    def is_contract_override_ref(value: Any) -> bool:
+        """
+        Report whether a row value is a contract override reference.
+
+        Contract:
+            - True exactly for a 4-tuple whose first item is the string
+              `"__contract_override__"` (the shape `build_contract_override_ref`
+              emits); every other value, including subclasses of `tuple`, is False.
+            - Pure and allocation-free; safe on every row read.
+
+        Args:
+            value: Any row or payload value.
+
+        Returns:
+            bool: Whether `value` is a reference to a live override payload entry.
+        """
+        return (
+            type(value) is tuple
+            and len(value) == 4
+            and value[0] == "__contract_override__"
+        )
 
     @staticmethod
     def serialize_codegen_signature_part(part: Any) -> bytes:

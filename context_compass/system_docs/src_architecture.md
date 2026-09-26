@@ -846,6 +846,12 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Phase 1 decides injection (2026-09-26): only a single class-like annotation or `list[T]` is injected; a
+  set, frozenset, dict or tuple parameter, and `typing.Any`, never are. Phase-4 validation judges only what
+  Phase 1 decided and never breaks a spell over a caller input: such parameters are REQUIRED_HOLE warnings
+  (the message names list-only collection injection) and the caller supplies them through meld overrides.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:AnnotationShapeGuardStrategy`
+  and `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy`.
 - Process-stable spell ids and complete cache bundles (2026-09-26): bind fingerprint inputs contain no
   memory address - repr, parameter-default, signature and init_signature text are hashed address-free and
   untruncated - so every spell, callables and default-repr instances included, keeps one id across
@@ -2631,6 +2637,10 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 caller-supplied containers: a constructor parameter typed as a dict, set or tuple of user classes,
+or dict[str, Any], used to break conjure at Phase 4 although Melder never injects it. It is now a REQUIRED_HOLE
+caller input; the guard's container error and its Any mismatch with Phase 1 are removed.
 
 2026-09-26 process-stable spell ids: function, method, lambda, partial, callable-instance and default-repr
 instance spells used to get a new id per process because the fingerprint hashed "at 0x..." repr text; with

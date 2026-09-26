@@ -3,6 +3,7 @@ from annotationlib import Format
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
 
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.configuration.system_state import SystemState
 from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis import (
     SpellOccurrenceContractAnalysis,
@@ -10,6 +11,7 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurr
 from melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy import (
     SpellArtifactProcessorStrategy,
 )
+from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import CodegenSignature
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
@@ -80,6 +82,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             contract_overrides_by_occurrence,
             contract_overrides_by_spell_id,
             contract_dependencies_complete,
+            contract_override_refs_by_occurrence,
         ) = self._compile_contract_overrides(
             occurrence_graph=graph_shape.occurrence_graph,
             spell_lookup=spellbook._spell_id_pool,
@@ -91,6 +94,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             contract_overrides_by_occurrence=contract_overrides_by_occurrence,
             contract_overrides_by_spell_id=contract_overrides_by_spell_id,
             contract_dependencies_complete=contract_dependencies_complete,
+            contract_override_refs_by_occurrence=contract_override_refs_by_occurrence,
         )
         previous_contract_shape = model.contract_shape
         model.contract_shape = contract_shape
@@ -134,12 +138,25 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
         Dict[OccurrenceKey, Dict[str, Any]],
         Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]],
         bool,
+        Dict[OccurrenceKey, Dict[str, Any]],
     ]:
         """
-        Compile SpellContract override payload maps for the model section.
+        Compile the override payload maps of every consumer descriptor for the model section.
+
+        Contract:
+            - `SpellContract` defaults resolve their provider through the contracted
+              lookup; `SpellMap` defaults carrying a payload use the phase-3 dependency
+              occurrence(s) of the parameter (2026-09-26).
+            - Every recorded payload gets a parallel value-only reference map
+              (`CodegenSignature.build_contract_override_ref`), keyed like the payload.
+
+        Returns:
+            Tuple of (payload by provider occurrence, payloads by provider spell id,
+            completeness flag, reference map by provider occurrence).
         """
         overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]] = {}
         overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]] = {}
+        refs_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]] = {}
         complete = True
 
         for occurrence in sorted(
@@ -148,28 +165,40 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
         ):
             if not self._compile_contract_overrides_for_occurrence(
                     occurrence=occurrence,
+                    occurrence_graph=occurrence_graph,
                     overrides_by_occurrence=overrides_by_occurrence,
                     overrides_by_spell_id=overrides_by_spell_id,
+                    refs_by_occurrence=refs_by_occurrence,
                     spell_lookup=spell_lookup,
                     spellbook=spellbook,
                     path_registry=path_registry,
             ):
                 complete = False
 
-        return overrides_by_occurrence, overrides_by_spell_id, complete
+        return overrides_by_occurrence, overrides_by_spell_id, complete, refs_by_occurrence
 
     def _compile_contract_overrides_for_occurrence(
             self,
             *,
             occurrence: OccurrenceKey,
+            occurrence_graph: Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]],
             overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]],
             overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]],
+            refs_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]],
             spell_lookup: Dict[str, Spell],
             spellbook: Spellbook,
             path_registry: Any,
     ) -> bool:
         """
-        Compile SpellContract override payloads for a single occurrence.
+        Compile the override payloads declared by one consumer occurrence.
+
+        Contract:
+            - A `SpellContract` default records its payload against the provider
+              occurrence `(provider_id, extend_path(occurrence, param))`.
+            - A `SpellMap` default with a payload records it against every phase-3
+              dependency occurrence of that parameter (the analyzer already routed
+              the edge); a parameter with no dependency edge records nothing.
+            - Each recorded payload is accompanied by its reference map.
         """
         spell = spell_lookup.get(occurrence[0])
         if spell is None:
@@ -179,6 +208,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
 
         complete = True
         allow_missing = self._allow_missing_contract_providers(spellbook)
+        consumer_spell_id = spell.spell_index.selected_spell_id or spell.spell_id
 
         for param_name, contract in self._iter_spell_contract_defaults(spell):
             target_spell_id = self._resolve_spell_contract_spell_id(
@@ -197,10 +227,11 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
                 path_registry.extend_path(occurrence[1], param_name),
             )
             normalized_payload = self._normalize_contract_override_payload(
-                payload=contract.spell_override,
-                consumer_spell_id=spell.spell_index.selected_spell_id or spell.spell_id,
+                payload=contract.override,
+                consumer_spell_id=consumer_spell_id,
                 consumer_spell_name=spell.spell_name,
                 param_name=param_name,
+                descriptor_name="SpellContract",
             )
             if not normalized_payload:
                 continue
@@ -210,10 +241,115 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
                 spell_id=target_spell_id,
                 overrides_by_occurrence=overrides_by_occurrence,
                 overrides_by_spell_id=overrides_by_spell_id,
+                refs_by_occurrence=refs_by_occurrence,
                 normalized_payload=normalized_payload,
+                payload_refs=self._build_override_payload_refs(
+                    normalized_payload=normalized_payload,
+                    consumer_spell_id=consumer_spell_id,
+                    param_name=param_name,
+                ),
             )
 
+        dependencies_by_param = occurrence_graph.get(occurrence)
+        for param_name, spell_map in self._iter_spell_map_defaults(spell):
+            normalized_payload = self._normalize_contract_override_payload(
+                payload=spell_map.override,
+                consumer_spell_id=consumer_spell_id,
+                consumer_spell_name=spell.spell_name,
+                param_name=param_name,
+                descriptor_name="SpellMap",
+            )
+            if not normalized_payload or dependencies_by_param is None:
+                continue
+            payload_refs = self._build_override_payload_refs(
+                normalized_payload=normalized_payload,
+                consumer_spell_id=consumer_spell_id,
+                param_name=param_name,
+            )
+            for child_occurrence in dependencies_by_param.get(param_name, ()):
+                self._record_contract_override(
+                    occurrence=child_occurrence,
+                    spell_id=child_occurrence[0],
+                    overrides_by_occurrence=overrides_by_occurrence,
+                    overrides_by_spell_id=overrides_by_spell_id,
+                    refs_by_occurrence=refs_by_occurrence,
+                    normalized_payload=normalized_payload,
+                    payload_refs=payload_refs,
+                )
+
         return complete
+
+    @staticmethod
+    def _iter_spell_map_defaults(
+            spell: Spell,
+    ) -> Iterable[Tuple[str, SpellMap]]:
+        """
+        Yield the SpellMap defaults of the spell's callable surface that carry a payload.
+
+        Contract:
+            - Mirrors `_iter_spell_contract_defaults`: the phase-1 requirements rows
+              are read when live (`spellmap_default` of a `SPELLMAP_DEFAULT` shape),
+              otherwise the callable signature in FORWARDREF format.
+            - Existing-creation spells yield nothing; descriptors with `override is
+              None` are skipped, so a payload-free SpellMap compiles exactly as before.
+        """
+        spell_maps: List[Tuple[str, SpellMap]] = []
+        if spell.is_existing_creation:
+            return spell_maps
+
+        if spell._compiler_artifact._requirements is not None:
+            for parameter in spell._compiler_artifact._requirements.parameters:
+                if parameter.di_shape is ParameterDIShape.SPELLMAP_DEFAULT:
+                    spell_map = parameter.spellmap_default
+                    if isinstance(spell_map, SpellMap) and spell_map.override is not None:
+                        spell_maps.append((parameter.name, spell_map))
+            return spell_maps
+
+        signature = inspect.signature(spell.spell, annotation_format=Format.FORWARDREF)
+        for param_name, parameter in signature.parameters.items():
+            if param_name in ("self", "cls"):
+                continue
+            if parameter.kind in (
+                    inspect.Parameter.VAR_POSITIONAL,
+                    inspect.Parameter.VAR_KEYWORD,
+            ):
+                continue
+            if parameter.default is inspect.Parameter.empty:
+                continue
+            if isinstance(parameter.default, SpellMap) and parameter.default.override is not None:
+                spell_maps.append((param_name, parameter.default))
+
+        return spell_maps
+
+    @staticmethod
+    def _build_override_payload_refs(
+            *,
+            normalized_payload: Dict[str, Any],
+            consumer_spell_id: str,
+            param_name: str,
+    ) -> Dict[str, Any]:
+        """
+        Build the value-only reference map of one normalized payload.
+
+        Contract:
+            - Same keys as the payload: a keyword entry maps to its reference; the
+              `__args__` entry maps to a tuple with one reference per positional
+              index. References are built by `CodegenSignature.build_contract_override_ref`.
+        """
+        payload_refs: Dict[str, Any] = {}
+        for key, value in normalized_payload.items():
+            if key == "__args__":
+                payload_refs[key] = tuple(
+                    CodegenSignature.build_contract_override_ref(
+                        consumer_spell_id, param_name, index,
+                    )
+                    for index in range(len(value))
+                )
+                continue
+            payload_refs[key] = CodegenSignature.build_contract_override_ref(
+                consumer_spell_id, param_name, key,
+            )
+        return payload_refs
 
     @staticmethod
     def _iter_spell_contract_defaults(
@@ -339,9 +475,21 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             consumer_spell_id: str,
             consumer_spell_name: str,
             param_name: str,
+            descriptor_name: str = "SpellContract",
     ) -> Dict[str, Any]:
         """
-        Normalize a SpellContract override payload for model storage.
+        Normalize a descriptor override payload for model storage.
+
+        Contract:
+            - `dict` payloads keep their keys (an `__args__` entry must be a list or
+              tuple and is stored as a tuple); `list`/`tuple` payloads become
+              `{"__args__": tuple(payload)}`; `None` yields an empty dict.
+            - Values are stored by reference and never inspected (they may be any
+              object; the phase-11 rows carry references instead).
+
+        Raises:
+            MeldExecutionError: On an unsupported payload shape; `descriptor_name`
+                names the descriptor in the message.
         """
         if payload is None:
             return {}
@@ -355,7 +503,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
                             spell_name=consumer_spell_name,
                             node_id=consumer_spell_id,
                             param_name=param_name,
-                            message="SpellContract __args__ override must be a list or tuple.",
+                            message=f"{descriptor_name} __args__ override must be a list or tuple.",
                         )
                     normalized_payload[key] = tuple(value)
                     continue
@@ -368,7 +516,7 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             spell_name=consumer_spell_name,
             node_id=consumer_spell_id,
             param_name=param_name,
-            message="SpellContract spell_override must be a dict, list, or tuple.",
+            message=f"{descriptor_name} override must be a dict, list, or tuple.",
         )
 
     @staticmethod
@@ -378,15 +526,24 @@ class SpellOccurrenceContractProcessorStrategy(SpellArtifactProcessorStrategy):
             spell_id: str,
             overrides_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]],
             overrides_by_spell_id: Dict[str, List[Tuple[OccurrenceKey, Dict[str, Any]]]],
+            refs_by_occurrence: Dict[OccurrenceKey, Dict[str, Any]],
             normalized_payload: Dict[str, Any],
+            payload_refs: Dict[str, Any],
     ) -> None:
         """
-        Record a normalized SpellContract override payload.
+        Record a normalized override payload and its reference map for one provider occurrence.
+
+        Contract:
+            - The payload is copied (an `__args__` list becomes a tuple); the reference
+              map is stored as given and keyed exactly like the payload.
+            - A later record for the same occurrence replaces the earlier one in both
+              maps (last writer wins, as before for payloads).
         """
         stored_payload = dict(normalized_payload)
         if "__args__" in stored_payload and isinstance(stored_payload["__args__"], list):
             stored_payload["__args__"] = tuple(stored_payload["__args__"])
         overrides_by_occurrence[occurrence] = stored_payload
+        refs_by_occurrence[occurrence] = dict(payload_refs)
         overrides_by_spell_id.setdefault(spell_id, []).append(
             (occurrence, stored_payload)
         )

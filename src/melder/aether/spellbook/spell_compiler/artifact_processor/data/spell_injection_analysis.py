@@ -92,6 +92,7 @@ class SpellInjectionInstanceSpec:
         "allow_list_aggregation",
         "uses_positional_override",
         "contract_payload",
+        "contract_payload_refs",
         "collection_param_names",
         "required_override_params",
     ]
@@ -103,6 +104,7 @@ class SpellInjectionInstanceSpec:
             allow_list_aggregation: bool,
             uses_positional_override: bool,
             contract_payload: Optional[Dict[str, Any]] = None,
+            contract_payload_refs: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Build one injection spec for one instance key.
@@ -114,11 +116,17 @@ class SpellInjectionInstanceSpec:
               the way into codegen.
             - Required supplied inputs become immutable value rows independent of
               optional override-targeting metadata: (name, position, kind, reference IDs).
+            - `contract_payload_refs` mirrors `contract_payload` key for key with the
+              value-only references phase 9 built (`__args__` maps to a tuple of
+              references); it is `None` exactly when `contract_payload` is `None`.
+              Phase-11 rows emit a reference wherever the payload value is not a
+              scalar, and hydration reads the live value back (2026-09-26).
         """
         self.param_sources: Dict[str, SpellInjectionParamSource] = param_sources
         self.allow_list_aggregation: bool = allow_list_aggregation
         self.uses_positional_override: bool = uses_positional_override
         self.contract_payload: Optional[Dict[str, Any]] = contract_payload
+        self.contract_payload_refs: Optional[Dict[str, Any]] = contract_payload_refs
         self.collection_param_names: frozenset[str] = frozenset(
             param_name
             for param_name, param_source in param_sources.items()
@@ -262,6 +270,9 @@ class SpellInjectionAnalysis(Cleanable):
             contract_payload = instance_spec.contract_payload
             if contract_payload is not None:
                 contract_payload.clear()
+            contract_payload_refs = instance_spec.contract_payload_refs
+            if contract_payload_refs is not None:
+                contract_payload_refs.clear()
         self.instance_specs_by_instance_key.clear()
 
         del self.root_spell_id

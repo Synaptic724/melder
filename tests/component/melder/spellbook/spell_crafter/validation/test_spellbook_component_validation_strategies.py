@@ -135,34 +135,36 @@ def _make_context(
     return context, issues
 
 
-def test_component_annotation_shape_guard_flags_unsupported_collection_shape() -> None:
+def test_component_annotation_shape_guard_leaves_set_parameters_to_the_caller() -> None:
     """
     Purpose:
-        Validate AnnotationShapeGuardStrategy flags unsupported collection annotations.
+        Validate that a set[T] constructor parameter is a caller input, not a DI error.
     Contract:
-        - set[T] DI annotations yield UNSUPPORTED_COLLECTION_SHAPE errors.
+        - Phase 1 never injects set[T]; AnnotationShapeGuardStrategy emits no issue for it.
+        - RequiredHolesStrategy reports it as REQUIRED_HOLE with the list-only collection hint.
     Returns:
         None.
     Raises:
-        AssertionError: If the unsupported collection shape is not reported.
+        AssertionError: If the guard judges the parameter or the hint is missing.
     """
     spellbook = _make_spellbook()
     strategy = AnnotationShapeGuardStrategy()
+    holes = RequiredHolesStrategy()
 
     class UsesSet:
         """
         Purpose:
-            Provide a spell with an unsupported collection DI annotation.
+            Provide a spell whose constructor takes a caller-supplied set of services.
         Contract:
-            - Declares set[BasicService] as a DI dependency.
+            - Declares set[BasicService], which Melder never injects.
         Args:
-            services: Injected services collection.
+            services: Services collection supplied by the caller.
         """
 
         def __init__(self, services: set[BasicService]) -> None:
             """
             Purpose:
-                Capture the injected services.
+                Capture the supplied services.
             Contract:
                 Stores the services on the instance.
             Args:
@@ -190,13 +192,14 @@ def test_component_annotation_shape_guard_flags_unsupported_collection_shape() -
         )
         try:
             strategy.validate(context)
-            assert len(issues) == 1
-            issue = issues[0]
-            assert issue.code == "UNSUPPORTED_COLLECTION_SHAPE"
-            assert issue.severity == "error"
+            assert issues == []
+            holes.validate(context)
+            assert [issue.code for issue in issues] == ["REQUIRED_HOLE"]
+            assert "Melder injects collections only as list[T]" in issues[0].message
         finally:
             context.cleanup()
     finally:
+        holes.cleanup()
         strategy.cleanup()
         spellbook.cleanup()
 

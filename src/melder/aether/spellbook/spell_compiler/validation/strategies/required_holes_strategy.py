@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, get_origin
 
 
 
@@ -26,6 +26,10 @@ class RequiredHolesStrategy(SpellValidationStrategy):
     - Reports caller-required parameters that Melder DI will never satisfy.
     - Emits warnings rather than hard errors because the caller may still
       provide these values at invocation time.
+    - For a set, frozenset, dict or tuple parameter the REQUIRED_HOLE message adds
+      that Melder injects collections only as `list[T]`, so such a parameter is
+      always supplied by the caller (2026-09-26; the Phase-4 annotation-shape
+      guard no longer judges these parameters).
     - Also reports resolved OVERRIDE_REQUIRED sockets from durable local topology.
       Non-resolvable roots have no construction-input obligations.
     - Also reports UNRESOLVED_INPUT sockets (a typed parameter no registered
@@ -49,7 +53,8 @@ class RequiredHolesStrategy(SpellValidationStrategy):
     AGENT_PURPOSE:
         access: internal. Phase-4 strategy: emits a REQUIRED_HOLE warning per PLAIN,
         default-less parameter - a hole Melder DI will never fill, so the caller must supply it
-        via overrides or manual composition - plus OVERRIDE_REQUIRED and UNRESOLVED_INPUT
+        via overrides or manual composition; for set/dict/tuple parameters the message adds
+        that Melder injects collections only as list[T] - plus OVERRIDE_REQUIRED and UNRESOLVED_INPUT
         warnings for supplied-input sockets. Reporting only.
     """
 
@@ -75,7 +80,8 @@ class RequiredHolesStrategy(SpellValidationStrategy):
         Contract:
         - Stops early if the validation context has been cancelled.
         - Emits one `REQUIRED_HOLE` warning per parameter that must be supplied
-          by the caller.
+          by the caller; a set/frozenset/dict/tuple annotation adds the
+          list-only collection hint (`_container_hint`).
         - Performs reporting only; it does not attempt to synthesize defaults
           or convert the hole into a DI target.
         - Reads reference-only required inputs from SpellSystemStates without
@@ -111,6 +117,7 @@ class RequiredHolesStrategy(SpellValidationStrategy):
                         "cannot be satisfied by Melder DI and has no default. "
                         "The caller must supply a value (e.g. via spell overrides "
                         "or manual composition)."
+                        f"{self._container_hint(param.annotation)}"
                     ),
                     details={
                         "parameter_name": param.name,
@@ -169,6 +176,31 @@ class RequiredHolesStrategy(SpellValidationStrategy):
                     },
                 )
             )
+
+    @staticmethod
+    def _container_hint(annotation: Any) -> str:
+        """
+        Return the list-only collection hint for a container-typed required hole.
+
+        Contract:
+            - Returns a leading-space sentence when the annotation's origin is set,
+              frozenset, dict or tuple (bare generics such as `dict[str, X]` and
+              their typing aliases); otherwise an empty string.
+            - Pure; reads only the annotation object.
+
+        Args:
+            annotation: Phase-1 annotation of the required hole (may be None or a string).
+
+        Returns:
+            str: The hint sentence, or "".
+        """
+        origin = get_origin(annotation)
+        if origin not in (set, frozenset, dict, tuple):
+            return ""
+        return (
+            " Melder injects collections only as list[T]; "
+            f"a {origin.__name__} parameter is always supplied by the caller."
+        )
 
     @staticmethod
     def _expected_type_for(requirements: SpellRequirements, param_name: str) -> str:

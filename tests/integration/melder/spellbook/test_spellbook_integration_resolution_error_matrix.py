@@ -18,7 +18,7 @@ NOTE:
 from __future__ import annotations
 
 import json
-from typing import List, Protocol
+from typing import Any, List, Protocol
 
 import pytest
 
@@ -122,7 +122,13 @@ class PlainValue:
         self.value = value
 
 
+class NeedsAnyMapping:
+    def __init__(self, meta: dict) -> None:
+        self.meta = meta
+
+
 NeedsPluginSet.__init__.__annotations__["plugins"] = set[IPlugin]
+NeedsAnyMapping.__init__.__annotations__["meta"] = dict[str, Any]
 
 
 def _make_spellbook() -> Spellbook:
@@ -381,13 +387,28 @@ def test_conjure_with_duplicate_spell_name_raises() -> None:
         spellbook.cleanup()
 
 
-def test_conjure_with_unsupported_collection_shape_raises() -> None:
-    """A set[IPlugin] DI annotation (UNSUPPORTED_COLLECTION_SHAPE) must block conjure."""
+def test_conjure_with_set_collection_parameter_succeeds_and_meld_takes_override() -> None:
+    """A set[IPlugin] parameter is a caller input: conjure succeeds and meld passes the supplied set through."""
     spellbook = _make_spellbook()
     try:
         spellbook.bind(spell=NeedsPluginSet, existence=Existence.unique, permissions="create")
-        with pytest.raises(Exception):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        plugins: set = set()
+        instance = conduit.meld(spell=NeedsPluginSet, override={"plugins": plugins})
+        assert instance.plugins is plugins
+    finally:
+        spellbook.cleanup()
+
+
+def test_conjure_with_dict_of_any_parameter_succeeds_and_meld_takes_override() -> None:
+    """dict[str, Any] is a caller input (Any is never injected): conjure succeeds and meld passes it through."""
+    spellbook = _make_spellbook()
+    try:
+        spellbook.bind(spell=NeedsAnyMapping, existence=Existence.many, permissions="create")
+        conduit = spellbook.conjure(name="root")
+        meta = {"key": 1}
+        instance = conduit.meld(spell=NeedsAnyMapping, override={"meta": meta})
+        assert instance.meta is meta
     finally:
         spellbook.cleanup()
 

@@ -201,14 +201,14 @@ class NeedsContract:
 
 
 class NeedsPluginSet:
-    """set[IPlugin] is an unsupported collection shape."""
+    """set[IPlugin] is a caller input: Melder never injects a set."""
 
     def __init__(self, plugins: set) -> None:  # annotated below via set[IPlugin]
         self.plugins = plugins
 
 
 class NeedsPluginDict:
-    """dict[str, IPlugin] is an unsupported collection shape."""
+    """dict[str, IPlugin] is a caller input: Melder never injects a dict."""
 
     def __init__(self, plugins: dict) -> None:  # annotated below via dict[str, IPlugin]
         self.plugins = plugins
@@ -598,26 +598,30 @@ def test_phase4_duplicate_name_still_errors_with_distinct_frame_and_binding() ->
         spellbook.cleanup()
 
 
-def test_phase4_unsupported_set_collection_shape_errors() -> None:
-    """set[IPlugin] is an UNSUPPORTED_COLLECTION_SHAPE error."""
+def test_phase4_set_collection_parameter_is_a_required_hole() -> None:
+    """set[IPlugin] is a caller input: a REQUIRED_HOLE warning, never a collection-shape error."""
     spellbook = _make_spellbook()
     try:
         spell_id = spellbook.bind(spell=NeedsPluginSet, existence=Existence.unique, permissions="create")
         spell = _get_spell(spellbook, spell_id)
         _phases_1_4(spell)
-        assert "UNSUPPORTED_COLLECTION_SHAPE" in _codes4(spell)
+        codes = _codes4(spell)
+        assert "UNSUPPORTED_COLLECTION_SHAPE" not in codes
+        assert "REQUIRED_HOLE" in codes
     finally:
         spellbook.cleanup()
 
 
-def test_phase4_unsupported_dict_collection_shape_errors() -> None:
-    """dict[str, IPlugin] is an UNSUPPORTED_COLLECTION_SHAPE error."""
+def test_phase4_dict_collection_parameter_is_a_required_hole() -> None:
+    """dict[str, IPlugin] is a caller input: a REQUIRED_HOLE warning, never a collection-shape error."""
     spellbook = _make_spellbook()
     try:
         spell_id = spellbook.bind(spell=NeedsPluginDict, existence=Existence.unique, permissions="create")
         spell = _get_spell(spellbook, spell_id)
         _phases_1_4(spell)
-        assert "UNSUPPORTED_COLLECTION_SHAPE" in _codes4(spell)
+        codes = _codes4(spell)
+        assert "UNSUPPORTED_COLLECTION_SHAPE" not in codes
+        assert "REQUIRED_HOLE" in codes
     finally:
         spellbook.cleanup()
 

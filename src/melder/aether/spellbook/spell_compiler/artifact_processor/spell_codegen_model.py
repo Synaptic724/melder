@@ -22,6 +22,9 @@ if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis import (
         SpellRuntimeAnalysis,
     )
+    from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis import (
+        SpellSiteGraphAnalysis,
+    )
     from melder.aether.spellbook.spell_compiler.spell_analyzer.data.spell_existence_occurrence_analysis import (
         SpellExistenceOccurrenceAnalysis,
     )
@@ -44,6 +47,9 @@ class SpellCodegenModel(Cleanable):
         - `graph_shape` is analyzer-owned truth borrowed into the model shell.
         - `order_shape`, `instance_shape`, and `contract_shape` are processor-
           owned sections populated by processor strategies.
+        - `site_graph_shape` is the processor-owned physical site graph
+          (one site per instance key, full parameter tables, path counts)
+          that override key resolution walks instead of logical paths.
         - Top-level scalar fields are compatibility selectors only. They should
           be populated by the shell builder or the strategies that genuinely own
           the corresponding facts.
@@ -61,6 +67,7 @@ class SpellCodegenModel(Cleanable):
         "contract_shape",
         "injection_shape",
         "override_targeting_shape",
+        "site_graph_shape",
         "spell_runtime_shape",
         "existence_occurrence_shape",
         "node_count",
@@ -98,6 +105,7 @@ class SpellCodegenModel(Cleanable):
             contract_shape: Optional[SpellOccurrenceContractAnalysis] = None,
             injection_shape: Optional[SpellInjectionAnalysis] = None,
             override_targeting_shape: Optional[SpellOverrideTargetingAnalysis] = None,
+            site_graph_shape: Optional[SpellSiteGraphAnalysis] = None,
             spell_runtime_shape: Optional[SpellRuntimeAnalysis] = None,
             existence_occurrence_shape: Optional["SpellExistenceOccurrenceAnalysis"] = None,
             node_count: int = 0,
@@ -132,8 +140,8 @@ class SpellCodegenModel(Cleanable):
             - All 4 section homes are explicit on construction.
             - `graph_shape` may be borrowed from analyzer-owned artifact truth.
             - `order_shape`, `instance_shape`, `contract_shape`,
-              `injection_shape`, `override_targeting_shape`, and
-              `spell_runtime_shape` are
+              `injection_shape`, `override_targeting_shape`,
+              `site_graph_shape`, and `spell_runtime_shape` are
               expected to be filled by processor strategies later in the same
               processor pass.
             - Mutable `assessment` and `applied_strategy_ids` are always
@@ -155,6 +163,7 @@ class SpellCodegenModel(Cleanable):
         self.override_targeting_shape: Optional[SpellOverrideTargetingAnalysis] = (
             override_targeting_shape
         )
+        self.site_graph_shape: Optional[SpellSiteGraphAnalysis] = site_graph_shape
         self.spell_runtime_shape: Optional[SpellRuntimeAnalysis] = (
             spell_runtime_shape
         )
@@ -196,7 +205,7 @@ class SpellCodegenModel(Cleanable):
             - Does not cleanup borrowed analyzer-owned `graph_shape`.
             - Best-effort cleans processor-owned `order_shape`,
               `instance_shape`, `contract_shape`, `injection_shape`,
-              `override_targeting_shape`, and
+              `override_targeting_shape`, `site_graph_shape`, and
               `spell_runtime_shape`.
             - Clears mutable assessment/provenance containers.
         """
@@ -229,6 +238,11 @@ class SpellCodegenModel(Cleanable):
                 self.override_targeting_shape.cleanup()
             except Exception:
                 pass
+        if self.site_graph_shape is not None:
+            try:
+                self.site_graph_shape.cleanup()
+            except Exception:
+                pass
         if self.spell_runtime_shape is not None:
             try:
                 self.spell_runtime_shape.cleanup()
@@ -246,6 +260,7 @@ class SpellCodegenModel(Cleanable):
         del self.contract_shape
         del self.injection_shape
         del self.override_targeting_shape
+        del self.site_graph_shape
         del self.spell_runtime_shape
         del self.existence_occurrence_shape
         del self.node_count
@@ -295,6 +310,7 @@ class SpellCodegenModel(Cleanable):
             "contract_shape",
             "injection_shape",
             "override_targeting_shape",
+            "site_graph_shape",
             "spell_runtime_shape",
             "existence_occurrence_shape",
             "assessment",

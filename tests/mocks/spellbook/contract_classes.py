@@ -210,12 +210,12 @@ class ContractConsumerDualOverride:
         left: IService = SpellContract(
             spellframe=IService,
             binding_name="primary",
-            spell_override={"marker": "override-left"},
+            override={"marker": "override-left"},
         ),
         right: IService = SpellContract(
             spellframe=IService,
             binding_name="primary",
-            spell_override={"marker": "override-right"},
+            override={"marker": "override-right"},
         ),
     ) -> None:
         """
@@ -245,7 +245,7 @@ class ContractConsumerOverrideList:
         service: IService = SpellContract(
             spellframe=IService,
             binding_name="primary",
-            spell_override=["override-list"],
+            override=["override-list"],
         ),
     ) -> None:
         """
@@ -273,7 +273,7 @@ class ContractConsumerOverrideTuple:
         service: IService = SpellContract(
             spellframe=IService,
             binding_name="primary",
-            spell_override=("override-tuple",),
+            override=("override-tuple",),
         ),
     ) -> None:
         """
@@ -301,7 +301,7 @@ class ContractConsumerOverrideArgsDict:
         service: IService = SpellContract(
             spellframe=IService,
             binding_name="primary",
-            spell_override={"__args__": ["override-dict-args"]},
+            override={"__args__": ["override-dict-args"]},
         ),
     ) -> None:
         """

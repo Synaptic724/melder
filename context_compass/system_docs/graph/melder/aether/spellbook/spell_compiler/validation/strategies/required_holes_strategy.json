@@ -1,94 +1,97 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py",
- "source_sha256": "fec409606dc38aac3a54b60c7c18bcbc1216bc13e5f2794d59dfad9fb9d8827d",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy",
-   "label": "required_holes_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py",
-   "lineno": 1,
-   "include": true,
-   "role": "Phase 4 advisory: caller-required parameters DI will never satisfy.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ],
-   "semantics_authored_against": "cd938e8cd83e38581a8cd2d42bbff55fc079bb35af73870b98504f7311bb1fe4"
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py",
+  "source_sha256": "91938d48320aef5b727ffdca62614d96bb0d29f1c83a0da1e7d3ea781e302d56",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy",
+      "label": "required_holes_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py",
+      "lineno": 1,
+      "include": true,
+      "role": "Phase 4 advisory: caller-required parameters DI will never satisfy.",
+      "responsibilities": [
+        "provides one validation or examination strategy/support surface"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ],
+      "semantics_authored_against": "cd938e8cd83e38581a8cd2d42bbff55fc079bb35af73870b98504f7311bb1fe4"
+    },
+    "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
+      "label": "RequiredHolesStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py",
+      "lineno": 14,
+      "bases": [
+        "SpellValidationStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "validate"
+      ],
+      "shape": {
+        "method_count": 3,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "e99a308f00c7a072fae6fc7558c3e95daae3c1cbdd2d603a3f773135a5d3c414",
+      "include": true,
+      "role": "Reports caller-required parameters that Melder DI will never satisfy - advisory, because the caller may still supply them at invocation.",
+      "responsibilities": [
+        "consume the Phase-1 SpellRequirements.iter_required_holes() view",
+        "emit warnings rather than hard errors",
+        "adds the list-only collection hint to REQUIRED_HOLE for set, frozenset, dict and tuple annotations",
+        "reports resolved OVERRIDE_REQUIRED inputs using durable local topology; descriptive roots have no construction obligations",
+        "warns once per UNRESOLVED_INPUT socket with parameter, position, kind, expected type and frame key"
+      ],
+      "phases": [
+        "compile"
+      ],
+      "semantics_authored_against": "e99a308f00c7a072fae6fc7558c3e95daae3c1cbdd2d603a3f773135a5d3c414"
+    }
   },
-  "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
-   "label": "RequiredHolesStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py",
-   "lineno": 14,
-   "bases": [
-    "SpellValidationStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "validate"
-   ],
-   "shape": {
-    "method_count": 2,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "f1597630748fc0c8d892d3f11c0883f64fab570bd5f42840d79d8502408c0dea",
-   "include": true,
-   "role": "Reports caller-required parameters that Melder DI will never satisfy - advisory, because the caller may still supply them at invocation.",
-   "responsibilities": [
-    "consume the Phase-1 SpellRequirements.iter_required_holes() view",
-    "emit warnings rather than hard errors",
-    "reports resolved OVERRIDE_REQUIRED inputs using durable local topology; descriptive roots have no construction obligations",
-    "warns once per UNRESOLVED_INPUT socket with parameter, position, kind, expected type and frame key"
-   ],
-   "phases": [
-    "compile"
-   ],
-   "semantics_authored_against": "0028541421043f90b3c05181c37199f4697706f46d6ea4cac0c9ba05acdc607e"
-  }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
-   "to_label": "SpellValidationStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
-   "to_label": "RuntimeError",
-   "relation": "creates",
-   "confidence": "candidate"
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
+      "to_label": "SpellValidationStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
+      "to_label": "RuntimeError",
+      "relation": "creates",
+      "confidence": "candidate"
+    },
+    {
+      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
+      "to_label": "SpellValidationIssue",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "get_origin": "typing.get_origin",
+    "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+    "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+    "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+    "UnresolvedInputError": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+    "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
+    "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
   },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
-   "to_label": "SpellValidationIssue",
-   "relation": "creates",
-   "confidence": "candidate"
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
+    "label": "RequiredHolesStrategy"
   }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
-  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-  "UnresolvedInputError": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
-  "SpellRequirements": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.spell_requirements.SpellRequirements",
-  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.required_holes_strategy.RequiredHolesStrategy",
-  "label": "RequiredHolesStrategy"
- }
 }

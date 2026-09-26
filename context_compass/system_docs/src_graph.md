@@ -15146,7 +15146,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
 
-- source_sha256: `3da298348a66d3b8fc795fcf10a92b61bdc17a3ef16557d07b242c971f92df20`
+- source_sha256: `3e0fc02803ceffb759badc12dff2423c1351a9c3724099e6e43c0a26625385e0`
 - nodes: 2
 
 ### Nodes
@@ -15155,7 +15155,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:1`
-- role: Phase 4 check: unsupported collection-style DI annotation shapes.
+- role: Phase 4 check: list-element and forward-reference annotation shapes Melder cannot inject.
 - responsibilities:
   - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
@@ -15165,9 +15165,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:22`
 - extends: `SpellValidationStrategy`
-- role: Rejects collection-style DI annotation shapes Melder does not support, reading Phase-1 requirements annotations.
+- role: Warns about list[T] elements and forward references Melder cannot inject, reading Phase-1 requirements annotations; container parameters are caller inputs it leaves to RequiredHolesStrategy.
 - responsibilities:
-  - treat list[T] as the only collection DI form worth deeper inspection in this cut
+  - treat list[T] as the only collection DI form: warn LIST_ELEMENT_NOT_DI_TARGET for a non-injectable element and UNRESOLVED_FORWARD_REF for unresolved forward references
+  - never judge set, frozenset, dict or tuple parameters: Phase 1 never injects them, so they are caller inputs
+  - treat typing.Any as not a DI target, matching Phase 1
   - defer SpellMap and SpellContract defaults to their own strategies
   - emit issues into the context; never mutate the spell or attempt recovery
   - retains ordinary Python annotation shapes on non-resolvable definitions without enforcing constructor-DI limits
@@ -15552,7 +15554,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
 
-- source_sha256: `fec409606dc38aac3a54b60c7c18bcbc1216bc13e5f2794d59dfad9fb9d8827d`
+- source_sha256: `91938d48320aef5b727ffdca62614d96bb0d29f1c83a0da1e7d3ea781e302d56`
 - nodes: 2
 
 ### Nodes
@@ -15575,6 +15577,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - consume the Phase-1 SpellRequirements.iter_required_holes() view
   - emit warnings rather than hard errors
+  - adds the list-only collection hint to REQUIRED_HOLE for set, frozenset, dict and tuple annotations
   - reports resolved OVERRIDE_REQUIRED inputs using durable local topology; descriptive roots have no construction obligations
   - warns once per UNRESOLVED_INPUT socket with parameter, position, kind, expected type and frame key
 - phases: `compile`

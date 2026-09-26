@@ -468,3 +468,41 @@ def test_validate_cancellation_preempts() -> None:
 
     assert issues == []
     assert cancel_event.throw_calls == 1
+
+
+def test_validate_container_hole_names_list_only_collection_injection() -> None:
+    """
+    Purpose:
+        Ensure container-typed required holes say Melder injects collections only as list[T].
+    Contract:
+        set/frozenset/dict/tuple annotations add the hint naming the container; other annotations do not.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the hint is missing or attached to a non-container parameter.
+    """
+    strategy = RequiredHolesStrategy()
+    issues: list[SpellValidationIssue] = []
+    params = [
+        _ParamStub("ops", 0, dict[str, object]),
+        _ParamStub("tags", 1, set[str]),
+        _ParamStub("frozen", 2, frozenset[str]),
+        _ParamStub("parts", 3, tuple[int, ...]),
+        _ParamStub("count", 4, int),
+        _ParamStub("raw", 5, None),
+    ]
+    context = _make_context(
+        spell=_SpellStub(),
+        requirements=_RequirementsStub(required_holes=params),
+        issues=issues,
+    )
+
+    strategy.validate(context)
+
+    messages = {issue.details["parameter_name"]: issue.message for issue in issues}
+    for name, container in (("ops", "dict"), ("tags", "set"), ("frozen", "frozenset"), ("parts", "tuple")):
+        assert "Melder injects collections only as list[T]" in messages[name]
+        assert f"a {container} parameter is always supplied by the caller" in messages[name]
+    assert "list[T]" not in messages["count"]
+    assert "list[T]" not in messages["raw"]
+    assert all(issue.code == "REQUIRED_HOLE" for issue in issues)

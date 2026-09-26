@@ -200,7 +200,7 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
 
                 dependencies = occurrence_graph[occurrence]
                 if shared_spell:
-                    contract_payload = self._resolve_shared_contract_payload(
+                    contract_payload, payload_occurrence = self._resolve_shared_contract_payload(
                         spell_id=spell_id,
                         canonical_occurrence=occurrence,
                         contract_shape=contract_shape,
@@ -211,9 +211,17 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                             occurrence
                         )
                     )
+                    payload_occurrence = occurrence
                 normalized_contract_payload = self._clone_contract_payload(
                     contract_payload
                 )
+                contract_payload_refs = None
+                if normalized_contract_payload is not None:
+                    contract_payload_refs = self._clone_contract_payload(
+                        contract_shape.contract_override_refs_by_occurrence.get(
+                            payload_occurrence
+                        )
+                    )
                 param_sources: Dict[str, SpellInjectionParamSource] = {}
                 allow_list_aggregation = False
                 uses_positional_override = False
@@ -295,6 +303,7 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
                     allow_list_aggregation=allow_list_aggregation,
                     uses_positional_override=uses_positional_override,
                     contract_payload=normalized_contract_payload,
+                    contract_payload_refs=contract_payload_refs,
                 )
 
         return instance_specs_by_instance_key
@@ -305,7 +314,7 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
             spell_id: str,
             canonical_occurrence: OccurrenceKey,
             contract_shape: SpellOccurrenceContractAnalysis,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[OccurrenceKey]]:
         """
         Resolve the single applicable contract payload for one shared provider.
 
@@ -325,6 +334,9 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
               user intent applies regardless of canonical-edge selection.
             - Multiple distinct payloads: raises `MeldExecutionError` -- one
               shared instance cannot be constructed two different ways.
+            - The second item is the occurrence whose payload was chosen (the
+              first recorded edge carrying it, in recording order), so the caller
+              can pair it with that edge's reference map; `None` when no payload.
 
         Raises:
             MeldExecutionError:
@@ -333,15 +345,20 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
         """
         recorded = contract_shape.contract_overrides_by_spell_id.get(spell_id)
         if not recorded:
-            return contract_shape.contract_overrides_by_occurrence.get(
+            fallback_payload = contract_shape.contract_overrides_by_occurrence.get(
                 canonical_occurrence
             )
+            if fallback_payload is None:
+                return None, None
+            return fallback_payload, canonical_occurrence
         distinct_payloads: List[Dict[str, Any]] = []
-        for _occurrence, payload in recorded:
+        first_occurrences: List[OccurrenceKey] = []
+        for occurrence, payload in recorded:
             if not any(payload == existing for existing in distinct_payloads):
                 distinct_payloads.append(payload)
+                first_occurrences.append(occurrence)
         if len(distinct_payloads) == 1:
-            return distinct_payloads[0]
+            return distinct_payloads[0], first_occurrences[0]
         raise MeldExecutionError(
             spell_id=spell_id,
             spell_name=spell_id,
@@ -349,7 +366,7 @@ class SpellInjectionProcessorStrategy(SpellArtifactProcessorStrategy):
             param_name="<shared_contract_payload>",
             message=(
                 "Shared provider received "
-                f"{len(distinct_payloads)} distinct SpellContract override "
+                f"{len(distinct_payloads)} distinct descriptor override "
                 f"payloads across {len(recorded)} contract edges. A "
                 "shared-existence spell constructs exactly once, so "
                 "conflicting payloads cannot all apply. Make the payloads "

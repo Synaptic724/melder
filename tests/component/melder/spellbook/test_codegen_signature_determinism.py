@@ -139,7 +139,7 @@ class ContractConsumer:
             service: IService = SpellContract(
                 spellframe=IService,
                 binding_name="primary",
-                spell_override={"marker": PayloadMarker("payload")},
+                override={"marker": PayloadMarker("payload")},
             ),
     ) -> None:
         """
@@ -165,7 +165,7 @@ class StringPayloadContractConsumer:
             service: IService = SpellContract(
                 spellframe=IService,
                 binding_name="primary",
-                spell_override={"marker": "override"},
+                override={"marker": "override"},
             ),
     ) -> None:
         """

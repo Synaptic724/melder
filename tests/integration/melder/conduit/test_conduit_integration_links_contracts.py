@@ -596,9 +596,9 @@ def test_conduit_spell_contract_prefers_contracted_spell() -> None:
 def test_conduit_spell_contract_applies_override_payload() -> None:
     """
     Purpose:
-        Validate SpellContract spell_override applies to provider construction.
+        Validate SpellContract override applies to provider construction.
     Contract:
-        - spell_override payload is passed to the provider constructor.
+        - override payload is passed to the provider constructor.
     Returns:
         None.
     Raises:
@@ -609,7 +609,7 @@ def test_conduit_spell_contract_applies_override_payload() -> None:
         Purpose:
             Provide a consumer that supplies a SpellContract override.
         Contract:
-            - Declares a SpellContract socket with a spell_override payload.
+            - Declares a SpellContract socket with an override payload.
             - Stores the resolved service for assertions.
         """
 
@@ -618,7 +618,7 @@ def test_conduit_spell_contract_applies_override_payload() -> None:
             service: IService = SpellContract(
                 spellframe=IService,
                 binding_name="primary",
-                spell_override={"marker": "override"},
+                override={"marker": "override"},
             ),
         ) -> None:
             """

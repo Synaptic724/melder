@@ -26,6 +26,9 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy import (
     SpellRuntimeProcessorStrategy,
 )
+from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy import (
+    SpellSiteGraphProcessorStrategy,
+)
 
 
 class SpellArtifactProcessorStrategyBuilder(Cleanable):
@@ -85,8 +88,10 @@ class SpellArtifactProcessorStrategyBuilder(Cleanable):
             - Clears and rebuilds the registry each time it runs.
             - Keys are the strategies' stable `strategy_id` values.
             - Current defaults are the 3 occurrence-derived processor
-              strategies plus runtime, injection, and override-targeting
-              fitting strategies.
+              strategies plus runtime, existence-occurrence, injection,
+              site-graph, and override-targeting fitting strategies.
+            - The site-graph strategy runs directly after injection because
+              it maps injection dependency keys to site indexes.
             - Registration order is execution order.
         """
         order_strategy = SpellOccurrenceOrderProcessorStrategy()
@@ -95,6 +100,7 @@ class SpellArtifactProcessorStrategyBuilder(Cleanable):
         runtime_strategy = SpellRuntimeProcessorStrategy()
         existence_occurrence_strategy = SpellExistenceOccurrenceProcessorStrategy()
         injection_strategy = SpellInjectionProcessorStrategy()
+        site_graph_strategy = SpellSiteGraphProcessorStrategy()
         override_targeting_strategy = SpellOverrideTargetingProcessorStrategy()
 
         self._strategies_by_name[order_strategy.strategy_id] = order_strategy
@@ -105,6 +111,7 @@ class SpellArtifactProcessorStrategyBuilder(Cleanable):
             existence_occurrence_strategy.strategy_id
         ] = existence_occurrence_strategy
         self._strategies_by_name[injection_strategy.strategy_id] = injection_strategy
+        self._strategies_by_name[site_graph_strategy.strategy_id] = site_graph_strategy
         self._strategies_by_name[
             override_targeting_strategy.strategy_id
         ] = override_targeting_strategy

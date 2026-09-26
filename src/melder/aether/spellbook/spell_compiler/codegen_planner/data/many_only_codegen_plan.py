@@ -77,6 +77,7 @@ class ManyOnlyCodegenPlanStep:
         "_contract_positional_override",
         "_has_contract_payload",
         "_contract_payload",
+        "_contract_payload_refs",
         "_override_match_prefix",
         "_override_match_prefix_len",
     ]
@@ -97,6 +98,7 @@ class ManyOnlyCodegenPlanStep:
             override_match_prefix: Optional[int],
             override_match_prefix_len: int,
             required_override_params: Tuple[RequiredOverrideParam, ...] = (),
+            contract_payload_refs: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize one many-only execution step (pure store; one validation).
@@ -134,6 +136,10 @@ class ManyOnlyCodegenPlanStep:
             required_override_params:
                 Immutable required-input rows retained in both variants. These are
                 construction obligations, independent of optional targeting metadata.
+            contract_payload_refs:
+                Value-only reference map keyed like `contract_payload` (`__args__`
+                maps to a tuple of references); phase-11 rows emit a reference wherever
+                the payload value is not a scalar (2026-09-26). None without a payload.
 
         Raises:
             ValueError: If `collection_param_names` is None.
@@ -154,6 +160,7 @@ class ManyOnlyCodegenPlanStep:
         self._contract_positional_override = contract_positional_override
         self._has_contract_payload = has_contract_payload
         self._contract_payload = contract_payload
+        self._contract_payload_refs = contract_payload_refs
         self._override_match_prefix = override_match_prefix
         self._override_match_prefix_len = override_match_prefix_len
 
@@ -224,6 +231,13 @@ class ManyOnlyCodegenPlanStep:
     def has_contract_payload(self) -> bool:
         """Return whether this step carries plan-time contract kwargs."""
         return self._has_contract_payload
+
+    @property
+    def contract_payload_refs(self) -> Optional[Dict[str, Any]]:
+        """
+        Return the value-only reference map of `contract_payload`, or None.
+        """
+        return self._contract_payload_refs
 
     @property
     def contract_payload(self) -> Optional[Dict[str, Any]]:
@@ -1057,6 +1071,7 @@ class ManyOnlyCodegenPlanBuilder:
                     contract_positional_override=contract_positional_override,
                     has_contract_payload=has_contract_payload,
                     contract_payload=contract_payload,
+                    contract_payload_refs=inject_spec.contract_payload_refs,
                     override_match_prefix=override_match_prefix,
                     override_match_prefix_len=override_match_prefix_len,
                 )

@@ -1,90 +1,91 @@
 {
- "schema_version": 1,
- "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py",
- "source_sha256": "3da298348a66d3b8fc795fcf10a92b61bdc17a3ef16557d07b242c971f92df20",
- "generator": "tools/system_documents/python/extract_graph.py",
- "nodes": {
-  "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy": {
-   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy",
-   "label": "annotation_shape_guard_strategy",
-   "kind": "module",
-   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py",
-   "lineno": 1,
-   "include": true,
-   "role": "Phase 4 check: unsupported collection-style DI annotation shapes.",
-   "responsibilities": [
-    "provides one validation or examination strategy/support surface"
-   ],
-   "phases": [
-    "validation",
-    "runtime"
-   ],
-   "semantics_authored_against": "74017c5513c567506a7ef881c8f4296bfa77c2805628686e1d730ec5ecf71a98"
+  "schema_version": 1,
+  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py",
+  "source_sha256": "3e0fc02803ceffb759badc12dff2423c1351a9c3724099e6e43c0a26625385e0",
+  "generator": "tools/system_documents/python/extract_graph.py",
+  "nodes": {
+    "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy": {
+      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy",
+      "label": "annotation_shape_guard_strategy",
+      "kind": "module",
+      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py",
+      "lineno": 1,
+      "include": true,
+      "role": "Phase 4 check: list-element and forward-reference annotation shapes Melder cannot inject.",
+      "responsibilities": [
+        "provides one validation or examination strategy/support surface"
+      ],
+      "phases": [
+        "validation",
+        "runtime"
+      ],
+      "semantics_authored_against": ""
+    },
+    "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy": {
+      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy",
+      "label": "AnnotationShapeGuardStrategy",
+      "kind": "class",
+      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py",
+      "lineno": 22,
+      "bases": [
+        "SpellValidationStrategy"
+      ],
+      "markers": [],
+      "public_methods": [
+        "validate"
+      ],
+      "shape": {
+        "method_count": 2,
+        "has_bases": true,
+        "trivial": false
+      },
+      "span_sha256": "e56f35482a331988342b4154f36031f163959c7183efc951e61f73a0475b4687",
+      "include": true,
+      "role": "Warns about list[T] elements and forward references Melder cannot inject, reading Phase-1 requirements annotations; container parameters are caller inputs it leaves to RequiredHolesStrategy.",
+      "responsibilities": [
+        "treat list[T] as the only collection DI form: warn LIST_ELEMENT_NOT_DI_TARGET for a non-injectable element and UNRESOLVED_FORWARD_REF for unresolved forward references",
+        "never judge set, frozenset, dict or tuple parameters: Phase 1 never injects them, so they are caller inputs",
+        "treat typing.Any as not a DI target, matching Phase 1",
+        "defer SpellMap and SpellContract defaults to their own strategies",
+        "emit issues into the context; never mutate the spell or attempt recovery",
+        "retains ordinary Python annotation shapes on non-resolvable definitions without enforcing constructor-DI limits"
+      ],
+      "phases": [
+        "compile"
+      ],
+      "semantics_authored_against": "e56f35482a331988342b4154f36031f163959c7183efc951e61f73a0475b4687"
+    }
   },
-  "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy": {
-   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy",
-   "label": "AnnotationShapeGuardStrategy",
-   "kind": "class",
-   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py",
-   "lineno": 22,
-   "bases": [
-    "SpellValidationStrategy"
-   ],
-   "markers": [],
-   "public_methods": [
-    "validate"
-   ],
-   "shape": {
-    "method_count": 3,
-    "has_bases": true,
-    "trivial": false
-   },
-   "span_sha256": "b3f470f2af8b0a37f1c3c67ce1f860b31b49ceab576bc2484d0563bf308fb50a",
-   "include": true,
-   "role": "Rejects collection-style DI annotation shapes Melder does not support, reading Phase-1 requirements annotations.",
-   "responsibilities": [
-    "treat list[T] as the only collection DI form worth deeper inspection in this cut",
-    "defer SpellMap and SpellContract defaults to their own strategies",
-    "emit issues into the context; never mutate the spell or attempt recovery",
-    "retains ordinary Python annotation shapes on non-resolvable definitions without enforcing constructor-DI limits"
-   ],
-   "phases": [
-    "compile"
-   ],
-   "semantics_authored_against": "2d30b3b64e112888af5cd133752584e5eeea33d95307cd7fc276cdce7f7a9f3a"
+  "edges_out": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy",
+      "to_label": "SpellValidationStrategy",
+      "relation": "specializes",
+      "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+    }
+  ],
+  "edge_candidates": [
+    {
+      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy",
+      "to_label": "SpellValidationIssue",
+      "relation": "creates",
+      "confidence": "candidate"
+    }
+  ],
+  "published_aliases": [],
+  "imports": {
+    "TYPE_CHECKING": "typing.TYPE_CHECKING",
+    "Any": "typing.Any",
+    "get_args": "typing.get_args",
+    "get_origin": "typing.get_origin",
+    "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+    "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
+    "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+    "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
+  },
+  "collapse_candidate": {
+    "module": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy",
+    "class": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy",
+    "label": "AnnotationShapeGuardStrategy"
   }
- },
- "edges_out": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy",
-   "to_label": "SpellValidationStrategy",
-   "relation": "specializes",
-   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
-  }
- ],
- "edge_candidates": [
-  {
-   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy",
-   "to_label": "SpellValidationIssue",
-   "relation": "creates",
-   "confidence": "candidate"
-  }
- ],
- "published_aliases": [],
- "imports": {
-  "TYPE_CHECKING": "typing.TYPE_CHECKING",
-  "Any": "typing.Any",
-  "Tuple": "typing.Tuple",
-  "get_args": "typing.get_args",
-  "get_origin": "typing.get_origin",
-  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-  "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
-  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
- },
- "collapse_candidate": {
-  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy",
-  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy",
-  "label": "AnnotationShapeGuardStrategy"
- }
 }

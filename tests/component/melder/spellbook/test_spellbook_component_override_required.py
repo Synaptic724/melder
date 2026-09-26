@@ -238,7 +238,7 @@ def test_explicit_spellmap_keeps_the_false_target_even_with_a_provider(compiler_
 @pytest.mark.parametrize("payload", [{}, {"x": 1}, []])
 def test_false_spellmap_refuses_provider_construction_payload(compiler_book: Spellbook, payload: object) -> None:
     """Even an empty explicit construction payload is incompatible with a disabled provider."""
-    descriptor = SpellMap(spell=Definition, spell_override=payload)
+    descriptor = SpellMap(spell=Definition, override=payload)
 
     class MappedConsumer:
         """Declare an incompatible construction payload on a descriptive definition."""
@@ -250,7 +250,7 @@ def test_false_spellmap_refuses_provider_construction_payload(compiler_book: Spe
     try:
         compiler_book.bind(spell=Definition, existence="unique", resolvable=False)
         consumer_id = compiler_book.bind(spell=MappedConsumer, existence="unique")
-        with pytest.raises(RuntimeError, match="non-resolvable.*spell_override"):
+        with pytest.raises(RuntimeError, match="non-resolvable.*override"):
             _local_topology(compiler_book, consumer_id, indexed=False)
     finally:
         descriptor.cleanup()

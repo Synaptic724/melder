@@ -3140,6 +3140,18 @@ Spec vs implementation notes:
 Purpose:
 - Compile per-spell artifacts and validate correctness before resolution.
 
+Caller-supplied container parameters (2026-09-26):
+- Phase 1 is the single decider of injection: it injects only a single class-like annotation
+  (SINGLE_BY_ANNOTATION) or `list[T]` (COLLECTION_BY_ANNOTATION). A set, frozenset, dict or tuple parameter is
+  always PLAIN, a caller input, and `typing.Any` is never a DI target.
+- Phase 4 agrees: AnnotationShapeGuardStrategy judges only `list[T]` elements and forward references (warnings)
+  and treats `typing.Any` as not injectable; it no longer emits UNSUPPORTED_COLLECTION_SHAPE. A default-less
+  container parameter is a REQUIRED_HOLE whose message adds that Melder injects collections only as `list[T]`.
+  Such spells conjure; the value is supplied through meld overrides.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:AnnotationShapeGuardStrategy.validate`,
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy._container_hint`,
+  `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:SpellRequirementsFinder._classify_parameter`.
+
 Non-resolvable definitions and required inputs (S3, 2026-09-19):
 - Phase 3 retains original declarations but distinguishes executable target_spell_ids from
   referenced_spell_ids on OVERRIDE_REQUIRED sockets. Required supplied inputs retain signature
@@ -3323,6 +3335,9 @@ Failure Modes:
 - RuntimeError when single-annotation DI resolves to multiple candidates. Zero candidates raised this
   error until 2026-09-26; they now yield an UNRESOLVED_INPUT socket.
 - RuntimeError when SpellMap defaults resolve to zero or multiple candidates.
+- Until 2026-09-26 a set/frozenset/dict/tuple parameter of user classes or `typing.Any` broke its spell at
+  Phase 4 (UNSUPPORTED_COLLECTION_SHAPE error, conjure refused) although Phase 1 never injects it; it is now a
+  REQUIRED_HOLE caller input.
 
 Observability:
 - Errors surfaced via exceptions and logger in Spellbook.
@@ -4761,6 +4776,8 @@ Purpose:
 - Run structural validation strategies (Phase 4).
 Contract/Interface:
 - `SpellValidationSystem.validate_spell(...)`.
+- Strategies judge what Phase 1 decided and never break a spell over a parameter Phase 1 made a caller input
+  (2026-09-26: container parameters are REQUIRED_HOLE warnings, not shape errors).
 Data Structures:
 - Strategy registry and validation results.
 Concurrency/Threading:
@@ -7844,7 +7861,7 @@ Module count: 574 (excluding `__init__.py`), measured 2026-08-01.
 - `src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py`
   Aggregate validation result for a single spell
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py`
-  Validate DI annotation shapes for unsupported collection forms
+  Warn about list elements and forward references Melder cannot inject (containers are caller inputs)
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py`
   Detect binding-key cycles implied by spell requirements
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py`
@@ -9125,6 +9142,11 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 caller-supplied containers: Phase 4 no longer contradicts Phase 1 on set/frozenset/dict/tuple
+parameters (never injected, so caller inputs) or on `typing.Any` (never injectable). The annotation-shape
+guard's container error is gone and REQUIRED_HOLE carries the list-only collection hint (SpellCompiler and
+Validation Pipeline entry, Spell Validation Strategies).
 
 2026-09-26 process-stable spell ids and complete cache bundles: the bind fingerprint hashes address-free
 text, so callable and default-repr instance spells keep one id across processes (promoted into Binding

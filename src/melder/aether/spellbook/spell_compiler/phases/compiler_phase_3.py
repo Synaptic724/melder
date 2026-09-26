@@ -902,11 +902,11 @@ class CompilerPhase3:
                 if not spell_obj.resolvable:
                     if (
                             di_shape is ParameterDIShape.SPELLMAP_DEFAULT
-                            and dep.spellmap_default.spell_override is not None
+                            and dep.spellmap_default.override is not None
                     ):
                         raise RuntimeError(
                             f"Parameter {dep.param_name!r} on spell {spell.spell_name!r} selects "
-                            f"non-resolvable definition {spell_obj.spell_name!r} with a spell_override "
+                            f"non-resolvable definition {spell_obj.spell_name!r} with an override "
                             "construction payload. Remove that payload and supply the consumer "
                             "parameter through a meld override."
                         )

@@ -11,7 +11,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T00:14:30Z
-- Updated: 2026-09-26T11:23:09Z
+- Updated: 2026-09-26T11:30:45Z
 
 ## Objective
 Produce a source-grounded design that (1) lets a constructor declare parameters the caller always
@@ -798,6 +798,22 @@ Compare it against joint_alpha_proposal.md and recommend one path with tradeoffs
   IMPACT: No evidence of deadlock or double construction from consumer-first nested guards; supports P3
     without a claim protocol for these shapes.
   NEXT: Owner reviews prototype_results.md with design_v2.md and answers Q1-Q5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T11:30:45Z
+  TYPE: DECISION
+  CLAIM: Owner approved design v2 after prototype_results.md ("oh yeah that looks great fucken send it").
+    Taken as approval of Q1-Q5 as recommended: P2 error kept, P3 static operands (no claim protocol), key
+    names checked once per key set with no value checks, B2/B5/B7 accepted, build order S1-S6. Implementation
+    moves to STORY-2026-09-26-implement-override-site-plan-lowering with patch lane
+    override_site_plan_2026_09_26; this task stays in review as the design record until the owner confirms
+    closure (artifacts retained as reference).
+  EVIDENCE:
+  - tickets/stories/2026-09-26_implement_override_site_plan_lowering_story.md
+  - system_docs/patches/active/override_site_plan_2026_09_26/architecture_patch.md
+  IMPACT: The design is settled; semantics for implementation are B1-B8 plus P1/P2/P3/E1/K1.
+  NEXT: Owner confirms closure of this design task.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 

@@ -8,7 +8,7 @@
 - Lead Agent: updater_0
 - Priority: p1
 - Created: 2026-09-24T09:27:42Z
-- Updated: 2026-09-26T08:54:50Z
+- Updated: 2026-09-26T11:30:45Z
 - Target Window: Investigation first; implementation after owner review.
 - Related Program/Initiative: Melder runtime performance.
 
@@ -97,7 +97,7 @@ parallel inconsistent resolution semantics or slowing ordinary creation.
 - [x] Trace measured overhead and evaluate design alternatives, including separate top-level inputs.
 - [x] Measure an artifact-only same-constructor prototype and independently qualify selected regressions.
 - [x] Investigate occurrence-aware pruning, validation/admission ordering and shared lifecycle semantics.
-- [ ] Agree the runtime/API design and patch contracts with the owner.
+- [x] Agree the runtime/API design and patch contracts with the owner (design v2, 2026-09-26).
 - [ ] Implement and qualify the chosen optimization.
 
 ## Stories (Required to Complete)
@@ -106,6 +106,8 @@ parallel inconsistent resolution semantics or slowing ordinary creation.
   tickets/stories/completed/2026-09-25_verify_override_writer_and_contract_story.md
 - STORY-2026-09-26-unresolved-input-sockets (melder_0; done 2026-09-26, shipped in 0.2.54):
   tickets/stories/completed/2026-09-26_unresolved_input_sockets_story.md
+- STORY-2026-09-26-implement-override-site-plan-lowering (melder_0; in progress, S1 ready):
+  tickets/stories/2026-09-26_implement_override_site_plan_lowering_story.md
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [ ] TASK-2026-09-24-discover-override-execution-semantics:
@@ -162,6 +164,7 @@ must cover ordinary creation, override creation and purge while preserving Creat
 registry. The direct variant also removes full-catalog wrapper rebuilding from pruned warm calls.
 Existing Existence, scope routing and context/cache invalidation retain their responsibilities.
 No production override code, release version or build assets have changed during discovery.
+Superseded 2026-09-26 by the owner-approved design v2 (artifacts/melder_override_design_20260926/design_v2.md).
 
 ## Decision Log
 - 2026-09-24: Owner authorized epic creation and a unified Melder-only experiment before runtime changes.
@@ -176,6 +179,8 @@ No production override code, release version or build assets have changed during
   cache generation 10). Override emitters now hold slot guards; joint-alpha work builds on that.
 - 2026-09-26: Owner approves melder_0's UNRESOLVED_INPUT socket (typed parameter with no provider is
   supplied at meld; UnresolvedInputError otherwise) as design step S1; resolvable=False stays separate.
+- 2026-09-26: Owner approves melder_0's design v2 after its E1-E4 prototype: site graph, one plan per key set,
+  one lowering, static operands (no claim protocol), P2 error kept. Supersedes joint alpha's runtime design.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
