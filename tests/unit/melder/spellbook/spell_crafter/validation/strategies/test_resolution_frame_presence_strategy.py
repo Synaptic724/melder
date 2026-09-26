@@ -1,5 +1,5 @@
 import pytest
-from typing import Optional, List
+from typing import List, Optional
 
 from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import (
     SpellValidationContext,
@@ -15,30 +15,28 @@ from melder.aether.spellbook.spell_compiler.validation.strategies.resolution_fra
 class _SpellStub:
     """
     Purpose:
-        Provide a spell stub with name and dependency graph attribute.
+        Provide a spell stub with the one attribute the strategy reads.
     Contract:
-        Exposes spell_name and optional dependency_graph.
+        Exposes spell_name only; the strategy must not read any other spell
+        attribute (the retired graph read would fail on this stub).
     """
 
     def __init__(
         self,
         *,
         spell_name: str = "spell-name",
-        dependency_graph: Optional[object] = None,
     ) -> None:
         """
         Purpose:
             Initialize the spell stub.
         Contract:
-            dependency_graph is always set; None represents "no graph".
+            Stores the diagnostics name only.
         Args:
             spell_name: Spell name used in diagnostics.
-            dependency_graph: Dependency graph object or None.
         Returns:
             None.
         """
         self.spell_name = spell_name
-        self.dependency_graph = dependency_graph
 
 
 class _CancelStub:
@@ -143,7 +141,7 @@ def test_validate_missing_resolution_frame_emits_error() -> None:
     Purpose:
         Ensure missing resolution frame emits an error issue.
     Contract:
-        A missing resolution frame issue is appended and warning is not emitted.
+        A missing resolution frame issue is appended and nothing else.
     Returns:
         None.
     Raises:
@@ -151,7 +149,7 @@ def test_validate_missing_resolution_frame_emits_error() -> None:
     """
     strategy = ResolutionFramePresenceStrategy()
     issues: list[SpellValidationIssue] = []
-    spell = _SpellStub(spell_name="Root", dependency_graph="graph")
+    spell = _SpellStub(spell_name="Root")
     context = _make_context(
         spell=spell,
         resolution_frame=None,
@@ -171,9 +169,9 @@ def test_validate_missing_resolution_frame_emits_error() -> None:
 def test_validate_missing_resolution_frame_returns_early() -> None:
     """
     Purpose:
-        Ensure missing resolution frame prevents dependency graph warning.
+        Ensure a missing resolution frame emits exactly one issue.
     Contract:
-        Only the missing frame error is emitted even if graph is missing.
+        Only the missing frame error is emitted; nothing else is inspected.
     Returns:
         None.
     Raises:
@@ -181,7 +179,7 @@ def test_validate_missing_resolution_frame_returns_early() -> None:
     """
     strategy = ResolutionFramePresenceStrategy()
     issues: list[SpellValidationIssue] = []
-    spell = _SpellStub(spell_name="Root", dependency_graph=None)
+    spell = _SpellStub(spell_name="Root")
     context = _make_context(
         spell=spell,
         resolution_frame=None,
@@ -194,41 +192,13 @@ def test_validate_missing_resolution_frame_returns_early() -> None:
     assert issues[0].code == "MISSING_RESOLUTION_FRAME"
 
 
-def test_validate_missing_dependency_graph_emits_warning() -> None:
+def test_validate_resolution_frame_present_emits_no_issue() -> None:
     """
     Purpose:
-        Ensure missing dependency graph emits a warning when frame exists.
+        Ensure a present resolution frame yields no issue at all.
     Contract:
-        A missing dependency graph warning is appended when frame is present.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If warning is not emitted.
-    """
-    strategy = ResolutionFramePresenceStrategy()
-    issues: list[SpellValidationIssue] = []
-    spell = _SpellStub(spell_name="Root", dependency_graph=None)
-    context = _make_context(
-        spell=spell,
-        resolution_frame=object(),
-        issues=issues,
-    )
-
-    strategy.validate(context)
-
-    assert len(issues) == 1
-    issue = issues[0]
-    assert issue.severity == "warning"
-    assert issue.code == "MISSING_DEPENDENCY_GRAPH"
-    assert issue.details == {}
-
-
-def test_validate_dependency_graph_present_emits_no_issue() -> None:
-    """
-    Purpose:
-        Ensure no warning is emitted when graph is present.
-    Contract:
-        No issues are added when resolution frame and graph are present.
+        No issues are added when the resolution frame exists; the strategy reads
+        nothing else from the spell (the stub carries only a name).
     Returns:
         None.
     Raises:
@@ -236,7 +206,7 @@ def test_validate_dependency_graph_present_emits_no_issue() -> None:
     """
     strategy = ResolutionFramePresenceStrategy()
     issues: list[SpellValidationIssue] = []
-    spell = _SpellStub(spell_name="Root", dependency_graph=object())
+    spell = _SpellStub(spell_name="Root")
     context = _make_context(
         spell=spell,
         resolution_frame=object(),
@@ -246,57 +216,6 @@ def test_validate_dependency_graph_present_emits_no_issue() -> None:
     strategy.validate(context)
 
     assert issues == []
-
-
-def test_validate_falsey_dependency_graph_is_treated_as_present() -> None:
-    """
-    Purpose:
-        Ensure falsey non-None dependency_graph does not trigger a warning.
-    Contract:
-        No issues are added when dependency_graph is an empty container.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If any issues are added.
-    """
-    strategy = ResolutionFramePresenceStrategy()
-    issues: list[SpellValidationIssue] = []
-    spell = _SpellStub(spell_name="Root", dependency_graph=[])
-    context = _make_context(
-        spell=spell,
-        resolution_frame=object(),
-        issues=issues,
-    )
-
-    strategy.validate(context)
-
-    assert issues == []
-
-
-def test_validate_dependency_graph_none_emits_warning() -> None:
-    """
-    Purpose:
-        Ensure dependency_graph None triggers a warning.
-    Contract:
-        The missing dependency graph warning is appended when graph is None.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If warning is not emitted.
-    """
-    strategy = ResolutionFramePresenceStrategy()
-    issues: list[SpellValidationIssue] = []
-    spell = _SpellStub(spell_name="Root", dependency_graph=None)
-    context = _make_context(
-        spell=spell,
-        resolution_frame=object(),
-        issues=issues,
-    )
-
-    strategy.validate(context)
-
-    assert len(issues) == 1
-    assert issues[0].code == "MISSING_DEPENDENCY_GRAPH"
 
 
 def test_validate_appends_to_existing_issues() -> None:
@@ -313,17 +232,17 @@ def test_validate_appends_to_existing_issues() -> None:
     strategy = ResolutionFramePresenceStrategy()
     existing = SpellValidationIssue("warning", "EXISTING", "existing")
     issues: list[SpellValidationIssue] = [existing]
-    spell = _SpellStub(spell_name="Root", dependency_graph=None)
+    spell = _SpellStub(spell_name="Root")
     context = _make_context(
         spell=spell,
-        resolution_frame=object(),
+        resolution_frame=None,
         issues=issues,
     )
 
     strategy.validate(context)
 
     assert issues[0] is existing
-    assert issues[1].code == "MISSING_DEPENDENCY_GRAPH"
+    assert issues[1].code == "MISSING_RESOLUTION_FRAME"
 
 
 def test_validate_cancellation_preempts() -> None:

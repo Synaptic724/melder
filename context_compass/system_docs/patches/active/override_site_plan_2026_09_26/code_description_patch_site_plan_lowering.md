@@ -36,11 +36,24 @@ hot path.
    - constructor failures go through `_raise_meld_construction_error` with the supplied names/positional
      count of that call.
 7. Conflicts: one guard per equal-rank pair, before any construction.
+8. Placement (S2b-1, 2026-09-26; design L1/L3): kept steps are placed consumers before providers. The root is
+   top level. A many site lives where its one consumer is built: inside the consumer's miss when the consumer
+   is shared, otherwise at the consumer's own place. A shared site lives at the lowest context common to all its
+   consumers. A shared site that carries a winning override is pinned to top level. Each shared site emits an
+   inline hit read at its place and an out-of-line `_miss{i}(meld, ov, c{i}, ...)`: build guard, recheck (P2
+   when pinned), the sites placed inside it in step order, construction, publication, `return v{i}`. Values from
+   outer contexts arrive as arguments; dict mode passes `instance_results`; `many_store` is recomputed in each
+   function that registers a disposal-bearing many.
 
 ## Edge/Error Semantics
 - Key validation errors: today's RuntimeError/ValueError texts, wrapped `MeldExecutionError("Failed to apply
   overrides.")` with the root spell id/name; not cached; retried on the next call.
 - P2 and root refusal messages unchanged; unresolved inputs keep the interim failure-path conversion (S4).
+- Pinning keeps P2 exact: a shared site with a winning override is always visited, so a rule on a stored site
+  still raises even when the site's consumer is itself stored, and an unstored one is still built and
+  published with the value.
+- A stored shared site's children are not built (B2): constructors under it run only in its miss. Sibling
+  construction order changes accordingly; providers still precede their consumers.
 
 ## Invariants and Idempotency
 - Operands depend on the key set only (P3). No new locks; hits are lock-free reads.
@@ -49,7 +62,11 @@ hot path.
   (S2a, 2026-09-26: the empty-key-set plan runs at 98-102% of the inner no-overrides executor on 3.14t and
   GIL). No namespace name is assigned in the plan body.
 - Concurrent first compiles of one key set produce equivalent plans; the dict write is a single store.
+- Nested misses take build guards consumer before provider along DAG edges (one global partial order; guards
+  are re-entrant), so two plans cannot wait on each other in a cycle; warm hits take no lock. A cold shared
+  build holds its guard while its children are built (design R2).
 
 ## Explicit Non-Goals
-- Consumer-first shared misses (B2) and the normal lane switch (S2); unresolved inputs decided in the plan
-  (S4); Phase-5 overlay retirement (S5).
+- The normal lane switch (S2b-2); unresolved inputs decided in the plan (S4); Phase-5 overlay retirement (S5).
+- A per-call cell for a site demanded only from misses of two different shared parents (design L1): such a
+  site is placed at their common context instead, which never builds more than the straight-line form did.

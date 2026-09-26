@@ -5,7 +5,7 @@
 - Status: draft
 - Owner: fable_0 (cowork)
 - Created: 2026-09-26T15:49:37Z
-- Updated: 2026-09-26T15:49:37Z
+- Updated: 2026-09-26T16:39:37Z
 
 ## Patch Scope and Non-Goals
 - Objective (epic I-1, owner-selected 2026-09-26; design settled the same day): a conjure whose creation
@@ -23,7 +23,7 @@
 ## Changed-Components Matrix
 | component | change_type | rationale | depends_on |
 |---|---|---|---|
-| SpellCompiler and Validation Pipeline (phase 3) | modify | C-C: `_build_local_frame_dag` produces ordered node ids, dependency ids and DAG edge rows without materializing a `DirectedAcyclicWorkGraph`; `Spell.dependency_graph` becomes a documented tombstone; the resolution-frame presence strategy reads the frame instead | none |
+| SpellCompiler and Validation Pipeline (phase 3) | modify (LANDED 2026-09-26, task C-C) | C-C: `_build_local_frame_dag` returns `(ordered_node_ids, dependency_spell_ids)` without materializing a `DirectedAcyclicWorkGraph` (order = sorted distinct dependency ids + root; a self-dependency raises ValueError before any registry write); `Spell.dependency_graph` is a documented None tombstone; `_add_build_details(dependencies)`; the presence strategy checks the frame only (MISSING_DEPENDENCY_GRAPH retired) | none |
 | SpellCompiler and Validation Pipeline (new structural snapshot seam) | add | one module beside the phases owns capture (rows from a finished pass) and hydrate (registry replay + artifact/Spell writes) plus the per-spell key digest, world stamp and replayability verdict | C-C (rows) |
 | Spellbook Core (conjure pipeline, `SpellbookCreationSystem`) | modify | structural classification and hydrate happen BEFORE the structural run; the structural run takes a spell subset; phase 4 runs for all spells whenever any phase 3 ran live; capture at conjure end beside the executor staging | snapshot seam |
 | Creation cache envelope (`CachingSystem`) | modify | top-level `structural_payloads` map (spell_id -> nested-marshal bytes) with upsert/get/remove/keys; generation 14 -> 15 (`structural_snapshot_rows`); transfer drops the structural payload | none |
@@ -50,12 +50,14 @@
     "phase3": {"dependency_ids": [str, ...], "ordered_node_ids": [str, ...],
                "sockets": [(param_name, position, socket_kind_name, is_collection, is_optional,
                             target_spell_ids, dependency_key, contract_key, referenced_spell_ids,
-                            parameter_kind_name), ...],
-               "dag_edges": [(parent_id, child_id, param_name, socket_kind_name), ...]},
+                            parameter_kind_name), ...]},
     "phase4": {"validity": "valid" | "gated", "contract_unvalidated": bool, "is_broken": false,
                "issue_codes": [str, ...]}}`.
   Sockets are the `SpellSocketDescriptor` fields (all strings, ints, bools, enum names and tuples of
-  strings); `dag_edges` are the rows C-C derives in place of DagNodes. No index ULID, no object, no repr.
+  strings). There is no separate edge list: the retired per-spell DAG was a star (every dependency ->
+  root, every edge NORMAL, first parameter name kept per dependency), so its rows are a projection of
+  the sockets (`target_spell_ids` x `param_name`) and `ordered_node_ids` is the sorted distinct
+  dependency ids plus the root (landed with C-C, 2026-09-26). No index ULID, no object, no repr.
 - Interface delta 3 (keys): per-spell tier = the spell id plus the sorted (module, qualname) refs of the
   phase-1 annotation types, read from the bind-time profile requirements (level 0) at both capture and
   hit; a spell whose profile carries no requirements is a structural miss. Per-conduit tier = the WORLD
@@ -150,8 +152,8 @@
 - UNKNOWN: whether the bind-time profile requirements exist for every spell kind (proven for class spells
   by the phase-1 identity guard; callables and existing creations to verify at the capture task) - a spell
   without them is a structural miss, so correctness does not depend on the answer, only the hit rate.
-- UNKNOWN: whether any Nexus or crystallizer reader consumed `Spell.dependency_graph` (grep shows one
-  production reader, the presence strategy; eight test files); the C-C task settles it.
+- RESOLVED (C-C, 2026-09-26): no Nexus or crystallizer reader consumed `Spell.dependency_graph`; the only
+  production reader was the presence strategy (retired warning); nine test files moved to the rows.
 
 ## Context / Handoff Summary
 - What changed: nothing under `src/`; this patch and its two siblings define the design for tasks 2-6.

@@ -445,3 +445,149 @@ def test_validate_dependencies_tuple_is_supported() -> None:
     strategy.validate(context)
 
     assert len(issues) == 1
+
+
+class _SocketStub:
+    """
+    Purpose:
+        Provide a topology socket with a parameter name and resolved targets.
+    """
+
+    def __init__(self, param_name: str, target_spell_ids: tuple) -> None:
+        """
+        Purpose:
+            Store the socket's parameter name and target ids.
+        Returns:
+            None.
+        """
+        self.param_name = param_name
+        self.target_spell_ids = target_spell_ids
+
+
+class _TopologyStub:
+    """
+    Purpose:
+        Provide a local topology exposing its sockets in constructor order.
+    """
+
+    def __init__(self, sockets: list) -> None:
+        """
+        Purpose:
+            Store the sockets.
+        Returns:
+            None.
+        """
+        self._sockets = tuple(sockets)
+
+    def iter_sockets(self) -> tuple:
+        """
+        Purpose:
+            Return the sockets.
+        Returns:
+            tuple: The sockets in constructor order.
+        """
+        return self._sockets
+
+
+class _StatesStub:
+    """
+    Purpose:
+        Provide a spell-system-states stand-in returning one topology.
+    """
+
+    def __init__(self, topology: object) -> None:
+        """
+        Purpose:
+            Store the topology to return.
+        Returns:
+            None.
+        """
+        self._topology = topology
+
+    def get_local_topology(self, spell_index: object) -> object:
+        """
+        Purpose:
+            Return the stored topology for any spell index.
+        Returns:
+            object: The topology, or None.
+        """
+        return self._topology
+
+
+def _live_context(sockets: list, issues: list) -> SpellValidationContext:
+    """
+    Purpose:
+        Build a context whose spell carries a Phase-3 topology and whose spellbook is present.
+    Returns:
+        SpellValidationContext: The context.
+    """
+    spell = _SpellStub(spell_id="root", spell_name="Node", dependencies=["root"])
+    spell._spell_system_states = _StatesStub(_TopologyStub(sockets))
+    return SpellValidationContext(
+        spell=spell,
+        spellbook=object(),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+        cancel_event=None,
+        issues=issues,
+    )
+
+
+def test_validate_names_the_parameter_that_resolves_to_the_spell() -> None:
+    """
+    Purpose:
+        Ensure the message names the self-resolving parameter when the topology is known.
+    Contract:
+        Only sockets targeting the spell itself are named; details carry the names.
+    Returns:
+        None.
+    """
+    issues: list[SpellValidationIssue] = []
+    context = _live_context([_SocketStub("parent", ("root",)), _SocketStub("name", ())], issues)
+
+    SelfDependencyStrategy().validate(context)
+
+    assert len(issues) == 1
+    assert issues[0].message == (
+        "Spell 'Node' depends on itself: its constructor parameter 'parent' resolves to this same spell. "
+        "Remove that parameter or give it a default."
+    )
+    assert issues[0].details == {"spell_id": "root", "parameter_names": ["parent"]}
+
+
+def test_validate_names_every_self_resolving_parameter() -> None:
+    """
+    Purpose:
+        Ensure several self-resolving parameters are all named, in constructor order.
+    Returns:
+        None.
+    """
+    issues: list[SpellValidationIssue] = []
+    context = _live_context([_SocketStub("left", ("root",)), _SocketStub("right", ("other", "root"))], issues)
+
+    SelfDependencyStrategy().validate(context)
+
+    assert "its constructor parameters 'left', 'right' resolve to this same spell" in issues[0].message
+    assert issues[0].message.endswith("Remove those parameters or give them defaults.")
+
+
+def test_validate_message_stays_generic_without_a_topology() -> None:
+    """
+    Purpose:
+        Ensure a live context whose spell has no Phase-3 topology keeps the generic message.
+    Returns:
+        None.
+    """
+    issues: list[SpellValidationIssue] = []
+    spell = _SpellStub(spell_id="root", spell_name="Node", dependencies=["root"])
+    spell._spell_system_states = _StatesStub(None)
+    context = SpellValidationContext(
+        spell=spell, spellbook=object(), requirements=None, symbolic_graph=None,
+        resolution_frame=None, cancel_event=None, issues=issues,
+    )
+
+    SelfDependencyStrategy().validate(context)
+
+    assert "one of its constructor parameters resolves to this same spell" in issues[0].message
+    assert issues[0].details == {"spell_id": "root"}

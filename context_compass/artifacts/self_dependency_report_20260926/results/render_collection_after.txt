@@ -1,0 +1,4 @@
+RAISED melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError
+Spellbook validation failed. Broken spells: Branch.
+Branch:
+  - Spell 'Branch' depends on itself: its constructor parameter 'children' resolves to this same spell. Remove that parameter or give it a default. [SELF_DEPENDENCY]

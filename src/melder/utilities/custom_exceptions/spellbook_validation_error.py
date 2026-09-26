@@ -44,7 +44,8 @@ class SpellbookValidationError(RuntimeError):
           "  - <message> [CODE]"; errors that belong to no spell under
           "Whole-graph errors:".
         - Exact duplicates are dropped; BINDING_RESOLUTION_CYCLE is hidden when
-          CIRCULAR_DEPENDENCY is shown for the same spell; root_not_viable and
+          CIRCULAR_DEPENDENCY is reported for the same spell, and CIRCULAR_DEPENDENCY
+          when SELF_DEPENDENCY is (a spell that depends on itself); root_not_viable and
           broken_spell_in_dag are hidden when any other error is shown.
         - Footers count the hidden warnings and explain `[internal]`.
 
@@ -129,7 +130,10 @@ class SpellbookValidationError(RuntimeError):
     RESTATING_CODES: ClassVar[FrozenSet[str]] = frozenset({"root_not_viable", "broken_spell_in_dag"})
 
     # Code -> code that reports the same fault more readably for the same spell.
-    SUPERSEDED_BY: ClassVar[Dict[str, str]] = {"BINDING_RESOLUTION_CYCLE": "CIRCULAR_DEPENDENCY"}
+    SUPERSEDED_BY: ClassVar[Dict[str, str]] = {
+        "BINDING_RESOLUTION_CYCLE": "CIRCULAR_DEPENDENCY",
+        "CIRCULAR_DEPENDENCY": "SELF_DEPENDENCY",
+    }
 
     def __init__(
             self,

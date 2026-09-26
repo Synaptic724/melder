@@ -588,16 +588,17 @@ def test_component_resolution_frame_presence_strategy_flags_missing_frame() -> N
         spellbook.cleanup()
 
 
-def test_component_resolution_frame_presence_strategy_warns_on_missing_graph() -> None:
+def test_component_resolution_frame_presence_strategy_accepts_phase3_frame() -> None:
     """
     Purpose:
-        Validate ResolutionFramePresenceStrategy warns when dependency graph is missing.
+        Validate ResolutionFramePresenceStrategy is silent once Phase 3 has produced the frame.
     Contract:
-        - Missing dependency_graph yields a MISSING_DEPENDENCY_GRAPH warning.
+        - A real Phase-3 resolution frame yields no issue; the strategy inspects nothing else
+          (the per-spell dependency graph object was retired 2026-09-26).
     Returns:
         None.
     Raises:
-        AssertionError: If the expected warning is not reported.
+        AssertionError: If any issue is reported.
     """
     spellbook = _make_spellbook()
     strategy = ResolutionFramePresenceStrategy()
@@ -609,18 +610,19 @@ def test_component_resolution_frame_presence_strategy_warns_on_missing_graph() -
         )
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
+        assert spell.dependency_graph is None
 
         context, issues = _make_context(
             spell=spell,
             spellbook=spellbook,
-            resolution_frame=object(),
+            resolution_frame=spell.resolution_frame,
         )
         try:
             strategy.validate(context)
-            assert len(issues) == 1
-            issue = issues[0]
-            assert issue.code == "MISSING_DEPENDENCY_GRAPH"
-            assert issue.severity == "warning"
+            assert issues == []
         finally:
             context.cleanup()
     finally:

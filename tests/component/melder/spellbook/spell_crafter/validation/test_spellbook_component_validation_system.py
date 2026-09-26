@@ -302,7 +302,6 @@ def test_component_validation_system_reports_all_issue_types_in_complex_case() -
         try:
             codes = {issue.code for issue in result.issues}
             expected = {
-                "MISSING_DEPENDENCY_GRAPH",
                 "DANGLING_DEPENDENCY",
                 "SELF_DEPENDENCY",
                 "CIRCULAR_DEPENDENCY",
@@ -311,7 +310,6 @@ def test_component_validation_system_reports_all_issue_types_in_complex_case() -
             }
             assert expected.issubset(codes)
             severity_by_code = {issue.code: issue.severity for issue in result.issues}
-            assert severity_by_code["MISSING_DEPENDENCY_GRAPH"] == "warning"
             assert severity_by_code["REQUIRED_HOLE"] == "warning"
             assert severity_by_code["DANGLING_DEPENDENCY"] == "error"
             assert severity_by_code["SELF_DEPENDENCY"] == "error"

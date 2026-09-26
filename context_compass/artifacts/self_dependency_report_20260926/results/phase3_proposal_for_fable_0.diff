@@ -1,0 +1,91 @@
+--- a/src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
++++ b/src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
+@@ -821,10 +821,10 @@
+             
+             Raises:
+                 ValueError:
+-                    If ``requirements`` or ``graph`` is None, or if the spell
+-                    resolves itself as one of its own dependencies (a direct
+-                    self-cycle is a configuration error, refused before any
+-                    registry write).
++                    If ``requirements`` or ``graph`` is None. A spell that
++                    resolves itself is not refused here: the self id is recorded
++                    as a dependency (outside the frame order) and Phase 4's
++                    SELF_DEPENDENCY check refuses the spell (2026-09-26).
+                 RuntimeError:
+                     If the spell has no bound SpellIndex / current spell id, or
+                     when annotation resolution is ambiguous (see the resolvers).
+@@ -925,14 +925,10 @@
+                         )
+                     socket_references.setdefault(key, []).append(dep_spell_id)
+                     continue
+-                if dep_spell_id == root_id:
+-                    # A direct self-cycle was refused by the dependency graph
+-                    # before the rows replaced it; keep the refusal here, before
+-                    # any registry write.
+-                    raise ValueError(
+-                        f"SpellCrafter Phase 3: spell {spell.spell_name!r} resolves itself for "
+-                        f"parameter {dep.param_name!r}; a spell cannot depend on itself."
+-                    )
++                # A parameter that resolves to this same spell (a constructor taking its
++                # own class) is recorded like any dependency: Phase 4's SELF_DEPENDENCY
++                # check then refuses the spell with a readable message. It never enters
++                # the local frame order below (2026-09-26).
+                 dependency_spell_ids.append(dep_spell_id)
+                 socket_targets.setdefault(key, []).append(dep_spell_id)
+ 
+@@ -957,7 +953,8 @@
+ 
+         # Local frame order: distinct dependencies ascending by id, root last -
+         # the topological order of the star graph phase 3 used to materialize.
+-        ordered_node_ids: List[str] = sorted(set(dependency_spell_ids))
++        # A self-dependency stays out of the order; Phase 4 refuses that spell.
++        ordered_node_ids: List[str] = sorted(set(dependency_spell_ids) - {root_id})
+         ordered_node_ids.append(root_id)
+         return ordered_node_ids, dependency_spell_ids
+ 
+--- a/tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_3.py
++++ b/tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_3.py
+@@ -1077,8 +1077,8 @@
+     ]
+ 
+ 
+-def test_build_local_frame_dag_refuses_self_dependency_before_registry_writes() -> None:
+-    """A spell that resolves itself is refused with ValueError and nothing is registered."""
++def test_build_local_frame_dag_records_self_dependency_outside_frame_order() -> None:
++    """A spell that resolves itself is recorded as its own dependency for Phase 4, outside the frame order."""
+     phase = CompilerPhase3()
+ 
+     class _RootFrame:
+@@ -1104,18 +1104,20 @@
+         ],
+     )
+ 
+-    with pytest.raises(ValueError, match="cannot depend on itself"):
+-        phase._build_local_frame_dag(
+-            spell=root_spell,
+-            spellbook=SimpleNamespace(_spell_id_pool={"root": root_spell}),
+-            spell_system_states=spell_system_states,
+-            requirements=SimpleNamespace(parameters=[]),
+-            graph=graph,
+-            cancellation_event=_CancelStub(is_set=False),
+-        )
++    ordered_node_ids, dependency_spell_ids = phase._build_local_frame_dag(
++        spell=root_spell,
++        spellbook=SimpleNamespace(_spell_id_pool={"root": root_spell}),
++        spell_system_states=spell_system_states,
++        requirements=SimpleNamespace(parameters=[]),
++        graph=graph,
++        cancellation_event=_CancelStub(is_set=False),
++    )
+ 
+-    assert spell_system_states.dependencies_calls == []
+-    assert spell_system_states.topology_calls == []
++    assert dependency_spell_ids == ["root"]
++    assert ordered_node_ids == ["root"]
++    assert spell_system_states.dependencies_calls[0][1] == ["root"]
++    topology = spell_system_states.topology_calls[0][1]
++    assert topology.get_sockets_for_param("me")[0].target_spell_ids == ("root",)
+ 
+ 
+ def test_run_builds_resolution_frame_and_updates_topology(

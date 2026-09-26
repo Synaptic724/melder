@@ -2,15 +2,20 @@
 
 # Task: Keep class binding-profile annotations when a field names a TYPE_CHECKING-only type
 
+- Completed: 2026-09-26T16:32:21Z
+- Summary: Class binding profiles keep class-level annotations that name TYPE_CHECKING-only types (source text,
+  the ClassInspector read), so those fields count in the spell id and appear in Nexus; affected classes get a
+  new id once. Tests, docs, graph and release note done; owner accepted. Ships in 0.2.59+ (owner notches).
+
 ## Metadata
 - Task ID: TASK-2026-09-26-fix-class-binding-profile-annotations-for-type-checking-names
 - Story: none (fix for the defect left open by TASK-2026-09-26-keep-class-binding-annotations-with-type-checking-names)
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_1
 - Priority: p2
 - Created: 2026-09-26T16:12:32Z
-- Updated: 2026-09-26T16:28:45Z
+- Updated: 2026-09-26T16:32:21Z
 
 ## Objective
 A class whose field annotations name a type imported only under `TYPE_CHECKING` loses every annotation from its
@@ -43,14 +48,17 @@ reflects the class's annotated fields and Nexus publishes them. Affected classes
 - to_state: review
 - transition_reason: Applied to the worktree; suites green on a worktree sync; docs, graph and release note
   current (2026-09-26T16:28:45Z).
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted ("ok cool whats next?"); closure sync done (2026-09-26T16:32:21Z).
 
 ## Steps / Checklist
 - [x] Re-read the class path, the fallback helper and every consumer in full on current source.
 - [x] Patch lane (architecture + component) and implementation-to-validation mapping.
 - [x] Implement on a VM copy with tests; before/after probes; unit, component and integration suites.
 - [x] Apply to the worktree by anchored edit; docs, graph descriptor, release note.
-- [ ] Owner review.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Owner review.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
 - [x] Document each meaningful finding immediately in `## Notes` before further investigation.
@@ -84,18 +92,18 @@ reflects the class's annotated fields and Nexus publishes them. Affected classes
 - [ ] No behavior claim cited only to a document or a one-line search hit.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Validation status recorded
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/class_binding_annotations_fix_20260926/
   - artifacts/class_binding_annotations_20260926/ (earlier probes and prototype, read-only)
-  - system_docs/patches/active/class_binding_annotations_2026_09_26/
+  - system_docs/patches/completed/class_binding_annotations_2026_09_26/
 - DISPOSITION: retain_as_reference (artifacts); promote_to_documentation (patch docs)
 - CLEANUP_TRIGGER: ticket closure
 
@@ -276,7 +284,23 @@ reflects the class's annotated fields and Nexus publishes them. Affected classes
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-09-26T16:32:21Z
+  TYPE: DECISION
+  CLAIM: Owner accepted ("ok cool whats next? btw each change we make is a notch of 0.01 so its fine").
+    Closure: ticket to tickets/tasks/completed/, patch lane to system_docs/patches/completed/ (deltas already
+    in src_components and src_architecture), artifacts retained, boards synced, commit list names the moved
+    paths. Version: owner convention is one notch per change; __version__ is left to the owner's commit-time
+    notch. Owner-machine suites: Not run.
+  EVIDENCE:
+  - context_compass/system_docs/patches/completed/class_binding_annotations_2026_09_26/architecture_patch.md:1-50
+  - context_compass/artifacts/class_binding_annotations_fix_20260926/scripts/close_lane.py:1-140
+  IMPACT: melder_1 moves to the next lane (self-referencing constructor message).
+  NEXT: none (closed).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
+CLOSED 2026-09-26T16:32:21Z: owner accepted; ticket, patch lane, boards and commit list synced.
 IN REVIEW 2026-09-26T16:28:45Z: class binding profiles keep TYPE_CHECKING-named annotations as source text
 (NameError fallback to SignatureReflection.class_annotations, the ClassInspector read); affected classes get a new
 id once. Tests, docs, graph and release note done; suites green on a worktree sync (failures identical to base).

@@ -82,6 +82,12 @@ O(spells^2) step on the cold conjure path. It now hashes them once per conjure. 
 
 - **No change in what gets compiled.** The analysis is rebuilt exactly when it was before, and creation
   caches are not invalidated.
+- **Phase 3 no longer builds a per-spell graph object.** The local frame of every spell (its resolved
+  dependencies, ascending by id, then the spell itself) is computed as id rows; the per-spell
+  `DirectedAcyclicWorkGraph` that carried the same information, with its lock, node objects and sort, is
+  gone. Phase 3 is about a third faster per conjure on the 29-spell benchmark. `Spell.dependency_graph`
+  is now always `None` (kept for shape); `Spell.dependencies`, `Spell.resolution_frame` and the
+  registered local topology carry the frame. The Phase-4 warning `MISSING_DEPENDENCY_GRAPH` is retired.
 
 ## Creation-cache signatures are the same in every process
 

@@ -1,0 +1,5 @@
+RAISED melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError
+Spellbook validation failed. Broken spells: Node.
+Node:
+  - Spell 'Node' depends on itself: its constructor parameter 'parent' resolves to this same spell. Remove that parameter or give it a default. [SELF_DEPENDENCY]
+1 warning not shown (warnings never block conjure); conjure(validation_warnings=True) logs them.

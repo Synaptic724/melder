@@ -301,3 +301,26 @@ def test_broken_spells_attribute_is_kept_as_supplied() -> None:
     error = SpellbookValidationError(spells, system_diagnostics=[_diag("cycle_detected", "Cycle.")])
 
     assert error.broken_spells is spells
+
+
+def test_circular_dependency_hidden_when_self_dependency_reported() -> None:
+    """
+    Purpose:
+        Report a spell that depends on itself once.
+    Contract:
+        CIRCULAR_DEPENDENCY (and the binding-key cycle behind it) is hidden when SELF_DEPENDENCY is present in
+        the same block; CIRCULAR_DEPENDENCY alone is still shown.
+    """
+    looped = _spell(name="Node", issues=[
+        _issue("SELF_DEPENDENCY", "Node depends on itself."),
+        _issue("CIRCULAR_DEPENDENCY", "Node cycle."),
+        _issue("BINDING_RESOLUTION_CYCLE", "Node key cycle."),
+    ])
+    cycle = _spell(name="CycleA", spell_id="spell-2", issues=[_issue("CIRCULAR_DEPENDENCY", "Two-spell cycle.")])
+
+    message = str(SpellbookValidationError([looped, cycle]))
+
+    assert "Node depends on itself. [SELF_DEPENDENCY]" in message
+    assert "Node cycle." not in message
+    assert "Node key cycle." not in message
+    assert "Two-spell cycle. [CIRCULAR_DEPENDENCY]" in message

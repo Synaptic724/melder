@@ -10,7 +10,7 @@
 - Agent Name: melder_2
 - Priority: p1
 - Created: 2026-09-26T15:43:24Z
-- Updated: 2026-09-26T16:29:58Z
+- Updated: 2026-09-26T16:50:28Z
 
 ## Objective
 A per-scope-cycle cost map for Melder on the real-world gauntlet - where the time and the calls go in outer and
@@ -339,6 +339,122 @@ ranked candidate list (expected gain, risk, files, owning lane). No production o
   IMPACT: Refresh the VM copy from the device tree before reading or prototyping the meld and lifecycle paths;
     any trim in conduit.py, meld.py, conduit_meld.py or spellspace_meld.py needs a mailbox NOTICE first.
   NEXT: Refresh the VM copy (src/ and benchmarks/ from the device tree), then read the scope-lifecycle path.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T16:33:35Z
+  TYPE: FACT
+  CLAIM: Scope-lifecycle path read in full on the refreshed copy (conduit.py identical to the device tree). One
+    anonymous cycle is 23 Python functions and 19 C calls. Its 5 RLock pairs: root Conduit._lock
+    (_link_new_lesser_under_lock) and root ConduitWard._lock (_link_lesser_conduit), both shared by every gauntlet
+    thread on every cycle; then the lesser's own Conduit._lock (cleanup), its Creations._lock (reset_for_pool) and
+    its ward lock (_detach_for_pool), which are thread-confined. Every cycle also writes the root ward's
+    _lesser_conduits dict (insert at link, pop at detach, the pop under the CHILD ward lock) and the root pool
+    deque, both shared across threads. Earlier trims are already in place: SpellSpace exit takes no lock
+    (reset_for_pool_unlocked), drain() does not allocate, the hook and logger checks are single bools, and there is
+    no per-cycle wrapper object. What remains removable without a contract change is call depth: about 8 thin
+    helpers (acquire_untracked, push, pop_expected, recycle_from_managed_context, reset_for_pool_unlocked,
+    _cleanup_spellspaces_for_pool, drain, return_lesser_conduit). Removing the root lock pair or the shared
+    registry write would change the parent-cleanup ordering contract. How much of space-exit and lesser-cleanup
+    time with melds is deallocation of the scope's objects when the stores clear is UNKNOWN.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:566-706
+  - src/melder/aether/conduit/conduit.py:1201-1235
+  - src/melder/aether/conduit/conduit.py:2539-2796
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:382-465
+  - src/melder/aether/conduit/conduit_ward/conduit_ward.py:1176-1219
+  - src/melder/aether/conduit/conduit_pool.py:106-161
+  - src/melder/aether/conduit/spell_space/spell_space.py:213-408
+  - src/melder/aether/conduit/spell_space/spell_space_pool.py:185-288
+  - src/melder/aether/conduit/spell_space/spell_space_thread_state.py:187-302
+  - src/melder/aether/conduit/creations/creations.py:1009-1105
+  IMPACT: Local call flattening can save roughly 0.2-0.4 us of the ~1.9 us lifecycle (an estimate, not yet
+    measured). The cross-thread cost of the shared root lock, dict and deque cannot be measured on 2 vCPUs, and
+    changing it needs patch docs. The meld path is the larger remaining target: 4-5 cached melds at ~0.32 us each.
+  NEXT: Measure the deallocation share of space exit and lesser cleanup, then read the cached-meld path after
+    melder_0's 16:17Z change (SpellSpace.meld -> SpellSpaceMeld fast door, Conduit.meld -> ConduitMeld).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:43:20Z
+  TYPE: MEASURE
+  CLAIM: Largest lever so far is cross-thread refcounting, not call count. On 3.14t, a worker-thread load of an
+    object owned by a LIVE other thread costs ~9 ns extra (4 loads: 54.6 vs 19.7 ns). An object from an exited
+    thread (19.7 ns) or with deferred refcounting (18.1 ns) costs nothing extra. Melder conjures on the main
+    thread, so every warm meld and plan step touches main-owned kernel objects: Spells, contexts, the spellbook,
+    root meld and store dicts, executor cells and tuples. A pooled shell built by live main costs +19-22% per cycle
+    (a cached lesser meld +39-43%); shells built by exited threads cost nothing, and that is the gauntlet's steady
+    state. Experiment only (probe_deferred.py, no src change): after warm-up, deferred refcounting via ctypes
+    (PyUnstable_Object_EnableDeferredRefcount, CPython 3.14) on the melder-owned graph from the root conduit and
+    spellbook, with user instances, types, modules and module globals skipped. Fresh worker threads, 3 x 3,000
+    cycles x 3 rounds: request 15.8-16.1 -> 10.8 us (-32%), worker_a 11.8-11.9 -> 8.4 (-29%), worker_b 10.5-10.8
+    -> 8.0 (-25%). Two concurrent threads: request 18.8 -> 12.8, worker_a 13.2 -> 9.9. By scope: kernel instances
+    alone give -9 to -18%; adding dict/list/tuple/set gives -20 to -23%; adding functions and cells gives the full
+    gain. The walk touches ~13k objects, defers ~7.2k, and takes ~18 ms. One 3-thread gauntlet pair on the VM
+    (300 iterations, noisy): melder active cycles/s +22-31%.
+  EVIDENCE:
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/vm_runs/deferred_refcount_experiment.txt:1-24
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/probes/probe_deferred.py:1-75
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/probes/probe_owner.py:1-52
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/probes/gauntlet_deferred.py:1-47
+  IMPACT: This explains most of melder_0's worker-vs-main gap (402 vs 188 ns) and is worth roughly -25 to -32% of
+    the scope cycle on worker threads, more than P1. It is also a design decision: ctypes into an unstable CPython
+    3.14 API, memory for deferred objects reclaimed only by the GC, a no-op on GIL builds, and chokepoints in
+    other lanes' files (conjure, hydration, pooled shells, fast-door entries).
+  NEXT: Decision request to the owner: implement free-threaded deferred refcounting behind patch docs (chokepoints
+    and files named), or not; meanwhile check the tests for weakref/refcount-release assertions.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-26T16:47:32Z
+  TYPE: MEASURE
+  CLAIM: How much of the deferral gain reaches the gauntlet. (1) Scope, 8 interleaved processes per variant, fresh
+    worker thread: kernel instances only -10 to -15%; plus functions, cells and tuples -9 to -20%; plus dicts,
+    lists and sets that hold no user object at walk time ("userfree") -21 to -26%; everything -21 to -29%.
+    "userfree" keeps nearly all of the gain without deferring containers that already hold user objects.
+    (2) Exposure: in the real 3-thread gauntlet, the pooled lesser shell is owned (object-header ob_tid) by
+    another thread in 63-71% of cycles, and so is its spellspace. New threads that reuse an exited thread's id
+    inherit its objects, which is why exited-thread shells measured "free". (3) Real gauntlet with
+    DI_GAUNTLET_THREADS=1 (the shell is effectively always owned, so only the main-owned kernel remains):
+    userfree deferral, walked after setup and again after iteration 1, gives active cycles/s +4 to +10%
+    (102-106k -> 109-112k). hot_scopes/s is dominated by per-iteration thread spawn and is within noise. The
+    3-thread VM gauntlet stays too noisy to judge.
+  EVIDENCE:
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/vm_runs/deferred_scope_and_ownership.txt:1-55
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/vm_runs/gauntlet_threads1_deferred_ab.txt:1-7
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/probes/gauntlet_ownership.py:1-51
+  IMPACT: Rough gauntlet estimate: about two thirds of cycles gain ~25% and the rest ~5%, so roughly -18% per
+    3-thread cycle on the VM. The owner machine runs threads on separate cores, where contended atomics cost more,
+    so the gain could be larger; only an owner run can say. The "userfree" rule is the shippable shape.
+  NEXT: Check the suites for release-timing assumptions (weakref and getrefcount tests); then write the decision
+    request with the chokepoint and file list.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:50:28Z
+  TYPE: PLAN
+  CLAIM: Next is a VM-copy prototype P3 (no tree edit) of deferred refcounting as a library feature, so the owner
+    decides from validated numbers and a suite run. Facts on 3.14.7t: module-level functions and classes are
+    already deferred; closures built at runtime (every hydrated executor and step function) and all instances
+    and dicts are not. sys.intern makes a str immortal in place, which adds ~3-5% on top. Shape:
+    (a) new utility melder/utilities/helpers/refcount_deferral.py (RefcountDeferral), free-threaded CPython
+    only, resolved once as a class attribute and a no-op elsewhere. defer_graph(*roots) is a breadth-first walk
+    with one gc.get_referents call per level, using the "userfree" rule: melder instances, functions, methods and
+    cells, plus containers that hold no user object. It never enters modules, code objects, module globals, types
+    or user instances, and descends only through roots and newly deferred objects. (b) Chokepoints: end of
+    Spellbook conjure and _conjure_existing_conduit (spellbook, conduit), each hydrator's hot-door publication
+    (the context), new pooled lesser and spellspace shells, and fast-door entry tuples (a single defer).
+    (c) Validate on the VM copy: the full suites on 3.14t and GIL (GIL builds get a no-op), probe_deferred.py
+    and probe_steps.py A/B, and the setup-time delta.
+  EVIDENCE:
+  - context_compass/artifacts/gauntlet_runtime_speed_20260926/vm_runs/deferred_scope_and_ownership.txt:1-55
+  - src/melder/aether/conduit/meld/conduit_meld.py:585-620
+  - src/melder/aether/conduit/meld/spellspace_meld.py:547-582
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:205-235
+  IMPACT: Turns a probe-only win into a candidate with files, tests and costs named. Tree edits still wait for the
+    owner's decision, patch docs and NOTICEs to the file owners (melder_0 for the meld files and conduit.py).
+  NEXT: Read the hydrator publication sites and Spellbook conjure's tail in full, then write the utility on the
+    VM copy.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 

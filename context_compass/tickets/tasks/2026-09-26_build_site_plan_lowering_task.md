@@ -10,7 +10,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T12:29:50Z
-- Updated: 2026-09-26T16:31:17Z
+- Updated: 2026-09-26T16:54:01Z
 
 ## Objective
 Overrides run through per-key-set plans compiled from the site graph: supplied dependencies and everything
@@ -1365,16 +1365,144 @@ the empty key set; the normal lane switches to it only when it meets the parity 
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T16:36:56Z
+  TYPE: FACT
+  CLAIM: S2b discovery. (1) B2 waste is real today: G1 Root(a: A many, s: S upc(x: X many)) and G2 (S reached through
+    P and Q) build X on every warm meld and drop it (warm counts X=1, S=0). (2) A shared site's transient child has one
+    site however many paths reach the shared site (G2: X is (X, 5) once), so a many site has exactly one consumer
+    and multi-consumer sites are always shared. (3) The lowering already passes operands positionally up to the first
+    omitted parameter (`SitePlanEmission._call_arguments`), so P1's lever is in it. (4) Today's generalized normal lane
+    (generalized_manifest_no_overrides_compiler.emit_step_plan_source) is straight-line providers-first with closure
+    aliases; extras: an unrolled transient lane (all-many rows, none registering) and an opt-in singleton warm-tail
+    specialization (`generalized_singleton_specialization_enabled`, default False) whose body and deopt target come
+    from that compiler. (5) Hydration builds the normal inner executor at first meld; creation caches hold manifests,
+    not code, so a hydration-only change needs no cache generation.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/s2b_shape_probe.py:1-103
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:653-720
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:111-315
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:250-340
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:470-476
+  IMPACT: Nesting is well defined (a many site's home is its one consumer's); B2 removes real work on warm melds.
+  NEXT: Record the S2b-1 plan and file list.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:36:56Z
+  TYPE: PLAN
+  CLAIM: S2b in two steps. S2b-1 (this step, override plans only; normal lane unchanged): nested shared misses (design
+    L1/L3, B2) in SitePlanEmission. Placement over kept steps, consumers before providers: the root is top level; a
+    many site lives where its one consumer is built (inside the consumer's miss when the consumer is shared, else the
+    consumer's home); a shared site lives at the lowest context common to all its consumers; a shared site that
+    carries a winning override is pinned to top level, so today's P2 refusal and its build-and-publish stay exactly
+    as they are (a rule under a stored parent is never silently skipped). Each shared site emits an inline hit read at
+    its home and an out-of-line `_miss{i}(meld, ov, c{i}, ...)` that takes the build guard, rechecks, builds the
+    sites homed inside it in step order, constructs, publishes and returns; outer values arrive as arguments
+    (`instance_results` in dict mode, `args` when read, `many_store` recomputed per function). Warm hits unchanged;
+    a stored shared site's children are no longer built. S2b-2 (next): normal lane on the lowering's empty-key-set
+    plan for both families (hydrators and runtime), measured against today's inner executors (parity gate), with
+    the transient lane and opt-in specialization kept or ported by measurement; separate plan note and file list.
+    FILES (S2b-1): src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py;
+    tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py;
+    tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py; code-description patch.
+  EVIDENCE:
+  - artifacts/melder_override_design_20260926/design_v2.md:124-146
+  - artifacts/melder_override_design_20260926/design_v2.md:316-330
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:870-940
+  IMPACT: Override plans on graphs with shared sites stop building discarded children; S2b-2 reuses the same emitter.
+  NEXT: Update the code-description patch, then implement on a fresh VM copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:49:30Z
+  TYPE: MEASURE
+  CLAIM: S2b-1 tests written (apply_s2b1_test_edits.py) and applied on ~/work/melder_s2b: seven unit contracts (stored
+    shared site skips its children; a shared site needed only inside T's miss is read there, stored T skips it, a
+    stored S is reused by rebuilt P/Q; sibling misses receive one outer S; a supplied rule under a stored parent keeps
+    P2 and is built and published when S is absent; T's guard is held while S builds inside it and a warm meld takes
+    no lock; a contract-payload step inside a miss reads its inner many and the outer shared Z by key; a
+    disposal-bearing many inside a miss registers in the innermost scope) and one component contract (Keeper(store:
+    Store upc(leaf: Leaf many)); a warm override meld builds only Keeper, fresh and cached). Both files: 56 passed on
+    3.14t. The same tests on the unchanged baseline (melder_s2bbase, restored after): 7 failed (the five B2/placement
+    unit tests and both component variants), 49 passed - the sibling and pinned tests pass on both by design (they pin
+    behavior that must not change).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s2b1_test_edits.py:1-376
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s2b1_edits.py:1-429
+  IMPACT: The tests fail for the regression S2b-1 removes and pass for the behavior it keeps.
+  NEXT: Full suites on ~/work/melder_s2b on 3.14t and GIL.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T16:52:30Z
+  TYPE: CONFLICT
+  CLAIM: Design v2 L3/section 7 (a shared miss holds its guard across recheck, CHILDREN, construction and
+    publication; risk R2) contradicts a pinned contract. Full 3.14t suites on ~/work/melder_s2b: unit spellbook 2189,
+    component spellbook 773, integration spellbook 579+2s+2xf+2xp, conduit 268, component aether 1204+1xf all pass,
+    but multithreading fails per_conduit-root-meld-override (the baseline twin passes it): thread A melds the upc
+    consumer with an override; the unique service's miss now sits inside the consumer's miss and takes the service's
+    Spell lock before building its many DeadlockLeaf, so A parks in that constructor holding the Spell lock and the
+    competitor can never enter the service build ("thread A was never released"). The harness says every case must
+    complete and forbids loosening it. The only compliant path: a miss builds its children BEFORE taking its guard
+    (recheck, construct, publish stay under it). That keeps B2 (the hit read at the site's home still skips the
+    children on warm melds) and today's locking (a plan holds at most one build lock, only across a site's own
+    construction; R2 retired), at the cost of a cold race building and dropping the loser's children, which
+    today's straight-line lowering already does on every cold race.
+  EVIDENCE:
+  - tests/integration/melder/multithreading/test_multithreading_meld_lock_order_deadlock.py:58-64
+  - tests/integration/melder/multithreading/test_multithreading_meld_lock_order_deadlock.py:287-296
+  - context_compass/artifacts/melder_override_design_20260926/design_v2.md:134-137
+  - context_compass/artifacts/melder_override_design_20260926/design_v2.md:316-330
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s2b1_edits.py:332-332
+  IMPACT: S2b-1 as designed would reintroduce a lock hazard class the 2026-09-25 fix removed (user code in a child
+    constructor running under a parent's build lock); S2b-2 would spread it to normal melds.
+  NEXT: Emit children before the guard in _emit_miss; update the class contract, the code-description patch
+    (step 8, invariants) and the guard-order unit test; rerun all suites.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T16:52:30Z
+  TYPE: FACT
+  CLAIM: tests/experimentation/test_melder_creation_overrides_performance.py::test_melder_override_matrix_contracts
+    [solo] fails on the baseline twin too (device state), so it is not S2b-1: it follows the 16:28Z solo benchmark
+    change in this lane. Cause UNKNOWN until read.
+  EVIDENCE: context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_solo_override_edits.py:1-113
+  IMPACT: A regression from this lane is on the device; it must be fixed with S2b-1 or separately.
+  NEXT: Read the matrix contract test after the S2b-1 guard fix.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T16:54:01Z
+  TYPE: FACT
+  CLAIM: The [solo] matrix failure is this lane's: `_root_inputs` in the experimentation override matrix still maps
+    SoloRootA to no inputs (`return {}`), so `python_root_only` calls `SoloRootA()` and raises "missing 1 required
+    positional argument: 'leaf'" since the 16:28Z benchmark gave the root a `leaf` parameter. The module docstring
+    also still calls the benchmark's solo an existing-singleton case. Fix (PLAN, file list):
+    tests/experimentation/test_melder_creation_overrides_performance.py only - `_root_inputs` returns
+    `{"leaf": root.leaf}` for SoloRootA (so solo gets the root_one/root_args cases like the other graphs) and the
+    docstring sentence is corrected; applied by apply_solo_matrix_test_edits.py. Separately, the S2b-1 guard fix
+    (CONFLICT above) is applied on a fresh ~/work/melder_s2b: lowering unit + component + all 12 lock-order deadlock
+    cases, 68 passed on 3.14t.
+  EVIDENCE:
+  - tests/experimentation/test_melder_creation_overrides_performance.py:135-147
+  - tests/experimentation/test_melder_creation_overrides_performance.py:236-259
+  - tests/experimentation/test_melder_creation_overrides_performance.py:12-16
+  - benchmarks/testing_other_di/test_overrides_all.py:102-110
+  IMPACT: Restores the matrix contract for solo; no library change.
+  NEXT: Write and apply the edit on the work copy, then run all suites on 3.14t and GIL.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 In the device tree, uncommitted: S3a (key-set override plans), S3b-1/S3b-2 (old override lane, legacy codec and
 fallback family retired; cache generation 14), S2a (plans read constants as globals), the override fast door, the
-Conduit.meld id-lane trim, the benchmark fix (owner file) and the existing-object fast path (entries carry an
-existing-object flag; flagged warm hits return `user_created_object` without the door). Open with the owner: the
-solo benchmark definition (keep existing-object, plain construction, or a new one-parameter graph for all libraries).
-Next: S2b - empty-key-set plans for the normal lane behind the parity gate (plan, patch docs and file list first;
-melder_2's positional-argument lever applies). Later: S4, S5, S6 (docs, owner-approved asset rebuild, release note;
-retire the bullet at release_docs/next_version_release.md:42-45). Known unrelated failures: crystallizer
-file_backed_morph x4; build assets stamped 0.2.56 vs package 0.2.57.
+Conduit.meld id-lane trim, the existing-object fast path (entries carry an existing-object flag), the solo benchmark
+on a real override, and version 0.2.59 with its release-note sections. S2b is in this lane (owner, 16:31:17Z).
+S2b-1 (nested shared misses in override plans) is implemented on the VM work copy ~/work/melder_s2b (twin
+~/work/melder_s2bbase) via apply_s2b1_edits.py, 1470 passed on 3.14t and GIL; next are its new unit/component tests,
+full suites, then --check and apply to the device. S2b-2 (normal lane on empty-key-set plans, parity gate) follows
+with its own plan note and file list. Later: S4, S5, S6 (docs, owner-approved asset rebuild, release note). Known
+unrelated failures: crystallizer file_backed_morph x4; asset-stamp test (assets 0.2.56 vs package 0.2.59).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

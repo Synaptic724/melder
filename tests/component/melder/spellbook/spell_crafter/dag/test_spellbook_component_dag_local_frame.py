@@ -4,9 +4,6 @@ import tests.component.melder.spellbook.compiler_test_helpers as compiler_test_h
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
-    DirectedAcyclicWorkGraph,
-)
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
@@ -72,11 +69,12 @@ def _get_spell_by_version_id(spellbook: Spellbook, spell_id: str):
 def test_component_local_frame_dag_records_param_metadata_for_dependencies() -> None:
     """
     Purpose:
-        Validate local-frame DAG edges record param metadata for dependencies.
+        Validate the local frame rows record each dependency under its constructor parameter.
     Contract:
-        - Root node incoming params map dependencies to constructor names.
-        - Dependency nodes list the root under the same param name.
-        - Plain parameters do not appear in the DAG edge metadata.
+        - The resolution frame lists the dependencies ascending by id, then the root last.
+        - `Spell.dependencies` holds exactly the resolved dependency ids.
+        - The registered topology maps each DI parameter to its dependency spell id.
+        - Plain parameters resolve no dependency; no per-spell graph object is built.
     Returns:
         None.
     """
@@ -140,24 +138,19 @@ def test_component_local_frame_dag_records_param_metadata_for_dependencies() -> 
         compiler_test_helpers.run_phase_symbolic_graph(spell)
         compiler_test_helpers.run_phase_local_frame(spell)
 
-        dag = spell.dependency_graph
-        assert isinstance(dag, DirectedAcyclicWorkGraph)
-
         root_id = spell.spell_index.selected_spell_id
-        root_node = dag.get_node(root_id)
-        assert root_node is not None
+        assert spell.dependency_graph is None
+        assert spell.resolution_frame.ordered_node_ids == sorted([service_id, config_id]) + [root_id]
+        assert set(spell.dependencies) == {service_id, config_id}
 
-        service_node = dag.get_node(service_id)
-        config_node = dag.get_node(config_id)
-        assert service_node is not None
-        assert config_node is not None
-
-        assert root_node.incoming_params[service_node] == "service"
-        assert root_node.incoming_params[config_node] == "config"
-        assert set(root_node.incoming_params.values()) == {"service", "config"}
-
-        assert root_node in service_node.children_by_param["service"]
-        assert root_node in config_node.children_by_param["config"]
+        topology = spellbook._spell_system_states.get_local_topology(spell.spell_index)
+        assert topology is not None
+        (service_socket,) = topology.get_sockets_for_param("service")
+        (config_socket,) = topology.get_sockets_for_param("config")
+        assert service_socket.target_spell_ids == (service_id,)
+        assert config_socket.target_spell_ids == (config_id,)
+        (count_socket,) = topology.get_sockets_for_param("count")
+        assert count_socket.target_spell_ids == ()
     finally:
         spellbook.cleanup()
 
@@ -165,10 +158,10 @@ def test_component_local_frame_dag_records_param_metadata_for_dependencies() -> 
 def test_component_local_frame_dag_supports_collection_dependencies() -> None:
     """
     Purpose:
-        Validate collection dependencies register multiple incoming edges.
+        Validate collection dependencies register every implementation as a dependency.
     Contract:
-        - Each resolved service spell is registered as a parent of the root.
-        - All incoming params map to the same collection parameter name.
+        - Each resolved service spell appears in the frame order and in `Spell.dependencies`.
+        - The one collection socket targets every implementation.
     Returns:
         None.
     """
@@ -223,25 +216,16 @@ def test_component_local_frame_dag_supports_collection_dependencies() -> None:
         compiler_test_helpers.run_phase_symbolic_graph(spell)
         compiler_test_helpers.run_phase_local_frame(spell)
 
-        dag = spell.dependency_graph
-        assert isinstance(dag, DirectedAcyclicWorkGraph)
         root_id = spell.spell_index.selected_spell_id
-        root_node = dag.get_node(root_id)
-        assert root_node is not None
+        assert spell.dependency_graph is None
+        assert spell.resolution_frame.ordered_node_ids == sorted([service_id, named_id]) + [root_id]
+        assert set(spell.dependencies) == {service_id, named_id}
 
-        service_node = dag.get_node(service_id)
-        named_node = dag.get_node(named_id)
-        assert service_node is not None
-        assert named_node is not None
-
-        incoming_values = {
-            root_node.incoming_params[service_node],
-            root_node.incoming_params[named_node],
-        }
-        assert incoming_values == {"services"}
-
-        assert root_node in service_node.children_by_param["services"]
-        assert root_node in named_node.children_by_param["services"]
+        topology = spellbook._spell_system_states.get_local_topology(spell.spell_index)
+        assert topology is not None
+        (services_socket,) = topology.get_sockets_for_param("services")
+        assert services_socket.is_collection is True
+        assert set(services_socket.target_spell_ids) == {service_id, named_id}
     finally:
         spellbook.cleanup()
 

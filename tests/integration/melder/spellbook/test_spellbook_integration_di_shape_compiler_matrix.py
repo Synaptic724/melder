@@ -670,7 +670,6 @@ def test_phase4_self_dependency_reports_self_and_cycle() -> None:
         spell_id = spellbook.bind(spell=Leaf, existence=Existence.unique, permissions="create")
         spell = _get_spell(spellbook, spell_id)
         spell.dependencies = [spell_id]
-        spell.dependency_graph = object()
         result = system.validate_spell(spell=spell, requirements=None, symbolic_graph=None, resolution_frame=object())
         try:
             codes = {issue.code for issue in result.issues}
@@ -696,23 +695,6 @@ def test_phase4_missing_resolution_frame_errors() -> None:
             result.cleanup()
     finally:
         system.cleanup()
-        spellbook.cleanup()
-
-
-def test_phase4_missing_dependency_graph_warns_not_broken() -> None:
-    """A missing dependency graph is a warning, not a break."""
-    spellbook = _make_spellbook()
-    try:
-        spell_id = spellbook.bind(spell=Leaf, existence=Existence.unique, permissions="create")
-        spell = _get_spell(spellbook, spell_id)
-        ch.run_phase_requirements(spell)
-        ch.run_phase_symbolic_graph(spell)
-        ch.run_phase_local_frame(spell)
-        spell.dependency_graph = None
-        ch.run_phase_validation(spell)
-        assert "MISSING_DEPENDENCY_GRAPH" in _codes4(spell)
-        assert spell.is_broken is False
-    finally:
         spellbook.cleanup()
 
 

@@ -13,9 +13,9 @@ context_compass/system_docs/src_graph.md
 context_compass/system_docs/src_graph_index.md
 release_docs/next_version_release.md
 # Patch lane and ContextCompass records
-context_compass/system_docs/patches/active/class_binding_annotations_2026_09_26/   (2 files, new; moves to completed/ at closure)
+context_compass/system_docs/patches/completed/class_binding_annotations_2026_09_26/   (2 files, new; moved there at closure)
 context_compass/artifacts/class_binding_annotations_fix_20260926/
-context_compass/tickets/tasks/2026-09-26_fix_class_binding_profile_annotations_for_type_checking_names_task.md
+context_compass/tickets/tasks/completed/2026-09-26_fix_class_binding_profile_annotations_for_type_checking_names_task.md   (moved at closure)
 context_compass/attention_board.md
 context_compass/artifact_board.md
 context_compass/mailbox_board.md

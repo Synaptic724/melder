@@ -1,0 +1,2 @@
+RAISED builtins.ValueError
+DagNode cannot depend on itself.

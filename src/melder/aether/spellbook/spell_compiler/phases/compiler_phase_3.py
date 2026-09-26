@@ -33,9 +33,6 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
 from melder.aether.spellbook.spell_compiler.phases.utility import (
     CompilerPhaseUtility,
 )
-from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
-    DirectedAcyclicWorkGraph,
-)
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
     SpellResolutionFrame,
@@ -789,22 +786,19 @@ class CompilerPhase3:
             graph: SpellSymbolicGraph,
             cancellation_event: Optional[CancellationEvent],
             *,
-            return_dependencies: bool = False,
             resolution_pass_cache: Optional[Dict[str, Any]] = None,
-    ) -> Union[DirectedAcyclicWorkGraph, Tuple[DirectedAcyclicWorkGraph, List[str]]]:
+    ) -> Tuple[List[str], List[str]]:
         """
             Internal helper for Phase 3.
             
-            Build the concrete DAG for this Spell's **local frame** and emit
-            constructor topology into SpellSystemStates.
+            Resolve this Spell's **local frame** into id rows and emit constructor
+            topology into SpellSystemStates.
             
             Responsibilities:
-                * Add a DAG node for the root Spell (current SpellIndex version).
                 * For each symbolic dependency:
                       - resolve normal DI shapes via direct Spellbook map iteration,
-                      - add DAG nodes for resolved dependency spells,
-                      - add edges from each dependency node to the root node,
-                        tagging edges with "param_name" and "socket_kind".
+                      - record each resolved dependency spell id as a direct
+                        dependency of the root (this spell).
                 * Track, per constructor socket "(param_name, position)", the
                   concrete dependency spell ids resolved in this phase.
                 * Build a: class:`SpellLocalTopology` from the symbolic graph plus
@@ -812,22 +806,49 @@ class CompilerPhase3:
                 * Call into: class:`SpellSystemStates`:
                       - record direct dependency spell ids, and
                       - register the local topology for this Spell.
+                * Compute the ordered local frame: the distinct dependency ids in
+                  ascending id order, then the root id last. This is the order the
+                  per-spell dependency DAG used to yield (dependencies first, ties
+                  broken by id, root last); the graph object is no longer built.
+            
+            Returns:
+                Tuple[List[str], List[str]]:
+                    ``(ordered_node_ids, dependency_spell_ids)`` where
+                    ``ordered_node_ids`` is the local frame order described above
+                    and ``dependency_spell_ids`` lists the resolved dependency ids
+                    in resolution order (a spell resolved through two sockets
+                    appears twice; callers de-duplicate as needed).
+            
+            Raises:
+                ValueError:
+                    If ``requirements`` or ``graph`` is None.
+                RuntimeError:
+                    If the spell has no bound SpellIndex / current spell id, or
+                    when annotation resolution is ambiguous (see the resolvers).
             
             Important:
                 * This helper does **not** mutate the Spell object. All artifacts
-                  (DAG, topology, dependency ids) remain in these SpellCrafter and
+                  (topology, dependency ids) remain in this SpellCrafter and
                   SpellSystemStates.
-                * If "return_dependencies" is True, it returns a tuple of
-                  "(dag, dependency_spell_ids)"; otherwise it returns only the DAG.
                 * SpellContract sockets take part in the
-                  symbolic graph and topology but do not produce DAG edges or
+                  symbolic graph and topology but do not produce dependency ids or
                   concrete targets at this stage.
                 * Selected non-resolvable definitions produce reference-only
                   OVERRIDE_REQUIRED inputs. Non-resolvable roots retain their own
                   declarations/topology without resolving constructor requirements.
                 * A single typed dependency that no registered spell provides
-                  produces an UNRESOLVED_INPUT socket (no DAG edge, no dependency
-                  id) instead of failing: the constructing meld supplies it.
+                  produces an UNRESOLVED_INPUT socket (no dependency id) instead of
+                  failing: the constructing meld supplies it.
+                * The per-socket target rows carry everything the retired DAG held
+                  (parent id, child id, parameter name; every edge was NORMAL), so
+                  no edge list is kept beside them.
+                * A constructor that takes its own class resolves to the spell
+                  itself. That self-resolution is RECORDED - in the dependency ids,
+                  the socket targets, the registry and `Spell.dependencies` - and
+                  kept out of the ordered frame, so Phase 4's SELF_DEPENDENCY check
+                  refuses the spell through the readable validation report instead
+                  of a Phase-3 abort (owner decision 2026-09-26; the retired DAG
+                  raised ValueError here).
         """
         if requirements is None:
             raise ValueError("requirements must not be None.")
@@ -840,7 +861,6 @@ class CompilerPhase3:
             raise RuntimeError("SpellCrafter has no bound Spell with a SpellIndex.")
 
         root_id = self._get_required_current_spell_id(spell)
-        dag = DirectedAcyclicWorkGraph()
 
         # Pass-scoped candidate index (None -> original scan semantics).
         # Built lazily once per resolution pass; eq-risky pools disable it.
@@ -848,9 +868,6 @@ class CompilerPhase3:
             self._get_candidate_index(spellbook, resolution_pass_cache)
             if spell.resolvable else None
         )
-
-        # Register the root node first.
-        dag.add_node(key=root_id, payload=spell)
 
         # Track all dependency spell IDs for SpellSystemStates.
         dependency_spell_ids: List[str] = []
@@ -867,7 +884,7 @@ class CompilerPhase3:
 
             di_shape = dep.di_shape
 
-            # Only "normal" DI shapes produce concrete DAG edges for now.
+            # Only "normal" DI shapes produce concrete dependency ids for now.
             if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
                 resolved = self._resolve_single_by_annotation(
                     spell,
@@ -885,8 +902,8 @@ class CompilerPhase3:
                 resolved = self._resolve_spellmap_default(spell, spellbook, dep)
             else:
                 # SpellContract / PLAIN and any future shapes
-                # are currently metadata-only at the DAG level. They still
-                # participate in the local topology below.
+                # are currently metadata-only at the dependency level. They
+                # still participate in the local topology below.
                 resolved = {}
 
             key = (dep.param_name, dep.position)
@@ -912,16 +929,10 @@ class CompilerPhase3:
                         )
                     socket_references.setdefault(key, []).append(dep_spell_id)
                     continue
+                # A self-resolution (dep_spell_id == root_id) is recorded like any
+                # other dependency; Phase 4 reports it as SELF_DEPENDENCY.
                 dependency_spell_ids.append(dep_spell_id)
                 socket_targets.setdefault(key, []).append(dep_spell_id)
-
-                dag.add_node(key=dep_spell_id, payload=spell_obj)
-                dag.add_dependency(
-                    parent_key=dep_spell_id,
-                    child_key=root_id,
-                    param_name=dep.param_name,
-                    socket_kind=self._socket_kind_for_dep(dep),
-                )
 
         # Snapshot local topology for this spell's constructor.
         topology = self._build_local_topology(
@@ -942,10 +953,12 @@ class CompilerPhase3:
                 topology,
             )
 
-        if return_dependencies:
-            return dag, dependency_spell_ids
-
-        return dag
+        # Local frame order: distinct dependencies ascending by id, root last -
+        # the topological order of the star graph phase 3 used to materialize.
+        # A recorded self-resolution is not a frame node of its own.
+        ordered_node_ids: List[str] = sorted(set(dependency_spell_ids) - {root_id})
+        ordered_node_ids.append(root_id)
+        return ordered_node_ids, dependency_spell_ids
 
     def run(
             self,
@@ -957,15 +970,14 @@ class CompilerPhase3:
             resolution_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Phase 3 - Build the local-frame DAG and constructor topology.
+        Phase 3 - Resolve the local frame and constructor topology.
 
         Responsibilities:
             * Consume the Phase 2 symbolic graph and resolve each socket into
               concrete dependency spell ids.
-            * Build the local constructor DAG
-              (:class:`DirectedAcyclicWorkGraph`) rooted at this spell, where:
-                  - dependency spells are parents,
-                  - this spell is the child/root node.
+            * Compute the ordered local frame rooted at this spell (resolved
+              dependencies first, ascending by id; this spell last) as id rows -
+              no per-spell graph object is built (retired 2026-09-26).
             * Build and register a :class:`SpellLocalTopology` describing the
               constructor sockets (normal sockets and SpellContract sockets)
               and the resolved target spell ids.
@@ -995,7 +1007,7 @@ class CompilerPhase3:
               instead of auto-running earlier phases.
             * Assumes the bound Spell is attached to a Spellbook; direct
               Spellbook map iteration is used for resolution.
-            * Stores the local DAG and direct dependency list on the Spell via
+            * Stores the direct dependency list on the Spell via
               :meth:`Spell._add_build_details`, and keeps a
               :class:`SpellResolutionFrame` on this compiler artifact.
             * Does not return a value; callers rely on:
@@ -1016,25 +1028,17 @@ class CompilerPhase3:
         required_spell_system_states = self._get_required_spell_system_states(
             spell_system_states
         )
-        dag_with_dependencies = self._build_local_frame_dag(
+        ordered_node_ids, dependency_spell_ids = self._build_local_frame_dag(
             spell=spell,
             spellbook=spellbook,
             spell_system_states=required_spell_system_states,
             requirements=artifact._requirements,
             graph=artifact._symbolic_graph,
             cancellation_event=cancel_event,
-            return_dependencies=True,
             resolution_pass_cache=resolution_pass_cache,
         )
-        if not isinstance(dag_with_dependencies, tuple):
-            raise RuntimeError(
-                "SpellCrafter Phase 3 expected a DAG/dependency tuple when return_dependencies=True."
-            )
-        dag, dependency_spell_ids = dag_with_dependencies
 
-        # Topological order of node ids (deps first, then root).
-        ordered_node_ids = dag.collect_dependency_ids()
-
+        # Ordered local frame (deps first, then root) computed as rows.
         artifact._resolution_frame = SpellResolutionFrame(
             spell_id=self._get_required_current_spell_id(spell),
             ordered_node_ids=ordered_node_ids,
@@ -1044,7 +1048,6 @@ class CompilerPhase3:
         unique_dependencies = list(dict.fromkeys(dependency_spell_ids))
         try:
             spell._add_build_details(
-                dag=dag,
                 dependencies=unique_dependencies,
             )
         except AttributeError:

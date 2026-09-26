@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T15:03:58Z
-- Updated: 2026-09-26T16:12:08Z
+- Updated: 2026-09-26T16:47:56Z
 
 ## User Narrative
 As the Melder owner, I want a conjure whose creation cache fully hits to skip the structural and resolution
@@ -88,7 +88,9 @@ rows - measured on the gauntlet before it is trusted.
   tickets/tasks/completed/2026-09-26_author_structural_snapshot_patch_docs_task.md (done 2026-09-26T16:12:08Z)
 - [ ] Task: TASK-2026-09-26-drop-phase3-dag-object-for-id-rows (C-C) - phase-3 DAG object to id and edge rows;
   presence strategy repointed. tickets/tasks/2026-09-26_drop_phase3_dag_object_for_id_rows_task.md (opened 2026-09-26T16:12:08Z)
-- [ ] Task: capture on miss - per-spell phase 1-4 rows beside the executor payload; replayability verdicts;
+- [ ] Task: TASK-2026-09-26-capture-structural-payloads-at-conjure-end - per-spell phase 3-4 rows beside the
+  executor payload; replayability verdicts; world stamp; key; generation 15. tickets/tasks/2026-09-26_capture_structural_payloads_at_conjure_end_task.md
+  (opened 2026-09-26T16:47:56Z). Original line: capture on miss - per-spell phase 1-4 rows beside the executor payload; replayability verdicts;
   world stamp; key extension; generation bump
 - [ ] Task: hydrate on hit - registry replay through the helpers, Spell flags, structural run only for the
   regenerating set, phase-4 rerun rule; 5-7 and the 8-11 load unchanged
@@ -292,6 +294,7 @@ rulings (a)-(d); no edit under src/. Resume from task 1's latest STATE line.
 STATE 2026-09-26T16:07:21Z: task 1 in REVIEW (three patch docs, consumption mapping); design settled; task 2 (C-C) opens
 on owner approval. No src edit yet. Resume from task 1's latest STATE line.
 STATE 2026-09-26T16:12:08Z: task 1 DONE (owner approved); task 2 (C-C) opened and routed. Resume from task 2's latest STATE line.
+STATE 2026-09-26T16:40:10Z: task 2 (C-C) in REVIEW - landed on the device tree, worktree suites green; owner-run B6 pending.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

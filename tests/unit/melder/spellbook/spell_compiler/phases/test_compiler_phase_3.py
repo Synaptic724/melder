@@ -88,10 +88,9 @@ def _make_spell_stub(
     """Build a minimal spell stub for Phase 3 matching and run tests."""
     build_details: list[dict[str, Any]] = []
 
-    def _add_build_details(*, dag: Any, dependencies: list[str]) -> None:
+    def _add_build_details(*, dependencies: list[str]) -> None:
         build_details.append(
             {
-                "dag": dag,
                 "dependencies": dependencies,
             }
         )
@@ -830,7 +829,7 @@ def test_resolve_spellmap_default_raises_on_ambiguous_match() -> None:
 
 
 def test_build_local_frame_dag_skips_unresolved_collection() -> None:
-    """Phase 3 local DAG build should leave collections empty when unresolved."""
+    """Phase 3 local frame build should leave collections empty when unresolved."""
     phase = CompilerPhase3()
     root_spell = _make_spell_stub(
         "root",
@@ -853,7 +852,7 @@ def test_build_local_frame_dag_skips_unresolved_collection() -> None:
         ],
     )
 
-    dag = phase._build_local_frame_dag(
+    ordered_node_ids, dependency_spell_ids = phase._build_local_frame_dag(
         spell=root_spell,
         spellbook=SimpleNamespace(_spell_id_pool={}),
         spell_system_states=spell_system_states,
@@ -862,14 +861,15 @@ def test_build_local_frame_dag_skips_unresolved_collection() -> None:
         cancellation_event=_CancelStub(is_set=False),
     )
 
-    assert dag.collect_dependency_ids() == ["root"]
+    assert ordered_node_ids == ["root"]
+    assert dependency_spell_ids == []
     assert spell_system_states.dependencies_calls == [
         (root_spell.spell_index, [])
     ]
 
 
 def test_build_local_frame_dag_handles_spellmap_default_success() -> None:
-    """Phase 3 local DAG build should create edges for resolved SpellMap defaults."""
+    """Phase 3 local frame build should record resolved SpellMap defaults as dependencies."""
     phase = CompilerPhase3()
     explicit = object()
     root_spell = _make_spell_stub(
@@ -903,7 +903,7 @@ def test_build_local_frame_dag_handles_spellmap_default_success() -> None:
         ],
     )
 
-    dag = phase._build_local_frame_dag(
+    ordered_node_ids, dependency_spell_ids = phase._build_local_frame_dag(
         spell=root_spell,
         spellbook=SimpleNamespace(_spell_id_pool={"dep": dependency_spell}),
         spell_system_states=spell_system_states,
@@ -912,14 +912,15 @@ def test_build_local_frame_dag_handles_spellmap_default_success() -> None:
         cancellation_event=_CancelStub(is_set=False),
     )
 
-    assert "dep-id" in dag.collect_dependency_ids()
+    assert ordered_node_ids == ["dep-id", "root"]
+    assert dependency_spell_ids == ["dep-id"]
     assert spell_system_states.dependencies_calls == [
         (root_spell.spell_index, ["dep-id"])
     ]
 
 
 def test_build_local_frame_dag_ignores_contract_shapes() -> None:
-    """Phase 3 local DAG build should not create edges for SpellContract sockets."""
+    """Phase 3 local frame build should not record dependencies for SpellContract sockets."""
     phase = CompilerPhase3()
     root_spell = _make_spell_stub(
         "root",
@@ -941,7 +942,7 @@ def test_build_local_frame_dag_ignores_contract_shapes() -> None:
         ],
     )
 
-    dag = phase._build_local_frame_dag(
+    ordered_node_ids, dependency_spell_ids = phase._build_local_frame_dag(
         spell=root_spell,
         spellbook=SimpleNamespace(_spell_id_pool={}),
         spell_system_states=spell_system_states,
@@ -950,7 +951,8 @@ def test_build_local_frame_dag_ignores_contract_shapes() -> None:
         cancellation_event=_CancelStub(is_set=False),
     )
 
-    assert dag.collect_dependency_ids() == ["root"]
+    assert ordered_node_ids == ["root"]
+    assert dependency_spell_ids == []
     assert spell_system_states.dependencies_calls == [
         (root_spell.spell_index, [])
     ]
@@ -1005,6 +1007,122 @@ def test_run_phase_local_frame_requires_spell_system_states() -> None:
         )
 
 
+def test_build_local_frame_dag_orders_dependencies_by_id_then_root() -> None:
+    """The local frame lists distinct dependencies ascending by id, then the root last."""
+    phase = CompilerPhase3()
+
+    class _FrameA:
+        pass
+
+    class _FrameB:
+        pass
+
+    root_spell = _make_spell_stub(
+        "root",
+        spell_obj=object(),
+        spellframe=None,
+        spell_name="RootSpell",
+    )
+    dep_a = _make_spell_stub("dep-a", spell_obj=object(), spellframe=_FrameA, spell_name="DepA")
+    dep_b = _make_spell_stub("dep-b", spell_obj=object(), spellframe=_FrameB, spell_name="DepB")
+    spell_system_states = _SpellSystemStatesStub()
+    graph = SpellSymbolicGraph(
+        spell_id="root",
+        dependencies=[
+            _make_dependency(
+                spell_id="root",
+                param_name="second",
+                position=0,
+                di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
+                target_annotation=_FrameB,
+            ),
+            _make_dependency(
+                spell_id="root",
+                param_name="first",
+                position=1,
+                di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
+                target_annotation=_FrameA,
+            ),
+            _make_dependency(
+                spell_id="root",
+                param_name="again",
+                position=2,
+                di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
+                target_annotation=_FrameB,
+            ),
+        ],
+    )
+
+    ordered_node_ids, dependency_spell_ids = phase._build_local_frame_dag(
+        spell=root_spell,
+        spellbook=SimpleNamespace(_spell_id_pool={"dep-a": dep_a, "dep-b": dep_b}),
+        spell_system_states=spell_system_states,
+        requirements=SimpleNamespace(parameters=[]),
+        graph=graph,
+        cancellation_event=_CancelStub(is_set=False),
+    )
+
+    # Resolution order is kept for the dependency ids (a spell reached through
+    # two sockets appears twice); the frame order is the retired DAG's law.
+    assert dependency_spell_ids == ["dep-b", "dep-a", "dep-b"]
+    assert ordered_node_ids == ["dep-a", "dep-b", "root"]
+    assert spell_system_states.dependencies_calls == [
+        (root_spell.spell_index, ["dep-b", "dep-a", "dep-b"])
+    ]
+    topology = spell_system_states.topology_calls[0][1]
+    assert [socket.target_spell_ids for socket in topology.sockets] == [
+        ("dep-b",),
+        ("dep-a",),
+        ("dep-b",),
+    ]
+
+
+def test_build_local_frame_dag_records_self_dependency_out_of_the_frame() -> None:
+    """A spell that resolves itself is recorded as its own dependency and stays out of the frame order."""
+    phase = CompilerPhase3()
+
+    class _RootFrame:
+        pass
+
+    root_spell = _make_spell_stub(
+        "root",
+        spell_obj=object(),
+        spellframe=_RootFrame,
+        spell_name="RootSpell",
+    )
+    spell_system_states = _SpellSystemStatesStub()
+    graph = SpellSymbolicGraph(
+        spell_id="root",
+        dependencies=[
+            _make_dependency(
+                spell_id="root",
+                param_name="me",
+                position=0,
+                di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
+                target_annotation=_RootFrame,
+            ),
+        ],
+    )
+
+    ordered_node_ids, dependency_spell_ids = phase._build_local_frame_dag(
+        spell=root_spell,
+        spellbook=SimpleNamespace(_spell_id_pool={"root": root_spell}),
+        spell_system_states=spell_system_states,
+        requirements=SimpleNamespace(parameters=[]),
+        graph=graph,
+        cancellation_event=_CancelStub(is_set=False),
+    )
+
+    # Recorded everywhere Phase 4 looks; absent from the ordered frame (root once, last).
+    assert dependency_spell_ids == ["root"]
+    assert ordered_node_ids == ["root"]
+    assert spell_system_states.dependencies_calls == [
+        (root_spell.spell_index, ["root"])
+    ]
+    topology = spell_system_states.topology_calls[0][1]
+    assert [socket.target_spell_ids for socket in topology.sockets] == [("root",)]
+
+
 def test_run_builds_resolution_frame_and_updates_topology(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1048,8 +1166,7 @@ def test_run_builds_resolution_frame_and_updates_topology(
 
     assert artifact._resolution_frame is not None
     assert artifact._resolution_frame.spell_id == "root"
-    assert artifact._resolution_frame.ordered_node_ids[-1] == "root"
-    assert "dep" in artifact._resolution_frame.ordered_node_ids
+    assert artifact._resolution_frame.ordered_node_ids == ["dep", "root"]
 
     assert len(root_spell._build_details_calls) == 1
     assert root_spell._build_details_calls[0]["dependencies"] == ["dep"]

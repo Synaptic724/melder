@@ -1,0 +1,7 @@
+# melder_2 VM 2026-09-26 ~17:00Z: real gauntlet, melder only, DI_GAUNTLET_THREADS=1 (one fresh worker thread per iteration), 600 iterations; deferred = userfree walk after spawn_singletons and again after iteration 1
+base: hot_scopes/s=12,478, [melder] lane=request | cycles=6000 active=102,325, 
+deferred: defer: 6523 objects defer: 549 more objects hot_scopes/s=13,608, [melder] lane=request | cycles=6000 active=112,212, 
+base: hot_scopes/s=15,001, [melder] lane=request | cycles=6000 active=104,717, 
+deferred: defer: 6523 objects defer: 549 more objects hot_scopes/s=14,050, [melder] lane=request | cycles=6000 active=109,250, 
+base: hot_scopes/s=14,606, [melder] lane=request | cycles=6000 active=106,362, 
+deferred: defer: 6523 objects defer: 549 more objects hot_scopes/s=14,016, [melder] lane=request | cycles=6000 active=111,349, 

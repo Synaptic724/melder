@@ -465,8 +465,15 @@ class Spell(Cleanable):
         self._activation_hooks: list[Callable[..., Any]] = []
         self._post_hooks: list[Callable[..., Any]] = []
 
-        # Final build-time artifacts
-        self.dependency_graph: Any = None
+        # Final build-time artifacts.
+        # `dependency_graph` is a RETIRED tombstone (2026-09-26): phase 3 no
+        # longer builds a per-spell dependency graph object, so this is always
+        # None. The ordered local frame lives on the compiler artifact
+        # (`resolution_frame.ordered_node_ids`), the direct dependency ids in
+        # `dependencies`, and the per-socket targets in the SpellSystemStates
+        # local topology. The attribute is kept so readers of the old shape do
+        # not fail on lookup; it is deleted with the other slots at cleanup.
+        self.dependency_graph: Optional[Any] = None
         self.dependencies: list[str] = []  # SHA256 spell IDs required for this spell to function
 
         # Foundation artifact home for compiler/build state and validation
@@ -561,13 +568,6 @@ class Spell(Cleanable):
             if not self._spellbook_cleanup:
                 self._spellbook.cleanup_and_remove_spell(self)
                 return
-
-            if self.dependency_graph is not None:
-                try:
-                    self.dependency_graph.cleanup()
-                except Exception:
-                    # Never let cleanup explosions propagate.
-                    pass
 
             if self.profile is not None and isinstance(self.profile, Cleanable):
                 try:
@@ -1471,40 +1471,38 @@ class Spell(Cleanable):
 
     def _add_build_details(
             self,
-            dag: Any,
             dependencies: list[str],
     ) -> None:
         """
         Internal
 
-        Attach static build-time dependency graph details to this spell.
+        Attach the static build-time dependency ids to this spell.
 
-        This is typically invoked by the structural DAG builder after it has
-        analyzed the spell's parameters and constructed a dependency DAG.
+        This is invoked by compiler phase 3 after it has resolved the spell's
+        constructor sockets into concrete dependency spell ids (and, later, by
+        the structural-snapshot hydrate that replays those ids from rows).
+        The per-spell dependency graph object that used to ride beside the ids
+        was retired on 2026-09-26; `dependency_graph` stays `None`.
 
         Contract:
-            - Replaces the current dependency graph/dependencies references.
-            - Invalidates any existing spell-owned CreationContext so the runtime shape is rebuilt against the updated spell structure.
+            - Replaces the current `dependencies` reference with the given list
+              (the caller owns de-duplication and ordering).
+            - Invalidates any existing spell-owned CreationContext so the
+              runtime shape is rebuilt against the updated spell structure.
+            - Runs under the spell lock.
 
         Args:
-            dag:
-                A static DAG representation for this spell's dependency structure.
-                This object is considered immutable at runtime and may expose a
-                `dispose()` method for cleanup.
             dependencies:
                 A list of spell_ids (SHA256 fingerprints) that this spell depends on.
 
         Raises:
             ValueError:
-                If `dag` is None or `dependencies` is None.
+                If `dependencies` is None.
         """
-        if dag is None:
-            raise ValueError("Dependency graph cannot be None.")
         if dependencies is None:
             raise ValueError("Dependencies cannot be None.")
 
         with self._lock:
-            self.dependency_graph = dag
             self.dependencies = dependencies
             self._cleanup_creation_context()
 

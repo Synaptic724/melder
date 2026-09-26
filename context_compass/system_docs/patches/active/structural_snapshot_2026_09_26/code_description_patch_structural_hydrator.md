@@ -7,7 +7,7 @@
 - Status: draft
 - Owner: fable_0 (cowork)
 - Created: 2026-09-26T15:49:37Z
-- Updated: 2026-09-26T15:49:37Z
+- Updated: 2026-09-26T16:39:37Z
 
 ## Control Flow
 1. `conjure` (after configuration freeze, before any phase): `classify(spellbook, caching_system)` builds
@@ -27,7 +27,7 @@
    b. `spell_system_states.register_local_topology(spell.spell_index, SpellLocalTopology(spell_id,
       sockets))` with descriptors rebuilt from the socket rows (enum names -> members);
    c. `artifact._resolution_frame = SpellResolutionFrame(spell_id, phase3.ordered_node_ids)`;
-   d. `spell._add_build_details(dag=None, dependencies=phase3.dependency_ids)` (sets `Spell.dependencies`,
+   d. `spell._add_build_details(dependencies=phase3.dependency_ids)` (sets `Spell.dependencies`,
       invalidates the creation context - the cached context is loaded later at activation as today);
    e. Nexus publication when `spellbook._nexus_publish_enabled`.
 4. Verdict replay (full hit only), per spell: `state = get_by_index_id(spell.spell_index.id)`;
@@ -44,7 +44,8 @@
 8. Capture at conjure end (inside `_activate_conjured_conduit`, before the conjure-end emit): for every
    spell whose phase 3 ran live in this conjure (`misses`, or all spells on paths miss/disabled), build
    `{"key", "world_stamp", "replayable", "phase3", "phase4"}` from the artifact (`_resolution_frame`,
-   the socket descriptors of the registered topology, the C-C edge rows), the lineage state (`validity`,
+   the socket descriptors of the registered topology; no edge rows, they are a socket projection), the
+   lineage state (`validity`,
    `contract_unvalidated` flag; `is_broken` is false by construction) and the pass verdict
    (`replayable` false when the pass ran with the phase-3 candidate index disabled), and
    `caching_system.upsert_structural_payload(spell_id, payload)`; remove structural payloads whose ids

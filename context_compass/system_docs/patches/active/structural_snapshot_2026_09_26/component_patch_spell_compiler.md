@@ -8,7 +8,7 @@
 - Status: draft
 - Owner: fable_0 (cowork)
 - Created: 2026-09-26T15:49:37Z
-- Updated: 2026-09-26T15:49:37Z
+- Updated: 2026-09-26T16:39:37Z
 
 ## Component Purpose and Boundary
 - Current boundary: `SpellbookCreationSystem.conjure` freezes the configuration, runs phases 1-4 over
@@ -30,10 +30,13 @@
   `Spell.dependency_graph`; its only production reader is the resolution-frame presence strategy's
   `is None` warning; `Spell.dependencies`, the resolution frame and the registered topology carry the
   same information (candidates.md C-C; phase_03.md:38-80).
-- After (phase 3, C-C): computes `ordered_node_ids`, `dependency_spell_ids` and DAG EDGE ROWS
-  `(parent_id, child_id, param_name, socket_kind)` from the resolved sockets without DagNodes;
-  `Spell.dependency_graph` is a documented tombstone (`None`, kept for shape); the presence strategy
-  reads the resolution frame; every other write of phase 3 is unchanged.
+- After (phase 3, C-C; LANDED 2026-09-26): `_build_local_frame_dag` returns `(ordered_node_ids,
+  dependency_spell_ids)` without DagNodes - the order is the sorted distinct dependency ids then the root
+  (the star DAG's topological law), a self-dependency raises ValueError before any registry write, and the
+  edge rows are not stored because they are a projection of the topology sockets; `Spell.dependency_graph`
+  is a documented `None` tombstone (cleanup cascade removed, slot kept for shape);
+  `Spell._add_build_details(dependencies)` has no `dag` parameter; the presence strategy checks the frame
+  only (MISSING_DEPENDENCY_GRAPH retired); every other write of phase 3 is unchanged.
 - Before (conjure, structural): phases 1-4 run for every spell on every conjure, including a full
   executor hit (structural wall 3.885ms of the 6.158ms phases 1-7 wall at 29 spells, owner-run
   2026-09-26).
@@ -53,7 +56,7 @@
   `spell_system_states.update_dependencies(spell.spell_index, dependency_ids)`,
   `register_local_topology(spell.spell_index, SpellLocalTopology(spell_id, sockets))`,
   `artifact._resolution_frame = SpellResolutionFrame(spell_id, ordered_node_ids)`,
-  `spell._add_build_details(dag=None, dependencies=dependency_ids)` (invalidates the creation context, as
+  `spell._add_build_details(dependencies=dependency_ids)` (invalidates the creation context, as
   today), Nexus publication when enabled; on path (a) additionally `state.clear_dirty(time.time())` and
   `state.set_validity(...)` with the recorded verdict and flags, and `artifact._is_broken = False`. On path
   (b) phase 4 runs live for every spell instead of replaying verdicts.
@@ -90,7 +93,7 @@
 
 ## Dependency and Ordering Constraints
 1. C-C lands first (rows exist; the DAG reader is gone) - `compiler_phase_3.py`, `spell.py`, one strategy,
-   eight test files.
+   nine test files. LANDED 2026-09-26 (worktree suites green; owner-run pending).
 2. The envelope change and generation 15 are sequenced after melder_0's generation 14 commit; NOTICE before
    touching `caching_system.py`, `spellbook_creation_system.py` or `spellbook.py` (melder_0's S3 lane
    edits the cache path).

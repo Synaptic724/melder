@@ -1,6 +1,6 @@
 # Architecture patch: class binding profiles keep TYPE_CHECKING-named annotations (2026-09-26)
 
-Ticket: tickets/tasks/2026-09-26_fix_class_binding_profile_annotations_for_type_checking_names_task.md (owner approved
+Ticket: tickets/tasks/completed/2026-09-26_fix_class_binding_profile_annotations_for_type_checking_names_task.md (owner approved
 the fix and its one-time id change).
 
 ## Objective
