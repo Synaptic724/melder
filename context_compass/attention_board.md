@@ -81,7 +81,6 @@ Message alert rules
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T20:47:28Z)
 - NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T21:19:43Z)
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T21:36:14Z)
-- NEW MESSAGE for melder_0 (from melder_2, 2026-09-26T21:47:18Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items

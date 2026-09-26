@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-06-13
+- Updated: 2026-09-26
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -20,25 +20,17 @@ three-tier suite with shared bootstrap and shared runtime harness layers:
 The suite also includes:
 - shared top-level helpers in `tests/`
 - deterministic fixture/mocks under `tests/mocks/`
+- a locally collected experimentation tree under `tests/experimentation/`
+  (under `testpaths`, outside the three tiers CI runs)
 
 ## Indexing
-This document is AUTHORED. Its only generated companion is
-`tests_architecture_index.md`, rebuilt in the SAME pass as any edit:
+This document is AUTHORED. Its only generated companion is its index
+(`tests_architecture_index`), rebuilt in the SAME pass as any edit by the
+documentation tooling that maintains these documents. The commands live with that
+tooling, not here: this document ships with the code and the tooling does not.
 
-```bash
-python tools/system_documents/index_document.py \
-    --doc system_docs/tests_architecture.md
-```
-
-Consume it by slicing rather than reading this document whole, and verify before
-trusting a range:
-
-```bash
-python tools/system_documents/index_document.py \
-    --doc system_docs/tests_architecture.md --slice "<section name>"
-python tools/system_documents/index_document.py \
-    --doc system_docs/tests_architecture.md --check
-```
+Consume it by slicing a named section rather than reading it whole, and verify the
+index proof (line count, line ending, content hash) before trusting a range.
 
 The index was STALE for an extended period before 2026-08-02 - 115 recorded lines
 against a live 386 - which means every range it offered was wrong while still
@@ -129,13 +121,25 @@ If not evidenced => UNKNOWN.
 UNKNOWN items must remain explicitly marked until the relevant source is read.
 
 ## Unknowns
-- UNKNOWN: external CI shard/split behavior is not documented here.
-  Why it matters: a future reader may otherwise assume the local pytest layout
-  is the whole execution topology.
-  Local evidence boundary: this checkout has no in-repo `.github/` workflow
-  config, so there is no local CI topology to cite here.
-  Where to investigate: external CI configuration outside this checkout.
-  Current status: blocked on external evidence.
+- RESOLVED 2026-09-26 (was UNKNOWN: external CI shard/split behavior, blocked while
+  the checkout had no in-repo `.github/` workflow config). CI now lives in the
+  repository and does not shard: `.github/workflows/test-runtime.yml` runs
+  `.github/scripts/run_runtime_tests.py`, which runs `tests/unit`,
+  `tests/component` and `tests/integration` in ONE pytest process per OS/Python
+  cell. See `## System Boundary and External Interfaces`.
+- UNKNOWN: which Python minors a given CI run tested.
+  Why it matters: the matrix is discovered at run time (every stable free-threaded
+  minor at or above the `requires-python` floor, on three runners), so no file in
+  the tree records the versions a run used.
+  Where to investigate: the `runtime-python-matrix-*` artifact of that run.
+  Current status: by design; recorded per run, not in the tree.
+- UNKNOWN: whether the six tracked `bundle.json` files under
+  tests/unit/melder/utilities/_caching_system_tmp_load_*/ are fixtures or leftovers.
+  Why it matters: no current test references those directories (the caching tests
+  that write cwd-relative directories use other names, and newer ones use
+  `tmp_path`), so they are either dead fixtures or committed droppings.
+  Where to investigate: `tests/unit/melder/utilities/test_caching_system.py` history.
+  Current status: raised to the owner; not changed.
 
 ## System Context (C4)
 The test system's actors and boundary, which are NOT the runtime's:
@@ -157,6 +161,23 @@ The test system therefore has ONE inbound edge (the runner), ONE outbound edge
 ## System Boundary and External Interfaces
 Primary test entrypoint:
 - pytest, configured through `[tool.pytest.ini_options]` in `pyproject.toml`
+
+CI entrypoint (verified 2026-09-26 against the files named):
+- `.github/scripts/run_runtime_tests.py`, called by `.github/workflows/test-runtime.yml`
+  (itself called by `.github/workflows/ci.yml` for pull requests). It calls
+  `pytest.main` with `-q tests/unit tests/component tests/integration` and a JUnit
+  report, adds `--cov=melder --cov-branch` when a coverage report is requested, and
+  raises before AND after the run unless the process is Python 3.14+ built
+  free-threaded with the GIL off. `tests/experimentation/` is therefore collected by
+  a local `pytest` (it sits under `testpaths`) and never by CI.
+- Matrix: `.github/scripts/python_runtime_matrix.py` discovers every stable
+  free-threaded Python minor at or above the `requires-python` floor for
+  ubuntu-latest (x64), windows-latest (x64) and macos-latest (arm64). Each cell
+  installs locked test dependencies (`uv sync --locked --group test`) and runs with
+  `PYTHON_GIL=0`. Coverage uploads only after every cell reported, and an upload
+  failure does not fail the run.
+- Nothing in the repository runs the GIL-enabled posture. Lanes that need it run the
+  suites by hand with `PYTHON_GIL=1` on the same interpreter.
 
 Verified test-runner configuration:
 - `testpaths = ["tests"]`
@@ -225,6 +246,12 @@ The test tree broadly mirrors the production tree:
   `spellbook`, and `utilities`
 - `tests/integration/melder/aether`, `conduit`, `crystallizer`,
   `live_sim`, `multithreading`, `mutation_research`, and `spellbook`
+- `tests/unit/` also holds three trees that test repository tooling, not `melder`:
+  `github_workflows` (the CI scripts, loaded by path through their own conftest),
+  `llm_support` (the whole-repository text-bundle builder) and
+  `architecture_and_design` (the architecture-docs tool)
+- `tests/experimentation/` holds 33 `test_*.py` experiment and probe modules beside
+  the synthetic-module benches; a local `pytest` collects them, CI does not
 
 The most important recent integration addition is the dedicated
 `tests/integration/melder/aether/rift/` harness layer:
@@ -239,10 +266,18 @@ The most important recent integration addition is the dedicated
 - `pytest` is the only entrypoint, configured entirely through
   `[tool.pytest.ini_options]` in `pyproject.toml`. There is no `pytest.ini`,
   `tox.ini` or `setup.cfg` in this repository, so that block is the single
-  source of runner truth.
+  source of runner truth. The CI driver `.github/scripts/run_runtime_tests.py` is a
+  thin `pytest.main` wrapper, not a second runner: it adds tier selection,
+  JUnit/coverage output and the free-threading gate below.
+- GUARDRAIL - FREE THREADING (CI): the driver raises before and after pytest unless
+  the interpreter is 3.14+, built free-threaded and running with the GIL disabled,
+  so an import or plugin that re-enables the GIL fails the run instead of passing
+  on the wrong runtime.
 - GUARDRAIL - IMPORT PATH: the root conftest inserts BOTH `src/` and the project
   root into `sys.path`. The second insertion is the non-obvious one: the tests
-  tree is a NAMESPACE PACKAGE with no `__init__.py` anywhere, so
+  tree is a NAMESPACE PACKAGE - none of its test directories has an
+  `__init__.py`; the 57 that exist belong to fixture packages under `tests/mocks/`
+  and to packages the experimentation benches generate - so
   `import tests.mocks...` and the `tests/_*_support` modules resolve only when
   the project root is importable. `python -m pytest` gets that free from the
   cwd; a bare `pytest` does not.
@@ -252,6 +287,12 @@ The most important recent integration addition is the dedicated
 - GUARDRAIL - SINGLETON RESET: runtime-heavy tests reset singleton state rather
   than inheriting it. `Aether` is a process singleton, so without this a test
   file would silently depend on whichever file ran before it.
+  A reset BOOTS NOTHING: `_reset_singleton_for_tests()` cleans the instance and
+  clears the bookkeeping, and constructs no new world. `Spellbook`, `CommandSystem`
+  and `StaticFrameViewer` hold class-level `_aether` references bound at import, and
+  `Spellbook()` asks for the Nexus that an Aether boot builds. A fixture that
+  resets must therefore boot `Aether()` again and rebind the class references its
+  tests use, after as well as before (see `### Flow: Singleton Reset And Re-Boot`).
 
 ## Boot and Configuration Sequence
 1. `pytest` reads `[tool.pytest.ini_options]` from `pyproject.toml`;
@@ -261,12 +302,16 @@ The most important recent integration addition is the dedicated
    `sys.path` insertions above, guarding each with a membership test so a
    repeated invocation cannot duplicate an entry.
    EVIDENCE: tests/conftest.py:1-22
-3. Scoped conftests apply beneath their directories, and there are only THREE
-   in the tree - the root, `tests/integration/melder/live_sim/conftest.py`
-   (29 lines, providing `reset_aether_singleton_for_live_sim`), and
-   `tests/unit/melder/aether/conduit/conftest.py` (444 lines, the largest by an
+3. Scoped conftests apply beneath their directories, and there are FOUR in the
+   tree (three until the CI tests arrived) - the root,
+   `tests/integration/melder/live_sim/conftest.py` (28 lines, providing
+   `reset_aether_singleton_for_live_sim`),
+   `tests/unit/melder/aether/conduit/conftest.py` (445 lines, the largest by an
    order of magnitude, providing `fresh_singletons`, `configuration_automatic`,
-   `configuration_dynamic` and the spellbook/aether/dev-ops stubs).
+   `configuration_dynamic` and the spellbook/aether/dev-ops stubs), and
+   `tests/unit/github_workflows/conftest.py` (73 lines), which prepends
+   `.github/scripts` to `sys.path` per test and loads each CI script by path, so
+   those tests create no runtime package and never boot Melder.
    That asymmetry is the shape of the harness: conduit tests need a rebuilt
    world per test, and almost nothing else does.
 4. Collected modules import `melder` from the workspace `src/`.
@@ -282,6 +327,40 @@ The most important recent integration addition is the dedicated
    `Aether`, `Nexus`, `Spellbook`, `Conduit`, or viewer singletons.
 5. tests build local fixtures/harnesses, execute assertions, then cleanup or
    reset singleton state.
+
+### Flow: CI Runtime Qualification
+1. `ci.yml` routes a pull request through `branch-policy`; when the runtime is in
+   scope it calls `test-runtime.yml` (and the asset and documentation checks).
+2. `discover` computes the OS/Python matrix and keeps it as an artifact.
+3. each cell sets up a free-threaded Python, installs locked test dependencies and
+   runs `run_runtime_tests.py` with `PYTHON_GIL=0`.
+4. the driver checks the runtime, runs the three tiers in one pytest process,
+   checks the runtime again and returns pytest's exit code; JUnit XML is always
+   kept, coverage XML only when the run passed.
+5. `coverage` requires a report from every cell before uploading to Codecov.
+
+### Flow: Singleton Reset And Re-Boot
+1. an autouse fixture resets `AetherUtilitySystem`, `Nexus` and `Aether`.
+2. it boots a fresh `Aether()`, which builds the Nexus, utility system and the
+   other hosted roots, and rebinds the class-level `_aether` references its tests
+   use (`Spellbook._aether` at least).
+3. the test runs; teardown repeats steps 1-2 so the next file finds a live world.
+4. skipping step 2 leaves no Aether behind: the next `Spellbook()` raises "Nexus
+   must be initialized with an Aether instance" inside a test that did nothing
+   wrong. The system-document view fixtures did this until 2026-09-26, which made
+   `test_bind_rejects_internal_class` depend on test order.
+
+### Flow: Concurrent-Writer Stand-In
+1. a regression for a race builds the real runtime (a Spellbook, bindings, a
+   conjured conduit) instead of starting threads.
+2. it swaps the shared structure for a stand-in whose iteration performs the
+   concurrent write deterministically (for the spell pool: a dict that inserts one
+   entry after yielding its first item, and whose `copy()` returns the entries as
+   they were).
+3. the pass under test runs once: before the fix it fails the way the race did,
+   after it passes. The multithreading suite stays the stress layer, but a rare
+   race is proven by the stand-in, not by rerunning the suite.
+   EVIDENCE: tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py:51-103
 
 ### Flow: Viewer/ACL Matrix Fixture Path
 1. `_nexus_viewer_matrix_support.py` builds descriptor fixtures,
@@ -313,6 +392,13 @@ The most important recent integration addition is the dedicated
   small real slices plus selective stubbing, per `tests/component/INFO.MD`.
 - The static Rift bench is intentionally real-runtime, not pure mocks.
 - The capability Rift bench is intentionally real-runtime, not pure mocks.
+- CI runs exactly `tests/unit`, `tests/component` and `tests/integration`, in one
+  pytest process per OS/Python cell, free-threaded only. A local `pytest` also
+  collects `tests/experimentation/`.
+- A singleton reset is always followed by a re-boot before the fixture yields and
+  after it tears down; a bare reset leaves the next test without a world.
+- Races are proven by deterministic stand-ins for the concurrent writer; the
+  multithreading lane is stress coverage, not the proof.
 
 ## Source Coverage and Evidence
 Direct evidence used in this pass:
@@ -339,10 +425,12 @@ Direct evidence used in this pass:
 - direct filesystem inventory over `tests/`
 
 Current Python test inventory from direct filesystem count:
-- `unit/`: 334 `.py` files
-- `component/`: 81 `.py` files
-- `integration/`: 88 `.py` files
-- `mocks/`: 42 `.py` files
+- `unit/`: 464 `.py` files (334 on 2026-06-13)
+- `component/`: 143 `.py` files (81)
+- `integration/`: 148 `.py` files (88)
+- `mocks/`: 44 `.py` files (42)
+- `experimentation/`: 196 `.py` files, 33 of them `test_*.py` (not counted before)
+Recounted 2026-09-26 with `find tests/<tier> -name '*.py'` (pycache excluded).
 
 ## Core Responsibilities
 - Unit tests validate class- and method-level runtime contracts.
@@ -422,8 +510,10 @@ Current Python test inventory from direct filesystem count:
   Purpose: room-mode JSON request and multistep turn-script benches.
 
 ## Open Questions
-- Whether any external CI system shards or subsets the suite beyond the local
-  pytest entrypoint; no in-repo CI workflow evidence exists in this checkout.
+- ANSWERED 2026-09-26: whether any external CI system shards or subsets the suite
+  beyond the local pytest entrypoint. It does not shard; it subsets to the three
+  tiers (see `## System Boundary and External Interfaces`). The question read "no
+  in-repo CI workflow evidence exists in this checkout" until the workflows landed.
 - Whether a formal marker taxonomy should exist for larger integration lanes;
   no marker taxonomy was evidenced in `pyproject.toml` during this pass.
 
@@ -436,6 +526,18 @@ Current Python test inventory from direct filesystem count:
   or `Spellbook` state leaves the next test running against a world it did not
   build. The failure surfaces in an unrelated test file, which is what makes it
   expensive - the reset fixtures exist to stop it.
+- SINGLETON VOID: the reverse, a teardown that resets without booting a new Aether.
+  The next test's `Spellbook()` raises "Nexus must be initialized with an Aether
+  instance". It passes alone and fails after the offending file, so check the
+  previous file's fixture teardown before the failing test.
+- RUNTIME POSTURE (CI): a GIL-enabled process fails the CI driver's gate before or
+  after pytest, with the instruction to use a free-threaded build and `PYTHON_GIL=0`.
+- TREE ARTIFACTS: cache tests write inside the repository - nine `CachingSystem`
+  unit tests use cwd-relative `tests/unit/melder/utilities/_caching_system_tmp_*`
+  directories (under `tests/tests/...` when pytest runs from `tests/`), and
+  component cache tests write under the package directory (`src/melder/tests/...`).
+  `.gitignore` covers `*.melc` and the `tests/tests/...` form, so the caches never
+  reach a commit, but they survive between runs; newer tests use `tmp_path`.
 - COLLECTION DRIFT: a new top-level tree containing Python that is not added to
   `norecursedirs` is collected silently. It does not error; it just runs.
 - HARNESS DRIFT (the one nothing catches): this document and
@@ -458,154 +560,184 @@ constituent files.
 
 - path: `pyproject.toml`
   start_line: 1
-  end_line: 239
-  loc: 239
-  verified_at: 2026-08-02T15:15:48Z
+  end_line: 245
+  loc: 245
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/conftest.py`
   start_line: 1
   end_line: 22
   loc: 22
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/_frame_posture_test_support.py`
   start_line: 1
   end_line: 263
   loc: 263
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/component/INFO.MD`
   start_line: 1
   end_line: 17
   loc: 17
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/_nexus_viewer_matrix_support.py`
   start_line: 1
   end_line: 638
   loc: 638
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/experimentation/unittest_synthetic_module_edge_cases_testbench.py`
   start_line: 1
   end_line: 868
   loc: 868
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/experimentation/physical_to_synthetic_module_swap_semantics_testbench.py`
   start_line: 1
   end_line: 920
   loc: 920
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/integration/melder/aether/test_nexus_frame_surface_projection_integration.py`
   start_line: 1
   end_line: 215
   loc: 215
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/integration/melder/aether/test_nexus_viewer_extended_surface_integration_matrix.py`
   start_line: 1
-  end_line: 586
-  loc: 586
-  verified_at: 2026-08-02T15:15:48Z
+  end_line: 620
+  loc: 620
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
   start_line: 1
   end_line: 606
   loc: 606
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py`
   start_line: 1
   end_line: 487
   loc: 487
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/integration/melder/aether/rift/test_static_rift_json_testbench_integration.py`
   start_line: 1
   end_line: 935
   loc: 935
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/integration/melder/aether/rift/test_capability_rift_json_testbench_integration.py`
   start_line: 1
   end_line: 1148
   loc: 1148
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_nexus.py`
   start_line: 1
-  end_line: 6350
-  loc: 6350
-  verified_at: 2026-08-02T15:15:48Z
+  end_line: 6368
+  loc: 6368
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_rift_runtime_contracts.py`
   start_line: 1
-  end_line: 454
-  loc: 454
-  verified_at: 2026-08-02T15:15:48Z
+  end_line: 458
+  loc: 458
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_workstation.py`
   start_line: 1
   end_line: 282
   loc: 282
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_command_system_direct.py`
   start_line: 1
   end_line: 457
   loc: 457
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/contract_classes.py`
   start_line: 1
   end_line: 425
   loc: 425
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/core_classes.py`
   start_line: 1
   end_line: 245
   loc: 245
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/deep_layers.py`
   start_line: 1
   end_line: 1255
   loc: 1255
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/factories.py`
   start_line: 1
   end_line: 174
   loc: 174
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/protocols.py`
   start_line: 1
   end_line: 74
   loc: 74
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/scan_bind_module_bad_metadata.py`
   start_line: 1
   end_line: 28
   loc: 28
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/scan_bind_module_core.py`
   start_line: 1
   end_line: 98
   loc: 98
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/scan_bind_module_duplicate.py`
   start_line: 1
   end_line: 59
   loc: 59
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/scan_bind_module_empty.py`
   start_line: 1
   end_line: 25
   loc: 25
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/scan_bind_module_lambda.py`
   start_line: 1
   end_line: 42
   loc: 42
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/scan_bind_module_lambda_invalid.py`
   start_line: 1
   end_line: 14
   loc: 14
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/scan_bind_module_reexport.py`
   start_line: 1
   end_line: 8
   loc: 8
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
 - path: `tests/mocks/spellbook/scan_bind_module_wrapped.py`
   start_line: 1
   end_line: 123
   loc: 123
-  verified_at: 2026-08-02T15:15:48Z
+  verified_at: 2026-09-26T21:51:55Z
+- path: `.github/workflows/test-runtime.yml`
+  start_line: 1
+  end_line: 158
+  loc: 158
+  verified_at: 2026-09-26T21:51:55Z
+- path: `.github/scripts/run_runtime_tests.py`
+  start_line: 1
+  end_line: 54
+  loc: 54
+  verified_at: 2026-09-26T21:51:55Z
+- path: `tests/unit/github_workflows/conftest.py`
+  start_line: 1
+  end_line: 73
+  loc: 73
+  verified_at: 2026-09-26T21:51:55Z
+- path: `tests/integration/melder/live_sim/conftest.py`
+  start_line: 1
+  end_line: 28
+  loc: 28
+  verified_at: 2026-09-26T21:51:55Z
+- path: `tests/unit/melder/aether/conduit/conftest.py`
+  start_line: 1
+  end_line: 445
+  loc: 445
+  verified_at: 2026-09-26T21:51:55Z
+- path: `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`
+  start_line: 1
+  end_line: 235
+  loc: 235
+  verified_at: 2026-09-26T21:51:55Z
 
 ## Diagrams
 ### ASCII Diagram (C4)
@@ -628,6 +760,11 @@ constituent files.
 
 [frame-posture support] and [codegen/compiler helpers] feed runtime-heavy lanes
 [shared helpers + mocks] feed all three tiers
+
+[CI: ci.yml -> test-runtime.yml -> run_runtime_tests.py (free-threaded gate)]
+        |  one pytest process per OS/Python cell
+        v
+[unit/] [component/] [integration/]        [experimentation/] local pytest only
 ```
 
 ### Mermaid Diagram (C4)
@@ -652,6 +789,10 @@ graph TD
   SH["tests/_nexus_viewer_matrix_support.py"] --> U
   SH --> CP
   SH --> I
+  CI["CI: test-runtime.yml / run_runtime_tests.py"] -->|"free-threaded, one process"| U
+  CI --> CP
+  CI --> I
+  L["local pytest (testpaths)"] --> X["tests/experimentation"]
 ```
 
 ## Information Sources
@@ -673,9 +814,32 @@ graph TD
 - `tests/unit/melder/aether/test_rift_runtime_contracts.py`
 - `tests/unit/melder/aether/test_workstation.py`
 - `tests/unit/melder/aether/test_command_system_direct.py`
+- `.github/workflows/ci.yml`
+- `.github/workflows/test-runtime.yml`
+- `.github/scripts/run_runtime_tests.py`
+- `.github/scripts/python_runtime_matrix.py`
+- `tests/unit/github_workflows/conftest.py`
+- `tests/integration/melder/live_sim/conftest.py`
+- `tests/unit/melder/aether/conduit/conftest.py`
+- `tests/unit/melder/test_system_document_view.py`
+- `tests/unit/melder/test_melder_registration_guard.py`
+- `tests/unit/melder/utilities/test_caching_system.py`
+- `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`
+- `.gitignore`
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+REFRESHED 2026-09-26 (first update since 2026-06-13 besides the August
+recomposition). CI now lives in the repository: one free-threaded pytest process per
+OS/Python cell over the three tiers, with `tests/experimentation/` collected only
+locally. Added the fourth conftest (CI scripts), the singleton-reset rule that a
+reset boots nothing (and the SINGLETON VOID failure it prevents), the
+concurrent-writer stand-in pattern for race regressions, the in-tree cache
+artifacts, and recounted the inventory. The index commands were moved out of
+`## Indexing` to the documentation tooling (portability rule). C1 ranges remeasured.
+Open: the per-run CI matrix, and six tracked `bundle.json` leftovers under
+tests/unit/melder/utilities/ that no test references.
 
 RECOMPOSED 2026-08-02 to the Required Section Contract - which is
 `src_architecture.md`'s contract name for name, because the pair must stay

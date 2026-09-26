@@ -250,6 +250,20 @@ every other live iteration of the pool on the same revalidation path must be che
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T21:49:31Z
+  TYPE: FACT
+  CLAIM: M2-8 from melder_2 (21:47:18Z, consumed): an owner-approved change notched above 0.2.72 stops the normal
+    site plan re-taking its root's slot guard when the calling door already holds it (unique_per_conduit and
+    spellspace routes) in site_plan_lowering.py, site_plan_override_runtime.py and generalized_hydrator.py; its
+    device apply waited for this task's 0.2.72 docs and assets. Those are done, and no edit of this lane touches
+    those files, so M0-50 tells melder_2 to proceed. Their change will move line citations into those files and
+    needs its own asset and LLM-bundle rebuild at their notch.
+  EVIDENCE: tickets/tasks/2026-09-26_remove_nested_slot_guard_take_task.md
+  IMPACT: No conflict; melder_2 is unblocked.
+  NEXT: Continue the tests docs refresh.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 Review. Compiler passes on the meld-time path iterate a copy of the spell pool (Phases 3, 4 strategies, 5, 6
 frame-wide, the Phase-8 walk); Phase 5 admits only ids with a registered state. 0.2.72: docs, graph, assets, LLM

@@ -12,11 +12,11 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_architecture.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-08-02T16:38:50Z |
-| line_count | 710 |
+| generated_at | 2026-09-26T21:52:27Z |
+| line_count | 874 |
 | line_ending | lf |
-| content_sha256 | `3290c2ed8a5eb6dd92e4c60bff28f626753044e4cfc800deab7f69d2be097cb4` |
-| sections | 28 |
+| content_sha256 | `0d8c4290e0f4160806423e4914f66275c7369757f4a04620b840ed99bdd0ce81` |
+| sections | 31 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
 before slicing. On any mismatch: STOP, do not slice, do not eyeball an
@@ -28,30 +28,33 @@ which you did.
 | lines | lvl | name |
 | --- | --- | --- |
 | 3-9 | 2 | Metadata |
-| 10-23 | 2 | Scope and Intent |
-| 24-118 | 2 | Indexing |
-| 48-118 | 3 | Indexing > Verifying the cited test paths and ranges in this document |
-| 119-130 | 2 | DO NOT ASSUME / Unknowns Gate |
-| 131-139 | 2 | Unknowns |
-| 140-156 | 2 | System Context (C4) |
-| 157-199 | 2 | System Boundary and External Interfaces |
-| 200-237 | 2 | Architecture Summary (C4) |
-| 238-255 | 2 | Entrypoints and Runtime Guardrails |
-| 256-275 | 2 | Boot and Configuration Sequence |
-| 276-305 | 2 | Data Flows and Sequences |
-| 277-285 | 3 | Data Flows and Sequences > Flow: Standard Pytest Run |
-| 286-291 | 3 | Data Flows and Sequences > Flow: Viewer/ACL Matrix Fixture Path |
-| 292-305 | 3 | Data Flows and Sequences > Flow: Static/Capability Rift Bench Path |
-| 306-316 | 2 | Operational Invariants |
-| 317-346 | 2 | Source Coverage and Evidence |
-| 347-366 | 2 | Core Responsibilities |
-| 367-387 | 2 | C3 Components Overview |
-| 388-423 | 2 | C2 Subcomponents Overview |
-| 424-429 | 2 | Open Questions |
-| 430-446 | 2 | Failure Modes and Error Paths |
-| 447-609 | 2 | C1 Code Map (Core Only) |
-| 610-656 | 2 | Diagrams |
-| 611-632 | 3 | Diagrams > ASCII Diagram (C4) |
-| 633-656 | 3 | Diagrams > Mermaid Diagram (C4) |
-| 657-677 | 2 | Information Sources |
-| 678-710 | 2 | Context / Handoff Summary |
+| 10-25 | 2 | Scope and Intent |
+| 26-110 | 2 | Indexing |
+| 40-110 | 3 | Indexing > Verifying the cited test paths and ranges in this document |
+| 111-122 | 2 | DO NOT ASSUME / Unknowns Gate |
+| 123-143 | 2 | Unknowns |
+| 144-160 | 2 | System Context (C4) |
+| 161-220 | 2 | System Boundary and External Interfaces |
+| 221-264 | 2 | Architecture Summary (C4) |
+| 265-296 | 2 | Entrypoints and Runtime Guardrails |
+| 297-320 | 2 | Boot and Configuration Sequence |
+| 321-384 | 2 | Data Flows and Sequences |
+| 322-330 | 3 | Data Flows and Sequences > Flow: Standard Pytest Run |
+| 331-341 | 3 | Data Flows and Sequences > Flow: CI Runtime Qualification |
+| 342-352 | 3 | Data Flows and Sequences > Flow: Singleton Reset And Re-Boot |
+| 353-364 | 3 | Data Flows and Sequences > Flow: Concurrent-Writer Stand-In |
+| 365-370 | 3 | Data Flows and Sequences > Flow: Viewer/ACL Matrix Fixture Path |
+| 371-384 | 3 | Data Flows and Sequences > Flow: Static/Capability Rift Bench Path |
+| 385-402 | 2 | Operational Invariants |
+| 403-434 | 2 | Source Coverage and Evidence |
+| 435-454 | 2 | Core Responsibilities |
+| 455-475 | 2 | C3 Components Overview |
+| 476-511 | 2 | C2 Subcomponents Overview |
+| 512-519 | 2 | Open Questions |
+| 520-548 | 2 | Failure Modes and Error Paths |
+| 549-741 | 2 | C1 Code Map (Core Only) |
+| 742-797 | 2 | Diagrams |
+| 743-769 | 3 | Diagrams > ASCII Diagram (C4) |
+| 770-797 | 3 | Diagrams > Mermaid Diagram (C4) |
+| 798-830 | 2 | Information Sources |
+| 831-874 | 2 | Context / Handoff Summary |

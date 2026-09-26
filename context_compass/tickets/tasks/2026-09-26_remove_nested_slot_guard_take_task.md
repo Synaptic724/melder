@@ -237,6 +237,49 @@ prototype (tickets/tasks/2026-09-26_spellspace_build_locks_task.md:170-194).
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T21:56:48Z
+  TYPE: DECISION
+  CLAIM: Implemented on the VM copy (work72 = device 0.2.72 plus the change), per the patch docs.
+    - site_plan_lowering.py: emit and SitePlanEmission take door_route_key. The class constant
+      DOOR_HELD_ROOT_EXISTENCE maps "unique_per_conduit" -> unique_per_conduit and "spellspace" ->
+      unique_per_spell_space. _emit_miss leaves out the root's "with guard" only when the flag is set and keeps the
+      recheck. A door route key outside normal mode raises RuntimeError.
+    - site_plan_override_runtime.py: door_route_key (default None) goes to the normal plan only.
+    - generalized_hydrator.py: _build_site_plan_runtime(route_key=...) passes it. The file's CRLF line endings are
+      preserved.
+    - Emitted normal plans: with "spellspace" and a spellspace root, the root miss has no guard and its child
+      misses keep theirs. With no route, or a mismatched one, the source is unchanged.
+    - New tests: tests/unit/.../shared_assets/test_site_plan_door_held_root.py (15; 14 red on the base tree, where
+      the keyword is unknown and the root takes its guard) and
+      tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py (5; green on base and
+      change). Their spells run through the site-plan executor with the door-held root (checked by inspecting the
+      hydrated misses).
+  EVIDENCE:
+  - artifacts/gauntlet_runtime_speed_20260926/nested_slot_guard/src.diff:1-355
+  - system_docs/patches/active/nested_slot_guard_2026_09_26/code_description_patch_site_plan_root_guard.md:1-37
+  IMPACT: Ready for validation. Not run yet: full suites, soak, A/B.
+  NEXT: Run the suites on work72 and base72 (3.14t gil 0 and 1, GIL build) in the background and compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T21:57:59Z
+  TYPE: FACT
+  CLAIM: M0-50 consumed (melder_0, 21:49:31Z, re M2-8). 0.2.72 is complete on the device: src fix, canonical
+    docs, graph, build assets and LLM bundles. melder_0 has no edits in flight on the three files and only edits
+    tests_architecture/tests_components now, which are not packaged and not in the asset fingerprints. The device
+    copies of the three files are byte-identical to the base of this change (sha256). The VM trees predate his
+    asset rebuild: only src/melder/_build_assets manifests and payloads differ.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_snapshot_phase5_live_spell_pool_task.md:227-248
+  - tickets/tasks/2026-09-26_snapshot_phase5_live_spell_pool_task.md:250-258
+  IMPACT: Device apply is unblocked. The notch pipeline for 0.2.73 follows his 0.2.72 sequence: canonical docs and
+    C1 re-measure, indexes --check, graph extract/accept/assemble, the asset runner on a work copy carrying
+    context_compass/system_docs and then on the device (byte-equal, CRLF kept), and LLM bundles with
+    --include-untracked.
+  NEXT: Finish the suite comparison, refresh both VM trees from the device (assets), then the soak and A/B.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
 Opened on the owner's go-ahead (~21:37Z). Safe shape only: the door keeps its guard, and the plan it calls stops
 taking that guard a second time. First step: read the code being changed and its callers.

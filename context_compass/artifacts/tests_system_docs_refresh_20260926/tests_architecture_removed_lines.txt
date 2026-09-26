@@ -1,0 +1,46 @@
+<       1  (29 lines, providing `reset_aether_singleton_for_live_sim`), and
+<       1  --doc system_docs/tests_architecture.md
+<       1  --doc system_docs/tests_architecture.md --check
+<       1  --doc system_docs/tests_architecture.md --slice "<section name>"
+<       1  Current status: blocked on external evidence.
+<       1  Local evidence boundary: this checkout has no in-repo `.github/` workflow
+<       1  Where to investigate: external CI configuration outside this checkout.
+<       1  Why it matters: a future reader may otherwise assume the local pytest layout
+<       1  `configuration_dynamic` and the spellbook/aether/dev-ops stubs).
+<       1  `tests/unit/melder/aether/conduit/conftest.py` (444 lines, the largest by an
+<       1  config, so there is no local CI topology to cite here.
+<       1  end_line: 239
+<       1  end_line: 245
+<       1  end_line: 28
+<       1  end_line: 454
+<       1  end_line: 586
+<       1  end_line: 6350
+<       1  in the tree - the root, `tests/integration/melder/live_sim/conftest.py`
+<       1  is the whole execution topology.
+<       1  loc: 239
+<       1  loc: 245
+<       1  loc: 28
+<       1  loc: 454
+<       1  loc: 586
+<       1  loc: 6350
+<       1  pytest entrypoint; no in-repo CI workflow evidence exists in this checkout.
+<       1  source of runner truth.
+<      30  start_line: 1
+<       1  tree is a NAMESPACE PACKAGE with no `__init__.py` anywhere, so
+<       2  v
+<      30  verified_at: 2026-08-02T15:15:48Z
+<       1 - UNKNOWN: external CI shard/split behavior is not documented here.
+<       1 - Updated: 2026-06-13
+<       1 - Whether any external CI system shards or subsets the suite beyond the local
+<       1 - `component/`: 81 `.py` files
+<       1 - `integration/`: 88 `.py` files
+<       1 - `mocks/`: 42 `.py` files
+<       1 - `unit/`: 334 `.py` files
+<       1 3. Scoped conftests apply beneath their directories, and there are only THREE
+<       1 Consume it by slicing rather than reading this document whole, and verify before
+<       1 This document is AUTHORED. Its only generated companion is
+<       5 ```
+<       3 ```bash
+<       1 `tests_architecture_index.md`, rebuilt in the SAME pass as any edit:
+<       3 python tools/system_documents/index_document.py \
+<       1 trusting a range:
