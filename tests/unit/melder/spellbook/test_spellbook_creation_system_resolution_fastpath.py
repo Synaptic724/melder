@@ -14,6 +14,12 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity imp
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue import (
+    SpellValidationIssue,
+)
+from melder.aether.spellbook.spell_compiler.validation.spell_validation_result import (
+    SpellValidationResult,
+)
 from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
 
 
@@ -139,8 +145,8 @@ class _StubLogger:
     Purpose:
         Provide minimal logger surface for fallback-path compatibility.
     Contract:
-        - Accepts `.error(...)` calls from tested code paths.
-        - Stores error invocations for optional assertions.
+        - Accepts `.error(...)` and `.warning(...)` calls from tested code paths.
+        - Stores error and warning invocations for optional assertions.
     Lifecycle:
         - Test-only helper with append-only call log.
     """
@@ -150,11 +156,12 @@ class _StubLogger:
         Purpose:
             Initialize logger call capture storage.
         Contract:
-            - Starts with an empty error call list.
+            - Starts with empty error and warning call lists.
         Returns:
             None.
         """
         self.error_calls: List[tuple[Any, ...]] = []
+        self.warning_calls: List[tuple[Any, ...]] = []
 
     def error(self, *args: Any, **kwargs: Any) -> None:
         """
@@ -169,6 +176,20 @@ class _StubLogger:
             None.
         """
         self.error_calls.append(args + (kwargs,))
+
+    def warning(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Purpose:
+            Capture logger warning calls issued by the tested code.
+        Contract:
+            - Appends call payload for later inspection.
+        Args:
+            *args: Positional logger arguments.
+            **kwargs: Keyword logger arguments.
+        Returns:
+            None.
+        """
+        self.warning_calls.append(args + (kwargs,))
 
 
 class _StubCachingSystem:
@@ -536,6 +557,7 @@ def test_creation_system_cleanup_is_idempotent_and_clears_fields() -> None:
     assert not hasattr(system, "_spellbook")
     assert not hasattr(system, "_policy")
     assert not hasattr(system, "_dynamic")
+    assert not hasattr(system, "_validation_warnings")
     assert system._lock is not None
 
 
@@ -696,6 +718,113 @@ def test_prepare_spellbook_for_conjure_runs_structural_phases_without_disposal_r
     assert calls == [(spellbook, _SchedulerProbe)]
     assert spellbook._spells["a"].disposal_method_names == frozenset({"cleanup"})
     assert spellbook._spells["a"].has_disposal_methods is True
+
+
+def _phase4_spell(spell_name: str, issues: Optional[List[SpellValidationIssue]]) -> types.SimpleNamespace:
+    """Build an owned-spell stub whose Phase-4 result carries `issues` (None means no result)."""
+    result = None
+    if issues is not None:
+        result = SpellValidationResult(spell_id=f"{spell_name}-id", spell_name=spell_name, issues=issues)
+    return types.SimpleNamespace(spell_name=spell_name, validation_result_phase4=result)
+
+
+def _warning(code: str, **details: Any) -> SpellValidationIssue:
+    """Build one warning-severity Phase-4 issue."""
+    return SpellValidationIssue(severity="warning", code=code, message=f"{code} message", details=details)
+
+
+def _prepare_with_spells(
+        monkeypatch: pytest.MonkeyPatch,
+        spells: Dict[str, types.SimpleNamespace],
+        **kwargs: Any,
+) -> _StubLogger:
+    """Run conjure preparation over stub spells with structural phases stubbed; return the logger."""
+    logger = _StubLogger()
+    spellbook = types.SimpleNamespace(
+        is_configuration_locked=lambda: True, _spells=spells, _logger=logger,
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "run_structural_phases",
+        staticmethod(lambda *, spellbook, phase_scheduler_cls: None),
+    )
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+        spellbook=spellbook, phase_scheduler_cls=_SchedulerProbe, **kwargs,
+    )
+    return logger
+
+
+def _warning_spells() -> Dict[str, types.SimpleNamespace]:
+    """Three owned spells: mixed warnings plus an error, no result, and a detail-less warning."""
+    return {
+        "a": _phase4_spell("A", [
+            _warning("UNRESOLVED_INPUT", parameter_name="value", expected_type="Package"),
+            SpellValidationIssue(severity="error", code="DANGLING_DEPENDENCY", message="error message"),
+            _warning("REQUIRED_HOLE", parameter_name="count"),
+        ]),
+        "b": _phase4_spell("B", None),
+        "c": _phase4_spell("C", [
+            _warning("NO_SPELLBOOK_FOR_DEPENDENCY_CHECK"),
+            _warning("UNRESOLVED_INPUT", parameter_name="work", expected_type="Task"),
+        ]),
+    }
+
+
+@pytest.mark.parametrize("kwargs", [{}, {"validation_warnings": False}])
+def test_prepare_spellbook_for_conjure_does_not_report_warnings_by_default(
+        monkeypatch: pytest.MonkeyPatch, kwargs: Dict[str, Any],
+) -> None:
+    """Internal routes omit the flag (upgrade_to_normal) or pass False; neither logs the report."""
+    logger = _prepare_with_spells(monkeypatch, _warning_spells(), **kwargs)
+
+    assert logger.warning_calls == []
+
+
+def test_prepare_spellbook_for_conjure_reports_grouped_warnings_when_asked(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One WARNING call: codes in first-seen order, book then issue order, errors excluded."""
+    logger = _prepare_with_spells(monkeypatch, _warning_spells(), validation_warnings=True)
+
+    assert logger.warning_calls == [(
+        "Conjure validation warnings (4):\n"
+        "  UNRESOLVED_INPUT (2): A.value -> Package; C.work -> Task\n"
+        "  REQUIRED_HOLE (1): A.count\n"
+        "  NO_SPELLBOOK_FOR_DEPENDENCY_CHECK (1): C",
+        "_report_validation_warnings",
+        {},
+    )]
+
+
+def test_prepare_spellbook_for_conjure_reports_nothing_without_warnings(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Errors alone, empty results and missing results produce no report even when asked."""
+    spells = {
+        "a": _phase4_spell("A", [
+            SpellValidationIssue(severity="error", code="DANGLING_DEPENDENCY", message="error message"),
+        ]),
+        "b": _phase4_spell("B", []),
+        "c": _phase4_spell("C", None),
+    }
+
+    logger = _prepare_with_spells(monkeypatch, spells, validation_warnings=True)
+
+    assert logger.warning_calls == []
+
+
+@pytest.mark.parametrize(("code", "details", "expected"), [
+    ("UNRESOLVED_INPUT", {"parameter_name": "work", "expected_type": "Package"}, "Task.work -> Package"),
+    ("SPELL_CONTRACT_MISSING_PROVIDER", {"parameter_name": "billing", "contract_key": "k"}, "Task.billing"),
+    ("MISSING_DEPENDENCY_GRAPH", {}, "Task"),
+])
+def test_render_validation_warning_entry_names_spell_and_parameter(
+        code: str, details: Dict[str, Any], expected: str,
+) -> None:
+    """Unresolved inputs name the expected type; other issues name the parameter, else the spell."""
+    assert SpellbookCreationSystem._render_validation_warning_entry(
+        spell_name="Task", code=code, details=details,
+    ) == expected
 
 
 def test_run_resolution_phases_rejects_empty_conduit_id() -> None:

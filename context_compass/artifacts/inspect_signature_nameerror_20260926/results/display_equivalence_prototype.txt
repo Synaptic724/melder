@@ -1,0 +1,5 @@
+callables=7697 display_signature: identical_to_VALUE=6873 differ=0 recovered_from_NameError=817 bad_render=0 failures=0
+stabilize_signature(FORWARDREF): differs_from_VALUE=2 renders_owner_or_address=0
+class annotations: identical=637 differ=0 recovered=2 bad=0
+   ('stabilize_differs_from_value', 'melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation', "(request_id: str, request_type: ChangeTransactionType, staged_at: float, initiator_conduit_id: str,  || (request_id: str, request_type: 'ChangeTransactionType', staged_at: float, initiator_conduit_id: str")
+   ('stabilize_differs_from_value', 'melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation.ChangeControlStagedMutation.__init__', "(self, request_id: str, request_type: ChangeTransactionType, staged_at: float, initiator_conduit_id: || (self, request_id: str, request_type: 'ChangeTransactionType', staged_at: float, initiator_conduit_i")

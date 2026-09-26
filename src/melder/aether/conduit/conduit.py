@@ -6734,7 +6734,7 @@ class Conduit(Cleanable):
     #region Hooks
     def _resolve_peer_conduit_for_contract_hooks(
             self,
-            conduit: "Conduit" | None,
+            conduit: Optional["Conduit"],
             conduit_id: str | None,
             aetheric_frame: str,
     ) -> Optional["Conduit"]:

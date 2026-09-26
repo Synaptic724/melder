@@ -1,0 +1,2 @@
+callables=7689 invalid_annotations=1
+   melder.aether.conduit.conduit.Conduit._resolve_peer_conduit_for_contract_hooks -> TypeError: unsupported operand type(s) for |: 'str' and 'NoneType'

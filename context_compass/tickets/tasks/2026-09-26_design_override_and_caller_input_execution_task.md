@@ -6,12 +6,12 @@
 - Task ID: TASK-2026-09-26-design-override-and-caller-input-execution
 - Epic: EPIC-2026-09-24-override-execution-performance
 - Story: none (epic-level design task)
-- Status: review
+- Status: in_progress
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T00:14:30Z
-- Updated: 2026-09-26T00:22:28Z
+- Updated: 2026-09-26T08:58:44Z
 
 ## Objective
 Produce a source-grounded design that (1) lets a constructor declare parameters the caller always
@@ -43,6 +43,10 @@ Compare it against joint_alpha_proposal.md and recommend one path with tradeoffs
 - from_state: in_progress
 - to_state: review
 - transition_reason: Design artifact written; D1-D4 raised, 2026-09-26T00:22:28Z.
+- from_state: review
+- to_state: in_progress
+- transition_reason: Owner reopened the override performance lane ("go back to the real overrides issue ...
+  overrides are 20% of the speed of normal resolution ... make a sound structural strategy"), 2026-09-26T08:58:44Z.
 
 ## Steps / Checklist
 - [x] Read joint_alpha_proposal.md, structural_plan.md, compact_structure_proposal.md,
@@ -197,6 +201,80 @@ Compare it against joint_alpha_proposal.md and recommend one path with tradeoffs
   NEXT: Owner answers D1-D4.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T08:58:44Z
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Lane reopened. Owner goal: a sound structural strategy for implementing the override fix, starting
+    from joint_alpha_proposal.md (Codex) and understanding where the 5x gap to ordinary resolution comes from.
+    D1 is settled by the shipped S1 (automatic UNRESOLVED_INPUT socket, no per-binding keyword); D2-D4 remain
+    open. Scope stays read-only on src/ until the owner approves a strategy. Mailbox M1-9 answered (M0-15):
+    melder_1 owns an inspect.signature src lane; no file overlap with this read-only work.
+  EVIDENCE:
+  - artifacts/override_structural_discovery_20260924/joint_alpha_proposal.md:1-150
+  - artifacts/melder_override_design_20260926/design.md:166-204
+  - tickets/stories/completed/2026-09-26_unresolved_input_sockets_story.md
+  IMPACT: The strategy must be grounded in a measured cost breakdown of the current override path, which
+    neither proposal has: joint alpha's evidence is semantic/mechanism proofs and design.md measured nothing.
+  NEXT: Read the epic's current structural design and the baseline/compiler measurement artifacts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T09:00:20Z
+  TYPE: FACT
+  CLAIM: Where an override meld spends its time, from source (many_only; generalized has the same targeting
+    artifact). Per call, execute_with_overrides splits __args__, then targeting maps each RAW KEY to socket
+    rows and builds a NEW socket-keyed override_map and socket_shape: one key hits a last-call cache only if
+    the VALUE is the same object; two to four keys build a sorted (key, id(value)) signature; every other
+    call loops keys, ranks specificity, compares equal-rank values with `!=`, builds the map and sorts shape
+    rows. The executor cache is then keyed by that socket_shape (identity fast path fails whenever the tuple
+    is rebuilt), and the executor body reads values back out of the socket-keyed map per step. So the stable
+    thing (the caller's key set) is re-derived per call from the unstable thing (the values). Prior
+    measurements (09-24, before slot guards) split this: shallow override public 1.997us vs executor 1.047us;
+    wide with 8 root keys 9.44us public vs 3.12us executor; deep is executor-dominated (154us vs 32us normal).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_finalize_creation_context_step.py:243-470
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/artifacts/spell_override_targeting_codegen_creation.py:210-427
+  - src/melder/aether/conduit/meld/conduit_meld.py:259-580
+  - artifacts/override_emission_prototype_20260924/results.md:1-48
+  IMPACT: The 5x has three separable causes: per-call targeting (front end), an interpreted executor body,
+    and construction of supplied branches. A plan keyed by the raw key set can read values by literal key
+    (`ov["a"]`) and remove the first two without any semantic change; pruning is the third and is semantic.
+  NEXT: Measure the current (0.2.54, slot-guard) split on 3.14t: public vs targeting-only vs executor-only.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T09:09:11Z
+  TYPE: MEASURE
+  CLAIM: Current gap re-measured on 0.2.54 (3.14.7t, VM copy, automatic, disk cache off, 7 repeats, existing
+    experiment test_melder_creation_overrides_performance.py). Override throughput vs normal: shallow 21.8%,
+    wide 20.4%, diamond 21.1%, deep 22.5% (one fresh root key); wide with all 8 root keys 8.1%. Key control:
+    empty_tuple (override=() -> no keys, no targeting, generic override executor) is already 19.7-23.2%, e.g.
+    deep 110.7us vs 25.7us normal. So the interpreted override executor body alone accounts for the 5x on
+    every graph; per-key targeting adds on top (wide 7.0us with 8 keys vs 2.8us with 1).
+  EVIDENCE:
+  - artifacts/melder_override_design_20260926/perf_0254_314t/automatic/results.md
+  - artifacts/melder_override_design_20260926/perf_0254_314t/automatic/results.json
+  IMPACT: Fixing targeting alone cannot close the gap; the executor lowering is the primary lever and pruning
+    is secondary for these transient graphs.
+  NEXT: Paused for the owner-directed conjure validation_warnings task; resume with the executor/targeting
+    split probe (public vs targeting-only vs executor-only).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T09:15:57Z
+  TYPE: FACT
+  CLAIM: Mailbox F0-1 consumed (fable_0, NOTICE, no ACK requested). Owner approved fable_0's compiler tranche:
+    one leaf serialize/hash/freeze implementation under spell_compiler/shared_assets/, with
+    phases/shared_compiler_executions.py and codegen_creation_schema_helpers.py delegating (three helpers),
+    plus a phase-8 key-path change. fable_0 edits shared_compiler_executions.py only after the
+    missing_dependency_sockets hunks (landed, story closed 08:54:37Z); caching_system.py and generation 11
+    are untouched; byte-compatible for deterministic signatures (no generation bump).
+  EVIDENCE: tickets/stories/2026-09-26_signature_determinism_and_phase8_digest_story.md
+  IMPACT: Any override prototype touching shared_compiler_executions.py or phase-8 keys must rebase on
+    fable_0's tranche; the conjure validation_warnings task touches neither file.
+  NEXT: Resume this lane with the executor/targeting split probe after conjure_validation_warnings.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
 
 ## Context / Handoff Summary
 Design in review: artifacts/melder_override_design_20260926/design.md (probe and results beside it).

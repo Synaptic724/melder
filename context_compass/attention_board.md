@@ -81,7 +81,7 @@ Message alert rules
 - NEW MESSAGE for updater_1 (from melder_0, 2026-09-25T23:30:00Z)
 - NEW MESSAGE for updater_0 (from melder_0, 2026-09-26T00:22:42Z)
 - NEW MESSAGE for workflows_0 (from melder_0, 2026-09-26T00:22:42Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T08:43:16Z)
+- NEW MESSAGE for updater_1 (from fable_0, 2026-09-26T09:08:43Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -105,10 +105,13 @@ Message alert rules
 | ir_phase_survey_5_7 | review | handoff | claude | fable_0 | none | Owner reviews phase_05-07.md and resolution_driver.md. | Phases 5-7 and the full-hit load path recorded from source (D1, D2, D6). | Owner accepts tranche-2 records or redirects scope. | tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md | 2026-09-26T07:23:22Z | REQUIRED |
 | ir_phase_survey_seam | review | handoff | claude | fable_0 | none | Owner reviews the survey records (summary.md first); no design decisions are asked in this lane. | Cache mechanics, key composition, invalidation surface and summary.md (D3, D4, D5; D1-D6 consolidated). | Owner accepts the records (Milestone 1, closure sync) or redirects scope. | tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md | 2026-09-26T07:38:41Z | REQUIRED |
 | ir_phase_cost_model | review | handoff | claude | fable_0 | none | Owner reviews cost_model.md (counted rows, measured rows, owner-run command). | Per-stage cost model for phases 1-11 with two owner-run measurement sources. | Owner accepts the cost model or redirects scope. | tickets/tasks/2026-09-26_model_phase_pipeline_costs_task.md | 2026-09-26T08:13:27Z | REQUIRED |
-| ir_phase_improvement_plan | review | handoff | claude | fable_0 | none | Owner picks tranche T1 (C-H+C-A+C-B), T1' (snapshot) or T1'' (chunking) from the epic strategy note. | Thirteen ranked candidates and one first-tranche recommendation (candidates.md). | Owner selects a tranche or redirects. | tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md | 2026-09-26T08:18:28Z | REQUIRED |
-| override_design_melder | review | handoff | claude | melder_0 | none | Owner decides D1-D4 in design.md; S1 caller inputs can start after D1. | Source-grounded override + caller-input design compared with joint alpha. | Owner accepts or redirects the design; implementation tasks open per decision. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T00:22:28Z | REQUIRED |
+| ir_phase_improvement_plan | review | handoff | claude | fable_0 | none | Owner confirms closure of the plan story (T1 decided: C-H + C-A; C-B deferred). | Thirteen ranked candidates; T1 decided by the owner. | Owner confirms acceptance; closure sync follows. | tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md | 2026-09-26T09:08:28Z | REQUIRED |
+| sig_determinism_phase8 | ready | implementation | claude | fable_0 | none | Owner confirms task 2 U1 (files, symbols, freeze rule, set rule); then edit. | One signature implementation, determinism test, phase-8 pool digest. | Both code tasks in review with owner-run suites green. | tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md | 2026-09-26T09:08:28Z | REQUIRED |
+| conjure_validation_warnings | in_progress | implementation | claude | melder_0 | none | Re-read the conjure chain in source, then write patch docs. | Opt-in Spellbook.conjure(validation_warnings=False); default silent, True logs grouped Phase-4 warnings. | Flag implemented, tested, documented; task in review. | tickets/tasks/2026-09-26_add_conjure_validation_warnings_flag_task.md | 2026-09-26T09:17:00Z | REQUIRED |
+| override_design_melder | in_progress | discovery | claude | melder_0 | none | Paused for conjure_validation_warnings; resume with the executor/targeting split probe. | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T09:09:11Z | REQUIRED |
 | caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
-| inspect_signature_nameerror | in_progress | discovery | claude | melder_1 | none | Probe every Melder callable with inspect.signature on 3.14t and count failures. | Root cause, scope and a tested fix for TYPE_CHECKING-annotation NameErrors. | Fix applied with zero probe failures, or DECISION_REQUEST recorded. | tickets/tasks/2026-09-26_fix_inspect_signature_nameerror_on_type_checking_annotations_task.md | 2026-09-26T08:32:46Z | REQUIRED |
+| inspect_signature_nameerror | blocked | handoff | claude | melder_1 | annotation audit first (owner) | Fold the audit findings in, then apply the approved src edits. | Tested fix for TYPE_CHECKING-annotation NameErrors, docs and rebuilt assets. | Audit reported, then fix applied with tests and assets. | tickets/tasks/2026-09-26_fix_inspect_signature_nameerror_on_type_checking_annotations_task.md | 2026-09-26T09:17:15Z | REQUIRED |
+| inspect_annotation_audit | review | handoff | claude | melder_1 | none | Owner reviews findings, confirms fixes and tool placement. | Every never-evaluable annotation in src/melder located with file:line. | Owner confirms fix set and tool placement, or redirects. | tickets/tasks/2026-09-26_build_annotation_integrity_audit_tool_task.md | 2026-09-26T09:23:31Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
@@ -172,11 +175,17 @@ Message alert rules
   RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
   tickets/stories/2026-09-26_phase_pipeline_improvement_plan_story.md ->
   tickets/tasks/2026-09-26_model_phase_pipeline_costs_task.md.
-- ir_phase_improvement_plan: SWITCH_TRIGGER is the owner's tranche decision (T1 / T1' / T1'') or an owner redirect.
+- ir_phase_improvement_plan: SWITCH_TRIGGER is owner closure confirmation of the plan story (tranche decided 2026-09-26).
   RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
   tickets/stories/2026-09-26_phase_pipeline_improvement_plan_story.md ->
   tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md. Fact base: artifacts/ir_phase_improvement_20260926/cost_model.md
   and artifacts/ir_phase_survey_20260925/summary.md.
+- sig_determinism_phase8: SWITCH_TRIGGER is owner confirmation of each Propose -> Confirm message, then suites green owner-run.
+  RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
+  tickets/stories/2026-09-26_signature_determinism_and_phase8_digest_story.md ->
+  tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md (then
+  tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md). Patch docs:
+  system_docs/patches/active/codegen_signature_determinism_2026_09_26/.
 - ir_phase_survey_1_4: SWITCH_TRIGGER is owner acceptance of the tranche-1 records (task in review) or an owner scope redirect.
   RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
   tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md ->
@@ -184,13 +193,18 @@ Message alert rules
   tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md ->
   tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md. Strategy and recovery protocol:
   the epic's Context / Handoff Summary, section DISCOVERY STRATEGY AND RECOVERY (2026-09-26).
+- conjure_validation_warnings: SWITCH_TRIGGER is the flag implemented, tested and documented (task in review).
+  RESUME_HIERARCHY: tickets/tasks/2026-09-26_add_conjure_validation_warnings_flag_task.md. Patch docs:
+  system_docs/patches/active/conjure_validation_warnings_2026_09_26/.
 - override_design_melder: SWITCH_TRIGGER is the design artifact plus owner decision requests.
   RESUME_HIERARCHY: tickets/epics/2026-09-24_override_execution_performance_epic.md ->
   tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md.
 - caller_input_strictness: SWITCH_TRIGGER is the responsible commit plus before/after runs.
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md.
-- inspect_signature_nameerror: SWITCH_TRIGGER is a tested fix or a recorded owner decision request.
+- inspect_signature_nameerror: SWITCH_TRIGGER is the annotation audit's findings (owner redirect), then the fix applied.
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_fix_inspect_signature_nameerror_on_type_checking_annotations_task.md.
+- inspect_annotation_audit: SWITCH_TRIGGER is the audit run over src/melder with findings recorded, or an owner redirect.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-26_build_annotation_integrity_audit_tool_task.md.
 ### Agent Message-Pass Protocol (melder_0 <-> melder_1; owner-set 2026-09-25)
 - Channel: `mailbox_board.md` `## Messages` plus one alert line under `## Message Alerts` here,
   per `agent_onboarding/default/general/skills/mailbox_protocol.md`. No harness-native messaging.

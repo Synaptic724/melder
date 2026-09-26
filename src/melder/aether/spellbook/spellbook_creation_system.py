@@ -127,6 +127,7 @@ class SpellbookCreationSystem(Cleanable):
         "_phase_scheduler_cls",
         "_policy",
         "_spellbook",
+        "_validation_warnings",
     ]
 
     def __init__(
@@ -138,6 +139,7 @@ class SpellbookCreationSystem(Cleanable):
             name: str | None,
             conduit_logger: Any | None,
             phase_scheduler_cls: type[PhaseScheduler],
+            validation_warnings: bool = False,
     ) -> None:
         """
         Purpose:
@@ -154,6 +156,11 @@ class SpellbookCreationSystem(Cleanable):
             conduit_logger: Optional conduit logger.
             phase_scheduler_cls:
                 Scheduler class used for structural and resolution phases.
+            validation_warnings:
+                When True, `conjure()` logs this book's Phase-4 validation
+                warnings once, grouped by code. Only the public
+                `Spellbook.conjure` passes True; every internal route keeps
+                the default False and logs nothing.
         Returns:
             None.
         Raises:
@@ -166,6 +173,7 @@ class SpellbookCreationSystem(Cleanable):
         self._name: str | None = name
         self._conduit_logger = conduit_logger
         self._phase_scheduler_cls: type[PhaseScheduler] = phase_scheduler_cls
+        self._validation_warnings: bool = validation_warnings
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
@@ -198,6 +206,7 @@ class SpellbookCreationSystem(Cleanable):
             del self._name
             del self._conduit_logger
             del self._phase_scheduler_cls
+            del self._validation_warnings
 
     def conjure(self) -> Conduit:
         """
@@ -222,6 +231,7 @@ class SpellbookCreationSystem(Cleanable):
         SpellbookCreationSystem._prepare_spellbook_for_conjure(
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,
+            validation_warnings=self._validation_warnings,
         )
         # Classify cache posture before plan phases so a full hit can skip the
         # phase-8-to-11 compile and load the runtime lanes from cache instead.
@@ -291,6 +301,7 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             phase_scheduler_cls: type[PhaseScheduler],
+            validation_warnings: bool = False,
     ) -> None:
         """
         Purpose:
@@ -298,12 +309,15 @@ class SpellbookCreationSystem(Cleanable):
         Contract:
             - Freezes and binds configuration when not already locked.
             - Executes structural phases before conduit construction.
-            - Reports unresolved inputs once, right after the structural phases,
-              while their Phase-4 results still exist (they are released after
-              resolution).
+            - When `validation_warnings` is True, reports the Phase-4 validation
+              warnings once, right after the structural phases, while their
+              results still exist (they are released after resolution). The
+              default False reports nothing; internal conjure routes (such as
+              the existing-conduit route used by upgrade_to_normal) rely on it.
         Args:
             spellbook: Owning Spellbook instance.
             phase_scheduler_cls: Scheduler class used for phase execution.
+            validation_warnings: Opt-in for the grouped warning report.
         Returns:
             None.
         Raises:
@@ -317,45 +331,81 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,
         )
-        SpellbookCreationSystem._report_unresolved_inputs(spellbook=spellbook)
+        if validation_warnings:
+            SpellbookCreationSystem._report_validation_warnings(spellbook=spellbook)
 
     @staticmethod
-    def _report_unresolved_inputs(*, spellbook: Spellbook) -> None:
+    def _report_validation_warnings(*, spellbook: Spellbook) -> None:
         """
         Purpose:
-            Make unresolved inputs visible at conjure. A typed parameter that no
-            registered spell provides no longer fails conjure; it must be supplied
-            by the meld that constructs its spell. Without this line a forgotten
-            binding would first surface as an UnresolvedInputError at meld.
+            Show a beginner what Phase 4 flagged without failing conjure. Warnings
+            never stop conjure; an unresolved input, for example, first surfaces
+            as an UnresolvedInputError at meld unless the caller reads this report.
         Contract:
-            - Reads the UNRESOLVED_INPUT warnings Phase 4 stored on this book's
-              active spells; emits nothing when there are none.
-            - Emits one INFO line per conjure listing `Spell.param -> ExpectedType`.
-            - Reporting only; conjure continues either way.
+            - Reads the warning-severity issues Phase 4 stored on this book's
+              owned spells, in book order and then issue order; errors are not
+              reported here (they already fail conjure).
+            - Groups them by issue code, codes in first-seen order, and emits ONE
+              WARNING event: a header "Conjure validation warnings (N):" and one
+              line per code, "  CODE (n): entry; entry".
+            - Emits nothing when there are no warnings.
+            - Reporting only; never changes validity, phase results or conjure.
         Args:
             spellbook: Owning Spellbook whose structural phases just ran.
         Returns:
             None.
         """
-        entries: list[str] = []
+        grouped: dict[str, list[str]] = {}
+        total = 0
         for spell in spellbook._spells.values():
             result = spell.validation_result_phase4
             if result is None:
                 continue
-            for issue in result.issues:
-                if issue.code != "UNRESOLVED_INPUT":
-                    continue
-                entries.append(
-                    f"{spell.spell_name}.{issue.details['parameter_name']} -> "
-                    f"{issue.details['expected_type']}"
+            for issue in result.warnings:
+                grouped.setdefault(issue.code, []).append(
+                    SpellbookCreationSystem._render_validation_warning_entry(
+                        spell_name=spell.spell_name,
+                        code=issue.code,
+                        details=issue.details,
+                    )
                 )
-        if not entries:
+                total += 1
+        if not grouped:
             return
-        spellbook._logger.info(
-            f"Conjure: {len(entries)} unresolved input(s) have no registered provider and must be "
-            f"supplied by the meld that constructs them (or given a provider): {', '.join(entries)}.",
-            "_report_unresolved_inputs",
-        )
+        lines = [f"Conjure validation warnings ({total}):"]
+        for code, entries in grouped.items():
+            lines.append(f"  {code} ({len(entries)}): {'; '.join(entries)}")
+        spellbook._logger.warning("\n".join(lines), "_report_validation_warnings")
+
+    @staticmethod
+    def _render_validation_warning_entry(
+            *,
+            spell_name: str,
+            code: str,
+            details: Mapping[str, Any],
+    ) -> str:
+        """
+        Purpose:
+            Render one Phase-4 warning as a short entry for the grouped report.
+        Contract:
+            - UNRESOLVED_INPUT renders `Spell.param -> ExpectedType`, the same
+              names UnresolvedInputError uses at meld.
+            - Any other issue carrying `details["parameter_name"]` renders
+              `Spell.param`; an issue without one renders the spell name.
+            - Pure; reads only the arguments.
+        Args:
+            spell_name: Name of the spell the issue belongs to.
+            code: The issue's machine-readable code.
+            details: The issue's structured details.
+        Returns:
+            str: The entry text.
+        """
+        parameter_name = details.get("parameter_name")
+        if parameter_name is None:
+            return spell_name
+        if code == "UNRESOLVED_INPUT":
+            return f"{spell_name}.{parameter_name} -> {details['expected_type']}"
+        return f"{spell_name}.{parameter_name}"
 
     @staticmethod
     def _prepare_resolution_for_conjure(

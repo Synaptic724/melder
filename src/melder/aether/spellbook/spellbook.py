@@ -6544,6 +6544,7 @@ class Spellbook(Cleanable):
             dynamic: bool = False,
             name: str | None = None,
             conduit_logger: Any | None = None,
+            validation_warnings: bool = False,
     ) -> Conduit:
         """
         Public API
@@ -6567,6 +6568,14 @@ class Spellbook(Cleanable):
                 An optional name for the conduit.
             conduit_logger (Any, optional):
                 An optional logger instance to attach to the conduit for logging purposes.
+            validation_warnings (bool, optional):
+                If True, log this Spellbook's validation warnings once, grouped by
+                warning code, at WARNING level through the Spellbook logger. Warnings
+                never stop conjure; they flag things that may fail later, such as a
+                typed parameter no registered spell provides (UNRESOLVED_INPUT, which
+                the meld that constructs that spell must supply). Useful while
+                learning or debugging a new graph. Defaults to False, which logs
+                nothing.
 
         Returns:
             Conduit: The newly created Conduit instance.
@@ -6625,6 +6634,7 @@ class Spellbook(Cleanable):
                 dynamic=self._settle_or_inherit_conjure_mode(dynamic),
                 name=name,
                 conduit_logger=conduit_logger,
+                validation_warnings=validation_warnings,
             )
         finally:
             mediator.end_transaction_for_identity(
@@ -6867,6 +6877,7 @@ class Spellbook(Cleanable):
             dynamic: bool,
             name: str | None,
             conduit_logger: Any | None,
+            validation_warnings: bool,
     ) -> Conduit:
         """
         Internal
@@ -6885,6 +6896,8 @@ class Spellbook(Cleanable):
               mode when public frame setup already locked it, and binds the frame
               posture. Rich values stay frozen; the recorded world receives its
               Book and settled frame twins, including Rift visibility policy.
+            - Passes `validation_warnings` to the creation system unchanged; only
+              the public `conjure()` supplies it.
         Threading:
             - The CONJURE embargo is acquired by `conjure()` BEFORE this method
               takes the Spellbook lock, preserving embargo-then-lock ordering so
@@ -6961,6 +6974,7 @@ class Spellbook(Cleanable):
                 name=name,
                 conduit_logger=conduit_logger,
                 phase_scheduler_cls=PhaseScheduler,
+                validation_warnings=validation_warnings,
             )
             try:
                 return spellbook_creation_system.conjure()

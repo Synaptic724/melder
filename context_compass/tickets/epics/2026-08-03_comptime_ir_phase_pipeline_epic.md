@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T08:17:57Z
+- Updated: 2026-09-26T09:08:28Z
 - Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
@@ -212,6 +212,9 @@ on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling
       improvements to phases 1-11 and recommend the first tranche (opened on owner
       direction 2026-09-26). tickets/stories/2026-09-26_phase_pipeline_improvement_plan_story.md
       (fable_0)
+- [ ] Story: STORY-2026-09-26-signature-determinism-phase8-digest - tranche T1 (C-H + C-A) as
+      approved 2026-09-26; patch docs first; three tasks.
+      tickets/stories/2026-09-26_signature_determinism_and_phase8_digest_story.md (fable_0)
 - [ ] Story: STORY-2026-08-03-ir-schema-design - define the node/edge schema,
       the symbolic id scheme, the version stamp, and the answer to the identity
       question. Owner ratification required.
@@ -365,6 +368,9 @@ on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling
 - 2026-09-26 (owner): "your job is to figure out how we can improve the phases and all this stuff so keep
   working on it." Improvement-plan story opened; STORY-1 stays in review; no design ratification asked
   until the plan is presented once.
+- 2026-09-26 (owner): improvement plan decided: C-H and C-A approved as the first tranche; C-B (fuse
+  phases 5-7) rejected for now - the system-wide check and the single-spell dependency check must stay
+  separately schedulable.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -979,6 +985,25 @@ on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling
     and are not re-asked here.
   NEXT: Owner picks T1, T1', T1'' or redirects; on T1 fable_0 opens the implementation story with patch
     docs and three tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T08:59:53Z
+  TYPE: DECISION
+  CLAIM: Owner ruling on the improvement plan (2026-09-26): T1 items 1 and 2 are approved (C-H signature
+    determinism plus one serializer; C-A phase-8 None-first check plus a pass-hoisted pool digest). Item 3
+    (C-B, fusing phases 5-7 into one unit) is NOT approved now: the owner wants the system-wide check
+    (phase 6 frame-wide) to remain separately invocable, and a singular dependency check when a spell and
+    its dependencies are invalidated (the local 5-7 path). C-B is deferred, not dropped; the next
+    implementation story carries C-H and C-A only.
+  EVIDENCE:
+  - artifacts/ir_phase_improvement_20260926/candidates.md
+  - artifacts/ir_phase_survey_20260925/phase_06.md
+  - artifacts/ir_phase_survey_20260925/structural_driver.md
+  IMPACT: Implementation entry I-0 opens as a story with two tasks and patch docs; phases 5-7 keep their
+    three-phase registration and both the frame-wide and local variants.
+  NEXT: Open the implementation story (patch docs first), NOTICE melder_0 and updater_1, then propose the
+    exact files and symbols for confirmation before any edit under src/.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 

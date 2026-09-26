@@ -36,3 +36,10 @@ class Car:
 def make_car(engine: Engine, price: Optional[Decimal] = None) -> Car:
     """Factory with the same annotation pattern."""
     return Car(engine, price)
+
+
+class Garage:
+    """Late-bound consumer of Car (bound after conjure in the runtime-path probe)."""
+
+    def __init__(self, car: Car) -> None:
+        self.car = car

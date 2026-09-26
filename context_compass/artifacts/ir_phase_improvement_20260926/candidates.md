@@ -65,6 +65,9 @@ Two invariants that bound every ranking below:
   wiring (the dirty-root suite, 11 files) stay green (owner-run).
 - Collision: `spellbook_creation_system.py` may be under edit by melder_0 (missing_dependency_sockets,
   step 3 "conjure INFO report"); verify with `git diff` before the patch and split hunks.
+- OWNER RULING 2026-09-26: NOT NOW. The system-wide check (phase 6 frame-wide) must stay separately
+  invocable, and a singular dependency check for an invalidated spell and its dependencies (the local
+  5-7 path) must stay available; fusing the three phases would collapse that. Deferred, not dropped.
 
 ### C-C. Stop materializing the phase-3 DAG object; keep the id rows
 - Mechanism: phase 3 builds a `DirectedAcyclicWorkGraph` per spell per conjure (ULID mint, RLock, two
@@ -259,6 +262,8 @@ Two invariants that bound every ranking below:
 | cache correctness (all regimes) | C-H | - | - | prerequisite for C-A and C-G |
 
 ## Recommended first tranche (small, measurable, inside the epic's boundary, no hot-path reach)
+DECIDED 2026-09-26 (owner): T1 = C-H + C-A; C-B deferred (see its ruling above). The text below is the
+recommendation as presented.
 T1 = C-H + C-A + C-B, as one implementation story with three gauntlet-gated tasks:
 1. C-H first (determinism test; one serializer) - it is the acceptance test for everything signature-based
    and it protects today's cache; sequence after melder_0's `shared_compiler_executions.py` hunks land.

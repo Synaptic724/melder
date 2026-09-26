@@ -78,6 +78,14 @@ class KeywordConsumer:
         self.value = value
 
 
+class CountedConsumer:
+    """A plain `int` without a default is a REQUIRED_HOLE warning, not an unresolved input."""
+
+    def __init__(self, count: int) -> None:
+        """Retain the caller's count."""
+        self.count = count
+
+
 @pytest.fixture
 def compiler_book() -> Iterator[Spellbook]:
     """Own one isolated compiler world and clean it after each contract test."""
@@ -263,30 +271,68 @@ def test_injection_source_and_rows_carry_the_unresolved_input(compiler_book: Spe
         compiler.cleanup()
 
 
-def test_conjure_reports_unresolved_inputs_once(caplog: pytest.LogCaptureFixture) -> None:
-    """Conjure succeeds and logs one INFO line listing Spell.param -> ExpectedType."""
+@pytest.fixture
+def reporting_book() -> Iterator[tuple[Spellbook, logging.Logger]]:
+    """Own one isolated world whose book logs through a dedicated stdlib logger."""
     Aether._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
-    logger = logging.getLogger("melder.tests.unresolved_input_report")
-    book = Spellbook(aetheric_frame="unresolved-input-report", logger=logger)
+    logger = logging.getLogger("melder.tests.conjure_validation_warnings")
+    book = Spellbook(aetheric_frame="conjure-validation-warnings", logger=logger)
     book.get_configuration().set_property("phase_scheduler_workers_per_spellbook", 1)
     book._aetheric_frame_configuration.with_system_caching_enabled(False)
     try:
-        book.bind(spell=Consumer, existence="many")
-        with caplog.at_level(logging.INFO, logger=logger.name):
-            conduit = book.conjure()
-        lines = [record.getMessage() for record in caplog.records if "unresolved input" in record.getMessage()]
-        assert len(lines) == 1
-        assert "Consumer.value -> Unregistered" in lines[0]
-        conduit.cleanup()
+        yield book, logger
     finally:
         book.cleanup()
         Aether._reset_singleton_for_tests()
         aether = Aether()
         Spellbook._aether = aether
         Conduit._aether = aether
+
+
+def test_default_conjure_logs_no_validation_report(
+    reporting_book: tuple[Spellbook, logging.Logger], caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Without the flag, conjure says nothing about warnings at any level, unresolved inputs included."""
+    book, logger = reporting_book
+    book.bind(spell=Consumer, existence="many")
+    book.bind(spell=CountedConsumer, existence="many")
+    with caplog.at_level(logging.DEBUG, logger=logger.name):
+        conduit = book.conjure()
+    try:
+        messages = [record.getMessage() for record in caplog.records]
+        assert not [m for m in messages if "validation warnings" in m or "unresolved input" in m]
+    finally:
+        conduit.cleanup()
+
+
+def test_conjure_validation_warnings_logs_one_grouped_warning(
+    reporting_book: tuple[Spellbook, logging.Logger], caplog: pytest.LogCaptureFixture,
+) -> None:
+    """With the flag, conjure succeeds and logs every warning once, grouped by code in first-seen order."""
+    book, logger = reporting_book
+    book.bind(spell=Consumer, existence="many")
+    book.bind(spell=CountedConsumer, existence="many")
+    book.bind(spell=KeywordConsumer, existence="many")
+    with caplog.at_level(logging.DEBUG, logger=logger.name):
+        conduit = book.conjure(validation_warnings=True)
+    try:
+        reports = [
+            record for record in caplog.records
+            if record.getMessage().startswith("Conjure validation warnings")
+        ]
+        assert len(reports) == 1
+        assert reports[0].levelno == logging.WARNING
+        assert reports[0].getMessage().split("\n") == [
+            "Conjure validation warnings (3):",
+            "  UNRESOLVED_INPUT (2): Consumer.value -> Unregistered; KeywordConsumer.value -> Unregistered",
+            "  REQUIRED_HOLE (1): CountedConsumer.count",
+        ]
+        assert not [m for m in (r.getMessage() for r in caplog.records) if "unresolved input(s)" in m]
+    finally:
+        conduit.cleanup()
 
 
 @pytest.mark.parametrize("consumer_type", [Consumer, OptionalConsumer])

@@ -4,12 +4,12 @@
 
 ## Metadata
 - Task ID: TASK-2026-09-26-fix-inspect-signature-nameerror-on-type-checking-annotations
-- Status: in_progress
+- Status: blocked
 - Owner: user
 - Agent Name: melder_1
 - Priority: p1
 - Created: 2026-09-26T08:32:46Z
-- Updated: 2026-09-26T08:32:46Z
+- Updated: 2026-09-26T09:12:21Z
 
 ## Objective
 `inspect.signature(Aether.get_conduit_by_name)` raises `NameError: name 'Conduit' is not defined` on
@@ -40,12 +40,22 @@ root cause from source, and fix it.
 - from_state: draft
 - to_state: in_progress
 - transition_reason: Owner directed the hunt and fix on 2026-09-26.
+- from_state: in_progress
+- to_state: blocked
+- transition_reason: Validated prototype ready; src edits need owner confirmation of the file
+  set (DECISION_REQUEST note).
+- from_state: blocked
+- to_state: in_progress
+- transition_reason: Owner approved the file set (DECISION note); implementation starts.
+- from_state: in_progress
+- to_state: blocked
+- transition_reason: Owner redirected to an annotation audit first (DECISION note); src not yet edited.
 
 ## Steps / Checklist
 - [x] Reproduce with a probe and record the exact failure.
 - [x] Measure scope: every Melder callable whose signature fails under default `inspect.signature`.
-- [ ] Find and read Melder's own introspection call sites; test them against the pattern.
-- [ ] Root cause and fix options recorded; choose (or raise DECISION_REQUEST).
+- [x] Find and read Melder's own introspection call sites; test them against the pattern.
+- [x] Root cause and fix options recorded; choose (or raise DECISION_REQUEST).
 - [ ] Implement with tests; re-measure to zero failures.
 - [ ] Run Ticket Microcycle; document each meaningful finding before continuing.
 
@@ -53,10 +63,11 @@ root cause from source, and fix it.
 - Source fix plus regression test(s); before/after counts in Notes.
 
 ## Files / Paths Impacted
-- UNKNOWN until the scope measurement.
+- Proposed (awaiting owner confirmation): see the DECISION_REQUEST note; prototype in
+  artifacts/inspect_signature_nameerror_20260926/prototype/.
 
 ## Validation
-- Not run.
+- Sandbox prototype: see MEASURE notes. Owner machine: Not run.
 
 ## Risks / Rollback Notes
 - Runtime imports added to break TYPE_CHECKING-only names can create import cycles; any such change
@@ -79,7 +90,8 @@ root cause from source, and fix it.
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/inspect_signature_nameerror_20260926/
-- DISPOSITION: retain_as_reference
+  - system_docs/patches/active/type_checking_annotation_reflection_2026_09_26/
+- DISPOSITION: retain_as_reference (evidence); promote_to_documentation (patch lane)
 - CLEANUP_TRIGGER: ticket closure (retain probes and before/after results)
 
 ## Context Management
@@ -278,9 +290,191 @@ root cause from source, and fix it.
   NEXT: Full unit run of the prototype, then mailbox melder_0 (M1-9) and propose to the owner.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T08:57:27Z
+  TYPE: FACT
+  CLAIM: Consumed mailbox M0-14 (melder_0, 2026-09-26T08:43:16Z): the owner approved a version bump to
+    0.2.54 and a full build-asset run (runner + LLM support) now. If this fix changes src after that
+    run, _build_asset_runner.py must be rerun, because the bind guard and agent docs fingerprint src.
+    melder_0 also points out UnresolvedInputError._constructor_expected_type already reads FORWARDREF
+    (consistent with the fix; that site was already classified safe).
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_bump_version_rebuild_assets_for_unresolved_inputs_task.md
+  - src/melder/utilities/custom_exceptions/unresolved_input_error.py:280-292
+  IMPACT: src edits must land after melder_0's asset run, then the asset runner must run again; a new
+    class (SignatureReflection) also enters the bind-guard manifest only through that rerun.
+  NEXT: Ask melder_0 (M1-9) when the asset run completes and whether any planned file overlaps.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T09:00:46Z
+  TYPE: FACT
+  CLAIM: Consumed mailbox M0-15 (melder_0 ACK of M1-9, 2026-09-26T08:58:20Z): the 0.2.54 asset run is
+    finished (runner and LLM --check OK at 08:55Z); melder_0 writes none of the planned files and its
+    next lane is read-only on src. After this fix, rerun _build_asset_runner.py and
+    llm_support/_builder.py; the system-documents payloads need delete permission on the mount.
+  EVIDENCE: tickets/tasks/completed/2026-09-26_bump_version_rebuild_assets_for_unresolved_inputs_task.md
+  IMPACT: No writer conflict; the asset-rebuild tail is part of this fix's closure.
+  NEXT: Owner confirmation of the file/symbol list, then patch lane, src edits, docs, asset rebuild.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T09:01:23Z
+  TYPE: MEASURE
+  CLAIM: Prototype tests (sandbox 3.14.0rc2t, -X gil=0): 14 new SignatureReflection unit contracts and
+    8 new component regressions (late bind, both contract fallbacks, ConduitWard keys, fingerprint
+    text, Package.describe, ProtocolCrafter on a user class and on Conduit, detailed profile). All 8
+    regressions FAIL on the unmodified snapshot and all 22 new tests PASS on the prototype.
+    tests/component: 2068 passed on the snapshot, 2076 (the 8 new) on the prototype, no new failure.
+    tests/unit/melder on the prototype: 8037 passed, 3 failed; the same 3 fail on the snapshot
+    (build-asset version stamps, since rebuilt by melder_0 at 0.2.54). Owner machine: Not run.
+  EVIDENCE:
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/tests_prototype.txt:1-21
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/prototype/tests/test_type_checking_annotation_introspection.py:1-223
+  IMPACT: The fix set is validated end to end in the sandbox; device src for all planned files is
+    byte-identical to the snapshot (sha256 checked after melder_0's 0.2.54 run).
+  NEXT: Propose exact files/symbols, the patch lane and the asset-rebuild tail to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T09:01:44Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Owner confirmation required before any repository src edit (propose -> confirm -> implement;
+    spans 10 src files; adds one module, so patch_framework_gating applies via the graph refresh).
+    Proposed set (writer melder_1, melder_0 confirmed no overlap in M0-15): NEW
+    utilities/helpers/signature_reflection.py (SignatureReflection); FORWARDREF reads in
+    ConduitWard._get_spell_contract_keys, both _iter_spell_contract_defaults, Package.signature,
+    ProtocolCrafter._collect_attributes/_render_signature/_get_property_annotation (+ one owner-bearing
+    ForwardRef branch in _render_annotation); SignatureReflection in Package.describe,
+    ClassInspector._members (+ new _class_annotations, eval_str first), MethodInspector._fill_signature,
+    BindingProfileStrategy init_signature/signature text; Conduit._resolve_peer_conduit_for_contract_hooks
+    annotation -> Optional[Conduit]/Optional[str]; 2 new test files. Sequence after confirmation:
+    compact patch lane type_checking_annotation_reflection_2026_09_26, mapping note, src edits (CRLF
+    preserved, hashes verified), src_components/graph descriptor updates, then
+    _build_asset_runner.py + llm_support/_builder.py rerun. Effect on ids: only spells whose
+    constructor text carried an owner-bearing ForwardRef change id, and those ids were random per
+    process before. Not proposed (separate owner calls): function-spell ids hash repr addresses
+    (unstable for every function spell); binding-profile class annotations are cleared to {} when
+    any name is unresolved; external get_type_hints/default inspect.signature on Melder's API still
+    raise (inherent to TYPE_CHECKING imports; recommend documenting FORWARDREF, help() works);
+    ProtocolCrafter renders typing's quoted generic args as Any.
+  EVIDENCE:
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/tests_prototype.txt:1-21
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/display_equivalence_prototype.txt:1-5
+  - context_compass/agent_onboarding/default/engineer/skills/patch_framework_gating.md:13-24
+  IMPACT: Implementation is blocked only on this confirmation; the prototype is ready to port.
+  NEXT: Wait for owner confirmation (or redirect) of the set above.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T09:04:13Z
+  TYPE: DECISION
+  CLAIM: Owner approved the proposed file set, patch lane and asset-rebuild tail ("ok sure do your
+    thing sounds reasonable"), then paused to ask why the Conduit annotation is broken. Answered:
+    conduit: "Conduit" | None evaluates str | None, and str has no | with None, so every
+    annotation read raises TypeError (eager 3.13 semantics would fail at import; 3.14 lazy
+    annotations hid it until introspection). The only such annotation among 7,689 callables.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:6734-6740
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/invalid_annotations_before.txt:1-2
+  IMPACT: Implementation is unblocked once the owner's question is settled.
+  NEXT: Start the patch lane type_checking_annotation_reflection_2026_09_26 on the owner's go.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T09:06:25Z
+  TYPE: CONFLICT
+  CLAIM: Owner direction: "fix the actual type hints ... when we have TYPE_CHECKING we should just use
+    that" instead of FORWARDREF reads. Conflict: the NameError is CAUSED by TYPE_CHECKING-only hints (the
+    name is never imported at runtime, so a VALUE read cannot find it); rewriting hints to TYPE_CHECKING
+    cannot remove it, and the crashing input in the runtime bug is USER code written in that style,
+    which Melder cannot rewrite. FORWARDREF is how the reading code asks Python 3.14 for annotations,
+    not a kind of hint; the compiler already reads that way (meld.py, requirements finder, binding
+    profile, UnresolvedInputError). Separately measured: Melder's own source carries 608 quoted
+    annotations (481 fully quoted) in 158 modules, contrary to rule 5.14 (some nested ones are
+    legitimate Literal values); converting them to TYPE_CHECKING + unquoted is a valid style cleanup
+    but fixes none of the reported failures and adds to the external default-inspect NameErrors.
+  EVIDENCE:
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/quoted_annotations_before.txt:1-11
+  - context_compass/artifacts/inspect_signature_nameerror_20260926/results/runtime_s1_trace_before.txt:1-9
+  - src/melder/aether/conduit/meld/meld.py:1135-1152
+  IMPACT: Implementation paused until the owner chooses: approved reading-side fix, optionally plus the
+    quoted-hint cleanup as its own ticket.
+  NEXT: Owner decision on the options given in chat.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T09:11:52Z
+  TYPE: FACT
+  CLAIM: Owner asked whether Conduit can name its own type unquoted. On 3.14 it can: annotations are
+    evaluated when read, after the class exists (requires-python >=3.14), and conduit.py already does
+    it in several methods (parent: Conduit, root: Conduit, -> Conduit, new_conduit: Conduit). The
+    quote was needed only under eager (<=3.13) evaluation. Planned fix stays Optional[Conduit] /
+    Optional[str]; Optional["Conduit"] would also be valid (typing converts it) but breaks no-quotes.
+  EVIDENCE:
+  - pyproject.toml:10-10
+  - src/melder/aether/conduit/conduit.py:2405-2410
+  - src/melder/aether/conduit/conduit.py:2540-2545
+  - src/melder/aether/conduit/conduit.py:2722-2726
+  IMPACT: No change to the approved plan.
+  NEXT: Resume implementation: patch lane, then src edits.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+- DATETIME: 2026-09-26T09:12:21Z
+  TYPE: DECISION
+  CLAIM: CONFLICT resolved: the owner's "fix the actual type hints" referred to the Conduit hint (a quoted
+    name mixed with a union); the approved plan already fixes it as Optional[Conduit]/Optional[str], and
+    the owner's approval of the full set stands. Implementation starts: patch lane
+    type_checking_annotation_reflection_2026_09_26, then src edits, tests, docs, graph, asset rebuild.
+  EVIDENCE: src/melder/aether/conduit/conduit.py:6734-6740
+  IMPACT: Ticket returns to in_progress (implementation).
+  NEXT: Author the patch lane documents and link them.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-26T09:14:11Z
+  TYPE: PLAN
+  CLAIM: Patch lane type_checking_annotation_reflection_2026_09_26 authored and linked (architecture +
+    6 component patches; no code_description patch: no control-flow, locking or rollback semantics
+    change). Read order done. Mapping (patch section -> implementation -> validation):
+    utilities_helpers -> add signature_reflection.py; Package.describe/signature -> helper unit tests +
+    package regression. spell_examination_profiles -> BindingProfileStrategy stabilize text,
+    ClassInspector _class_annotations + display_signature, MethodInspector -> fingerprint and
+    detailed-profile regressions, cross-process id probe. spell_compiler -> both contract fallbacks
+    FORWARDREF -> late-bind + fallback regressions. conduit_ward -> FORWARDREF -> ward regression.
+    public_helper_exports -> ProtocolCrafter FORWARDREF + render branch -> two crafter regressions.
+    conduit_runtime -> Optional[Conduit]/Optional[str] -> crafter(Conduit) regression, invalid-
+    annotation probe 0. Then full unit + component suites on 3.14t (device venv).
+  EVIDENCE:
+  - system_docs/patches/active/type_checking_annotation_reflection_2026_09_26/architecture_patch.md:1-81
+  IMPACT: Patch-framework entry gate satisfied; src edits may start.
+  NEXT: Apply the prototype edits to the device files (CRLF preserved) and verify hashes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T09:16:44Z
+  TYPE: DECISION
+  CLAIM: Owner redirect (interrupting the src apply): build a tool that finds every annotation of the
+    "Type" | None kind across the library before fixing. src edits were NOT applied (device src still
+    byte-identical to the snapshot; the prototype remains staged in the sandbox). Measured truth table
+    on 3.14: a string literal in a | union raises TypeError against None, str, classes, builtin
+    generics, Optional/Union and Any; only typing._GenericAlias (List[int]) and TypeVar accept it.
+    The audit runs as its own task; this fix resumes with any audit findings folded in.
+  EVIDENCE: context_compass/artifacts/inspect_signature_nameerror_20260926/results/invalid_annotations_before.txt:1-2
+  IMPACT: Implementation paused; patch lane stays active.
+  NEXT: Open the audit task, build and run the finder over src/melder.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T09:22:22Z
+  TYPE: RISK
+  CLAIM: Two facts for the resume: (a) device conduit.py changed after the 08:57 hash check (owner edit:
+    conduit: Optional["Conduit"]); the prototype's conduit.py must NOT be committed, and every planned
+    file must be re-hashed and the edits re-applied to current bytes. (b) Recommitting a file through
+    an outputs path that was already committed once can deliver the OLD bytes while reporting
+    success (seen twice: annotation_audit.py, probe_user_mod.py); every commit must use a fresh staged
+    path and be verified by sha256 on the device.
+  EVIDENCE: src/melder/aether/conduit/conduit.py:6735-6740
+  IMPACT: Prevents overwriting the owner's edit and silently shipping stale bytes.
+  NEXT: On resume, re-hash planned files and patch current device bytes in place.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
-Opened 2026-09-26T08:32:46Z on owner direction. Resume from the latest Notes NEXT.
+Opened 2026-09-26T08:32:46Z on owner direction. Root cause, scope (817 callables; 11 internal
+sites; a dynamic late-bind crash; unstable class spell ids) and a validated sandbox prototype are
+recorded. Blocked on the owner confirming the DECISION_REQUEST file/symbol set; then patch lane,
+src edits, docs, asset rebuild. Resume from the latest Notes NEXT.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

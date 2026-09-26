@@ -1,0 +1,57 @@
+files scanned: 595
+findings: 41
+
+== STRING_IN_UNION: 4
+  STRING_IN_UNION src/melder/aether/conduit/conduit.py:6737 Conduit._resolve_peer_conduit_for_contract_hooks(conduit) -- 'Conduit' | None
+  STRING_IN_UNION src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py:1621 WeakConcurrentDict.__or__(other) -- 'WeakConcurrentDict[_K, _V]' | Mapping[_K, _V] | Iterable[Tuple[_K, _V]]
+  STRING_IN_UNION src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py:1657 WeakConcurrentDict.__ior__(other) -- 'WeakConcurrentDict[_K, _V]' | Mapping[_K, _V] | Iterable[Tuple[_K, _V]]
+  STRING_IN_UNION src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py:1685 WeakConcurrentDict.__ror__(other) -- 'WeakConcurrentDict[_K, _V]' | Mapping[_K, _V] | Iterable[Tuple[_K, _V]]
+
+== UNDEFINED_NAME: 37
+  UNDEFINED_NAME  src/melder/aether/conduit/meld/creation_context/creation_context.py:239 CreationContext.execute(meld) -- Meld (inside a string annotation)
+  UNDEFINED_NAME  src/melder/aether/conduit/meld/creation_context/creation_context.py:276 CreationContext.execute_no_hooks(meld) -- Meld (inside a string annotation)
+  UNDEFINED_NAME  src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py:713 FrameACLProfileBuilder.create_profile(view_override_ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py:714 FrameACLProfileBuilder.create_profile(command_override_ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py:715 FrameACLProfileBuilder.create_profile(codegen_override_ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:73 FrameACLCompiler.__init__(profile_builder) -- IFrameACLProfileBuilder
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:299 FrameACLCompiler._compile_frame_payload_fields(view_profile) -- FrameACLViewProfile
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:300 FrameACLCompiler._compile_frame_payload_fields(precision_profile) -- FrameACLViewProfile
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:342 FrameACLCompiler._compile_conduit_access(view_profile) -- FrameACLViewProfile
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:343 FrameACLCompiler._compile_conduit_access(precision_profile) -- FrameACLViewProfile
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:386 FrameACLCompiler._compile_spell_access(view_profile) -- FrameACLViewProfile
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:387 FrameACLCompiler._compile_spell_access(precision_profile) -- FrameACLViewProfile
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:771 FrameACLCompiler._collect_operation_effects(ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:791 FrameACLCompiler._collect_effective_operation_effects(base_ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:792 FrameACLCompiler._collect_effective_operation_effects(override_ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:815 FrameACLCompiler._collect_effective_operation_effects_from_rulesets(rulesets) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:841 FrameACLCompiler._collect_condition_string_values_from_rulesets(rulesets) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:875 FrameACLCompiler._collect_import_module_roots_from_rulesets(rulesets) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:914 FrameACLCompiler._collect_effective_spell_operation_effects_for_record(rulesets) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:941 FrameACLCompiler._as_frame_acl_ruleset(ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:941 FrameACLCompiler._as_frame_acl_ruleset(return) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:1031 FrameACLCompiler._spell_selector_rules_present_for_operation(rulesets) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_compiler.py:1054 FrameACLCompiler._collect_selector_spell_operation_effects_for_record(rulesets) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/frame_acl_configuration_chain.py:458 FrameACLConfigurationChain._validate_revision_payload(configuration) -- Any
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:81 FrameACLSetCompatibilityValidator.__init__(profile_builder) -- IFrameACLProfileBuilder
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:444 FrameACLSetCompatibilityValidator._check_visibility_vs_enable(view_rulesets) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:445 FrameACLSetCompatibilityValidator._check_visibility_vs_enable(view_override_ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:446 FrameACLSetCompatibilityValidator._check_visibility_vs_enable(command_rulesets) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:447 FrameACLSetCompatibilityValidator._check_visibility_vs_enable(command_override_ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:509 FrameACLSetCompatibilityValidator._check_member_visibility_vs_command(view_rulesets) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:510 FrameACLSetCompatibilityValidator._check_member_visibility_vs_command(view_override_ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:511 FrameACLSetCompatibilityValidator._check_member_visibility_vs_command(command_rulesets) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:512 FrameACLSetCompatibilityValidator._check_member_visibility_vs_command(command_override_ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:559 FrameACLSetCompatibilityValidator._collect_operation_effects(ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:582 FrameACLSetCompatibilityValidator._collect_effective_operation_effects(base_ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:583 FrameACLSetCompatibilityValidator._collect_effective_operation_effects(override_ruleset) -- FrameACLRuleSet
+  UNDEFINED_NAME  src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:614 FrameACLSetCompatibilityValidator._collect_effective_operation_effects_from_rulesets(rulesets) -- FrameACLRuleSet
+
+== UNPARSEABLE_STRING: 0
+
+== EVAL_ERROR: 0
+
+== TC_IMPORT_ERROR: 0
+
+== IMPORT_ERROR: 0
+
+policy counts (not defects): PEP 604 unions 417, quoted annotations 575
