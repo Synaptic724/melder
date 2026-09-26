@@ -14,9 +14,9 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.54"
-SOURCE_SHA256 = "35218bcea3ae453ab298dc467380334fe3fc0b8fd79be071162e4e1127a901fb"
-ENTRY_COUNT = 634
+BUILT_FOR_VERSION = "0.2.56"
+SOURCE_SHA256 = "15c34e3f17ab79dbdb12c9cb8bdf8982b981979a74baf43a010e9922ccfc50f8"
+ENTRY_COUNT = 645
 
 ENTRIES = (
     ('melder.aether.aether', 'Aether'),
@@ -168,6 +168,9 @@ ENTRIES = (
     ('melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis', 'SpellOverrideTargetingAnalysis'),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis', 'SpellRuntimeAnalysis'),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_runtime_analysis', 'SpellRuntimeRecord'),
+    ('melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis', 'SpellSite'),
+    ('melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis', 'SpellSiteGraphAnalysis'),
+    ('melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis', 'SpellSiteParam'),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor', 'SpellArtifactProcessor'),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy', 'SpellArtifactProcessorStrategy'),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder', 'SpellArtifactProcessorStrategyBuilder'),
@@ -179,6 +182,7 @@ ENTRIES = (
     ('melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy', 'SpellOccurrenceOrderProcessorStrategy'),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy', 'SpellOverrideTargetingProcessorStrategy'),
     ('melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy', 'SpellRuntimeProcessorStrategy'),
+    ('melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy', 'SpellSiteGraphProcessorStrategy'),
     ('melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint', 'RootResolutionBlueprint'),
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation', 'SpellCodegenCreation'),
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery', 'CodegenCreationDiscovery'),
@@ -193,6 +197,13 @@ ENTRIES = (
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_system', 'CodegenCreationSystem'),
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_family_step', 'CodegenCreationFamilyStep'),
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers', 'CodegenCreationSchemaHelpers'),
+    ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver', 'OverrideKeyResolution'),
+    ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver', 'OverrideKeyResolver'),
+    ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering', 'SitePlanEmission'),
+    ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering', 'SitePlanLowering'),
+    ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering', 'SitePlanRuntimeHelpers'),
+    ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering', 'SitePlanStep'),
+    ('melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime', 'SitePlanOverrideRuntime'),
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy', 'SpellCodegenStrategy'),
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy_builder', 'SpellCodegenStrategyBuilder'),
     ('melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy', 'FallbackNoOverridesCodegenCreationStrategy'),

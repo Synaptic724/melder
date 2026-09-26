@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T13:19:04Z
+- Updated: 2026-09-26T13:27:19Z
 - Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
@@ -186,8 +186,9 @@ Non-Functional
 
 ## Milestones (Track Progress)
 
-- [ ] Milestone 1: Ground truth - every phase's real inputs and outputs
+- [x] Milestone 1: Ground truth - every phase's real inputs and outputs
       established from source, object-bound points named with file:line.
+      (done 2026-09-26T13:27:19Z: survey story accepted; phases 1-7 plus the drivers and the seam; 8-11 deferred by owner)
 - [ ] Milestone 2: IR schema ratified by the owner, with the identity question
       answered explicitly.
 - [ ] Milestone 3: Phases 1-10 ported, existing suite green, gauntlet parity.
@@ -199,19 +200,21 @@ phases 1-4); component-map slices done, no phase source read yet. Milestones 2-5
 Milestone status (2026-09-26): STORY-1 discovery steps S1-S11 executed; all three tasks and the story are in
 review with nine records plus summary.md under artifacts/ir_phase_survey_20260925/. Milestone 1 is checked
 on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling). Milestones 2-5 not started.
+Milestone status (2026-09-26T13:27:19Z): Milestone 1 DONE (owner turned in the survey story). The improvement-plan story
+and tranche T1 are also closed. Milestones 2-5 not started; I-1 (structural snapshot) is the next implementation entry.
 
 ## Stories (Required to Complete)
 
-- [ ] Story: STORY-2026-08-03-phase-pipeline-survey - read `compiler_phase_1.py`
+- [x] Story: STORY-2026-08-03-phase-pipeline-survey - read `compiler_phase_1.py`
       through `compiler_phase_11.py` and record, per phase, what it consumes,
       what it produces, and every point where it holds a live object rather than
       a value. **Gate: no other story starts until this is accepted.**
-      tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md (fable_0, opened
-      2026-09-25)
-- [ ] Story: STORY-2026-09-26-phase-pipeline-improvement-plan - rank source-backed
+      tickets/stories/completed/2026-09-25_ir_phase_pipeline_survey_story.md (fable_0; done
+      2026-09-26T13:27:19Z: drivers, phases 1-7 and the seam; the phases 8-11 exhaustive survey is deferred)
+- [x] Story: STORY-2026-09-26-phase-pipeline-improvement-plan - rank source-backed
       improvements to phases 1-11 and recommend the first tranche (opened on owner
-      direction 2026-09-26). tickets/stories/2026-09-26_phase_pipeline_improvement_plan_story.md
-      (fable_0)
+      direction 2026-09-26). tickets/stories/completed/2026-09-26_phase_pipeline_improvement_plan_story.md
+      (fable_0; done 2026-09-26T13:27:19Z: T1 chosen and shipped)
 - [x] Story: STORY-2026-09-26-signature-determinism-phase8-digest - tranche T1 (C-H + C-A) as
       approved 2026-09-26; patch docs first; five tasks (two added on owner rulings).
       tickets/stories/completed/2026-09-26_signature_determinism_and_phase8_digest_story.md (fable_0;
@@ -386,6 +389,8 @@ on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling
 - 2026-09-26 (owner): tranche T1 accepted and closed (tasks 1-5 and the story); I-0 of the implementation
   entry is delivered (one serializer, determinism test). Canonical maps carry the tranche; the structural
   snapshot inherits the row rule (hash surface; contract override values are never row material).
+- 2026-09-26 (owner): the survey story (Milestone 1) and the improvement-plan story turned in ("turn in your
+  shit if your done"); their records stay under artifacts/ as reference. No fable_0 lane is routed after this.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -1098,6 +1103,23 @@ on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-09-26T13:27:19Z
+  TYPE: FACT
+  CLAIM: Owner turned in fable_0's remaining review tickets: the survey story with its three tasks (Milestone 1
+    done: drivers, phases 1-7, the seam, summary.md D1-D6) and the improvement-plan story with its two tasks
+    (cost model; thirteen candidates; T1 chosen and shipped). Records retained: artifacts/ir_phase_survey_20260925/
+    and artifacts/ir_phase_improvement_20260926/ (retain_as_reference). The epic stays open with fable_0 as
+    the focus lane; nothing is routed until the owner picks the next entry (I-1 structural snapshot, patch docs
+    first, or the deferred phases 8-11 survey).
+  EVIDENCE:
+  - tickets/stories/completed/2026-09-25_ir_phase_pipeline_survey_story.md
+  - tickets/stories/completed/2026-09-26_phase_pipeline_improvement_plan_story.md
+  - artifacts/ir_phase_survey_20260925/summary.md
+  IMPACT: Milestone 1 closed; Milestones 2-5 untouched; the recovery table's S11 row reads done.
+  NEXT: Owner selects the next lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -1149,7 +1171,7 @@ STEPS - one microcycle unit each. The status column is edited in place when a st
 | S8 | task 2 | spellbook_creation_system.py _prepare_resolution_for_conjure and the full-hit branch; the codegen_creation_system cache-load entry | D6 | done 2026-09-26 (5-7 still run on a full hit; hydration reads only the pool and the phase-5 path registry; registry rows gate meld) |
 | S9 | task 3 | utilities/caching_system/caching_system.py (618); capture_phase2_5_codegen_ir and hash_codegen_signature inputs (re-verify) | D3, D4 | done 2026-09-26 (envelope = 4 exact stamps + per-spell bytes; key: id covers the pool projection; dormant signature is a digest, not a key) |
 | S10 | task 3 | transaction families; spell_system_states.py gated/dirty transitions (whole methods) | D5 | done 2026-09-26 (all writers via set_validity; per-event table; no new hooks needed; no raw index ULIDs in rows) |
-| S11 | task 3 | consolidate summary.md; close tasks; story exit; Milestone 1 | D1-D6 accepted by owner | review 2026-09-26 (summary.md written; owner acceptance and four decisions pending) |
+| S11 | task 3 | consolidate summary.md; close tasks; story exit; Milestone 1 | D1-D6 accepted by owner | done 2026-09-26T13:27:19Z (owner turned in the story; Milestone 1 checked) |
 
 Task 1: tickets/tasks/2026-09-25_survey_compiler_phases_1_to_4_task.md
 Task 2: tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md
@@ -1170,6 +1192,9 @@ RECOVERY PROTOCOL - after any compaction or handoff:
 UPDATE 2026-09-26T13:17:13Z (fable_0): tranche T1 (I-0 plus the phase-8 digest and the live contract operands) is DONE
 and accepted; its story and five tasks are in completed/. No fable_0 lane is routed on the board after this closure;
 the survey story (S11) and the improvement-plan story remain in review for the owner.
+UPDATE 2026-09-26T13:27:19Z (fable_0): the survey story (Milestone 1) and the improvement-plan story are turned in by the
+owner; every fable_0 story under this epic is now in completed/. Resume point after a compaction: this epic's
+Decision Log and IMPLEMENTATION ENTRY; wait for the owner's lane selection.
 
 IMPLEMENTATION ENTRY - after S11 and the owner's explicit go, in this order:
 - I-0 signature-determinism test plus one serializer (small, compiler-side, protects today's cache;

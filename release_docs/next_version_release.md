@@ -1,6 +1,70 @@
-# Melder 0.2.55
+# Melder 0.2.56
 
 **Unreleased**
+
+## `override` replaces `spell_override` on `SpellMap` and `SpellContract`
+
+The construction payload a `SpellMap` or `SpellContract` carries for its provider is now declared with
+`override`, the same keyword `meld` uses:
+
+```python
+class Consumer:
+    def __init__(
+        self,
+        service: Service = SpellContract(spell=Service, override={"marker": marker}),
+    ) -> None:
+        self.service = service
+```
+
+- **Breaking change: the old keyword is gone.** `SpellContract(..., spell_override=...)` and
+  `SpellMap(..., spell_override=...)` raise `TypeError`; rename the keyword to `override`. The
+  attribute is `.override` as well, and there is no alias.
+- **`meld(override=...)` is unchanged**, and so is precedence: a value supplied at meld wins over the
+  descriptor's payload, which wins over the resolved dependency.
+
+## Override payload values reach the provider as the objects you gave
+
+The values inside a `SpellMap` or `SpellContract` `override` payload may be any Python object - an
+instance, a callable, a dict, an enum member. Melder never copies them into a compiled plan or into the
+creation cache: the plan records a reference to the descriptor and reads the live value when it builds
+the provider, so the provider's constructor receives the very object from the descriptor, on the first
+meld and on every later run that loads the creation cache.
+
+- **Before, non-scalar values could arrive transformed.** A dict, list, enum, callable or object in
+  the payload could reach the provider as its frozen text or tuple form - on most bindings in-process,
+  and always after a creation-cache hit. Only `None`, `bool`, `int`, `float` and `str` values, and
+  tuples of them, were reliable. All values are now delivered as they are.
+- **`SpellMap` payloads are applied.** A `SpellMap(..., override=...)` payload was accepted but never
+  reached the provider. It now does, exactly like a `SpellContract` payload.
+- **The creation cache never stores your objects.** Cached plans hold scalar payload values and
+  references for everything else, so a plan is valid in any process that binds the same book.
+- **Existing creation caches keep working.** Cache entries for books whose payload values are all
+  scalars are byte-identical; a book with a non-scalar payload value compiles new plans once.
+- **One path still renders values the old way.** A meld that passes its own `override` payload builds
+  through a separate executor that still writes the descriptor's payload values into generated code.
+  That executor is being replaced. Until then, pass such values in `meld(override=...)` itself, which
+  always delivers them by identity.
+
+## Faster conjure on large books
+
+Phase 8 of the compiler hashed the whole book's blueprint rows once per root spell, an
+O(spells^2) step on the cold conjure path. It now hashes them once per conjure. On a synthetic book of
+300 spells, cold conjure took 34% less time; at 29 spells the difference is within measurement noise.
+
+- **No change in what gets compiled.** The analysis is rebuilt exactly when it was before, and creation
+  caches are not invalidated.
+
+## Creation-cache signatures are the same in every process
+
+The signature that identifies a compiled creation plan in the cache rendered some values with Python's
+default `repr`, which prints a memory address for functions and for objects that do not define their own
+`repr`. A plan carrying such a value in a contract payload therefore got a different signature every
+time the program started and never matched its cache. Signatures are now the same across processes for
+every value the cache can hold, and one implementation of the signature code serves the whole compiler.
+
+- **Plans whose signatures were already stable keep their bytes.** Existing caches for those books are
+  reused unchanged. Books that carry a function or an object with a default `repr` in a payload compile
+  new plans once and then hit the cache on every run.
 
 ## Typed parameters without a provider are supplied at meld
 
@@ -243,8 +307,9 @@ could be silently omitted from the disposal list and never run during scope tear
 
 - The packaged system documents (`melder.__architecture__`, `__components__`, `__graph_network__` and
   `__graph_details__`) are regenerated and describe unresolved inputs, `UnresolvedInputError`, the
-  opt-in conjure warning report, process-stable spell ids, cache generation 12 and caller-supplied container
-  parameters.
+  opt-in conjure warning report, process-stable spell ids, cache generation 12, caller-supplied container
+  parameters, the `override` descriptor keyword with live payload values, and the single
+  codegen-signature implementation.
 - `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
   raised and caught, but it cannot be bound as a spell.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.55.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.56.

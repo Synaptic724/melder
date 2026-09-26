@@ -367,6 +367,65 @@ state, which ordering), whether it is a production defect or a test artifact, an
   NEXT: Read system_docs/patches/completed/shared_context_rebuild_2026_09_05/ in patch order.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-09-26T13:22:13Z
+  TYPE: PLAN
+  CLAIM: September design, adapted to current source (read in full: the five archived patch docs, CreationGate,
+    CreationContext, CreationContextRebuild, Meld's three producer entries, run_resolution_phases_for_target_spell).
+    (1) Spell keeps a stable spell-index gate reference (dynamic only, resolved when the factory is configured) and
+    a failed-build cause. (2) Factory keeps the CounterSwitch election; a failed leader records the cause and
+    releases the claim (state 1 -> 0) so followers raise with that cause instead of hanging. (3) Dynamic meld doors
+    admit the index ticket BEFORE reading the context and run the context's executor slots directly under that one
+    ticket (no second admission inside execute); after admission a spell that became resolution_required releases,
+    runs the existing deferred path and re-admits. Automatic doors unchanged. (4) Meld's three producers (structural
+    1-4, resolution 5-11, deferred 8-11) run inside CreationContextRebuild([spell]) for dynamic spells: freeze and
+    drain the index gate, then take spell._lock, run, publish the new context from a present plan, reopen.
+    Adaptations to September: (a) freeze/drain happens BEFORE spell._lock, because since 2026-09-25 an
+    Existence.unique build holds the spell lock while its meld holds a ticket, so draining under the spell lock
+    deadlocks until the 30 s drain timeout; (b) Phase 5 run_local now touches only the target (2026-09-19), so the
+    affected set is the target and the leftover's "mark resolution_required when no plan" branch is dropped: it
+    would route the spell to the deferred lane, which cannot compile without a Phase-5 blueprint. Nothing else
+    opens or closes spell-index gates (enable_all/disable_all have no callers), so gate lock -> spell lock has no
+    reverse order. Known limit: a meld whose own constructor melds the same spell through a conduit that must
+    rebuild would drain itself (30 s timeout, RuntimeError); pathological, documented.
+  EVIDENCE:
+  - system_docs/patches/completed/shared_context_rebuild_2026_09_05/architecture_patch.md:1-57
+  - system_docs/patches/completed/shared_context_rebuild_2026_09_05/code_description_patch_context_protocol.md:1-31
+  - src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py:1-144
+  - src/melder/utilities/synchronization/creation_gate.py:349-415
+  - src/melder/utilities/synchronization/creation_gate.py:540-603
+  - src/melder/aether/conduit/meld/creation_context/creation_context.py:236-310
+  - src/melder/aether/conduit/meld/meld.py:748-863
+  - src/melder/aether/conduit/meld/meld.py:991-1049
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1657-1752
+  - src/melder/utilities/synchronization/creation_gate_controller.py:1001-1115
+  IMPACT: Files: spell.py, creation_context_factory.py, creation_context_rebuild.py, meld.py, conduit_meld.py,
+    spellspace_meld.py plus tests. Per-meld cost: the dynamic ticket pair moves earlier (not added); one Spell
+    attribute read replaces one context attribute read on the normal lane. To be measured, not assumed.
+  NEXT: Resync the VM copy (drop the superseded lock prototype) and implement the plan there.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATETIME: 2026-09-26T13:35:23Z
+  TYPE: MEASURE
+  CLAIM: September plan prototype on the VM copy (scripts apply_sept_spell_factory.py, apply_sept_window_doors.py,
+    apply_sept_test_stubs.py; 3.14.7t, -X gil=0). The deterministic September regression passes; 682 tests pass
+    in the meld/spell/synchronization unit folders plus the component file once two Spell test stubs model the new
+    fields. 40 runs of the concurrency file with the two-cluster test unskipped: 0 failing (today 7/40). With the
+    default 100 ms drain poll the file took a 1.98 s median instead of 1.05 s (contended rebuild windows wait whole
+    poll steps); with a 1 ms poll for the rebuild window only: 0/40 failing, 1.05 s median. Warm meld, ns/meld,
+    median of per-process minimums, today vs patched: automatic plain 233.5 vs 236.6 (n=6, per-variant spread about
+    10 ns; fast-door code is byte-identical and a slots-only copy measured 232.2), automatic hooks 499.3 vs 497.4,
+    dynamic plain 492.3 vs 495.7 (n=5), dynamic hooks 719.1 vs 723.3 (n=3), after inlining the warm context read
+    in Meld._execute_admitted (without it dynamic plain was about 535). New Spell slots are appended last.
+  EVIDENCE:
+  - context_compass/artifacts/creation_context_race_20260926/results/file_runs_40_sept_poll1ms.txt:1-40
+  - context_compass/artifacts/creation_context_race_20260926/results/file_runs_40_sept_poll100ms.txt:1-40
+  - context_compass/artifacts/creation_context_race_20260926/results/warm_meld_bench.txt:1-66
+  - context_compass/artifacts/creation_context_race_20260926/probes/bench_meld.py:1-33
+  IMPACT: Both races closed in the stress runs with no warm-path change outside measurement noise.
+  NEXT: Make the scripts reproduce the measured state exactly (slot placement), add contract tests for the new
+    behaviour, run the broader suites, then author the active patch lane before any device edit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Opened 2026-09-26T12:29:46Z on owner direction. Investigation first; no src edits until the owner approves a plan.

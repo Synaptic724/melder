@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `6bb99bde2631849ba446ceec096c57821f43c7f33f27d96324aa4a222c1c4a46`
+- source_sha256: `66b85bd63320cab05c44a50d15da2b3c137e7583135b043fb2fd4beddbc0930c`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `2576b798f4561802daf744fdb347c41cfa5136461f41d06154678801abb9022f`
+- source_sha256: `4b2ee30023b5ff32cd3e369781fb8bb655a68f84182ec05130795dce7da678e0`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `61800e84a88782b086077833f806b5bb5e2d15b2e985cc1165d4fe172791703f`
+- source_sha256: `55c154222d3d7f38a534f8555caa1a326e5e069ae8b78c7ce3e269161dcbc5ec`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `c5d2037b86c1698e247190cc9bfdfc6ed0d99117947ad7ad0e8d719843ddba28`
+- source_sha256: `f1f6523ebed79caddc180edc594d3b4efce6069affb024f154f837fbbf896aa8`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `5a7f4b2f4b3aedaec88fb04d8267b2662bc419fcd524b5a520865047d030d5a6`
+- source_sha256: `c057f83c0a4811faf2da5ac13a03b0f04e356a5873fc48a01cee209ee5454a46`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `64782d9e2257af39681421a3e906901f5ac2659942d5de563f3712469d67fd02`
+- source_sha256: `e328ef1b5ad805e0663ba38d2c9cafff175592967c6d5c0330e22964bb1d88af`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `65a967364ba73fdd644604c108aca842e21d6a2f825f9709d30ef844e5aadc18`
+- source_sha256: `17b12c85b23628994731c0be85dabd8ce86eacd86b18bb1c5bb972b479ef44dc`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `957fbea5ff534583a24e0258c879a1fecb8d16d82a5e6233d75b330256e3fe01`
+- source_sha256: `c26beeecdf0d3666206f6b8f4759894b38da94b7ff2624b2764863b441af8333`
 - nodes: 1
 
 ### Nodes

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 28121
-CONTENT_SHA256 = 'e07b111cc308f206cd94718f96e9375997c6eff0b31dc0c8a121b2fd8e5b672a'
+LINE_COUNT = 28396
+CONTENT_SHA256 = 'a76b2145dc0f977fa7c6b9dc3dc2f5eff46ad1ed5a2de5075119c160f6e84c33'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `63cc562a955c9f1a860661e8fff1203dd292d01e69d7b4ddbbbcbc2ab69046e8`
+- source_sha256: `3e960c69593ee4858f34ecacff1960ce0594ed58d73e621152ecb060bcc6a869`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `00cbe31130b3501afe73ea204b9dfa8d952751590546e0c091b5bc648be2b83c`
+- source_sha256: `6bb99bde2631849ba446ceec096c57821f43c7f33f27d96324aa4a222c1c4a46`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `9e6eea89ff29461604f13b5ba8727b0b24fb41c43049976b3cc64cf95679be3b`
+- source_sha256: `2576b798f4561802daf744fdb347c41cfa5136461f41d06154678801abb9022f`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `72e9dfe80d7d2b9be5764ada543ccc3a4624953cbb84ed327c3af68ee68e4be6`
+- source_sha256: `61800e84a88782b086077833f806b5bb5e2d15b2e985cc1165d4fe172791703f`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `8f0fcd19fc49e02644552b66a44603f97da569e21e1801b027ee3f87ca9854b8`
+- source_sha256: `c5d2037b86c1698e247190cc9bfdfc6ed0d99117947ad7ad0e8d719843ddba28`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `8baf6f679964338fc4f3b541e7d55c6a0c0a3d734dc2c1fc2a70a4bd222a03c4`
+- source_sha256: `5a7f4b2f4b3aedaec88fb04d8267b2662bc419fcd524b5a520865047d030d5a6`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `000eaae0d70d08a00e6ab3acd7b3ecbe4e725c19c623267b844aff89243e16ab`
+- source_sha256: `64782d9e2257af39681421a3e906901f5ac2659942d5de563f3712469d67fd02`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `003343dbfa2e9d594c335d4bfacac5c8f78c1bc0ccc95390feb7fc70a9ee2da9`
+- source_sha256: `65a967364ba73fdd644604c108aca842e21d6a2f825f9709d30ef844e5aadc18`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `c59cde814655df17a7b4a5cc227e8dafc3bdc50332da8ad5d7bb12cc6ee147c4`
+- source_sha256: `957fbea5ff534583a24e0258c879a1fecb8d16d82a5e6233d75b330256e3fe01`
 - nodes: 1
 
 ### Nodes
@@ -4420,7 +4420,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `fe3686f112a8eb630b8489ec350e096369ebbc06716a1bb31d51a28d4b111bce`
+- source_sha256: `156cc1619fa4f1534d0101bd2f15c4a2a3f53a700f7f3744e8ac973e5bdc2df9`
 - nodes: 2
 
 ### Nodes
@@ -5237,7 +5237,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/contracts/spell_contract.py
 
-- source_sha256: `4232691c38f46df57c72e51b12d37c49e53b0d879d7fdf7a78a0273bd83b8474`
+- source_sha256: `3369a5fad23cafe81ad1632361df52cebe41e93208f5c69d8a2aa024e1f140d5`
 - nodes: 2
 
 ### Nodes
@@ -5282,7 +5282,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/contracts/spell_map.py
 
-- source_sha256: `c313170dd39456396a9a136c16efd8b1429c8ffe37353a6bfc584f04b4c98211`
+- source_sha256: `3d0a54bf2421cb59e482cf5a9d568da895260366b5ba232080bb9463a93a4ca8`
 - nodes: 2
 
 ### Nodes
@@ -6285,7 +6285,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py
 
-- source_sha256: `385f75638f72e77ef52eeb08744b016369161f2e80c0b3a0f097ff8ba3b7325d`
+- source_sha256: `f77a957b3f129a4d1aa0389cd41b878ac9092bdf02993e8a9b9ba33dc5d72879`
 - nodes: 4
 
 ### Nodes
@@ -6325,7 +6325,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellInjectionAnalysis` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis`
-- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:161`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py:169`
 - extends: `Cleanable`
 - role: Processor-owned injection section for one spell model.
 - responsibilities:
@@ -6357,7 +6357,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_contract_analysis.py
 
-- source_sha256: `e4e58059ce4d9b63f35d001af47c798fc5e188a35ad293e34be7dc69ff75e936`
+- source_sha256: `d3dccbb4db6ebab3e78db261b46f5f3127883de627538aa18948663efe74d74a`
 - nodes: 2
 
 ### Nodes
@@ -6577,6 +6577,57 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_runtime_analysis.py -->
 
+<!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py -->
+
+## src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py
+
+- source_sha256: `66aa471f903cd41613a45a11fc10ad459e2e2a3376e3d32fcbb01c8786d46428`
+- nodes: 4
+
+### Nodes
+
+#### `spell_site_graph_analysis` (module)
+
+- id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py:1`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `SpellSiteParam` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteParam`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py:9`
+- public methods: `as_row`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `SpellSite` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSite`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py:135`
+- public methods: `as_row`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `SpellSiteGraphAnalysis` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py:226`
+- extends: `Cleanable`
+- public methods: `cleanup`, `param`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+
+### Edge candidates (1, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis` creates `ValueError`
+
+<!-- END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py -->
+
 <!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py -->
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py
@@ -6675,7 +6726,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy_builder.py
 
-- source_sha256: `0d4c442ac374f57723eaa4aa1245f67411d8669540de7dcc353a6237198d8916`
+- source_sha256: `198555d90129cc9b3112f5df1efe0e50f77922a5e0d72f00ddb08c34b9faab6d`
 - nodes: 2
 
 ### Nodes
@@ -6689,7 +6740,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellArtifactProcessorStrategyBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy_builder.py:31`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy_builder.py:34`
 - extends: `Cleanable`
 - role: Registry holder for built-in artifact-processor strategies.
 - responsibilities:
@@ -6725,7 +6776,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder` -> `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy.SpellRuntimeProcessorStrategy`: SpellArtifactProcessorStrategyBuilder registers the runtime processor strategy in its default chain.
 - `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder` -> `melder.utilities.general_base.cleanable.Cleanable`: SpellArtifactProcessorStrategyBuilder inherits the explicit cleanup lifecycle from Cleanable.
 
-### Edge candidates (8, unconfirmed)
+### Edge candidates (9, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -6735,6 +6786,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder` creates `SpellRuntimeProcessorStrategy`
 - `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder` creates `SpellExistenceOccurrenceProcessorStrategy`
 - `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder` creates `SpellInjectionProcessorStrategy`
+- `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder` creates `SpellSiteGraphProcessorStrategy`
 - `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder` creates `SpellOverrideTargetingProcessorStrategy`
 - `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder` creates `RuntimeError`
 
@@ -6744,7 +6796,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py
 
-- source_sha256: `1909c50695f84e2589ee1ae184741124142ceff02e11f89eb0e180618d601de3`
+- source_sha256: `3be8ea79e7e6a03d34f2ed75a403ae740f3a932511382c68484ab8e99a8101a3`
 - nodes: 2
 
 ### Nodes
@@ -6758,7 +6810,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellCodegenModel` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel`
-- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py:33`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py:36`
 - extends: `Cleanable`
 - role: Processor-owned codegen model for one spell.
 - responsibilities:
@@ -6841,7 +6893,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py
 
-- source_sha256: `f41f567f5dbcd2b114fb133c8c35b8c5b36775e416230572bf51849bb002af60`
+- source_sha256: `39fd89a9598410961f159d43ed89135cdec1dc1137e0b6b218d438ae4766dd41`
 - nodes: 2
 
 ### Nodes
@@ -6896,7 +6948,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py
 
-- source_sha256: `ebd19adfec83b89a268c30215bc17e9390e238205102df4b44ece2b6a879ba1b`
+- source_sha256: `2798861a144d23dad90825556260daa0171af410d769c2fd884c4ce7f5fb02bc`
 - nodes: 2
 
 ### Nodes
@@ -6910,7 +6962,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellOccurrenceContractProcessorStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:33`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:35`
 - extends: `SpellArtifactProcessorStrategy`
 - role: Processor strategy fitting SpellContract routing and payload facts into the codegen model.
 - responsibilities:
@@ -7146,6 +7198,46 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_runtime_processor_strategy.py -->
 
+<!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py -->
+
+## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py
+
+- source_sha256: `dd9c420f057caedc3c87afdf972ba3fd21c3edbe57fb46578a3c513614adeeba`
+- nodes: 2
+
+### Nodes
+
+#### `spell_site_graph_processor_strategy` (module)
+
+- id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py:1`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `SpellSiteGraphProcessorStrategy` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py:33`
+- extends: `SpellArtifactProcessorStrategy`
+- public methods: `build_site_graph`, `process`, `strategy_id`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy` | specializes | `melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy` | - | - | derived |
+
+### Edge candidates (4, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy` creates `SpellSiteGraphAnalysis`
+- `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy` creates `SpellSiteParam`
+- `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy` creates `RuntimeError`
+- `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy` creates `SpellSite`
+
+<!-- END FILE: src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py -->
+
 <!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py -->
 
 ## src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py
@@ -7240,7 +7332,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.py
 
-- source_sha256: `26e582fc4c0130d23f3d28004b79678ecfe1b807f36a1c5aba9ab0ce670b71ab`
+- source_sha256: `cacf3eb296af035c04001946473ba635b1f45cef9ac3c0c74555b2588428f50b`
 - nodes: 1
 
 ### Nodes
@@ -7806,7 +7898,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py
 
-- source_sha256: `87ffb37ee0f25049acda9141b85d6f2349c998a08aa7e15604812a9fe48898ef`
+- source_sha256: `b4272534c52ce6f1640c51c2f9446d08a076060153d40ff5b686538c3041c21e`
 - nodes: 2
 
 ### Nodes
@@ -7820,14 +7912,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CodegenCreationSchemaHelpers` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:6`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:12`
 - role: Shared phase-11 helper surface for codegen-creation families.
 - responsibilities:
   - serializes deterministic signature parts and hashes phase-11 schema payloads
   - normalizes transient plans and instance keys into schema-safe forms
   - builds reusable phase-11 step IR rows and no-overrides compile signatures
 - phases: `runtime`
-- public methods: `build_fast_transient_schema`, `build_fast_transient_signature`, `build_no_overrides_codegen_creation_step_signature_row`, `build_phase11_step_ir_row`, `freeze_phase11_schema_value`, `get_phase11_step_ir_rows`, `hash_codegen_signature`, `normalize_instance_key`, `serialize_codegen_signature_part`
+- public methods: `build_fast_transient_schema`, `build_fast_transient_signature`, `build_no_overrides_codegen_creation_step_signature_row`, `build_phase11_step_ir_row`, `contract_payload_refs_from_row`, `freeze_phase11_schema_value`, `get_phase11_step_ir_rows`, `hash_codegen_signature`, `is_replayable_contract_payload_value`, `normalize_instance_key`, `project_contract_payload_entry`, `resolve_contract_override_ref` (+2 more)
 
 ### Edges out
 
@@ -7838,6 +7930,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers` -> `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan`: CodegenCreationSchemaHelpers reads SpellGeneralizedCodegenLanePlan steps, memoized phase-11 rows, and fast-transient payloads when exporting schema-only phase-11 data.
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers` -> `melder.aether.spellbook.spell_compiler.executor_code_cache`: CodegenCreationSchemaHelpers shapes deterministic IR/signature payloads later consumed by emitted executor compilation and caching.
+
+### Edge candidates (1, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers` creates `RuntimeError`
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py -->
 
@@ -7879,7 +7977,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.py
 
-- source_sha256: `a802674822570f82dd6cde5521db1269a4b182445824b479707064a14405d9a1`
+- source_sha256: `d0bb53c852e236f2379aa15222ac07d8bee06694d456f40da318765b85141ddd`
 - nodes: 1
 
 ### Nodes
@@ -7911,6 +8009,150 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache` -> `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan`: manifest_creation_cache dispatches generalized lane-plan reload through the cached phase-11 row and transient-plan surfaces on SpellGeneralizedCodegenLanePlan.
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.py -->
+
+<!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py -->
+
+## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py
+
+- source_sha256: `aed8d5d6bf781d69dee33a405f80188dc9f47a21b5d57a5e396be0c585408dc2`
+- nodes: 3
+
+### Nodes
+
+#### `override_key_resolver` (module)
+
+- id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py:1`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `OverrideKeyResolution` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolution`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py:16`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `OverrideKeyResolver` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolver`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py:96`
+- public methods: `resolve`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+### Edge candidates (2, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolver` creates `OverrideKeyResolution`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolver` creates `RuntimeError`
+
+<!-- END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py -->
+
+<!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py -->
+
+## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py
+
+- source_sha256: `d3827be718d926f15b2a02aa58e6cf2cfe64575340cea8e4c7f942e3c195bbc5`
+- nodes: 5
+
+### Nodes
+
+#### `site_plan_lowering` (module)
+
+- id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:1`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `SitePlanStep` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:37`
+- extends: `Cleanable`
+- public methods: `cleanup`, `from_generalized_row`, `from_many_only_row`, `masked`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `SitePlanRuntimeHelpers` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:261`
+- public methods: `conflict_guard`, `construct_with_supplied_values`, `raise_existing_override`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `SitePlanLowering` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:425`
+- public methods: `build_site_graph`, `demanded_instance_keys`, `emit`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `SitePlanEmission` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:616`
+- extends: `Cleanable`
+- public methods: `cleanup`, `render`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+| `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+
+### Edge candidates (9, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep` creates `SitePlanStep`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers` creates `MeldExecutionError`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanRuntimeHelpers` creates `RuntimeError`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering` creates `SpellInjectionAnalysis`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering` creates `SitePlanEmission`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering` creates `SpellInjectionInstanceSpec`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering` creates `RuntimeError`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanLowering` creates `SpellInjectionParamSource`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanEmission` creates `RuntimeError`
+
+<!-- END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py -->
+
+<!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py -->
+
+## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py
+
+- source_sha256: `476935ea7d3bbbb4eb626d98e1986a7536e7563ca50924ae75ef9509a245dca4`
+- nodes: 2
+
+### Nodes
+
+#### `site_plan_override_runtime` (module)
+
+- id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:1`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `SitePlanOverrideRuntime` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:28`
+- extends: `Cleanable`
+- public methods: `cleanup`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+### Edges out
+
+| from | relation | to | cardinality | phase | origin |
+| --- | --- | --- | --- | --- | --- |
+| `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+
+### Edge candidates (3, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime` creates `Lock`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime` creates `RuntimeError`
+- `melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime` creates `MeldExecutionError`
+
+<!-- END FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py -->
 
 <!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy.py -->
 
@@ -8151,7 +8393,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py
 
-- source_sha256: `2a2c6f2ddca1d3c47f71f424ec49288e07c882fee61ada7abdc59e3e7bf2e8fa`
+- source_sha256: `0c7bc3811b25ae8d90d2459b2434ae3b5738716b1157b58dbe550aa5f2306cf5`
 - nodes: 1
 
 ### Nodes
@@ -8225,7 +8467,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py
 
-- source_sha256: `6d689d59ab96bd970faf9c535de79988d118e94b2d9fbf8830f95a8c9b09bf5c`
+- source_sha256: `8f41d97389ea95eafdf03d564ebab89d038116b35aa800911d3651c7c917f861`
 - nodes: 1
 
 ### Nodes
@@ -8612,7 +8854,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py
 
-- source_sha256: `8b1f65dda75768ce5f7c899d67d6a27845abd5c8ea721594ee058e583a8e27af`
+- source_sha256: `a731f44c2fd13bb928a476ee954cbea00b28cc15a65f7a664a12c527fb60edc1`
 - nodes: 2
 
 ### Nodes
@@ -8631,7 +8873,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `GeneralizedHydratedExecutors` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator.GeneralizedHydratedExecutors`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:61`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:70`
 - extends: `Cleanable`
 - role: Hydration result container for generalized family runtime doors.
 - responsibilities:
@@ -9031,7 +9273,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py
 
-- source_sha256: `80537f080d12b3e4aa6b720b992dad88302df47b04082d5ac5165e3d8357b558`
+- source_sha256: `99585b4f671458dbefee96e61d5f27102fe20dec7baec9e26f9fa90bcd2f01f9`
 - nodes: 3
 
 ### Nodes
@@ -9052,7 +9294,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyCodegenPlanTargetKind` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanTargetKind`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:53`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:56`
 - role: Compiler-local target-kind labels for the many-only no-overrides compiler.
 - responsibilities:
   - name the target kinds this compiler emits, scoped to the compiler rather than shared vocabulary
@@ -9061,7 +9303,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyCodegenPlanCallMode` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.ManyOnlyCodegenPlanCallMode`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:64`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:67`
 - role: Compiler-local call-mode labels for the many-only no-overrides compiler.
 - responsibilities:
   - name the call modes this compiler emits, scoped to the compiler rather than shared vocabulary
@@ -9116,7 +9358,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py
 
-- source_sha256: `f4298b9dbd6ae9c0cd6e35b966611feb4aec9d0ffe590b4d1e94f6d91be46ec8`
+- source_sha256: `9878d7cfed1c6e5543c611b2d059707ab057edbf18576c144389ef1e6d10d3b9`
 - nodes: 2
 
 ### Nodes
@@ -9135,7 +9377,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyHydratedExecutors` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator.ManyOnlyHydratedExecutors`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py:57`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py:65`
 - extends: `Cleanable`
 - role: Hydration result container for one many_only spell.
 - responsibilities:
@@ -9175,7 +9417,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py
 
-- source_sha256: `bdd41be627465f383c236f5f2c7b52e8cf4a0ea504cb966c1b263b2f00e12aa1`
+- source_sha256: `5f9bec5e0eaf6b5ed69a92084a06a8a5e4211e29d8aeb997c499ecc1158d7f1f`
 - nodes: 1
 
 ### Nodes
@@ -9210,7 +9452,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py
 
-- source_sha256: `1349bbde1996f5c0c639760636e61525da74b578b4dce80d2bef846f11ac695a`
+- source_sha256: `c9092ee3f249e910e767b8315094a22c7c6795fa1db90d517e482e8c7c8fd220`
 - nodes: 2
 
 ### Nodes
@@ -9224,7 +9466,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyCodegenCreationHelpers` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers.ManyOnlyCodegenCreationHelpers`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py:6`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py:10`
 - role: Many-only-local phase-11 helper surface.
 - responsibilities:
   - provides deterministic hashing and signature serialization for the many-only family
@@ -10427,7 +10669,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py
 
-- source_sha256: `561ccdf10639f3a12b9f2426e90e87d9b49fcad272d39acdaeb034e353875e68`
+- source_sha256: `6b23c994190899bc89635b3dac506c442ae220a1beae32d0ddb83ab55a3f5340`
 - nodes: 7
 
 ### Nodes
@@ -10472,12 +10714,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - retains required_override_params as plain values for either many-only lane
 - owns_state: `_instance_key`, `_occurrence`, `_spell`, `_shared_instance`, `_dependency_resolution_order`, `_uses_positional_override`, `_contract_positional_override`, `_has_contract_payload`, `_contract_payload`, `_override_match_prefix`, `_override_match_prefix_len`
 - phases: `runtime`, `cleanup`
-- public methods: `collection_param_names`, `contract_payload`, `contract_positional_override`, `creations_target_kind`, `dependency_resolution_order`, `has_contract_payload`, `instance_key`, `occurrence`, `override_match_prefix`, `override_match_prefix_len`, `required_override_params`, `shared_instance` (+2 more)
+- public methods: `collection_param_names`, `contract_payload`, `contract_payload_refs`, `contract_positional_override`, `creations_target_kind`, `dependency_resolution_order`, `has_contract_payload`, `instance_key`, `occurrence`, `override_match_prefix`, `override_match_prefix_len`, `required_override_params` (+3 more)
 
 #### `ManyOnlyNoOverridesPlan` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyNoOverridesPlan`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:244`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:258`
 - extends: `Cleanable`
 - role: Planner-owned no-overrides payload for the many-only family.
 - responsibilities:
@@ -10491,7 +10733,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyOverridesPlan` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyOverridesPlan`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:796`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:810`
 - extends: `Cleanable`
 - role: Planner-owned overrides payload for the many-only family.
 - responsibilities:
@@ -10505,7 +10747,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ManyOnlyCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.many_only_codegen_plan.ManyOnlyCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:894`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:908`
 - role: Standalone builder for many-only planner payloads from SpellCodegenModel.
 - responsibilities:
   - builds ordered many-only planner steps from graph, order, instance, injection, and runtime model sections
@@ -10561,7 +10803,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py
 
-- source_sha256: `43872dd9fe5b6b18a2bd476e2da812792d2417515b6f2ce33b74e36676b8596c`
+- source_sha256: `c702129a444d3481d34b5900026a5382d8d36198371da8d54bf564fa0d5192a5`
 - nodes: 9
 
 ### Nodes
@@ -10617,12 +10859,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - retains required_override_params independently of optional override metadata in either lane
 - owns_state: `_instance_key`, `_occurrence`, `_spell`, `_existence`, `_creations_target_kind`, `_shared_instance`, `_inject_spec`, `_dependency_keys`, `_dependency_keys_by_param`, `_dependency_resolution_order`, `_override_keys`, `_override_match_prefix`, `_override_match_prefix_len`, `_expects_overrides`, `_contract_keys`, `_allow_list_aggregation`, `_uses_positional_override`, `_contract_payload`, `_contract_positional_override`, `_has_contract_payload`, `_lock_hint`, `_use_spell_lock_hint`, `_requires_spellspace`, `_owner_conduit_required`, `_must_register`, `_disposal_method_names`
 - phases: `runtime`, `cleanup`
-- public methods: `allow_list_aggregation`, `collection_param_names`, `contract_keys`, `contract_payload`, `contract_positional_override`, `creations_target_kind`, `dependency_keys`, `dependency_keys_by_param`, `dependency_resolution_order`, `disposal_method_names`, `existence`, `expects_overrides` (+16 more)
+- public methods: `allow_list_aggregation`, `collection_param_names`, `contract_keys`, `contract_payload`, `contract_payload_refs`, `contract_positional_override`, `creations_target_kind`, `dependency_keys`, `dependency_keys_by_param`, `dependency_resolution_order`, `disposal_method_names`, `existence` (+17 more)
 
 #### `SpellGeneralizedCodegenLanePlan` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenLanePlan`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:442`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:458`
 - extends: `Cleanable`
 - role: Planner-owned generalized lane-plan carrier with fast-path and phase-11 row-cache state.
 - responsibilities:
@@ -10636,7 +10878,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellGeneralizedCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1055`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1071`
 - role: Base generalized lane-plan builder from SpellCodegenModel.
 - responsibilities:
   - builds generalized lane-plan steps from graph, order, instance, injection, and runtime model sections
@@ -10649,7 +10891,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellSoloCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellSoloCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1931`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1949`
 - extends: `SpellGeneralizedCodegenPlanBuilder`
 - role: Solo-specialized builder over the generalized lane-plan base.
 - responsibilities:
@@ -10661,7 +10903,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellManyOnlyCodegenPlanBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellManyOnlyCodegenPlanBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1967`
+- defined at: `src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1985`
 - extends: `SpellGeneralizedCodegenPlanBuilder`
 - role: Many-only-specialized builder over the generalized lane-plan base.
 - responsibilities:
@@ -11103,7 +11345,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/dag/dag_index.py
 
-- source_sha256: `585794c001eec41f7a14d976c1a60df479eec7d1efee7adf8855f9f4f78de6df`
+- source_sha256: `fad5147aa84998eb98641583624d0a511c0ea13213cbe2e62d2d0aca944798d4`
 - nodes: 6
 
 ### Nodes
@@ -11129,7 +11371,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SocketRef` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.dag.dag_index.SocketRef`
-- defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:279`
+- defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:298`
 - role: Stable reference to one DAG socket for targeting.
 - responsibilities:
   - stores node id, parameter name, path id, and socket kind for override targeting
@@ -11139,7 +11381,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `DagIndex` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex`
-- defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:335`
+- defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:354`
 - extends: `Cleanable`
 - role: Index over SocketRef instances keyed by path and parameter name.
 - responsibilities:
@@ -11152,7 +11394,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `DagTargetingEngine` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.dag.dag_index.DagTargetingEngine`
-- defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:521`
+- defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:540`
 - extends: `Cleanable`
 - role: Targeting engine over a DagIndex.
 - responsibilities:
@@ -11164,7 +11406,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `DagIndexBuilder` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndexBuilder`
-- defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:699`
+- defined at: `src/melder/aether/spellbook/spell_compiler/dag/dag_index.py:718`
 - role: Builder for DagIndex instances from rooted blueprints.
 - responsibilities:
   - builds DagIndex state from rooted blueprint socket refs
@@ -11677,7 +11919,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py
 
-- source_sha256: `955ddee7840dabe98c2fa63a8d041ec3497fef1a9246560227520b8c3567ef1a`
+- source_sha256: `58ae1b3c599dfcd6b90fa5df613f28c5c867f29101d19014221fc411510566b9`
 - nodes: 2
 
 ### Nodes
@@ -12069,7 +12311,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py
 
-- source_sha256: `f1485269ca5e5e8b7546375adc31a2c77a4dfe0e264ea0c189b80b09878bda96`
+- source_sha256: `b96ca76636ee9fe93f00d94739c62c1b313970b0fa889f2a5e2ea0bbb1ae7fa0`
 - nodes: 2
 
 ### Nodes
@@ -12083,7 +12325,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SharedCompilerExecutions` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions.SharedCompilerExecutions`
-- defined at: `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:16`
+- defined at: `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py:17`
 - role: Shared static execution helper surface for compiler phases.
 - responsibilities:
   - owns deterministic schema-freezing and signature-hashing helpers reused across compiler phases
@@ -12248,6 +12490,36 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.spell_compiler.profiles.resolution_profile.SpellResolutionProfile` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
 <!-- END FILE: src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py -->
+
+<!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py -->
+
+## src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py
+
+- source_sha256: `571c21087ae641060f59642951956ae89d1e8d333b58d1dd0d699a51ce16107b`
+- nodes: 2
+
+### Nodes
+
+#### `codegen_signature` (module)
+
+- id: `melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature`
+- defined at: `src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py:1`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+#### `CodegenSignature` (class)
+
+- id: `melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature.CodegenSignature`
+- defined at: `src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py:7`
+- public methods: `build_contract_override_ref`, `freeze_phase11_schema_value`, `hash_codegen_signature`, `is_contract_override_ref`, `is_replayable_contract_payload_value`, `project_contract_payload_entry`, `serialize_codegen_signature_part`
+- **UNSEMANTIC** - mechanical scaffold only, not yet authored
+
+### Edge candidates (1, unconfirmed)
+
+Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
+
+- `melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature.CodegenSignature` creates `RuntimeError`
+
+<!-- END FILE: src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py -->
 
 <!-- BEGIN FILE: src/melder/aether/spellbook/spell_compiler/spell_analyzer/data/spell_existence_occurrence_analysis.py -->
 
@@ -12481,7 +12753,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
 
-- source_sha256: `b323ca387780212ff71f6f2ebea31f75998b91473c1c14637189734814de2353`
+- source_sha256: `72e5d6f07f20cc0b12a1a2e83f08db9c22cbd4e091cae2e785d362df632354db`
 - nodes: 2
 
 ### Nodes
@@ -13732,7 +14004,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py
 
-- source_sha256: `7e984152de6b23d103cf3ca6d03d5148c9c5918259fa7ec0c82f7c11ebae96c1`
+- source_sha256: `6815e6f0d9b60b67539289a41aa82ea7717027da3689c087d59c0c9e07ab07b2`
 - nodes: 2
 
 ### Nodes
@@ -15165,7 +15437,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
 
-- source_sha256: `3da298348a66d3b8fc795fcf10a92b61bdc17a3ef16557d07b242c971f92df20`
+- source_sha256: `3e0fc02803ceffb759badc12dff2423c1351a9c3724099e6e43c0a26625385e0`
 - nodes: 2
 
 ### Nodes
@@ -15174,7 +15446,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:1`
-- role: Phase 4 check: unsupported collection-style DI annotation shapes.
+- role: Phase 4 check: list-element and forward-reference annotation shapes Melder cannot inject.
 - responsibilities:
   - provides one validation or examination strategy/support surface
 - phases: `validation`, `runtime`
@@ -15184,9 +15456,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - id: `melder.aether.spellbook.spell_compiler.validation.strategies.annotation_shape_guard_strategy.AnnotationShapeGuardStrategy`
 - defined at: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:22`
 - extends: `SpellValidationStrategy`
-- role: Rejects collection-style DI annotation shapes Melder does not support, reading Phase-1 requirements annotations.
+- role: Warns about list[T] elements and forward references Melder cannot inject, reading Phase-1 requirements annotations; container parameters are caller inputs it leaves to RequiredHolesStrategy.
 - responsibilities:
-  - treat list[T] as the only collection DI form worth deeper inspection in this cut
+  - treat list[T] as the only collection DI form: warn LIST_ELEMENT_NOT_DI_TARGET for a non-injectable element and UNRESOLVED_FORWARD_REF for unresolved forward references
+  - never judge set, frozenset, dict or tuple parameters: Phase 1 never injects them, so they are caller inputs
+  - treat typing.Any as not a DI target, matching Phase 1
   - defer SpellMap and SpellContract defaults to their own strategies
   - emit issues into the context; never mutate the spell or attempt recovery
   - retains ordinary Python annotation shapes on non-resolvable definitions without enforcing constructor-DI limits
@@ -15571,7 +15845,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
 
-- source_sha256: `fec409606dc38aac3a54b60c7c18bcbc1216bc13e5f2794d59dfad9fb9d8827d`
+- source_sha256: `91938d48320aef5b727ffdca62614d96bb0d29f1c83a0da1e7d3ea781e302d56`
 - nodes: 2
 
 ### Nodes
@@ -15594,6 +15868,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - consume the Phase-1 SpellRequirements.iter_required_holes() view
   - emit warnings rather than hard errors
+  - adds the list-only collection hint to REQUIRED_HOLE for set, frozenset, dict and tuple annotations
   - reports resolved OVERRIDE_REQUIRED inputs using durable local topology; descriptive roots have no construction obligations
   - warns once per UNRESOLVED_INPUT socket with parameter, position, kind, expected type and frame key
 - phases: `compile`
@@ -15938,7 +16213,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `895257a46d48dd39d2e8c113bc97c88dd6eb19214f7fb2b076b26333f5e73314`
+- source_sha256: `07bb74de6e873f100e7409bc47019c076cde60eee951d36ce0fb63d18a081148`
 - nodes: 2
 
 ### Nodes
@@ -26110,7 +26385,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/caching_system/caching_system.py
 
-- source_sha256: `edeea185e71d7f83018a3b0e43da2b5e7424e15eb2cfef21a2bd53812b0de0f8`
+- source_sha256: `458a574fe2f50a63412efa62bb3221f67e06e9c01debe7952d11c88e86fe95ea`
 - nodes: 2
 
 ### Nodes

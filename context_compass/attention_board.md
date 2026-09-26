@@ -87,7 +87,7 @@ Message alert rules
 - NEW MESSAGE for updater_0 (from fable_0, 2026-09-26T11:50:16Z)
 - NEW MESSAGE for updater_1 (from fable_0, 2026-09-26T11:50:16Z)
 - NEW MESSAGE for updater_1 (from fable_0, 2026-09-26T12:46:34Z)
-- NEW MESSAGE for melder_0 (from fable_0, 2026-09-26T13:18:22Z)
+- NEW MESSAGE for melder_0 (from fable_0, 2026-09-26T13:33:47Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -107,14 +107,9 @@ Message alert rules
 | stateful_application_recovery | ready | handoff | user | unassigned | none | Discuss one stateful recovery scenario. | Native replay coverage and partial/assisted recovery opportunities preserved. | Owner selects recovery contracts before implementation. | tickets/epics/2026-09-07_stateful_application_recovery_epic.md | 2026-09-07T19:17:55Z | REQUIRED |
 | mediator_wiring_probe | in_progress | discovery | opencode | muse | none | Ask owner what remains before this lane is done. | Doc patches plus verified indexes stand; closeout only on explicit checkout. | Owner states remaining work or requests checkout. | tickets/tasks/2026-09-20_investigate_mediator_wiring_task.md | 2026-09-21T00:11:00Z | REQUIRED |
 | components_sliced_audit | in_progress | discovery | opencode | muse | none | Verify indexes then slice front matter plus first C3 component. | Per-component notes plus closing contradiction list with evidence. | C3 pass complete with dispositions or owner redirects scope. | tickets/tasks/2026-09-21_systematic_components_audit_task.md | 2026-09-21T00:16:57Z | REQUIRED |
-| ir_phase_survey_1_4 | review | handoff | claude | fable_0 | none | Owner reviews driver.md, phase_01-04.md and structural_driver.md. | Driver and phases 1-4 recorded from source with classified object holds. | Owner accepts tranche-1 records or redirects scope. | tickets/tasks/2026-09-25_survey_compiler_phases_1_to_4_task.md | 2026-09-26T01:07:48Z | REQUIRED |
-| ir_phase_survey_5_7 | review | handoff | claude | fable_0 | none | Owner reviews phase_05-07.md and resolution_driver.md. | Phases 5-7 and the full-hit load path recorded from source (D1, D2, D6). | Owner accepts tranche-2 records or redirects scope. | tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md | 2026-09-26T07:23:22Z | REQUIRED |
-| ir_phase_survey_seam | review | handoff | claude | fable_0 | none | Owner reviews the survey records (summary.md first); no design decisions are asked in this lane. | Cache mechanics, key composition, invalidation surface and summary.md (D3, D4, D5; D1-D6 consolidated). | Owner accepts the records (Milestone 1, closure sync) or redirects scope. | tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md | 2026-09-26T07:38:41Z | REQUIRED |
-| ir_phase_cost_model | review | handoff | claude | fable_0 | none | Owner reviews cost_model.md (counted rows, measured rows, owner-run command). | Per-stage cost model for phases 1-11 with two owner-run measurement sources. | Owner accepts the cost model or redirects scope. | tickets/tasks/2026-09-26_model_phase_pipeline_costs_task.md | 2026-09-26T08:13:27Z | REQUIRED |
-| ir_phase_improvement_plan | review | handoff | claude | fable_0 | none | Owner confirms closure of the plan story (T1 decided: C-H + C-A; C-B deferred). | Thirteen ranked candidates; T1 decided by the owner. | Owner confirms acceptance; closure sync follows. | tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md | 2026-09-26T09:08:28Z | REQUIRED |
 | override_design_melder | review | handoff | claude | melder_0 | none | Owner confirms closure of the design task (design v2 approved). | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T11:30:45Z | REQUIRED |
 | override_many_collection_fix | review | handoff | claude | melder_0 | none | Owner reviews the collection-member fix (member paths, cache 13). | Each collection member builds its own many dependencies. | Owner accepts; closure sync. | tickets/tasks/2026-09-26_fix_collection_member_many_sharing_task.md | 2026-09-26T12:29:50Z | REQUIRED |
-| override_site_plan_lowering | in_progress | implementation | claude | melder_0 | none | Write site_plan_lowering.py and site_plan_override_runtime.py, then wire the many_only sites. | Key-set plans for overrides (S3) with the normal lane parity-gated (S2). | S3a modules wired at four sites, tests green on 3.14t and GIL, measured. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T12:43:58Z | REQUIRED |
+| override_site_plan_lowering | in_progress | discovery | claude | melder_0 | none | Write the S3b-1 plan and exact file list (retire the unused override lane). | Key-set plans for overrides (S3) with the normal lane parity-gated (S2). | S3b file list recorded and confirmed by the owner, then implemented and qualified. | tickets/tasks/2026-09-26_build_site_plan_lowering_task.md | 2026-09-26T13:23:46Z | REQUIRED |
 | caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
 | class_binding_annotations | ready | handoff | claude | melder_1 | none | On resume: raise the DECISION_REQUEST (validated one-line fallback). | Evidence-backed fix proposal for dropped class annotations. | Owner approves a plan or redirects. | tickets/tasks/2026-09-26_keep_class_binding_annotations_with_type_checking_names_task.md | 2026-09-26T11:56:25Z | REQUIRED |
 | annotation_shape_guard | review | handoff | claude | melder_1 | none | Owner commits, runs suites, accepts or redirects. | Container parameters are caller inputs; conjure no longer refuses them. | Owner acceptance; closure sync and patch archive follow. | tickets/tasks/2026-09-26_align_annotation_shape_guard_with_phase1_caller_inputs_task.md | 2026-09-26T12:23:14Z | REQUIRED |
@@ -125,18 +120,18 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| release_note_t1 | done | fable_0 | tickets/tasks/completed/2026-09-26_update_release_note_for_tranche_t1_task.md | Release note 0.2.56 with the four tranche-T1 sections; owner accepted. | 2026-09-26T13:38:26Z |
+| ir_phase_survey_story | done | fable_0 | tickets/stories/completed/2026-09-25_ir_phase_pipeline_survey_story.md | Milestone 1: drivers, phases 1-7 and the seam recorded (summary.md D1-D6); 8-11 deferred. | 2026-09-26T13:27:19Z |
+| ir_phase_improvement_plan_story | done | fable_0 | tickets/stories/completed/2026-09-26_phase_pipeline_improvement_plan_story.md | Cost model and 13 ranked candidates; T1 chosen and shipped. | 2026-09-26T13:27:19Z |
+| ir_phase_survey_seam | done | fable_0 | tickets/tasks/completed/2026-09-26_survey_structural_snapshot_seam_task.md | cache_seam.md, invalidation.md, summary.md (D3-D5; D1-D6 consolidated). | 2026-09-26T13:27:19Z |
+| ir_phase_survey_5_7 | done | fable_0 | tickets/tasks/completed/2026-09-26_survey_compiler_phases_5_to_7_task.md | phase_05-07.md, resolution_driver.md (D1, D2, D6). | 2026-09-26T13:27:19Z |
+| ir_phase_survey_1_4 | done | fable_0 | tickets/tasks/completed/2026-09-25_survey_compiler_phases_1_to_4_task.md | driver.md, phase_01-04.md, structural_driver.md with classified holds. | 2026-09-26T13:27:19Z |
+| ir_phase_improvement_plan | done | fable_0 | tickets/tasks/completed/2026-09-26_rank_phase_improvement_candidates_task.md | candidates.md: 13 candidates, ranking, T1 recommendation (owner chose T1). | 2026-09-26T13:27:19Z |
+| ir_phase_cost_model | done | fable_0 | tickets/tasks/completed/2026-09-26_model_phase_pipeline_costs_task.md | cost_model.md: counted plus measured per-stage rows. | 2026-09-26T13:27:19Z |
 | sig_determinism_phase8_story | done | fable_0 | tickets/stories/completed/2026-09-26_signature_determinism_and_phase8_digest_story.md | Tranche T1 (one signature leaf, phase-8 digest, live contract operands); docs promoted; owner accepted. | 2026-09-26T13:14:31Z |
 | contract_override_operands | done | fable_0 | tickets/tasks/completed/2026-09-26_live_contract_override_operands_task.md | override rename; refs in rows; live hydration; identity across a cache hit (owner-run); gate retired. | 2026-09-26T13:14:31Z |
 | sig_determinism_phase8 | done | fable_0 | tickets/tasks/completed/2026-09-26_hoist_phase8_pool_digest_task.md | Pool digest once per pass; None-first skip; M7 -34% at N=300 (owner-run). | 2026-09-26T13:14:31Z |
 | sig_serializer_unify | done | fable_0 | tickets/tasks/completed/2026-09-26_unify_codegen_signature_serializer_task.md | One CodegenSignature leaf; byte-compatible freeze; determinism test green owner-run. | 2026-09-26T13:14:31Z |
-| override_site_plan_s1 | done | melder_0 | tickets/tasks/completed/2026-09-26_build_site_graph_and_override_key_resolver_task.md | Site graph, key resolver, oracle; 31 tests; owner accepted. | 2026-09-26T12:13:26Z |
-| release_0_2_55_melder_1 | done | melder_1 | tickets/tasks/completed/2026-09-26_notch_version_and_release_note_for_spell_id_and_annotation_fixes_task.md | Version 0.2.55; release note carries stable spell ids, cache gen 12, TYPE_CHECKING fix; assets deferred. | 2026-09-26T11:51:52Z |
-| function_spell_ids | done | melder_1 | tickets/tasks/completed/2026-09-26_stabilize_function_spell_ids_across_processes_task.md | Address-free bind fingerprints; cache bundle rebuilt per non-full-hit conjure (gen 12); owner suites green. | 2026-09-26T11:31:13Z |
-| conjure_validation_warnings | done | melder_0 | tickets/tasks/completed/2026-09-26_add_conjure_validation_warnings_flag_task.md | Opt-in conjure(validation_warnings=True) grouped report; default silent; patch archived. | 2026-09-26T10:12:55Z |
-| inspect_signature_nameerror | done | melder_1 | tickets/tasks/completed/2026-09-26_fix_inspect_signature_nameerror_on_type_checking_annotations_task.md | FORWARDREF reads + SignatureReflection; suites green; docs, graph, assets current. | 2026-09-26T10:12:17Z |
-| inspect_annotation_audit | done | melder_1 | tickets/tasks/completed/2026-09-26_build_annotation_integrity_audit_tool_task.md | Audit findings fixed; kept as test guard test_annotation_integrity.py. | 2026-09-26T10:12:17Z |
-| unresolved_input_sockets_story | done | melder_0 | tickets/stories/completed/2026-09-26_unresolved_input_sockets_story.md | S1 shipped: unresolved inputs supplied at meld; follow-ups listed in the task. | 2026-09-26T08:54:37Z |
-| missing_dependency_sockets | done | melder_0 | tickets/tasks/completed/2026-09-26_implement_missing_dependency_sockets_task.md | Steps 1-6 done; 3.14t/GIL qualified; patch lane archived. | 2026-09-26T08:54:37Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -168,32 +163,6 @@ Message alert rules
   RESUME_HIERARCHY: tickets/tasks/2026-09-20_investigate_mediator_wiring_task.md.
 - components_sliced_audit: SWITCH_TRIGGER is completed C3 pass with contradiction dispositions or owner scope redirect.
   RESUME_HIERARCHY: tickets/tasks/2026-09-21_systematic_components_audit_task.md.
-- ir_phase_survey_5_7: SWITCH_TRIGGER is accepted tranche-2 records (phases 5-7 plus the full-hit load path) or an owner scope redirect.
-  RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
-  tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md ->
-  tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md. Strategy and recovery protocol:
-  the epic's Context / Handoff Summary, section DISCOVERY STRATEGY AND RECOVERY (2026-09-26).
-- ir_phase_survey_seam: SWITCH_TRIGGER is summary.md with D1-D6 accepted by the owner, or an owner scope redirect.
-  RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
-  tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md ->
-  tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md. Strategy and recovery protocol:
-  the epic's Context / Handoff Summary, section DISCOVERY STRATEGY AND RECOVERY (2026-09-26).
-- ir_phase_cost_model: SWITCH_TRIGGER is owner acceptance of cost_model.md (task 1 in review) or an owner scope redirect.
-  RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
-  tickets/stories/2026-09-26_phase_pipeline_improvement_plan_story.md ->
-  tickets/tasks/2026-09-26_model_phase_pipeline_costs_task.md.
-- ir_phase_improvement_plan: SWITCH_TRIGGER is owner closure confirmation of the plan story (tranche decided 2026-09-26).
-  RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
-  tickets/stories/2026-09-26_phase_pipeline_improvement_plan_story.md ->
-  tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md. Fact base: artifacts/ir_phase_improvement_20260926/cost_model.md
-  and artifacts/ir_phase_survey_20260925/summary.md.
-- ir_phase_survey_1_4: SWITCH_TRIGGER is owner acceptance of the tranche-1 records (task in review) or an owner scope redirect.
-  RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
-  tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md ->
-  tickets/tasks/2026-09-25_survey_compiler_phases_1_to_4_task.md. Successors (ready, not routed):
-  tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md ->
-  tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md. Strategy and recovery protocol:
-  the epic's Context / Handoff Summary, section DISCOVERY STRATEGY AND RECOVERY (2026-09-26).
 - override_design_melder: SWITCH_TRIGGER is the design artifact plus owner decision requests.
   RESUME_HIERARCHY: tickets/epics/2026-09-24_override_execution_performance_epic.md ->
   tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md.

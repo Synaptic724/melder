@@ -1,14 +1,19 @@
 # Task: Rank source-backed improvement candidates for phases 1-11 and recommend the first tranche
 
+- Completed: 2026-09-26T13:27:19Z
+- Summary: candidates.md ranks thirteen source-backed improvements and recommends T1 = C-H + C-A; the owner
+  chose that tranche (C-B deferred) and it shipped as the signature-determinism story. Owner turned in
+  2026-09-26T13:27:19Z.
+
 ## Metadata
 - Task ID: TASK-2026-09-26-rank-phase-improvement-candidates
 - Story: STORY-2026-09-26-phase-pipeline-improvement-plan
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T08:12:47Z
-- Updated: 2026-09-26T08:18:17Z
+- Updated: 2026-09-26T13:27:19Z
 
 ## Objective
 Produce `candidates.md`: every improvement candidate for the conjure pipeline's phases 1-11 (structure and
@@ -46,6 +51,10 @@ ranking, the recommended first tranche and a single decision ask.
 - to_state: review
 - transition_reason: candidates.md complete and the epic carries one STRATEGY_DISCUSSION note with a single
   decision ask (2026-09-26); exit gate met; awaiting the owner's tranche decision.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turned in fable_0's finished review tickets ("turn in your shit if your done",
+  2026-09-26T13:27:19Z); records retained as reference; boards synced.
 
 ## Steps / Checklist
 - [x] R1: write `candidates.md` from cost_model.md and the survey records (one section per candidate,
@@ -55,10 +64,10 @@ ranking, the recommended first tranche and a single decision ask.
       boundary, no hot-path reach); name the falsifying measurement.
 - [x] R3: one STRATEGY_DISCUSSION note on the epic (eight-part structure) with a single decision ask;
       story note; boards; task -> review.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - artifacts/ir_phase_improvement_20260926/candidates.md
@@ -79,22 +88,22 @@ ranking, the recommended first tranche and a single decision ask.
 - Another lane edits `spell_compiler/**` now (melder_0); ranges are dated and re-verified before reuse.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
-- [ ] No candidate promoted on a name, a docstring or a grep hit; no mid-stream design questions.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
+- [x] No candidate promoted on a name, a docstring or a grep hit; no mid-stream design questions.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -172,6 +181,7 @@ survey records; do not re-read surveyed source.
 STATE 2026-09-26T08:17:33Z: R1-R2 done (candidates.md). Resume at R3: epic STRATEGY_DISCUSSION note, story note, boards,
 task -> review.
 STATE 2026-09-26T08:18:17Z: task 2 in REVIEW; the story waits on the owner's tranche decision (epic strategy note).
+STATE 2026-09-26T13:27:19Z: DONE. Owner turned in the ticket; record retained under artifacts/; closed with its story.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

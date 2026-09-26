@@ -1,14 +1,18 @@
 # Story: Rank source-backed improvements to compiler phases 1-11 and recommend the first tranche
 
 ## Metadata
+- Completed: 2026-09-26T13:27:19Z
+- Closure Basis: owner turn-in of fable_0's finished tickets; the recommended tranche T1 was chosen and shipped.
+- Summary: cost_model.md and candidates.md (thirteen ranked candidates); the owner chose T1 = C-H + C-A, deferred
+  C-B, and T1 shipped as the signature-determinism story (closed 2026-09-26T13:14:31Z).
 - Story ID: STORY-2026-09-26-phase-pipeline-improvement-plan
 - Epic: EPIC-2026-08-03-comptime-ir-phase-pipeline
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T07:42:51Z
-- Updated: 2026-09-26T08:18:17Z
+- Updated: 2026-09-26T13:27:19Z
 
 ## User Narrative
 As the Melder owner, I want a ranked, evidence-backed plan for improving the conjure pipeline's phases
@@ -68,6 +72,10 @@ value-only IR direction, and the measurement that accepts or rejects it.
 - to_state: review
 - transition_reason: Both tasks in review; cost_model.md and candidates.md exist; the epic carries the single
   STRATEGY_DISCUSSION note with one decision ask (2026-09-26); owner decision pending.
+- from_state: review
+- to_state: done
+- transition_reason: Owner decided T1 (C-H + C-A) earlier on 2026-09-26 and turned in the story with its two tasks
+  (2026-09-26T13:27:19Z); records retained as reference.
 
 ## Dependencies / Related Work
 - tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md (in review; source of facts)
@@ -75,12 +83,12 @@ value-only IR direction, and the measurement that accepts or rejects it.
   lanes touching phases 8-11 and the emitters; this story is read-only alongside them)
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-09-26-model-phase-pipeline-costs - per-phase cost model from source plus the
-  owner-run per-phase timing request tickets/tasks/2026-09-26_model_phase_pipeline_costs_task.md (review 2026-09-26)
-- [ ] Task: TASK-2026-09-26-rank-phase-improvement-candidates - candidates, ranking, first-tranche
-  recommendation tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md (review 2026-09-26)
-- [ ] Enforce Ticket Microcycle across all linked tasks.
-- [ ] Require meaningful-finding note updates during discovery.
+- [x] Task: TASK-2026-09-26-model-phase-pipeline-costs - per-phase cost model from source plus the
+  owner-run per-phase timing request tickets/tasks/completed/2026-09-26_model_phase_pipeline_costs_task.md (done 2026-09-26T13:27:19Z)
+- [x] Task: TASK-2026-09-26-rank-phase-improvement-candidates - candidates, ranking, first-tranche
+  recommendation tickets/tasks/completed/2026-09-26_rank_phase_improvement_candidates_task.md (done 2026-09-26T13:27:19Z)
+- [x] Enforce Ticket Microcycle across all linked tasks.
+- [x] Require meaningful-finding note updates during discovery.
 
 ## Acceptance Criteria
 - `artifacts/ir_phase_improvement_20260926/cost_model.md`: one row per phase and driver stage with
@@ -104,10 +112,10 @@ value-only IR direction, and the measurement that accepts or rejects it.
   measurement that would falsify it.
 
 ## Applicable Anti-Patterns
-- [ ] No story-state transition without linked task-state evidence.
-- [ ] No closure while required tasks remain active or un-routed.
-- [ ] No cross-task synthesis claims without ticket-note evidence pointers.
-- [ ] No candidate promoted on a name, a docstring or a grep hit.
+- [x] No story-state transition without linked task-state evidence.
+- [x] No closure while required tasks remain active or un-routed.
+- [x] No cross-task synthesis claims without ticket-note evidence pointers.
+- [x] No candidate promoted on a name, a docstring or a grep hit.
 
 ## Open Questions
 - Which regime the owner weights most (cold conjure on a fresh process, restore of a large world,
@@ -177,9 +185,9 @@ value-only IR direction, and the measurement that accepts or rejects it.
   SCORE_0_TO_10: 8
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -193,6 +201,8 @@ records under artifacts/ir_phase_survey_20260925/ are the fact base; do not re-r
 STATE 2026-09-26T08:13:02Z: task 1 in REVIEW (cost_model.md); task 2 in progress at R1. Resume from task 2's
 latest STATE line.
 STATE 2026-09-26T08:18:17Z: story in REVIEW; both tasks in review; waiting on the owner's tranche decision.
+STATE 2026-09-26T13:27:19Z: DONE. Owner turned in the story; T1 chosen and shipped; records retained under
+artifacts/ir_phase_improvement_20260926/ (retain_as_reference).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

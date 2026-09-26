@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 9341
-CONTENT_SHA256 = '358a1cc1e55f0b3d701ec60c15892838fbb50ddc435c81e1f088e03961eab46b'
+LINE_COUNT = 9443
+CONTENT_SHA256 = '3b37cb5ecf9056d14fdbe959ca7aa33cc92fb5111b090bd01dcf0de3c3e7c4c3'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -782,8 +782,27 @@ Binding flow (local spell):
 Purpose:
 - Provide declarative DI placeholders and contract sockets for spell parameters.
 
+Live override operands (2026-09-26):
+- `SpellContract(override=...)` and `SpellMap(override=...)` replace the `spell_override` keyword, slot and
+  attribute on both descriptors (`__repr__` renders `override=`); there is no compatibility alias.
+- The payload's values may be any object. Phase 9 records, beside each raw value, a value-only reference
+  `("__contract_override__", consumer_spell_id, param_name, key_or_index)` to the consumer's descriptor;
+  persisted phase-11 rows carry the reference for every non-scalar value and the scalar itself otherwise;
+  the no-overrides hydration of the generalized (manifest and legacy) and many_only families reads the
+  consumer's descriptor again (`inspect.signature` in FORWARDREF) and binds the live object, so the
+  provider's constructor receives it by identity in-process and after a cross-process cache full hit.
+- `SpellMap.override` is applied the same way (recorded against the phase-3 dependency occurrence). Before
+  2026-09-26 phase 3 read it only to refuse it on a non-resolvable definition, and nothing applied it.
+- Precedence is unchanged: meld override > descriptor payload value > dependency. The override lanes keep
+  the earlier literalized rows until the override site-plan lowering (S3) replaces them.
+- EVIDENCE: `src/melder/aether/conduit/meld/contracts/spell_contract.py:SpellContract`,
+  `src/melder/aether/conduit/meld/contracts/spell_map.py:SpellMap`,
+  `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:SpellOccurrenceContractProcessorStrategy._build_override_payload_refs`,
+  `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:CodegenCreationSchemaHelpers.resolve_contract_override_ref`.
+
 Responsibilities:
-- SpellMap encodes explicit DI intent and optional override payloads (dict/list/tuple).
+- SpellMap encodes explicit DI intent and an optional `override` payload (dict/list/tuple); the keyword
+  was `spell_override` until 2026-09-26 (renamed on both descriptors, no alias).
 - SpellMap supports concrete spell, spellframe, and frame-only forms and supplies canonical keys via SpellInputUtils.
 - SpellContract declares late-bound sockets to be satisfied via conduit links.
 - ParameterDIShape classification drives Phase 1 socket interpretation. It has SIX
@@ -813,7 +832,8 @@ Concurrency/Threading:
 Invariants/Guarantees:
 - At least one of `spell` or `spellframe` must be provided.
 - Binding names are normalized for case-insensitive matching and default to `__default__` when omitted.
-- SpellMap preserves override payloads as provided; when `None`, no override is attached.
+- SpellMap and SpellContract preserve `override` payloads as provided; when `None`, no override is attached.
+  The values are read live at hydration (2026-09-26): a descriptor mutated after conjure is read as it is.
 - SpellContract is intended for dynamic mode usage.
 
 Failure Modes:
@@ -3159,6 +3179,18 @@ Spec vs implementation notes:
 Purpose:
 - Compile per-spell artifacts and validate correctness before resolution.
 
+Caller-supplied container parameters (2026-09-26):
+- Phase 1 is the single decider of injection: it injects only a single class-like annotation
+  (SINGLE_BY_ANNOTATION) or `list[T]` (COLLECTION_BY_ANNOTATION). A set, frozenset, dict or tuple parameter is
+  always PLAIN, a caller input, and `typing.Any` is never a DI target.
+- Phase 4 agrees: AnnotationShapeGuardStrategy judges only `list[T]` elements and forward references (warnings)
+  and treats `typing.Any` as not injectable; it no longer emits UNSUPPORTED_COLLECTION_SHAPE. A default-less
+  container parameter is a REQUIRED_HOLE whose message adds that Melder injects collections only as `list[T]`.
+  Such spells conjure; the value is supplied through meld overrides.
+- EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:AnnotationShapeGuardStrategy.validate`,
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy._container_hint`,
+  `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:SpellRequirementsFinder._classify_parameter`.
+
 Non-resolvable definitions and required inputs (S3, 2026-09-19):
 - Phase 3 retains original declarations but distinguishes executable target_spell_ids from
   referenced_spell_ids on OVERRIDE_REQUIRED sockets. Required supplied inputs retain signature
@@ -3256,11 +3288,13 @@ Codegen IR export seams (2026-09-25):
   conjure-end cache export, override specialization and the family manifest each rowified the same
   immutable steps (up to 4x per lane on a cold pass).
 - Signatures come from `hash_codegen_signature`: SHA256 over typed scalar tags, containers via
-  `pickle.dumps(protocol=5)`, `repr` fallback. `freeze_phase11_schema_value` sorts dicts and sets
-  and returns `repr(value)` for non-primitive objects; step rows freeze user-supplied contract
-  payload values through it. `CodegenCreationSchemaHelpers` carries a second copy of the
-  serializer, hasher, freezer and row builders, imported by several consumers under the alias
-  `SharedCompilerExecutions`; the two copies must stay byte-identical for cache keys to agree.
+  `pickle.dumps(protocol=5)`, `repr` fallback. CORRECTED 2026-09-26: the serializer, hasher and
+  `freeze_phase11_schema_value` have ONE implementation, the stdlib-only leaf
+  `shared_assets/codegen_signature.py` (`CodegenSignature`); `SharedCompilerExecutions` and
+  `CodegenCreationSchemaHelpers` both delegate under their public names, so the duplicated copy that
+  had to stay byte-identical no longer exists. The row builders stay on the phase-11 facade; the
+  phase-side `build_phase11_step_ir_row` twin remains the digest-only input of the artifact's
+  `_codegen_ir`. Step rows no longer freeze non-scalar contract payload values (see the next block).
 - Phases 9 and 10 gate on `spell.resolvable` and delegate to `process(spell, artifact)` and
   `planner.build(artifact)`; phase 10 defers the planner subtree import to first use because
   full-hit conjures never run it.
@@ -3274,6 +3308,44 @@ Codegen IR export seams (2026-09-25):
   - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_2.py:179-184`
   - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:300-345`
   - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_10.py:44-48`
+
+Deterministic signatures, phase-8 pool digest and live contract operands (2026-09-26):
+- Freeze rule (`CodegenSignature.freeze_phase11_schema_value`): primitives, dicts (sorted pairs), lists
+  and tuples freeze as before; `set` and `frozenset` sort; functions, bound methods and builtin callables
+  render `("__callable__", module, qualname)` and instances whose type keeps `object.__repr__` render
+  `("__object__", module, qualname)`; every other value keeps `repr(value)`. Only renderings that carried
+  a memory address changed bytes, so signatures that were already cross-process deterministic are
+  byte-identical and no cache generation bump was needed. The shipped bodies are frozen verbatim in
+  `tests/mocks/spellbook/codegen_signature_reference.py` and compared against the live parts on every run.
+- Phase 8 (`SpellOccurrenceGraphAnalyzerStrategy.analyze`): the skip check tests the analysis slot first
+  (phase 5's attach nulls it every pass); the pool-invariant rows are hashed once per pass into
+  `analysis_pass_cache["phase8_pool_digest"]`; the fast key is `(root_spell_id, ordered_node_ids,
+  id(path_registry), blueprint_socket_rows, pool_digest)` and the input signature hashes the same parts;
+  root rows are built once per root. Owner-run: conjure -34% at 300 spells, inside noise at 29.
+- Contract override refs: phase 9 records `("__contract_override__", consumer_spell_id, param_name,
+  key_or_index)` beside every raw payload value
+  (`SpellOccurrenceContractAnalysis.contract_override_refs_by_occurrence`); the injection spec and both
+  planner step classes carry `contract_payload_refs`. `CodegenSignature.project_contract_payload_entry`
+  writes a `None`/`bool`/`int`/`float`/`str` value (or an exact tuple of those - the freeze fixed points) as
+  itself and any other value as its ref; a positional payload projects element by element. Every family's
+  row builders apply it, so persisted rows never carry a non-scalar payload value and the short-lived
+  emission gate (option B, same day) is retired: both `build_package` builders always return a package.
+- Hydration resolves refs to live values through
+  `CodegenCreationSchemaHelpers.resolve_contract_override_ref` (consumer from the spell lookup; descriptor
+  from `inspect.signature(..., FORWARDREF)`, memoized per hydration; `.override[key]`): the generalized
+  manifest compiler resolves the ROWS once at `hydrate_no_overrides_executor` and
+  `build_specialized_no_overrides_executor` (`resolve_contract_payload_rows`), and the generalized legacy
+  and many_only `_hydrate_steps_from_rows` resolve per row (adapters gain `contract_payload_refs`). The
+  solo family carries no payload field. A ref whose consumer, parameter or key is missing raises
+  RuntimeError at hydration (a plan/row contract violation, not a user error). The override lanes' row
+  copies and `build_runtime_rows` are unchanged until the override site-plan lowering (S3).
+- EVIDENCE:
+  - `src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py:CodegenSignature`
+  - `src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:SpellOccurrenceGraphAnalyzerStrategy.analyze`
+  - `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:SpellOccurrenceContractProcessorStrategy._build_override_payload_refs`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:CodegenCreationSchemaHelpers.resolve_contract_payload_row_values`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py:resolve_contract_payload_rows`
+  - `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py:_hydrate_steps_from_rows`
 
 Responsibilities:
 - Build requirements, symbolic graph, and local frames.
@@ -3342,6 +3414,11 @@ Failure Modes:
 - RuntimeError when single-annotation DI resolves to multiple candidates. Zero candidates raised this
   error until 2026-09-26; they now yield an UNRESOLVED_INPUT socket.
 - RuntimeError when SpellMap defaults resolve to zero or multiple candidates.
+- RuntimeError at hydration when a contract override ref names a consumer, parameter or payload key that
+  the spell lookup or the consumer's descriptor does not carry (2026-09-26).
+- Until 2026-09-26 a set/frozenset/dict/tuple parameter of user classes or `typing.Any` broke its spell at
+  Phase 4 (UNSUPPORTED_COLLECTION_SHAPE error, conjure refused) although Phase 1 never injects it; it is now a
+  REQUIRED_HOLE caller input.
 
 Observability:
 - Errors surfaced via exceptions and logger in Spellbook.
@@ -3353,6 +3430,7 @@ Key Files (C1):
 - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
 - `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py`
 - `src/melder/aether/spellbook/spell_compiler/phases/shared_compiler_executions.py`
+- `src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py`
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
 - `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
 - `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py`
@@ -4704,6 +4782,8 @@ Purpose:
 - Declare explicit DI targets with optional override payloads.
 Contract/Interface:
 - `SpellMap.lookup_triplet` and `SpellMap.canonical_key`.
+- `SpellMap(spell=None, *, spellframe=None, binding_name=None, override=None)`; `override` was
+  `spell_override` until 2026-09-26 and its values may be any object, bound live at meld.
 Data Structures:
 - `(spell, spellframe, binding_name)` tuple and override payload.
 Concurrency/Threading:
@@ -4717,6 +4797,8 @@ Purpose:
 - Describe the late-bound contract socket a conduit link satisfies.
 Contract/Interface:
 - `SpellContract.lookup_triplet` and `canonical_key`.
+- `SpellContract(spell=None, *, spellframe=None, binding_name=None, override=None)`; `override` was
+  `spell_override` until 2026-09-26 and its values may be any object, bound live at meld.
 - `SPELL_CONTRACT` is the contract-socket `ParameterDIShape`.
 Data Structures:
 - SpellContract keys and optional override payloads.
@@ -4780,6 +4862,8 @@ Purpose:
 - Run structural validation strategies (Phase 4).
 Contract/Interface:
 - `SpellValidationSystem.validate_spell(...)`.
+- Strategies judge what Phase 1 decided and never break a spell over a parameter Phase 1 made a caller input
+  (2026-09-26: container parameters are REQUIRED_HOLE warnings, not shape errors).
 Data Structures:
 - Strategy registry and validation results.
 Concurrency/Threading:
@@ -6101,6 +6185,8 @@ These flows describe concrete method sequences for core behaviors.
    target, then frame+binding lookup by iterating Spellbook `_spell_id_pool`.
 3. Zero candidates raises RuntimeError; multiple candidates raise RuntimeError with disambiguation guidance.
 4. The single resolved spell becomes the dependency target in the local resolution frame.
+5. A SpellMap carrying an `override` payload (2026-09-26): phase 9 records the payload against that
+   dependency occurrence with value-only refs; the no-overrides hydration binds the live values.
 
 ### Flow: Collection DI (list[FrameType])
 1. SpellRequirementsFinder classifies `list[FrameType]` as `ParameterDIShape.COLLECTION_BY_ANNOTATION`.
@@ -7863,7 +7949,7 @@ Module count: 574 (excluding `__init__.py`), measured 2026-08-01.
 - `src/melder/aether/spellbook/spell_compiler/validation/spell_validation_result.py`
   Aggregate validation result for a single spell
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py`
-  Validate DI annotation shapes for unsupported collection forms
+  Warn about list elements and forward references Melder cannot inject (containers are caller inputs)
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py`
   Detect binding-key cycles implied by spell requirements
 - `src/melder/aether/spellbook/spell_compiler/validation/strategies/callable_profile_hygiene_strategy.py`
@@ -9144,6 +9230,22 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 deterministic signatures and live contract override operands (tranche T1 of the IR epic): the
+codegen signature path is one stdlib-only leaf (`CodegenSignature`) with both facades delegating, and its
+freeze rule changes bytes only for renderings that carried an address; phase 8 hashes the pool-invariant rows
+once per pass and tests the analysis slot first. `SpellContract`/`SpellMap` take `override` (was
+`spell_override`, no alias); phase 9 records value-only refs beside the payload, rows carry scalars as
+themselves and refs otherwise, and the no-overrides hydration of every family binds the live object, so a
+provider receives an object payload by identity in-process and after a cross-process cache full hit. The
+same-day emission gate (option B) is retired. Promoted into the DI descriptor entry and subcomponents, the
+SpellCompiler entry (IR seams bullet corrected; new dated block; Key Files add the leaf) and the SpellMap
+flow. Owed: `src_graph.md` regeneration for the new leaf module (owner-run on 3.14).
+
+2026-09-26 caller-supplied containers: Phase 4 no longer contradicts Phase 1 on set/frozenset/dict/tuple
+parameters (never injected, so caller inputs) or on `typing.Any` (never injectable). The annotation-shape
+guard's container error is gone and REQUIRED_HOLE carries the list-only collection hint (SpellCompiler and
+Validation Pipeline entry, Spell Validation Strategies).
 
 2026-09-26 process-stable spell ids and complete cache bundles: the bind fingerprint hashes address-free
 text, so callable and default-repr instance spells keep one id across processes (promoted into Binding

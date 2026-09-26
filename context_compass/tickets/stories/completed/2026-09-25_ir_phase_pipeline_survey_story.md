@@ -1,14 +1,19 @@
 # Story: Survey compiler phases 1-11 for the value-only IR boundary
 
 ## Metadata
+- Completed: 2026-09-26T13:27:19Z
+- Closure Basis: owner turn-in of fable_0's finished tickets ("turn in your shit if your done").
+- Summary: Ground truth for the drivers and phases 1-7 plus the structural-snapshot seam recorded from source
+  (ten record files, summary.md with D1-D6); Milestone 1 of the IR epic closes on this acceptance. The
+  phases 8-11 exhaustive survey stays deferred by the owner's 2026-09-26 ruling.
 - Story ID: STORY-2026-08-03-phase-pipeline-survey
 - Epic: EPIC-2026-08-03-comptime-ir-phase-pipeline
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-25T21:23:55Z
-- Updated: 2026-09-26T07:34:07Z
+- Updated: 2026-09-26T13:27:19Z
 
 ## User Narrative
 As the Melder owner, I want every compiler phase's real inputs, outputs and live-object holds
@@ -76,6 +81,10 @@ entry gate says nothing else may start until it is accepted.
 - to_state: review
 - transition_reason: All three tasks in review (2026-09-26); records for the drivers and phases 1-7 plus
   summary.md with D1-D6 exist; owner acceptance and Milestone 1 pending.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turned in the story and its three tasks (2026-09-26T13:27:19Z); Milestone 1 checked on the epic;
+  records retained as reference.
 
 ## Dependencies / Related Work
 - tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md
@@ -85,18 +94,18 @@ entry gate says nothing else may start until it is accepted.
   (historical pipeline investigation; re-verify against current source before citing)
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-09-25-survey-compiler-phases-1-4 - driver, phases 1-4 and the structural
-  driver (steps S1-S5) tickets/tasks/2026-09-25_survey_compiler_phases_1_to_4_task.md
-- [ ] Task: TASK-2026-09-26-survey-compiler-phases-5-7 - phases 5-7 and the resolution driver's
-  full-hit load path (S6-S8) tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md
-- [ ] Task: TASK-2026-09-26-survey-structural-snapshot-seam - cache mechanics, key composition,
+- [x] Task: TASK-2026-09-25-survey-compiler-phases-1-4 - driver, phases 1-4 and the structural
+  driver (steps S1-S5) tickets/tasks/completed/2026-09-25_survey_compiler_phases_1_to_4_task.md (done 2026-09-26T13:27:19Z)
+- [x] Task: TASK-2026-09-26-survey-compiler-phases-5-7 - phases 5-7 and the resolution driver's
+  full-hit load path (S6-S8) tickets/tasks/completed/2026-09-26_survey_compiler_phases_5_to_7_task.md (done 2026-09-26T13:27:19Z)
+- [x] Task: TASK-2026-09-26-survey-structural-snapshot-seam - cache mechanics, key composition,
   invalidation surface, summary.md (S9-S11)
-  tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md
-- [ ] DEFERRED (owner, 2026-09-26): the exhaustive phases 8-11 survey (occurrence, injection, patch
+  tickets/tasks/completed/2026-09-26_survey_structural_snapshot_seam_task.md (done 2026-09-26T13:27:19Z)
+- [ ] DEFERRED (owner, 2026-09-26; not part of this closure): the exhaustive phases 8-11 survey (occurrence, injection, patch
   maps, execution plan, emit surface) opens for the schema story after the structural snapshot
   lands; S8 covers 8-11 only as far as the full-hit load path reads phase 1-7 objects.
-- [ ] Enforce Ticket Microcycle across all linked tasks.
-- [ ] Require meaningful-finding note updates during discovery.
+- [x] Enforce Ticket Microcycle across all linked tasks.
+- [x] Require meaningful-finding note updates during discovery.
 
 ## Acceptance Criteria
 - Seven per-phase records (1-7) plus driver records exist under `artifacts/ir_phase_survey_20260925/`,
@@ -125,10 +134,10 @@ entry gate says nothing else may start until it is accepted.
 - The VM shell runs Python 3.10.12 against a 3.14 project floor. Nothing executes in this story.
 
 ## Applicable Anti-Patterns
-- [ ] No story-state transition without linked task-state evidence.
-- [ ] No closure while required tasks remain active or un-routed.
-- [ ] No cross-task synthesis claims without ticket-note evidence pointers.
-- [ ] No behavior claim from `src_architecture.md`, the epic text, or a search hit.
+- [x] No story-state transition without linked task-state evidence.
+- [x] No closure while required tasks remain active or un-routed.
+- [x] No cross-task synthesis claims without ticket-note evidence pointers.
+- [x] No behavior claim from `src_architecture.md`, the epic text, or a search hit.
 
 ## Open Questions
 - Does any phase hold an object whose identity, not its name, is load-bearing? (epic identity
@@ -204,9 +213,9 @@ entry gate says nothing else may start until it is accepted.
   SCORE_0_TO_10: 8
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -260,6 +269,8 @@ loop is armed only by `notify_spell_changed`, which no shipped path calls (CONFL
 STATE 2026-09-26T07:34:07Z (fable_0): story in REVIEW. summary.md consolidates D1-D6, four conflicts, the unknowns and
 the I-0/I-1 hand-over; the owner's four decisions are listed in its last section. Resume: owner acceptance ->
 Milestone 1, closure sync for three tasks and this story, then I-0.
+STATE 2026-09-26T13:27:19Z: DONE. Owner turned in the story; Milestone 1 checked on the epic; records retained under
+artifacts/ir_phase_survey_20260925/ (retain_as_reference).
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

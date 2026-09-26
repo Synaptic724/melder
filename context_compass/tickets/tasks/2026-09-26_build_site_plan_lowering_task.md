@@ -10,7 +10,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T12:29:50Z
-- Updated: 2026-09-26T12:51:34Z
+- Updated: 2026-09-26T13:29:42Z
 
 ## Objective
 Overrides run through per-key-set plans compiled from the site graph: supplied dependencies and everything
@@ -331,6 +331,109 @@ the empty key set; the normal lane switches to it only when it meets the parity 
   EVIDENCE: tickets/tasks/2026-09-26_live_contract_override_operands_task.md
   IMPACT: S3a's step source (the families' _hydrate_steps_from_rows) carries live contract values, as the normal lane.
   NEXT: Plan S3b from the current device-tree sources.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T13:22:58Z
+  TYPE: FACT
+  CLAIM: Consumed fable_0 F0-13. Tranche T1 closed (owner accepted). src_components.md now carries the `override`
+    rename and the live-operand mechanics in the DI descriptors entry (:762-790), the SpellMap/SpellContract
+    subcomponents and a dated block in the SpellCompiler entry (:3293-3330); indexes regenerated. The override-lane
+    row copies are documented there as unchanged until S3. No src change in that closure.
+  EVIDENCE: tickets/stories/completed/2026-09-26_signature_determinism_and_phase8_digest_story.md
+  IMPACT: S3b changes what that SpellCompiler block says about the override lane; S6 promotion must re-read those
+    ranges and edit them in place, not add a parallel paragraph.
+  NEXT: Record the S3b override-lane cost measure and the S3b-1 plan with its file list.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T13:23:46Z
+  TYPE: MEASURE
+  CLAIM: With S3a in place the old override lane is built at every conjure and never used. Probe (conjure setup of the
+    owner's four graphs, disk cache off, median of 7, 3.14t, device tree + S3a): deep 42.44 ms setup, of which the
+    override lane is 5.33 ms (12.6%): Phase-9 spell_override_targeting_processor 2.24, Phase-10 overrides plan 1.44,
+    many_only override step rows 1.26, target serialization 0.39. Phase-9 spell_site_graph_processor adds 3.88 ms and
+    its artifact is not read at run time either (the override runtime rebuilds its site graph lazily from the kept
+    Phase-3 topologies). Shallow, wide and diamond spend under 0.1 ms there.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/override_lane_cost.py:1-60
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/override_lane_cost_results.txt:1-6
+  IMPACT: S3b removes up to ~9 ms (21%) of deep conjure: 5.3 ms by retiring the lane, 3.9 ms more if the Phase-9
+    site-graph processor is unregistered (S1's builder stays as library code for the runtime).
+  NEXT: Read every consumer of overrides_plan, the targeting/site-graph artifacts and manifest["overrides"], then
+    write the S3b-1 plan and file list.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T13:26:20Z
+  TYPE: FACT
+  CLAIM: How the unused lane is built at conjure. Phase 9: SpellArtifactProcessor runs every registered strategy in
+    registration order; the builder registers site_graph and override_targeting after injection (the only writers of
+    model.site_graph_shape / override_targeting_shape and the target_* counters). Phase 10: the many_only and
+    generalized_many_only plan strategies each run a second builder for the OVERRIDES variant (many_only
+    _build_overrides_plan re-walks _build_ordered_steps); the generalized strategy's build_dual walks once and only
+    adds a second _assemble_lane_plan over the shared steps (cheap). Solo builds its own overrides_plan and keeps it.
+    Readers of override_targeting_shape: the two manifests (raise when it is None), the two overrides steps (not in
+    any pipeline) and the legacy spell_codegen_creation_cache codec (already tolerates None). Readers of
+    overrides_plan besides those: generalized_binding_resolver and shared_compiler_executions (both skip None).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy_builder.py:77-118
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py:61-100
+  - src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_many_only_codegen_plan_strategy.py:36-77
+  - src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_codegen_plan_strategy.py:36-68
+  - src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py:1120-1335
+  - src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py:949-1369
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py:60-100
+  IMPACT: S3b-1 can stop the build at three points (Phase-9 registration, the two many_only-family plan strategies,
+    the two manifests) without touching solo or the generalized step walk.
+  NEXT: Read the two manifests, lazy door steps, legacy codec and the tests that pin the old lane, then write the plan.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T13:29:42Z
+  TYPE: PLAN
+  CLAIM: S3b splits in two. S3b-1 stops building and serializing the unused lane (edits only, no deletions):
+    (1) spell_artifact_processor_strategy_builder.py drops the site-graph and override-targeting registrations
+    (S1's build_site_graph stays as the library the runtime calls); (2) spell_many_only_codegen_plan_strategy.py
+    stops building the OVERRIDES variant (plan.overrides_plan stays None; solo and the generalized build_dual are
+    unchanged in S3b-1 - the generalized second lane is one constructor over shared steps and goes in S3b-2);
+    (3) many_only_manifest.py and generalized_manifest.py drop the "overrides" section, its validation and the
+    targeting requirement (MANIFEST_VERSION 3 -> 4); (4) many_only_lazy_door_step.py and
+    generalized_lazy_door_step.py drop the four override_* metadata keys read from it; (5) the two hydrators drop
+    the imports and helpers only the old runtime used; (6) caching_system.py generation 14
+    "override_site_plan_lanes". Readers that already skip a None lane are left alone (binding resolver,
+    shared_compiler_executions, legacy spell_codegen_creation_cache). Tests pinning the removed registrations,
+    manifest section or metadata are updated; the exact list comes from the suite run on the VM copy and is
+    recorded before device application. S3b-2 (owner-confirmed deletions) then removes the dead modules: both
+    override compilers, the overrides/finalize steps, both targeting artifacts, the targeting processor and
+    analysis, generalized_manifest_overrides_runtime, the generalized OVERRIDES lane variant, the
+    generalized_many_only plan strategy (registered nowhere) and their tests.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py:52-143
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py:38-181
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_lazy_door_step.py:45-117
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.py:98-219
+  - src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan_strategy_builder.py:75-95
+  - src/melder/utilities/caching_system/caching_system.py:99-161
+  IMPACT: About 9 ms (21%) off deep conjure with no runtime change; the deletion sweep stays separate and asked for.
+  NEXT: Implement S3b-1 on a fresh VM copy of the device tree and run the suites to find the pinned tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T13:41:05Z
+  TYPE: FACT
+  CLAIM: S3b-1 implemented on a fresh VM copy of the device tree (~/work/melder_s3b; untouched twin
+    ~/work/melder_s3bbase) by apply_s3b1_edits.py (anchor-checked, per-line line endings; caching_system.py mixes LF
+    and CRLF). Nine files: strategy builder (two registrations and imports), many_only plan strategy (no OVERRIDES
+    build), both manifests (version 4, no overrides section, validators, dead serializers/signature builders), both
+    lazy door steps (four override_* metadata keys), both hydrators (imports and helpers only the old runtime used:
+    targeting refs/artifacts, old compilers, finalize step, _NULL_MODEL, path-registry and target deserializers),
+    caching_system.py generation 14 "override_site_plan_lanes". An AST import check finds no new unused names
+    (generalized_manifest's MANIFEST_METADATA_KEY was already unused).
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s3b1_edits.py:1-441
+  IMPACT: The diff is exactly the planned surface; suites decide the test list.
+  NEXT: Read the 3.14t suite results and fix or move the tests that pin the removed lane.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 

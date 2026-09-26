@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2837449,
-        "lines": 69405,
+        "bytes": 2847237,
+        "lines": 69557,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "0e329234ccd0de946b93acb597aebe9e80e621be6c6ad732105a73062ac023be"
+        "sha256": "72326adf8354e87de0aab06da4634a964b6a8e9efb6ad09934d729e983c88a19"
       },
-      "content_bytes": 2630955,
-      "content_lines": 66439,
+      "content_bytes": 2640743,
+      "content_lines": 66591,
       "file_count": 370,
       "files": {
         ".gitattributes": {
@@ -1722,9 +1722,9 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_real_world_gauntlet.py": {
-          "content_bytes": 79555,
+          "content_bytes": 79556,
           "content_lines": 2018,
-          "content_sha256": "030cc6c0da6635c515335c489c68c33e9982a7003865a0524d8d1a768a6c69ee",
+          "content_sha256": "027989359cae325015c551c77ff961615814f71f0a1dffecfdada0650122e885",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_real_world_gauntlet_cprofile.py": {
@@ -2214,9 +2214,9 @@
           "source_encoding": "utf-8"
         },
         "release_docs/next_version_release.md": {
-          "content_bytes": 9821,
-          "content_lines": 163,
-          "content_sha256": "a3ddad98a94d2c36f7ba6f2024ac3ba1dba3e8f4e10bd05ca90646f08866df57",
+          "content_bytes": 19608,
+          "content_lines": 315,
+          "content_sha256": "0bc1bc5ff0786a9532cda9f0b76d5f4dd6bb790a4121fd91ab95cb3f471d23af",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2233,23 +2233,23 @@
         }
       },
       "index": {
-        "bytes": 62299,
+        "bytes": 62300,
         "lines": 392,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "26cd1aa9eba886868c8acc45c936b631a19a82b12d8da72dadeb6893873f126d"
+        "sha256": "e03a11d966bea5bf81a63ee599b80ad8a6c27bec0ba8aef4e2efe99adcb7c746"
       },
-      "source_fingerprint": "4ad0c7aa8a80d1def67d4a17d9ced916fae59dc9fe64991a9ba851002c2b1105"
+      "source_fingerprint": "33e61e9c635fbe50be45753e4fdc77f499c123e0afb839c847ace2a3c9b7b1b5"
     },
     "src": {
       "bundle": {
-        "bytes": 11060635,
-        "lines": 281309,
+        "bytes": 11201514,
+        "lines": 284615,
         "path": "llm_support/llm_full_src.txt",
-        "sha256": "0d3246f6aac8f5dab3032d4eb5771faae05a90e9d0ba0691745efdba7093d2f3"
+        "sha256": "abc7ff0466c594786e6a551431b1e5e1dd5479a3494158ac7d46364609b1ab2e"
       },
-      "content_bytes": 10701077,
-      "content_lines": 276583,
-      "file_count": 590,
+      "content_bytes": 10838650,
+      "content_lines": 279849,
+      "file_count": 595,
       "files": {
         "src/melder/__architecture__.py": {
           "content_bytes": 1904,
@@ -2308,7 +2308,7 @@
         "src/melder/__version__.py": {
           "content_bytes": 314,
           "content_lines": 12,
-          "content_sha256": "00953f9b8281a589255e68957a23082c8ad72cf3d5e5d604ab39a24800df489a",
+          "content_sha256": "9352f23014cae6d696881ac3d624a6cdc8f9f2b3898f0b3cb12b6233037df6ac",
           "source_encoding": "utf-8"
         },
         "src/melder/_build_assets/_agent_documentation/_builder.py": {
@@ -2936,15 +2936,15 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/meld/contracts/spell_contract.py": {
-          "content_bytes": 13661,
-          "content_lines": 343,
-          "content_sha256": "9e08a7100ddf1f19edf08567d89f31b872bbc9e57035567112026bca1bbc9fc9",
+          "content_bytes": 13828,
+          "content_lines": 344,
+          "content_sha256": "c497e78c7ea63eb237d6c1817533ad6d7ea3476cd1a702fefd2793d29e6226ba",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/meld/contracts/spell_map.py": {
-          "content_bytes": 13343,
-          "content_lines": 344,
-          "content_sha256": "5a5a3a1ce2eb32d3f549537b2ce0a3f89b51b32f62a5dc254488c379c27a8015",
+          "content_bytes": 13873,
+          "content_lines": 351,
+          "content_sha256": "a2181572e96cd46e2bfbd034995d3344d492ea312abfc933c5a598c484bb338c",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/conduit/meld/creation_context/creation_context.py": {
@@ -3056,15 +3056,15 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py": {
-          "content_bytes": 11277,
-          "content_lines": 277,
-          "content_sha256": "07413ac8e50256e2f81fe3945503130f54d046a2d744bc74343ecdd971ec5033",
+          "content_bytes": 12038,
+          "content_lines": 288,
+          "content_sha256": "b6732a8bc1970e7b97fbb72951c7a4e5e98b4bc8c9334fbc148f17c5106d7126",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_contract_analysis.py": {
-          "content_bytes": 2966,
-          "content_lines": 78,
-          "content_sha256": "704b0204468e4371d12e5f7513aa70740f68cb89a33a0f790eda0b04cdcb515f",
+          "content_bytes": 3686,
+          "content_lines": 88,
+          "content_sha256": "71e8ba6e9fedc73288fe570a01f9d2e7afa9ea65daf4191e6486e7b0b79c09a7",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_occurrence_instance_analysis.py": {
@@ -3091,6 +3091,12 @@
           "content_sha256": "875ac1b33b859504e54d643d29af410ae3038b42feea0e74bb9b89e85c416196",
           "source_encoding": "utf-8"
         },
+        "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_site_graph_analysis.py": {
+          "content_bytes": 13236,
+          "content_lines": 382,
+          "content_sha256": "d1c26456ab8cf9f391c2f1bb8189b52f008fae1c86886f1ccc5d06ecbd892d93",
+          "source_encoding": "utf-8"
+        },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor.py": {
           "content_bytes": 6919,
           "content_lines": 182,
@@ -3104,15 +3110,15 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy_builder.py": {
-          "content_bytes": 6493,
-          "content_lines": 167,
-          "content_sha256": "29741c90b5743b764a9e9a0568a666dbff9c8d954000dfb4ab5f1fa7cbecfba1",
+          "content_bytes": 6978,
+          "content_lines": 174,
+          "content_sha256": "96a9dce3bb74f6217a58e7cd68ecbc3d7d97c2f43c6abb3353229333f08e4092",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.py": {
-          "content_bytes": 11880,
-          "content_lines": 301,
-          "content_sha256": "110a08fa063db1f50a0a116cbefff60e6a7d20892b6b283a268385840606ab14",
+          "content_bytes": 12692,
+          "content_lines": 317,
+          "content_sha256": "bc893197ea7015b54b945a893fb3da16ea7a62179c312335fd0d5367b898787a",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_existence_occurrence_processor_strategy.py": {
@@ -3122,15 +3128,15 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_injection_processor_strategy.py": {
-          "content_bytes": 17113,
-          "content_lines": 374,
-          "content_sha256": "e76dd57e50e2d86542b590fc8cc2363c65f47da192964c22e6245f0f46c989bc",
+          "content_bytes": 18147,
+          "content_lines": 391,
+          "content_sha256": "645673bcf4385b1768c00ff623154001367eb988cec82ce44bd1a39b56469d9f",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py": {
-          "content_bytes": 15602,
-          "content_lines": 406,
-          "content_sha256": "c7df0c37f7967261c2c1cdf61b95c598351468c1a095ac4a65d1a3a5e682dff0",
+          "content_bytes": 23382,
+          "content_lines": 563,
+          "content_sha256": "292bb4acd12edd7c3dc887bce989ffeacef125034f92411b8bd2902522c9ff72",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_instance_processor_strategy.py": {
@@ -3157,6 +3163,12 @@
           "content_sha256": "d534c73870ada72c0cf960c743df2be9e4d77ab31e7a775d24ebf52dcd7a047d",
           "source_encoding": "utf-8"
         },
+        "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py": {
+          "content_bytes": 13718,
+          "content_lines": 362,
+          "content_sha256": "5e8c627d0092fb031964662b7580590fba993fea927b447b949ce0133c6062b6",
+          "source_encoding": "utf-8"
+        },
         "src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py": {
           "content_bytes": 10612,
           "content_lines": 298,
@@ -3170,9 +3182,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.py": {
-          "content_bytes": 24495,
-          "content_lines": 608,
-          "content_sha256": "f01ef0b318f745542fa9922dd51f506b51d5b94878572316fc60cc18b5edc850",
+          "content_bytes": 24229,
+          "content_lines": 602,
+          "content_sha256": "fa062797e4b36f3e3b1299677635d1c7bfcd349ddf83e51b7be74ecba82a9aa5",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery.py": {
@@ -3242,9 +3254,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py": {
-          "content_bytes": 22994,
-          "content_lines": 552,
-          "content_sha256": "5c0364605c2a54862e2aa86ad4010933d15d79533baa1527b93761b57f61df1d",
+          "content_bytes": 29730,
+          "content_lines": 682,
+          "content_sha256": "434dd5e23dd216121a3f8fe5565514107a91a7451392d551c953007d2ad78924",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py": {
@@ -3254,9 +3266,27 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.py": {
-          "content_bytes": 5876,
-          "content_lines": 146,
-          "content_sha256": "547fba1ba984efed4f01074ff47c979eeb1b96052390c0354e09689815dbd9fb",
+          "content_bytes": 5247,
+          "content_lines": 133,
+          "content_sha256": "462d3afc6b6b8ed45956bb697a313362b5c905fa7fa98048fce86eb335457899",
+          "source_encoding": "utf-8"
+        },
+        "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py": {
+          "content_bytes": 13065,
+          "content_lines": 334,
+          "content_sha256": "4a571b8781fe6bf50b86d90ebde518269243609515f1997abc5b85fcc11b8181",
+          "source_encoding": "utf-8"
+        },
+        "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py": {
+          "content_bytes": 43520,
+          "content_lines": 1059,
+          "content_sha256": "d3827be718d926f15b2a02aa58e6cf2cfe64575340cea8e4c7f942e3c195bbc5",
+          "source_encoding": "utf-8"
+        },
+        "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py": {
+          "content_bytes": 13322,
+          "content_lines": 342,
+          "content_sha256": "476935ea7d3bbbb4eb626d98e1986a7536e7563ca50924ae75ef9509a245dca4",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy.py": {
@@ -3290,9 +3320,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py": {
-          "content_bytes": 61202,
-          "content_lines": 1509,
-          "content_sha256": "f61788e077d5414428c224053ae07e94e209eb6c30f3d6d7b8223c327659fc7e",
+          "content_bytes": 64717,
+          "content_lines": 1578,
+          "content_sha256": "e5461b3065e0cfeb8ea8b31178d19635aa57e100bec0043cc5d102e08e913e4e",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_overrides_runtime.py": {
@@ -3302,9 +3332,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py": {
-          "content_bytes": 79069,
-          "content_lines": 2039,
-          "content_sha256": "98c4859c23a14087769e4375435fbc40d6af2acd92f597c51591e0c58ca35d4b",
+          "content_bytes": 80232,
+          "content_lines": 2062,
+          "content_sha256": "974b0e8d9f984d57369ba2ee663206b31622442df224170f7321717d508f6c45",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py": {
@@ -3356,9 +3386,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py": {
-          "content_bytes": 33688,
-          "content_lines": 777,
-          "content_sha256": "87d834e89a5a1d2436bd5e22b4f9e6e4b4cdfb804da3becfc6e1e5e4df47b561",
+          "content_bytes": 34829,
+          "content_lines": 801,
+          "content_sha256": "76c9b4314f3a365461a2a0215919168df323fe366d8524fae8db6ce74162b580",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py": {
@@ -3404,9 +3434,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.py": {
-          "content_bytes": 63615,
-          "content_lines": 1650,
-          "content_sha256": "e230ded4b303e7795e7e553207f20322f8be9418c9c342b40ba62b66693f5828",
+          "content_bytes": 64778,
+          "content_lines": 1673,
+          "content_sha256": "d9601004a1759f7176462ea716098821ae750791ecb51c48076766434cd89339",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_overrides_codegen_creation_compiler.py": {
@@ -3416,21 +3446,21 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py": {
-          "content_bytes": 15454,
-          "content_lines": 411,
-          "content_sha256": "8b8d75cf27b19a2ca3e06e11564fd41ec243c0e50586dce31421e6cbc06168ae",
+          "content_bytes": 15685,
+          "content_lines": 417,
+          "content_sha256": "7d570e3d38fb18f91a97360f65179c8a55df2621f887eda70f5ca4e4f9b7db37",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py": {
-          "content_bytes": 10098,
-          "content_lines": 279,
-          "content_sha256": "1e3c5aba236237bad387040c292292253cae1081c0520b779e3ddcd2ec29efc6",
+          "content_bytes": 10615,
+          "content_lines": 289,
+          "content_sha256": "85845357c5926f1ebbfd26ebda626da577b3b65d748df381a68b78cc391ccb50",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_helpers.py": {
-          "content_bytes": 9540,
-          "content_lines": 270,
-          "content_sha256": "db619c06eeaed571892ffa4f2d100229a71546e76e7a00eb1242a9a0a97d18ae",
+          "content_bytes": 10451,
+          "content_lines": 285,
+          "content_sha256": "9d5dd83c576b1dd78d698b6a3ab40593ef41bcaf031e51475bea649f9429bebe",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/many_only_codegen_creation_state.py": {
@@ -3596,15 +3626,15 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/many_only_codegen_plan.py": {
-          "content_bytes": 52074,
-          "content_lines": 1402,
-          "content_sha256": "c16f25a01041d3b1befb0cde04fbd8f5ed51eb05398d4194f642b96883ce3979",
+          "content_bytes": 52830,
+          "content_lines": 1417,
+          "content_sha256": "37edc6a282c0bc981d3feba97761eac57bf17c257e52f2fcd0ae94a67bf70562",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py": {
-          "content_bytes": 132400,
-          "content_lines": 2771,
-          "content_sha256": "626860f7760c388105ca6405076ddb4efa184d198bb63a200e8d0bf432f4f360",
+          "content_bytes": 133288,
+          "content_lines": 2789,
+          "content_sha256": "884d078523517efdbeb9a75d619f9b34b87fa1e26075d53dc24f4e9e092cbc5e",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/codegen_planner/spell_codegen_plan.py": {
@@ -3656,9 +3686,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/dag/dag_index.py": {
-          "content_bytes": 24908,
-          "content_lines": 768,
-          "content_sha256": "8640981761dbe6c2c4c542f59c2e854f890328b0b7bd7c161742d966369eb4d4",
+          "content_bytes": 25975,
+          "content_lines": 787,
+          "content_sha256": "ad0c5371d43daa91e790b27fb8d7deda520bd3a8cba6dcc40bed167b2f4b9db3",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/dag/dag_node.py": {
@@ -3728,9 +3758,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py": {
-          "content_bytes": 43682,
+          "content_bytes": 43671,
           "content_lines": 1057,
-          "content_sha256": "1ee54eb8f1c11e25bfc9646995f6e1d644b43e3c8d8af15eeb6817bf542ac59e",
+          "content_sha256": "6c18527877d634294cd19fd30d91f8a5f5218bd1f98db438d954992113262bd8",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_4.py": {
@@ -3788,9 +3818,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py": {
-          "content_bytes": 13090,
-          "content_lines": 301,
-          "content_sha256": "b8efb9c4397fb7a15c11335781b806bd4d262bf3394349e2bdc0113f7f2ea67f",
+          "content_bytes": 21502,
+          "content_lines": 481,
+          "content_sha256": "4a7c0032a96c47f96e7f94121ff560b3972a582af4965e43c6bf41d277388353",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/spell_analyzer/data/spell_existence_occurrence_analysis.py": {
@@ -3824,9 +3854,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py": {
-          "content_bytes": 52748,
-          "content_lines": 1261,
-          "content_sha256": "9f8fa324e92827b89eedebad053a1339ae64974d9ec89041d7f39b7c47bb229e",
+          "content_bytes": 54313,
+          "content_lines": 1294,
+          "content_sha256": "94f1c5bf2ca83ad5fe73947ce7026021be6b52f7ad6bcdccd9c7f11dc91de790",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/spell_compiler.py": {
@@ -3974,9 +4004,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.py": {
-          "content_bytes": 20526,
-          "content_lines": 490,
-          "content_sha256": "9864d2727f1a492f14524458a3cb1f3432bb892f6d23238a818c240243bac02a",
+          "content_bytes": 21381,
+          "content_lines": 505,
+          "content_sha256": "fc5582fba89eb0494a3ef81f0d429af279e7e0e39d90c994a01c71e81835857b",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_state.py": {
@@ -4166,9 +4196,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py": {
-          "content_bytes": 8868,
-          "content_lines": 226,
-          "content_sha256": "b2ddbc534fd9e885e48958c5771fb4df51c955a60a8fd0bd91cd816f61726935",
+          "content_bytes": 8171,
+          "content_lines": 202,
+          "content_sha256": "3e45eaa31f9a803dc304a55a84e812a4c339d60abebfe4ee610a7cb53706f2bc",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py": {
@@ -4220,9 +4250,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py": {
-          "content_bytes": 8705,
-          "content_lines": 199,
-          "content_sha256": "703cbb528f15079fbe0224df23af5114427da523fc444000de11a07362f38571",
+          "content_bytes": 10214,
+          "content_lines": 231,
+          "content_sha256": "74244fff10cd2db2d75a9ac8874fcbd4ab0aff1005c1a1d20181c76eeccea6d2",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spell_compiler/validation/strategies/resolution_frame_presence_strategy.py": {
@@ -4268,9 +4298,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spellbook.py": {
-          "content_bytes": 318914,
-          "content_lines": 7237,
-          "content_sha256": "be39b808ed4e2c4c6f8b395a7145d9c233e10ed421a3f82ca076d535f79d2ac9",
+          "content_bytes": 318170,
+          "content_lines": 7224,
+          "content_sha256": "986e2e0b73a32b127dac51a89f71545790495b0da3c0ef592338cad4c49183ae",
           "source_encoding": "utf-8"
         },
         "src/melder/aether/spellbook/spellbook_creation_system.py": {
@@ -5534,9 +5564,9 @@
           "source_encoding": "utf-8"
         },
         "src/melder/utilities/caching_system/caching_system.py": {
-          "content_bytes": 24920,
-          "content_lines": 629,
-          "content_sha256": "d12f3cae048f29a63cd2d2dfc4c8c9e3897970dc097c2fbe70d571ce57df469b",
+          "content_bytes": 25261,
+          "content_lines": 634,
+          "content_sha256": "7496ed8cc1e98d0c56f8987d8e8a7e37cb2f0a2853bc52a1d88e90d18eff2fb0",
           "source_encoding": "utf-8"
         },
         "src/melder/utilities/custom_exceptions/dead_reference_error.py": {
@@ -5793,23 +5823,23 @@
         }
       },
       "index": {
-        "bytes": 116523,
-        "lines": 612,
+        "bytes": 117676,
+        "lines": 617,
         "path": "llm_support/llm_full_src_index.md",
-        "sha256": "1cc1f35ce5e83d836a356618338549ebed6cd58da143b83e2aa79c908fd77e15"
+        "sha256": "c58bd180d3b8e69ce7787c3a43a6a952688e946a5c49639e7842021c1922adbc"
       },
-      "source_fingerprint": "86dbe417b8ba52cb32f11342cdf6479e9be9f3474c7ccea652b3e9571e463347"
+      "source_fingerprint": "f765754b3231d92e69c0b9f5ff67c6ba603c75250c16e5b1c249a52d22d7b27f"
     },
     "tests": {
       "bundle": {
-        "bytes": 11595417,
-        "lines": 328014,
+        "bytes": 11826491,
+        "lines": 332587,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "5660d17b930c988d4d9414c4646d2223d19a6c9a635483bc150b8a3d3749aab4"
+        "sha256": "e8e80aa07e80dcd50400cf3949647e09c576d6ae26b4b5cbdf9805be6f8b64d0"
       },
-      "content_bytes": 11076102,
-      "content_lines": 321088,
-      "file_count": 865,
+      "content_bytes": 11206359,
+      "content_lines": 324453,
+      "file_count": 1016,
       "files": {
         "tests/_annotation_audit_support.py": {
           "content_bytes": 29598,
@@ -5932,9 +5962,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_component_non_resolvable_overrides.py": {
-          "content_bytes": 8363,
-          "content_lines": 194,
-          "content_sha256": "01245f574665b5d088d5de30ec861dbfbfe14c37ea633900f78a4b66cdf8847f",
+          "content_bytes": 8565,
+          "content_lines": 199,
+          "content_sha256": "f259eb4da8bafd0931d183490ad0f679522834130d947046510edf4ab361064e",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/aether/conduit/test_conduit_component_policy_reader.py": {
@@ -6460,9 +6490,9 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py": {
-          "content_bytes": 34112,
-          "content_lines": 1088,
-          "content_sha256": "759ad7e14bc234103a97af9e5fed4c82ed1c6afa34f80865ab4dba919a95984e",
+          "content_bytes": 34378,
+          "content_lines": 1091,
+          "content_sha256": "537815a8b789bf6855537b837ce4c6146db454173d73568a25f7baa8a2720ba5",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py": {
@@ -6478,9 +6508,15 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_codegen_signature_determinism.py": {
-          "content_bytes": 23712,
-          "content_lines": 609,
-          "content_sha256": "f6ad4f4b2f179609e33d07435c7f1708519a1352a90ee7a628693a0081f349c4",
+          "content_bytes": 25347,
+          "content_lines": 655,
+          "content_sha256": "96498301e32dce5e0d27e0f40532485db75b1c0e1894851e1276bc7d33923289",
+          "source_encoding": "utf-8"
+        },
+        "tests/component/melder/spellbook/test_conjure_cache_restage.py": {
+          "content_bytes": 8314,
+          "content_lines": 204,
+          "content_sha256": "f79d2b8248025df0cbdd5248b35503d7b0df9c9980c623fa23c35eb4ae53f4ec",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_existing_instance_protocol_admission.py": {
@@ -6513,6 +6549,12 @@
           "content_sha256": "f94306e2be08549f908a9f77ff6cfda470fa15d73c1002d2e1d3fc8928fb285a",
           "source_encoding": "utf-8"
         },
+        "tests/component/melder/spellbook/test_spell_id_process_stability.py": {
+          "content_bytes": 3354,
+          "content_lines": 111,
+          "content_sha256": "56a2fd75eecf6b2259a651441b460880bd097df01d841f24f32729e7e84f12fe",
+          "source_encoding": "utf-8"
+        },
         "tests/component/melder/spellbook/test_spellbook_component_bind.py": {
           "content_bytes": 17789,
           "content_lines": 582,
@@ -6526,9 +6568,15 @@
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_caching_system.py": {
-          "content_bytes": 21107,
-          "content_lines": 655,
-          "content_sha256": "4b19270de0a467c7a8b0f4e71c575fd99356a3c6c29d95a49e85b9c1f6c91246",
+          "content_bytes": 21953,
+          "content_lines": 675,
+          "content_sha256": "4281cfa1035547c5a222b144c46101e7aed06b6f89624c7cbf7b3ce6333daef0",
+          "source_encoding": "utf-8"
+        },
+        "tests/component/melder/spellbook/test_spellbook_component_collection_many_instances.py": {
+          "content_bytes": 5448,
+          "content_lines": 159,
+          "content_sha256": "79198081b042e5f629c339251c89a0b5c40f0c0e4ed54627bd35944823eec049",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_conduit_definition.py": {
@@ -6549,6 +6597,12 @@
           "content_sha256": "4aee2042a8855a847770c615e720d0508d0a79b56c033d43b7c08a378b4d0e17",
           "source_encoding": "utf-8"
         },
+        "tests/component/melder/spellbook/test_spellbook_component_contract_override_operands.py": {
+          "content_bytes": 11624,
+          "content_lines": 297,
+          "content_sha256": "73fbe835ea30be64fc1a5569f1096827e1a5e373154cc8b74d40379d17f29ee1",
+          "source_encoding": "utf-8"
+        },
         "tests/component/melder/spellbook/test_spellbook_component_contracts.py": {
           "content_bytes": 26017,
           "content_lines": 749,
@@ -6561,10 +6615,22 @@
           "content_sha256": "a81541d8344b5fd37b70bcc85cda2fcd47764d07fed0fbd434cf01ab1a3f423c",
           "source_encoding": "utf-8"
         },
+        "tests/component/melder/spellbook/test_spellbook_component_override_key_oracle.py": {
+          "content_bytes": 9750,
+          "content_lines": 281,
+          "content_sha256": "a65a4ee509d73351f14080b2c0e85cfdd84ed98711e21fcd4232e8a7d54a94f7",
+          "source_encoding": "utf-8"
+        },
+        "tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py": {
+          "content_bytes": 13581,
+          "content_lines": 405,
+          "content_sha256": "502108ab5518c6923a89c0f9f173d66b46d706c5f5cad7dfcb37b04d1167243b",
+          "source_encoding": "utf-8"
+        },
         "tests/component/melder/spellbook/test_spellbook_component_override_required.py": {
-          "content_bytes": 26518,
+          "content_bytes": 26506,
           "content_lines": 538,
-          "content_sha256": "1d18c66e2f8173ec93b86aeb3b37a7e7d1a503e2887dad89c947ce6338002a21",
+          "content_sha256": "f3e570b11d9f9fa7782c60a6256b9d6be111a335ef1cb8356d822e094bebd54e",
           "source_encoding": "utf-8"
         },
         "tests/component/melder/spellbook/test_spellbook_component_resolvable_registration.py": {
@@ -6655,6 +6721,846 @@
           "content_bytes": 798,
           "content_lines": 22,
           "content_sha256": "2ee4a74292d349292761708f7f2bb14b4f1d2ff423d3fe668165671374eab369",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11/swap_case_class_method/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11/swap_case_class_method/consumer.py": {
+          "content_bytes": 113,
+          "content_lines": 5,
+          "content_sha256": "4762174a380ac76d90bfbfd765b29aa3a3ac607cafe4138edb602e6102b25a07",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11/swap_case_class_method/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_1/swap_case_class_method/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_1/swap_case_class_method/consumer.py": {
+          "content_bytes": 113,
+          "content_lines": 5,
+          "content_sha256": "4762174a380ac76d90bfbfd765b29aa3a3ac607cafe4138edb602e6102b25a07",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_1/swap_case_class_method/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_2/swap_case_class_method/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_2/swap_case_class_method/consumer.py": {
+          "content_bytes": 113,
+          "content_lines": 5,
+          "content_sha256": "4762174a380ac76d90bfbfd765b29aa3a3ac607cafe4138edb602e6102b25a07",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_2/swap_case_class_method/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_3/swap_case_class_method/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_3/swap_case_class_method/consumer.py": {
+          "content_bytes": 113,
+          "content_lines": 5,
+          "content_sha256": "4762174a380ac76d90bfbfd765b29aa3a3ac607cafe4138edb602e6102b25a07",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_3/swap_case_class_method/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_4/swap_case_class_method/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_4/swap_case_class_method/consumer.py": {
+          "content_bytes": 113,
+          "content_lines": 5,
+          "content_sha256": "4762174a380ac76d90bfbfd765b29aa3a3ac607cafe4138edb602e6102b25a07",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_class_method_11_4/swap_case_class_method/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11/swap_case_eager_function/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11/swap_case_eager_function/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11/swap_case_eager_function/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_1/swap_case_eager_function/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_1/swap_case_eager_function/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_1/swap_case_eager_function/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_2/swap_case_eager_function/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_2/swap_case_eager_function/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_2/swap_case_eager_function/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_3/swap_case_eager_function/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_3/swap_case_eager_function/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_3/swap_case_eager_function/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_4/swap_case_eager_function/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_4/swap_case_eager_function/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_eager_function_11_4/swap_case_eager_function/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11/swap_case_function_globals/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11/swap_case_function_globals/consumer.py": {
+          "content_bytes": 85,
+          "content_lines": 4,
+          "content_sha256": "4cb1c2b06f7e13417dabe13009f6f4d0652dfec1c9aae5138afb5577d10083e6",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11/swap_case_function_globals/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_1/swap_case_function_globals/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_1/swap_case_function_globals/consumer.py": {
+          "content_bytes": 85,
+          "content_lines": 4,
+          "content_sha256": "4cb1c2b06f7e13417dabe13009f6f4d0652dfec1c9aae5138afb5577d10083e6",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_1/swap_case_function_globals/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_2/swap_case_function_globals/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_2/swap_case_function_globals/consumer.py": {
+          "content_bytes": 85,
+          "content_lines": 4,
+          "content_sha256": "4cb1c2b06f7e13417dabe13009f6f4d0652dfec1c9aae5138afb5577d10083e6",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_2/swap_case_function_globals/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_3/swap_case_function_globals/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_3/swap_case_function_globals/consumer.py": {
+          "content_bytes": 85,
+          "content_lines": 4,
+          "content_sha256": "4cb1c2b06f7e13417dabe13009f6f4d0652dfec1c9aae5138afb5577d10083e6",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_3/swap_case_function_globals/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_4/swap_case_function_globals/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_4/swap_case_function_globals/consumer.py": {
+          "content_bytes": 85,
+          "content_lines": 4,
+          "content_sha256": "4cb1c2b06f7e13417dabe13009f6f4d0652dfec1c9aae5138afb5577d10083e6",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_function_globals_11_4/swap_case_function_globals/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_instances_11/swap_case_instances/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_instances_11/swap_case_instances/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_instances_11_1/swap_case_instances/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_instances_11_1/swap_case_instances/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_instances_11_2/swap_case_instances/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_instances_11_2/swap_case_instances/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_instances_11_3/swap_case_instances/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_instances_11_3/swap_case_instances/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_instances_11_4/swap_case_instances/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_instances_11_4/swap_case_instances/provider.py": {
+          "content_bytes": 71,
+          "content_lines": 3,
+          "content_sha256": "a41fad85263c6a43685e02bc561fde37e6500c803eb9b7914043c068b9a407f3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11/swap_case_lazy_import/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11/swap_case_lazy_import/consumer.py": {
+          "content_bytes": 74,
+          "content_lines": 3,
+          "content_sha256": "0d22c3cb0372286a25e1e11b9ce6d9dbcb91fcc0384253dd458025450d8cd533",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11/swap_case_lazy_import/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_1/swap_case_lazy_import/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_1/swap_case_lazy_import/consumer.py": {
+          "content_bytes": 74,
+          "content_lines": 3,
+          "content_sha256": "0d22c3cb0372286a25e1e11b9ce6d9dbcb91fcc0384253dd458025450d8cd533",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_1/swap_case_lazy_import/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_2/swap_case_lazy_import/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_2/swap_case_lazy_import/consumer.py": {
+          "content_bytes": 74,
+          "content_lines": 3,
+          "content_sha256": "0d22c3cb0372286a25e1e11b9ce6d9dbcb91fcc0384253dd458025450d8cd533",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_2/swap_case_lazy_import/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_3/swap_case_lazy_import/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_3/swap_case_lazy_import/consumer.py": {
+          "content_bytes": 74,
+          "content_lines": 3,
+          "content_sha256": "0d22c3cb0372286a25e1e11b9ce6d9dbcb91fcc0384253dd458025450d8cd533",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_3/swap_case_lazy_import/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_4/swap_case_lazy_import/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_4/swap_case_lazy_import/consumer.py": {
+          "content_bytes": 74,
+          "content_lines": 3,
+          "content_sha256": "0d22c3cb0372286a25e1e11b9ce6d9dbcb91fcc0384253dd458025450d8cd533",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_lazy_import_11_4/swap_case_lazy_import/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11/swap_case_module_object/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11/swap_case_module_object/consumer.py": {
+          "content_bytes": 75,
+          "content_lines": 4,
+          "content_sha256": "dea6fd87b3cdcbb986393d9db75337af3028090f750ebf3c538964bafa83fd0a",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11/swap_case_module_object/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_1/swap_case_module_object/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_1/swap_case_module_object/consumer.py": {
+          "content_bytes": 75,
+          "content_lines": 4,
+          "content_sha256": "dea6fd87b3cdcbb986393d9db75337af3028090f750ebf3c538964bafa83fd0a",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_1/swap_case_module_object/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_2/swap_case_module_object/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_2/swap_case_module_object/consumer.py": {
+          "content_bytes": 75,
+          "content_lines": 4,
+          "content_sha256": "dea6fd87b3cdcbb986393d9db75337af3028090f750ebf3c538964bafa83fd0a",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_2/swap_case_module_object/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_3/swap_case_module_object/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_3/swap_case_module_object/consumer.py": {
+          "content_bytes": 75,
+          "content_lines": 4,
+          "content_sha256": "dea6fd87b3cdcbb986393d9db75337af3028090f750ebf3c538964bafa83fd0a",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_3/swap_case_module_object/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_4/swap_case_module_object/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_4/swap_case_module_object/consumer.py": {
+          "content_bytes": 75,
+          "content_lines": 4,
+          "content_sha256": "dea6fd87b3cdcbb986393d9db75337af3028090f750ebf3c538964bafa83fd0a",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_module_object_11_4/swap_case_module_object/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11/swap_case_nested/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11/swap_case_nested/topic/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11/swap_case_nested/topic/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11/swap_case_nested/topic/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_1/swap_case_nested/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_1/swap_case_nested/topic/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_1/swap_case_nested/topic/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_1/swap_case_nested/topic/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_2/swap_case_nested/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_2/swap_case_nested/topic/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_2/swap_case_nested/topic/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_2/swap_case_nested/topic/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_3/swap_case_nested/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_3/swap_case_nested/topic/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_3/swap_case_nested/topic/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_3/swap_case_nested/topic/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_4/swap_case_nested/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_4/swap_case_nested/topic/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_4/swap_case_nested/topic/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_nested_11_4/swap_case_nested/topic/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11/swap_case_reload/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11/swap_case_reload/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11/swap_case_reload/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_1/swap_case_reload/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_1/swap_case_reload/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_1/swap_case_reload/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_2/swap_case_reload/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_2/swap_case_reload/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_2/swap_case_reload/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_3/swap_case_reload/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_3/swap_case_reload/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_3/swap_case_reload/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_4/swap_case_reload/__init__.py": {
+          "content_bytes": 0,
+          "content_lines": 0,
+          "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_4/swap_case_reload/consumer.py": {
+          "content_bytes": 71,
+          "content_lines": 4,
+          "content_sha256": "b65c85e8903b43feec18333fdb3f99b447a27ae6573d8277a4ebaa0810448dc3",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_physical_to_synth_swap_tmp/swap_case_reload_11_4/swap_case_reload/provider.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/collision_043958019f0c471f96574fbaf3dd00cb/synthetic_edge_collision_target.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/collision_680af289ef1f497d932dbacf653ceac8/synthetic_edge_collision_target.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/collision_78ae4373068a4fc58fc000815ec841f3/synthetic_edge_collision_target.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/collision_c63a71e6f6e9433ba1e31d9f97f4f198/synthetic_edge_collision_target.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/collision_ca532e5d52054bbe8bab30f56bfe9b52/synthetic_edge_collision_target.py": {
+          "content_bytes": 19,
+          "content_lines": 1,
+          "content_sha256": "3cdf5fca2f3457f2c6500a37d6e97e9623e0e3732bba85f6d534c3b1ef1b43ed",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_0f90baf9097f4df79b367b6a61157029/synthetic_edge_morph/__init__.py": {
+          "content_bytes": 26,
+          "content_lines": 1,
+          "content_sha256": "4d081b683f667e5b377d94e8d7702e84b8398b8b9ed7e79cd94dd05a1fe2756a",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_0f90baf9097f4df79b367b6a61157029/synthetic_edge_morph/core.py": {
+          "content_bytes": 82,
+          "content_lines": 4,
+          "content_sha256": "7c5f68b29b40007b93848da998eac47e1dc0deae63d3cef53226b50586f5d237",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_0f90baf9097f4df79b367b6a61157029/synthetic_edge_morph/helper.py": {
+          "content_bytes": 39,
+          "content_lines": 2,
+          "content_sha256": "473aa9ca458931f7856ee3b60caf64554ca8250b0db5611f021507e350d33233",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_2da8ec123cef4057aaf5816c428f4030/synthetic_edge_morph/__init__.py": {
+          "content_bytes": 26,
+          "content_lines": 1,
+          "content_sha256": "4d081b683f667e5b377d94e8d7702e84b8398b8b9ed7e79cd94dd05a1fe2756a",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_2da8ec123cef4057aaf5816c428f4030/synthetic_edge_morph/core.py": {
+          "content_bytes": 82,
+          "content_lines": 4,
+          "content_sha256": "7c5f68b29b40007b93848da998eac47e1dc0deae63d3cef53226b50586f5d237",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_2da8ec123cef4057aaf5816c428f4030/synthetic_edge_morph/helper.py": {
+          "content_bytes": 39,
+          "content_lines": 2,
+          "content_sha256": "473aa9ca458931f7856ee3b60caf64554ca8250b0db5611f021507e350d33233",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_36798bd3d8db49e199d9d4d2dec59f25/synthetic_edge_morph/__init__.py": {
+          "content_bytes": 26,
+          "content_lines": 1,
+          "content_sha256": "4d081b683f667e5b377d94e8d7702e84b8398b8b9ed7e79cd94dd05a1fe2756a",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_36798bd3d8db49e199d9d4d2dec59f25/synthetic_edge_morph/core.py": {
+          "content_bytes": 82,
+          "content_lines": 4,
+          "content_sha256": "7c5f68b29b40007b93848da998eac47e1dc0deae63d3cef53226b50586f5d237",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_36798bd3d8db49e199d9d4d2dec59f25/synthetic_edge_morph/helper.py": {
+          "content_bytes": 39,
+          "content_lines": 2,
+          "content_sha256": "473aa9ca458931f7856ee3b60caf64554ca8250b0db5611f021507e350d33233",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_5dad17320c1e413da359ed4ae94746b2/synthetic_edge_morph/__init__.py": {
+          "content_bytes": 26,
+          "content_lines": 1,
+          "content_sha256": "4d081b683f667e5b377d94e8d7702e84b8398b8b9ed7e79cd94dd05a1fe2756a",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_5dad17320c1e413da359ed4ae94746b2/synthetic_edge_morph/core.py": {
+          "content_bytes": 82,
+          "content_lines": 4,
+          "content_sha256": "7c5f68b29b40007b93848da998eac47e1dc0deae63d3cef53226b50586f5d237",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_5dad17320c1e413da359ed4ae94746b2/synthetic_edge_morph/helper.py": {
+          "content_bytes": 39,
+          "content_lines": 2,
+          "content_sha256": "473aa9ca458931f7856ee3b60caf64554ca8250b0db5611f021507e350d33233",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_60ba72dfc7b944e1b0124d25509efa26/synthetic_edge_morph/__init__.py": {
+          "content_bytes": 26,
+          "content_lines": 1,
+          "content_sha256": "4d081b683f667e5b377d94e8d7702e84b8398b8b9ed7e79cd94dd05a1fe2756a",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_60ba72dfc7b944e1b0124d25509efa26/synthetic_edge_morph/core.py": {
+          "content_bytes": 82,
+          "content_lines": 4,
+          "content_sha256": "7c5f68b29b40007b93848da998eac47e1dc0deae63d3cef53226b50586f5d237",
+          "source_encoding": "utf-8"
+        },
+        "tests/experimentation/_synthetic_edge_tmp/morph_60ba72dfc7b944e1b0124d25509efa26/synthetic_edge_morph/helper.py": {
+          "content_bytes": 39,
+          "content_lines": 2,
+          "content_sha256": "473aa9ca458931f7856ee3b60caf64554ca8250b0db5611f021507e350d33233",
           "source_encoding": "utf-8"
         },
         "tests/experimentation/activation_footprint_insert_only_probe.py": {
@@ -7420,9 +8326,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_links_contracts.py": {
-          "content_bytes": 24622,
+          "content_bytes": 24599,
           "content_lines": 758,
-          "content_sha256": "44624d6251611745161b10d7e5dabce4b9b3abf5a8a03cdf7699ecf2c7c2ebde",
+          "content_sha256": "9fafc3ddae119560c52020d7a0610481413c7f6e544a8a77518efb2d3d37e64f",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/conduit/test_conduit_integration_lookup_helpers.py": {
@@ -7672,9 +8578,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_cache_schema_version_integration.py": {
-          "content_bytes": 2820,
-          "content_lines": 81,
-          "content_sha256": "9c63a30ae8a40e26f25e91a29a5bf2ccde6aed7a2633bcaa81312597006e1938",
+          "content_bytes": 2855,
+          "content_lines": 82,
+          "content_sha256": "f6f5785937b99e5825d3fe5db0ec98ab3e8fd710c564a3ff572928f1f1157082",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_deferred_annotations.py": {
@@ -7756,15 +8662,15 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_di_shape_compiler_matrix.py": {
-          "content_bytes": 38463,
-          "content_lines": 1009,
-          "content_sha256": "b988483af45e5103e514a9a3cf38787c702357ecd5ce1abce6fc0429b3f9a722",
+          "content_bytes": 38694,
+          "content_lines": 1013,
+          "content_sha256": "29498f62e9c708b8467b2121eb193fa96378cad2e4a0bb566417dadc3b3f9fdd",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_di_validation_faults.py": {
-          "content_bytes": 8767,
-          "content_lines": 238,
-          "content_sha256": "697606f6bda9c143187ef02404bb81d070c3c36b16b4ae2e6cce91dfccacc097",
+          "content_bytes": 8893,
+          "content_lines": 240,
+          "content_sha256": "42cbdf552bb43f9038ac985177a0fb8ef0f8dd25dc378f86b03e8baae06de56b",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_existence.py": {
@@ -7906,9 +8812,9 @@
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_resolution_error_matrix.py": {
-          "content_bytes": 14813,
-          "content_lines": 444,
-          "content_sha256": "2e35628b2a666a4708247913108e4f37f62622ad19f66d4492fd188b9cda3ce5",
+          "content_bytes": 15720,
+          "content_lines": 465,
+          "content_sha256": "f453b0fe88dd74148e2aa125cb21196bdca18116f70e3d38cb69d0ca20bc067c",
           "source_encoding": "utf-8"
         },
         "tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py": {
@@ -8122,9 +9028,9 @@
           "source_encoding": "utf-8"
         },
         "tests/mocks/spellbook/contract_classes.py": {
-          "content_bytes": 11029,
+          "content_bytes": 10999,
           "content_lines": 425,
-          "content_sha256": "246ebb241960173f493e941142ad8e05abcebdc4b296b7679a59564c1e28cefd",
+          "content_sha256": "5819b996140cf5a7f07981d7c7d3ccb38c80cc751ca70c24f2b7583f713cf967",
           "source_encoding": "utf-8"
         },
         "tests/mocks/spellbook/core_classes.py": {
@@ -8434,15 +9340,15 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/meld/contracts/test_spell_contract.py": {
-          "content_bytes": 8417,
+          "content_bytes": 8303,
           "content_lines": 306,
-          "content_sha256": "cdebfef89c2ad29c8d57da2326edc8c83d9d3864cd6336b0fde485c89b76afe6",
+          "content_sha256": "a2edd79d147d893569e13378ef77147ad7b51bf79266a97b91ca65cd7685d90e",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/meld/contracts/test_spell_map.py": {
-          "content_bytes": 8247,
+          "content_bytes": 8133,
           "content_lines": 306,
-          "content_sha256": "65386c8e14055b4f0b655d3c200195aa39b526acc72165ddc35beb8924a1398c",
+          "content_sha256": "742177f0fea9e9b290f74527b7dbb6569467f1e8734a2fb3d43e4c0efa211653",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py": {
@@ -9807,6 +10713,12 @@
           "content_sha256": "495f9fbe826dc6e85351101a3a4d6d27c0ac2ff325b620768b72fe0516461620",
           "source_encoding": "utf-8"
         },
+        "tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py": {
+          "content_bytes": 9658,
+          "content_lines": 257,
+          "content_sha256": "c1274a530a358a1fb82116c57ae3dca2e11d40160fc1387f0a15f4878aac7eac",
+          "source_encoding": "utf-8"
+        },
         "tests/unit/melder/spellbook/configuration/test_configuration.py": {
           "content_bytes": 22291,
           "content_lines": 610,
@@ -9820,9 +10732,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_compiler/codegen_planner/test_generalized_dual_build_differential.py": {
-          "content_bytes": 12197,
-          "content_lines": 290,
-          "content_sha256": "decf386d9ff4f9e5044faa2b465bfdf4439d147cf62c9be7b79cedde7f608159",
+          "content_bytes": 12260,
+          "content_lines": 291,
+          "content_sha256": "938ddc4687df6fdcab23fad9e5bb90579a80fff2091ea44534868bf171d4cc4a",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_1.py": {
@@ -9916,15 +10828,21 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_compiler/shared_assets/test_codegen_signature.py": {
-          "content_bytes": 9494,
-          "content_lines": 240,
-          "content_sha256": "fded788cdcf5ff7928f9027aa897948e408fce0612f506d99ea5bef73352c831",
+          "content_bytes": 9924,
+          "content_lines": 249,
+          "content_sha256": "73e1c75363ece60b0ec9d5dba0d7c2cfc450d0b57b3697bc711b761789a6f9f2",
           "source_encoding": "utf-8"
         },
-        "tests/unit/melder/spellbook/spell_compiler/shared_assets/test_contract_payload_replayability.py": {
-          "content_bytes": 10273,
-          "content_lines": 267,
-          "content_sha256": "547d1146a7d941a77f204fa59227beafbe8e6cbea01b681bc03a0d720fa0b608",
+        "tests/unit/melder/spellbook/spell_compiler/shared_assets/test_contract_override_refs.py": {
+          "content_bytes": 20242,
+          "content_lines": 438,
+          "content_sha256": "0846e438bce6686fbde8af5b1bc3f6e0113b3c1c395db8dfc974d4a76de48154",
+          "source_encoding": "utf-8"
+        },
+        "tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py": {
+          "content_bytes": 22670,
+          "content_lines": 491,
+          "content_sha256": "817b691e4dd2f2dca26904e6c369c1af204316d3dd542bad990d88dfef816a1c",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_compiler/support/compiler_test_support.py": {
@@ -9987,10 +10905,16 @@
           "content_sha256": "ca4e3bb8f4adf3fa9cc361e19abaf8e78e62c32e1354214dd77d78b4ebd023dc",
           "source_encoding": "utf-8"
         },
+        "tests/unit/melder/spellbook/spell_compiler/test_override_key_resolver.py": {
+          "content_bytes": 8326,
+          "content_lines": 193,
+          "content_sha256": "1ada41f8422121e8c93318f7b45fb52d6f826dfb4d0d7581c0effc561f9c72f0",
+          "source_encoding": "utf-8"
+        },
         "tests/unit/melder/spellbook/spell_compiler/test_root_visible_family_selection_regressions.py": {
-          "content_bytes": 8577,
-          "content_lines": 224,
-          "content_sha256": "06a20dbd62624ceccf3087977eac132ea873bcd904185dc1eba41e08fdc22228",
+          "content_bytes": 8711,
+          "content_lines": 225,
+          "content_sha256": "05b17d65e34f62e342a6318447a552f5f4953a234f72daa329fbb4405a83fc42",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_compiler/test_spell_analyzer_core.py": {
@@ -10000,15 +10924,15 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_compiler/test_spell_artifact_processor_core.py": {
-          "content_bytes": 10093,
-          "content_lines": 284,
-          "content_sha256": "1ea449e9bae849c17cc70122aa51259352f00e8171c049edb60e1351442df70a",
+          "content_bytes": 10294,
+          "content_lines": 289,
+          "content_sha256": "007a29f9b6e37b2f518edc2983e23386e9693926f5a53838973a3d06fe98956f",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_compiler/test_spell_artifact_processor_data_migrations.py": {
-          "content_bytes": 7960,
-          "content_lines": 235,
-          "content_sha256": "af1b1ecb75f8f9c63a3a907141b275bae3b83780d0b3f9fb9b15089466e6ffff",
+          "content_bytes": 8009,
+          "content_lines": 236,
+          "content_sha256": "af64662de11878857da137f399922e42e28ad79e1ad82e6c00b16aa5ba85c03b",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_compiler/test_spell_codegen_cache_rehydration_exec.py": {
@@ -10053,10 +10977,16 @@
           "content_sha256": "3dbb13d2a45c03c2d06dfbf8d9808e24fb04d0b68be875970a63f720090a2022",
           "source_encoding": "utf-8"
         },
+        "tests/unit/melder/spellbook/spell_compiler/test_spell_site_graph_processor.py": {
+          "content_bytes": 12461,
+          "content_lines": 308,
+          "content_sha256": "b5b22b29957736cf0c8bc1a2508e350889db6f4f930fa4b62f759aaec5c1bf04",
+          "source_encoding": "utf-8"
+        },
         "tests/unit/melder/spellbook/spell_compiler/test_spell_strategy_migrations.py": {
-          "content_bytes": 23825,
-          "content_lines": 643,
-          "content_sha256": "e3fcbc165031eeb9a72382c5575ee30d7e035287f717ef20539c424889bf78e3",
+          "content_bytes": 24028,
+          "content_lines": 648,
+          "content_sha256": "27cc914adaec4c3fef7c1574e25077c073c3f0a15a163a50e181411328dd52bb",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_crafter/blueprints/test_root_resolution_blueprint.py": {
@@ -10093,6 +11023,12 @@
           "content_bytes": 10577,
           "content_lines": 344,
           "content_sha256": "dcacd0b192ebde466c1f02715d26b0ef309da6b53683f6bd1c74ee19c7aecc3c",
+          "source_encoding": "utf-8"
+        },
+        "tests/unit/melder/spellbook/spell_crafter/dag/test_path_registry_collection_members.py": {
+          "content_bytes": 2864,
+          "content_lines": 67,
+          "content_sha256": "1f8dab66cd57330e21e2ab60bf3c877542e264cd995b91b627c19022fc82e5d6",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_crafter/dag/test_target_spec.py": {
@@ -10432,9 +11368,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_annotation_shape_guard_strategy.py": {
-          "content_bytes": 4829,
-          "content_lines": 169,
-          "content_sha256": "1bdf815bba2a7274873657a3d5bc9b7e0f47d438dcb86b3526cba8aada04928d",
+          "content_bytes": 5342,
+          "content_lines": 178,
+          "content_sha256": "fa671abe4198e459d745b9f5a9275a6ed183d8b3e654b92ea9ded3a70823f359",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_binding_resolution_cycle_strategy.py": {
@@ -10486,9 +11422,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_required_holes_strategy.py": {
-          "content_bytes": 13762,
-          "content_lines": 470,
-          "content_sha256": "7028853af5397db2e7652c5d47a3cceec729b956a5de6bb22620e6873ab92bc3",
+          "content_bytes": 15282,
+          "content_lines": 508,
+          "content_sha256": "ddea9a0fe885b3f2f116543c97c97164e3b7ea555420e55d975d7b32a2c64011",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_resolution_frame_presence_strategy.py": {
@@ -11003,12 +11939,12 @@
         }
       },
       "index": {
-        "bytes": 166864,
-        "lines": 887,
+        "bytes": 199790,
+        "lines": 1038,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "39b3314fe0a06a704f3ee1a02bf93ee1062fb665852a624110d5cb4ed94905e8"
+        "sha256": "b2d20efb40eb5d12f4959bcc482a543cf64d9e7200b8d17f2a12ea1c9e61cd37"
       },
-      "source_fingerprint": "fa23b176bdb315bed0eb85354e8c3d3ff477c1d5029cb831579f26dc7c36a0d5"
+      "source_fingerprint": "82b3c849e5d485728ce316f13fbaee53da8f6b960b449ccb93dac8b71b78b37f"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

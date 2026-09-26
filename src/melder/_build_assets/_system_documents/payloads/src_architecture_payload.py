@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 2825
-CONTENT_SHA256 = '3a12fc1e3084ad3a639501692b714749b63b92fec6769f73f76d3cb7aedf8028'
+LINE_COUNT = 2854
+CONTENT_SHA256 = 'b5473fb881ffcbd008de88b2a1763196cadde7f66aacd4a113dd2f774189de36'
 
 TEXT = """# Src Architecture (C4)
 
@@ -865,6 +865,24 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Deterministic codegen signatures and live contract override operands (2026-09-26): the compiler's
+  signature serializer, hasher and freezer are one stdlib-only leaf (`CodegenSignature`) that both the
+  phase-side and phase-11 facades delegate to; the freeze rule renders callables and default-`repr`
+  instances as address-free tuples and leaves every other value's bytes unchanged, so the creation cache's
+  executor signatures agree across interpreter processes without a generation bump. Persisted phase-11 rows
+  are a hash surface: a `SpellContract`/`SpellMap` `override` value (renamed from `spell_override`; any
+  object is allowed) is written as itself only when it is a scalar, otherwise as a value-only reference to
+  the consumer's descriptor that the no-overrides hydration resolves to the live object at meld. Phase 8
+  hashes the pool-invariant rows once per pass. The override lanes keep their earlier rows until the
+  override site-plan lowering replaces them.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py:CodegenSignature`
+  and `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:CodegenCreationSchemaHelpers.resolve_contract_override_ref`.
+- Phase 1 decides injection (2026-09-26): only a single class-like annotation or `list[T]` is injected; a
+  set, frozenset, dict or tuple parameter, and `typing.Any`, never are. Phase-4 validation judges only what
+  Phase 1 decided and never breaks a spell over a caller input: such parameters are REQUIRED_HOLE warnings
+  (the message names list-only collection injection) and the caller supplies them through meld overrides.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:AnnotationShapeGuardStrategy`
+  and `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy`.
 - Process-stable spell ids and complete cache bundles (2026-09-26): bind fingerprint inputs contain no
   memory address - repr, parameter-default, signature and init_signature text are hashed address-free and
   untruncated - so every spell, callables and default-repr instances included, keeps one id across
@@ -2650,6 +2668,17 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 deterministic signatures and live contract operands (tranche T1 of the IR epic): one signature
+leaf with both facades delegating (bytes unchanged for previously deterministic inputs), phase 8's pool digest
+hoisted to once per pass (-34% conjure at 300 spells, owner-run), and `SpellContract`/`SpellMap` `override`
+values riding as live meld operands - rows carry refs, never object values, and the provider receives the
+object by identity in-process and after a cross-process cache full hit. The same-day emission gate is retired.
+The component map carries the mechanics; the graph still needs regenerating for the new leaf module.
+
+2026-09-26 caller-supplied containers: a constructor parameter typed as a dict, set or tuple of user classes,
+or dict[str, Any], used to break conjure at Phase 4 although Melder never injects it. It is now a REQUIRED_HOLE
+caller input; the guard's container error and its Any mismatch with Phase 1 are removed.
 
 2026-09-26 process-stable spell ids: function, method, lambda, partial, callable-instance and default-repr
 instance spells used to get a new id per process because the fingerprint hashed "at 0x..." repr text; with

@@ -10,9 +10,9 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | 4ad0c7aa8a80d1def67d4a17d9ced916fae59dc9fe64991a9ba851002c2b1105 |
-| bundle_sha256 | 0e329234ccd0de946b93acb597aebe9e80e621be6c6ad732105a73062ac023be |
-| bundle_line_count | 69405 |
+| source_fingerprint | 33e61e9c635fbe50be45753e4fdc77f499c123e0afb839c847ace2a3c9b7b1b5 |
+| bundle_sha256 | 72326adf8354e87de0aab06da4634a964b6a8e9efb6ad09934d729e983c88a19 |
+| bundle_line_count | 69557 |
 | bundle_line_ending | lf |
 | files | 370 |
 
@@ -305,7 +305,7 @@ Line numbers are 1-based and inclusive.
 | 54555-55215 | 54560-55212 | 22263 | utf-8 | abd84c14e6aff146eb58a904b94ae0be74a366f17c4ebb7f43cb058c8fa4e835 | benchmarks/testing_other_di/test_multithreading_di.py |
 | 55216-55988 | 55221-55985 | 22651 | utf-8 | 5a8adde1490e7a084768ec364f4310d54c8c2373a64ad884abc303b5b1af9fff | benchmarks/testing_other_di/test_overrides_all.py |
 | 55989-56835 | 55994-56832 | 31891 | utf-8 | 413ae6045e3d9f45c81aef773fb7295c3795a6d043d8f281a0c6f447053c8c4b | benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py |
-| 56836-58861 | 56841-58858 | 79555 | utf-8 | 030cc6c0da6635c515335c489c68c33e9982a7003865a0524d8d1a768a6c69ee | benchmarks/testing_other_di/test_real_world_gauntlet.py |
+| 56836-58861 | 56841-58858 | 79556 | utf-8 | 027989359cae325015c551c77ff961615814f71f0a1dffecfdada0650122e885 | benchmarks/testing_other_di/test_real_world_gauntlet.py |
 | 58862-58933 | 58867-58930 | 2072 | utf-8 | 9fa0217039115330bdc6ccb77ca6c5505996ae4b869698751da4c1f6b9da0c91 | benchmarks/testing_other_di/test_real_world_gauntlet_cprofile.py |
 | 58934-60997 | 58939-60994 | 65601 | utf-8 | e854922e9ea33a80df7c6eeb9e0a33662f7c21a218507aceaff68a11f349c52d | benchmarks/testing_other_di/test_shallow_all.py |
 | 60998-61477 | 61003-61474 | 14692 | utf-8 | fd9bd411f3e4693742030feb2360f6a277a9a309847f2ea9ab6f5b67e0cf723f | benchmarks/testing_other_di/test_shallow_all_diagnostics.py |
@@ -387,6 +387,6 @@ Line numbers are 1-based and inclusive.
 | 68410-68662 | 68415-68659 | 7773 | utf-8 | de7c77db321d42a8956257e849606b08210436adb2f387e4aa24a55b5a262232 | pyproject.toml |
 | 68663-68875 | 68668-68872 | 13066 | utf-8 | 1865e61282295b272c2e2d43d7cd255ff50688f5d38852e97ad9eacdde0409ae | release_docs/0.2.43.md |
 | 68876-69138 | 68881-69135 | 12983 | utf-8 | 3dd5db190054a458525c1fbc39b655a168375a36efbaa689d7d7e687c2dd8125 | release_docs/0.2.50.md |
-| 69139-69309 | 69144-69306 | 9821 | utf-8 | a3ddad98a94d2c36f7ba6f2024ac3ba1dba3e8f4e10bd05ca90646f08866df57 | release_docs/next_version_release.md |
-| 69310-69378 | 69315-69375 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
-| 69379-69405 | 69384-69402 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
+| 69139-69461 | 69144-69458 | 19608 | utf-8 | 0bc1bc5ff0786a9532cda9f0b76d5f4dd6bb790a4121fd91ab95cb3f471d23af | release_docs/next_version_release.md |
+| 69462-69530 | 69467-69527 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
+| 69531-69557 | 69536-69554 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
