@@ -267,6 +267,7 @@ Key Files (C1):
 - `tests/_frame_posture_test_support.py`
 - `tests/_codegen_system_support.py`
 - `tests/_nexus_viewer_matrix_support.py`
+- `tests/_annotation_audit_support.py`
 - `tests/component/melder/spellbook/compiler_test_helpers.py`
 - `tests/component/melder/spellbook/spell_compiler_runtime_test_support.py`
 - `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
@@ -596,6 +597,28 @@ Contract/Interface:
 Key Files (C1):
 - `tests/_nexus_viewer_matrix_support.py`
 
+### Subcomponent: Annotation Integrity Audit Support
+Parent Component: Shared Test Support And Matrix Fixtures
+Purpose:
+- locate annotations in a source tree that raise when Python 3.14 evaluates them: a string literal
+  used as a `|` operand (`"Conduit" | None`) or a name no scope binds, even under `TYPE_CHECKING`
+  (added 2026-09-26)
+Contract/Interface:
+- `AnnotationAudit(src_root, package, static=..., dynamic=...).run().findings()` returns
+  `AnnotationFinding` rows (`kind`, `path`, `line`, `owner`, `detail`); kinds `STRING_IN_UNION`,
+  `UNDEFINED_NAME`, `UNPARSEABLE_STRING`, `EVAL_ERROR`, plus `IMPORT_ERROR` / `TC_IMPORT_ERROR` when a
+  module or one of its `TYPE_CHECKING` imports cannot be loaded
+- `StaticAnnotationAudit` parses source only; `DynamicAnnotationAudit` imports every module, binds
+  its own `TYPE_CHECKING` imports and evaluates every annotation owner in VALUE format, so it mutates
+  module globals and runs in a separate process through the command-line entry point
+- guard: `tests/unit/melder/test_annotation_integrity.py` asserts zero static and dynamic findings
+  for `src/melder`, checks both passes against a seeded control package, and pins the string-union
+  shapes that raise on every observed 3.14 build (a `typing.Union` operand is build-dependent: it
+  raised on 3.14.0rc2 and wraps the string in a ForwardRef on 3.14.7)
+Key Files (C1):
+- `tests/_annotation_audit_support.py`
+- `tests/unit/melder/test_annotation_integrity.py`
+
 ### Subcomponent: Static Rift JSON Bench
 Parent Component: Shared Test Support And Matrix Fixtures
 Purpose:
@@ -903,6 +926,16 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 638
   loc: 638
   verified_at: 2026-08-02T15:19:19Z
+- path: `tests/_annotation_audit_support.py`
+  start_line: 1
+  end_line: 628
+  loc: 628
+  verified_at: 2026-09-26T10:01:18Z
+- path: `tests/unit/melder/test_annotation_integrity.py`
+  start_line: 1
+  end_line: 224
+  loc: 224
+  verified_at: 2026-09-26T10:01:18Z
 - path: `tests/component/melder/spellbook/compiler_test_helpers.py`
   start_line: 1
   end_line: 231
@@ -1518,6 +1551,8 @@ graph TD
 ## Information Sources
 - `pyproject.toml`
 - `tests/conftest.py`
+- `tests/_annotation_audit_support.py`
+- `tests/unit/melder/test_annotation_integrity.py`
 - `tests/_frame_posture_test_support.py`
 - `tests/_codegen_system_support.py`
 - `tests/component/INFO.MD`
@@ -1553,6 +1588,11 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-09-26 annotation integrity guard: `tests/_annotation_audit_support.py` (static AST pass plus a
+subprocess dynamic pass) and `tests/unit/melder/test_annotation_integrity.py` keep every annotation in
+`src/melder` evaluable once its `TYPE_CHECKING` imports are bound. Added to Shared Test Support and the
+C1 Code Map; measured on the device tree it reports zero findings.
 
 RECOMPOSED 2026-08-02 to the Required Section Contract.
 

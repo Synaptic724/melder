@@ -211,6 +211,16 @@ class CodegenSignature:
               reach (the determinism test is the guard).
             - Recurses into nested containers, so the whole structure is
               order-canonical and hashable.
+            - Deterministic, not lossless: the phase-11 row builder stores the
+              frozen payload values in the step rows, and every manifest-first
+              executor - hydrated in-process at first meld or from a cache hit
+              - binds those row values as constructor arguments (only the
+              legacy plan compiler binds the raw values). A contract payload
+              value that is not `None`, `bool`, `int`, `float`, `str` or a
+              tuple of those therefore reaches the constructor as its frozen
+              projection. The creation cache refuses such spells (owner option
+              B, 2026-09-26); the in-process projection is an open owner
+              decision recorded on the tranche's tickets.
 
         Args:
             value:

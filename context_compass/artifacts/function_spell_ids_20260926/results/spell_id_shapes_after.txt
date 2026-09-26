@@ -1,0 +1,17 @@
+Two fresh processes per build, 3.14.7t. before = device-tree src; after = the same tree with this lane's change.
+shape                      before  after  id moved after repr_string (display, unchanged)
+function                   NO      stable yes      <function make_engine at 0x43af1872400>
+function_object_default    NO      stable yes      <function make_with_object_default at 0x43af1872f40>
+function_contract_default  NO      stable yes      <function make_with_contract_default at 0x43af1873300>
+decorated_function         NO      stable yes      <function decorated_factory at 0x43af18751c0>
+lambda                     NO      stable yes      <function <lambda> at 0x43af1a97d40>
+bound_method               NO      stable yes      <bound method Workshop.build of <probe_user_shapes.Workshop object at 0x43af058e590>>
+static_method              NO      stable yes      <function Workshop.build_static at 0x43af1a92940>
+class_method               stable  stable no       <bound method Workshop.build_class of <class 'probe_user_shapes.Workshop'>>
+partial                    NO      stable yes      functools.partial(<function make_engine at 0x43af1872400>, size=4)
+callable_instance          NO      stable yes      <probe_user_shapes.CallableFactory object at 0x43af058e710>
+instance_default_repr      NO      stable yes      <probe_user_shapes.Settings object at 0x43af058e890>
+instance_custom_repr       stable  stable no       NamedSettings(prod)
+instance_dataclass         stable  stable no       ValueSettings(level=2)
+class                      stable  stable no       None
+class_object_default       NO      stable yes      None

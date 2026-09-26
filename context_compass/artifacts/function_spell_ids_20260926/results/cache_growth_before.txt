@@ -1,0 +1,15 @@
+Three fresh processes, 3.14.7t, device-tree src (VM copy, its own melder package root), same frame/conduit.
+Book: make_engine bound as a function spell (spellframe=Engine, unique) + Car(engine: Engine) class spell (many).
+Probe: probes/probe_cache_growth.py
+== process 1
+live spell ids: ['5bd477aeb4c2', 'fc8972a04ec0']
+bundle payload ids: ['5bd477aeb4c2', 'fc8972a04ec0']
+bundle payload count: 2 bytes: 2990
+== process 2
+live spell ids: ['c2607668999c', 'fc8972a04ec0']
+bundle payload ids: ['5bd477aeb4c2', 'c2607668999c', 'fc8972a04ec0']
+bundle payload count: 3 bytes: 3402
+== process 3
+live spell ids: ['96eaac0f0186', 'fc8972a04ec0']
+bundle payload ids: ['5bd477aeb4c2', '96eaac0f0186', 'c2607668999c', 'fc8972a04ec0']
+bundle payload count: 4 bytes: 3814

@@ -2,15 +2,20 @@
 
 # Task: Add an opt-in validation_warnings flag to Spellbook.conjure (silence the default INFO line)
 
+- Completed: 2026-09-26T10:12:55Z
+- Summary: Spellbook.conjure(validation_warnings=False) added on the main conjure only; default silent
+  (0.2.54 INFO line removed), True logs one WARNING grouping every Phase-4 warning by code. Tests, canonical
+  docs, graph, release note, build assets and LLM bundles updated; patch docs archived. Owner accepted.
+
 ## Metadata
 - Task ID: TASK-2026-09-26-add-conjure-validation-warnings-flag
 - Story: none (standalone follow-up to STORY-2026-09-26-unresolved-input-sockets, completed)
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T09:17:00Z
-- Updated: 2026-09-26T09:38:26Z
+- Updated: 2026-09-26T10:12:55Z
 
 ## Objective
 Give the public `Spellbook.conjure` an opt-in `validation_warnings: bool = False` keyword. When True,
@@ -51,6 +56,9 @@ frame creation, crystallizer restore, upgrade_to_normal) keep the default and ne
 - from_state: in_progress
 - to_state: review
 - transition_reason: Flag implemented, tested, documented, assets rebuilt; awaiting owner acceptance, 2026-09-26T09:38:26Z.
+- from_state: review
+- to_state: done
+- transition_reason: Owner accepted in chat ("ok yeah go ahead ... please close your stuff first"), 2026-09-26T10:12:55Z.
 
 ## Steps / Checklist
 - [x] Re-read the conjure call chain and the reporter in source; record findings.
@@ -60,10 +68,10 @@ frame creation, crystallizer restore, upgrade_to_normal) keep the default and ne
 - [x] Run touched suites on 3.14t and GIL; run the full unit suite on 3.14t.
 - [x] Update src_architecture/src_components (+ indexes), graph descriptors, release note.
 - [x] Rebuild build assets and LLM bundles (coordinate with melder_1); run --check.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - `Spellbook.conjure(..., validation_warnings: bool = False)` with grouped Phase-4 warning output.
@@ -87,27 +95,27 @@ frame creation, crystallizer restore, upgrade_to_normal) keep the default and ne
 - Warnings are released after resolution, so the report must stay before artifact cleanup.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
-- [ ] No behavior claim cited only to a document or a one-line search hit.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
+- [x] No behavior claim cited only to a document or a one-line search hit.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
-  - system_docs/patches/active/conjure_validation_warnings_2026_09_26/
+  - system_docs/patches/completed/conjure_validation_warnings_2026_09_26/
 - DISPOSITION: promote_to_documentation
 - CLEANUP_TRIGGER: Promotion into src_architecture/src_components at task closure; archive to
   system_docs/patches/completed/.
@@ -272,10 +280,23 @@ frame creation, crystallizer restore, upgrade_to_normal) keep the default and ne
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-26T10:12:55Z
+  TYPE: DECISION
+  CLAIM: Owner accepted and directed closure. Patch docs promoted (content already in src_architecture/
+    src_components) and archived to system_docs/patches/completed/conjure_validation_warnings_2026_09_26/;
+    ticket moved to tickets/tasks/completed/; attention and artifact boards synced. Open side items stay with
+    the owner: spellbook.py citation remap in the canonical docs, re-accepting the two stale graph nodes,
+    the flaky test_conduit_integration_concurrency.py file (pre-existing).
+  EVIDENCE: tickets/tasks/completed/2026-09-26_add_conjure_validation_warnings_flag_task.md
+  IMPACT: Lane closed; melder_0 returns to the paused override design lane.
+  NEXT: Resume tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-In review. Spellbook.conjure(validation_warnings=False) implemented on the main conjure only; default silent,
+Done. Spellbook.conjure(validation_warnings=False) implemented on the main conjure only; default silent,
 True logs one grouped WARNING of every Phase-4 warning. Tests, docs, graph, release note, assets and LLM
-bundles done. On owner acceptance: archive patch docs to system_docs/patches/completed/ and close. Then resume
+bundles done. Patch docs archived; task closed on owner acceptance. melder_0 resumes
 the paused override design lane (executor/targeting split probe).
 
 ## Project-Specific Additions

@@ -4642,7 +4642,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/conduit_ward.py
 
-- source_sha256: `9f26a5ab364197364c7e358eaf6416f2865dbec7f5820781986d0c6170f50e6a`
+- source_sha256: `f03efb5d01f9802e6c93b4bdddb7fe80f3a7a8ab5f3896efb18081e39ee9ed39`
 - nodes: 2
 
 ### Nodes
@@ -4661,7 +4661,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ConduitWard` (class)
 
 - id: `melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard`
-- defined at: `src/melder/aether/conduit/conduit_ward/conduit_ward.py:54`
+- defined at: `src/melder/aether/conduit/conduit_ward/conduit_ward.py:55`
 - extends: `Cleanable`
 - role: Contract and lineage graph manager for a conduit.
 - responsibilities:
@@ -5309,7 +5309,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/creation_context/creation_context.py
 
-- source_sha256: `7d98babe6ead4ae82a8f386a1767476c89a16c510d31be3bc8257462717f9ed9`
+- source_sha256: `ecc32df441f7835a992c3f7f673910ac97a2a65c1d911c391de3612effb43615`
 - nodes: 2
 
 ### Nodes
@@ -5327,7 +5327,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `CreationContext` (class)
 
 - id: `melder.aether.conduit.meld.creation_context.creation_context.CreationContext`
-- defined at: `src/melder/aether/conduit/meld/creation_context/creation_context.py:11`
+- defined at: `src/melder/aether/conduit/meld/creation_context/creation_context.py:12`
 - extends: `Cleanable`
 - role: Compiled execution context for one spell.
 - responsibilities:
@@ -6877,7 +6877,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py
 
-- source_sha256: `b126f098b2a3fb44d43d91c915eb5b3148662bdbc2b8c07e3f6df2d1693a26f3`
+- source_sha256: `ebd19adfec83b89a268c30215bc17e9390e238205102df4b44ece2b6a879ba1b`
 - nodes: 2
 
 ### Nodes
@@ -6891,7 +6891,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellOccurrenceContractProcessorStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy.SpellOccurrenceContractProcessorStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:32`
+- defined at: `src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:33`
 - extends: `SpellArtifactProcessorStrategy`
 - role: Processor strategy fitting SpellContract routing and payload facts into the codegen model.
 - responsibilities:
@@ -12462,7 +12462,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
 
-- source_sha256: `ac415f8c2ca742eb93ee001720c9de2830b98ea1c9bfefa34db153189ec3c47f`
+- source_sha256: `b323ca387780212ff71f6f2ebea31f75998b91473c1c14637189734814de2353`
 - nodes: 2
 
 ### Nodes
@@ -12476,7 +12476,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SpellOccurrenceGraphAnalyzerStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy.SpellOccurrenceGraphAnalyzerStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:49`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:50`
 - extends: `SpellAnalyzerStrategy`
 - role: Occurrence-graph analyzer strategy for phase-8 analysis.
 - responsibilities:
@@ -12720,7 +12720,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py
 
-- source_sha256: `167139b6132876584454b9b4bce2efad1879ab08cc941e5aa40a5c0921a780e4`
+- source_sha256: `ebd11d10bab85595104c5ed3e14183c3ea0bdd1d288711ba18967f1878789709`
 - nodes: 2
 
 ### Nodes
@@ -12734,7 +12734,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ClassInspector` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py:15`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py:16`
 - extends: `Cleanable`
 - role: Inspector producing structured class inventories.
 - responsibilities:
@@ -12750,9 +12750,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector` | uses | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility` | many_to_one | validation | authored |
 | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector` | creates | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile.ClassProfile` | one_to_many | validation | authored |
+| `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector` | uses | `melder.utilities.helpers.signature_reflection.SignatureReflection` | many_to_one | validation,runtime | authored |
 
 - `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector` -> `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility`: ClassInspector uses InspectorUtility for safe repr and extension-module checks.
 - `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector` -> `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.class_profile.ClassProfile`: ClassInspector emits structured ClassProfile objects from inspected class surfaces.
+- `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.class_inspector.ClassInspector` -> `melder.utilities.helpers.signature_reflection.SignatureReflection`: ClassInspector renders member signatures through SignatureReflection and falls back to its FORWARDREF class annotations when eval_str reading raises NameError.
 
 ### Edge candidates (1, unconfirmed)
 
@@ -12793,7 +12795,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py
 
-- source_sha256: `8d2af1cd991975d912733b1382f9b94e617ed0580d68ca9717ffc2359fa940d6`
+- source_sha256: `6e93ef9f7d494e6c3abe590a347e0c61dad15f56e1f48460c80983e8a3a9799d`
 - nodes: 2
 
 ### Nodes
@@ -12807,7 +12809,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `MethodInspector` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py:14`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py:15`
 - extends: `Cleanable`
 - role: Inspector producing structured callable inventories.
 - responsibilities:
@@ -12823,9 +12825,11 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector` | uses | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility` | many_to_one | validation | authored |
 | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector` | creates | `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.method_profile.MethodProfile` | one_to_many | validation | authored |
+| `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector` | uses | `melder.utilities.helpers.signature_reflection.SignatureReflection` | many_to_one | validation,runtime | authored |
 
 - `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector` -> `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility`: MethodInspector uses InspectorUtility for safe repr and callable unwrapping.
 - `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector` -> `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.profiles.method_profile.MethodProfile`: MethodInspector emits structured MethodProfile objects from inspected callable surfaces.
+- `melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector` -> `melder.utilities.helpers.signature_reflection.SignatureReflection`: MethodInspector renders the callable signature through SignatureReflection so TYPE_CHECKING-only names cannot raise.
 
 ### Edge candidates (1, unconfirmed)
 
@@ -13171,7 +13175,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
 
-- source_sha256: `b16044350c96c3b4bb5eaffebc0319b2c56223eb039a82d8ae940167f5ba9ec5`
+- source_sha256: `36bd8dcee32772471d8d8f03f4e9eb6dce1ba640a231464dfd76c98c69bec2d9`
 - nodes: 2
 
 ### Nodes
@@ -13185,11 +13189,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `BindingProfileStrategy` (class)
 
 - id: `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy`
-- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:17`
+- defined at: `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:18`
 - role: Strategy building binding profiles from raw candidates.
 - responsibilities:
   - builds the correct binding-profile variant from a raw candidate surface
   - captures Python 3.14 signatures with unresolved annotation names retained as ForwardRefs
+  - renders init_signature and callable signature fingerprint text with unresolved names as source text, keeping spell ids stable across processes
 - phases: `validation`, `runtime`
 - public methods: `build_profile`
 
@@ -13198,8 +13203,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy` | creates | `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile` | one_to_many | validation | authored |
+| `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy` | uses | `melder.utilities.helpers.signature_reflection.SignatureReflection` | many_to_one | validation | authored |
 
 - `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy` -> `melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile.SpellBindingProfile`: BindingProfileStrategy builds binding-profile variants from raw candidates.
+- `melder.aether.spellbook.spell_compiler.spell_examiner.strategies.binding_profile_strategy.BindingProfileStrategy` -> `melder.utilities.helpers.signature_reflection.SignatureReflection`: BindingProfileStrategy stabilizes init_signature and callable signature text through SignatureReflection, so the bind fingerprint carries no ForwardRef owner or memory address.
 
 ### Edge candidates (5, unconfirmed)
 
@@ -20297,7 +20304,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py
 
-- source_sha256: `c337733deaf7b11d30df073edd2e6445e110449dd88fc32a01684874449b8fd4`
+- source_sha256: `e28c4552a98bec1f782ecbff2cb7d16717b7a1002cd46097f55d37257e20fcb1`
 - nodes: 3
 
 ### Nodes
@@ -20311,7 +20318,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `_NamedCleanableProfile` (interface)
 
 - id: `melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder._NamedCleanableProfile`
-- defined at: `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py:29`
+- defined at: `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py:32`
 - markers: `Protocol`
 - role: Structural contract - the two things (name, cleanup) the generic profile-registry helpers need from any family profile.
 - responsibilities:
@@ -20323,7 +20330,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `FrameACLProfileBuilder` (class)
 
 - id: `melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder.FrameACLProfileBuilder`
-- defined at: `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py:82`
+- defined at: `src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py:85`
 - extends: `Cleanable`
 - role: Registry and composer for reusable ACL profiles.
 - responsibilities:
@@ -21498,7 +21505,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/frame_acl_compiler.py
 
-- source_sha256: `ee53c83848761f6323a1ba48ba09f1e5ee6513adc2c06376d3e8a10365661825`
+- source_sha256: `3a90d3180ef897cb029740ec97ab9d521c690af56a8a7cd758f18bbef6b69f50`
 - nodes: 2
 
 ### Nodes
@@ -21512,7 +21519,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `FrameACLCompiler` (class)
 
 - id: `melder.nexus.acl.frame_acl_compiler.FrameACLCompiler`
-- defined at: `src/melder/nexus/acl/frame_acl_compiler.py:17`
+- defined at: `src/melder/nexus/acl/frame_acl_compiler.py:24`
 - extends: `Cleanable`
 - role: Compiler from descriptor truth and typed ACL config into a consumer-facing access surface.
 - responsibilities:
@@ -21595,7 +21602,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/frame_acl_configuration_chain.py
 
-- source_sha256: `ade54198cf6b22641a375b4a2a8a3e83dd047d1b8a086556c2c0f70a8c0c738c`
+- source_sha256: `ed7abdf6b66f0a18d6a885a89b54e381c73ec5efe3a2c203802b6067a7aad244`
 - nodes: 2
 
 ### Nodes
@@ -21752,7 +21759,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py
 
-- source_sha256: `4b87953b661afef44faa59d2dca7a7553408d052752cecc461f832d94c9a5622`
+- source_sha256: `7b60401c8b72150a2fdd470325b5655f1a08e8e8727aef7e40b4feb206d1d4be`
 - nodes: 2
 
 ### Nodes
@@ -21766,7 +21773,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `FrameACLSetCompatibilityValidator` (class)
 
 - id: `melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator`
-- defined at: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:20`
+- defined at: `src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py:26`
 - extends: `Cleanable`
 - role: Cross-family ACL bundle compatibility validator.
 - responsibilities:
@@ -25862,7 +25869,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/ai_native_support_tools/protocol_crafter.py
 
-- source_sha256: `28c91d9d6b897ce34d765fa486c882a6b7b9f34a73c826d2bdfa85d54b339b44`
+- source_sha256: `2cdca61115df03ff05076af78318268e60bb781a13fcd776cb5543d0b9740166`
 - nodes: 2
 
 ### Nodes
@@ -25880,7 +25887,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ProtocolCrafter` (class)
 
 - id: `melder.utilities.ai_native_support_tools.protocol_crafter.ProtocolCrafter`
-- defined at: `src/melder/utilities/ai_native_support_tools/protocol_crafter.py:21`
+- defined at: `src/melder/utilities/ai_native_support_tools/protocol_crafter.py:22`
 - extends: `Cleanable`
 - role: AI-native support utility for protocol generation and interface-file maintenance.
 - responsibilities:
@@ -26536,7 +26543,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py
 
-- source_sha256: `6d5b08058de8a0e65a36e97b2d3839a8584480efcca2b3da6d02fd67c8da5a92`
+- source_sha256: `2893ed38dbe3e0affafd6da375012eb313bbeb45ede60fde1e510472317f4f12`
 - nodes: 5
 
 ### Nodes
@@ -26589,7 +26596,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - markers: `Generic`
 - role: Concurrent weak-key dictionary.
 - responsibilities:
-  - stores weakly referenced keys in a concurrent dictionary-like container
+  - stores values weakly behind WeakRefNode wrappers under strong keys in a thread-safe dictionary-like container, pruning collected entries when auto_prune is enabled
 - phases: `runtime`, `cleanup`
 - public methods: `auto_prune`, `auto_prune`, `batch_update`, `cleanup`, `clear`, `copy`, `filter`, `freeze`, `fromkeys`, `get`, `id`, `is_frozen` (+12 more)
 
@@ -27203,7 +27210,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/helpers/package.py
 
-- source_sha256: `8d36a769fba4d21759fae69970f54effb30b5c53ebe32757058d0a2d25b5a591`
+- source_sha256: `ac5442a91ed4b65c05ae88cce97555028bd33ec4c76fd9826c29ee41e2ad1b8a`
 - nodes: 2
 
 ### Nodes
@@ -27220,7 +27227,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Package` (class)
 
 - id: `melder.utilities.helpers.package.Package`
-- defined at: `src/melder/utilities/helpers/package.py:51`
+- defined at: `src/melder/utilities/helpers/package.py:53`
 - extends: `Cleanable`
 - markers: `Generic`
 - role: Packaged callable/result helper wrapper.
@@ -27234,6 +27241,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | from | relation | to | cardinality | phase | origin |
 | --- | --- | --- | --- | --- | --- |
 | `melder.utilities.helpers.package.Package` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
+| `melder.utilities.helpers.package.Package` | uses | `melder.utilities.helpers.signature_reflection.SignatureReflection` | many_to_one | runtime | authored |
+
+- `melder.utilities.helpers.package.Package` -> `melder.utilities.helpers.signature_reflection.SignatureReflection`: Package.describe renders its signature through SignatureReflection.display_signature.
 
 ### Edge candidates (8, unconfirmed)
 
@@ -27250,9 +27260,39 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ### Published aliases
 
-- `Pack` = `Package` (line 997)
+- `Pack` = `Package` (line 1009)
 
 <!-- END FILE: src/melder/utilities/helpers/package.py -->
+
+<!-- BEGIN FILE: src/melder/utilities/helpers/signature_reflection.py -->
+
+## src/melder/utilities/helpers/signature_reflection.py
+
+- source_sha256: `3f9e094408109ca7f8d1e531fc346de30eb6b8d4745bc9e13d7234b60780079c`
+- nodes: 2
+
+### Nodes
+
+#### `signature_reflection` (module)
+
+- id: `melder.utilities.helpers.signature_reflection`
+- defined at: `src/melder/utilities/helpers/signature_reflection.py:1`
+- role: Reads and renders signatures and annotations whose names are unbound at runtime.
+
+#### `SignatureReflection` (class)
+
+- id: `melder.utilities.helpers.signature_reflection.SignatureReflection`
+- defined at: `src/melder/utilities/helpers/signature_reflection.py:9`
+- role: Stateless reader/renderer for signatures and annotations that name types unbound at runtime.
+- responsibilities:
+  - returns the default VALUE-format signature when it evaluates, otherwise a FORWARDREF signature whose owner-bearing ForwardRefs are replaced by source text
+  - stabilizes an existing FORWARDREF signature for fingerprint text: no ForwardRef owner or memory address, unchanged when nothing is unresolved
+  - reads class annotations in FORWARDREF, rendering unresolved names as their source text
+  - recognizes owner-bearing ForwardRefs inside nested typing constructs
+- phases: `validation`, `runtime`
+- public methods: `class_annotations`, `contains_unresolved_name`, `display_signature`, `stabilize_signature`
+
+<!-- END FILE: src/melder/utilities/helpers/signature_reflection.py -->
 
 <!-- BEGIN FILE: src/melder/utilities/helpers/ulid_factory.py -->
 

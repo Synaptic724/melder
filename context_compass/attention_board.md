@@ -82,8 +82,8 @@ Message alert rules
 - NEW MESSAGE for updater_0 (from melder_0, 2026-09-26T00:22:42Z)
 - NEW MESSAGE for workflows_0 (from melder_0, 2026-09-26T00:22:42Z)
 - NEW MESSAGE for updater_1 (from fable_0, 2026-09-26T09:08:43Z)
-- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T09:35:35Z)
-- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T09:38:26Z)
+- NEW MESSAGE for melder_0 (from fable_0, 2026-09-26T10:30:30Z)
+- NEW MESSAGE for melder_1 (from fable_0, 2026-09-26T10:44:38Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -108,18 +108,21 @@ Message alert rules
 | ir_phase_survey_seam | review | handoff | claude | fable_0 | none | Owner reviews the survey records (summary.md first); no design decisions are asked in this lane. | Cache mechanics, key composition, invalidation surface and summary.md (D3, D4, D5; D1-D6 consolidated). | Owner accepts the records (Milestone 1, closure sync) or redirects scope. | tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md | 2026-09-26T07:38:41Z | REQUIRED |
 | ir_phase_cost_model | review | handoff | claude | fable_0 | none | Owner reviews cost_model.md (counted rows, measured rows, owner-run command). | Per-stage cost model for phases 1-11 with two owner-run measurement sources. | Owner accepts the cost model or redirects scope. | tickets/tasks/2026-09-26_model_phase_pipeline_costs_task.md | 2026-09-26T08:13:27Z | REQUIRED |
 | ir_phase_improvement_plan | review | handoff | claude | fable_0 | none | Owner confirms closure of the plan story (T1 decided: C-H + C-A; C-B deferred). | Thirteen ranked candidates; T1 decided by the owner. | Owner confirms acceptance; closure sync follows. | tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md | 2026-09-26T09:08:28Z | REQUIRED |
-| sig_determinism_phase8 | in_progress | implementation | claude | fable_0 | none | U2: leaf CodegenSignature module + facade delegations; then U3 tests. | One signature implementation, determinism test, phase-8 pool digest. | Both code tasks in review with owner-run suites green. | tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md | 2026-09-26T09:29:36Z | REQUIRED |
-| conjure_validation_warnings | review | handoff | claude | melder_0 | none | Owner reviews the flag, tests, docs and rebuilt assets. | Opt-in Spellbook.conjure(validation_warnings=False); default silent, True logs grouped Phase-4 warnings. | Owner accepts; patch docs archived and task closed. | tickets/tasks/2026-09-26_add_conjure_validation_warnings_flag_task.md | 2026-09-26T09:38:26Z | REQUIRED |
-| override_design_melder | in_progress | discovery | claude | melder_0 | none | Paused for conjure_validation_warnings; resume with the executor/targeting split probe. | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T09:09:11Z | REQUIRED |
+| sig_serializer_unify | review | handoff | claude | fable_0 | none | Suites: 1784 passed; owner re-runs the fixed component file (test_codegen_signature_determinism.py). | One CodegenSignature implementation, oracle, 15 tests, patch docs amended (commit 6fc9af345). | Owner reports suites and rules A/B/C; closure with the story. | tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md | 2026-09-26T10:42:09Z | REQUIRED |
+| sig_determinism_phase8 | review | handoff | claude | fable_0 | none | AFTER filed; owner runs BEFORE with build/_fable_stage/...BEFORE.py (stale .git/index.lock broke the stash). | Pool-wide rows hashed once per pass; None-first skip; root rows built once. | Owner reports results; closure with the story. | tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md | 2026-09-26T10:42:09Z | REQUIRED |
+| cache_payload_gate | review | handoff | claude | fable_0 | none | Owner picks (1) fail-fast or (2) raw-value side table for the in-process projection; gate stays as the cache half. | Non-replayable contract payloads never enter the .melc (owner option B); rows unchanged. | Owner reports results; closure with the story. | tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md | 2026-09-26T10:42:09Z | REQUIRED |
+| override_design_melder | in_progress | discovery | claude | melder_0 | none | Owner discusses P2/P3 (runtime reuse vs override rules) from the joint alpha read. | Evidence-backed override strategy with owner decisions. | Owner approves a strategy; implementation stories open. | tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md | 2026-09-26T10:32:04Z | REQUIRED |
 | caller_input_strictness | review | handoff | claude | melder_0 | none | Owner reviews the cause timeline; fix is the missing-dependency socket (S1). | Responsible change identified with before/after runs and fix options. | Commit and fix options recorded; task moves to review. | tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md | 2026-09-26T00:42:21Z | REQUIRED |
-| inspect_signature_nameerror | blocked | handoff | claude | melder_1 | annotation audit first (owner) | Fold the audit findings in, then apply the approved src edits. | Tested fix for TYPE_CHECKING-annotation NameErrors, docs and rebuilt assets. | Audit reported, then fix applied with tests and assets. | tickets/tasks/2026-09-26_fix_inspect_signature_nameerror_on_type_checking_annotations_task.md | 2026-09-26T09:17:15Z | REQUIRED |
-| inspect_annotation_audit | review | handoff | claude | melder_1 | none | Owner reviews findings, confirms fixes and tool placement. | Every never-evaluable annotation in src/melder located with file:line. | Owner confirms fix set and tool placement, or redirects. | tickets/tasks/2026-09-26_build_annotation_integrity_audit_tool_task.md | 2026-09-26T09:23:31Z | REQUIRED |
+| function_spell_ids | in_progress | implementation | claude | melder_1 | none | Patch lane, then fingerprint + cache fix in a VM copy with tests. | Stable function spell ids with an approved fingerprint and migration. | Fix validated on the device tree, docs/graph/assets updated; task in review. | tickets/tasks/2026-09-26_stabilize_function_spell_ids_across_processes_task.md | 2026-09-26T10:38:29Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| conjure_validation_warnings | done | melder_0 | tickets/tasks/completed/2026-09-26_add_conjure_validation_warnings_flag_task.md | Opt-in conjure(validation_warnings=True) grouped report; default silent; patch archived. | 2026-09-26T10:12:55Z |
+| inspect_signature_nameerror | done | melder_1 | tickets/tasks/completed/2026-09-26_fix_inspect_signature_nameerror_on_type_checking_annotations_task.md | FORWARDREF reads + SignatureReflection; suites green; docs, graph, assets current. | 2026-09-26T10:12:17Z |
+| inspect_annotation_audit | done | melder_1 | tickets/tasks/completed/2026-09-26_build_annotation_integrity_audit_tool_task.md | Audit findings fixed; kept as test guard test_annotation_integrity.py. | 2026-09-26T10:12:17Z |
 | unresolved_input_sockets_story | done | melder_0 | tickets/stories/completed/2026-09-26_unresolved_input_sockets_story.md | S1 shipped: unresolved inputs supplied at meld; follow-ups listed in the task. | 2026-09-26T08:54:37Z |
 | missing_dependency_sockets | done | melder_0 | tickets/tasks/completed/2026-09-26_implement_missing_dependency_sockets_task.md | Steps 1-6 done; 3.14t/GIL qualified; patch lane archived. | 2026-09-26T08:54:37Z |
 | version_assets_0_2_54 | done | melder_0 | tickets/tasks/completed/2026-09-26_bump_version_rebuild_assets_for_unresolved_inputs_task.md | 0.2.54; assets and LLM bundles rebuilt and checked; release note detailed. | 2026-09-26T08:54:37Z |
@@ -127,11 +130,8 @@ Message alert rules
 | gauntlet_harness_fix | done | melder_1 | tickets/tasks/completed/2026-09-26_fix_gauntlet_sample_storage_and_melder_lane_isolation_task.md | array('q') storage; Melder lane parity-guarded. | 2026-09-26T08:32:04Z |
 | melder_long_run_attribution | done | melder_1 | tickets/tasks/completed/2026-09-26_measure_melder_long_run_attribution_task.md | 2x2 controls: harness retention, not Melder. | 2026-09-26T08:32:04Z |
 | melder_long_run_growth | done | melder_1 | tickets/tasks/completed/2026-09-26_investigate_melder_long_run_growth_task.md | No retained growth; guard tests added. | 2026-09-26T08:32:04Z |
-| version_notch_0_2_53 | done | melder_0 | tickets/tasks/completed/2026-09-26_bump_version_for_deadlock_fix_task.md | Version and next-release header at 0.2.53; asset rebuild held. | 2026-09-26T00:11:19Z |
 | override_contract_story | done | melder_0, melder_1 | tickets/stories/completed/2026-09-25_verify_override_writer_and_contract_story.md | Deadlock fixed; contract verified; items 4a/5c chosen; open items carried. | 2026-09-26T00:15:00Z |
 | override_contract_verify | done | melder_1 | tickets/tasks/completed/2026-09-25_verify_override_behavior_contract_task.md | Items 1-8 verified with regression matrix; owner-directed turn-in. | 2026-09-26T00:12:00Z |
-| creation_slot_guards_impl | done | melder_0 | tickets/tasks/completed/2026-09-25_implement_creation_slot_build_guards_task.md | Per-slot build guards; deadlock fixed; docs, graph and release note updated. | 2026-09-25T23:47:39Z |
-| deadlock_regression_tests | done | melder_0 | tickets/tasks/completed/2026-09-25_add_meld_lock_order_deadlock_regression_tests_task.md | 12 lock-order cases must complete (3.14t and GIL). | 2026-09-25T23:47:39Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -182,12 +182,20 @@ Message alert rules
   tickets/stories/2026-09-26_phase_pipeline_improvement_plan_story.md ->
   tickets/tasks/2026-09-26_rank_phase_improvement_candidates_task.md. Fact base: artifacts/ir_phase_improvement_20260926/cost_model.md
   and artifacts/ir_phase_survey_20260925/summary.md.
-- sig_determinism_phase8: SWITCH_TRIGGER is owner confirmation of each Propose -> Confirm message, then suites green owner-run.
+- sig_serializer_unify: SWITCH_TRIGGER is the owner's suite report plus the A/B/C ruling on the cache-path payload limit.
   RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
   tickets/stories/2026-09-26_signature_determinism_and_phase8_digest_story.md ->
-  tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md (then
-  tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md). Patch docs:
+  tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md. Patch docs:
   system_docs/patches/active/codegen_signature_determinism_2026_09_26/.
+- sig_determinism_phase8: SWITCH_TRIGGER is the owner's suite/harness report (M5/M6, M7) or an owner redirect.
+  RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
+  tickets/stories/2026-09-26_signature_determinism_and_phase8_digest_story.md ->
+  tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md. Patch docs as above.
+- cache_payload_gate: SWITCH_TRIGGER is the owner's suite report or an owner redirect (option B, 2026-09-26).
+  RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
+  tickets/stories/2026-09-26_signature_determinism_and_phase8_digest_story.md ->
+  tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md. Patch docs as above
+  (Interface delta 4, Invariant 5).
 - ir_phase_survey_1_4: SWITCH_TRIGGER is owner acceptance of the tranche-1 records (task in review) or an owner scope redirect.
   RESUME_HIERARCHY: tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md ->
   tickets/stories/2026-09-25_ir_phase_pipeline_survey_story.md ->
@@ -195,18 +203,13 @@ Message alert rules
   tickets/tasks/2026-09-26_survey_compiler_phases_5_to_7_task.md ->
   tickets/tasks/2026-09-26_survey_structural_snapshot_seam_task.md. Strategy and recovery protocol:
   the epic's Context / Handoff Summary, section DISCOVERY STRATEGY AND RECOVERY (2026-09-26).
-- conjure_validation_warnings: SWITCH_TRIGGER is owner acceptance (then patch-doc archive and closure).
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_add_conjure_validation_warnings_flag_task.md. Patch docs:
-  system_docs/patches/active/conjure_validation_warnings_2026_09_26/.
 - override_design_melder: SWITCH_TRIGGER is the design artifact plus owner decision requests.
   RESUME_HIERARCHY: tickets/epics/2026-09-24_override_execution_performance_epic.md ->
   tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md.
 - caller_input_strictness: SWITCH_TRIGGER is the responsible commit plus before/after runs.
   RESUME_HIERARCHY: tickets/tasks/2026-09-26_trace_caller_input_conjure_strictness_regression_task.md.
-- inspect_signature_nameerror: SWITCH_TRIGGER is the annotation audit's findings (owner redirect), then the fix applied.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_fix_inspect_signature_nameerror_on_type_checking_annotations_task.md.
-- inspect_annotation_audit: SWITCH_TRIGGER is the audit run over src/melder with findings recorded, or an owner redirect.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_build_annotation_integrity_audit_tool_task.md.
+- function_spell_ids: SWITCH_TRIGGER is the fix validated on the device tree with docs, graph and assets updated.
+  RESUME_HIERARCHY: tickets/tasks/2026-09-26_stabilize_function_spell_ids_across_processes_task.md.
 ### Agent Message-Pass Protocol (melder_0 <-> melder_1; owner-set 2026-09-25)
 - Channel: `mailbox_board.md` `## Messages` plus one alert line under `## Message Alerts` here,
   per `agent_onboarding/default/general/skills/mailbox_protocol.md`. No harness-native messaging.

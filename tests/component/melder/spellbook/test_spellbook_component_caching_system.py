@@ -2,6 +2,7 @@ import inspect
 from pathlib import Path
 import shutil
 from types import CodeType
+from typing import Any
 
 import pytest
 
@@ -11,6 +12,9 @@ from melder.aether.aetheric_frame.aetheric_frame_configuration import (
 )
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets import (
+    manifest_creation_cache,
+)
 from melder.nexus.nexus import Nexus
 from melder.utilities.caching_system.caching_system import CachingSystem
 from tests.mocks.spellbook.core_classes import BasicService
@@ -600,3 +604,52 @@ def test_component_spell_emit_cache_skips_existing_spell_id_payload() -> None:
     assert spell is not None
     spell._get_or_build_creation_context()
     assert spell.emit_cache() is False
+
+
+def test_component_spell_emit_cache_stages_nothing_when_package_is_refused(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A refused package (the builder returns None for a plan whose contract payload cannot
+    replay from the rows; owner option B, 2026-09-26) stages nothing at conjure end: no
+    payload, no bundle file, and a later explicit emit still reports False.
+
+    Contract:
+        The refusal is silent for the caller of `_emit_spell_cache` (False, no exception);
+        the conduit cache simply never learns the spell.
+
+    Returns:
+        None.
+    """
+    cache_root_path = _prepare_cache_root(
+        _package_root() / "tests/component/melder/spellbook/_cache_emit_refused"
+    )
+    cache_root_fragment = _build_cache_root_fragment(cache_root_path)
+    _activate_aether_cache_configuration(
+        cache_root_fragment=cache_root_fragment,
+        enabled=True,
+    )
+    refused: list[str] = []
+
+    def _refuse(spell: Any) -> None:
+        """Stand in for a builder that rejects every plan."""
+        refused.append(spell.spell_id)
+        return None
+
+    monkeypatch.setattr(manifest_creation_cache, "build_package", _refuse, raising=True)
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=BasicService,
+        existence="unique",
+        permissions="create",
+    )
+    _conjure_root(spellbook, name="root")
+    spell = _get_spell_by_version_id(spellbook, spell_id)
+
+    assert spell is not None
+    assert spell_id in refused
+    caching_system = spellbook._get_or_create_caching_system()
+    assert caching_system.has_spell_payload(spell_id) is False
+    assert caching_system.bundle_path.exists() is False
+    assert spell.emit_cache() is False
+    assert caching_system.has_spell_payload(spell_id) is False

@@ -846,6 +846,16 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Annotation reflection (2026-09-26): Melder reads user and library annotations without evaluating
+  names that are unbound at runtime (a `TYPE_CHECKING`-only import; Python 3.14 evaluates annotations
+  when they are read). Code that needs only parameters or defaults reads signatures in
+  `annotationlib.Format.FORWARDREF`; code that renders them goes through `SignatureReflection`, which
+  matches the VALUE-format text whenever every name resolves and otherwise shows the unavailable name as
+  source text, never a ForwardRef owner or a memory address. Bind fingerprints hash that text, so a class
+  annotated with a `TYPE_CHECKING`-only type keeps one spell id across processes. Every annotation in
+  `src/melder` evaluates once its `TYPE_CHECKING` imports are bound, enforced by a unit guard.
+  EVIDENCE: `src/melder/utilities/helpers/signature_reflection.py:SignatureReflection` and
+  `tests/unit/melder/test_annotation_integrity.py`.
 - Creation build locks (2026-09-25): build-once exclusion is per SLOT (a spell id whose Existence
   promises one object in a store). unique_per_conduit, unique_per_spell_space, lineage and cluster
   slots use the target store's slot guard; unique uses its Spell lock (its one slot is the owner
@@ -1123,6 +1133,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- Reading Melder's own API with the default `inspect.signature` (VALUE format) or `typing.get_type_hints`
+  raises NameError for any annotation naming a type imported only under `TYPE_CHECKING` (817 of 7,689
+  callables, measured 2026-09-26). This follows from the typing policy and is not a defect to patch per
+  call site: read with `inspect.signature(obj, annotation_format=annotationlib.Format.FORWARDREF)`;
+  `help()`/pydoc work unchanged. Melder's own readers no longer raise on such annotations in user code.
 - A build that publishes into a Creations store cleaned during that build is refused with
   RuntimeError after its disposal methods run (2026-09-25). A reusable clear does not wait for
   in-flight builds; such a build publishes into the fresh store. Quiesce melds before cleanup.
@@ -2491,6 +2506,7 @@ without rewriting the original record or existing live IDs.
 
 ## Information Sources
 - `src/melder/utilities/caching_system/caching_system.py`
+- `src/melder/utilities/helpers/signature_reflection.py`
 - `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
 - `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
@@ -2607,6 +2623,12 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-26 TYPE_CHECKING annotation reflection: Melder's readers of signatures and annotations no longer
+raise NameError on names unbound at runtime - which had broken late binding in dynamic worlds, detailed
+profiles, `Package.describe` and ProtocolCrafter, and made such class spell ids differ per process. Readers
+use FORWARDREF or the `SignatureReflection` helper; an annotation integrity guard keeps `src/melder`
+evaluable. External default-format reads of Melder's API are documented under Failure Modes.
 
 2026-09-26 conjure validation warnings: `Spellbook.conjure(validation_warnings=False)` is an opt-in for
 beginners. When True, conjure logs every Phase-4 validation warning once, grouped by code, at WARNING

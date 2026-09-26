@@ -11,7 +11,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T00:14:30Z
-- Updated: 2026-09-26T08:58:44Z
+- Updated: 2026-09-26T10:47:11Z
 
 ## Objective
 Produce a source-grounded design that (1) lets a constructor declare parameters the caller always
@@ -276,10 +276,265 @@ Compare it against joint_alpha_proposal.md and recommend one path with tradeoffs
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-09-26T10:13:36Z
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Lane resumed after closing TASK-2026-09-26-add-conjure-validation-warnings-flag. Owner wants to talk
+    about overrides before more work. Proposed next step (not started): executor/targeting split probe -
+    time public override meld vs targeting-only vs executor-only on shallow/wide/diamond/deep, read-only.
+  EVIDENCE: tickets/tasks/completed/2026-09-26_add_conjure_validation_warnings_flag_task.md
+  IMPACT: Keeps the lane read-only until the owner and melder_0 agree on the probe and strategy framing.
+  NEXT: Discuss override strategy with the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-26T10:27:11Z
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Owner directs a deep read of the epic and the Codex (updater_0/updater_1) work before any strategy.
+    Epic re-read corrects my framing: the owner's primary goal is STRUCTURAL - supplied dependencies must
+    not be constructed (5 deps, 3 supplied -> build 2 + consumer; deep both-branches supplied -> 1 of 511).
+    The owner already rejected the emission-only prototype (all constructors kept; 41.8/53.3/41.6/95.3% of
+    normal) as the endpoint (decision 2026-09-24T11:16:08Z). So pruning is the objective, not a
+    "secondary, semantic" lever as I wrote at 09:09Z; instruction cost is the second objective.
+  EVIDENCE:
+  - tickets/epics/2026-09-24_override_execution_performance_epic.md:15-35
+  - tickets/epics/2026-09-24_override_execution_performance_epic.md:254-268
+  IMPACT: Any strategy I propose must be judged first on construction-demand pruning with correct shared
+    semantics, then on per-call cost; a faster eager executor does not meet the epic.
+  NEXT: Read joint_alpha_proposal.md, compact_structure_proposal.md, native_runtime_boundary.md,
+    structural_plan.md, semantics_findings.md, then the tasks' notes; verify key claims in source.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T10:27:11Z
+  TYPE: FACT
+  CLAIM: Joint alpha, as written (document claims, not yet source-verified by me): (1) one compact physical
+    construction graph shared by ordinary and override execution (each physical site once; shared providers
+    have several incoming edges; many children belong to their physical parent socket); (2) a prepared
+    request program per selector/operand layout: exact-path selectors advance (selector, prefix) states over
+    named edges, OR-merged at shared sites, PATH>UNIQUE>BROADCAST kept, UNIQUE counted over declared
+    logical paths without storing them; each physical parameter keeps guarded ranked candidate operands
+    plus a conditional default edge; (3) generated direct constructor calls with only remaining guards;
+    (4) a native claim prelude, consumer-first, that settles reuse hit/miss for demanded shared sites
+    before any constructor, using nonblocking per-entry claims with release-all-before-wait and retry
+    (no replay after user code). Contract items 1-8: whole supplied dep cuts demand; param override keeps
+    owner; validate selectors even under cut ancestors; rules below a supplied/reused constructor are
+    inactive and cannot influence another path; normalize surviving aliases, reject incompatible equal-rank
+    inputs; keep root refusal of override-on-reuse; retained unresolved descriptor fails honestly; no
+    constructor replay. Evidence cited: 42 scenario evaluations vs an expanded oracle; 6->3, 511->256->1;
+    depth-64 synthetic graph = 65 sites; 7+1 native adapter cases; 12 lock-order controls showing the
+    store/unique-Spell inversion (since fixed by slot guards, 2026-09-25). No native throughput measured.
+  EVIDENCE:
+  - artifacts/override_structural_discovery_20260924/joint_alpha_proposal.md:1-150
+  - artifacts/override_occurrence_discovery_20260924/compact_structure_proposal.md:1-236
+  - artifacts/override_structural_discovery_20260924/native_runtime_boundary.md:1-180
+  - artifacts/override_structural_discovery_20260924/structural_plan.md:1-247
+  - artifacts/override_structural_discovery_20260924/semantics_findings.md:1-147
+  IMPACT: The proposal has three separable parts - compact graph + selector program (compiler), pruned
+    direct emission, and a new native claim protocol - each needing its own verification against today's
+    source (which changed since 09-24: slot guards 09-25, unresolved inputs 09-26).
+  NEXT: Read structural_findings.md and the discovery task notes; then verify the current-behavior claims.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T10:27:54Z
+  TYPE: FACT
+  CLAIM: History of the epic, from its artifacts (document claims; behavior still to be source-checked):
+    (1) 09-24 baseline (updater_1): override 20-25% of normal; empty-tuple override already ~20% (deep
+    153.7us vs 32.0us); 8 wide root keys 8.6%; constructor counts unchanged by supplying (3/9/511).
+    (2) compiler diagnosis (updater_1): Phase 10 builds both variants from one ordered model but only
+    normal keeps the fast call layout; Phase 11 override emission passes only targeted-spell ids and counts,
+    so the executor re-derives parameter identity at runtime (SocketRef reads, name compares, kwargs dicts,
+    per-step store selection, result dict). (3) emission-only prototype: same constructors, normal-style
+    lowering + exact socket substitution -> 41.8/53.3/41.6/95.3% of normal (deep 4.68x); public front end
+    still large on small/wide graphs (wide all-root 7.38us public vs 1.26us executor). Owner rejected it as
+    the endpoint and chose structural pruning (09-24T11:16). (4) structural discovery: logical paths vs
+    physical sites; row-slice shows 6->3, 511->256->1; counterexamples (ghost Token when expanding aliases
+    then grouping; a rule under a replaced path leaks into the surviving alias; secondary-path descendant
+    rules ignored); static alias model failed two lead counterexamples (rules under a reused parent);
+    conditional model (guarded ranked candidates + conditional default edges) passes 20 cases. (5) compact
+    graph + selector-state program + generated direct calls (42 evals, 511->1, depth-64 = 65 sites), then a
+    native claim prelude and direct-publication adapter (8 cases). (6) melder pair 09-25: lock inversion
+    confirmed and fixed by slot guards; contract matrix with owner-recorded choices item 4 (a) inactive path,
+    item 5 (c) identity then == for scalars; carried: item-7 per-family wording, R5d probe, R7c, nested
+    unresolved contract. (7) my design.md (09-26) proposed dropping the claim protocol and live-state operand
+    choice (D2 conflicts with the recorded item 4 (a) for runtime reuse).
+  EVIDENCE:
+  - artifacts/override_execution_performance_20260924/findings.md:1-76
+  - artifacts/override_compiler_investigation_20260924/compiler_findings.md:1-164
+  - artifacts/override_emission_prototype_20260924/findings.md:1-116
+  - artifacts/override_occurrence_discovery_20260924/structural_findings.md:1-321
+  - artifacts/override_execution_lead_20260924/runtime_constraints.md:1-140
+  - artifacts/melder_override_contract_20260925/regression_matrix.md:1-136
+  - tickets/tasks/completed/2026-09-25_verify_override_behavior_contract_task.md:320-400
+  - artifacts/melder_override_design_20260926/design.md:1-204
+  IMPACT: The problem has two independent halves - wasted construction (structural, owner's goal) and
+    per-call instruction cost (front end + executor). Joint alpha addresses both but couples them to a new
+    lock protocol whose original motivation (the inversion) is gone since 09-25.
+  NEXT: Read the two Codex discovery task tickets' notes for the iterations and dead ends.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T10:28:19Z
+  TYPE: FACT
+  CLAIM: Codex iteration path (from both discovery tasks' notes, 09-24): row-slice over current phase-9 rows
+    (11 scenes, simple cuts OK) -> found alias asymmetry in NATIVE behavior (confirmed by public Meld only:
+    secondary-path descendant rule ignored 91->13; a rule under the replaced primary path changes the
+    surviving secondary alias) -> static alias plan with permanent winners (9 cases) -> lead counterexamples
+    under a REUSED parent (rule below a reused CachedParent conflicts/outranks FreshParent's rule) ->
+    conditional plan: all ranked candidates guarded by construction demand + conditional default edges
+    (20 cases, 91/conflict/91 and 91/21/91 transitions) -> compact physical graph + selector states instead
+    of expanded logical paths (42 evals, depth-64 in 65 sites) -> reuse decisions must be SETTLED before
+    choosing operands, so a consumer-first claim prelude (12 cases) -> native claim protocol to avoid the
+    store/Spell inversion (entry claims, release-before-wait) -> integrated adapters (7 + 8 cases). Every
+    step was an artifact-side interpreter or adapter over prevalidated fixtures; none touched production,
+    none measured throughput. The claim protocol exists because conditional operand choice depends on live
+    reuse state (a descendant's inputs depend on which parents are reused this call).
+  EVIDENCE:
+  - tickets/tasks/2026-09-24_discover_override_execution_semantics_task.md:98-706
+  - tickets/tasks/2026-09-24_discover_override_occurrence_slicing_task.md:91-771
+  IMPACT: The protocol's complexity is a consequence of one policy choice (item 4 (a) applied to RUNTIME
+    reuse: rules below a reused parent are inactive and cannot affect another path). The other big parts
+    (physical sites, selector states, pruned direct emission) are independent of that choice.
+  NEXT: Read the compact plan/emitter/prelude/direct-adapter code to see what the lowering actually emits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T10:29:27Z
+  TYPE: FACT
+  CLAIM: Read the prototype code. CompactPlan is a boolean guard program over physical sites: per site a
+    demand guard and a construct guard (shared: demand AND NOT reuse[spell]); per (site, parameter) a list of
+    ranked candidate operands, each guarded (PATH state reaching it AND constructing; UNIQUE/BROADCAST:
+    constructing); a child edge is live when constructing AND NOT supplied. Exact paths advance
+    (rule, prefix) states over physical edges, OR-merged; UNIQUE counts declared paths by DP. bind() picks the
+    highest active rank and compares equal-rank values with `!=`. The emitter lowers to straight-line direct
+    calls with literal raw-key reads; for many-only shapes it is exactly `n4=C4(); n0=C0(a=raw['a'], d=n4)`.
+    The claim prelude runs consumer-first over ALL demanded shared sites BEFORE any constructor, calling
+    select(site) which acquires and HOLDS a per-entry claim (hits included) until the whole call finishes;
+    contention releases everything and retries (up to 32). Why: a shared descendant's operand choice depends
+    on the reuse outcome of every ancestor on every alias, and a depth-first build would construct the
+    descendant before some of those ancestors' reuse is known; holding claims freezes those outcomes.
+  EVIDENCE:
+  - artifacts/override_occurrence_discovery_20260924/compact_alias_plan.py:40-311
+  - artifacts/override_occurrence_discovery_20260924/compact_alias_emitter.py:23-178
+  - artifacts/override_occurrence_discovery_20260924/compact_five_generated.py:1-14
+  - artifacts/override_occurrence_discovery_20260924/compact_claim_prelude.py:19-122
+  - artifacts/override_structural_discovery_20260924/native_compact_direct_adapter.py:36-130
+  IMPACT: The claim protocol is the price of item 4 (a) applied to RUNTIME reuse (reuse-dependent operands),
+    and it puts a per-entry lock on every warm shared hit plus serialization of melds sharing a site for the
+    whole call. If operands depend only on the static shape (my D2), decisions need no freezing: today's slot
+    guards with recheck suffice and warm hits stay lock-free. That is the one owner decision the whole
+    architecture turns on. Everything else in joint alpha (physical sites, selector states, pruned direct
+    emission) is compatible with either answer.
+  NEXT: Re-run the Codex probes on current source (VM copy, receipts kept out of the mount) to see which
+    of their proofs and native observations still hold after slot guards and unresolved inputs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-26T10:32:04Z
+  TYPE: MEASURE
+  CLAIM: Re-ran the Codex probes on current source (0.2.54 + today's conjure flag; VM copy of src/tests and
+    both artifact dirs, 3.14.7t; receipts written only in the copy). confirm_native_aliases, probe_semantics,
+    graph_slice_probe, compact_alias_probe, native_compact_probe, native_compact_direct_probe, entry_claim_probe
+    and native_admission_probe all pass; semantics_observations, native_alias_confirmation, results.json,
+    native_compact(_direct)_results are identical to the 09-24 receipts apart from hashes/timings. So every
+    current-behavior defect they recorded still exists (secondary-alias rule ignored 91->13, rule under a cut
+    primary path leaks into the surviving alias, nested missing contract passes the SpellContract descriptor,
+    supplied Space-scoped dependency still refused on the Conduit door, reused shared parent still rebuilds
+    transient children in ordinary melds). native_lock_probe now fails in competing_publication_case because
+    the root takes the slot guard instead of the store lock its instrumentation waits on (the inversion it
+    documented is fixed; my 09-25 regression cases cover it).
+  EVIDENCE:
+  - artifacts/override_structural_discovery_20260924/confirm_native_aliases.py:20-55
+  - artifacts/override_structural_discovery_20260924/native_lock_probe.py:207-260
+  IMPACT: Codex's problem statement is still accurate against today's code; nothing shipped since 09-24
+    resolved any of it. Their proofs remain valid evidence for the representation (sites + selector states).
+  NEXT: Record the policy fork the architecture depends on, then report the synthesis to the owner.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T10:32:04Z
+  TYPE: DECISION_REQUEST
+  CLAIM: The architecture turns on how runtime reuse interacts with override rules. Three cases:
+    P1 static cut (rule below a SUPPLIED dependency): inactive - joint alpha and my design agree (item 4 (a)).
+    P2 a rule targets a shared site's own parameter and that site is already stored: today BOTH families raise
+    MeldExecutionError ("Overrides were supplied for a spell instance that already exists"); joint alpha's
+    conditional plan guards those candidates by `constructing`, so they silently become inactive (a behavior
+    change not listed in its contract - item 6 keeps only the ROOT refusal). P3 a rule below a reused parent
+    reaches a shared descendant another live path still builds: joint alpha = inactive (operand depends on this
+    call's reuse outcomes, which forces the settled-claim prelude); alternative = active (operand depends only
+    on the key shape; slot guards + recheck suffice, warm hits stay lock-free). Equality: keep item 5 (c).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py:2717-2749
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py:1985-2025
+  - artifacts/override_occurrence_discovery_20260924/compact_alias_plan.py:230-261
+  - artifacts/override_occurrence_discovery_20260924/compact_claim_prelude.py:40-122
+  IMPACT: P3 decides whether a new claim protocol is needed at all; P2 decides whether the existing
+    targeted-reuse refusal survives. Item 4 (a) was recorded "without objection" and did not separate them.
+  NEXT: Owner discussion of P2/P3 with the synthesis; no strategy is final before that.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-26T10:40:10Z
+  TYPE: DECISION
+  CLAIM: Owner direction (chat): structural solution, not a quick fix; the common override is a plain reference
+    passed to the ROOT object's constructor parameters, so the design biases toward that and treats nested
+    paths, broadcast/unique selectors and aliased shared descendants as outliers. melder_0's reading, to confirm
+    with the owner: P2 keep today's error (a rule targeting an already-stored shared object raises); P3 operands
+    depend only on the key shape (a rule below a reused parent stays active for the shared object it reaches),
+    so no claim protocol - outliers must not impose locks on the common path. Outliers use the same graph and
+    lowering with correct deterministic semantics; they are not tuned first. Item 5 (c) equality stays.
+  EVIDENCE: tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md (DECISION_REQUEST 10:32:04Z)
+  IMPACT: The root-input shape becomes the design center: static cuts at root sockets, one prepared plan per
+    root key set, direct emitted calls, literal-key reads; the selector/alias machinery is secondary.
+  NEXT: Confirm the outlier interpretation with the owner, then write the structural strategy (design v2).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T10:43:37Z
+  TYPE: FACT
+  CLAIM: Why supplied dependencies are still constructed, from current source and a fresh capture (0.2.54,
+    3.14t, capture_codegen.py re-run in the VM copy). Shallow Root(a, b) with override {"a": obj}: the
+    generated override executor builds A (step 0) and B (step 1) unconditionally, then for the root compares
+    `single_override_socket_2.param_name != 'a'` at RUNTIME to decide whether to use A or the override, so A is
+    built and discarded. Cause: (1) Phase 10 produces one fixed step list per root (every instance, providers
+    first) shared by all shapes; (2) the override emitter writes "one direct step-resolution block per metadata
+    row" - it never drops a row; (3) the finalizer reduces the key-set's targets to per-step COUNTS before
+    emission (build_overrides_codegen_creation_step_target_counts_from_rows), so the emitted code cannot know
+    which parameter is supplied, cannot hard-wire it, and cannot prune the dependency's block. The key set is
+    known when the executor is compiled (it is cached per socket shape), so this is a codegen defect, not a
+    missing runtime capability. Keys are validated (parse + match count) during per-call targeting; supplied
+    VALUES are never checked - they go straight into kwargs.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_finalize_creation_context_step.py:678-828
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_overrides_codegen_creation_compiler.py:269-335
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_overrides_codegen_creation_compiler.py:758-860
+  - artifacts/override_compiler_investigation_20260924/002_shallow_root_one_reused.py:1-110
+  IMPACT: The structural fix is at compile time per key set: the plan must know which sockets are supplied
+    and drop their dependency blocks (unless another edge needs them). No runtime check is needed for that.
+  NEXT: Explain to the owner; propose key-name validation once per key set and no value validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-26T10:47:11Z
+  TYPE: DECISION
+  CLAIM: Owner: overrides favor speed over correctness - a supplied object is trusted as-is (no type or shape
+    check; a "potato" passed where a "tomato" is expected fails wherever the user's code fails). This matches
+    current value handling and is a hard design constraint: no per-call validation of supplied values, and no
+    readiness/descriptor checks on supplied edges. Key-name checking (typos, unknown paths) is a separate
+    question; melder_0 proposes it once per key set at plan compile, zero per-call cost.
+  EVIDENCE: tickets/tasks/2026-09-26_design_override_and_caller_input_execution_task.md (FACT 10:43:37Z)
+  IMPACT: The per-call override path reduces to: find the compiled plan for the key set, run it. Everything
+    else (cuts, operand placement, key checks) is compile-time per key set.
+  NEXT: Write design v2 (root-input centered, static operands, per-key-set plans, one lowering) for review.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Design in review: artifacts/melder_override_design_20260926/design.md (probe and results beside it).
-Waiting on owner decisions D1-D4. S1 (caller inputs) is independent and needs only D1. Validation: Not run
-beyond the read-only current-behavior probe (3.14.7t).
+Reopened 2026-09-26 for a deep read of the epic and joint alpha (notes from 10:27Z on). Codex probes re-run
+on current source: their recorded defects all still reproduce. The architecture choice turns on P2/P3 in
+the latest DECISION_REQUEST (runtime reuse vs override rules). design.md (09-26) predates this read; its D2
+matches the P3 "active" option, its D3 is withdrawn in favor of the owner-recorded item 5 (c).
+Validation: probes only (VM copy); no production code.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

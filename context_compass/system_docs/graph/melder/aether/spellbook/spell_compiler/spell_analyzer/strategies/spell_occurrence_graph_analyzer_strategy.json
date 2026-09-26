@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
- "source_sha256": "ac415f8c2ca742eb93ee001720c9de2830b98ea1c9bfefa34db153189ec3c47f",
+ "source_sha256": "b323ca387780212ff71f6f2ebea31f75998b91473c1c14637189734814de2353",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_analyzer.strategies.spell_occurrence_graph_analyzer_strategy": {
@@ -19,7 +19,7 @@
    "label": "SpellOccurrenceGraphAnalyzerStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py",
-   "lineno": 49,
+   "lineno": 50,
    "bases": [
     "SpellAnalyzerStrategy"
    ],
@@ -33,7 +33,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "cdd39747ff070a150dee156d6f1ece4155bf44572a898887729602975a34283f",
+   "span_sha256": "1ec2ad9029700b8788d2739b4503be9b643e03fa7dcc7cae3f253600fbd89519",
    "role": "Occurrence-graph analyzer strategy for phase-8 analysis.",
    "responsibilities": [
     "expands rooted blueprint truth plus topology and contract context into an occurrence graph",
@@ -90,6 +90,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "Format": "annotationlib.Format",
   "deque": "collections.deque",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",

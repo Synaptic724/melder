@@ -96,6 +96,113 @@ class CodegenCreationSchemaHelpers:
         return CodegenSignature.freeze_phase11_schema_value(value)
 
     @staticmethod
+    def is_replayable_contract_payload_value(value: Any) -> bool:
+        """
+        Return whether one contract payload value survives the creation cache unchanged.
+
+        Purpose:
+            Decide, from the RAW value on a live plan step, whether the frozen
+            projection the step rows carry hydrates back into the identical
+            constructor argument. Manifest-first executors bind the row values
+            both in-process and after a cache hit; the creation cache refuses
+            spells that fail this test (owner option B, 2026-09-26).
+
+        Contract:
+            - True for `None` and for values whose EXACT type is `bool`, `int`,
+              `float` or `str`, and for an exact `tuple` whose items are all
+              replayable: these are the values `freeze_phase11_schema_value`
+              returns unchanged, the row hydration passes through as-is, and
+              `marshal` persists.
+            - False for everything else. `list` and `set` thaw as tuples, `dict`
+              as a sorted tuple of pairs, plain enum members and classes as
+              `repr` text, callables and default-`repr` instances as marker
+              tuples - none of them is the value the SpellContract carried;
+              subclasses of the scalar types (an `IntEnum` member, a `str`
+              subclass) pass through freeze but are not marshallable, so they
+              are refused as well.
+            - Pure; never raises.
+
+        Args:
+            value:
+                Raw payload value taken from `step.contract_payload`.
+
+        Returns:
+            bool: True when the cache path reproduces `value` exactly.
+        """
+        if value is None:
+            return True
+        value_type = type(value)
+        if value_type is bool or value_type is int or value_type is float or value_type is str:
+            return True
+        if value_type is tuple:
+            for item in value:
+                if not CodegenCreationSchemaHelpers.is_replayable_contract_payload_value(item):
+                    return False
+            return True
+        return False
+
+    @staticmethod
+    def plan_contract_payloads_are_replayable(plan: Any) -> bool:
+        """
+        Return whether every contract payload value of a lane plan is cache-replayable.
+
+        Contract:
+            - Walks `plan.steps` and each step's `contract_payload` (`None` or a
+              dict whose values are the raw payload values; a positional payload
+              sits under `__args__` as a tuple and is judged item by item through
+              the tuple rule).
+            - A plan without steps, or whose steps carry no payload, is
+              replayable.
+            - Pure; the plan and its steps are never mutated.
+
+        Args:
+            plan:
+                Lane plan exposing `steps`; each step exposes `contract_payload`.
+
+        Returns:
+            bool: True when `build_package` may persist this lane; False when
+            the spell must stay on the in-process compile path.
+        """
+        for step in plan.steps:
+            contract_payload = step.contract_payload
+            if not contract_payload:
+                continue
+            for value in contract_payload.values():
+                if not CodegenCreationSchemaHelpers.is_replayable_contract_payload_value(value):
+                    return False
+        return True
+
+    @staticmethod
+    def spell_codegen_plan_is_replayable(spell_codegen_plan: Optional[Any]) -> bool:
+        """
+        Return whether a spell's phase-10 plan may be persisted into the creation cache.
+
+        Contract:
+            - `None` (no plan published for the spell) is NOT replayable: without
+              the raw payload values there is nothing to judge, and a package
+              built blind could hydrate wrong values, so the emitter skips it.
+            - Otherwise both lanes are judged with
+              `plan_contract_payloads_are_replayable`; a lane that is `None`
+              (no override lane) does not count against the spell.
+            - Pure; nothing is mutated.
+
+        Args:
+            spell_codegen_plan:
+                `SpellCodegenPlan` from `artifact._spell_codegen_plan`, or None.
+
+        Returns:
+            bool: True when every lane's contract payload values are replayable.
+        """
+        if spell_codegen_plan is None:
+            return False
+        for lane_plan in (spell_codegen_plan.no_overrides_plan, spell_codegen_plan.overrides_plan):
+            if lane_plan is None:
+                continue
+            if not CodegenCreationSchemaHelpers.plan_contract_payloads_are_replayable(lane_plan):
+                return False
+        return True
+
+    @staticmethod
     def normalize_instance_key(
             instance_key: Tuple[str, Optional[int]],
     ) -> Tuple[str, Optional[int]]:

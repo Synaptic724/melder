@@ -26,20 +26,25 @@ reported as "no measurable change", not as an improvement.
   harness's own entry) and keep the `.prof`. Record: ncalls and tottime of
   `serialize_codegen_signature_part`, `hash_codegen_signature`, `pickle.dumps`, and the cumtime of
   `_build_occurrence_graph_fast_key` / `_build_occurrence_graph_input_signature` (callees of `analyze`).
-- B3 corpus fixture: the executor signatures (both lanes) and the phase-8 input signatures for every
-  spell of the gauntlet book, written by a small owner-run script placed under this directory before the
-  first edit (task 2 U3 prerequisite). This is the byte-compatibility oracle.
+- B3 corpus oracle (REPLACED 2026-09-26): instead of a captured fixture file, the shipped helper bodies
+  are frozen verbatim in `tests/mocks/spellbook/codegen_signature_reference.py` and every facade hash call
+  over a real plan is compared with the reference digest on every test run (M2 below). No owner-run
+  capture is needed and the check cannot go stale.
 - B4 hot-path parity: `python benchmarks/testing_other_di/test_melder_gauntlet.py` once, per-scope-cycle
   create/cleanup/total lines (the epic's regression gate; this tranche does not touch the meld path).
 
 ## After task 2 (C-H)
-- M1 determinism test (pytest, part of the change): the same book built in two subprocesses with
-  `PYTHONHASHSEED=1` and `PYTHONHASHSEED=2` yields equal no-overrides and overrides executor signatures.
-  Two fixtures: (a) the gauntlet book - must pass BEFORE and AFTER (byte-compatibility); (b) a book with
-  an object-valued SpellContract override payload - documented to FAIL before (today's defect) and
-  PASS after. Fixture (b) is the proof the change did something.
-- M2 corpus check: B3 signatures unchanged after the edit for the gauntlet book. Any difference is a
-  RISK note and a generation-bump decision, not a pass.
+- M1 determinism test (pytest, part of the change:
+  `tests/component/melder/spellbook/test_codegen_signature_determinism.py`): the same book built in two
+  subprocesses with `PYTHONHASHSEED=1` and `PYTHONHASHSEED=2` yields equal executor signatures. Two
+  fixtures: (a) a plain three-spell book compiled through `SpellCompilerSystem` - equal BEFORE and AFTER
+  (byte-compatibility regression guard); (b) two linked dynamic conduits where the consumer's
+  `SpellContract` carries an object-valued override payload applied through a contracted provider
+  (payloads compile only from contracted spells) - unequal before (address in the `repr`), equal after.
+  Fixture (b) is the proof the change did something.
+- M2 corpus check: the reference digest equals the leaf digest for every facade hash call while
+  compiling fixture (a) (same test file). Any mismatch is a RISK note and a generation-bump decision,
+  not a pass.
 - M3 cross-process cache hit rate: process A runs the bind-conjure cycle and emits the `.melc`;
   process B (fresh interpreter) runs it again and reports the cache classification (`full_hit` expected)
   and the count of spells that had to rebuild phases 8-11. On the gauntlet book: full hit before and

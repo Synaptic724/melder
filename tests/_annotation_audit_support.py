@@ -7,8 +7,11 @@ annotation therefore stays silent at import and fails only for the tool that rea
 exist, and this module finds both:
 
 - STRING_IN_UNION: a string literal used as an operand of `|`, e.g. `"Conduit" | None`. Evaluating it
-  raises TypeError against None, str, classes, builtin generics, Optional/Union and Any; only
-  `typing.List[...]`-style aliases and TypeVars happen to accept a string.
+  raises TypeError when the other operand is None, a str, a class, a builtin generic or Any. A
+  `typing.Union` operand (`Optional[X] | "Y"`), a `typing.List[...]`-style alias or a TypeVar wraps the
+  string in a ForwardRef instead on 3.14.7 (3.14.0rc2 still raised for Union operands). Those shapes are
+  reported too: the repository forbids both `|` unions and quoted type names, and whether they raise
+  depends on the interpreter build.
 - UNDEFINED_NAME / EVAL_ERROR: an annotation naming something no scope binds - not imported, not even
   under `TYPE_CHECKING` - which raises NameError for every reader, type checkers included.
 

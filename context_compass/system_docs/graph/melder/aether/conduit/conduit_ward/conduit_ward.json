@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
- "source_sha256": "9f26a5ab364197364c7e358eaf6416f2865dbec7f5820781986d0c6170f50e6a",
+ "source_sha256": "f03efb5d01f9802e6c93b4bdddb7fe80f3a7a8ab5f3896efb18081e39ee9ed39",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.conduit_ward": {
@@ -28,7 +28,7 @@
    "label": "ConduitWard",
    "kind": "class",
    "file": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
-   "lineno": 54,
+   "lineno": 55,
    "bases": [
     "Cleanable"
    ],
@@ -43,7 +43,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "1818550980a9aa353c5ed0e36e70c487450771596df2b72ecfa9c9f976432519",
+   "span_sha256": "7c433cee63b6439f6147100860bef0c5af7b055a24e724783a27be91891cdcc8",
    "role": "Contract and lineage graph manager for a conduit.",
    "responsibilities": [
     "manages peer contracts",
@@ -144,6 +144,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "Format": "annotationlib.Format",
   "TracebackType": "types.TracebackType",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "List": "typing.List",

@@ -17,14 +17,21 @@ schema and hydration; this module only routes.
 
 Contract:
     - `build_package(spell)` is family-agnostic: it exports whatever manifest
-      the producing family stored on the creation artifact.
+      the producing family stored on the creation artifact - unless the spell's
+      lane plans carry a contract payload value the cache path cannot replay,
+      in which case it returns `None` and the spell stays on the in-process
+      compile path (owner option B, 2026-09-26).
     - `load_creation_context_lazy(...)` dispatches on `family_id` with an
       explicit branch per supported family. Unknown families raise, so cache
       payloads from newer/unknown builds degrade to a cold-load skip in the
       conjure orchestration's best-effort loop.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
+    CodegenCreationSchemaHelpers,
+)
 
 MANIFEST_METADATA_KEY = "codegen_creation_manifest"
 PACKAGE_VERSION = 2
@@ -34,9 +41,22 @@ SOLO_FAMILY_ID = "solo_codegen_creation"
 MANY_ONLY_FAMILY_ID = "many_only_codegen_creation"
 
 
-def build_package(spell: Any) -> Dict[str, Any]:
+def build_package(spell: Any) -> Optional[Dict[str, Any]]:
     """
     Build the marshal-safe cache package for one manifest-first spell.
+
+    Contract:
+        - Returns `None` - nothing to persist - when
+          `CodegenCreationSchemaHelpers.spell_codegen_plan_is_replayable` rejects
+          the spell's phase-10 plan: a contract payload value that is not
+          `None`/`bool`/`int`/`float`/`str` (or a tuple of those) hydrates from
+          its frozen row projection into something other than the value the
+          contract carried, so such a spell is never persisted (the in-process
+          projection of the same value is an open owner decision).
+          The plan must be live for the verdict; a spell without a published
+          plan is refused rather than packaged blind.
+        - Otherwise exports the family manifest exactly as the producing family
+          stored it.
 
     Raises:
         RuntimeError:
@@ -59,6 +79,10 @@ def build_package(spell: Any) -> Dict[str, Any]:
     family_id = manifest.get("family_id")
     if not isinstance(family_id, str) or not family_id:
         raise RuntimeError("manifest is missing a family_id.")
+    if not CodegenCreationSchemaHelpers.spell_codegen_plan_is_replayable(
+            artifact._spell_codegen_plan
+    ):
+        return None
     return {
         "package_version": PACKAGE_VERSION,
         "family_id": family_id,

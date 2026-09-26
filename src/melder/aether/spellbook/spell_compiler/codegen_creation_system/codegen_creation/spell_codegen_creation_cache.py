@@ -14,7 +14,9 @@ Purpose:
     per-conduit runtime object is ever frozen into the cache.
 
 Contract:
-    - `build_package(spell)` returns a marshal-safe dict (primitives, tuples,
+    - `build_package(spell)` returns `None` for a plan whose contract payload
+      values cannot replay from the frozen rows (owner option B, 2026-09-26);
+      otherwise it returns a marshal-safe dict (primitives, tuples,
       dicts, and one `CodeType`) covering both lanes.
     - `load_creation_context(spell, package, publish=...)` rebuilds both inner
       executors against the live Spellbook + live phase-5 path registry, wraps
@@ -96,14 +98,21 @@ _NO_OVERRIDES_STEP_SOURCE_NAME = (
 # Build (emit)
 # ---------------------------------------------------------------------------
 
-def build_package(spell: Any) -> Dict[str, Any]:
+def build_package(spell: Any) -> Optional[Dict[str, Any]]:
     """
     Build the marshal-safe both-lane cache package for one constructed spell.
 
     Contract:
         - Requires constructed-spell phase-11 output (creation + plan + model).
-        - Returns a dict of primitives/tuples/dicts plus the inner no_overrides
-          `CodeType`. The override lane is row-only (no code object).
+        - Returns `None` - nothing to persist - when
+          `CodegenCreationSchemaHelpers.spell_codegen_plan_is_replayable` rejects
+          the plan: a contract payload value that is not `None`/`bool`/`int`/
+          `float`/`str` (or a tuple of those) would hydrate from its frozen row
+          into something other than the value the contract carried (owner
+          option B, 2026-09-26).
+        - Otherwise returns a dict of primitives/tuples/dicts plus the inner
+          no_overrides `CodeType`. The override lane is row-only (no code
+          object).
 
     Raises:
         RuntimeError:
@@ -119,6 +128,8 @@ def build_package(spell: Any) -> Dict[str, Any]:
     spell_codegen_model = artifact._spell_codegen_model
     if spell_codegen_model is None:
         raise RuntimeError("cache export requires a spell_codegen_model.")
+    if not SharedCompilerExecutions.spell_codegen_plan_is_replayable(spell_codegen_plan):
+        return None
 
     package = {
         "package_version": PACKAGE_VERSION,

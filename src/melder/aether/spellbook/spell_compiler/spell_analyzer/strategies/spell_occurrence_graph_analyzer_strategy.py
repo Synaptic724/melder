@@ -134,7 +134,15 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             - Validates that the artifact is live before any work begins.
             - Computes the graph-side fast key and input signature directly in
               this strategy instead of reaching back into old Phase 8 helper
-              methods.
+              methods. The pool-wide rows (spell walk, topology, contracted
+              routing, system state) are hashed ONCE per pass into a memoized
+              digest (`_get_pool_digest`); each root keys and signs only its own
+              blueprint rows plus that digest, so per-root key work is
+              proportional to the root's blueprint, not to the spell pool.
+            - Reads the retained analysis slot FIRST and compares key and
+              signature only when an analysis is retained: phase 5's attach
+              nulls the slot on every conjure pass, so the cold path never
+              attempts a comparison that cannot succeed.
             - Replaces the prior graph artifact atomically and best-effort
               cleans the superseded analysis object.
             - Leaves order, instance, and contract artifacts untouched.
@@ -173,22 +181,38 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             spell_system_states=spell._spell_system_states,
             analysis_pass_cache=analysis_pass_cache,
         )
-        fast_key = self._build_occurrence_graph_fast_key(
-            root_blueprint=root_blueprint,
+        # The pool-wide rows are identical for every root analyzed in one
+        # pass, so they are hashed once into a pass-memoized digest; the root
+        # then contributes only its own blueprint rows, built once and shared
+        # by the fast key and the input signature (owner-approved C-A,
+        # 2026-09-26).
+        pool_digest = self._get_pool_digest(
             spell_rows=spell_rows,
             graph_shape=graph_shape,
+            analysis_pass_cache=analysis_pass_cache,
+        )
+        root_rows = None
+        if pool_digest is not None:
+            root_rows = self._build_root_blueprint_rows(root_blueprint)
+        fast_key = self._build_occurrence_graph_fast_key(
+            root_blueprint=root_blueprint,
+            root_rows=root_rows,
+            pool_digest=pool_digest,
         )
         input_signature = self._build_occurrence_graph_input_signature(
             root_blueprint=root_blueprint,
-            spell_rows=spell_rows,
-            graph_shape=graph_shape,
+            root_rows=root_rows,
+            pool_digest=pool_digest,
         )
+        # Analysis slot first: phase 5's attach nulls it on every conjure
+        # pass, so the key comparison is only worth making when an analysis
+        # is actually retained (warm JIT reuse and local reruns).
         if (
-                fast_key is not None
-                and artifact._occurrence_analysis_fast_key == fast_key
+                artifact._occurrence_graph_analysis is not None
+                and fast_key is not None
                 and input_signature is not None
+                and artifact._occurrence_analysis_fast_key == fast_key
                 and artifact._occurrence_analysis_input_signature == input_signature
-                and artifact._occurrence_graph_analysis is not None
         ):
             return
 
@@ -269,44 +293,41 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             self,
             *,
             root_blueprint: "RootResolutionBlueprint",
-            spell_rows: Optional[Tuple[Any, ...]],
-            graph_shape: Optional[Tuple[Any, ...]],
+            root_rows: Optional[Tuple[Tuple[Any, ...], int, Tuple[Any, ...]]],
+            pool_digest: Optional[str],
     ) -> Optional[Tuple[Any, ...]]:
         """
         Build a lightweight deterministic key for graph-analysis reuse.
 
         Contract:
-            - Returns `None` when required inputs are unavailable.
-            - Root-specific blueprint rows are computed here (cheap, own
-              subtree only); the graph-wide rows arrive pre-built in
-              `graph_shape` (pass-memoized; see `_build_graph_shape_rows`).
+            - Returns `None` when any input is unavailable (forces the rebuild
+              path).
+            - Key shape: `(root_spell_id, ordered_node_ids, id(path_registry),
+              blueprint_socket_rows, pool_digest)`. The root-specific rows are
+              built once by the caller (`_build_root_blueprint_rows`) and the
+              pool-wide rows are represented by their pass digest, so the key
+              holds no pool-sized tuple and compares in time proportional to
+              the root's own blueprint.
+            - `id(path_registry)` stays the deliberate process-local part: it
+              scopes reuse to one blueprint object.
         """
-        if root_blueprint is None or spell_rows is None or graph_shape is None:
-            return None
-
-        root_rows = self._build_root_blueprint_rows(root_blueprint)
-        if root_rows is None:
+        if root_blueprint is None or root_rows is None or pool_digest is None:
             return None
         ordered_node_ids, path_registry_identity, blueprint_socket_rows = root_rows
-        topology_rows, contracted_rows, system_state = graph_shape
-
         return (
             root_blueprint.root_spell_id,
             ordered_node_ids,
             path_registry_identity,
             blueprint_socket_rows,
-            spell_rows,
-            topology_rows,
-            system_state,
-            contracted_rows,
+            pool_digest,
         )
 
     def _build_occurrence_graph_input_signature(
             self,
             *,
             root_blueprint: "RootResolutionBlueprint",
-            spell_rows: Optional[Tuple[Any, ...]],
-            graph_shape: Optional[Tuple[Any, ...]],
+            root_rows: Optional[Tuple[Tuple[Any, ...], int, Tuple[Any, ...]]],
+            pool_digest: Optional[str],
     ) -> Optional[str]:
         """
         Build a deterministic graph-analysis input signature.
@@ -318,30 +339,73 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
             unchanged.
 
         Contract:
-            - Returns `None` when required inputs are unavailable, forcing a
-              rebuild.
-            - Hashes exactly the same row layout the fast key tracks; the
-              graph-wide rows arrive pre-built in `graph_shape`.
+            - Returns `None` when any input is unavailable, forcing a rebuild.
+            - Hashes exactly the five parts the fast key tracks, in the same
+              order; the pool-wide rows enter through `pool_digest`, so the
+              per-root hash covers only the root's own rows plus one 64-char
+              digest (hash of a hash of the same inputs the old layout hashed
+              flat).
+            - Artifact-local only: the value is reset with the artifact and is
+              never persisted, so its byte layout carries no cache-generation
+              consequence.
         """
-        if root_blueprint is None or spell_rows is None or graph_shape is None:
-            return None
-
-        root_rows = self._build_root_blueprint_rows(root_blueprint)
-        if root_rows is None:
+        if root_blueprint is None or root_rows is None or pool_digest is None:
             return None
         ordered_node_ids, path_registry_identity, blueprint_socket_rows = root_rows
-        topology_rows, contracted_rows, system_state = graph_shape
-
         return SharedCompilerExecutions.hash_codegen_signature(
             root_blueprint.root_spell_id,
             ordered_node_ids,
             path_registry_identity,
             blueprint_socket_rows,
+            pool_digest,
+        )
+
+    def _get_pool_digest(
+            self,
+            *,
+            spell_rows: Optional[Tuple[Any, ...]],
+            graph_shape: Optional[Tuple[Any, ...]],
+            analysis_pass_cache: Optional[Dict[str, Any]],
+    ) -> Optional[str]:
+        """
+        Return the pass-invariant digest of the pool-wide signature rows.
+
+        Purpose:
+            The spell walk rows, topology rows, contracted routing rows and the
+            system state are identical for every root analyzed in one pass;
+            hashing them per root made the phase-8 key path O(spells^2). With
+            a pass cache they are hashed once per pass.
+
+        Contract:
+            - Returns `None` when `spell_rows` or `graph_shape` is unavailable
+              (callers treat that as "force the rebuild path"); a `None` input
+              never consults or populates the memo.
+            - Digest = `hash_codegen_signature(spell_rows, topology_rows,
+              system_state, contracted_rows)` - the same rows in the same order
+              the old flat signature carried after the root parts.
+            - Memoized in `analysis_pass_cache["phase8_pool_digest"]`, which
+              dies with the pass units exactly like `phase8_spell_walk` and
+              `phase8_graph_shape_rows`; concurrent unit workers may race to
+              build it, which is benign (identical values, last write wins).
+            - Without a pass cache the digest is computed per root (the cost
+              the old layout paid on every root).
+        """
+        if spell_rows is None or graph_shape is None:
+            return None
+        if analysis_pass_cache is not None:
+            shared_digest = analysis_pass_cache.get("phase8_pool_digest")
+            if shared_digest is not None:
+                return shared_digest
+        topology_rows, contracted_rows, system_state = graph_shape
+        pool_digest = SharedCompilerExecutions.hash_codegen_signature(
             spell_rows,
             topology_rows,
             system_state,
             contracted_rows,
         )
+        if analysis_pass_cache is not None:
+            analysis_pass_cache["phase8_pool_digest"] = pool_digest
+        return pool_digest
 
     @staticmethod
     def _build_root_blueprint_rows(
@@ -353,6 +417,8 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         Contract:
             - Cost is proportional to the root's own blueprint, never to the
               full spell pool.
+            - Built ONCE per root by `analyze` and handed to both key builders
+              as `root_rows`.
             - Returns `None` on any extraction failure (callers treat that as
               "force the rebuild path").
         """
@@ -385,7 +451,9 @@ class SpellOccurrenceGraphAnalyzerStrategy(SpellAnalyzerStrategy):
         Purpose:
             Topology rows and contracted provider routing rows are identical
             for every spell analyzed in one pass; building them per spell made
-            phase 8 O(spells^2). With a pass cache they are built once.
+            phase 8 O(spells^2). With a pass cache they are built once, and
+            `_get_pool_digest` hashes them once more into the pass-memoized
+            `phase8_pool_digest` slot so no root hashes them again.
 
         Contract:
             - Returns `(topology_rows, contracted_rows, system_state)` or

@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 9256
-CONTENT_SHA256 = '1efb0de40ae21abc22929fe85ef554e72c986955c87d340fab054d8c5fabe956'
+LINE_COUNT = 9304
+CONTENT_SHA256 = '76057eaab26cef237609ab32a83efb3032b472c7fd3a17607184338e01aa1521'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -2526,6 +2526,10 @@ Invariants/Guarantees:
   On success it repoints `_root_conduit` to itself and resets `_policy` to
   `Policies.default`.
   EVIDENCE: src/melder/aether/conduit/conduit_ward/conduit_ward.py:527-580.
+- `_get_spell_contract_keys` reads only parameter defaults and reads the signature in
+  `Format.FORWARDREF`, like `Meld`, so an annotation naming a `TYPE_CHECKING`-only type cannot raise
+  there (2026-09-26).
+  EVIDENCE: src/melder/aether/conduit/conduit_ward/conduit_ward.py:2483-2537.
 
 Failure Modes:
 - RuntimeError for invalid policy or state transitions.
@@ -3299,6 +3303,14 @@ Invariants/Guarantees:
 - SpellMap defaults must resolve to exactly one candidate.
 - `phase8_11` IR dirty state means "refresh export payload before read/compile",
   not "runtime root requires revalidation."
+- Once conjure has released a spell's Phase 1-4 requirements, the phase-8 analyzer and the phase-9
+  contract processor find SpellContract defaults by reading the callable's signature in
+  `Format.FORWARDREF`. A consumer bound after conjure in a dynamic world therefore plans even when its
+  providers annotate `TYPE_CHECKING`-only types; before 2026-09-26 this read raised NameError
+  (PhaseExecutionError in `occurrence_plan_local`).
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py:995-1037
+  - src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py:219-258
 
 Failure Modes:
 - Validation errors captured in SpellValidationResult and SpellbookValidationError.
@@ -4206,11 +4218,29 @@ Invariants/Guarantees:
   return type beyond whatever the resolved builder emits.
 - Binding and resolution remain distinct nested layers inside the emitted
   profile objects.
+- Annotations that name a type unbound at runtime (a `TYPE_CHECKING`-only import; Python 3.14
+  evaluates annotations when they are read) never make profile building raise (2026-09-26).
+  Signature and annotation text goes through `SignatureReflection`: identical to the VALUE-format
+  rendering when every name resolves, otherwise the unavailable name appears as its source text
+  (`price: 'Optional[Decimal]' = None`), never as a ForwardRef owner or a memory address.
+- The binding profile's `init_signature` and callable `signature` strings - the text
+  `Bind.sha256_profile` hashes - use that rendering, so a class whose constructor names such a type
+  keeps one spell id across processes. `init_signature_object` stays the FORWARDREF signature the
+  requirements finder borrows. `ClassInspector` reads class annotations with `eval_str=True` first and
+  falls back to `SignatureReflection.class_annotations` (FORWARDREF) on NameError.
+  EVIDENCE:
+  - src/melder/utilities/helpers/signature_reflection.py:52-190
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:106-114
+  - src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py:150-175
 
 Failure Modes:
 - `SpellExaminer.create_profile(...)` raises `ValueError` when the requested
   profile name is not registered.
 - Builder or inspector failures bubble from the resolved builder path.
+- Known limits, recorded and not fixed (2026-09-26): a function spell's fingerprint hashes its `repr()`,
+  which carries a memory address, so function spell ids change per process; the binding profile's class
+  `annotations` fall back to `{}` when any name in them is unresolved.
+  EVIDENCE: src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:84-92
 
 Observability:
 - These layers are primarily introspection/tooling surfaces and do not define
@@ -4229,6 +4259,10 @@ Key Files (C1):
 - `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py`
 - `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/class_profile.py`
 - `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/profiles/method_profile.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/class_inspector.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py`
+- `src/melder/utilities/helpers/signature_reflection.py`
 
 
 #### Architecture narrative (folded in from `src_architecture.md`, 2026-08-01)
@@ -4444,6 +4478,10 @@ Contract/Interface:
 - `craft_protocol_code(...)`
 - `craft_protocol_module_code_from_source_file(...)`
 - `write_protocol_module_from_source_file(...)`
+- Reads class and function annotations in `annotationlib.Format.FORWARDREF`. A name unbound at runtime
+  (a `TYPE_CHECKING`-only import) renders quoted, like other class names, so Melder's own classes
+  (`Conduit`, `Spellbook`) and user classes written in that style can be mirrored (2026-09-26). Known
+  limit: typing's quoted generic arguments (`Optional['X']`) still render as `Any`.
 Data Structures:
 - Instance-local protocol-crafter id and lock.
 Concurrency/Threading:
@@ -8271,6 +8309,7 @@ through it; see `src/melder/aether/aether.py:222` and `:1243-1264`.)
   Purpose: Build stable lineage-style identifiers for runtime-owned objects, so every id in the...
 - `src/melder/utilities/helpers/init_helpers.py` - Centralized startup-time helper wrappers for logger resolution
 - `src/melder/utilities/helpers/package.py` - A lightweight, thread-safe wrapper around a callable (sync or coroutine)
+- `src/melder/utilities/helpers/signature_reflection.py` - Renders signatures with names unbound at runtime (2026-09-26)
 - `src/melder/utilities/helpers/ulid_factory.py` - Minimal internal ULID generator
 - `src/melder/utilities/interfaces/ichannellogger.py`
   Purpose: Describe the channel-logger shape structurally, so the runtime can accept any confor...
@@ -8879,6 +8918,7 @@ sequenceDiagram
 
 ## Information Sources
 - `src/melder/utilities/caching_system/caching_system.py`
+- `src/melder/utilities/helpers/signature_reflection.py`
 - `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
 - `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
 - `src/melder/aether/spellbook/spell_compiler/dag/socket_kind.py`
@@ -9073,6 +9113,14 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-26 TYPE_CHECKING annotation reflection: Melder no longer raises NameError when it reads an
+annotation naming a type unbound at runtime. Defaults-only readers (ConduitWard contract keys, the phase-8
+and phase-9 contract fallbacks, `Package.signature`, ProtocolCrafter) read FORWARDREF; renderers
+(`Package.describe`, the detailed-profile inspectors, the bind fingerprint text) go through the new
+`SignatureReflection` helper. Promoted into Spell Examination Profiles, ProtocolCrafter Utility, ConduitWard
+and Contracts and SpellCompiler; the Full Package Inventory lists the helper. The audit's annotation-only
+fixes (four Nexus ACL modules, CreationContext, WeakConcurrentDict) change no behavior and add no entry.
 
 2026-09-26 conjure validation warnings are promoted into the Spellbook Core entry, the conjure pipeline
 subcomponent, the conjure and unresolved-input flows and the SpellCompiler unresolved-input block. The

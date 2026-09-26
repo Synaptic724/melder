@@ -3,7 +3,7 @@
 ## Metadata
 - Patch ID: type_checking_annotation_reflection_2026_09_26
 - Component: SpellCompiler and Validation Pipeline
-- Status: active
+- Status: completed (promoted 2026-09-26; archived at closure)
 - Owner: user (writer: melder_1)
 - Created: 2026-09-26T09:12:40Z
 - Updated: 2026-09-26T09:12:40Z

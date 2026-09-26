@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T09:05:00Z
-- Updated: 2026-09-26T09:18:25Z
+- Updated: 2026-09-26T10:42:09Z
 
 ## User Narrative
 As the Melder owner, I want the compiler's signature path to be one implementation that is deterministic
@@ -37,6 +37,10 @@ measurable with the existing breakdown harness.
   docs, and the canonical maps at closure. NOT in scope: `phases/compiler_phase_5.py` .. `_7.py`, the
   scheduler, `conduit/meld/**`, `Creations`, `caching_system.py` (no generation bump: see the byte-
   compatibility constraint), the emitters and the door compiler.
+  EXTENDED 2026-09-26 (owner option B, task 4): the creation-cache emission seam - two pure helpers on
+  `CodegenCreationSchemaHelpers`, `manifest_creation_cache.build_package`,
+  `spell_codegen_creation_cache.build_package`, and the `Spellbook._emit_spell_cache` call site (one
+  hunk). Row format, manifest schema, hydration and `caching_system.py` stay out of scope.
 - DEPENDENCIES: artifacts/ir_phase_improvement_20260926/candidates.md (C-A, C-H);
   artifacts/ir_phase_survey_20260925/driver.md (hashing hazards); melder_0's live lane on
   `shared_compiler_executions.py` (missing_dependency_sockets) - sequence edits after their hunks land.
@@ -97,8 +101,13 @@ measurable with the existing breakdown harness.
   order mapping, consumption note tickets/tasks/2026-09-26_author_signature_patch_docs_task.md (review 2026-09-26)
 - [ ] Task: TASK-2026-09-26-unify-codegen-signature-serializer - one leaf implementation, canonical
   freeze, determinism test tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md
+  (review 2026-09-26; landed in commit 6fc9af345; owner-run suites pending)
 - [ ] Task: TASK-2026-09-26-hoist-phase8-pool-digest - None-first check and pass-hoisted digest in the
   occurrence strategy, tests tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md
+  (review 2026-09-26; owner-run harness before/after pending)
+- [ ] Task: TASK-2026-09-26-gate-cache-emission-on-replayable-payloads - refuse creation-cache
+  emission for spells whose rows cannot replay their contract payload (owner option B)
+  tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md (review 2026-09-26)
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery.
 
@@ -146,6 +155,13 @@ measurable with the existing breakdown harness.
 - 2026-09-26 (owner): T1 = C-H + C-A approved; C-B deferred (system-wide check and single-spell
   dependency check must stay separately schedulable).
 - 2026-09-26 (fable_0): byte-compatibility constraint adopted so no cache generation bump is needed.
+- 2026-09-26 (fable_0): the byte-compatibility oracle is the shipped helper bodies frozen verbatim in
+  `tests/mocks/spellbook/codegen_signature_reference.py`, compared against live parts on every run;
+  the planned owner-run corpus capture is dropped.
+- 2026-09-26 (owner): non-value SpellContract payloads on the cache path - option B chosen ("do the
+  recommended send it"): refuse cache emission for spells whose rows would not replay their payload
+  faithfully. Task 4 opens under this story; the boundary extends to the emission seam.
+- 2026-09-26 (owner): task 3 H1 confirmed in the same message.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -202,6 +218,68 @@ measurable with the existing breakdown harness.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-26T10:04:00Z
+  TYPE: RISK
+  CLAIM: Task 2 is in review (leaf + delegations + oracle + 15 tests; commit 6fc9af345). Its U3 resolved
+    the patch's open UNKNOWN the wrong way round: the frozen payload values in persisted phase-11 rows
+    are not only hashed, the cache-load path hydrates plan steps from them and constructs with them,
+    while the in-process path uses the raw values. Non-value payloads (objects, callables, and
+    already today dicts/lists/enums) construct differently after a cross-process cache hit. The
+    determinism change stands and is byte-compatible; the seam needs an owner ruling (A keep and
+    document / B refuse cache emission for such spells - recommended / C raise at plan time), and B
+    or C is a new task under this story (row-builder flag plus `build_package`/`build_manifest_package`).
+    Cross-story: the structural snapshot (epic goal) hydrates value rows too, so its row schema must be
+    lossless where this one is not - recorded on the epic.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:296-341
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.py:316-340
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.py:309-395
+  IMPACT: Story exit gate unchanged for task 2; a fourth task may be added on the owner's ruling. Task 3
+    opens now (H1) on the current strategy bytes (melder_1's FORWARDREF commit shifted the file by +1).
+  NEXT: Owner ruling A/B/C and owner-run suites; fable_0 proceeds to task 3 H1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T10:30:30Z
+  TYPE: FACT
+  CLAIM: All four tasks are now in review on this story. Task 3 (phase-8 pool digest, one file + one test
+    file) and task 4 (emission gate: three helpers, two package builders returning `Optional`, one call-
+    site hunk in `spellbook.py`, 267-line unit file, two component tests) landed after the owner's
+    "do the recommended send it"; task 2 was already in review. Cross-task: task 4 reuses task 2's
+    linked-contract fixture to prove the gate on a real plan, and task 3's M7 probe lives beside the
+    measurement plan. Nothing executed in this lane; the owner-run commands are on each task.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md
+  - tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md
+  - artifacts/codegen_signature_determinism_20260926/scaling_conjure_probe.py:1-197
+  IMPACT: The story's exit gate now waits only on owner-run results (suites, harness before/after, M7)
+    and acceptance; promotion into `src_components.md` follows acceptance.
+  NEXT: Owner runs the suites and the harness; fable_0 files results per measurement_plan.md and
+    prepares the component-map promotion text.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T10:42:09Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Owner-run results are in for tasks 2-4 (1784 passed; three failures were the new component
+    file's own fixture/assertions, fixed and not yet re-run). The failing fixture exposed that
+    manifest-first families bind the frozen row projection of contract payload values in-process as
+    well as from the cache, so task 4's gate is the cache half of the fix and the in-process half needs
+    an owner choice: (1) fail fast on non-replayable payload values, or (2) a live side table of raw
+    values for in-process hydration (recommended; touches the override lanes' hydrator files). Task 3's
+    AFTER numbers are filed; its BEFORE is still owed because a stale `.git/index.lock` (from this VM)
+    broke the owner's stash - the pre-task-3 file is staged under `build/_fable_stage/`.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md
+  - tickets/tasks/2026-09-26_hoist_phase8_pool_digest_task.md
+  - tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md
+  IMPACT: Story exit gate: suites need one re-run of the component file; M5-M7 need the BEFORE runs; a
+    fifth task opens on the owner's (1)/(2) choice.
+  NEXT: Owner: re-run the component file, run BEFORE, pick (1)/(2).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -218,6 +296,13 @@ STATE 2026-09-26T09:05:00Z: opened; task 1 (patch docs) in progress. Resume from
 STATE 2026-09-26T09:08:00Z: task 1 in REVIEW (patch docs); task 2 ready, waiting on the owner's U1 confirmation; task 3
 ready behind task 2.
 STATE 2026-09-26T09:18:25Z: measurement plan filed; still waiting on the owner's U1 confirmation for task 2.
+STATE 2026-09-26T10:04:00Z: task 2 in REVIEW (commit 6fc9af345, suites owner-run pending); owner ruling open on
+the cache-path payload limit; task 3 opens at H1.
+STATE 2026-09-26T10:12:00Z: owner chose B and confirmed H1; task 3 in progress (H2); task 4 to be opened after task 3.
+STATE 2026-09-26T10:21:00Z: task 3 in REVIEW; task 4 opened (in_progress, G1 done); boundary extended to the emission seam.
+STATE 2026-09-26T10:30:30Z: tasks 2, 3 and 4 in REVIEW; waiting on owner-run suites, harness (M5/M6), M7 probe and acceptance.
+STATE 2026-09-26T10:42:09Z: suites run (1784 passed; component fixture fixed, re-run owed); AFTER numbers filed; BEFORE owed;
+in-process projection decision (1)/(2) open with the owner.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

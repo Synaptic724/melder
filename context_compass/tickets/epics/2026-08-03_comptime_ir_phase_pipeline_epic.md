@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T09:08:28Z
+- Updated: 2026-09-26T10:42:09Z
 - Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
@@ -371,6 +371,10 @@ on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling
 - 2026-09-26 (owner): improvement plan decided: C-H and C-A approved as the first tranche; C-B (fuse
   phases 5-7) rejected for now - the system-wide check and the single-spell dependency check must stay
   separately schedulable.
+- 2026-09-26 (owner): creation-cache payload limit ruled as option B - refuse cache emission for spells
+  whose persisted rows cannot replay their contract payload faithfully (T1 story, task 4). The
+  structural snapshot inherits the constraint: replay rows must be lossless or carry a not-cacheable
+  verdict.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -1006,6 +1010,46 @@ on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling
     exact files and symbols for confirmation before any edit under src/.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T10:04:10Z
+  TYPE: DECISION_REQUEST
+  CLAIM: T1 task 2 (one signature implementation, determinism test) is in review, committed as 6fc9af345
+    with owner-run suites pending. Its investigation found a program-level fact for the structural
+    snapshot: the phase-11 persisted step rows carry payload values in their FROZEN form, and the
+    cache-load path executes them (dict -> sorted pair tuple, list -> tuple, enum -> repr text, object
+    -> marker), while the in-process path uses raw values. Two consequences. (1) Owner ruling needed for
+    the creation cache today: A keep and document; B refuse cache emission for spells whose rows carry a
+    non-value payload (recommended - correctness kept, only those spells lose cross-process hits); C
+    raise at plan time. (2) The structural snapshot's row schema (D2 hydrate obligations) must be
+    lossless for every value it replays, or carry an explicit not-cacheable verdict; the current rows are
+    a hash projection, not a replay format.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_unify_codegen_signature_serializer_task.md
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:296-341
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.py:316-340
+  - artifacts/ir_phase_survey_20260925/summary.md
+  IMPACT: Decision (1) may add a fourth task to the T1 story; consequence (2) becomes a constraint on the
+    snapshot design story when it opens.
+  NEXT: Owner rules A/B/C; fable_0 continues with T1 task 3 (phase-8 digest hoist) meanwhile.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T10:42:09Z
+  TYPE: DECISION_REQUEST
+  CLAIM: T1 suites owner-run (1784 passed; new component fixture corrected). Program-level finding: the
+    manifest-first phase-11 families bind the frozen row projection of SpellContract payload values
+    IN-PROCESS (lazy doors hydrate from the manifest), not only after a cache hit; task 4's emission gate
+    is the cache half. Owner choice for the in-process half: (1) fail fast on non-replayable payload
+    values, or (2) raw-value side table for in-process hydration (recommended). The structural snapshot
+    inherits the same rule: a row projection is a hash surface, not a replay surface, unless proven
+    lossless per value.
+  EVIDENCE:
+  - tickets/tasks/2026-09-26_gate_cache_emission_on_replayable_payloads_task.md
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_lazy_door_step.py:15-130
+  IMPACT: One more task under the T1 story on the owner's choice; no change to the phases 5-7 ruling.
+  NEXT: Owner picks (1) or (2).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

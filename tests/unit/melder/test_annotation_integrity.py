@@ -14,7 +14,7 @@ import pathlib
 import subprocess
 import sys
 import textwrap
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List
 
 import pytest
 
@@ -209,13 +209,16 @@ class _Conduit:
         pytest.param(lambda: "A" | "B", id='"A" | "B"'),
         pytest.param(lambda: _Conduit | "_Conduit", id='C | "C"'),
         pytest.param(lambda: int | "_Conduit", id='int | "C"'),
-        pytest.param(lambda: Optional[int] | "_Conduit", id='Optional[int] | "C"'),
+        pytest.param(lambda: list[int] | "_Conduit", id='list[int] | "C"'),
     ],
 )
 def test_string_union_shapes_raise_when_evaluated(build: Callable[[], object]) -> None:
     """
     Purpose: Pin why STRING_IN_UNION is a defect on the supported interpreter.
-    Contract: Evaluating each shape raises TypeError.
+    Contract: Evaluating each shape raises TypeError. A `typing.Union` operand (`Optional[X] | "Y"`) is
+        deliberately absent: 3.14.7 wraps the string in a ForwardRef while 3.14.0rc2 raised, so its
+        runtime outcome is build-dependent. The static pass reports it regardless (the seeded
+        `outer.inner(x)` case), because the repository forbids `|` unions and quoted type names.
     """
     with pytest.raises(TypeError):
         build()

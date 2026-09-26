@@ -2,7 +2,7 @@
 
 ## Metadata
 - Patch ID: conjure_validation_warnings_2026_09_26
-- Status: approved by owner in chat (2026-09-26); implementation in progress
+- Status: promoted to src_architecture/src_components and archived 2026-09-26T10:12:55Z
 - Owner: user (implementation: melder_0)
 - Task: TASK-2026-09-26-add-conjure-validation-warnings-flag
 - Created: 2026-09-26T09:19:49Z
