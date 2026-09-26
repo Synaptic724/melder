@@ -96,6 +96,11 @@ class CachingSystem(Cleanable):
         construct or bind it. Distinct from the crystallizer's restore record.
     """
 
+    # Version 14: many_only and generalized manifests (version 4) carry no
+    # override section and conjure no longer fits the Phase-9 override
+    # targeting or site-graph sections; override melds compile one plan per key
+    # set from the no-overrides rows (2026-09-26). Version-13 bundles hold
+    # version-3 manifests that the family validators reject.
     # Version 13: each member of a collection parameter gets its own compiler
     # path, so many-existence dependencies below different members are built
     # once per member instead of once per collection (2026-09-26). Version-12
@@ -157,6 +162,7 @@ class CachingSystem(Cleanable):
         11: "unresolved_input_sockets",
         12: "complete_bundle_restage",
         13: "collection_member_paths",
+        14: "override_site_plan_lanes",
     })
     CURRENT_VERSION: ClassVar[int] = max(CACHE_VERSION_HISTORY)
     BUNDLE_SUFFIX: ClassVar[str] = ".melc"

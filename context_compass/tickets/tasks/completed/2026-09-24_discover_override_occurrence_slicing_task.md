@@ -1,15 +1,19 @@
 # Task: Trace occurrence-aware graph slicing for supplied dependency overrides
 
+- Completed: 2026-09-26T13:45:56Z
+- Summary: Compact compiler and native bridge cross-reviewed. Turned in by the owner in the 2026-09-26 board cleanup (row agent updater_1);
+  no further work; artifacts retained as reference.
+
 ## Metadata
 - Task ID: TASK-2026-09-24-discover-override-occurrence-slicing
 - Epic: EPIC-2026-09-24-override-execution-performance
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: updater_1
 - Lead Agent: updater_0
 - Priority: p1
 - Created: 2026-09-24T11:16:08Z
-- Updated: 2026-09-24T22:45:35Z
+- Updated: 2026-09-26T13:45:56Z
 
 ## Objective
 Identify how existing occurrence graphs, injection plans and shape caches can represent only the
@@ -32,6 +36,10 @@ construction work still required after whole-dependency substitution. Return evi
 - from_state: in_progress
 - to_state: review
 - transition_reason: Compact compiler, generated claim prelude and native bridge support a joint alpha proposal.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turned in this dormant row in the 2026-09-26 shared-board cleanup (all 13 dormant rows,
+  2026-09-26T13:45:56Z); closed by fable_0 with board and artifact sync.
 
 ## Questions / Steps
 - [x] Map the exact parent-socket-to-child-occurrence data available before code generation.

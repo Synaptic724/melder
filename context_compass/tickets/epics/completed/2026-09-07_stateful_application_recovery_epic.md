@@ -1,14 +1,18 @@
 # Epic: Extend structural restore with application state and assisted recovery
 
+- Completed: 2026-09-26T13:45:56Z
+- Summary: Native replay coverage and partial/assisted recovery opportunities preserved. Turned in by the owner in the 2026-09-26 board cleanup (row agent unassigned);
+  no further work; artifacts retained as reference.
+
 ## Metadata
 - Epic ID: EPIC-2026-09-07-stateful_application_recovery
-- Status: ready
+- Status: done
 - Owner: project owner; documentation executor codex
 - Agent Name: unassigned
 - Documentation Author: command_1, working from CommandOps; no Melder agent assignment.
 - Priority: p1
 - Created: 2026-09-07T19:15:12Z
-- Updated: 2026-09-07T19:18:52Z
+- Updated: 2026-09-26T13:45:56Z
 - Target Window: discussion and recovery design; implementation not selected
 - Related Program/Initiative: Crystallizer recovery and CommandOps composition
 - Authorization: preserve findings and opportunities; no runtime implementation or restore execution.
@@ -358,6 +362,10 @@ rules; selecting an old code version does not automatically reverse migrated sta
 - from_state: draft
 - to_state: ready
 - transition_reason: owner-requested discussion capture prepared; design and implementation remain open.
+- from_state: ready
+- to_state: done
+- transition_reason: Owner turned in this dormant row in the 2026-09-26 shared-board cleanup (all 13 dormant rows,
+  2026-09-26T13:45:56Z); closed by fable_0 with board and artifact sync.
 
 ## Requirements (Functional + Non-Functional)
 - Distinguish definitions, scope topology, instances, value state and execution progress.

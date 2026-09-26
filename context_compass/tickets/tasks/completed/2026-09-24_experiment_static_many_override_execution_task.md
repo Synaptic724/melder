@@ -1,15 +1,19 @@
 # Task: Measure an isolated normal-style override emitter before production changes
 
+- Completed: 2026-09-26T13:45:56Z
+- Summary: Measured gains and ten independent regressions accepted by lead. Turned in by the owner in the 2026-09-26 board cleanup (row agent updater_1);
+  no further work; artifacts retained as reference.
+
 ## Metadata
 - Task ID: TASK-2026-09-24-experiment-static-many-override-execution
 - Epic: EPIC-2026-09-24-override-execution-performance
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: updater_1
 - Lead Agent: updater_0
 - Priority: p1
 - Created: 2026-09-24T10:33:26Z
-- Updated: 2026-09-24T10:53:26Z
+- Updated: 2026-09-26T13:45:56Z
 
 ## Objective
 Build an artifact-only prototype that retains the current constructor sequence but substitutes
@@ -33,6 +37,10 @@ named override operands into normal-style calls, then measure it against current
 - from_state: in_progress
 - to_state: review
 - transition_reason: Both measured variants passed parity; timing released and evidence sent for lead review.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turned in this dormant row in the 2026-09-26 shared-board cleanup (all 13 dormant rows,
+  2026-09-26T13:45:56Z); closed by fable_0 with board and artifact sync.
 
 ## Steps / Checklist
 - [x] Acknowledge OEP-008 and document the exact prototype seam/eligibility.

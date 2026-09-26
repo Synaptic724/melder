@@ -2,7 +2,10 @@
 Manifest builder for the generalized codegen-creation family.
 
 The manifest is the family's single serialization-shaped truth: one
-marshal-safe mapping holding every schema-only fact both runtime lanes need.
+marshal-safe mapping holding every schema-only fact the no-overrides runtime
+lane needs. Override melds compile one plan per override key set from the same
+rows at the first override meld, so there is no override section (version 4,
+2026-09-26).
 The live phase-11 path builds the manifest and publishes lazy doors over it;
 the cache path persists the manifest and hydrates it through the same
 hydrator at first meld. One assembly program, two callers.
@@ -17,7 +20,7 @@ Contract:
       `MANIFEST_METADATA_KEY` for codec export.
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
     CodegenCreationSchemaHelpers,
@@ -27,10 +30,13 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
     MANIFEST_METADATA_KEY,
 )
 
+# Version 4: no override section; override melds compile from the no-overrides
+# rows (2026-09-26). Version-3 manifests fail validation and regenerate as cold
+# cache.
 # Version 3: rows carry `spell_has_disposal_methods` (bind-time spell truth)
 # as the authoritative emit-time disposal fact. Version-2 manifests are
 # rejected by validation and regenerate as cold cache.
-MANIFEST_VERSION = 3
+MANIFEST_VERSION = 4
 FAMILY_ID = GENERALIZED_FAMILY_ID
 
 
@@ -44,22 +50,12 @@ def build_generalized_manifest(
 
     Raises:
         RuntimeError:
-            When a required lane plan or targeting shape is missing.
+            When the no-overrides lane plan is missing.
     """
     no_overrides_plan = spell_codegen_plan.no_overrides_plan
     if no_overrides_plan is None:
         raise RuntimeError(
             "generalized manifest requires a no_overrides_plan."
-        )
-    overrides_plan = spell_codegen_plan.overrides_plan
-    if overrides_plan is None:
-        raise RuntimeError(
-            "generalized manifest requires an overrides_plan."
-        )
-    override_targeting_shape = spell_codegen_model.override_targeting_shape
-    if override_targeting_shape is None:
-        raise RuntimeError(
-            "generalized manifest requires override_targeting_shape."
         )
 
     return {
@@ -69,10 +65,6 @@ def build_generalized_manifest(
         "root_spell_id": no_overrides_plan.root_spell_id,
         "no_overrides": _build_no_overrides_lane_payload(
             no_overrides_plan=no_overrides_plan,
-        ),
-        "overrides": _build_overrides_lane_payload(
-            overrides_plan=overrides_plan,
-            override_targeting_shape=override_targeting_shape,
         ),
     }
 
@@ -142,46 +134,6 @@ def _build_no_overrides_lane_payload(
     }
 
 
-def _build_overrides_lane_payload(
-        *,
-        overrides_plan: Any,
-        override_targeting_shape: Any,
-) -> Dict[str, Any]:
-    """
-    Build the schema-only overrides lane payload.
-    """
-    steps = tuple(overrides_plan.steps)
-    plan_rows = tuple(
-        _enrich_phase11_row(row, step)
-        for row, step in zip(
-            CodegenCreationSchemaHelpers.get_phase11_step_ir_rows(
-                overrides_plan,
-                include_override_metadata=True,
-            ),
-            steps,
-        )
-    )
-    plan_signature = build_override_plan_signature(
-        overrides_plan=overrides_plan,
-        plan_rows=plan_rows,
-    )
-    return {
-        "lane_id": overrides_plan.lane_id,
-        "root_spell_id": overrides_plan.root_spell_id,
-        "step_spell_ids": tuple(
-            step.spell.spell_index.selected_spell_id
-            for step in steps
-        ),
-        "plan_rows": plan_rows,
-        "plan_signature": plan_signature,
-        "empty_shape_key": (plan_signature, (), -1),
-        "targets_by_spec": serialize_targets_by_spec(
-            override_targeting_shape.targets_by_spec,
-        ),
-        "specificity_by_spec": dict(override_targeting_shape.specificity_by_spec),
-    }
-
-
 def build_no_overrides_executor_signature(
         *,
         no_overrides_plan: Any,
@@ -219,37 +171,6 @@ def build_no_overrides_executor_signature(
     )
 
 
-def build_override_plan_signature(
-        *,
-        overrides_plan: Any,
-        plan_rows: Any,
-) -> Tuple[Any, ...]:
-    """
-    Build the stable override plan signature used by specialization caching.
-
-    Contract:
-        - Family-owned replacement for the signature builder that previously
-          lived on the legacy finalize step.
-    """
-    steps_rows_signature = CodegenCreationSchemaHelpers.hash_codegen_signature(
-        tuple(plan_rows)
-    )
-    step_spell_ids = tuple(
-        step.spell.spell_index.selected_spell_id
-        for step in overrides_plan.steps
-    )
-    return (
-        "generalized_overrides_lane_plan",
-        CodegenCreationSchemaHelpers.hash_codegen_signature(
-            overrides_plan.lane_id,
-            overrides_plan.root_spell_id,
-            step_spell_ids,
-            steps_rows_signature,
-        ),
-        steps_rows_signature,
-    )
-
-
 def _enrich_phase11_row(
         row: Dict[str, Any],
         step: Any,
@@ -284,26 +205,6 @@ def _enrich_phase11_row(
     return enriched
 
 
-def serialize_targets_by_spec(
-        targets_by_spec: Dict[str, Tuple[Any, ...]],
-) -> Dict[str, Tuple[Tuple[Any, ...], ...]]:
-    """
-    Serialize processor override-target rows to marshal-safe tuples.
-    """
-    return {
-        spec_key: tuple(
-            (
-                target_ref.node_id,
-                target_ref.param_path_id,
-                target_ref.param_name,
-                target_ref.socket_kind_value,
-            )
-            for target_ref in target_refs
-        )
-        for spec_key, target_refs in targets_by_spec.items()
-    }
-
-
 def validate_generalized_manifest(manifest: Any) -> Dict[str, Any]:
     """
     Validate one manifest mapping and return it.
@@ -324,7 +225,6 @@ def validate_generalized_manifest(manifest: Any) -> Dict[str, Any]:
             "route_key",
             "root_spell_id",
             "no_overrides",
-            "overrides",
     ):
         if required_field not in manifest:
             raise RuntimeError(

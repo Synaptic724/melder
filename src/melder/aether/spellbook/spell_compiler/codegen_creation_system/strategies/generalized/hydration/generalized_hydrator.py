@@ -11,8 +11,9 @@ Hydration shape:
     2. Build slotted runtime rows from manifest rows.
     3. Hydrate the inner no-overrides executor through the family compiler
        (row-driven emission, process-wide factory cache).
-    4. Build the family override runtime (process-wide shape source +
-       factory caches; per-spell bound-executor memo).
+    4. Build the family override runtime lazily at the first override meld:
+       `SitePlanOverrideRuntime` over the same no-overrides rows, one
+       compiled plan per override key set (2026-09-26).
     5. Wrap both lanes in the shared route-keyed CreationContext doors.
 """
 
@@ -24,23 +25,11 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
     compile_creation_context_hooks_overrides_only_executor,
     compile_creation_context_instance_no_overrides_executor,
 )
-from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
-    SpellOverrideTargetRef,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library import (
-    SpellOverrideTargetingCodegenCreation,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler import (
     build_specialized_no_overrides_executor,
     hydrate_no_overrides_executor,
     resolve_root_instance_key_from_rows,
     select_specializable_step_indexes,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime import (
-    build_overrides_execute_runtime,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows import (
-    build_runtime_rows,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver import (
     SpellbookBindingResolver,
@@ -55,7 +44,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
     SitePlanOverrideRuntime,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest import (
-    coerce_manifest_sequences,
     validate_generalized_manifest,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import (
@@ -445,26 +433,6 @@ def _resolve_spell_lookup(
     return spell_lookup
 
 
-def _deserialize_targets_by_spec(
-        serialized_targets_by_spec: Dict[str, Any],
-) -> Dict[str, Tuple[SpellOverrideTargetRef, ...]]:
-    """
-    Rebuild processor override-target rows from serialized tuples.
-    """
-    rebuilt: Dict[str, Tuple[SpellOverrideTargetRef, ...]] = {}
-    for spec_key, target_rows in serialized_targets_by_spec.items():
-        rebuilt[spec_key] = tuple(
-            SpellOverrideTargetRef(
-                node_id=target_row[0],
-                param_path_id=target_row[1],
-                param_name=target_row[2],
-                socket_kind_value=target_row[3],
-            )
-            for target_row in target_rows
-        )
-    return rebuilt
-
-
 def _build_lazy_overrides_door(
         *,
         manifest: Dict[str, Any],
@@ -476,10 +444,10 @@ def _build_lazy_overrides_door(
     Build a cold overrides door that hydrates the overrides runtime lazily.
 
     Purpose:
-        Defer the overrides-lane hydration cost (runtime rows, override
-        targeting deserialization, root-instance-key resolution, and the
-        override execute-runtime build) from FIRST MELD to FIRST OVERRIDE
-        MELD, so override-free workloads never pay for the lane at all.
+        Defer the overrides-lane hydration cost (no-overrides row hydration,
+        root-instance-key resolution, and the key-set plan runtime build)
+        from FIRST MELD to FIRST OVERRIDE MELD, so override-free workloads
+        never pay for the lane at all.
 
     Contract:
         - Zero hydration work at build time: closure construction only.
@@ -502,7 +470,8 @@ def _build_lazy_overrides_door(
 
     Args:
         manifest:
-            Validated family manifest carrying the overrides lane payload.
+            Validated family manifest; its no-overrides rows feed the
+            override runtime.
         root_spell:
             Live root spell whose published context receives the hot swap.
         route_key:

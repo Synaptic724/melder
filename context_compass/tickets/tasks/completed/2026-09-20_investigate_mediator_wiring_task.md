@@ -1,14 +1,18 @@
 # Task: Investigate mediator wiring and propose doc refresh
 
+- Completed: 2026-09-26T13:45:56Z
+- Summary: Doc patches plus verified indexes stand; closeout only on explicit checkout. Turned in by the owner in the 2026-09-26 board cleanup (row agent muse);
+  no further work; artifacts retained as reference.
+
 ## Metadata
 - Task ID: TASK-2026-09-20-mediator-wiring
 - Story: UNKNOWN
-- Status: in_progress
+- Status: done
 - Owner: user
 - Agent Name: muse
 - Priority: p1
 - Created: 2026-09-20T23:54:21Z
-- Updated: 2026-09-21T00:11:00Z
+- Updated: 2026-09-26T13:45:56Z
 
 ## Objective
 Prove current mediator-plane wiring from source, then propose minimal
@@ -43,6 +47,10 @@ BUILT-NOT-WIRED claim. No doc edits in this task without owner approval.
 - to_state: in_progress
 - transition_reason: owner stated lane is not done and checkout was not
   requested; reopened per owner direction with doc edits retained.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner turned in this dormant row in the 2026-09-26 shared-board cleanup (all 13 dormant rows,
+  2026-09-26T13:45:56Z); closed by fable_0 with board and artifact sync.
 
 ## Steps / Checklist
 - [ ] Verify `src_components_index.md` staleness proof, then slice mediator area.
@@ -93,8 +101,8 @@ BUILT-NOT-WIRED claim. No doc edits in this task without owner approval.
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false

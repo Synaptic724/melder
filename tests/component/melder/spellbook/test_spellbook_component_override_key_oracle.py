@@ -4,7 +4,8 @@ Every key today's targeting accepts (all exact paths it indexes plus `*name` and
 name) and a set of invalid keys are resolved by both implementations on real conjured graphs. They must
 agree on the targeted (spell id, parameter) pairs, on how many logical sockets each key reaches, and on
 the error raised. The one recorded difference: today's targeting keeps only the last member for a PATH
-through a collection; the resolver keeps every member.
+through a collection; the resolver keeps every member. Conjure no longer fits either Phase-9 section
+(S3b-1), so the oracle fits both on the conjured model itself; it retires with the targeting code.
 """
 
 from collections import Counter
@@ -17,6 +18,12 @@ from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell import Spell
+from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy import (
+    SpellOverrideTargetingProcessorStrategy,
+)
+from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy import (
+    SpellSiteGraphProcessorStrategy,
+)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver import (
     OverrideKeyResolver,
 )
@@ -166,7 +173,16 @@ def _conjured_root(
     conduit.meld(root, override=override)
     selected = spellbook.find_spell_by_id(ids[root])
     assert selected is not None
+    _fit_override_sections(selected)
     return selected
+
+
+def _fit_override_sections(spell: Spell) -> None:
+    """Fit the two Phase-9 sections conjure no longer builds (S3b-1) on the conjured model."""
+    artifact = spell._compiler_artifact
+    model = artifact._spell_codegen_model
+    SpellSiteGraphProcessorStrategy().process(spell, artifact, model)
+    SpellOverrideTargetingProcessorStrategy().process(spell, artifact, model)
 
 
 def _today(targeting: SpellOverrideTargetingCodegenCreation, key: str) -> Outcome:

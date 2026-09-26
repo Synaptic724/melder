@@ -442,7 +442,13 @@ def test_required_input_rows_survive_both_planner_variants(compiler_book: Spellb
             assert signature_input[6:] == expected[0][1:]
         compiler.run_phase_patch_maps(consumer)
         plan = consumer._compiler_artifact._spell_codegen_plan
-        for variant in (plan.no_overrides_plan, plan.overrides_plan):
+        variants = [plan.no_overrides_plan]
+        if family == "many_only":
+            # many_only plans no override lane since S3b-1: override melds compile from these rows.
+            assert plan.overrides_plan is None
+        else:
+            variants.append(plan.overrides_plan)
+        for variant in variants:
             step = next(step for step in variant.steps if step.instance_key[0] == consumer_id)
             assert step.required_override_params == expected
             assert all(key[0] != definition_id for _, keys in step.dependency_resolution_order for key in keys)

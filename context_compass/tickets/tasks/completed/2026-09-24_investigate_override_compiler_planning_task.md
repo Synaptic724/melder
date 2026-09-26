@@ -1,14 +1,18 @@
 # Task: Trace override plan divergence through compiler phases 7-11
 
+- Completed: 2026-09-26T13:45:56Z
+- Summary: Default-plan reuse diagnosis verified by the measured prototype. Turned in by the owner in the 2026-09-26 board cleanup (row agent updater_1);
+  no further work; artifacts retained as reference.
+
 ## Metadata
 - Task ID: TASK-2026-09-24-investigate-override-compiler-planning
 - Epic: EPIC-2026-09-24-override-execution-performance
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: updater_1
 - Priority: p1
 - Created: 2026-09-24T10:04:57Z
-- Updated: 2026-09-24T10:32:26Z
+- Updated: 2026-09-26T13:45:56Z
 
 ## Objective
 Explain why the override path departs from normal-plan performance and constructs overridden
@@ -32,6 +36,10 @@ Evaluate the owner's default-plan-plus-adjustments model before selecting an API
 - from_state: in_progress
 - to_state: review
 - transition_reason: Compiler diagnosis, exact source capture and bounded next-tranche seams delivered to lead.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turned in this dormant row in the 2026-09-26 shared-board cleanup (all 13 dormant rows,
+  2026-09-26T13:45:56Z); closed by fable_0 with board and artifact sync.
 
 ## Questions To Resolve
 - Where do the normal and override plans diverge, and what is already shared?

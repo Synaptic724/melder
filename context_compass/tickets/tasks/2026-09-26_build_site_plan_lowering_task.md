@@ -10,7 +10,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-26T12:29:50Z
-- Updated: 2026-09-26T13:29:42Z
+- Updated: 2026-09-26T13:50:34Z
 
 ## Objective
 Overrides run through per-key-set plans compiled from the site graph: supplied dependencies and everything
@@ -434,6 +434,181 @@ the empty key set; the normal lane switches to it only when it meets the parity 
   - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s3b1_edits.py:1-441
   IMPACT: The diff is exactly the planned surface; suites decide the test list.
   NEXT: Read the 3.14t suite results and fix or move the tests that pin the removed lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T13:41:25Z
+  TYPE: MEASURE
+  CLAIM: S3b-1 validated on the VM copy. Tests that pinned the removed lane (six files, apply_s3b1_test_edits.py):
+    processor registry order; many_only plan strategy (one builder call, overrides_plan None); the S1 oracle now fits
+    both retired Phase-9 sections itself on the conjured model; required-input rows check only the no-overrides
+    variant for many_only; the spell-crafter "*service" target now resolves through the site graph and
+    OverrideKeyResolver; cache history pin gains 14. 3.14t: unit spellbook 2192, component spellbook 768, integration
+    spellbook 578+2s+3xf+1xp, component aether 1186+1s+1xf, conduit 267+1s, unit aether 4124, integration aether 716,
+    multithreading 42, unit utilities 785+2s+7xf, crystallizer unit 565, mutation_research 277/40/66, root files 26;
+    only the known environment failures (crystallizer file_backed_morph x4; build_assets x2, also on the untouched twin
+    because the copy has no context_compass). GIL: unit spellbook 2192, component spellbook 768, integration spellbook
+    578, component aether 1186, multithreading 42, unit aether 4124; conduit concurrency flakes 2-5 per run on both
+    trees (race lane). Conjure setup (median of 9, 3.14t): deep 42.8/45.6 -> 32.0/33.0 ms (-25%); shallow, wide,
+    diamond unchanged within noise. Override benchmark (3 s): shallow 195,565 -> 200,489, wide 187,930 -> 181,262,
+    diamond 201,918 -> 197,509, deep 31,393 -> 31,214 roots/s, errors=0 (noise). The solo graph sometimes reports
+    duration 0.00s / 0 steps on both trees (harness quirk, not a failure). All 15 device files still match the
+    snapshot the VM copy was taken from.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s3b1_test_edits.py:1-152
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/conjure_setup.py:1-14
+  - tests/integration/melder/spellbook/test_cache_schema_version_integration.py:12-27
+  IMPACT: S3b-1 is ready for the device tree: conjure -25% on deep with no runtime or test regression.
+  NEXT: Notify fable_0 (many_only_manifest.py) and melder_1 (cache generation 14), then apply both scripts to the
+    device tree and verify byte-identity with the VM copy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T13:42:48Z
+  TYPE: FACT
+  CLAIM: Consumed fable_0 F0-14: release_docs/next_version_release.md (0.2.56) says a meld that passes its own
+    override still renders descriptor payload values into generated code. Probe (SpellMap payload object on a many
+    consumer, meld with override={"other": obj}): without S3a (~/work/melder_devbase) the provider gets a different
+    object (False); with S3a (device tree, and with S3b-1) it gets the same object (True), normal melds True on all.
+    The bullet is obsolete once S3a ships.
+  EVIDENCE:
+  - release_docs/next_version_release.md:42-45
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/payload_override_identity.py:1-40
+  IMPACT: The release section for this story (S6) retires that bullet and says override melds deliver payload
+    objects by identity too.
+  NEXT: Apply S3b-1 to the device tree after the notices.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T13:44:05Z
+  TYPE: FACT
+  CLAIM: S3b-1 applied to the device tree after --check on both scripts: nine src files (apply_s3b1_edits.py) and six
+    test files (apply_s3b1_test_edits.py); all fifteen are byte-identical to the validated VM copy. Notices M0-26
+    (fable_0: the two manifests) and M0-27 (melder_1: cache generation 14) sent. Uncommitted, like S3a.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/manifest/many_only_manifest.py:41-100
+  - src/melder/utilities/caching_system/caching_system.py:99-166
+  IMPACT: Conjure stops paying for the unused override lane; the dead modules remain for S3b-2.
+  NEXT: Map every importer of the retired override modules on the S3b-1 tree and write the S3b-2 deletion list.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-26T13:45:11Z
+  TYPE: DECISION_REQUEST
+  CLAIM: S3b-2 (delete the dead lane) is a many-file sweep with deletions, so it waits for the owner. Importer map on
+    the S3b-1 tree: nothing reachable from conjure or meld imports these 12 modules - many_only overrides compiler,
+    many_only overrides step, many_only finalize step, many_only targeting artifact, generalized overrides compiler,
+    generalized_manifest_overrides_runtime, generalized overrides step, generalized finalize step, generalized
+    targeting artifact, the Phase-9 targeting processor and its analysis, and the unregistered
+    generalized_many_only plan strategy. Their remaining importers are: the legacy non-manifest codec
+    spell_codegen_creation_cache.py (reached only by tests - plan discovery always picks solo/many_only/generalized,
+    all three emit manifests, so the fallback family and legacy build_package never run from conjure);
+    spellbook_creation_system._rebuild_cached_creation_context_executors (legacy override branch);
+    generalized_runtime_library (override re-exports; the module stays, it serves the live no-overrides compiler);
+    and nine test files (codegen_creation_core, codegen_creation_compilers_core, ordered_disposal_compiler,
+    spell_strategy_migrations, spell_artifact_processor_data_migrations, contract_override_refs, the S1 oracle,
+    spell_codegen_pipeline_component, the experimentation cache playground). Also trimmed with it: the model's
+    override fields and counters, the family states' override slots, the generalized OVERRIDES lane variant, the
+    override metadata in shared_compiler_executions. The bind-guard and system-document build assets name these
+    classes, so an asset rebuild (owner approval) follows in S6. Options: (1) S3b-2 as listed, legacy codec and
+    fallback family kept minus their override halves (recommended: the story's scope, nothing live changes, git
+    restores); (2) also retire the legacy codec and fallback family (broader than this story); (3) leave the dead
+    modules in place.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spell_compiler/codegen_planner/codegen_plan_discovery_system/strategies/generalized_codegen_plan_discovery_strategy.py:55-83
+  - src/melder/aether/spellbook/spellbook.py:995-1024
+  - src/melder/aether/spellbook/spellbook_creation_system.py:667-830
+  - src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.py:98-219
+  IMPACT: No runtime or conjure change either way (S3b-1 already removed the cost); this is code and test removal.
+  NEXT: Ask the owner; meanwhile measure the S2 parity gate (empty key set through the lowering vs the normal lane).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T13:48:43Z
+  TYPE: MEASURE
+  CLAIM: S2 parity probe (S3b-1 tree, direct calls, median of 7): the lowering's empty-key-set plan vs the many_only
+    inner no-overrides executor runs at 92-107% (3.14t) and 90-97% (GIL) speed on shallow/wide/diamond, 97-99% on
+    deep. The emitted bodies are identical (same transient targets, same try/except per step); the plan differs only
+    in its signature - `(meld, ov, <every namespace name as a default>)` - where the inner executor reads module
+    globals. Filling defaults costs per call, which matches the 10-30 ns gap. Public meld adds ~200 ns over the inner
+    executor on small graphs (fast-door path); the override experiment (MELDER_OVERRIDE_PERF=1, 3.14t) shows override
+    melds at 66-83% of normal on shallow/wide/diamond (root_one_reused 488 vs normal 341 ns on shallow), so the
+    remaining override cost is meld entry and dispatch, not the plan.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/s2_parity.py:1-65
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/s2_sources.py:1-25
+  - src/melder/aether/conduit/meld/conduit_meld.py:500-545
+  IMPACT: S2 parity is within reach by emitting plans into a globals namespace (as the inner executor does); the
+    same change trims every override plan call. The override-vs-normal gap is in the meld entry path.
+  NEXT: Record the owner's S3b-2 decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T13:48:43Z
+  TYPE: DECISION
+  CLAIM: Owner answered the S3b-2 request with "1 and 2": delete the dead override modules as listed AND retire the
+    legacy non-manifest codec (spell_codegen_creation_cache.py) and the fallback no-overrides family, with their
+    callers and tests. melder_0 reads this as the union of both options (option 2 is option 1 plus the legacy codec
+    and fallback family). Build-asset rebuilds still wait for owner approval (S6).
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  IMPACT: S3b-2 scope is fixed; exact file list recorded before code after reading every caller.
+  NEXT: Read the legacy codec's callers (spellbook._emit_spell_cache, spellbook_creation_system cache publish) and the
+    fallback registrations, then record the S3b-2 file list.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T13:50:34Z
+  TYPE: PLAN
+  CLAIM: S3b-2 file list (prefix src/melder/aether/spellbook/spell_compiler/, "ccs" = codegen_creation_system/).
+    DELETE (17): ccs/strategies/many_only/compilers/many_only_overrides_codegen_creation_compiler.py,
+    ccs/strategies/many_only/steps/many_only_overrides_codegen_creation_step.py,
+    ccs/strategies/many_only/steps/many_only_finalize_creation_context_step.py,
+    ccs/strategies/many_only/artifacts/spell_override_targeting_codegen_creation.py,
+    ccs/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.py,
+    ccs/strategies/generalized/compilers/generalized_manifest_overrides_runtime.py,
+    ccs/strategies/generalized/steps/generalized_overrides_codegen_creation_step.py,
+    ccs/strategies/generalized/steps/generalized_finalize_creation_context_step.py,
+    ccs/strategies/generalized/steps/generalized_no_overrides_codegen_creation_step.py (fallback-only),
+    ccs/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.py,
+    ccs/strategies/generalized/generalized_codegen_creation_state.py (used only by the deleted steps),
+    ccs/strategies/fallback_no_overrides/fallback_no_overrides_codegen_creation_strategy.py,
+    ccs/codegen_creation_discovery_system/strategies/fallback_no_overrides_codegen_creation_discovery_strategy.py,
+    ccs/codegen_creation/spell_codegen_creation_cache.py (legacy codec),
+    artifact_processor/strategies/spell_override_targeting_processor_strategy.py,
+    artifact_processor/data/spell_override_targeting_analysis.py,
+    codegen_planner/strategies/spell_generalized_many_only_codegen_plan_strategy.py; plus the three emptied folders.
+    EDIT: spellbook.py _emit_spell_cache (a creation without a manifest is not cached); spellbook_creation_system.py
+    (_publish_cached_creation_context_for_spell accepts manifest packages only; the CodeType/legacy rebuild helpers and
+    their module helpers go - no producer of those payloads exists and generation 14 rejects older bundles);
+    ccs/spell_codegen_strategy_builder.py and ccs/codegen_creation_discovery_system/
+    codegen_creation_discovery_strategy_builder.py (unregister fallback; an unclaimed plan raises the existing
+    "could not select" error); generalized_runtime_library.py (override exports); spell_codegen_model.py
+    (override_targeting_shape, target_* counters, override_shape_family); phases/shared_compiler_executions.py (the
+    target_spec_count export key); many_only_codegen_creation_state.py (override slots); spell_site_graph_analysis.py
+    (docstring naming the targeting section). Kept for S2 as the design orders: the generalized Phase-10 OVERRIDES
+    variant (build_dual) and solo's own override executor. TESTS: delete test_spell_codegen_cache_rehydration_exec.py,
+    the S1 oracle test and the experimentation cache-asset playground; trim the targeting/legacy/fallback cases from
+    the other files that reference them (list recorded after the suite run).
+  EVIDENCE: tickets/tasks/2026-09-26_build_site_plan_lowering_task.md
+  IMPACT: Removes roughly 8k lines of dead override and legacy-codec code with no runtime change.
+  NEXT: Implement on the VM copy (edits by anchored script, deletions by rm), then run the suites.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-26T13:53:10Z
+  TYPE: FACT
+  CLAIM: S3b-2 src applied to the VM copy by apply_s3b2_edits.py: 17 modules deleted and 3 emptied folders pruned; 12
+    files edited (spellbook._emit_spell_cache returns False for a creation without a manifest;
+    _publish_cached_creation_context_for_spell accepts manifest packages only and the legacy rebuild helpers and their
+    module helpers are gone; fallback unregistered from both creation builders; runtime-library override exports,
+    model override fields, the target_spec_count export, many_only state override slots removed; site-graph docstrings
+    corrected - the processor docstring still claimed S3b-1's removed registration). The tree compiles, no src file
+    imports a deleted module, and no edited file has an unused import. Integration spellbook 578 passes unchanged;
+    11 test files fail at collection because they import deleted modules.
+  EVIDENCE:
+  - context_compass/artifacts/melder_override_design_20260926/s3_staging/apply_s3b2_edits.py:1-411
+  IMPACT: The src side of S3b-2 is complete; the test side follows the collection errors.
+  NEXT: Rework or delete the 11 test files, then run all suites on 3.14t and GIL.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 

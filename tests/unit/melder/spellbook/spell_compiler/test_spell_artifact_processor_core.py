@@ -162,8 +162,6 @@ def test_spell_artifact_processor_builder_registers_default_order() -> None:
         "spell_runtime_processor",
         "spell_existence_occurrence_processor",
         "spell_injection_processor",
-        "spell_site_graph_processor",
-        "spell_override_targeting_processor",
     )
     with pytest.raises(RuntimeError, match="missing strategy 'missing_processor'"):
         builder.get_strategy("missing_processor")

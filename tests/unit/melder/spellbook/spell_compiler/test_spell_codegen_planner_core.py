@@ -331,8 +331,8 @@ def test_spell_many_only_codegen_plan_strategy_uses_dedicated_many_only_builder(
 
     assert calls == [
         (state, SpellGeneralizedCodegenPlanVariant.NO_OVERRIDES),
-        (state, SpellGeneralizedCodegenPlanVariant.OVERRIDES),
     ]
     assert plan.no_overrides_plan == "many_only:no_overrides"
-    assert plan.overrides_plan == "many_only:overrides"
+    # Override melds compile their own key-set plans from the no-overrides rows (S3b-1).
+    assert plan.overrides_plan is None
     assert plan.metadata["selected_strategy_id"] == strategy.strategy_id

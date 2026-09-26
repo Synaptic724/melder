@@ -1,14 +1,18 @@
 # Task: Investigate required caller-supplied constructor inputs
 
+- Completed: 2026-09-26T13:45:56Z
+- Summary: Five consumer failures explained; existing runtime capability verified. Turned in by the owner in the 2026-09-26 board cleanup (row agent workflows_0);
+  no further work; artifacts retained as reference.
+
 ## Metadata
 - Task ID: TASK-2026-09-24-investigate-required-caller-inputs
 - Story: none; standalone investigation
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: workflows_0
 - Priority: p1
 - Created: 2026-09-24T11:36:32Z
-- Updated: 2026-09-24T11:53:24Z
+- Updated: 2026-09-26T13:45:56Z
 
 ## Objective
 Explain why bootstrap validation rejects constructors requiring caller-provided Package/Conduit
@@ -42,6 +46,10 @@ and rejects construction if those inputs are absent. The inherited-cleanup corre
 - to_state: review
 - transition_reason: Consumer failures, existing native capability and epic/history boundaries are
   verified; a bounded parameter-declaration recommendation is recorded without production edits.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turned in this dormant row in the 2026-09-26 shared-board cleanup (all 13 dormant rows,
+  2026-09-26T13:45:56Z); closed by fable_0 with board and artifact sync.
 
 ## Steps / Checklist
 - [x] Obtain exact consumer failures and declaration attempts from command_0.

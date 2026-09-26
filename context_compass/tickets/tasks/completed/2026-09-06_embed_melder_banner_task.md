@@ -1,13 +1,17 @@
 # Task: Embed the approved Melder banner in README and documentation
 
+- Completed: 2026-09-26T13:45:56Z
+- Summary: Local banner source and public fallback validated. Turned in by the owner in the 2026-09-26 board cleanup (row agent codex_1);
+  no further work; artifacts retained as reference.
+
 ## Metadata
 - Task ID: TASK-2026-09-06-embed-melder-banner
 - Story: none (owner-approved branding integration)
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: codex_1
 - Created: 2026-09-06T13:37:41Z
-- Updated: 2026-09-06T14:27:09Z
+- Updated: 2026-09-26T13:45:56Z
 
 ## Objective
 Use the approved richer upscaled banner as the README and Read the Docs homepage header,
@@ -32,6 +36,10 @@ remove the old mage emoji, and keep the existing documentation content and navig
 - from_state: in_progress
 - to_state: review
 - transition_reason: README local-source and public-fallback checks pass; generated corpus is current.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turned in this dormant row in the 2026-09-26 shared-board cleanup (all 13 dormant rows,
+  2026-09-26T13:45:56Z); closed by fable_0 with board and artifact sync.
 
 ## Steps / Checklist
 - [x] Inspect current README/docs opening and repository status.

@@ -8,25 +8,18 @@ doors at first meld.
 
 The no-overrides lane hydrates through the many_only compiler's public
 Codegen IR entrypoint (the manifest stores that IR verbatim). The override
-runtime is rebuilt through the bridged many_only finalize builder fed cached
-rows plus the live phase-5 path registry, mirroring the generalized family's
-hydration discipline.
+runtime is `SitePlanOverrideRuntime` over those same rows: one compiled plan
+per override key set, built at first use (2026-09-26), as in the generalized
+family.
 """
 
 import threading
-from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Tuple
 
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler import (
     compile_creation_context_hooks_no_overrides_executor,
     compile_creation_context_hooks_overrides_only_executor,
     compile_creation_context_instance_no_overrides_executor,
-)
-from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
-    SpellOverrideTargetRef,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation import (
-    SpellOverrideTargetingCodegenCreation,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler import (
     _hydrate_steps_from_rows,
@@ -39,15 +32,8 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime import (
     SitePlanOverrideRuntime,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler import (
-    compile_overrides_codegen_creation_executor,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.manifest.many_only_manifest import (
-    coerce_manifest_sequences,
     validate_many_only_manifest,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step import (
-    ManyOnlyFinalizeCreationContextStep,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import (
     MeldExecutionError,
@@ -56,10 +42,6 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
     SpellSpaceScopeError,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-
-# Null model stand-in for the bridged override-runtime builder: it only reads
-# `graph_shape` when no explicit path registry is supplied.
-_NULL_MODEL = SimpleNamespace(graph_shape=None)
 
 
 class ManyOnlyHydratedExecutors(Cleanable):
@@ -377,41 +359,3 @@ def _resolve_spell_lookup(
             )
         spell_lookup[spell_id] = resolved_spell
     return spell_lookup
-
-
-def _resolve_live_path_registry(spell: Any) -> Any:
-    """
-    Return the live phase-5 path registry for override specialization.
-    """
-    artifact = spell._compiler_artifact
-    if artifact is None:
-        raise RuntimeError(
-            "Spell has no compiler artifact for manifest hydration."
-        )
-    root_blueprint = artifact._root_blueprint_phase5
-    if root_blueprint is None:
-        raise RuntimeError(
-            "Manifest hydration requires a live phase-5 root blueprint "
-            f"(spell_id={spell.spell_id})."
-        )
-    return root_blueprint.path_registry
-
-
-def _deserialize_targets_by_spec(
-        serialized_targets_by_spec: Dict[str, Any],
-) -> Dict[str, Tuple[SpellOverrideTargetRef, ...]]:
-    """
-    Rebuild processor override-target rows from serialized tuples.
-    """
-    rebuilt: Dict[str, Tuple[SpellOverrideTargetRef, ...]] = {}
-    for spec_key, target_rows in serialized_targets_by_spec.items():
-        rebuilt[spec_key] = tuple(
-            SpellOverrideTargetRef(
-                node_id=target_row[0],
-                param_path_id=target_row[1],
-                param_name=target_row[2],
-                socket_kind_value=target_row[3],
-            )
-            for target_row in target_rows
-        )
-    return rebuilt

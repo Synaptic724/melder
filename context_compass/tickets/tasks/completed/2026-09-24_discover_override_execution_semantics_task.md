@@ -1,14 +1,18 @@
 # Task: Define effective-graph execution semantics for supplied dependencies
 
+- Completed: 2026-09-26T13:45:56Z
+- Summary: Compact/native proofs and direct-publication variant delivered. Turned in by the owner in the 2026-09-26 board cleanup (row agent updater_0);
+  no further work; artifacts retained as reference.
+
 ## Metadata
 - Task ID: TASK-2026-09-24-discover-override-execution-semantics
 - Epic: EPIC-2026-09-24-override-execution-performance
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: updater_0
 - Priority: p1
 - Created: 2026-09-24T11:16:08Z
-- Updated: 2026-09-24T22:43:55Z
+- Updated: 2026-09-26T13:45:56Z
 
 ## Objective
 Investigate a structural override design that supplies existing values before deciding which
@@ -31,6 +35,10 @@ constructors must execute. Own validation/lifetime/hook semantics and synthesis 
 - from_state: in_progress
 - to_state: review
 - transition_reason: Native lock/admission evidence and compact-store integration delivered with peer cross-review.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turned in this dormant row in the 2026-09-26 shared-board cleanup (all 13 dormant rows,
+  2026-09-26T13:45:56Z); closed by fable_0 with board and artifact sync.
 
 ## Steps / Checklist
 - [x] Preserve prior prototype and reframe results relative to normal throughput.

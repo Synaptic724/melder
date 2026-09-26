@@ -1,14 +1,18 @@
 # Task: Review upgrade_to_normal ownership, imports, and failure handling
 
+- Completed: 2026-09-26T13:45:56Z
+- Summary: Code unchanged; import purpose confirmed, broader review stopped. Turned in by the owner in the 2026-09-26 board cleanup (row agent updater_1);
+  no further work; artifacts retained as reference.
+
 ## Metadata
 - Task ID: TASK-2026-09-22-review-upgrade-to-normal-complexity
 - Story: none
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: updater_1
 - Priority: p1
 - Created: 2026-09-22T22:54:06Z
-- Updated: 2026-09-22T23:02:47Z
+- Updated: 2026-09-26T13:45:56Z
 
 ## Objective
 Review the complete lesser-to-normal graduation change and explain which imports,
@@ -44,6 +48,10 @@ MRP alignment: preserve independent root ownership with the smallest correct lif
 - from_state: in_progress
 - to_state: review
 - transition_reason: Owner instructed leaving the implementation unchanged; further review is stopped.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turned in this dormant row in the 2026-09-26 shared-board cleanup (all 13 dormant rows,
+  2026-09-26T13:45:56Z); closed by fable_0 with board and artifact sync.
 
 ## Steps / Checklist
 - [x] Read supplied excerpt and completed graduation contracts; locate affected graduation source.

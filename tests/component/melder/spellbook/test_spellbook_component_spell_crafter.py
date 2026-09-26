@@ -12,6 +12,12 @@ from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
 )
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy import (
+    SpellSiteGraphProcessorStrategy,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver import (
+    OverrideKeyResolver,
+)
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -1411,7 +1417,8 @@ def test_component_spell_crafter_builds_real_patch_maps_for_dependency_and_mutat
     Purpose:
         Validate Phase 10 materializes live override and mutation patch maps.
     Contract:
-        - A normal dependency produces an override patch target.
+        - A normal dependency is an override target (resolved through the
+          site graph since S3b-1).
         - A mutation contract socket produces a mutation patch target.
         - The live phase10 artifacts can apply runtime payloads directly.
     Returns:
@@ -1470,15 +1477,15 @@ def test_component_spell_crafter_builds_real_patch_maps_for_dependency_and_mutat
         artifact = consumer_spell._compiler_artifact
         model = artifact._spell_codegen_model
         assert model is not None
-        override_targeting = model.override_targeting_shape
-
-        assert override_targeting is not None
-        assert "*service" in override_targeting.targets_by_spec
-
-        override_targets = override_targeting.targets_by_spec["*service"]
-        assert len(override_targets) == 1
-        assert override_targets[0].param_name == "service"
-        assert override_targets[0].node_id == consumer_id
+        # Conjure no longer fits the override-targeting section (S3b-1); override keys resolve
+        # through the site graph the override runtime builds at the first override meld.
+        SpellSiteGraphProcessorStrategy().process(consumer_spell, artifact, model)
+        graph = model.site_graph_shape
+        resolution = OverrideKeyResolver.resolve(graph, ("*service",))
+        targets = resolution.targets_by_key["*service"]
+        assert [(graph.sites[site].spell_id, name) for site, name in targets] == [
+            (consumer_id, "service"),
+        ]
     finally:
         spellbook.cleanup()
 

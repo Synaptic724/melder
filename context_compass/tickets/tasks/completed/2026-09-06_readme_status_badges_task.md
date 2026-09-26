@@ -1,14 +1,18 @@
 # Task: Add useful and evidence-backed README badges
 
+- Completed: 2026-09-26T13:45:56Z
+- Summary: Approved tagline, badges and current asset proofs. Turned in by the owner in the 2026-09-26 board cleanup (row agent codex_1);
+  no further work; artifacts retained as reference.
+
 ## Metadata
 - Task ID: TASK-2026-09-06-readme-status-badges
 - Story: none (owner-requested README refinement)
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: codex_1
 - Priority: p2
 - Created: 2026-09-06T14:28:14Z
-- Updated: 2026-09-06T15:38:07Z
+- Updated: 2026-09-26T13:45:56Z
 
 ## Objective
 Add useful README badges and establish an honest source for the requested coverage badge.
@@ -30,6 +34,10 @@ Add useful README badges and establish an honest source for the requested covera
 - from_state: in_progress
 - to_state: review
 - transition_reason: Approved tagline is applied; generated corpus proofs and diff checks pass.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turned in this dormant row in the 2026-09-26 shared-board cleanup (all 13 dormant rows,
+  2026-09-26T13:45:56Z); closed by fable_0 with board and artifact sync.
 
 ## Steps / Checklist
 - [x] Inspect actual workflow invocation, report outputs, and package metadata.

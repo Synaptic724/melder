@@ -1,14 +1,18 @@
 # Task: Measure normal Melder creation against constructor inputs and overrides
 
+- Completed: 2026-09-26T13:45:56Z
+- Summary: Measured 20-25% graph throughput and eager-construction evidence. Turned in by the owner in the 2026-09-26 board cleanup (row agent updater_1);
+  no further work; artifacts retained as reference.
+
 ## Metadata
 - Task ID: TASK-2026-09-24-measure-melder-creation-and-overrides
 - Epic: EPIC-2026-09-24-override-execution-performance
-- Status: review
+- Status: done
 - Owner: codex
 - Agent Name: updater_1
 - Priority: p1
 - Created: 2026-09-24T09:27:42Z
-- Updated: 2026-09-24T09:48:20Z
+- Updated: 2026-09-26T13:45:56Z
 
 ## Objective
 Create and run one reproducible Melder-only experiment comparing normal creation and override shapes.
@@ -30,6 +34,10 @@ Use the supplied benchmarks as bases and establish evidence for later optimizati
 - from_state: in_progress
 - to_state: review
 - transition_reason: Unified experiment, both mode measurements and constructor-count evidence are ready.
+- from_state: review
+- to_state: done
+- transition_reason: Owner turned in this dormant row in the 2026-09-26 shared-board cleanup (all 13 dormant rows,
+  2026-09-26T13:45:56Z); closed by fable_0 with board and artifact sync.
 
 ## Steps / Checklist
 - [x] Read relevant benchmark bases, experiment conventions and public override call paths.

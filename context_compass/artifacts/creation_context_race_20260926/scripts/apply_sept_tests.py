@@ -184,7 +184,9 @@ def test_spellspace_meld_dynamic_no_hooks_holds_one_index_ticket_through_executi
     assert gate.active_ticket_count() == 0
 
 
-def test_meld_execute_admitted_rechecks_deferred_resolution_without_holding_ticket() -> None:
+def test_meld_execute_admitted_rechecks_deferred_resolution_without_holding_ticket(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """A spell that became resolution_required while parked is resolved with no ticket held."""
     meld, creations, spellbook = _make_conduit_meld()
     context = _CreationContextStub(no_hooks_no_overrides_result="instance")
@@ -193,12 +195,14 @@ def test_meld_execute_admitted_rechecks_deferred_resolution_without_holding_tick
     spell.resolution_required = True
     seen: list[int] = []
 
-    def _resolve_deferred(target: Any) -> None:
+    def _resolve_deferred(meld_self: Any, target: Any) -> None:
         """Stand in for the deferred 8-11 path and record the ticket count it sees."""
+        _ = meld_self
         seen.append(gate.active_ticket_count())
         target.resolution_required = False
 
-    meld._ensure_runtime_resolution_ready = _resolve_deferred
+    # Patched on the class: ConduitMeld uses slots.
+    monkeypatch.setattr(ConduitMeld, "_ensure_runtime_resolution_ready", _resolve_deferred)
     assert meld._execute_admitted(spell, gate, None, False) == "instance"
     assert seen == [0]
     assert gate.active_ticket_count() == 0
@@ -460,24 +464,34 @@ def test_enter_waits_for_admitted_tickets_then_freezes_and_clears_failure() -> N
     gate = spell._creation_gate
     gate.admit_ticket()
     entered = Event()
-    window = CreationContextRebuild((spell,))
+    leave = Event()
+    errors: list[BaseException] = []
 
-    def _enter() -> None:
-        """Enter the window on a worker thread."""
-        window.__enter__()
-        entered.set()
+    def _produce() -> None:
+        """Enter and leave the window on one worker thread, as producers do."""
+        try:
+            with CreationContextRebuild((spell,)):
+                entered.set()
+                if not leave.wait(timeout=5.0):
+                    raise TimeoutError("test did not let the producer leave")
+        except BaseException as error:
+            errors.append(error)
 
-    producer = Thread(target=_enter, name="producer")
+    producer = Thread(target=_produce, name="producer")
     producer.start()
     try:
+        # The admitted ticket keeps the producer draining; the gate is frozen.
         assert not entered.wait(timeout=0.2)
         assert gate.enabled is False
     finally:
         gate.unregister_ticket()
-    producer.join(timeout=5.0)
-    assert entered.is_set()
+    assert entered.wait(timeout=5.0)
     assert spell._creation_context_failure is None
-    window.__exit__(None, None, None)
+    assert gate.enabled is False
+    leave.set()
+    producer.join(timeout=5.0)
+    assert not producer.is_alive()
+    assert errors == []
     assert gate.enabled is True
 
 
@@ -566,12 +580,16 @@ def test_drain_failure_on_entry_unwinds_and_propagates(monkeypatch: pytest.Monke
     spell = _SpellStub("a")
     gate = spell._creation_gate
 
-    def _failing_drain(timeout: float = 30.0, interval: float = 0.1) -> None:
-        """Simulate a drain timeout."""
-        _ = (timeout, interval)
+    def _failing_drain(
+            target: CreationGate,
+            timeout: float = 30.0,
+            interval: float = 0.1,
+    ) -> None:
+        """Simulate a drain timeout (patched on the class: CreationGate uses slots)."""
+        _ = (target, timeout, interval)
         raise RuntimeError("drain timed out")
 
-    monkeypatch.setattr(gate, "close_and_drain", _failing_drain)
+    monkeypatch.setattr(CreationGate, "close_and_drain", _failing_drain)
     with pytest.raises(RuntimeError, match="drain timed out"):
         with CreationContextRebuild((spell,)):
             pytest.fail("window body must not run")
@@ -669,6 +687,12 @@ def blocking_runtime() -> Iterator[tuple[Conduit, Conduit, Spell]]:
     peer = peer_book.conjure(dynamic=True, name="blocking-peer")
     try:
         owner.link(peer)
+        with peer.transaction("link", conduits=[peer, owner]):
+            peer.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
         assert isinstance(owner.meld(spell_id=spell_id), _BlockingService)
         yield owner, peer, owner_book._spells_by_id[spell_id]
     finally:
