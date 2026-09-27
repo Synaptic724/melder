@@ -2,12 +2,15 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-07-19-ux-aix-advanced
-- Status: done_pending_owner_run
+- Status: done
 - Owner: cowork
 - Agent Name: examples_0
 - Priority: p2
 - Created: 2026-07-19T12:52:00Z
-- Updated: 2026-08-02T15:43:51Z
+- Updated: 2026-09-27T10:46:47Z
+- Completed: 2026-09-27T10:46:47Z
+- Summary: Turned in by owner directive: arcs A-E authored (18 sequential lessons, 64 advanced probe rows,
+  public-root coverage 48/63); last measured signal 61/64 advanced - never re-run after the final rewrites.
 
 ## Objective
 The isolation + AR tier: configuration surfaces fenced out of intermediate
@@ -617,6 +620,14 @@ crystallizer save/load, and synthetic modules. See the tier scope note below.
   (enum-to-string conversion, then the renumber). Last measured result was
   61/64 advanced and 26/27 intermediate.
 
+## State Transition Event - 2026-09-27T10:46:47Z
+- from_state: done_pending_owner_run
+- to_state: done
+- transition_reason: Owner directive 2026-09-27 ("close this and turn it in ... and then we'll focus on something
+  new"). The tier is turned in as authored; no owner-run green after the enum-to-string and
+  renumber rewrites is recorded, and the open rulings (Scan, SpellExaminer, the frame_name defect)
+  stay as notes for whoever reopens the examples lane.
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the
@@ -660,3 +671,5 @@ to expert, so someone has to rule on whether advanced gets the simple
 
 `ConduitCloud` is NOT part of this tier as of 2026-08-02 - it belongs to
 intermediate as dynamic-mode basics.
+STATE 2026-09-27T10:46:47Z: DONE. Closed and turned in by the owner; moved to completed/. Open rulings remain recorded
+above.

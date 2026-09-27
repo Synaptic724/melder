@@ -3256,11 +3256,11 @@ def test_command_system_execute_target_method_can_force_strong_result_binding() 
     assert workstation.get("status", store="attributes") == "ops-done"
 
 
-def test_capability_command_system_can_get_conduit_by_id_with_lesser_fallback(
+def test_capability_command_system_get_conduit_by_id_resolves_lessers_through_aether(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify capability conduit lookup falls back to lesser-conduit lineage traversal when root lookup misses.
+    Verify capability conduit lookup returns a lesser through Aether's live lookup (roots, then root wards).
 
     Returns:
         None.
@@ -3280,15 +3280,18 @@ def test_capability_command_system_can_get_conduit_by_id_with_lesser_fallback(
             _get_lesser_conduit=lambda conduit_id: sentinel,
         )
     )
+    frame = SimpleNamespace(_conduits={"root-1": root_conduit})
+
+    def live_lookup(conduit_id: str, frame_name: str) -> object:
+        """Run Aether's live walk over the stub frame, raising like Aether.get_conduit_by_id on a miss."""
+        conduit = Aether._find_live_conduit(frame, conduit_id)
+        if conduit is None:
+            raise ValueError(f"Conduit with id '{conduit_id}' not found in frame '{frame_name}'.")
+        return conduit
+
     aether_stub = SimpleNamespace(
-        get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(
-            ValueError("missing")
-        ),
-        _aetheric_frames={
-            "ops": SimpleNamespace(
-                _conduits={"root-1": root_conduit},
-            )
-        },
+        get_conduit_by_id=live_lookup,
+        _aetheric_frames={"ops": frame},
     )
     monkeypatch.setattr(
         type(space.command_system),
@@ -3582,7 +3585,7 @@ def test_capability_command_system_denies_conduit_object_by_id_when_conduit_acl_
     monkeypatch.setattr(
         type(space.command_system),
         "_aether",
-        SimpleNamespace(_get_conduit_by_id=lambda conduit_id, frame_name: object()),
+        SimpleNamespace(get_conduit_by_id=lambda conduit_id, frame_name: object()),
     )
 
     with pytest.raises(
@@ -3810,7 +3813,7 @@ def test_static_room_returns_live_spell_runtime_object_by_index_id(
     )
     monkeypatch.setattr(
         type(type(space.command_system)._aether),
-        "_get_conduit_by_id",
+        "get_root_conduit_by_id",
         lambda self, conduit_id, frame_name: owner_conduit,
     )
 
@@ -4245,7 +4248,7 @@ def test_static_room_denies_many_and_spellspace_spell_runtime_object_access(
         type(space.command_system),
         "_aether",
         SimpleNamespace(
-            _get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+            get_root_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
         ),
     )
 
@@ -4326,7 +4329,7 @@ def test_static_command_system_reports_spell_status_for_live_spell() -> None:
         )
     )
     space.command_system._aether = SimpleNamespace(
-        _get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+        get_root_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
     )
 
     status = space.command_system.describe_spell_status_by_index_id(
@@ -4401,7 +4404,7 @@ def test_static_command_system_reports_spell_status_for_unsupported_spell() -> N
         has_live_creation=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: True
     )
     space.command_system._aether = SimpleNamespace(
-        _get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+        get_root_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
     )
 
     status = space.command_system.describe_spell_status_by_source_id(
@@ -4482,7 +4485,7 @@ def test_static_room_denies_spell_runtime_object_when_not_live(
     )
     monkeypatch.setattr(
         type(type(space.command_system)._aether),
-        "_get_conduit_by_id",
+        "get_root_conduit_by_id",
         lambda self, conduit_id, frame_name: owner_conduit,
     )
 

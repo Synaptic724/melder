@@ -632,9 +632,9 @@ class FakeAether:
         member_ids.update(owner_id for owner_id in cluster.shared_spells.keys() if owner_id)
         return list(member_ids)
 
-    def list_conduit_ids(self, frame_name: str) -> List[str]:
+    def list_root_conduit_ids(self, frame_name: str) -> List[str]:
         """
-        Return registered conduit ids for the requested frame.
+        Return registered root conduit ids for the requested frame.
 
         Args:
             frame_name: Frame name to inspect.
@@ -644,9 +644,9 @@ class FakeAether:
         frame = self._get_frame(frame_name)
         return list(frame._conduits.keys())
 
-    def get_conduit_by_id(self, conduit_id: str, frame_name: str) -> Any:
+    def get_root_conduit_by_id(self, conduit_id: str, frame_name: str) -> Any:
         """
-        Return a conduit by id from the requested frame.
+        Return a root conduit by id from the requested frame.
 
         Args:
             conduit_id: Conduit id to resolve.

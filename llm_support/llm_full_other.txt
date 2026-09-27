@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 25e05422fc495181282798beea55e220185212f8ed5331a8d237bbc37d73cb5c
-FILE COUNT: 375
+SOURCE FINGERPRINT: f3aee9364c46e7046076e12cc26bd0b25a4e65a5d8c75d8be1b708966144c312
+FILE COUNT: 378
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -4569,7 +4569,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: a57cf2af2457ecc58524e6f65341e00f8966cc54a0539bc90672f78297c3463d
+CONTENT SHA256: 9f575513683268ec5966c760de72f122fd0d2bcd4432fa1efdf5e83204d41721
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -4602,6 +4602,7 @@ SOURCE ENCODING: utf-8
 
 **[Browse Examples](https://melder.readthedocs.io/en/latest/examples/index.html)**
 · **[Full Table of Contents](https://melder.readthedocs.io/en/latest/contents.html)**
+· **[Roadmap](#roadmap)**
 
 Beginner → Intermediate → Advanced → Expert
 
@@ -4819,6 +4820,24 @@ and be refused — **before a single object is constructed.**
 
 That's the difference between an AI that can *call* your system and an AI that
 can safely *evolve* it.
+
+---
+
+## Roadmap
+
+The planned path from API stabilization to a supported runtime and the Mojo migration.
+
+<a href="https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png">
+  <picture>
+    <source srcset="roadmap/melder-roadmap-art.png">
+    <img src="https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png"
+         alt="Melder roadmap: API stabilization, a supported 1.0 runtime, and staged Mojo migration through 2.0"
+         width="100%">
+  </picture>
+</a>
+
+[Read the detailed roadmap](https://github.com/Synaptic724/melder/blob/prod/roadmap/melder-roadmap-expanded.md)
+· [Open the image at full size](https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png)
 
 ---
 
@@ -48539,7 +48558,7 @@ END FILE: benchmarks/testing_other_di/test_fast_switch_three_mode_orchestrated_p
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_gauntlet_melder_lane_parity.py
-CONTENT SHA256: 5d2a6fe3ed8ec96972e9f30a1f0c28f07fccd7059e140af7e367f8ed8d015d64
+CONTENT SHA256: 41bf61c206f8c45f0c37f2390ea48f5d94f31c2be63cdc50aa576bf3fadae823
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -48789,7 +48808,7 @@ def _live_spells() -> List[Tuple[Any, ...]]:
     """
     from melder.aether.aether import Aether
 
-    conduit = Aether().get_conduit_by_name(_LaneNames.CONDUIT, _LaneNames.FRAME)
+    conduit = Aether().get_root_conduit_by_name(_LaneNames.CONDUIT, _LaneNames.FRAME)
     return sorted(
         (
             row["spell_name"],
@@ -56728,7 +56747,7 @@ END FILE: benchmarks/testing_other_di/test_overrides_all.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py
-CONTENT SHA256: 413ae6045e3d9f45c81aef773fb7295c3795a6d043d8f281a0c6f447053c8c4b
+CONTENT SHA256: d3827be60c768eef6c53ed706f0a2b91f91b27fa5e109db272daa8f010722ddf
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -56753,8 +56772,11 @@ Default runtime:
 Scenarios:
     fastapi_steady
         Saturated 10-thread request handling. Each worker repeatedly executes the
-        request-scope workload. This models a no-GIL FastAPI-like service using
-        threads instead of processes.
+        request-scope workload. It models the THREAD PATTERN of a no-GIL
+        FastAPI-like service (threads instead of processes); there is no HTTP,
+        no framework integration and no I/O - it is a persistent, threaded
+        scope-and-object-graph benchmark, and `app_work_ns` is the only
+        simulated application work.
 
     bursty_app
         Long-running worker app with synchronized active/idle bursts. Active
@@ -56780,9 +56802,13 @@ Degradation mode:
     Setting PERSISTENT_GAUNTLET_BUCKET_SECONDS > 0 turns on time-bucketed
     reporting: per-bucket cycles/s, sampled p50/p95/p99/max, GC collection
     counts, and GC pause totals (gc.callbacks based), plus a first-vs-last
-    bucket drift summary. This is the long-horizon instrument: GC-dependent
-    containers drift as heap pressure accumulates while deterministic
-    cleanup stays flat. The 300s summary alone averages that story away.
+    bucket drift summary. This is the long-horizon instrument. Hypothesis it
+    can confirm or reject: a runtime whose scope garbage is left to the
+    cyclic GC drifts as heap pressure accumulates, while deterministic
+    cleanup stays flat. Drift alone does not name a cause - contention,
+    scheduling, allocator behavior or the harness's own retained samples
+    can drift too - so read the gc lines next to the throughput lines. The
+    300s summary alone averages any drift away.
 
     Recommended 20-minute degradation run:
         PERSISTENT_GAUNTLET_SECONDS=1200 \
@@ -56790,10 +56816,35 @@ Degradation mode:
         pytest benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py -s
 
     Default output is unchanged when the bucket env is unset/0.
+
+Instrumentation modes:
+    PERSISTENT_GAUNTLET_INSTRUMENTATION=full (default) keeps the per-phase
+    timers and sampled percentiles; `minimal` counts cycles and elapsed time
+    only (about 1 us of harness accounting per cycle less), so the two modes
+    can be compared to bound the harness's own cost. The adapters' internal
+    clock reads are part of the measured call in both modes.
+
+Reading the numbers:
+    - cycles/s_wall is the headline: completed cycles over measured wall time.
+    - worker_active is elapsed time inside cycles summed over workers,
+      including time blocked or descheduled; it is not CPU time.
+    - objects_min counts are the declared graph's per-cycle minimums
+      (verified untimed by the scope-semantics phase and constructor counts),
+      not observed allocations; objects/s_request_active_min uses the
+      objects built inside the request phase only.
+    - Latencies are completion times of cycles in a saturated loop, not
+      client-observed latency under an external arrival rate: a stalled
+      worker simply starts fewer cycles.
+    - Setup time on the first run of a library in a process includes its
+      imports (the config line says whether imports were cold).
+    - Each (library, scenario) is one observation in one process; for
+      publication, repeat in fresh processes and vary the order.
 """
 
 import gc
+import importlib.metadata
 import os
+import platform
 import random
 import statistics
 import sys
@@ -56825,6 +56876,8 @@ import test_real_world_gauntlet as base
 
 _ONE_BILLION = 1_000_000_000
 _VARIANT_COUNT = getattr(base, "_VARIANT_COUNT", 3)
+_STARTUP_TIMEOUT_S = 60.0
+_JOIN_TIMEOUT_S = 120.0
 
 
 def _env_int(name: str, default: int) -> int:
@@ -56884,6 +56937,12 @@ class PersistentConfig:
     burst_worker_a_weight: int
     burst_worker_b_weight: int
     bucket_s: float = 0.0
+    instrumentation: str = "full"
+
+    @property
+    def minimal(self) -> bool:
+        """True when only cycle counts and elapsed time are recorded per cycle."""
+        return self.instrumentation == "minimal"
 
     @property
     def bucket_ns(self) -> int:
@@ -56905,7 +56964,10 @@ class PersistentConfig:
             burst_worker_a_weight=max(0, _env_int("PERSISTENT_BURST_WORKER_A_WEIGHT", 25)),
             burst_worker_b_weight=max(0, _env_int("PERSISTENT_BURST_WORKER_B_WEIGHT", 15)),
             bucket_s=max(0.0, _env_float("PERSISTENT_GAUNTLET_BUCKET_SECONDS", 0.0)),
+            instrumentation=(os.getenv("PERSISTENT_GAUNTLET_INSTRUMENTATION") or "full").strip().lower(),
         )
+        if cfg.instrumentation not in {"full", "minimal"}:
+            raise AssertionError("PERSISTENT_GAUNTLET_INSTRUMENTATION must be full or minimal")
         if cfg.duration_s <= 0:
             raise AssertionError("PERSISTENT_GAUNTLET_SECONDS must be > 0")
         if cfg.warmup_s < 0:
@@ -57090,6 +57152,7 @@ class LaneStats:
     name: str
     cycles: int = 0
     objects_min: int = 0
+    inner_objects_min: int = 0
     variant_counts: list[int] = field(default_factory=lambda: [0] * _VARIANT_COUNT)
     cycle_timer: SampledTimer = field(default_factory=SampledTimer)
     outer_create: SampledTimer = field(default_factory=SampledTimer)
@@ -57099,9 +57162,19 @@ class LaneStats:
     request_cleanup: SampledTimer = field(default_factory=SampledTimer)
     request_total: SampledTimer = field(default_factory=SampledTimer)
 
+    def add_cycle_minimal(self, variant: int, cycle_ns: int) -> None:
+        """Minimal instrumentation: count the cycle and its elapsed time, nothing else."""
+        self.cycles += 1
+        self.objects_min += base._lane_objects_per_cycle(self.name)
+        self.inner_objects_min += base._lane_inner_objects_per_cycle(self.name)
+        self.variant_counts[variant] += 1
+        self.cycle_timer.total_ns += cycle_ns
+        self.cycle_timer.count += 1
+
     def add_cycle(self, variant: int, cycle_ns: int, metrics: Any, *, take_sample: bool) -> None:
         self.cycles += 1
         self.objects_min += base._lane_objects_per_cycle(self.name)
+        self.inner_objects_min += base._lane_inner_objects_per_cycle(self.name)
         self.variant_counts[variant] += 1
         self.cycle_timer.add(cycle_ns, take_sample=take_sample)
         self.outer_create.add(metrics.outer_create_ns, take_sample=take_sample)
@@ -57114,6 +57187,7 @@ class LaneStats:
     def merge(self, other: "LaneStats") -> None:
         self.cycles += other.cycles
         self.objects_min += other.objects_min
+        self.inner_objects_min += other.inner_objects_min
         for i, value in enumerate(other.variant_counts):
             self.variant_counts[i] += value
         self.cycle_timer.merge(other.cycle_timer)
@@ -57163,6 +57237,11 @@ class PersistentResult:
     lib: str
     cfg: PersistentConfig
     gil_status: str
+    gil_status_at_setup: str
+    semantics_checks: int
+    environment: str
+    imports_cold: bool
+    cleanup_timed: bool
     setup_ns: int
     warmup_ns: int
     measured_ns: int
@@ -57225,7 +57304,10 @@ def _run_one_cycle(
     cycle_ns = time.perf_counter_ns() - t0
     if record:
         stats.active_ns += cycle_ns
-        stats.lanes[lane_name].add_cycle(variant, cycle_ns, metrics, take_sample=take_sample)
+        if cfg.minimal:
+            stats.lanes[lane_name].add_cycle_minimal(variant, cycle_ns)
+        else:
+            stats.lanes[lane_name].add_cycle(variant, cycle_ns, metrics, take_sample=take_sample)
         if bucket_ns > 0:
             bucket_ix = (t0 - measure_start_ns) // bucket_ns
             if bucket_ix >= 0:
@@ -57250,9 +57332,7 @@ def _worker_loop(
     ready: threading.Barrier,
     start_event: threading.Event,
     stop_event: threading.Event,
-    warmup_deadline_ns: int,
-    measure_start_ns: int,
-    end_ns: int,
+    deadlines: dict[str, int],
     out_stats: list[WorkerStats],
     errors: list[BaseException],
 ) -> None:
@@ -57263,8 +57343,12 @@ def _worker_loop(
     local_counter = 0
 
     try:
-        ready.wait()
+        ready.wait(timeout=_STARTUP_TIMEOUT_S)
         start_event.wait()
+        # Published by the main thread AFTER every worker reached the barrier,
+        # so thread start-up never eats into the warmup or the measurement.
+        measure_start_ns = deadlines["measure_start_ns"]
+        end_ns = deadlines["end_ns"]
         while not stop_event.is_set():
             now_ns = time.perf_counter_ns()
             if now_ns >= end_ns:
@@ -57305,33 +57389,59 @@ def _worker_loop(
         out_stats[worker_ix] = stats
 
 
+def _library_version(distribution: str) -> str:
+    try:
+        return importlib.metadata.version(distribution)
+    except importlib.metadata.PackageNotFoundError:
+        return "not-installed"
+
+
+def _environment_line() -> str:
+    """
+    One value-only line naming what the numbers were taken on: interpreter, cores, library versions, mapping.
+    """
+    return (
+        f"python={platform.python_version()} ({platform.python_implementation()}, "
+        f"free_threading={'yes' if sysconfig_free_threading() else 'no'}), "
+        f"cpu_count={os.cpu_count()}, platform={platform.system()}-{platform.machine()}, "
+        f"melder={_library_version('melder')}, dependency-injector={_library_version('dependency-injector')}, "
+        f"dishka={_library_version('dishka')}, dishka_layer_scope={base._dishka_layer_scope_name()}"
+    )
+
+
+def sysconfig_free_threading() -> bool:
+    import sysconfig
+    return bool(sysconfig.get_config_var("Py_GIL_DISABLED"))
+
+
+_LIB_IMPORT_ROOTS = {
+    "melder": "melder",
+    "dependency-injector": "dependency_injector",
+    "dishka": "dishka",
+}
+
+
 def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> PersistentResult:
+    gil_status_at_setup = _gil_status()
+    imports_cold = _LIB_IMPORT_ROOTS.get(lib, lib) not in sys.modules
     setup_t0 = time.perf_counter_ns()
     ops = base._build_ops(lib)
     try:
         ops.spawn_singletons()
         ops.bootstrap_fanout()
         setup_ns = time.perf_counter_ns() - setup_t0
+        # Untimed correctness phase: the declared lifetimes must hold before a
+        # single timed cycle runs (see base.verify_scope_semantics).
+        semantics_checks = base.verify_scope_semantics(ops)
 
         ready = threading.Barrier(cfg.threads + 1)
         start_event = threading.Event()
         stop_event = threading.Event()
         errors: list[BaseException] = []
         worker_stats: list[WorkerStats] = [WorkerStats() for _ in range(cfg.threads)]
-
-        now_ns = time.perf_counter_ns()
-        warmup_deadline_ns = now_ns + int(cfg.warmup_s * _ONE_BILLION)
-        measure_start_ns = warmup_deadline_ns
-        end_ns = measure_start_ns + int(cfg.duration_s * _ONE_BILLION)
-
-        gc_monitor: GcBucketMonitor | None = None
-        if cfg.bucket_ns > 0:
-            gc_monitor = GcBucketMonitor(
-                measure_start_ns=measure_start_ns,
-                end_ns=end_ns,
-                bucket_ns=cfg.bucket_ns,
-            )
-            gc_monitor.install()
+        # Filled in AFTER the readiness barrier and before the start event, so
+        # the clocks start when the workers can actually run.
+        deadlines: dict[str, int] = {}
 
         threads: list[threading.Thread] = []
         for worker_ix in range(cfg.threads):
@@ -57344,9 +57454,7 @@ def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> Pe
                     "ready": ready,
                     "start_event": start_event,
                     "stop_event": stop_event,
-                    "warmup_deadline_ns": warmup_deadline_ns,
-                    "measure_start_ns": measure_start_ns,
-                    "end_ns": end_ns,
+                    "deadlines": deadlines,
                     "out_stats": worker_stats,
                     "errors": errors,
                 },
@@ -57356,15 +57464,29 @@ def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> Pe
             threads.append(thread)
             thread.start()
 
-        ready.wait()
+        ready.wait(timeout=_STARTUP_TIMEOUT_S)
         actual_start_ns = time.perf_counter_ns()
+        measure_start_ns = actual_start_ns + int(cfg.warmup_s * _ONE_BILLION)
+        end_ns = measure_start_ns + int(cfg.duration_s * _ONE_BILLION)
+        deadlines["measure_start_ns"] = measure_start_ns
+        deadlines["end_ns"] = end_ns
+
+        gc_monitor: GcBucketMonitor | None = None
+        if cfg.bucket_ns > 0:
+            gc_monitor = GcBucketMonitor(
+                measure_start_ns=measure_start_ns,
+                end_ns=end_ns,
+                bucket_ns=cfg.bucket_ns,
+            )
+            gc_monitor.install()
+
         start_event.set()
         sleep_seconds = max(0.0, (end_ns - time.perf_counter_ns()) / _ONE_BILLION)
         if sleep_seconds > 0:
             time.sleep(sleep_seconds)
         stop_event.set()
         for thread in threads:
-            thread.join()
+            thread.join(timeout=_JOIN_TIMEOUT_S)
         actual_end_ns = time.perf_counter_ns()
 
         if gc_monitor is not None:
@@ -57372,10 +57494,26 @@ def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> Pe
 
         if errors:
             raise errors[0]
+        stuck = [thread.name for thread in threads if thread.is_alive()]
+        if stuck:
+            raise AssertionError(f"[{lib}] workers did not stop within {_JOIN_TIMEOUT_S:.0f}s: {stuck}")
 
         merged = WorkerStats()
         for stats in worker_stats:
             merged.merge(stats)
+
+        # Validation: the run must have measured real work on every worker.
+        total_cycles = sum(lane.cycles for lane in merged.lanes.values())
+        if total_cycles <= 0:
+            raise AssertionError(f"[{lib}] no cycle was recorded in the measured window")
+        idle_workers = [
+            index for index, stats in enumerate(worker_stats)
+            if sum(lane.cycles for lane in stats.lanes.values()) <= 0
+        ]
+        if idle_workers:
+            raise AssertionError(f"[{lib}] workers recorded no cycles: {idle_workers}")
+        if actual_end_ns - measure_start_ns < int(0.9 * cfg.duration_s * _ONE_BILLION):
+            raise AssertionError(f"[{lib}] measured window shorter than 90% of the configured duration")
 
         cleanup_t0 = time.perf_counter_ns()
         ops.cleanup()
@@ -57386,6 +57524,11 @@ def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> Pe
             lib=lib,
             cfg=cfg,
             gil_status=_gil_status(),
+            gil_status_at_setup=gil_status_at_setup,
+            semantics_checks=semantics_checks,
+            environment=_environment_line(),
+            imports_cold=imports_cold,
+            cleanup_timed=ops.cleanup_timed,
             setup_ns=setup_ns,
             warmup_ns=max(0, measure_start_ns - actual_start_ns),
             measured_ns=max(0, actual_end_ns - measure_start_ns),
@@ -57418,10 +57561,23 @@ def _print_result(result: PersistentResult) -> None:
 
     print(
         f"[{result.lib}] persistent config: "
-        f"scenario={cfg.scenario}, gil={result.gil_status}, duration={cfg.duration_s:.1f}s, "
+        f"scenario={cfg.scenario}, gil={result.gil_status} (at setup: {result.gil_status_at_setup}), "
+        f"duration={cfg.duration_s:.1f}s, "
         f"warmup={cfg.warmup_s:.1f}s, threads={cfg.threads}, sample_every={cfg.sample_every}, "
-        f"app_work_ns={cfg.app_work_ns}, setup={_ms(result.setup_ns):.3f}ms, "
+        f"app_work_ns={cfg.app_work_ns}, instrumentation={cfg.instrumentation}, "
+        f"setup={_ms(result.setup_ns):.3f}ms (cold imports: {'yes' if result.imports_cold else 'no'}), "
         f"cleanup={_ms(result.cleanup_ns):.3f}ms"
+    )
+    print(f"[{result.lib}] persistent environment | {result.environment}")
+    print(
+        f"[{result.lib}] persistent notes | worker_active is elapsed time inside cycles (not CPU time); "
+        f"objects_min counts are the declared graph's per-cycle minimums (verified untimed), not observed "
+        f"allocations; latencies are saturated-loop completion times, not client-observed latency"
+    )
+    print(
+        f"[{result.lib}] scope semantics | verified untimed before the timed threads: "
+        f"{result.semantics_checks} assertions passed (sessions cached per outer scope, transient layer chain "
+        f"fresh per session, request objects request-local, app singletons shared, dependency identities)"
     )
     print(
         f"[{result.lib}] persistent summary | "
@@ -57438,22 +57594,43 @@ def _print_result(result: PersistentResult) -> None:
         if lane.cycles <= 0:
             continue
         lane_cycle_wall_s = measured_s
+        if cfg.minimal:
+            print(
+                f"[{result.lib}] persistent lane={lane_name} | "
+                f"cycles={lane.cycles:,}, objects_min={lane.objects_min:,}, variants={tuple(lane.variant_counts)}, "
+                f"cycles/s_wall={(lane.cycles / lane_cycle_wall_s) if lane_cycle_wall_s > 0 else 0.0:,.0f}, "
+                f"objects/s_wall_min={(lane.objects_min / lane_cycle_wall_s) if lane_cycle_wall_s > 0 else 0.0:,.0f}, "
+                f"cycle_avg={_ms(lane.cycle_timer.avg_ns()):.3f}ms (minimal instrumentation: no phase timers)"
+            )
+            continue
         lane_request_active_s = lane.request_total.total_ns / _ONE_BILLION if lane.request_total.total_ns > 0 else 0.0
+        # The inner-phase rate uses the objects built INSIDE the request phase
+        # (57/23/18 per cycle), never the whole-cycle minimum (63/25/20).
         print(
             f"[{result.lib}] persistent lane={lane_name} | "
             f"cycles={lane.cycles:,}, objects_min={lane.objects_min:,}, variants={tuple(lane.variant_counts)}, "
             f"cycles/s_wall={(lane.cycles / lane_cycle_wall_s) if lane_cycle_wall_s > 0 else 0.0:,.0f}, "
             f"objects/s_wall_min={(lane.objects_min / lane_cycle_wall_s) if lane_cycle_wall_s > 0 else 0.0:,.0f}, "
             f"cycles/s_request_active={(lane.cycles / lane_request_active_s) if lane_request_active_s > 0 else 0.0:,.0f}, "
-            f"objects/s_request_active_min={(lane.objects_min / lane_request_active_s) if lane_request_active_s > 0 else 0.0:,.0f}"
+            f"objects/s_request_active_min={(lane.inner_objects_min / lane_request_active_s) if lane_request_active_s > 0 else 0.0:,.0f} "
+            f"(inner objects only)"
         )
         print(f"[{result.lib}] lane={lane_name} cycle_total | {lane.cycle_timer.sampled_summary()}")
         print(f"[{result.lib}] lane={lane_name} outer_total | {lane.outer_total.sampled_summary()}")
         print(f"[{result.lib}] lane={lane_name} request_total | {lane.request_total.sampled_summary()}")
         print(f"[{result.lib}] lane={lane_name} outer_create | {lane.outer_create.sampled_summary()}")
-        print(f"[{result.lib}] lane={lane_name} outer_cleanup | {lane.outer_cleanup.sampled_summary()}")
+        if result.cleanup_timed:
+            print(f"[{result.lib}] lane={lane_name} outer_cleanup | {lane.outer_cleanup.sampled_summary()}")
+        else:
+            print(
+                f"[{result.lib}] lane={lane_name} outer_cleanup | not separately measured: the adapter has no "
+                f"scope teardown (scope garbage is left to the GC), so these fields are absent, not zero-cost"
+            )
         print(f"[{result.lib}] lane={lane_name} request_create | {lane.request_create.sampled_summary()}")
-        print(f"[{result.lib}] lane={lane_name} request_cleanup | {lane.request_cleanup.sampled_summary()}")
+        if result.cleanup_timed:
+            print(f"[{result.lib}] lane={lane_name} request_cleanup | {lane.request_cleanup.sampled_summary()}")
+        else:
+            print(f"[{result.lib}] lane={lane_name} request_cleanup | not separately measured (see outer_cleanup)")
 
 
 def _gc_gen_summary(bucket: GcBucketStats) -> str:
@@ -57478,8 +57655,9 @@ def _print_degradation(result: PersistentResult) -> None:
           when the measured window does not fill it.
         - Drift compares the FIRST complete bucket against the LAST complete
           bucket: cycles/s, sampled p99, and GC pause per bucket. Flat lines
-          mean the runtime does not degrade with heap age; drifting lines are
-          the GC-pressure signature this mode exists to expose.
+          mean throughput did not change over the window; drifting lines are
+          a prompt to read the gc columns beside them - GC pressure is the
+          hypothesis this mode tests, not a conclusion the drift proves.
     """
     cfg = result.cfg
     if cfg.bucket_ns <= 0 or not result.worker_stats.buckets:
@@ -57558,8 +57736,24 @@ def _print_degradation(result: PersistentResult) -> None:
         )
 
 
-_LIBS = _env_list("PERSISTENT_GAUNTLET_LIBS", ("melder","dependency-injector", "dishka"))
+_LIBS = _env_list("PERSISTENT_GAUNTLET_LIBS", ("dishka", "melder","dependency-injector"))
 _SCENARIOS = _env_list("PERSISTENT_GAUNTLET_SCENARIOS", ("fastapi_steady", "bursty_app"))
+
+
+@pytest.mark.parametrize("lib", _LIBS)
+def test_scope_semantics_parity(lib: str) -> None:
+    """
+    Untimed: every adapter delivers the declared lifetimes (the same checks the benchmark runs before timing).
+    """
+    ops = base._build_ops(lib)
+    try:
+        ops.spawn_singletons()
+        ops.bootstrap_fanout()
+        checks = base.verify_scope_semantics(ops)
+        print(f"[{lib}] scope semantics parity | {checks} assertions passed")
+        assert checks > 0
+    finally:
+        ops.cleanup()
 
 
 @pytest.mark.timeout(720000)
@@ -57575,7 +57769,7 @@ END FILE: benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_real_world_gauntlet.py
-CONTENT SHA256: 610c991293adcb84af0d26cde72696e9338d5a7e5d1f17b630fc3d464ce3cafc
+CONTENT SHA256: 93d3a3020d2d3be36df0e158c81df092861bbf5180069ac1f9ec8c7845e2a09b
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -58007,6 +58201,14 @@ _REQUEST_OBJECTS_PER_ROOT = 63
 _REQUEST_SCOPE_RUNS_DEFAULT = 10
 _WORKER_A_OBJECTS_PER_ROOT = 25
 _WORKER_B_OBJECTS_PER_ROOT = 20
+# Objects built INSIDE the request phase of one cycle (variant 0): the whole-cycle
+# minimum minus the outer-scope objects (session + its transient helper chain).
+# request: 63 - (RequestSession, Layer4..Layer1, BootstrapAObject) = 57
+# worker_a: 25 - (WorkerASession, BootstrapBObject) = 23
+# worker_b: 20 - (WorkerBSession, BootstrapCObject) = 18
+_REQUEST_INNER_OBJECTS_PER_ROOT = 57
+_WORKER_A_INNER_OBJECTS_PER_ROOT = 23
+_WORKER_B_INNER_OBJECTS_PER_ROOT = 18
 _WORKER_A_JOBS_DEFAULT = 25
 _WORKER_B_JOBS_DEFAULT = 30
 _BOOTSTRAP_FANOUT_PER_SINGLETON = 5
@@ -58059,6 +58261,14 @@ class _RuntimeOps:
     worker_a_scope_cycle: Callable[[int], _ScopeCycleMetrics]
     worker_b_scope_cycle: Callable[[int], _ScopeCycleMetrics]
     cleanup: Callable[[], None]
+    # Untimed: resolve the request lane's objects through two outer scopes and
+    # two requests so `verify_scope_semantics` can check identities. Never
+    # called from a timed path.
+    probe_scopes: Callable[[], dict[str, Any]] | None = None
+    # False when the adapter has no scope teardown to time: its cleanup
+    # fields are zero because nothing is measured there, not because
+    # teardown is free (dependency-injector leaves scope garbage to the GC).
+    cleanup_timed: bool = True
 
 
 @dataclass(frozen=True)
@@ -58287,6 +58497,8 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
                 root2 = _get(RequestRoot)
                 if not isinstance(root1, RequestRoot) or not isinstance(root2, RequestRoot):
                     raise AssertionError("Dependency Injector: request scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dependency Injector: request-scoped root not cached within the request")
 
         return _run_in_two_context_scopes(
             outer_cls=RequestSession,
@@ -58311,6 +58523,8 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
                 root2 = _get(WorkerAJobRoot)
                 if not isinstance(root1, WorkerAJobRoot) or not isinstance(root2, WorkerAJobRoot):
                     raise AssertionError("Dependency Injector: worker A scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dependency Injector: worker A root not cached within the request")
 
         return _run_in_two_context_scopes(
             outer_cls=WorkerASession,
@@ -58335,6 +58549,8 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
                 root2 = _get(WorkerBJobRoot)
                 if not isinstance(root1, WorkerBJobRoot) or not isinstance(root2, WorkerBJobRoot):
                     raise AssertionError("Dependency Injector: worker B scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dependency Injector: worker B root not cached within the request")
 
         return _run_in_two_context_scopes(
             outer_cls=WorkerBSession,
@@ -58350,6 +58566,29 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
                 reset()
         gc.collect()
 
+    def probe_scopes() -> dict[str, Any]:
+        probe: dict[str, Any] = {"shared": _get(AppSingletonE)}
+
+        def outer_run(tag: str) -> None:
+            probe[f"session_{tag}"] = _get(RequestSession)
+            probe[f"session_{tag}_again"] = _get(RequestSession)
+
+            def request_run() -> None:
+                probe[f"root_{tag}"] = _get(RequestRoot)
+                probe[f"root_{tag}_again"] = _get(RequestRoot)
+                probe[f"marker_{tag}"] = _get(RequestScopeMarker)
+                probe[f"group_{tag}"] = _get(RequestGroup)
+
+            def request_run_2() -> None:
+                probe[f"root_{tag}_request2"] = _get(RequestRoot)
+
+            contextvars.copy_context().run(request_run)
+            contextvars.copy_context().run(request_run_2)
+
+        for tag in ("a", "b"):
+            contextvars.Context().run(outer_run, tag)
+        return probe
+
     return _RuntimeOps(
         name="dependency-injector",
         spawn_singletons=spawn_singletons,
@@ -58358,6 +58597,8 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
         worker_a_scope_cycle=worker_a_scope_cycle,
         worker_b_scope_cycle=worker_b_scope_cycle,
         cleanup=cleanup,
+        probe_scopes=probe_scopes,
+        cleanup_timed=False,
     )
 
 
@@ -58370,6 +58611,17 @@ def _build_runtime_dishka() -> _RuntimeOps:
     request_scoped_types = set(_REQUEST_SCOPED_TYPES)
     request_scope_transients = set(_REQUEST_SCOPE_TRANSIENT_TYPES)
 
+    # GAUNTLET_DISHKA_LAYER_SCOPE selects where the transient Layer1-4Scope
+    # helpers live (they stay `cache=False`, the `Existence.many` equivalent):
+    #   app     - original mapping: Scope.APP, resolved through the root
+    #             container (and therefore under its lock) from every session;
+    #   session - Scope.SESSION, constructed inside the session container that
+    #             uses them. Bootstrap objects stay at Scope.APP either way
+    #             because `bootstrap_fanout` resolves them from the root.
+    layer_scope_name = _dishka_layer_scope_name()
+    layer_scope = Scope.SESSION if layer_scope_name == "session" else Scope.APP
+    layer_types = {Layer1Scope, Layer2Scope, Layer3Scope, Layer4Scope}
+
     provider = Provider()
     for cls in _ALL_CLASSES:
         if cls in singleton_types:
@@ -58380,6 +58632,8 @@ def _build_runtime_dishka() -> _RuntimeOps:
             provider.provide(cls, scope=Scope.REQUEST, cache=True)
         elif cls in request_scope_transients:
             provider.provide(cls, scope=Scope.REQUEST, cache=False)
+        elif cls in layer_types:
+            provider.provide(cls, scope=layer_scope, cache=False)
         else:
             provider.provide(cls, scope=Scope.APP, cache=False)
 
@@ -58472,6 +58726,8 @@ def _build_runtime_dishka() -> _RuntimeOps:
                 root2 = request_container.get(RequestRoot)
                 if not isinstance(root1, RequestRoot) or not isinstance(root2, RequestRoot):
                     raise AssertionError("Dishka: request scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dishka: request scope root not cached within the request")
 
         return _run_in_session_and_request_scopes(
             outer_cls=RequestSession,
@@ -58496,6 +58752,8 @@ def _build_runtime_dishka() -> _RuntimeOps:
                 root2 = request_container.get(WorkerAJobRoot)
                 if not isinstance(root1, WorkerAJobRoot) or not isinstance(root2, WorkerAJobRoot):
                     raise AssertionError("Dishka: worker A scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dishka: worker A scope root not cached within the request")
 
         return _run_in_session_and_request_scopes(
             outer_cls=WorkerASession,
@@ -58520,6 +58778,8 @@ def _build_runtime_dishka() -> _RuntimeOps:
                 root2 = request_container.get(WorkerBJobRoot)
                 if not isinstance(root1, WorkerBJobRoot) or not isinstance(root2, WorkerBJobRoot):
                     raise AssertionError("Dishka: worker B scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dishka: worker B scope root not cached within the request")
 
         return _run_in_session_and_request_scopes(
             outer_cls=WorkerBSession,
@@ -58532,6 +58792,21 @@ def _build_runtime_dishka() -> _RuntimeOps:
         container.close()
         gc.collect()
 
+    def probe_scopes() -> dict[str, Any]:
+        probe: dict[str, Any] = {"shared": container.get(AppSingletonE)}
+        for tag in ("a", "b"):
+            with container(scope=Scope.SESSION) as outer_container:
+                probe[f"session_{tag}"] = outer_container.get(RequestSession)
+                probe[f"session_{tag}_again"] = outer_container.get(RequestSession)
+                with outer_container(scope=Scope.REQUEST) as request_container:
+                    probe[f"root_{tag}"] = request_container.get(RequestRoot)
+                    probe[f"root_{tag}_again"] = request_container.get(RequestRoot)
+                    probe[f"marker_{tag}"] = request_container.get(RequestScopeMarker)
+                    probe[f"group_{tag}"] = request_container.get(RequestGroup)
+                with outer_container(scope=Scope.REQUEST) as request_container:
+                    probe[f"root_{tag}_request2"] = request_container.get(RequestRoot)
+        return probe
+
     return _RuntimeOps(
         name="dishka",
         spawn_singletons=spawn_singletons,
@@ -58540,6 +58815,7 @@ def _build_runtime_dishka() -> _RuntimeOps:
         worker_a_scope_cycle=worker_a_scope_cycle,
         worker_b_scope_cycle=worker_b_scope_cycle,
         cleanup=cleanup,
+        probe_scopes=probe_scopes,
     )
 
 
@@ -58687,6 +58963,8 @@ def _build_runtime_melder() -> _RuntimeOps:
                 root2 = space.meld(spell_id=spell_ids[RequestRoot])
                 if not isinstance(root1, RequestRoot) or not isinstance(root2, RequestRoot):
                     raise AssertionError("Melder: request scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Melder: request scope root not cached within the request")
 
         return _run_in_lesser_and_spellspace(
             outer_cls=RequestSession,
@@ -58711,6 +58989,8 @@ def _build_runtime_melder() -> _RuntimeOps:
                 root2 = space.meld(spell_id=spell_ids[WorkerAJobRoot])
                 if not isinstance(root1, WorkerAJobRoot) or not isinstance(root2, WorkerAJobRoot):
                     raise AssertionError("Melder: worker A scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Melder: worker A scope root not cached within the request")
 
         return _run_in_lesser_and_spellspace(
             outer_cls=WorkerASession,
@@ -58735,6 +59015,8 @@ def _build_runtime_melder() -> _RuntimeOps:
                 root2 = space.meld(spell_id=spell_ids[WorkerBJobRoot])
                 if not isinstance(root1, WorkerBJobRoot) or not isinstance(root2, WorkerBJobRoot):
                     raise AssertionError("Melder: worker B scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Melder: worker B scope root not cached within the request")
 
         return _run_in_lesser_and_spellspace(
             outer_cls=WorkerBSession,
@@ -58753,6 +59035,24 @@ def _build_runtime_melder() -> _RuntimeOps:
             Conduit._aether = aether2
         gc.collect()
 
+    def probe_scopes() -> dict[str, Any]:
+        probe: dict[str, Any] = {"shared": _get(AppSingletonE)}
+        for tag in ("a", "b"):
+            lesser = conduit.create_lesser_conduit()
+            try:
+                probe[f"session_{tag}"] = lesser.meld(spell_id=spell_ids[RequestSession])
+                probe[f"session_{tag}_again"] = lesser.meld(spell_id=spell_ids[RequestSession])
+                with lesser.enter_spellspace() as space:
+                    probe[f"root_{tag}"] = space.meld(spell_id=spell_ids[RequestRoot])
+                    probe[f"root_{tag}_again"] = space.meld(spell_id=spell_ids[RequestRoot])
+                    probe[f"marker_{tag}"] = space.meld(spell_id=spell_ids[RequestScopeMarker])
+                    probe[f"group_{tag}"] = space.meld(spell_id=spell_ids[RequestGroup])
+                with lesser.enter_spellspace() as space:
+                    probe[f"root_{tag}_request2"] = space.meld(spell_id=spell_ids[RequestRoot])
+            finally:
+                lesser.cleanup()
+        return probe
+
     return _RuntimeOps(
         name="melder",
         spawn_singletons=spawn_singletons,
@@ -58761,7 +59061,104 @@ def _build_runtime_melder() -> _RuntimeOps:
         worker_a_scope_cycle=worker_a_scope_cycle,
         worker_b_scope_cycle=worker_b_scope_cycle,
         cleanup=cleanup,
+        probe_scopes=probe_scopes,
     )
+
+
+def _dishka_layer_scope_name() -> str:
+    """
+    Read GAUNTLET_DISHKA_LAYER_SCOPE (app|session; default app = the original mapping).
+    """
+    raw = (os.getenv("GAUNTLET_DISHKA_LAYER_SCOPE") or "app").strip().lower()
+    if raw not in {"app", "session"}:
+        raise AssertionError(f"GAUNTLET_DISHKA_LAYER_SCOPE must be app or session, got {raw!r}")
+    return raw
+
+
+def _layer_chain(session: Any) -> tuple[Any, ...]:
+    """
+    Return (Layer4, Layer3, Layer2, Layer1, BootstrapAObject) as reached from a RequestSession.
+    """
+    layer4 = session.scope
+    layer3 = layer4.prior
+    layer2 = layer3.prior
+    layer1 = layer2.prior
+    return layer4, layer3, layer2, layer1, layer1.entry
+
+
+def verify_scope_semantics(ops: _RuntimeOps) -> int:
+    """
+    Untimed correctness phase shared by every library: prove the adapter delivers the declared lifetimes.
+
+    Checks (request lane, two outer scopes "a"/"b", two requests inside "a"):
+        - session objects are cached within an outer scope and distinct across outer scopes;
+        - the transient Layer1-4Scope chain and BootstrapAObject are built fresh per session (never cached);
+        - request-scoped objects (root, marker) are cached within a request and distinct across requests,
+          including a second request inside the same session;
+        - app singletons are one object everywhere (root container, sessions, layer branches);
+        - dependency identities hold: roots and markers reference their session, every group references the
+          session, the five groups and fifty leaves of a root are distinct objects, the extra transient group
+          is not one of the root's groups and shares no leaf with it.
+
+    Returns:
+        int: number of assertions performed (for the report line).
+
+    Raises:
+        AssertionError: naming the library and the failed contract.
+    """
+    if ops.probe_scopes is None:
+        raise AssertionError(f"{ops.name}: adapter has no probe_scopes")
+    probe = ops.probe_scopes()
+    checks = 0
+
+    def expect(condition: bool, contract: str) -> None:
+        nonlocal checks
+        checks += 1
+        if not condition:
+            raise AssertionError(f"{ops.name}: scope semantics violated - {contract}")
+
+    shared = probe["shared"]
+    expect(isinstance(shared, AppSingletonE), "root container resolves AppSingletonE")
+    for tag in ("a", "b"):
+        session = probe[f"session_{tag}"]
+        expect(isinstance(session, RequestSession), f"session_{tag} type")
+        expect(session is probe[f"session_{tag}_again"], f"session_{tag} cached within its outer scope")
+        expect(session.shared is shared, f"session_{tag}.shared is the app singleton")
+        root = probe[f"root_{tag}"]
+        expect(root is probe[f"root_{tag}_again"], f"root_{tag} cached within its request")
+        expect(root.session is session, f"root_{tag}.session is its session")
+        marker = probe[f"marker_{tag}"]
+        expect(marker.session is session, f"marker_{tag}.session is its session")
+        root2 = probe[f"root_{tag}_request2"]
+        expect(root2 is not root, f"root_{tag} differs across two requests of one session")
+        expect(root2.session is session, f"root_{tag}_request2 still references the shared session")
+        groups = root.groups
+        expect(len(groups) == 5 and len({id(group) for group in groups}) == 5, f"root_{tag} has 5 distinct groups")
+        leaves = [leaf for group in groups for leaf in group.leaves]
+        expect(len(leaves) == 50 and len({id(leaf) for leaf in leaves}) == 50, f"root_{tag} has 50 distinct leaves")
+        for group in groups:
+            expect(group.session is session, f"root_{tag} groups reference the session")
+        extra = probe[f"group_{tag}"]
+        expect(extra.session is session, f"group_{tag}.session is its session")
+        expect(all(extra is not group for group in groups), f"group_{tag} is not one of the root's groups")
+        leaf_ids = {id(leaf) for leaf in leaves}
+        expect(all(id(leaf) not in leaf_ids for leaf in extra.leaves), f"group_{tag} shares no leaf with the root")
+        layer4, layer3, layer2, layer1, bootstrap = _layer_chain(session)
+        expect(isinstance(layer4, Layer4Scope) and isinstance(bootstrap, BootstrapAObject), f"layer chain of session_{tag}")
+        expect(layer1.shared is shared, f"Layer1Scope.shared of session_{tag} is the app singleton")
+        expect(isinstance(bootstrap.root, AppSingletonA), f"BootstrapAObject.root of session_{tag}")
+
+    expect(probe["session_a"] is not probe["session_b"], "sessions differ across outer scopes")
+    expect(probe["root_a"] is not probe["root_b"], "roots differ across outer scopes")
+    chain_a = _layer_chain(probe["session_a"])
+    chain_b = _layer_chain(probe["session_b"])
+    for index, name in enumerate(("Layer4Scope", "Layer3Scope", "Layer2Scope", "Layer1Scope", "BootstrapAObject")):
+        expect(chain_a[index] is not chain_b[index], f"{name} is transient (fresh per session)")
+    expect(chain_a[4].root is chain_b[4].root, "AppSingletonA shared through both bootstrap objects")
+    expect(chain_a[2].branch is chain_b[2].branch, "AppSingletonB shared through both Layer2Scope branches")
+    expect(chain_a[1].branch is chain_b[1].branch, "AppSingletonC shared through both Layer3Scope branches")
+    expect(chain_a[0].branch is chain_b[0].branch, "AppSingletonD shared through both Layer4Scope branches")
+    return checks
 
 
 def _build_ops(lib: str) -> _RuntimeOps:
@@ -58783,6 +59180,19 @@ def _lane_objects_per_cycle(name: str) -> int:
         return _WORKER_A_OBJECTS_PER_ROOT
     if name == "worker_b":
         return _WORKER_B_OBJECTS_PER_ROOT
+    raise AssertionError(f"Unknown lane: {name}")
+
+
+def _lane_inner_objects_per_cycle(name: str) -> int:
+    """
+    Objects built inside the request phase of one cycle (variant 0 minimum); see the constants.
+    """
+    if name == "request":
+        return _REQUEST_INNER_OBJECTS_PER_ROOT
+    if name == "worker_a":
+        return _WORKER_A_INNER_OBJECTS_PER_ROOT
+    if name == "worker_b":
+        return _WORKER_B_INNER_OBJECTS_PER_ROOT
     raise AssertionError(f"Unknown lane: {name}")
 
 
@@ -65138,7 +65548,7 @@ END FILE: docs/handbook.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/index.md
-CONTENT SHA256: 074c2201a08ca3c3461e70ef9b749ab132215a846e606d636635a28950785f41
+CONTENT SHA256: 5a4245eaa1a3eb4f7f6bde94d5b07831d691bf3f6e1939bd43e587a6e950146e
 SOURCE ENCODING: utf-8
 ================================================================================
 ---
@@ -65149,7 +65559,9 @@ myst:
       instance lifetimes, cleanup, isolated worlds, and agent-operated infrastructure.
 ---
 
-# A runtime you can build on
+(a-runtime-you-can-build-on)=
+
+# A dependency graph runtime for Python
 
 Melder wires ordinary Python objects into a live dependency graph: services,
 configuration, connections, and the objects your application works with.
@@ -65744,7 +66156,7 @@ END FILE: docs/intermediate/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/scopes.md
-CONTENT SHA256: 992bb942c4163e44f6570892424d6dde1d7ba22c2095606a12a607556704f5dd
+CONTENT SHA256: 196afaffbf291a4d71ee41b600ed5e075204d22fb1c42d817e6cffdf5d548fca
 SOURCE ENCODING: utf-8
 ================================================================================
 # Spell spaces, lineage, and scopes that end
@@ -65799,6 +66211,13 @@ scope. A direct reference is enough when the job stays local. Cloud returns a
 borrowed reference: it does not extend the owner's lifetime or make reuse after
 cleanup safe. Names are discovery addresses, not matching-lifetime tags; the
 registered `Existence` still decides where objects are shared.
+
+Aether reaches the same directory from the runtime root:
+`Aether().get_conduit_by_name("job-42")` returns the named scope in the default
+frame (pass `aetheric_frame_name` for another frame), and
+`Aether().get_conduit_by_id(job.id)` finds any live scope by id, named or
+anonymous. The root-only lookups carry root names, such as
+`get_root_conduit_by_name`.
 
 ### Promote only when independent ownership is needed
 
@@ -69701,7 +70120,7 @@ END FILE: docs/tools/site_model.py
 ================================================================================
 ================================================================================
 BEGIN FILE: pyproject.toml
-CONTENT SHA256: de7c77db321d42a8956257e849606b08210436adb2f387e4aa24a55b5a262232
+CONTENT SHA256: f2faaecd49500f1a9b73ec8f70e368b8917fd16af5a9e687f3b5fb69fe3158c4
 SOURCE ENCODING: utf-8
 ================================================================================
 [build-system]
@@ -69795,13 +70214,13 @@ LinkedIn = "https://www.linkedin.com/in/mark-geleta-4b59b752/"
 test = [
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
-    "coverage>=7.15.0",
+    "coverage==7.16.1",
     # Parse workflow structure in CI contract tests; not a runtime dependency.
     "PyYAML>=6.0.3",
 ]
 
 lint = [
-    "ruff>=0.15.15",
+    "ruff==0.16.9",
 ]
 # Opt-in: parallel test execution (`pytest -n auto`).
 parallel = [
@@ -69833,6 +70252,7 @@ dev = [
     { include-group = "test" },
     { include-group = "lint" },
     { include-group = "build" },
+    "build==1.6.1",
 ]
 
 [tool.uv]
@@ -70429,11 +70849,11 @@ An externally supplied object remains referenced by its registration; purge does
 END FILE: release_docs/0.2.50.md
 ================================================================================
 ================================================================================
-BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: f0c12608e2bcf20695b88cf073b82975606c871e94a9a46eb5f84c76b3358441
+BEGIN FILE: release_docs/0.2.77.md
+CONTENT SHA256: f9f4960cbdb865f03a17d87d0bb81d0c630d745ac9128bc61e03e47733e6a068
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.77
+# Melder 0.2.78
 
 **Unreleased**
 
@@ -70994,13 +71414,15 @@ stay valid.
 
 ## Packaging and documentation
 
+- The documentation homepage now says "A dependency graph runtime for Python". Its previous heading
+  link remains valid; the existing guide cards, navigation and page layout are preserved.
 - Documentation builds check titles, descriptions, canonical URLs and sitemap destinations, with
   intentional preview indexing handled separately. The late-binding example now has a distinct title
   from its guide while preserving its old heading link. Read the Docs continues to serve the existing
   generated `robots.txt` and sitemap.
 - Documentation page titles use the short Melder suffix. Selected guides and examples now carry
   page-specific search descriptions through their existing source files and manifests. The cleanup
-  guide links directly to the website's configuration chapter; the visible homepage and guides remain.
+  guide links directly to the website's configuration chapter; the existing guides remain.
 - The Sphinx API inventory now includes `UnresolvedInputError`, so documentation builds no longer
   refuse the newly exported public error. Windows checkout also succeeds after shortening the retired
   graph-descriptor archive paths; the archived contents and original-path mapping are preserved.
@@ -71031,7 +71453,90 @@ stay valid.
   what each group of tests protects, and the rule that a test fixture resetting Melder's singletons must boot
   a fresh `Aether` afterwards. The registration-guard test and the system-document view tests no longer
   depend on the order the suite runs them in.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.77.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.78.
+================================================================================
+END FILE: release_docs/0.2.77.md
+================================================================================
+================================================================================
+BEGIN FILE: release_docs/next_version_release.md
+CONTENT SHA256: 18956953a24a740fcba9c3b4e02a43941d8106b8ee2c74d16bac07d5875d7abe
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder 0.2.82
+
+This release makes Aether find any conduit in a frame - a named lesser at any depth by name, any live
+conduit by id - and gives the root-only lookups `*_root_*` names, and it makes scope teardown run every
+declared disposal method even after one of them raises, reporting each failure with its cause. One rename
+is breaking: the root-only Aether lookups, listed below with their new names.
+
+## Aether finds any conduit by name or id; root-only lookups carry root names
+
+`Aether.get_conduit_by_name` now finds every named scope in a frame - a named root, or a lesser created
+with `create_lesser_conduit(name=...)` at any depth - and `Aether.get_conduit_by_id` finds any live
+conduit, anonymous lessers included:
+
+```python
+root = book.conjure(name="app")
+request = root.create_lesser_conduit(name="request")
+job = request.create_lesser_conduit()
+
+aether = Aether()
+assert aether.get_conduit_by_name("request") is request
+assert aether.get_conduit_by_id(job.id) is job
+```
+
+Before, both answered over root conduits only, so `get_conduit_by_name("request")` raised "not found"
+while the frame's `ConduitCloud` returned the scope.
+
+- **Breaking change: the root-only lookups are renamed, with no aliases.** `list_conduit_ids`,
+  `list_conduit_names`, `count_conduits`, `has_conduit_id`, `has_conduit_name` and
+  `find_conduit_id_by_name` are now `list_root_conduit_ids`, `list_root_conduit_names`,
+  `count_root_conduits`, `has_root_conduit_id`, `has_root_conduit_name` and
+  `find_root_conduit_id_by_name`; the old names raise `AttributeError`. Root-only lookups by name and
+  by id are `get_root_conduit_by_name` and `get_root_conduit_by_id`.
+- **`get_conduit_by_name` and `get_conduit_by_id` keep their names and cover more.** Every root still
+  resolves to the same object. Code that relied on a lesser's name or id raising "not found" should use
+  the root lookups.
+- **Lookups stay per frame.** Every lookup takes `aetheric_frame_name`, a string that defaults to
+  `"default"`; a scope in another frame is found by naming that frame. A frame given as anything but a
+  string, such as `None`, now raises `TypeError` instead of a misleading "does not exist" error.
+- **Errors name the frame.** A miss reads `Conduit with name 'request' not found in frame 'default'.`,
+  followed by what the lookup covers; the usual cause is a scope that lives in another frame.
+- **Returned and cleaned scopes do not resolve.** A lesser returned to its pool leaves both lookups. The
+  reference you get is borrowed and does not keep the scope alive.
+- **`ConduitCloud.list_conduits()`** returns one frame's named conduits as a tuple:
+  `Aether().get_conduit_cloud().list_conduits()`.
+- **Id lookups tolerate scopes coming and going.** The walk behind `get_conduit_by_id`, which the room
+  commands of the same name also use, reads snapshots, so a lesser returning to its pool on another thread
+  can no longer make it fail with `dictionary changed size during iteration` on free-threaded Python.
+- **Room commands are unchanged.** The Nexus room commands and viewer methods of the same names keep
+  their behaviour and access control.
+
+## Disposal runs every method and reports every failure
+
+When one of an object's disposal methods raises, Melder now still runs the methods declared after it. With
+a book whose `disposal_method_names` is `["close", "release"]`, an object whose `close()` raises still has
+`release()` called; before, `release()` was skipped and whatever it releases leaked.
+
+- **One error per failing method, with the real cause.** `purge`, leaving a `with conduit.enter_spellspace()`
+  block and the other scope teardowns raise the same `ExceptionGroup` as before, and conduit cleanup still
+  logs it. The group now holds one `RuntimeError` per failing method instead of one per object, and each
+  error's `__cause__` is the exception the method raised, with its type and traceback.
+- **One bad object cannot stop the rest.** Reporting a failure no longer relies on the failing object's
+  `__str__`; an object whose `__str__` also fails is named by type and id, and the other objects in the
+  scope are still disposed.
+- **Order is unchanged.** Methods run in the order the book declares them, and objects are disposed newest
+  first, as before.
+
+## Packaging and documentation
+
+- The README now includes the roadmap artwork after the product introduction, with quick navigation,
+  a full-size image link and a link to the detailed milestones.
+- The packaged system documents (`melder.__architecture__`, `__components__`, `__graph_network__` and
+  `__graph_details__`) are regenerated and describe what each Aether conduit lookup covers (the root-only
+  `*_root_*` family, `get_conduit_by_name` over named scopes and `get_conduit_by_id` over every live
+  conduit) and disposal that runs every declared method and reports each failure.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.82.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================
@@ -71130,4 +71635,991 @@ SOURCE ENCODING: utf-8
 - 🌈 Customization: Providing advanced customization options for users' specific needs.
 ================================================================================
 END FILE: roadmap.md
+================================================================================
+================================================================================
+BEGIN FILE: roadmap/melder-roadmap-expanded.md
+CONTENT SHA256: c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder Roadmap
+
+**Status:** Expanded discussion draft — established direction plus labeled proposals  
+**Planning horizon:** Approximately two years from adoption, covering the full path to 2.0.
+
+## North star: governed runtime evolution of software
+
+Melder's intention is to make software evolvable through its running runtime.
+Humans and agents should be able to understand a live system, propose and research
+changes, obtain the required authority, introduce new capabilities, verify the
+outcome, and preserve or recover the resulting system through supported mechanisms.
+
+The intended product is not merely object construction, dependency injection, or
+an agent wrapper. It is a runtime foundation for the ongoing evolution of software,
+with service-management practices, operational evidence, change controls, and
+frame-owned governance built into that foundation.
+
+The 1.0 direction includes an agent-usable, ITIL-compatible service-management
+capability, the MutationResearch mechanics needed to support governed evolution,
+and additional frame-local systems. Full compatibility is a target to define and
+substantiate, not a claim that the current release is accredited or complete.
+
+The roadmap has three connected stages: stabilize the public API, complete the
+capabilities required by the runtime strategy, and progressively migrate the
+implementation to Mojo while retaining a supported Python interface.
+
+**API stability at 0.5 is not a feature freeze. Feature completion for the 1.0
+scope and completion of the Mojo migration at 2.0 are separate milestones.**
+
+The two-year horizon is a development target for the whole roadmap, not two years
+per stage. Individual release dates will be assigned as scope and dependencies
+are established. Releases must meet their acceptance criteria rather than ship
+solely to satisfy a date.
+
+## Milestones
+
+| Target | Focus | Intended outcome |
+| --- | --- | --- |
+| **0.4** | API consolidation and stabilization | Review and settle public contracts across all systems and subsystems; resolve known inconsistencies and planned breaking redesigns. |
+| **0.5** | Stable API baseline and alpha exit | Establish compatibility-protected public APIs, supported extension points, and an explicit deprecation process. |
+| **0.5–1.0** | Feature development, integration, and performance | Add the features and implementation work required to fulfill Melder's declared 1.0 strategy and capability claims, alongside verification and optimization. |
+| **1.0** | Complete supported runtime and dual licensing | Deliver the agreed 1.0 capabilities, supported tooling, documented contracts, and performance evidence. Make dual licensing available. |
+| **1.2** | Mojo: compiler and resolution surfaces | Migrate compiler and resolution implementations behind the supported interfaces. |
+| **1.4** | Mojo: backend | Migrate backend systems while preserving their documented behavior and interactions with other subsystems. |
+| **1.6** | Mojo: Nexus | Migrate Nexus and its supported operator-facing and agent-facing surfaces. |
+| **1.8** | Mojo: Crystallizer | Migrate Crystallizer and its persistence, checkpoint, and restoration responsibilities. |
+| **2.0** | Complete Mojo migration | Complete migration of all Melder runtime systems and subsystems to Mojo, retaining a supported Python interface over the completed core. |
+
+These are milestone targets, not a claim that the work has already shipped.
+Intermediate releases can deliver compatible features, fixes, and incremental
+migration work.
+
+## Through 0.5: stabilize the contracts
+
+By 0.4, the public APIs across Melder's systems and subsystems should be
+consolidated into a coherent design. By 0.5, that work should establish the
+compatibility baseline required to leave alpha.
+
+The protected surface includes documented behavior, not only method names.
+Configuration, inputs and outputs, errors, lifecycle and ownership rules,
+structured inspection results, operator commands, extension points, and
+persistence interfaces must have clear contracts appropriate to their role.
+
+Internal implementation details can continue to change. Existing public contracts
+must not become disposable merely because a subsystem is being expanded or
+rewritten.
+
+New features remain welcome after 0.5. Additions should extend established
+contracts compatibly. Genuinely experimental additions must be explicitly
+identified, with a clear process for becoming supported.
+
+## 0.5–1.0: build out the intended runtime
+
+This is an active feature-development phase, not merely a validation or
+maintenance phase.
+
+Melder will add the capabilities, integrations between subsystems, and
+implementation work necessary to fulfill the strategy defined for 1.0. The work
+includes closing architectural gaps, extending existing systems, completing
+operator workflows, and making the supported tooling effective in practice.
+
+The scope is the complete runtime, not only IoC or object resolution. Runtime
+operation, ownership and lifecycle management, inspection, agent-facing tooling,
+structural change, persistence, and recovery all belong in the release's
+capability planning.
+
+Correctness, usability, and performance will develop alongside the features.
+A capability is not complete merely because an API exists: it must be accessible
+through supported interfaces, work in the intended workflows, interact correctly
+with other systems, and have documented limits.
+
+Before 1.0, each capability claimed for that release must be connected to its
+implementation, documentation, working examples or tooling, and appropriate
+correctness and performance evidence. Significant unfinished work needed to
+support a 1.0 claim remains release work; it is not automatically deferred to the
+Mojo migration.
+
+**1.0 is the target for delivering Melder's declared runtime capabilities, not
+simply declaring the existing implementation stable.** It does not imply that
+every possible future feature has been invented or delivered.
+
+## 1.0 capability direction: an operational environment for evolution
+
+### Direction established for this roadmap
+
+The 0.5–1.0 phase includes active feature development across the runtime. It aims
+to make the declared 1.0 strategy usable and performant, not simply to stabilize
+or test the present implementation.
+
+Agents should be able to participate in a complete governed-change workflow:
+understand a service, investigate a problem or opportunity, propose a change,
+assemble evidence, obtain authorization, stage and enact the change, evaluate the
+outcome, and preserve the result or execute an approved recovery plan.
+
+New service-management and governance systems should have frame-local ownership,
+configuration, authority, and lifecycle. Separate frames must be able to adopt
+separate policies without accidentally sharing mutable approvals, change state,
+or operator authority.
+
+The following workstreams are **proposed elaborations of that direction**. They
+are not claims that these capabilities have already shipped. Names are functional
+working labels, not decisions about public class names, exact module boundaries,
+or guaranteed minor-release assignments. More systems may be introduced where
+needed to meet the north star.
+
+### Proposed workstream: frame-local service management and change enablement
+
+Provide a machine-readable service-management model that supports change requests,
+change models, authorization, scheduling, progress, verification, closure, and
+links to incidents, problems, configuration items, releases, and improvement work.
+
+Support a range of policy-driven change paths: pre-authorized repeatable changes,
+assessed normal changes, and expedited emergency changes with explicit authority
+and follow-up review. Not every operation should need a committee or synchronous
+human intervention. Equally, an agent should not gain authority merely by labeling
+its own request an emergency or assigning itself a low risk score.
+
+Record which policy revision and principal authorized a particular plan, the
+scope and limits of that authorization, and the evidence on which it depended.
+Policy changes and delegation changes must themselves follow controlled paths.
+
+Keep the long-running service-management workflow separate from short-lived
+structural transaction admission. Do not hold runtime locks while waiting for
+reviews, external systems, experiments, or an agent's next response. Revalidate
+approved preconditions when the operation actually enters the mutation path.
+
+### Proposed workstream: MutationResearch as the evidence foundation
+
+Extend MutationResearch and its associated systems to support the complete
+research side of runtime evolution. Connect candidate identities, source and
+structural diffs, composition changes, dependency impact, baselines, experiments,
+policy assessments, and observed outcomes through stable references.
+
+The research record should be able to explain what was proposed, why it was
+proposed, what alternatives were evaluated, which assumptions were used, what
+was measured, and which implemented outcome followed the decision.
+
+Preserve the distinction between a read-only candidate preview and actual
+execution. Add a separately controlled rehearsal mechanism for tests and
+benchmarks rather than making a preview secretly execute code. Record uncertainty
+and untested conditions explicitly; a structural diff is not proof of arbitrary
+runtime behavior or external side effects.
+
+Bind evidence to the exact candidate, target frame, affected baseline revisions,
+policy version, relevant configuration, and workload. If an affected dependency,
+approval, or policy changes, re-evaluate the affected evidence before promotion.
+An unrelated change elsewhere need not invalidate all work.
+
+Give each concurrent operation explicit principal, frame, campaign, and change
+identities. Ensure those identities survive retries and handoffs without leaking
+through a shared ambient default into another agent's work.
+
+Research should supply evidence to authorization, not automatically authorize its
+own conclusions. Preserve the separate ownership of research, policy decisions,
+runtime execution, and persistence custody.
+
+### Proposed workstream: service catalog, configuration, and desired state
+
+Add a frame-local service and configuration model that relates named services,
+capabilities, ownership, dependency contracts, and explicitly managed external
+resources to the live runtime graph.
+
+Distinguish desired state, an approved baseline, currently observed live state,
+and recorded historical state. Do not treat a stale checkpoint as proof of what
+is running now. Provide stable identities and reconciliation rules for updates,
+restores, external records, and frame replacement.
+
+Use runtime topology as evidence for a service-management configuration view;
+augment it with service meaning and explicit external-resource links rather than
+assuming every Python object is automatically a complete configuration item.
+
+### Proposed workstream: release, rollout, and state-transition coordination
+
+Provide controlled staging and promotion of versions and compositions. Define
+how rollout cohorts, compatibility checks, lifecycle hooks, health checks,
+quiescence, and policy decisions compose with existing mutation mechanisms.
+
+Specify what happens to in-flight calls, existing references, stateful instances,
+shared resources, and cleanup when an implementation changes. Support explicit
+state transfer or reconstruction where required. Do not imply that selecting a
+new implementation automatically rewrites every previously returned Python
+reference or preserves arbitrary state.
+
+Separate structural reversion, object-state recovery, and compensation for
+external actions. Recovery must state what it can restore and what remains
+irreversible. Returning to an older implementation is a new forward-recorded
+event, not deletion of the failed change's history.
+
+Canary and shadow execution are candidate techniques, not blanket guarantees of
+safe duplication: isolate or stub side effects before replaying a workload.
+
+### Proposed workstream: incidents, problems, service health, and improvement
+
+Extend the existing descriptive incident model with the supported operator
+workflows needed for triage, ownership, impact, problem investigation, known
+errors, remediation proposals, and verified resolution.
+
+Connect incidents and health evidence to MutationResearch campaigns and governed
+changes. Closing a record should not itself be presented as proof that the
+service recovered. Conversely, merely recording a suspected incident must not
+implicitly mutate the running graph.
+
+Add explicit monitoring/event integration, service objectives, and performance
+budgets so rollout decisions can use measured outcomes. Treat behavioral and
+performance risk as additional evidence; do not confuse it with the existing
+structural/resolution-validity risk signal.
+
+The improvement loop should connect the original operational need to the proposed
+change and its measured result. Telemetry collection must have declared overhead,
+privacy, retention, and failure behavior rather than imposing uncontrolled work on
+steady-state resolution.
+
+### Proposed workstream: durable agent operations and delegated authority
+
+Expose supported, discoverable, schema-versioned operations through the mediated
+agent-facing interfaces. Agents should not need internal manager references or
+undocumented object traversal to participate in service management.
+
+Provide operation identities, progress, cancellation, idempotent retry semantics,
+authorization expiry, and explicit recovery after interruption. A replacement
+agent should be able to inspect the current operation state and continue only
+within its own current authority. Restoring a record must not silently restore
+expired privileges.
+
+Support separate proposing, evaluating, approving, and executing roles where
+policy requires it. Pre-authorized automation remains possible within bounded
+models. Add structured refusal and escalation responses so agents can distinguish
+an invalid candidate, stale evidence, missing authority, contention, and a failed
+postcondition.
+
+### Proposed workstream: extensible frame-owned subsystem hosting
+
+Introduce or extend a stable hosting contract for new frame-local systems:
+capability discovery, configuration schemas, dependencies, construction order,
+activation, cleanup, version compatibility, observation, and persistence/restore
+participation.
+
+A system should be independently configurable without hidden process-global
+state. Optional systems should be disabled or lazy where appropriate, so the
+runtime does not require every application to pay for the entire governance stack.
+This is a performance design target to measure, not a promise of zero overhead.
+
+Agent and integration adapters should use these contracts rather than bypassing
+the frame's permissions or taking ownership of internal kernel managers.
+
+### Additional candidate: coordinated evolution across frame boundaries
+
+Support explicit protocols for changes that affect multiple independently governed
+frames. Each affected frame retains its own authority, policy, and local admission
+checks. A coordinator may exchange proposals and evidence but must not silently
+borrow another frame's authority.
+
+Define partial failure, cancellation, and compensation. Local structural
+transactions must not be described as global atomicity over multiple frames,
+processes, databases, or external systems without an implemented and verified
+protocol that actually provides it.
+
+The mechanism can begin as an integration or federation layer; it does not require
+removing the existing frame boundary or enabling arbitrary direct cross-frame
+references.
+
+### ITIL compatibility: make the goal testable
+
+Full ITIL compatibility remains the target. Before describing it as achieved,
+publish the targeted ITIL version and a practice-to-capability matrix identifying
+native runtime support, supported integration responsibilities, organizational
+roles, evidence, and any remaining gaps.
+
+A small collection of change-related features is not by itself proof of full
+compatibility. Practices outside direct runtime operation must be accounted for
+through explicit supported boundaries rather than silently omitted or declared
+satisfied by a ticket record. Select the precise baseline during scope definition;
+this draft does not silently choose between ITIL editions.
+
+Distinguish technical interoperability with selected ITSM products from alignment
+with ITIL practices. Versioned adapters, authentication, correlation, retries, and
+conflict reconciliation are implementation work, not automatic consequences of
+using common terminology. Vendor integrations remain candidates until supported
+products and versions are explicitly selected.
+
+Do not describe this roadmap as an accreditation. Formal PeopleCert tool-vendor
+accreditation would be a separate decision and assessment, not an outcome granted
+by publishing a compatibility matrix.
+
+### Architectural placement and boundaries
+
+The uploaded source already has frame-local DevOps ownership and separate
+incident, change-control, and risk managers. It also has an Aether-owned
+MutationResearch singleton with named research sets and a persistence emission
+boundary. These are foundations to extend, not absent systems to reinvent.
+
+The proposed frame-owned governance services do not require inventing a separate
+MutationResearch singleton inside every frame. One candidate design is to retain
+the shared research root while exposing properly partitioned frame-scoped research
+contexts. This requires explicit identity, authorization, publication, cleanup,
+retention, and restore rules; a frame name or filter alone is not isolation.
+Changing the root ownership model instead would be a deliberate architectural
+migration, not a description of the current implementation.
+
+Maintain four distinct responsibilities: research explains; governance authorizes;
+transactional runtime mechanisms enact; persistence preserves the declared record.
+Incident description and monitoring inform those decisions rather than becoming
+implicit mutation channels.
+
+Frame separation and in-process code checks should not be advertised as an
+operating-system sandbox for hostile code. Rehearsal of untrusted code requires
+appropriately isolated execution and explicitly controlled external effects.
+
+### Proposed 1.0 acceptance scenario
+
+Demonstrate an agent completing a governed runtime change through supported APIs:
+identify a service issue, open a correlated investigation, produce a candidate,
+attach static and executable evidence, receive the required authorization, stage
+and promote under current preconditions, and evaluate the resulting service.
+
+Demonstrate a refusal when the relevant baseline changed after approval; an
+interrupted agent handing off without duplicating the mutation; a separate frame
+remaining unaffected; and a controlled recovery whose limits are explicit.
+Preserve the complete causal record of success, refusal, and recovery.
+
+This scenario complements, rather than replaces, the full capability/ITIL coverage
+matrix, subsystem tests, supported-platform qualification, and performance gates.
+
+### Fit with the 0.5 contract baseline and the 2.0 migration
+
+Specify common operation, evidence, policy, frame-hosting, and persistence seams
+during the 0.4–0.5 API work. Their supported implementations and compatible
+extensions can continue to grow through 1.0. Do not represent the entire future
+feature set as frozen merely because the shared contracts are stable.
+
+Every runtime subsystem introduced for 1.0 is included in the 2.0 migration goal.
+MutationResearch and the new governance systems need explicit entries in the
+migration inventory; their intermediate release allocation remains to be decided.
+This does not change the owner's stated 1.2 compiler/resolution, 1.4 backend,
+1.6 Nexus, and 1.8 Crystallizer sequence.
+
+## Dual licensing at 1.0
+
+Dual licensing is planned to become available with the 1.0 release.
+
+The available license options and their exact terms will be published as part of
+that release. This roadmap does not itself change the current license or grant
+an alternative license before it is available.
+
+## 1.0–2.0: progressively migrate the core to Mojo
+
+After establishing the 1.0 runtime, Melder will use a strangler fig approach to
+replace its Python implementation subsystem by subsystem.
+
+Existing and migrated implementations will coexist during the transition.
+Supported interfaces and explicit internal boundaries will route work to the
+appropriate implementation. Each migrated subsystem must demonstrate the
+required behavior and performance before replacing its predecessor.
+
+Python access will remain available throughout the migration. The target at 2.0
+is a completed Mojo runtime behind a supported Python interface—not a period
+without Python access followed by its reintroduction at the end.
+
+The migration is of Melder's runtime implementation. It does not require
+applications, user-defined Python objects, or agent tooling to be rewritten in
+Mojo.
+
+### 1.2: compiler and resolution surfaces
+
+Begin with the compiler and resolution implementations. Establish and exercise
+the Python/Mojo boundary, preserve the supported compilation and resolution
+contracts, and measure performance through the actual Python-facing API.
+
+This milestone must qualify the interoperability and packaging approach needed
+by subsequent subsystem migrations, including the supported interpreter and
+concurrency configurations.
+
+### 1.4: backend
+
+Extend the migration into the backend. Preserve the contracts for runtime state,
+ownership, lifecycle behavior, coordination, and subsystem interaction wherever
+those responsibilities belong to the migrated backend.
+
+Mixed Python/Mojo operation must be verified before the remaining systems depend
+on the replacement backend.
+
+### 1.6: Nexus
+
+Migrate Nexus while preserving its supported interfaces and behavior for
+inspection, mediated operations, agent workspaces, and structured responses.
+
+Permission decisions, refusal behavior, object identity, and supported operations
+across migrated boundaries must remain consistent with the public contracts.
+
+### 1.8: Crystallizer
+
+Migrate Crystallizer, including its supported recording, checkpoint, and
+restoration workflows.
+
+Define and test the supported compatibility of persisted formats and restored
+systems across the migration. Where conversion is required, provide an explicit
+migration path rather than silently changing the meaning of existing data.
+
+### 2.0: complete the migration
+
+Complete migration of all Melder runtime systems and subsystems to Mojo and
+retire superseded Python core implementations.
+
+Python remains the supported interface and integration layer. The objective is
+to preserve the public programming model while changing the machinery beneath
+it; the 2.0 milestone is not an excuse for unrelated API churn.
+
+Completion requires the whole runtime to work through that interface, not merely
+a collection of individually ported subsystems.
+
+## Migration acceptance criteria
+
+A migration milestone is complete only when its replacement meets the supported
+behavioral contracts, works with the rest of the runtime, and satisfies defined
+performance and delivery criteria.
+
+Use shared contract tests and equivalent isolated workloads to compare old and
+new implementations. Verify outcomes, errors, identity and lifetime semantics,
+concurrency behavior, and relevant persistence behavior. For operations with
+side effects, comparisons must not execute the same real-world mutation twice.
+
+Measure end-to-end workloads through the Python interface, including
+interoperability overhead, memory use, and concurrency. Performance improvement
+is an engineering objective to demonstrate, not an automatic claim attached to
+a language change.
+
+Keep a controlled return path to the previous implementation until a migration
+stage is accepted, where state and persisted-format compatibility permit it.
+Document limits to reversal and data conversion explicitly.
+
+Mojo interoperability, the toolchain, supported platforms, and package delivery
+must be qualified as part of the migration. A subsystem does not become ready
+solely because its source has been translated.
+
+## Proposed compatibility and deprecation policy
+
+From 0.5 onward, documented public contracts are compatibility-protected.
+
+During the remaining 0.x series, planned removals require at least one
+minor-release series of advance notice. A deprecation introduced at 0.5.0, for
+example, remains supported throughout 0.5.x and can be removed no earlier than
+0.6.0. Planned deprecations should normally begin at minor-release boundaries;
+a late patch must not be used to create an effectively immediate removal.
+
+Each notice must identify the affected API, the version where deprecation begins,
+the earliest removal version, and the replacement or migration instructions.
+Deprecated behavior remains supported and tested during its notice period.
+
+From 1.0 onward, compatible additions can ship in minor releases, while
+incompatible public API removals or changes require a major release and must
+also satisfy the published notice policy. The 1.x Mojo migration should preserve
+the established public contracts.
+
+API compatibility, supported runtime environments, and persisted-data formats
+must each have explicit expectations; preserving function names alone is not
+enough.
+
+---
+
+**Stable contracts by 0.5. Governed runtime evolution, agent-usable service
+management, and the agreed capabilities and performance at 1.0, with dual licensing
+available. A fully migrated Mojo core with a Python interface at 2.0. One
+approximately two-year roadmap.**
+
+
+## Editorial and evidence notes
+
+This is a planning draft, not a statement that all proposed systems are currently
+implemented. The source review was static; no runtime verification or ITIL
+conformance assessment was performed. Companion file:
+`melder-roadmap-source-notes.md`.
+
+The original repository roadmap and the earlier draft have not been modified.
+================================================================================
+END FILE: roadmap/melder-roadmap-expanded.md
+================================================================================
+================================================================================
+BEGIN FILE: roadmap/melder-roadmap-source-notes.md
+CONTENT SHA256: 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder roadmap: source inspection notes
+
+Static inspection of the user-provided `melder.7z` snapshot. No Melder runtime or test suite was executed. Docstrings below describe intended contracts; they do not independently prove every claimed behavior. Line numbers refer to the extracted source, and hashes identify the exact inspected files.
+
+These notes distinguish existing source contracts from proposals in `melder-roadmap-expanded.md`.
+
+## AethericFrame
+
+File: `src/melder/aether/aetheric_frame/aetheric_frame.py`  
+SHA-256: `22438de3c9ce7cb6526a51e8232296301f65d61134eaaa4f42cb3d3792e4ecb8`  
+Excerpt: lines 29–67.
+
+```text
+29:     """
+30:     Manage one isolated runtime frame within `Aether`.
+31: 
+32:     `AethericFrame` is the per-frame ownership boundary beneath the global
+33:     `Aether` singleton. It owns the frame-local conduit registry, spell/index
+34:     registries, frame-level posture/config references, and the DevOps services
+35:     tied to that frame. It also owns the frame-local `ConduitCloud`, which in
+36:     turn owns the cluster registry and cluster lifecycle.
+37: 
+38:     Contract:
+39:       - Owns root conduits and their spell registries.
+40:       - Owns a stable root-conduit name index for per-frame lookup.
+41:       - Owns the version registry for all `SpellIndex` lineages in this frame.
+42:       - Owns one `DevOpsInformationRegistry` as the frame-local topology and
+43:         transaction mirror for reporting and future strategy resolution.
+44:       - Owns one `ConduitCloud` over the frame-local conduit registries.
+45:       - Owns `SpellSystemStates` and `DevOpsManager` for this frame.
+46:       - Owns one narrow frame-level AR posture object distinct from the richer
+47:         shared Spellbook configuration object.
+48:       - Detaches itself from `Aether` only after frame-owned cleanup completes.
+49: 
+50:     Threading / Concurrency:
+51:       - Uses one frame-local `RLock` to guard cleanup and frame-owned registry
+52:         mutation.
+53:       - Relies on child objects to guard their own internal state.
+54: 
+55:     Threading:
+56:         One frame-local `RLock` guards cleanup and frame-owned registry
+57:         mutation; children guard their own state. The frame does NOT take a
+58:         child's lock, which keeps the lock order strictly downward:
+59:         frame -> child, never child -> frame.
+60: 
+61:     Lifecycle / Cleanup:
+62:         Under V3 Horizon lazy frames, `import melder` creates ZERO frames - the
+63:         first `Spellbook` births the frame it names via `_ensure_frame`
+64:         (get-or-create is the intended semantic), and a collapsed configuration
+65:         falls back to a lazily created "default". Teardown detaches from
+66:         `Aether` only AFTER frame-owned cleanup completes, so a half-torn frame
+67:         is never reachable from the global registry.
+```
+
+## DevOpsManager
+
+File: `src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py`  
+SHA-256: `9984f1426364c2c08b254f8fa8b25e98bd10682a196968859006e1238f74e439`  
+Excerpt: lines 25–63.
+
+```text
+25:     """
+26:     Frame-level ownership root for DevOps and admission-control subsystems.
+27: 
+28:     `DevOpsManager` is the operational facade over the frame's health and
+29:     control-plane services. It owns and exposes the managers that describe
+30:     incidents, track dirty/pending change state, assess risk, and govern
+31:     conduit creation-gate admission.
+32: 
+33:     Owned subsystems:
+34:     - `IncidentManager`: descriptive incident recording
+35:     - `ChangeControlManager`: pending-change and dirty-root coordination
+36:     - `RiskManager`: risk posture tied back into spell-system state
+37:     - `CreationGateController`: conduit and lineage admission governance
+38:     - `SpellSystemStates`: frame-local state registry surfaced through this hub
+39:     - borrowed `DevOpsInformationRegistry`: frame-owned topology and
+40:       transaction mirror exposed through the manager boundary
+41: 
+42:     Contract:
+43:     - One `DevOpsManager` owns one coherent set of frame-local operational
+44:       managers.
+45:     - The information registry is borrowed from the owning frame rather than
+46:       created here, so runtime-object unregister flows are not coupled to
+47:       manager cleanup order.
+48:     - The manager is the intended boundary for higher-level tools or AI agents
+49:       that need to inspect or manipulate frame health.
+50:     - Cleanup is responsible for tearing down the owned manager graph in a
+51:       deterministic order and then dropping the borrowed registry reference.
+52: 
+53:     Threading:
+54:         Each owned manager guards its own state; this hub adds no lock of its
+55:         own and never reaches into a child's internals, keeping the lock order
+56:         strictly downward.
+57: 
+58:     Lifecycle / Cleanup:
+59:         One instance per `AethericFrame`, constructed in the frame's `__init__`.
+60:         Cleanup tears down the OWNED manager graph in deterministic order and
+61:         only then drops the BORROWED registry reference - owned children die
+62:         first, borrowed references are released last.
+63: 
+```
+
+## IncidentManager
+
+File: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py`  
+SHA-256: `8b3b71796dc37deecf2294a9f0db1bc1250763a3163888fdaecf72ded1d3bcea`  
+Excerpt: lines 19–57.
+
+```text
+19:     """
+20:     Frame-local registry of `Incident` records.
+21: 
+22:     `IncidentManager` is the descriptive side of the DevOps surface. It owns
+23:     the incident objects for one frame, allocates their ids, and provides the
+24:     lookup/filtering entrypoints that tooling, operators, or higher-level
+25:     automation can use to inspect that frame's incident history.
+26: 
+27:     Contract:
+28:     - The manager owns every `Incident` it creates.
+29:     - Incident ids are allocated sequentially for the lifetime of the manager.
+30:     - Query methods return current registry state only; no policy decisions are
+31:       made here.
+32:     - Cleanup is idempotent and tears down child incidents before clearing the
+33:       registry itself.
+34: 
+35:     Threading:
+36:         Registry mutation and id allocation are serialized internally.
+37:         Sequential id allocation means ids are frame-local and monotonic, not
+38:         globally unique across frames.
+39: 
+40:     Lifecycle / Cleanup:
+41:         Owned by `DevOpsManager`. Cleanup cleans child incidents FIRST and only
+42:         then clears the registry - children before container, matching the
+43:         repo-wide teardown posture.
+44: 
+45:     Registration:
+46:         MELDER KERNEL - guarded. Frame-owned; reached through `DevOpsManager`.
+47: 
+48:     Subsystem Context:
+49:         The DESCRIPTIVE side of DevOps, deliberately opposite the decisive
+50:         side. `RiskManager` and `ChangeControlManager` change what the runtime
+51:         DOES; this manager only records what happened. Its records are read by
+52:         tooling and agents, never by meld.
+53: 
+54:     System Context:
+55:         "No policy decisions are made here" is the whole contract and it is
+56:         worth respecting strictly. An incident registry that also gated
+57:         behaviour would make recording a problem indistinguishable from
+```
+
+## RiskManager
+
+File: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py`  
+SHA-256: `a3add707c9fc95e313056e42752efcef41ccac3173ed272f5fe96b7497d692b6`  
+Excerpt: lines 94–132.
+
+```text
+94:     """
+95:     DevOps risk tracking for meld validation gating.
+96: 
+97:     `RiskManager` is the conduit-local risk aggregator that feeds back into the
+98:     spellbook-level "validation required" signal used by Meld-facing runtime
+99:     flows. It does not validate spells itself. Instead, it watches validity
+100:     state changes and folds them into one operational question per conduit:
+101: 
+102:     "Does this conduit currently own or see any lineage whose state means meld
+103:     should not be trusted without another validation pass?"
+104: 
+105:     Risk model:
+106:     - structural risk is tracked by lineage id
+107:     - resolution risk is tracked by conduit-local lineage or spell id key
+108:     - any non-`SpellValidity.valid` state is treated as risky
+109:     - if either risk set is non-empty, the owning spellbook is marked as
+110:       requiring validation
+111: 
+112:     Operational role:
+113:     - register conduits and the spells they currently expose
+114:     - react to structural and per-conduit resolution validity changes
+115:     - keep conduit-local risk buckets current
+116:     - push one distilled validation-required flag back onto each spellbook
+117: 
+118:     Threading:
+119:     - Internal state is guarded by an `RLock`.
+120:     - Callers may invoke methods concurrently across conduits; updates are
+121:       folded into conduit-local buckets under the manager lock.
+122: 
+123:     Lifecycle:
+124:     - Owned by `DevOpsManager` and cleaned from that ownership boundary.
+125:     - After cleanup, public methods fail through `check_cleaned()`.
+126: 
+127:     Registration:
+128:         MELDER KERNEL - guarded. Frame-owned control-plane service reached
+129:         through `DevOpsManager`; never constructed by users.
+130: 
+131:     Subsystem Context:
+132:         The AGGREGATOR of the control plane. `SpellSystemStates` holds the
+```
+
+## ChangeControlManager
+
+File: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`  
+SHA-256: `1444dde9957c097733fdc9b373c410752246d56a6c34339fabafff040750a312`  
+Excerpt: lines 62–100.
+
+```text
+62:     """
+63:     Change-control registry for an Aetheric Frame.
+64: 
+65:     Purpose:
+66:         Provide DevOps-facing bookkeeping for spell lineages, dirty roots, and
+67:         change-control admission helpers. This is the frame-level control-plane
+68:         owner for admission, embargo, conflict, staging, and targeted
+69:         revalidation bookkeeping; it is not the hot-path resolver itself.
+70: 
+71:     Contract:
+72:         - Tracks pending change metadata by SpellIndex id.
+73:         - Tracks per-conduit component-of and dirty root state for targeted revalidation.
+74:         - Owns and coordinates the transaction/conflict/embargo/orchestrator
+75:           helper managers used by change-control flows.
+76:         - Exposes hook-registration seams for commit, abort, structural
+77:           validation, and dirty-marking behavior.
+78:         - Does not own SpellSystemStates lifecycle.
+79:     Args:
+80:         spell_system_states:
+81:             Spell system state container for this frame.
+82:     Returns:
+83:         None.
+84:     Raises:
+85:         ValueError: If spell_system_states is None.
+86:     Ownership:
+87:         Owns internal registries and the change-control manager instances.
+88: 
+89:     Threading:
+90:         All state mutations are guarded by an internal RLock.
+91:     Lifecycle:
+92:         cleanup() is idempotent and nulls internal references.
+93: 
+94:     Registration:
+95:         MELDER KERNEL - guarded. The frame's DevOps control-plane owner:
+96:         constructed and driven by the AethericFrame dev-ops layer; never
+97:         user-constructed or bound.
+98: 
+99:     Subsystem Context:
+100:         The top of the `change_control_manager` subsystem. It OWNS and wires the
+```
+
+## MutationResearch
+
+File: `src/melder/mutation_research/mutation_research.py`  
+SHA-256: `37b37cb10e0ae1d9d8e231e091082dec0d69d33e7c67548276720f53e4a55f36`  
+Excerpt: lines 39–77.
+
+```text
+39:     """
+40:     Singleton mutation-research root hosted by `Aether`.
+41: 
+42:     Purpose:
+43:         Own the formal declaration record of research over the live spell
+44:         world. The root manages `ResearchSet` networks by name (one
+45:         guaranteed `default` set), carries the mutation-research
+46:         configuration lifecycle, and is the ONLY object in the package that
+47:         touches the crystallizer: sets emit detached payloads through an
+48:         injected callback, and the root records them into the persistence
+49:         layer as the `MutationResearchCrystal` composition payload.
+50: 
+51:     Contract:
+52:         - Singleton, mirroring the hosting pattern used by `Nexus` and
+53:           `Crystallizer`; hosted by `Aether`, not by `AethericFrame`.
+54:         - Owns configuration state and the research-set registry.
+55:         - Emission is replace-on-emit through `Crystallizer.emit(...)` and is
+56:           a NO-OP while the crystallizer records nothing; lifecycle flips
+57:           ride the `RecordedUnitState` switch as before.
+58:         - Conduits and frames carry NO mutation dimension: the old
+59:           conduit/frame facades and SpellIndex-keyed sessions are out of the
+60:           model and gone.
+61: 
+62:     Threading:
+63:         Class lock guards singleton identity; instance verbs serialize under
+64:         the same reentrant lock. A dedicated reentrant emission lock makes
+65:         the persistence emission atomic (snapshot build + replace-on-emit
+66:         publication happen under one holder, so a paused emitter can never
+67:         publish a stale composition over a newer one). Lock order is
+68:         emission -> root -> set -> crystallizer, one-way: every path that
+69:         can trigger an emission while holding the root lock (set creation,
+70:         hydration) acquires the emission lock first.
+71: 
+72:     Lifecycle:
+73:         `cleanup()` cascades into owned sets and configuration, emits the
+74:         cleaned state while the record outlives the root, and resets
+75:         singleton bookkeeping; idempotent.
+76: 
+77:     Registration:
+```
+
+## MutationResearch.preview_candidate
+
+File: `src/melder/mutation_research/mutation_research.py`  
+SHA-256: `37b37cb10e0ae1d9d8e231e091082dec0d69d33e7c67548276720f53e4a55f36`  
+Excerpt: lines 2808–2846.
+
+```text
+2808:         """
+2809:         Mock one candidate codegen and report what would happen next.
+2810: 
+2811:         Purpose:
+2812:             The foresight centerpiece: BEFORE anything executes, binds, or
+2813:             records, answer what the candidate code defines, what it
+2814:             imports, how it differs from the version it would replace, and
+2815:             what blast radius that replacement would have - so an agent can
+2816:             guess what happens next instead of finding out.
+2817: 
+2818:         Contract:
+2819:             - Read-only: nothing executes, binds, or records.
+2820:             - Unparseable code answers honestly (`parse_error` row; the
+2821:               analysis/diff/impact sections go None) - previewing broken
+2822:               code is a legitimate question.
+2823:             - With `against_spell_id`, the candidate text adopts that
+2824:               spell's root module name so the would-be diff compares module
+2825:               universes honestly; the impact section is that root module's
+2826:               current blast radius joined with research residency.
+2827:             - With only `module_name`, the impact section is that module's
+2828:               radius; with neither, impact is None (nothing to center on).
+2829: 
+2830:         Args:
+2831:             code:
+2832:                 Candidate Python source text.
+2833:             against_spell_id:
+2834:                 Optional current version the candidate would replace.
+2835:             module_name:
+2836:                 Optional module identity for the candidate when no
+2837:                 against-version exists.
+2838:             set_name:
+2839:                 Research set for the impact residency join.
+2840: 
+2841:         Returns:
+2842:             Dict[str, object]:
+2843:                 `{"candidate_sha256", "module_name", "parse_error",
+2844:                 "defines", "import_roots", "diff", "impact",
+2845:                 "against_spell_id"}`.
+2846: 
+```
+
+## MutationResearch.record_world_entry
+
+File: `src/melder/mutation_research/mutation_research.py`  
+SHA-256: `37b37cb10e0ae1d9d8e231e091082dec0d69d33e7c67548276720f53e4a55f36`  
+Excerpt: lines 1243–1272.
+
+```text
+1243:         """
+1244:         Idempotently declare one world-entry into the default set.
+1245: 
+1246:         Purpose:
+1247:             The runtime-seam facade: the spellbook's bind and bind_inactive
+1248:             confirmation points call this on every dynamic-lane world entry
+1249:             once the root is active. Rediscovery (identical content, same
+1250:             SHA) is a quiet no-op - the runtime never fails on research
+1251:             bookkeeping.
+1252: 
+1253:         Contract:
+1254:             - CAMPAIGN DEFAULTS TO THE AMBIENT ONE: `campaign=None` inherits
+1255:               `active_campaign` rather than meaning "no campaign".
+1256:             - Records against the DEFAULT research set, not a named one.
+1257: 
+1258:         Args:
+1259:             spell_id:
+1260:                 Binding-signature SHA256 entering the world.
+1261:             staged:
+1262:                 True for parked (`bind_inactive`) entries.
+1263:             author:
+1264:                 Optional acting agent name.
+1265:             reason:
+1266:                 Optional reason line.
+1267: 
+1268:         Returns:
+1269:             bool:
+1270:                 True when a new declaration was recorded; False when the
+1271:                 identity was already declared.
+1272:         """
+```
+
+## MutationResearch.set_active_campaign
+
+File: `src/melder/mutation_research/mutation_research.py`  
+SHA-256: `37b37cb10e0ae1d9d8e231e091082dec0d69d33e7c67548276720f53e4a55f36`  
+Excerpt: lines 1064–1089.
+
+```text
+1064:         """
+1065:         Set the ambient research-campaign stamp.
+1066: 
+1067:         Purpose:
+1068:             Multi-agent campaigns stamp work ACROSS lanes; once set, every
+1069:             runtime auto-record routed through the root facades
+1070:             (`record_world_entry` / `record_promotion` - i.e. every dynamic
+1071:             bind, staged bind, and notch) carries this stamp until cleared,
+1072:             so campaign membership never depends on remembering to pass it.
+1073: 
+1074:         Contract:
+1075:             - Sets the AMBIENT DEFAULT that later group operations inherit when they pass
+1076:               `campaign=None`. It does not retroactively attribute earlier operations.
+1077:             - Rejects a non-string or empty campaign.
+1078: 
+1079:         Args:
+1080:             campaign:
+1081:                 Non-empty campaign name.
+1082: 
+1083:         Returns:
+1084:             None.
+1085: 
+1086:         Raises:
+1087:             ValueError:
+1088:                 If campaign is empty.
+1089:         """
+```
+
+## TransitionAct
+
+File: `src/melder/mutation_research/research_set/transition_entry.py`  
+SHA-256: `a9d0e76bc78c048cca1a0a0fab5fd2eb8cbb6e6f723e4d0d45c35559587690c2`  
+Excerpt: lines 10–48.
+
+```text
+10:     """
+11:     World-entry act vocabulary for the mutation-research journal.
+12: 
+13:     Purpose:
+14:         Name the only events the research record acknowledges. The stream is
+15:         forward-only and additive: history exists for understanding, never for
+16:         time travel, so there are deliberately NO checkout/rollback acts.
+17:         Returning to an old version is a NEW registration, not a rewind.
+18: 
+19:     Registration:
+20:         VALUE VOCABULARY. An enum is compared and
+21:         passed, never injected.
+22: 
+23:     Subsystem Context:
+24:         The act vocabulary stamped onto every `TransitionEntry` in a
+25:         `ResearchJournal`. The vocabulary is drawn from version control but is
+26:         deliberately NOT git: there is no merge, no rebase, and no checkout,
+27:         because those verbs all imply rewriting or relocating history that this
+28:         model treats as permanent.
+29: 
+30:     System Context:
+31:         The absent acts say more than the present ones. `promoted` changes what
+32:         is LIVE without changing which lane holds a version, and `restored`
+33:         rebuilds organization while itself being journalled - so even a rewind
+34:         of structure appears in history as a forward event. There is no act in
+35:         this enum that removes anything.
+36: 
+37:     Contract:
+38:         - `lane_created`: a research lane entered the network (optionally
+39:           anchored onto another lane's node).
+40:         - `registered`: a bound version was formally declared research and
+41:           landed in a lane (the world-entry moment; active bind-side).
+42:         - `staged`: a version entered the world PARKED (`bind_inactive`);
+43:           same declaration mechanics as `registered`, different runtime
+44:           posture at entry.
+45:         - `promoted`: the runtime selection moved (a notch repointed the
+46:           SpellIndex active member); journal-only - promotion changes what
+47:           is live, never which lane holds the version.
+48:         - `attached` / `detached`: a lane's ancestry anchor was organized onto
+```
+
+## Continuity is not arbitrary state rollback
+
+The architecture document distinguishes structural checkpoint reconstruction from live version promotion. It also states that not every live value or callable can be reconstructed from data alone.
+
+Source: `architecture_and_design/02_architecture/continuity_and_evolution.md`, sections "Continuity Path" and "Tradeoffs"; and `architecture_and_design/03_usage/preserve_and_evolve.md`, sections "Continuity Workflow" and "Evolution Workflow".
+
+## External terminology sources checked
+
+Checked on 2026-09-27. These sources support terminology and the distinction between a roadmap target and formal accreditation; they are not a complete ITIL practice-guide assessment.
+
+- [PeopleCert: ITIL 4 Practitioner — Change Enablement](https://www.peoplecert.org/browse-certifications/it-governance-and-service-management/ITIL-1/itil-4-practitioner-change-enablement-3794): risk assessment, authorization, change scheduling, roles, and practice outcomes.
+- [PeopleCert: ITIL Foundation Bridge (Version 5)](https://www.peoplecert.org/browse-mock-exams/it-governance-and-service-management/ITIL-1/ITIL-Foundation-Bridge-Version-5-Mock-exam-4159): establishes that a newer ITIL baseline exists, so compatibility should name a version.
+- [PeopleCert: ITIL-Accredited Tool Vendors programme](https://atv.peoplecert.org/): describes formal assessment of tool alignment and vendor expertise.
+- [PeopleCert: accreditation model](https://atv.peoplecert.org/accreditation/accreditation-model/): describes the practice-based tool/vendor assessment model.
+================================================================================
+END FILE: roadmap/melder-roadmap-source-notes.md
 ================================================================================

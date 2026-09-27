@@ -107,7 +107,7 @@ def test_static_command_system_status_reports_missing_and_ambiguous_publication(
 
     viewer.descriptor.spell_records_by_key.pop("ops-spellbook:sha-1-shadow")
     command_system._aether = SimpleNamespace(
-        _get_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
+        get_root_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
             has_live_creation=lambda *, spell: False
         )
     )
@@ -131,7 +131,7 @@ def test_static_command_system_reports_ambiguous_index_and_command_disabled_not_
     viewer.descriptor.spell_records_by_key.pop("ops-spellbook:sha-2")
     viewer.compiled_access_surface.command_frame_enabled = False
     command_system._aether = SimpleNamespace(
-        _get_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
+        get_root_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
             has_live_creation=lambda *, spell: True
         )
     )
@@ -142,7 +142,7 @@ def test_static_command_system_reports_ambiguous_index_and_command_disabled_not_
     viewer.compiled_access_surface.command_frame_enabled = True
     viewer.compiled_access_surface.enabled_spell_index_ids = ("lineage-1",)
     command_system._aether = SimpleNamespace(
-        _get_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
+        get_root_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
             has_live_creation=lambda *, spell: False
         )
     )

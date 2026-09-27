@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/static_command_system.py",
- "source_sha256": "7c70af7a30ac45666d5fb1541b6ee8ed9833f7cf26a81919e0b235dd51ec4f8c",
+ "source_sha256": "d2bd5af6ef4f7024abb09a9d6d5fa039c866770c0d006b68188f674a0d4c0e0c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.static_command_system": {
@@ -42,17 +42,18 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "75f687ac210567e243aebdf9f6b3751468984b1ef19a6040568ee47a00e065ed",
+   "span_sha256": "68ef2412ff3c69392debbb1e674a26b543960aece1b192dcd4858f8264041ee5",
    "role": "Static-room command specialization.",
    "responsibilities": [
     "preserves the shared command API while denying topology mutation and direct create-path spell activation",
-    "restricts spell retrieval to already-live static-compatible spell lifecycles"
+    "restricts spell retrieval to already-live static-compatible spell lifecycles",
+    "resolves spell owners through Aether's root lookup (owners are roots)"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "75f687ac210567e243aebdf9f6b3751468984b1ef19a6040568ee47a00e065ed"
+   "semantics_authored_against": "68ef2412ff3c69392debbb1e674a26b543960aece1b192dcd4858f8264041ee5"
   }
  },
  "edges_out": [
