@@ -1,5 +1,3 @@
-import hashlib
-import pickle
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 if TYPE_CHECKING:
@@ -12,6 +10,9 @@ if TYPE_CHECKING:
 
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_types.spell_types import SpellType
+from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
+    CodegenSignature,
+)
 
 class SharedCompilerExecutions:
     """
@@ -65,8 +66,13 @@ class SharedCompilerExecutions:
                 Avoid expensive mega-`repr(...)` materialization on large nested
                 IR payloads while preserving deterministic signature behaviour.
             Contract:
+                - Delegates to `CodegenSignature.serialize_codegen_signature_part`,
+                  the single implementation shared with the phase-11 helper
+                  surface; the two facades can no longer drift apart.
                 - Uses typed fastpaths for common scalar values.
-                - Uses direct `pickle` fallback for container and unsupported values.
+                - Uses direct `pickle` fallback for container and unsupported values;
+                  a top-level `set`/`frozenset` part is frozen (sorted) first so its
+                  bytes do not depend on the process hash seed.
                 - Falls back to `repr(...).encode(...)` for non-picklable values.
             Args:
                 part:
@@ -75,40 +81,7 @@ class SharedCompilerExecutions:
                 bytes:
                     Deterministic encoded bytes for hashing.
         """
-        part_type = type(part)
-        if (
-                part_type is dict
-                or part_type is tuple
-                or part_type is list
-                or part_type is set
-                or part_type is frozenset
-        ):
-            try:
-                encoded_part_from_collection: bytes = pickle.dumps(part, protocol=5)
-                return encoded_part_from_collection
-            except (pickle.PickleError, TypeError, AttributeError):
-                return repr(part).encode("utf-8")
-        if part is None:
-            return b"N"
-        if part_type is bool:
-            return b"B1" if part else b"B0"
-        if part_type is int:
-            return b"I" + str(part).encode("ascii")
-        if part_type is float:
-            return b"F" + repr(part).encode("ascii")
-        if part_type is str:
-            part_str: str = part
-            return b"S" + part_str.encode("utf-8")
-        if part_type is bytes:
-            part_bytes: bytes = part
-            return b"Y" + part_bytes
-        if part_type is bytearray:
-            return b"Y" + bytes(part)
-        try:
-            encoded_part_from_object: bytes = pickle.dumps(part, protocol=5)
-            return encoded_part_from_object
-        except (pickle.PickleError, TypeError, AttributeError):
-            return repr(part).encode("utf-8")
+        return CodegenSignature.serialize_codegen_signature_part(part)
 
     @staticmethod
     def hash_codegen_signature(*parts: Any) -> str:
@@ -119,6 +92,8 @@ class SharedCompilerExecutions:
                 Produce stable fingerprints for phase-exported IR slices so
                 codegen-creation compilation can skip unchanged payloads.
             Contract:
+                - Delegates to `CodegenSignature.hash_codegen_signature` (single
+                  implementation shared with the phase-11 helper surface).
                 - Signature is deterministic for equal-ordered inputs.
                 - Does not depend on process-randomized object identity.
             Args:
@@ -128,13 +103,7 @@ class SharedCompilerExecutions:
                 str:
                     SHA256 hex digest for the supplied parts.
         """
-        digest = hashlib.sha256()
-        for part in parts:
-            digest.update(
-                SharedCompilerExecutions.serialize_codegen_signature_part(part)
-            )
-            digest.update(b"|")
-        return digest.hexdigest()
+        return CodegenSignature.hash_codegen_signature(*parts)
 
     @staticmethod
     def socket_row_sort_key(
@@ -161,43 +130,6 @@ class SharedCompilerExecutions:
             socket_row[1],
             socket_row[3],
         )
-
-    @staticmethod
-    def build_phase5_socket_rows(
-            artifact: SpellCompilerArtifact,
-    ) -> Tuple[Tuple[Any, ...], ...]:
-        """
-        Build deterministic schema rows for Phase5 socket references.
-
-        Purpose:
-            Export explicit socket routing data from the root blueprint into
-            phase2-5 IR without leaking live socket objects.
-        Contract:
-            - Returns only primitive tuple rows.
-            - Ignores malformed socket objects that do not expose required
-              fields.
-            - Output row order is deterministic.
-        Returns:
-            Tuple[Tuple[Any, ...], ...]:
-                Rows `(node_id, param_name, param_path_id, socket_kind)`.
-        """
-        if artifact._root_blueprint_phase5 is None:
-            return ()
-        rows: List[Tuple[Any, ...]] = []
-        for socket_ref in artifact._root_blueprint_phase5.socket_refs:
-            try:
-                rows.append(
-                    (
-                        socket_ref.node_id,
-                        socket_ref.param_name,
-                        socket_ref.param_path_id,
-                        socket_ref.socket_kind.value,
-                    )
-                )
-            except AttributeError:
-                continue
-        rows.sort(key=SharedCompilerExecutions.socket_row_sort_key)
-        return tuple(rows)
 
     @staticmethod
     def build_phase5_dag_edge_rows(
@@ -312,8 +244,6 @@ class SharedCompilerExecutions:
         phase5_root_spell_id: Optional[str] = None
         phase5_root_lineage_id: Optional[str] = None
         phase5_root_ordered_node_ids: Tuple[str, ...] = ()
-        phase5_socket_ref_count = 0
-        phase5_socket_rows: Tuple[Tuple[Any, ...], ...] = ()
         phase5_dag_edge_rows: Tuple[Tuple[Any, ...], ...] = ()
         if artifact._root_blueprint_phase5 is not None:
             phase5_root_spell_id = artifact._root_blueprint_phase5.root_spell_id
@@ -323,10 +253,6 @@ class SharedCompilerExecutions:
                 phase5_root_lineage_id = None
             phase5_root_ordered_node_ids = tuple(
                 artifact._root_blueprint_phase5.ordered_node_ids
-            )
-            phase5_socket_ref_count = len(artifact._root_blueprint_phase5.socket_refs)
-            phase5_socket_rows = SharedCompilerExecutions.build_phase5_socket_rows(
-                artifact
             )
             phase5_dag_edge_rows = SharedCompilerExecutions.build_phase5_dag_edge_rows(
                 artifact
@@ -348,8 +274,6 @@ class SharedCompilerExecutions:
             phase5_root_spell_id,
             phase5_root_lineage_id,
             phase5_root_ordered_node_ids,
-            phase5_socket_ref_count,
-            phase5_socket_rows,
             phase5_dag_edge_rows,
             phase5_index_spell_ids,
         )
@@ -364,8 +288,6 @@ class SharedCompilerExecutions:
             "phase5_root_spell_id": phase5_root_spell_id,
             "phase5_root_lineage_id": phase5_root_lineage_id,
             "phase5_root_ordered_node_ids": phase5_root_ordered_node_ids,
-            "phase5_socket_ref_count": phase5_socket_ref_count,
-            "phase5_socket_rows": phase5_socket_rows,
             "phase5_dag_edge_rows": phase5_dag_edge_rows,
             "phase5_index_spell_ids": phase5_index_spell_ids,
             "signature": phase2_5_signature,
@@ -384,9 +306,13 @@ class SharedCompilerExecutions:
                 Convert nested payload values into primitive/tuple structures so
                 Phase11 IR rows can be serialized without leaking live objects.
             Contract:
+                - Delegates to `CodegenSignature.freeze_phase11_schema_value`
+                  (single implementation shared with the phase-11 helper surface).
                 - Primitive values are returned as-is.
-                - Dict/list/tuple/set values are recursively normalized.
-                - Non-primitive objects are represented by deterministic repr text.
+                - Dict/list/tuple/set values are recursively normalized; sets sort.
+                - Callables and instances whose `repr` would carry a memory address
+                  are rendered as process-independent marker tuples; every other
+                  non-primitive object keeps its deterministic repr text.
             Args:
                 value:
                     Raw value captured from plan metadata.
@@ -394,34 +320,7 @@ class SharedCompilerExecutions:
                 Any:
                     Deterministic schema-safe value.
         """
-        if value is None or isinstance(value, (bool, int, float, str)):
-            return value
-        if isinstance(value, dict):
-            return tuple(
-                sorted(
-                    (
-                        key,
-                        SharedCompilerExecutions.freeze_phase11_schema_value(item),
-                    )
-                    for key, item in value.items()
-                )
-            )
-        if isinstance(value, (list, tuple)):
-            return tuple(
-                SharedCompilerExecutions.freeze_phase11_schema_value(item)
-                for item in value
-            )
-        if isinstance(value, set):
-            return tuple(
-                sorted(
-                    (
-                        SharedCompilerExecutions.freeze_phase11_schema_value(item)
-                        for item in value
-                    ),
-                    key=repr,
-                )
-            )
-        return repr(value)
+        return CodegenSignature.freeze_phase11_schema_value(value)
 
     @staticmethod
     def normalize_instance_key(
@@ -872,7 +771,8 @@ class SharedCompilerExecutions:
                 - Expects InjectionSpec/ParamSource contract fields to be present.
                 - Fails fast when malformed/cleaned artifacts violate contract.
                 - override_required rows append signature position/kind and descriptive IDs;
-                  ordinary source kinds retain their existing six-field row layout.
+                  unresolved_input rows append signature position/kind only (no provider,
+                  no references); ordinary source kinds retain their six-field row layout.
             Args:
                 instance_injections:
                     Mapping from instance key to InjectionSpec-like objects.
@@ -937,6 +837,11 @@ class SharedCompilerExecutions:
                             param_source.position,
                             param_source.parameter_kind,
                             tuple(param_source.referenced_spell_ids),
+                        )
+                    elif kind == "unresolved_input":
+                        param_row += (
+                            param_source.position,
+                            param_source.parameter_kind,
                         )
                     param_rows.append(param_row)
 
@@ -1219,6 +1124,7 @@ class SharedCompilerExecutions:
                 - Includes param source wiring, aggregation flags, and contract payload.
                 - Returns tuple-only deterministic structure.
                 - Required-input position/kind/reference fields survive either metadata mode.
+                - Unresolved-input position/kind fields survive either metadata mode.
             Args:
                 injection_spec:
                     Phase 9 InjectionSpec-like object.
@@ -1252,6 +1158,11 @@ class SharedCompilerExecutions:
                     param_source.position,
                     param_source.parameter_kind,
                     tuple(param_source.referenced_spell_ids),
+                )
+            elif param_source.kind == "unresolved_input":
+                param_row += (
+                    param_source.position,
+                    param_source.parameter_kind,
                 )
             param_rows.append(param_row)
 
@@ -1417,7 +1328,6 @@ class SharedCompilerExecutions:
                 "route_family": spell_codegen_model.route_family,
                 "node_count": spell_codegen_model.node_count,
                 "max_dependency_count": spell_codegen_model.max_dependency_count,
-                "target_spec_count": spell_codegen_model.target_spec_count,
                 "applied_strategy_ids": tuple(spell_codegen_model.applied_strategy_ids),
             },
             "plan": None if spell_codegen_plan is None else {

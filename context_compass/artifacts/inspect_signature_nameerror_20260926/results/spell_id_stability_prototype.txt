@@ -1,0 +1,14 @@
+=== run 1 (separate process)
+Engine 77f86a28dbef52e63dced083ff0be3f60fde19fc016c9ba6d3c050200734eaeb
+Car 7f03a2d9319fb95a3ed629cdaf8c90a27cfabc09221929739b36c6df538668b4
+Garage e6b2c30aa9399fd33b52c6b5c9b392823263e8c45b169228cd4795078a9c04c6
+make_car 4011c49e71092f6331bd5cdd617fc8c4e7f02430fa627aee3914a29941cfaed3
+Car init_signature: (engine: probe_user_mod.Engine, price: 'Optional[Decimal]' = None) -> None
+Car annotations: {}
+=== run 2 (separate process)
+Engine 77f86a28dbef52e63dced083ff0be3f60fde19fc016c9ba6d3c050200734eaeb
+Car 7f03a2d9319fb95a3ed629cdaf8c90a27cfabc09221929739b36c6df538668b4
+Garage e6b2c30aa9399fd33b52c6b5c9b392823263e8c45b169228cd4795078a9c04c6
+make_car 18183f9425317eb6c608b9c876d93d3b7c93d0888ad61e44eb318ebe9b8aa546
+Car init_signature: (engine: probe_user_mod.Engine, price: 'Optional[Decimal]' = None) -> None
+Car annotations: {}

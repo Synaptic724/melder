@@ -1,0 +1,134 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py",
+ "source_sha256": "af0b12de5c823907a5cae46b55959e13764ed8b6c435c6b6685306f41e37c8fb",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy",
+   "label": "spell_site_graph_processor_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Builder of a root's site graph from injection sources and Phase-3 topologies.",
+   "responsibilities": [
+    "hosts SpellSiteGraphProcessorStrategy"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": ""
+  },
+  "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "label": "SpellSiteGraphProcessorStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_site_graph_processor_strategy.py",
+   "lineno": 33,
+   "bases": [
+    "SpellArtifactProcessorStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "build_site_graph",
+    "process",
+    "strategy_id"
+   ],
+   "shape": {
+    "method_count": 10,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "1802d80dee2fed87b6ea03d1708f848d7febc0b2a10dba877ce3cf03d7174a38",
+   "include": true,
+   "role": "Builds a root's site graph from injection sources and live Phase-3 topologies; not registered in the default Phase-9 chain.",
+   "responsibilities": [
+    "orders reachable instance keys parents first with an iterative DFS",
+    "builds one parameter row per topology socket, falling back to the injection source",
+    "accumulates logical path counts parents first",
+    "fits model.site_graph_shape when a caller runs it as a processor strategy"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "1802d80dee2fed87b6ea03d1708f848d7febc0b2a10dba877ce3cf03d7174a38"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to_label": "SpellArtifactProcessorStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to_label": "SpellSiteGraphAnalysis",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to_label": "SpellSiteParam",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to_label": "SpellSite",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Callable": "typing.Callable",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "SiteInstanceKey": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SiteInstanceKey",
+  "SpellSite": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSite",
+  "SpellSiteGraphAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
+  "SpellSiteParam": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteParam",
+  "SpellArtifactProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellInjectionAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionAnalysis",
+  "SpellInjectionInstanceSpec": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionInstanceSpec",
+  "SpellInjectionParamSource": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis.SpellInjectionParamSource",
+  "SpellCodegenModel": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+  "SpellCompilerArtifact": "melder.aether.spellbook.spell_compiler.spell_compiler_artifact.SpellCompilerArtifact",
+  "SpellLocalTopology": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
+  "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+  "label": "SpellSiteGraphProcessorStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_site_graph_processor_strategy.SpellSiteGraphProcessorStrategy",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
+   "relation": "creates",
+   "why": "build_site_graph returns a new section; the caller (the site-plan runtime, or the model when run as a processor) owns its cleanup.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
+}

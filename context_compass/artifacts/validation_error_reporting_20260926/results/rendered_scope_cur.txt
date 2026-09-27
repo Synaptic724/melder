@@ -1,0 +1,8 @@
+RAISED melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError
+Spellbook validation failed; one or more spells are broken. Broken spells: Holder (id=a6f1f7ee2832cb9e22593da8e4dfd7b374338f13faee5e550136cd5c4ca0f750, frame=None)
+Diagnostics:
+Phase 4 issues:
+- Spell 'Holder' (id=a6f1f7ee2832cb9e22593da8e4dfd7b374338f13faee5e550136cd5c4ca0f750, frame=None):
+    (none recorded)
+Phase 6 diagnostics:
+  (none recorded)

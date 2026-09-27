@@ -114,7 +114,7 @@ class SpellContract(Cleanable):
         "spell",
         "spellframe",
         "binding_name",
-        "spell_override",
+        "override",
     ]
 
     def __init__(
@@ -123,7 +123,7 @@ class SpellContract(Cleanable):
         *,
         spellframe: Optional[Any] = None,
         binding_name: Optional[str] = None,
-        spell_override: Optional[Union[dict, list, tuple]] = None,
+        override: Optional[Union[dict, list, tuple]] = None,
     ) -> None:
         """
         Create one late-binding contract descriptor.
@@ -155,21 +155,22 @@ class SpellContract(Cleanable):
                 binding name remains `None` so default-binding semantics remain
                 intact.
 
-            spell_override:
-                Optional positional/keyword override payload that should be
-                applied when a concrete spell is finally bound to this contract
-                during linking or resolution.
+            override:
+                Optional construction payload for the provider spell that satisfies
+                this contract, applied when that provider is constructed for this
+                consumer:
 
-                Semantics mirror `SpellMap`:
+                - `dict`: keyword arguments for the provider's constructor
+                - `list` / `tuple`: positional arguments
 
-                - `dict`: treated as keyword arguments
-                - `list` / `tuple`: treated as positional arguments
+                Values may be any Python object. They are never copied into the
+                compiled plan or the creation cache: phase 9 records a reference
+                to this descriptor and the executor reads the live value from it
+                at hydration, so the provider receives the object itself, by
+                identity (2026-09-26). A caller payload on `meld(override=...)`
+                still wins over this payload (override > contract > dependency).
 
-                `SpellContract` itself does not interpret this payload; it is
-                carried forward so that the linker / runtime planning path can
-                attach it to the eventual provider spell.
-
-                When `None`, no override payload is attached.
+                When `None`, no payload is attached.
 
         Raises:
             ValueError: If both `spell` and `spellframe` are omitted, because
@@ -192,8 +193,8 @@ class SpellContract(Cleanable):
             if binding_name is not None
             else None
         )
-        # Preserve the caller payload; None means no override is attached.
-        self.spell_override = spell_override
+        # Preserve the caller payload by reference; None means no payload is attached.
+        self.override = override
 
     def cleanup(self) -> None:
         """
@@ -215,10 +216,10 @@ class SpellContract(Cleanable):
         self._cleaned = True
 
         # Clear override payload if it is a container.
-        if isinstance(self.spell_override, (list, dict)):
-            self.spell_override.clear()
+        if isinstance(self.override, (list, dict)):
+            self.override.clear()
 
-        self.spell_override = None
+        self.override = None
         self.spell = None
         self.spellframe = None
         self.binding_name = None
@@ -339,5 +340,5 @@ class SpellContract(Cleanable):
             f"<SpellContract spell={self.spell!r} "
             f"spellframe={self.spellframe!r} "
             f"binding_name={self.binding_name!r} "
-            f"override={self.spell_override!r}>"
+            f"override={self.override!r}>"
         )

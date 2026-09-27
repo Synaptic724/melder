@@ -235,7 +235,7 @@ class CallableParameterBindingSummary:
     """
     Minimal binding-time view of a single callable parameter (for fingerprint/diagnostics).
     """
-    __slots__ = ["name", "kind", "default_repr", "annotation_repr"]
+    __slots__ = ["name", "kind", "default_repr", "annotation_repr", "default_fingerprint_repr"]
 
     def __init__(
             self,
@@ -243,6 +243,7 @@ class CallableParameterBindingSummary:
             kind: str,
             default_repr: Optional[str],
             annotation_repr: Optional[str],
+            default_fingerprint_repr: Optional[str] = None,
     ) -> None:
         """
         Initialize one minimal callable-parameter binding summary.
@@ -256,6 +257,9 @@ class CallableParameterBindingSummary:
                 Optional default-value representation.
             annotation_repr:
                 Optional annotation representation.
+            default_fingerprint_repr:
+                Optional address-free, untruncated default repr used only by the bind
+                fingerprint. None means the fingerprint derives it from `default_repr`.
 
         Returns:
             None.
@@ -264,6 +268,7 @@ class CallableParameterBindingSummary:
         self.kind: str = kind
         self.default_repr: Optional[str] = default_repr
         self.annotation_repr: Optional[str] = annotation_repr
+        self.default_fingerprint_repr: Optional[str] = default_fingerprint_repr
 
 
 class CallableBindingProfile(SpellBindingProfile):
@@ -283,6 +288,7 @@ class CallableBindingProfile(SpellBindingProfile):
         "object_id",
         "type_name",
         "repr_string",
+        "fingerprint_repr",
         "signature",
         "parameters",
         "builtin_module",
@@ -308,6 +314,7 @@ class CallableBindingProfile(SpellBindingProfile):
             extension_module: bool = False,
             lambda_function: bool = False,
             abstract: bool = False,
+            fingerprint_repr: Optional[str] = None,
     ) -> None:
         """
         Initialize one callable binding profile.
@@ -341,6 +348,10 @@ class CallableBindingProfile(SpellBindingProfile):
                 Whether the callable is a lambda.
             abstract:
                 Whether the callable appears abstract.
+            fingerprint_repr:
+                Optional address-free, untruncated repr used only by the bind fingerprint
+                (`InspectorUtility.stable_repr`). None means the fingerprint derives the text
+                from `repr_string` with memory addresses removed.
 
         Returns:
             None.
@@ -358,6 +369,7 @@ class CallableBindingProfile(SpellBindingProfile):
         self.extension_module: bool = extension_module
         self.lambda_function: bool = lambda_function
         self.abstract: bool = abstract
+        self.fingerprint_repr: Optional[str] = fingerprint_repr
 
     def cleanup(self) -> None:
         """
@@ -383,6 +395,7 @@ class CallableBindingProfile(SpellBindingProfile):
         del self.extension_module
         del self.lambda_function
         del self.abstract
+        del self.fingerprint_repr
 
         super().cleanup()
 
@@ -395,6 +408,7 @@ class InstanceBindingProfile(SpellBindingProfile):
         "type_name",
         "module",
         "repr_string",
+        "fingerprint_repr",
     ]
 
     def __init__(
@@ -405,6 +419,7 @@ class InstanceBindingProfile(SpellBindingProfile):
             type_name: str,
             module: str,
             repr_string: str,
+            fingerprint_repr: Optional[str] = None,
     ) -> None:
         """
         Initialize one instance binding profile.
@@ -420,6 +435,10 @@ class InstanceBindingProfile(SpellBindingProfile):
                 Declaring module name.
             repr_string:
                 Detached representation string.
+            fingerprint_repr:
+                Optional address-free, untruncated repr used only by the bind fingerprint
+                (`InspectorUtility.stable_repr`). None means the fingerprint derives the text
+                from `repr_string` with memory addresses removed.
 
         Returns:
             None.
@@ -428,6 +447,7 @@ class InstanceBindingProfile(SpellBindingProfile):
         self.type_name: str = type_name
         self.module: str = module
         self.repr_string: str = repr_string
+        self.fingerprint_repr: Optional[str] = fingerprint_repr
 
     def cleanup(self) -> None:
         """
@@ -442,6 +462,7 @@ class InstanceBindingProfile(SpellBindingProfile):
         del self.type_name
         del self.module
         del self.repr_string
+        del self.fingerprint_repr
 
         super().cleanup()
 
@@ -458,6 +479,7 @@ class OtherBindingProfile(SpellBindingProfile):
         "type_name",
         "module",
         "repr_string",
+        "fingerprint_repr",
     ]
 
     def __init__(
@@ -468,6 +490,7 @@ class OtherBindingProfile(SpellBindingProfile):
             type_name: str,
             module: str,
             repr_string: str,
+            fingerprint_repr: Optional[str] = None,
     ) -> None:
         """
         Initialize one fallback binding profile.
@@ -483,6 +506,10 @@ class OtherBindingProfile(SpellBindingProfile):
                 Declaring module name.
             repr_string:
                 Detached representation string.
+            fingerprint_repr:
+                Optional address-free, untruncated repr used only by the bind fingerprint
+                (`InspectorUtility.stable_repr`). None means the fingerprint derives the text
+                from `repr_string` with memory addresses removed.
 
         Returns:
             None.
@@ -491,6 +518,7 @@ class OtherBindingProfile(SpellBindingProfile):
         self.type_name: str = type_name
         self.module: str = module
         self.repr_string: str = repr_string
+        self.fingerprint_repr: Optional[str] = fingerprint_repr
 
     def cleanup(self) -> None:
         """
@@ -504,4 +532,5 @@ class OtherBindingProfile(SpellBindingProfile):
         del self.type_name
         del self.module
         del self.repr_string
+        del self.fingerprint_repr
         super().cleanup()

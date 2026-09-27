@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py",
- "source_sha256": "811961743ccae7d27048354d10f079a5029cadbfb46fb010430825a1c63be321",
+ "source_sha256": "bf17ccb488104ae2c3885576cbbb87cd8f2bae7c346b4d8ac41641685d39502c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver": {
@@ -26,58 +26,53 @@
    "markers": [],
    "public_methods": [
     "cleanup",
-    "resolve_path_registry",
     "resolve_spell"
    ],
    "shape": {
-    "method_count": 3,
+    "method_count": 2,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d9c18c65b4e532289e82143341c60bb99edcfa0cd99a935600fb7f44c172dd04",
+   "span_sha256": "be706397d2df9bbec2359b2cb9eff09a9c1052bbc109df6f5522874b59b07084",
    "role": "Live phase-11 binding resolver over generalized plan/model truth.",
    "responsibilities": [
     "resolves spells from runtime-shape records first and lane plan steps second",
-    "resolves the phase-5 path registry from analyzer graph-shape truth",
     "owns only temporary reference maps for one hydration/build pass"
    ],
    "owns_state": [
     "_records_by_spell_id",
-    "_spells_by_id",
-    "_path_registry"
+    "_spells_by_id"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "d9c18c65b4e532289e82143341c60bb99edcfa0cd99a935600fb7f44c172dd04"
+   "semantics_authored_against": "be706397d2df9bbec2359b2cb9eff09a9c1052bbc109df6f5522874b59b07084"
   },
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_binding_resolver.SpellbookBindingResolver",
    "label": "SpellbookBindingResolver",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py",
-   "lineno": 155,
+   "lineno": 131,
    "bases": [
     "Cleanable"
    ],
    "markers": [],
    "public_methods": [
     "cleanup",
-    "resolve_path_registry",
     "resolve_spell"
    ],
    "shape": {
-    "method_count": 3,
+    "method_count": 2,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "cc027d8c9ca8897e99f2c5a44e88b372aeb19fd7cbddd25af259e19c7195c158",
+   "span_sha256": "95fdd69c365ec5cf01595bedeb5925fc3e5312b1f025c5fe81bc6ca88e69c061",
    "role": "Cache-load binding resolver over the live Spellbook surface.",
    "responsibilities": [
     "resolves spells from the owning Spellbook spell-id pool during cache hydration",
-    "resolves the live phase-5 path registry from the root blueprint",
-    "raises explicit sequencing errors when hydration prerequisites are not live"
+    "raises explicit errors when the spell has no Spellbook or the pool lacks an id"
    ],
    "owns_state": [
     "_spell"
@@ -86,7 +81,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "cc027d8c9ca8897e99f2c5a44e88b372aeb19fd7cbddd25af259e19c7195c158"
+   "semantics_authored_against": "95fdd69c365ec5cf01595bedeb5925fc3e5312b1f025c5fe81bc6ca88e69c061"
   }
  },
  "edges_out": [
@@ -121,7 +116,6 @@
  "imports": {
   "Any": "typing.Any",
   "Dict": "typing.Dict",
-  "Optional": "typing.Optional",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
  },
  "collapse_candidate": null,

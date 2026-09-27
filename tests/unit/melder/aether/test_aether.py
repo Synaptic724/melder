@@ -1,5 +1,6 @@
 ﻿import logging
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 import pytest
 import threading
 from unittest.mock import MagicMock, patch, ANY
@@ -925,6 +926,25 @@ def test_bind_aetheric_frame_configuration_sets_default_frame_posture() -> None:
     assert bound.rift_enabled is False
     assert bound.shared_framewide_spellbook_configuration is False
     assert frame_configuration._cleaned is True
+
+
+def test_bind_aetheric_frame_configuration_copies_the_caching_posture() -> None:
+    """The first posture bind carries the cache flag and the cache root into the frame-owned object."""
+    a = Aether()
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-1",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+        system_caching_enabled=False,
+        system_cache_root_path="tests/_frame_bind_cache_root",
+    )
+    a._ensure_frame("default").bind_frame_configuration(frame_configuration)
+    bound = a._default_frame.frame_configuration
+    assert bound is not frame_configuration
+    assert bound.system_caching_enabled is False
+    assert bound.system_cache_root_path == Path("tests/_frame_bind_cache_root")
+    assert bound.matches_posture(bound)
 
 
 def test_bind_aetheric_frame_configuration_same_posture_cleans_duplicate() -> None:

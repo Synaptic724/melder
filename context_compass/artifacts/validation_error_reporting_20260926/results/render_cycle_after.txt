@@ -1,0 +1,6 @@
+RAISED melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError
+Spellbook validation failed. Broken spells: CycleA, CycleB.
+CycleA:
+  - Spell 'CycleA' is part of a dependency cycle: 'CycleA' -> 'CycleB' -> 'CycleA'. Melder cannot build any spell in the cycle; remove one of these constructor dependencies or give that parameter a default. [CIRCULAR_DEPENDENCY]
+CycleB:
+  - Spell 'CycleB' is part of a dependency cycle: 'CycleB' -> 'CycleA' -> 'CycleB'. Melder cannot build any spell in the cycle; remove one of these constructor dependencies or give that parameter a default. [CIRCULAR_DEPENDENCY]

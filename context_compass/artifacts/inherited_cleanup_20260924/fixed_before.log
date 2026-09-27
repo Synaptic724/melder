@@ -1,0 +1,144 @@
+FFFF.FFF.F.FFF.F......FFF.FF                                             [100%]
+================================== FAILURES ===================================
+_______ test_requested_inherited_cleanup_is_retained[general-explicit] ________
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:152: in test_requested_inherited_cleanup_is_retained
+    assert spell.disposal_method_names == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+______ test_requested_inherited_cleanup_is_retained[general-configured] _______
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:152: in test_requested_inherited_cleanup_is_retained
+    assert spell.disposal_method_names == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_______ test_requested_inherited_cleanup_is_retained[detailed-explicit] _______
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:152: in test_requested_inherited_cleanup_is_retained
+    assert spell.disposal_method_names == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+______ test_requested_inherited_cleanup_is_retained[detailed-configured] ______
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:152: in test_requested_inherited_cleanup_is_retained
+    assert spell.disposal_method_names == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_ test_teardown_uses_the_winning_inherited_method[many-InheritedCleanup-cleanup] _
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:175: in test_teardown_uses_the_winning_inherited_method
+    assert instance.calls == [expected]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_ test_teardown_uses_the_winning_inherited_method[many-GrandchildCleanup-cleanup] _
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:175: in test_teardown_uses_the_winning_inherited_method
+    assert instance.calls == [expected]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_ test_teardown_uses_the_winning_inherited_method[many-MultipleCleanup-cleanup] _
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:175: in test_teardown_uses_the_winning_inherited_method
+    assert instance.calls == [expected]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_ test_teardown_uses_the_winning_inherited_method[many-MultipleOverrideCleanup-override] _
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:175: in test_teardown_uses_the_winning_inherited_method
+    assert instance.calls == [expected]
+E   AssertionError: assert [] == ['override']
+E     
+E     Right contains one more item: 'override'
+E     Use -v to get more diff
+_ test_teardown_uses_the_winning_inherited_method[unique-InheritedCleanup-cleanup] _
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:175: in test_teardown_uses_the_winning_inherited_method
+    assert instance.calls == [expected]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_ test_teardown_uses_the_winning_inherited_method[unique-GrandchildCleanup-cleanup] _
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:175: in test_teardown_uses_the_winning_inherited_method
+    assert instance.calls == [expected]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_ test_teardown_uses_the_winning_inherited_method[unique-MultipleCleanup-cleanup] _
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:175: in test_teardown_uses_the_winning_inherited_method
+    assert instance.calls == [expected]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_ test_teardown_uses_the_winning_inherited_method[unique-MultipleOverrideCleanup-override] _
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:175: in test_teardown_uses_the_winning_inherited_method
+    assert instance.calls == [expected]
+E   AssertionError: assert [] == ['override']
+E     
+E     Right contains one more item: 'override'
+E     Use -v to get more diff
+_______ test_inherited_staticmethod_keeps_existing_callable_eligibility _______
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:200: in test_inherited_staticmethod_keeps_existing_callable_eligibility
+    assert spell.disposal_method_names == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_ test_inherited_disposal_preserves_priority_overlap_and_deduplication[False-expected0] _
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:217: in test_inherited_disposal_preserves_priority_overlap_and_deduplication
+    assert spell.disposal_method_names == expected
+E   AssertionError: assert ['close'] == ['close', 'flush', 'cleanup']
+E     
+E     Right contains 2 more items, first extra item: 'flush'
+E     Use -v to get more diff
+_ test_inherited_disposal_preserves_priority_overlap_and_deduplication[True-expected1] _
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:217: in test_inherited_disposal_preserves_priority_overlap_and_deduplication
+    assert spell.disposal_method_names == expected
+E   AssertionError: assert ['close'] == ['flush', 'cleanup', 'close']
+E     
+E     At index 0 diff: 'close' != 'flush'
+E     Right contains 2 more items, first extra item: 'cleanup'
+E     Use -v to get more diff
+___ test_inactive_binding_resolves_inherited_cleanup_before_fingerprinting ____
+tests\component\melder\spellbook\test_inherited_disposal_binding.py:243: in test_inactive_binding_resolves_inherited_cleanup_before_fingerprinting
+    staged_id = book.bind_inactive(
+src\melder\aether\spellbook\spellbook.py:5006: in bind_inactive
+    raise RuntimeError(
+E   RuntimeError: Spell ID collision detected. spell_id is computed from the spell's bind-time 
+E   fingerprint (e.g., structural profile, lookup signature, existence, and resolved 
+E   disposal metadata). The existing spell with this id is already registered in the 
+E   Spellbook or Aether for this frame. If you intended to register a distinct spell, ensure its 
+E   bind-time fingerprint differs so it produces a unique spell_id.
+________ test_inherited_class_disposal_preserves_book_and_spell_order _________
+tests\component\melder\spellbook\test_ordered_disposal_binding.py:228: in test_inherited_class_disposal_preserves_book_and_spell_order
+    assert spell.disposal_method_names == ["flush", "close", "stop"]
+E   AssertionError: assert [] == ['flush', 'close', 'stop']
+E     
+E     Right contains 3 more items, first extra item: 'flush'
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_requested_inherited_cleanup_is_retained[general-explicit]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_requested_inherited_cleanup_is_retained[general-configured]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_requested_inherited_cleanup_is_retained[detailed-explicit]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_requested_inherited_cleanup_is_retained[detailed-configured]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_teardown_uses_the_winning_inherited_method[many-InheritedCleanup-cleanup]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_teardown_uses_the_winning_inherited_method[many-GrandchildCleanup-cleanup]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_teardown_uses_the_winning_inherited_method[many-MultipleCleanup-cleanup]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_teardown_uses_the_winning_inherited_method[many-MultipleOverrideCleanup-override]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_teardown_uses_the_winning_inherited_method[unique-InheritedCleanup-cleanup]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_teardown_uses_the_winning_inherited_method[unique-GrandchildCleanup-cleanup]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_teardown_uses_the_winning_inherited_method[unique-MultipleCleanup-cleanup]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_teardown_uses_the_winning_inherited_method[unique-MultipleOverrideCleanup-override]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_inherited_staticmethod_keeps_existing_callable_eligibility
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_inherited_disposal_preserves_priority_overlap_and_deduplication[False-expected0]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_inherited_disposal_preserves_priority_overlap_and_deduplication[True-expected1]
+FAILED tests/component/melder/spellbook/test_inherited_disposal_binding.py::test_inactive_binding_resolves_inherited_cleanup_before_fingerprinting
+FAILED tests/component/melder/spellbook/test_ordered_disposal_binding.py::test_inherited_class_disposal_preserves_book_and_spell_order
+17 failed, 11 passed in 0.83s

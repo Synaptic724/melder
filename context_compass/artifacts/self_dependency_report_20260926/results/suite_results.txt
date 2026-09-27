@@ -1,0 +1,29 @@
+# FINAL: suites on ~/sd3_fix (worktree sync with fable_0's landed C-C Phase 3, plus apply_own.py), 3.14.7t -X gil=0
+unit_spellbook     2185 passed in 3.32s
+unit_aether        4145 passed in 14.23s
+unit_rest          4 failed, 1894 passed, 3 skipped, 7 xfailed in 16.25s
+unit_other         44 failed, 388 errors in 1.85s
+component          2146 passed, 43 skipped, 1 xfailed in 23.92s
+int_spellbook      584 passed, 2 skipped, 2 xfailed, 2 xpassed in 4.81s
+int_crystallizer   258 passed, 3 xfailed in 54.44s
+int_conduit        268 passed in 3.43s
+int_mr_live        67 passed, 1 xfailed in 0.60s
+int_aether         716 passed in 18.06s
+int_mt             42 passed in 11.35s
+# unit_rest: 4 failures identical to base in the same chunk; unit_other identical to base (files absent from the VM copy)
+# earlier run (full proposal incl. Phase 3 on ~/sd2_fix) kept below
+# Suites on ~/sd2_fix (worktree sync incl. fable_0's C-C Phase 3, plus apply_fix.py), 3.14.7t -X gil=0
+unit_spellbook     2185 passed in 3.42s
+unit_aether        4145 passed in 13.97s
+unit_rest          4 failed, 1894 passed, 3 skipped, 7 xfailed in 16.06s
+unit_other         44 failed, 388 errors in 1.92s
+component          2146 passed, 43 skipped, 1 xfailed in 25.57s
+int_spellbook      584 passed, 2 skipped, 2 xfailed, 2 xpassed in 4.68s
+int_crystallizer   258 passed, 3 xfailed in 54.89s
+int_conduit        268 passed in 3.20s
+int_mr_live        67 passed, 1 xfailed in 0.58s
+int_aether         716 passed in 16.83s
+int_mt             42 passed in 11.64s
+# unit_rest: 4 failures identical to ~/sd2_base in the same chunk (stale assets x2, version stamp, order-dependent guard test)
+# unit_other: identical to ~/sd2_base (files absent from the VM copy)
+# 8 new or changed tests fail on unpatched source (C-C base)

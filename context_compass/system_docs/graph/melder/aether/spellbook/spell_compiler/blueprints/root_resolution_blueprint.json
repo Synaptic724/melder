@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py",
- "source_sha256": "f3a806bd1c4d36091a2894091e8818c84d7ef0eb98fc18989ad71b5425a33629",
+ "source_sha256": "49ca93bdf6cabafd6c9a8b7b072daab70087688a984d8c650ebe3dce8ddba60d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint": {
@@ -19,50 +19,46 @@
    "label": "RootResolutionBlueprint",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.py",
-   "lineno": 13,
+   "lineno": 12,
    "bases": [
     "Cleanable"
    ],
    "markers": [],
    "public_methods": [
-    "add_socket_ref",
     "cleanup",
     "dag",
-    "dag_index",
-    "ensure_dag_index_built",
     "ordered_node_ids",
     "path_registry",
-    "replace_dag_index",
     "requires_spellspace_request",
     "root_lineage_id",
-    "root_spell_id",
-    "socket_refs"
+    "root_spell_id"
    ],
    "shape": {
-    "method_count": 12,
+    "method_count": 7,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6317e281ef7a65abc663203b31a89c8a5e70d2bf98238c766e6aae65f81f72fb",
+   "span_sha256": "295d5018f8103f3d5ce11d2274db83172fb5fb031efee602c19df0aea365ed07",
    "role": "Phase 5 rooted deep-DAG blueprint for one spell.",
    "responsibilities": [
     "stores the rooted deep DAG and stable execution order for one root spell",
-    "owns socket references and the targeting index for override and component paths",
+    "owns the PathRegistry that Phase 8 mints root-relative path ids into (no socket references since S5a/R1)",
     "hands off rooted structure to system validation, change-control, and later planning phases"
    ],
    "owns_state": [
     "_root_spell_id",
+    "_root_lineage_id",
     "_dag",
     "_ordered_node_ids",
-    "_socket_refs",
-    "_dag_index"
+    "_requires_spellspace_request",
+    "_path_registry"
    ],
    "phases": [
     "validation",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "6317e281ef7a65abc663203b31a89c8a5e70d2bf98238c766e6aae65f81f72fb"
+   "semantics_authored_against": "295d5018f8103f3d5ce11d2274db83172fb5fb031efee602c19df0aea365ed07"
   }
  },
  "edges_out": [
@@ -76,19 +72,13 @@
  "edge_candidates": [
   {
    "from": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-   "to_label": "Lock",
-   "relation": "creates",
-   "confidence": "candidate"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
    "to_label": "ValueError",
    "relation": "creates",
    "confidence": "candidate"
   },
   {
    "from": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-   "to_label": "DagIndex",
+   "to_label": "PathRegistry",
    "relation": "creates",
    "confidence": "candidate"
   }
@@ -101,9 +91,7 @@
   "ClassVar": "typing.ClassVar",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "DirectedAcyclicWorkGraph": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
-  "DagIndex": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
-  "PathRegistry": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry",
-  "SocketRef": "melder.aether.spellbook.spell_compiler.dag.dag_index.SocketRef"
+  "PathRegistry": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry"
  },
  "collapse_candidate": {
   "module": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint",
@@ -113,9 +101,9 @@
  "edges_authored": [
   {
    "from": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-   "to": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
+   "to": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
    "relation": "owns_lifecycle_of",
-   "why": "RootResolutionBlueprint owns the DagIndex used for later override targeting.",
+   "why": "RootResolutionBlueprint owns the rooted deep DAG for one root spell.",
    "cardinality": "one_to_one",
    "phase": [
     "validation",
@@ -126,12 +114,11 @@
   },
   {
    "from": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
-   "to": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
+   "to": "melder.aether.spellbook.spell_compiler.dag.dag_index.PathRegistry",
    "relation": "owns_lifecycle_of",
-   "why": "RootResolutionBlueprint owns the rooted deep DAG for one root spell.",
+   "why": "Owns one PathRegistry (fresh unless one is passed in) and cleans it with the DAG.",
    "cardinality": "one_to_one",
    "phase": [
-    "validation",
     "runtime",
     "cleanup"
    ],

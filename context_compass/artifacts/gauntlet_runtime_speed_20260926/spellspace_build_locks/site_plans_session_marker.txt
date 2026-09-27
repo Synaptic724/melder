@@ -1,0 +1,117 @@
+# melder_2 VM, 2026-09-26T21:18:34Z: dump_site_plans.py on tree_0270 (0.2.70): site-plan source compiled at the first meld of WorkerASession and WorkerAScopeMarker.
+===== WorkerASession (unique_per_conduit): 1 compiled unit(s)
+----- <melder_site_plan_executor>
+def _miss0(meld, c0):
+    with spells[0]._lock:
+        v0 = c0._creations.get(sid0)
+        if v0 is None:
+            try:
+                v0 = t0()
+            except Exception as exc:
+                _raise_meld_construction_error(spells[0], exc)
+            c0._creations[sid0] = v0
+        return v0
+def _miss1(meld, c1):
+    with spells[1]._lock:
+        v1 = c1._creations.get(sid1)
+        if v1 is None:
+            try:
+                v1 = t1()
+            except Exception as exc:
+                _raise_meld_construction_error(spells[1], exc)
+            c1._creations[sid1] = v1
+        return v1
+def _miss3(meld, c3):
+    c0 = spells[0]._owner_creations
+    v0 = c0._creations.get(sid0)
+    if v0 is None:
+        v0 = _miss0(meld, c0)
+    c1 = spells[1]._owner_creations
+    v1 = c1._creations.get(sid1)
+    if v1 is None:
+        v1 = _miss1(meld, c1)
+    try:
+        v2 = t2(v0)
+    except Exception as exc:
+        _raise_meld_construction_error(spells[2], exc)
+    with (c3._slot_guards.get(sid3) or c3.slot_guard(sid3)):
+        v3 = c3._creations.get(sid3)
+        if v3 is None:
+            try:
+                v3 = t3(v2, v1)
+            except Exception as exc:
+                _raise_meld_construction_error(spells[3], exc)
+            c3._creations[sid3] = v3
+        return v3
+def _site_plan_executor(meld):
+    c3 = meld._conduit_creations
+    v3 = c3._creations.get(sid3)
+    if v3 is None:
+        v3 = _miss3(meld, c3)
+    return v3
+
+===== WorkerAScopeMarker (unique_per_spell_space): 1 compiled unit(s)
+----- <melder_site_plan_executor>
+def _miss0(meld, c0):
+    with spells[0]._lock:
+        v0 = c0._creations.get(sid0)
+        if v0 is None:
+            try:
+                v0 = t0()
+            except Exception as exc:
+                _raise_meld_construction_error(spells[0], exc)
+            c0._creations[sid0] = v0
+        return v0
+def _miss1(meld, c1):
+    with spells[1]._lock:
+        v1 = c1._creations.get(sid1)
+        if v1 is None:
+            try:
+                v1 = t1()
+            except Exception as exc:
+                _raise_meld_construction_error(spells[1], exc)
+            c1._creations[sid1] = v1
+        return v1
+def _miss3(meld, c3):
+    c0 = spells[0]._owner_creations
+    v0 = c0._creations.get(sid0)
+    if v0 is None:
+        v0 = _miss0(meld, c0)
+    c1 = spells[1]._owner_creations
+    v1 = c1._creations.get(sid1)
+    if v1 is None:
+        v1 = _miss1(meld, c1)
+    try:
+        v2 = t2(v0)
+    except Exception as exc:
+        _raise_meld_construction_error(spells[2], exc)
+    with (c3._slot_guards.get(sid3) or c3.slot_guard(sid3)):
+        v3 = c3._creations.get(sid3)
+        if v3 is None:
+            try:
+                v3 = t3(v2, v1)
+            except Exception as exc:
+                _raise_meld_construction_error(spells[3], exc)
+            c3._creations[sid3] = v3
+        return v3
+def _miss4(meld, c4):
+    c3 = meld._conduit_creations
+    v3 = c3._creations.get(sid3)
+    if v3 is None:
+        v3 = _miss3(meld, c3)
+    with (c4._slot_guards.get(sid4) or c4.slot_guard(sid4)):
+        v4 = c4._creations.get(sid4)
+        if v4 is None:
+            try:
+                v4 = t4(v3)
+            except Exception as exc:
+                _raise_meld_construction_error(spells[4], exc)
+            c4._creations[sid4] = v4
+        return v4
+def _site_plan_executor(meld):
+    c4 = meld._spellspace_creations
+    v4 = c4._creations.get(sid4)
+    if v4 is None:
+        v4 = _miss4(meld, c4)
+    return v4
+

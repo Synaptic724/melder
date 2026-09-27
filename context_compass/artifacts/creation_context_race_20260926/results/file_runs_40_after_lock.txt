@@ -1,0 +1,46 @@
+19 passed in 1.05s
+19 passed in 1.07s
+19 passed in 0.92s
+19 passed in 0.96s
+19 passed in 0.94s
+19 passed in 1.02s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_concurrent_meld_many_across_borrowers_distinct_instances
+1 failed, 18 passed in 1.09s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_instance
+1 failed, 18 passed in 1.14s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_cluster_concurrent_meld_unique_per_conduit_cluster_shared_instance
+1 failed, 18 passed in 1.09s
+19 passed in 1.07s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_concurrent_meld_many_across_borrowers_distinct_instances
+1 failed, 18 passed in 1.07s
+19 passed in 1.06s
+19 passed in 1.04s
+19 passed in 1.01s
+19 passed in 1.06s
+19 passed in 1.03s
+19 passed in 1.00s
+19 passed in 0.97s
+19 passed in 1.01s
+19 passed in 0.93s
+19 passed in 0.96s
+19 passed in 1.07s
+19 passed in 1.07s
+19 passed in 1.22s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_concurrent_meld_many_across_borrowers_distinct_instances
+1 failed, 18 passed in 1.07s
+19 passed in 1.13s
+19 passed in 1.09s
+19 passed in 0.99s
+19 passed in 1.12s
+19 passed in 1.02s
+FAILED tests/integration/melder/conduit/test_conduit_integration_concurrency.py::test_conduit_concurrent_meld_unique_across_multiple_borrowers_shared_instance
+1 failed, 18 passed in 1.16s
+19 passed in 1.23s
+19 passed in 1.08s
+19 passed in 1.10s
+19 passed in 1.13s
+19 passed in 0.98s
+19 passed in 1.00s
+19 passed in 1.18s
+19 passed in 1.00s
+19 passed in 0.98s

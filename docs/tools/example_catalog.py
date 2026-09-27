@@ -18,11 +18,12 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 from site_model import Page
+from page_metadata import PageMetadata
 
 
 @dataclasses.dataclass(frozen=True)
 class Lesson:
-    """Value-only metadata derived from one actual lesson's header and source identity."""
+    """Value-only source identity, header facts, and optional editorial description for one lesson."""
 
     source: str
     level: str
@@ -33,6 +34,8 @@ class Lesson:
     surfaces: str
     topics: tuple[str, ...]
     digest: str
+    description: str = ""
+    legacy_anchor: str = ""
 
 
 class ExampleCatalog:
@@ -137,7 +140,7 @@ class ExampleCatalog:
             raise ValueError("The lesson catalog contains duplicate page identifiers.")
 
     def _lesson(self, path: Path, level: str, overrides: dict) -> Lesson:
-        """Extract syntax/header facts from one source, rejecting missing editorial contracts."""
+        """Extract source facts and validated editorial overrides before any output is written."""
         raw = self.source_bytes[path.relative_to(self.root).as_posix()]
         tree = ast.parse(raw.decode("utf-8-sig"), filename=str(path))
         fields = self.fields(ast.get_docstring(tree, clean=True) or "")
@@ -153,8 +156,13 @@ class ExampleCatalog:
         goal = override["GOAL"] if "GOAL" in override else fields["GOAL"]
         surfaces = override.get("SURFACE EXERCISED", fields.get("SURFACE EXERCISED", ""))
         topics = tuple(override.get("topics", self._topics(goal + " " + surfaces)))
+        description = PageMetadata.description(override.get("description"), relative)
+        legacy_anchor = override.get("legacy_anchor", "")
+        if (not isinstance(legacy_anchor, str)
+                or (legacy_anchor and re.fullmatch(r"[a-z0-9][a-z0-9-]*", legacy_anchor) is None)):
+            raise ValueError(f"Legacy heading anchor for {relative} must contain lowercase letters, digits or hyphens.")
         return Lesson(relative, level, path.stem[:2], identifier, title, goal, surfaces,
-                      topics, hashlib.sha256(raw).hexdigest())
+                      topics, hashlib.sha256(raw).hexdigest(), description, legacy_anchor)
 
     def _title(self, level: str) -> str:
         """Return the owner-defined visible label for a validated level."""
@@ -198,7 +206,7 @@ class ExampleCatalog:
                 f'<p id="example-results" role="status" aria-live="polite">{len(self.lessons)} examples</p>')
 
     def _lesson_body(self, lesson: Lesson) -> str:
-        """Render a complete source-backed lesson page without claiming that its assertions have run."""
+        """Render a source-backed lesson with optional description, without claiming its checks ran."""
         source_name = lesson.source.removeprefix("UX_and_AIX_experiences/")
         download = self._link(lesson.identifier, "downloads/" + source_name, "")
         guide = self._link(lesson.identifier, lesson.level + "/index")
@@ -206,7 +214,10 @@ class ExampleCatalog:
         bundle = self._link(lesson.identifier, "downloads/" + lesson.level + "-examples.zip", "")
         source_url = str(self._configuration["repository_url"]).rstrip('/') + f"/blob/{self._revision}/{lesson.source}"
         paragraphs = "\n\n".join(" ".join(block.split()) for block in lesson.goal.split("\n\n") if block.strip())
-        return (f"# {lesson.title}\n\n**{self._title(lesson.level)} · Lesson {lesson.number}**\n\n"
+        # Keep an established fragment address when editorial copy changes the automatic heading ID.
+        legacy_target = f"({lesson.legacy_anchor})=\n" if lesson.legacy_anchor else ""
+        return (PageMetadata.frontmatter(lesson.description)
+                + legacy_target + f"# {lesson.title}\n\n**{self._title(lesson.level)} · Lesson {lesson.number}**\n\n"
                 f"{paragraphs}\n\n## Before you run\n\n"
                 f"Use the [{lesson.level.title()} guide]({guide}) for prerequisite concepts. "
                 "Run from a checkout with Melder installed and Python 3.14 free-threading selected. "

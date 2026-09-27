@@ -21,6 +21,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
@@ -95,8 +96,13 @@ class VisibilityGapStrategy(SpellSystemValidationStrategy):
                 SystemDiagnostic(
                     code="visibility_gap_dependency_filtered",
                     message=(
-                        f"Spell '{node.spell_id}' depends on missing spell ids "
-                        f"{sorted(missing)}, which are not visible in the current spellbook."
+                        f"Spell {SpellInputUtils.describe_spell_id(node.spell_id, spell_lookup)} "
+                        "depends on spells this Spellbook cannot see ("
+                        + ", ".join(
+                            SpellInputUtils.describe_spell_id(dep_id, spell_lookup)
+                            for dep_id in sorted(missing)
+                        )
+                        + "). Bind them in this Spellbook, or give this conduit access to them."
                     ),
                     severity=SystemDiagnosticSeverity.ERROR,
                     spell_id=node.spell_id,

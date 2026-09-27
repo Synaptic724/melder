@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "94c4b05d037dbd079094b8deb7af950d7f571a9b13c657471dcac21da9867874",
+ "source_sha256": "5b2bb92fa26a1a3e54d2bdc3b7530346847cd77422363aad6d67ab139d9d4183",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -60,7 +60,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b0c0f1d3c25e8b3104ae54ad1e277ec82f89ce0cd8716609a3a87750dc1aeea5",
+   "span_sha256": "1c873b1232c8c227ba25492a2ee7197f3b3647590137ad2bad7797728d0d7edb",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
@@ -74,7 +74,9 @@
     "dispatches captured post hooks after active or parked publication and before outer transaction completion",
     "refreshes complete recorded Book twins with value-only bind-stage markers and explicitly cleans Bind during teardown",
     "preserves same-identity name admission during existing-conduit conjure",
-    "records owning Book and frame twins when public frame setup already locked configuration before conjure"
+    "records owning Book and frame twins when public frame setup already locked configuration before conjure",
+    "offers beginners an opt-in conjure report of Phase-4 validation warnings (validation_warnings=True); the default and internal conjure routes are silent",
+    "caches a creation only when it carries a manifest package (_emit_spell_cache)"
    ],
    "owns_state": [
     "_bind",
@@ -82,7 +84,6 @@
     "_spells_by_id",
     "_lookup_spells",
     "_contracted_spells",
-    "_spell_validator",
     "_configuration",
     "_conduit"
    ],
@@ -92,7 +93,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "631cd322862d97e9217b4b914057b4b85a47defa62d722b1fd16e128d213739d"
+   "semantics_authored_against": "1c873b1232c8c227ba25492a2ee7197f3b3647590137ad2bad7797728d0d7edb"
   }
  },
  "edges_out": [
@@ -244,8 +245,7 @@
   "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger",
   "UnitOfWork": "melder.utilities.synchronization.unit_of_work.UnitOfWork",
   "MANIFEST_METADATA_KEY": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.MANIFEST_METADATA_KEY",
-  "build_manifest_package": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.build_package",
-  "build_package": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache.build_package"
+  "build_manifest_package": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.build_package"
  },
  "collapse_candidate": {
   "module": "melder.aether.spellbook.spellbook",

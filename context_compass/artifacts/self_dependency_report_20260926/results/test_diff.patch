@@ -1,0 +1,346 @@
+diff --git a/tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_self_validation_strategy.py b/tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_self_validation_strategy.py
+index 7b7410fb9..2f39649c7 100644
+--- a/tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_self_validation_strategy.py
++++ b/tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_self_validation_strategy.py
+@@ -445,3 +445,149 @@ def test_validate_dependencies_tuple_is_supported() -> None:
+     strategy.validate(context)
+ 
+     assert len(issues) == 1
++
++
++class _SocketStub:
++    """
++    Purpose:
++        Provide a topology socket with a parameter name and resolved targets.
++    """
++
++    def __init__(self, param_name: str, target_spell_ids: tuple) -> None:
++        """
++        Purpose:
++            Store the socket's parameter name and target ids.
++        Returns:
++            None.
++        """
++        self.param_name = param_name
++        self.target_spell_ids = target_spell_ids
++
++
++class _TopologyStub:
++    """
++    Purpose:
++        Provide a local topology exposing its sockets in constructor order.
++    """
++
++    def __init__(self, sockets: list) -> None:
++        """
++        Purpose:
++            Store the sockets.
++        Returns:
++            None.
++        """
++        self._sockets = tuple(sockets)
++
++    def iter_sockets(self) -> tuple:
++        """
++        Purpose:
++            Return the sockets.
++        Returns:
++            tuple: The sockets in constructor order.
++        """
++        return self._sockets
++
++
++class _StatesStub:
++    """
++    Purpose:
++        Provide a spell-system-states stand-in returning one topology.
++    """
++
++    def __init__(self, topology: object) -> None:
++        """
++        Purpose:
++            Store the topology to return.
++        Returns:
++            None.
++        """
++        self._topology = topology
++
++    def get_local_topology(self, spell_index: object) -> object:
++        """
++        Purpose:
++            Return the stored topology for any spell index.
++        Returns:
++            object: The topology, or None.
++        """
++        return self._topology
++
++
++def _live_context(sockets: list, issues: list) -> SpellValidationContext:
++    """
++    Purpose:
++        Build a context whose spell carries a Phase-3 topology and whose spellbook is present.
++    Returns:
++        SpellValidationContext: The context.
++    """
++    spell = _SpellStub(spell_id="root", spell_name="Node", dependencies=["root"])
++    spell._spell_system_states = _StatesStub(_TopologyStub(sockets))
++    return SpellValidationContext(
++        spell=spell,
++        spellbook=object(),
++        requirements=None,
++        symbolic_graph=None,
++        resolution_frame=None,
++        cancel_event=None,
++        issues=issues,
++    )
++
++
++def test_validate_names_the_parameter_that_resolves_to_the_spell() -> None:
++    """
++    Purpose:
++        Ensure the message names the self-resolving parameter when the topology is known.
++    Contract:
++        Only sockets targeting the spell itself are named; details carry the names.
++    Returns:
++        None.
++    """
++    issues: list[SpellValidationIssue] = []
++    context = _live_context([_SocketStub("parent", ("root",)), _SocketStub("name", ())], issues)
++
++    SelfDependencyStrategy().validate(context)
++
++    assert len(issues) == 1
++    assert issues[0].message == (
++        "Spell 'Node' depends on itself: its constructor parameter 'parent' resolves to this same spell. "
++        "Remove that parameter or give it a default."
++    )
++    assert issues[0].details == {"spell_id": "root", "parameter_names": ["parent"]}
++
++
++def test_validate_names_every_self_resolving_parameter() -> None:
++    """
++    Purpose:
++        Ensure several self-resolving parameters are all named, in constructor order.
++    Returns:
++        None.
++    """
++    issues: list[SpellValidationIssue] = []
++    context = _live_context([_SocketStub("left", ("root",)), _SocketStub("right", ("other", "root"))], issues)
++
++    SelfDependencyStrategy().validate(context)
++
++    assert "its constructor parameters 'left', 'right' resolve to this same spell" in issues[0].message
++    assert issues[0].message.endswith("Remove those parameters or give them defaults.")
++
++
++def test_validate_message_stays_generic_without_a_topology() -> None:
++    """
++    Purpose:
++        Ensure a live context whose spell has no Phase-3 topology keeps the generic message.
++    Returns:
++        None.
++    """
++    issues: list[SpellValidationIssue] = []
++    spell = _SpellStub(spell_id="root", spell_name="Node", dependencies=["root"])
++    spell._spell_system_states = _StatesStub(None)
++    context = SpellValidationContext(
++        spell=spell, spellbook=object(), requirements=None, symbolic_graph=None,
++        resolution_frame=None, cancel_event=None, issues=issues,
++    )
++
++    SelfDependencyStrategy().validate(context)
++
++    assert "one of its constructor parameters resolves to this same spell" in issues[0].message
++    assert issues[0].details == {"spell_id": "root"}
+diff --git a/tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py b/tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py
+index f6ed72171..c0550261f 100644
+--- a/tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py
++++ b/tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py
+@@ -301,3 +301,26 @@ def test_broken_spells_attribute_is_kept_as_supplied() -> None:
+     error = SpellbookValidationError(spells, system_diagnostics=[_diag("cycle_detected", "Cycle.")])
+ 
+     assert error.broken_spells is spells
++
++
++def test_circular_dependency_hidden_when_self_dependency_reported() -> None:
++    """
++    Purpose:
++        Report a spell that depends on itself once.
++    Contract:
++        CIRCULAR_DEPENDENCY (and the binding-key cycle behind it) is hidden when SELF_DEPENDENCY is present in
++        the same block; CIRCULAR_DEPENDENCY alone is still shown.
++    """
++    looped = _spell(name="Node", issues=[
++        _issue("SELF_DEPENDENCY", "Node depends on itself."),
++        _issue("CIRCULAR_DEPENDENCY", "Node cycle."),
++        _issue("BINDING_RESOLUTION_CYCLE", "Node key cycle."),
++    ])
++    cycle = _spell(name="CycleA", spell_id="spell-2", issues=[_issue("CIRCULAR_DEPENDENCY", "Two-spell cycle.")])
++
++    message = str(SpellbookValidationError([looped, cycle]))
++
++    assert "Node depends on itself. [SELF_DEPENDENCY]" in message
++    assert "Node cycle." not in message
++    assert "Node key cycle." not in message
++    assert "Two-spell cycle. [CIRCULAR_DEPENDENCY]" in message
+--- /dev/null	2026-09-26 10:36:12.454178425 +0000
++++ tests/integration/melder/spellbook/test_spellbook_integration_self_dependency.py	2026-09-26 16:55:37.442267200 +0000
+@@ -0,0 +1,158 @@
++"""tests/integration/melder/spellbook/test_spellbook_integration_self_dependency.py
++
++A constructor that takes its own class is refused through the readable validation report (2026-09-26):
++the spell by name, the parameter, and the fix, reported once. Before, conjure aborted in Phase 3 with
++PhaseExecutionError "DagNode cannot depend on itself" and a late dynamic bind raised a bare ValueError at meld.
++"""
++from typing import Iterator, Optional
++
++import pytest
++
++from melder.aether.aether import Aether
++from melder.aether.conduit.conduit import Conduit
++from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
++from melder.aether.spellbook.existence.existence import Existence
++from melder.aether.spellbook.spellbook import Spellbook
++from melder.nexus.nexus import Nexus
++from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
++from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbook_configuration
++
++
++@pytest.fixture(autouse=True)
++def reset_singletons_for_self_dependency() -> Iterator[None]:
++    """Reset Nexus + Aether around each test for singleton isolation."""
++    def _reset() -> None:
++        Nexus._reset_singleton_for_tests()
++        Aether._reset_singleton_for_tests()
++        aether = Aether()
++        Spellbook._aether = aether
++        Conduit._aether = aether
++
++    _reset()
++    yield
++    _reset()
++
++
++class Node:
++    """Constructor that takes its own class."""
++
++    def __init__(self, parent: "Node", name: str) -> None:
++        """Store the parent."""
++        self.parent = parent
++
++
++class Tree:
++    """Consumer of the self-referencing spell."""
++
++    def __init__(self, root: Node) -> None:
++        """Store the root."""
++        self.root = root
++
++
++class Branch:
++    """Collection parameter of its own class."""
++
++    def __init__(self, children: list["Branch"]) -> None:
++        """Store the children."""
++        self.children = children
++
++
++class Leaf:
++    """Self-typed parameter with a default: plain, never injected."""
++
++    def __init__(self, parent: Optional["Leaf"] = None) -> None:
++        """Store the optional parent."""
++        self.parent = parent
++
++
++class Unrelated:
++    """A spell with no dependencies."""
++
++    def __init__(self) -> None:
++        """Construct nothing."""
++
++
++NODE_LINE = ("Spell 'Node' depends on itself: its constructor parameter 'parent' resolves to this same spell. "
++             "Remove that parameter or give it a default. [SELF_DEPENDENCY]")
++
++
++def _book(tag: str, *classes: type) -> Spellbook:
++    """Build one dynamic spellbook on its own frame and bind `classes` as many-existence spells."""
++    frame = f"intg-self-dependency-{tag}"
++    configuration = SpellbookConfiguration(frame)
++    apply_dynamic_defaults_for_spellbook_configuration(configuration)
++    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
++    book = Spellbook(aetheric_frame=frame, configuration=configuration)
++    for cls in classes:
++        book.bind(spell=cls, existence=Existence.many, permissions="create")
++    return book
++
++
++def test_conjure_refuses_self_referencing_constructor_with_readable_report() -> None:
++    """The spell is refused by name, parameter and fix, once; its validation result keeps both codes."""
++    book = _book("single", Node)
++    try:
++        with pytest.raises(SpellbookValidationError) as raised:
++            book.conjure(dynamic=True, name="root")
++        message = str(raised.value)
++        assert message.startswith("Spellbook validation failed. Broken spells: Node.")
++        assert NODE_LINE in message
++        assert "[CIRCULAR_DEPENDENCY]" not in message
++        assert "DagNode" not in message
++        codes = {issue.code for issue in raised.value.broken_spells[0].validation_result_phase4.issues}
++        assert {"SELF_DEPENDENCY", "CIRCULAR_DEPENDENCY"} <= codes
++    finally:
++        book.cleanup()
++
++
++def test_conjure_refuses_self_collection_parameter() -> None:
++    """A list of its own class is refused the same way."""
++    book = _book("collection", Branch)
++    try:
++        with pytest.raises(SpellbookValidationError) as raised:
++            book.conjure(dynamic=True, name="root")
++        assert ("Spell 'Branch' depends on itself: its constructor parameter 'children' resolves to this same "
++                "spell.") in str(raised.value)
++    finally:
++        book.cleanup()
++
++
++def test_conjure_names_the_self_referencing_spell_beside_its_consumer() -> None:
++    """The self-referencing spell carries its own reason when another spell consumes it."""
++    book = _book("consumer", Node, Unrelated, Tree)
++    try:
++        with pytest.raises(SpellbookValidationError) as raised:
++            book.conjure(dynamic=True, name="root")
++        message = str(raised.value)
++        assert NODE_LINE in message
++        assert "Unrelated" not in message
++    finally:
++        book.cleanup()
++
++
++def test_self_typed_parameter_with_default_conjures() -> None:
++    """A default makes the parameter plain, so nothing is refused."""
++    book = _book("default", Leaf)
++    try:
++        conduit = book.conjure(dynamic=True, name="root")
++        conduit.cleanup()
++    finally:
++        book.cleanup()
++
++
++def test_late_dynamic_bind_raises_readable_report() -> None:
++    """Binding a self-referencing class after conjure raises the report, not a bare ValueError.
++
++    Depending on the frame posture the structural phases run at that bind or at the spell's first meld;
++    either way the user gets the same SpellbookValidationError.
++    """
++    book = _book("late", Unrelated)
++    try:
++        conduit = book.conjure(dynamic=True, name="root")
++        with pytest.raises(SpellbookValidationError) as raised:
++            book.bind(spell=Node, existence=Existence.many, permissions="create")
++            conduit.meld(spell=Node, override={"parent": None, "name": "n"})
++        assert "Spell 'Node' depends on itself" in str(raised.value)
++        conduit.cleanup()
++    finally:
++        book.cleanup()

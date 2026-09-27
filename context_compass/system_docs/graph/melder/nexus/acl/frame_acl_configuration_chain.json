@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/frame_acl_configuration_chain.py",
- "source_sha256": "ade54198cf6b22641a375b4a2a8a3e83dd047d1b8a086556c2c0f70a8c0c738c",
+ "source_sha256": "ed7abdf6b66f0a18d6a885a89b54e381c73ec5efe3a2c203802b6067a7aad244",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.frame_acl_configuration_chain": {
@@ -106,6 +106,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "Any": "typing.Any",
   "Dict": "typing.Dict",
   "List": "typing.List",
   "Optional": "typing.Optional",

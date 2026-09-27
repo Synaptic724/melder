@@ -1,0 +1,12 @@
+# Owner-run on Windows, pasted verbatim by the owner on 2026-09-26 (~21:05Z), tree 0.2.70/0.2.71, .venv_new (3.14t),
+# PowerShell, same $env:MELDER_ROOT and $d as the 20:50Z runs. probe_steps3.py: per-step 95% trimmed means in ns.
+
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .venv_new\Scripts\python.exe -X gil=0 "$d\probe_steps3.py" melder worker_a 1 4000
+melder lane=worker_a threads=1 cycles=4000 | wall/cycle 14,549 | window=7,106 lifecycle=4,524 | outer_create=1,478 outer_1st=1,539 outer_2nd=454 req_enter=439 marker_1st=1,111 marker_2nd=402 outer_inherited=433 group_build=1,050 root_build=2,246 root_cached=403 req_exit=1,020 outer_cleanup=1,587
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .venv_new\Scripts\python.exe -X gil=0 "$d\probe_steps3.py" melder worker_a 3 4000
+melder lane=worker_a threads=3 cycles=4000 | wall/cycle 15,347 15,585 15,850 | window=8,089 lifecycle=4,563 | outer_create=1,401 outer_1st=1,850 outer_2nd=571 req_enter=445 marker_1st=1,389 marker_2nd=513 outer_inherited=598 group_build=1,095 root_build=2,491 root_cached=558 req_exit=1,001 outer_cleanup=1,715
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .venv_new\Scripts\python.exe -X gil=0 "$d\probe_steps3.py" dishka worker_a 1 4000
+dishka lane=worker_a threads=1 cycles=4000 | wall/cycle 9,703 | window=6,005 lifecycle=1,481 | outer_create=489 outer_1st=1,380 outer_2nd=279 req_enter=443 marker_1st=569 marker_2nd=273 outer_inherited=405 group_build=1,016 root_build=2,617 root_cached=277 req_exit=406 outer_cleanup=144
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .venv_new\Scripts\python.exe -X gil=0 "$d\probe_steps3.py" dishka worker_a 3 4000
+dishka lane=worker_a threads=3 cycles=4000 | wall/cycle 13,740 13,407 13,203 | window=7,667 lifecycle=1,824 | outer_create=649 outer_1st=2,162 outer_2nd=389 req_enter=535 marker_1st=821 marker_2nd=332 outer_inherited=535 group_build=1,216 root_build=3,403 root_cached=382 req_exit=443 outer_cleanup=197
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private>

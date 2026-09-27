@@ -5,11 +5,9 @@ import pytest
 from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
-from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, PathRegistry, SocketRef
 from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.system.spell_system_index import SpellSystemIndex
 from melder.aether.spellbook.spell_compiler.system.spell_system_node import SpellSystemNode
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
@@ -60,9 +58,6 @@ from melder.aether.spellbook.spell_compiler.system.validation.root_scale_limit_s
 )
 from melder.aether.spellbook.spell_compiler.system.validation.root_viability_strategy import (
     RootViabilityStrategy,
-)
-from melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy import (
-    SocketRefSanityStrategy,
 )
 from melder.aether.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.custom_exceptions.operation_cancelled_error import (
@@ -153,40 +148,6 @@ def _make_blueprint(
         root_spell_id=root_id,
         root_lineage_id=root_lineage_id,
         dag=dag,
-    )
-
-
-def _path_id(path_registry: PathRegistry, path: tuple[str, ...]) -> int:
-    path_id = path_registry.root_path_id
-    for segment in path:
-        path_id = path_registry.extend_path(path_id, segment)
-    return path_id
-
-
-def _make_socket_ref(
-    *,
-    node_id: str,
-    name: str,
-    path: tuple[str, ...],
-    path_registry: PathRegistry,
-) -> SocketRef:
-    """
-    Purpose:
-        Build a simple SocketRef for socket sanity tests.
-    Contract:
-        - SocketRef uses SocketKind.NORMAL.
-    Args:
-        node_id: Owning node id.
-        name: Socket param name.
-        path: Socket param path.
-    Returns:
-        SocketRef: The constructed socket reference.
-    """
-    return SocketRef(
-        node_id=node_id,
-        param_name=name,
-        param_path_id=_path_id(path_registry, path),
-        socket_kind=SocketKind.NORMAL,
     )
 
 
@@ -957,192 +918,6 @@ def test_component_root_viability_emits_once_per_root() -> None:
 
     root_not_viable = [diag for diag in diagnostics if diag.code == "root_not_viable"]
     assert len(root_not_viable) == 1
-
-
-def test_component_socket_ref_sanity_no_issues_for_valid_index() -> None:
-    """
-    Purpose:
-        Validate SocketRefSanityStrategy reports no issues for valid sockets.
-    Contract:
-        - Diagnostics remain empty for matching socket refs and DagIndex.
-    Returns:
-        None.
-    """
-    strategy = SocketRefSanityStrategy()
-    blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
-    blueprint.ensure_dag_index_built()
-    socket = _make_socket_ref(
-        node_id="root",
-        name="service",
-        path=("service",),
-        path_registry=blueprint.path_registry,
-    )
-    blueprint.add_socket_ref(socket)
-    diagnostics: list[SystemDiagnostic] = []
-
-    strategy.run(
-        index=_make_index({"root": {"dep"}, "dep": set()}, root_ids={"root"}),
-        blueprints={"root": blueprint},
-        phase4_results={},
-        broken_spell_ids=set(),
-        diagnostics=diagnostics,
-        spell_system_states=None,
-        spell_lookup={},
-        cancel_event=None,
-    )
-
-    assert diagnostics == []
-
-
-def test_component_socket_ref_sanity_reports_duplicate_socket_ref() -> None:
-    """
-    Purpose:
-        Validate SocketRefSanityStrategy reports duplicate socket refs.
-    Contract:
-        - socket_ref_duplicate is emitted for repeated SocketRefs.
-    Returns:
-        None.
-    """
-    strategy = SocketRefSanityStrategy()
-    blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
-    blueprint.ensure_dag_index_built()
-    socket = _make_socket_ref(
-        node_id="root",
-        name="service",
-        path=("service",),
-        path_registry=blueprint.path_registry,
-    )
-    blueprint.add_socket_ref(socket)
-    blueprint.add_socket_ref(socket)
-    diagnostics: list[SystemDiagnostic] = []
-
-    strategy.run(
-        index=_make_index({"root": {"dep"}, "dep": set()}, root_ids={"root"}),
-        blueprints={"root": blueprint},
-        phase4_results={},
-        broken_spell_ids=set(),
-        diagnostics=diagnostics,
-        spell_system_states=None,
-        spell_lookup={},
-        cancel_event=None,
-    )
-
-    assert {diag.code for diag in diagnostics} == {"socket_ref_duplicate"}
-
-
-def test_component_socket_ref_sanity_reports_missing_index_entries() -> None:
-    """
-    Purpose:
-        Validate SocketRefSanityStrategy reports missing DagIndex entries.
-    Contract:
-        - socket_ref_missing_in_index and socket_ref_missing_in_index_name are emitted.
-    Returns:
-        None.
-    """
-    strategy = SocketRefSanityStrategy()
-    blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
-    path_registry = blueprint.path_registry
-    blueprint.ensure_dag_index_built()
-    socket = _make_socket_ref(
-        node_id="root",
-        name="service",
-        path=("service",),
-        path_registry=path_registry,
-    )
-    blueprint.add_socket_ref(socket)
-    blueprint.replace_dag_index(DagIndex(path_registry=path_registry))
-    blueprint.dag_index.rebuild([])
-    diagnostics: list[SystemDiagnostic] = []
-
-    strategy.run(
-        index=_make_index({"root": {"dep"}, "dep": set()}, root_ids={"root"}),
-        blueprints={"root": blueprint},
-        phase4_results={},
-        broken_spell_ids=set(),
-        diagnostics=diagnostics,
-        spell_system_states=None,
-        spell_lookup={},
-        cancel_event=None,
-    )
-
-    codes = {diag.code for diag in diagnostics}
-    assert "socket_ref_missing_in_index" in codes
-    assert "socket_ref_missing_in_index_name" in codes
-
-
-def test_component_socket_ref_sanity_reports_orphan_index_socket() -> None:
-    """
-    Purpose:
-        Validate SocketRefSanityStrategy reports orphan DagIndex sockets.
-    Contract:
-        - dag_index_orphan_socket is emitted for index-only sockets.
-    Returns:
-        None.
-    """
-    strategy = SocketRefSanityStrategy()
-    blueprint = _make_blueprint(root_id="root", edges={"root": {"dep"}})
-    orphan = _make_socket_ref(
-        node_id="root",
-        name="orphan",
-        path=("orphan",),
-        path_registry=blueprint.path_registry,
-    )
-    blueprint.dag_index.add_socket(orphan)
-    diagnostics: list[SystemDiagnostic] = []
-
-    strategy.run(
-        index=_make_index({"root": {"dep"}, "dep": set()}, root_ids={"root"}),
-        blueprints={"root": blueprint},
-        phase4_results={},
-        broken_spell_ids=set(),
-        diagnostics=diagnostics,
-        spell_system_states=None,
-        spell_lookup={},
-        cancel_event=None,
-    )
-
-    assert {diag.code for diag in diagnostics} == {"dag_index_orphan_socket"}
-
-
-def test_component_socket_ref_sanity_scopes_diagnostics_to_root() -> None:
-    """
-    Purpose:
-        Validate SocketRefSanityStrategy scopes diagnostics to the offending root.
-    Contract:
-        - Diagnostics reference only the root with socket issues.
-    Returns:
-        None.
-    """
-    strategy = SocketRefSanityStrategy()
-    blueprint_a = _make_blueprint(root_id="root-a", edges={"root-a": {"dep"}})
-    blueprint_b = _make_blueprint(root_id="root-b", edges={"root-b": {"dep"}})
-    blueprint_a.ensure_dag_index_built()
-    socket = _make_socket_ref(
-        node_id="root-a",
-        name="service",
-        path=("service",),
-        path_registry=blueprint_a.path_registry,
-    )
-    blueprint_a.add_socket_ref(socket)
-    blueprint_a.add_socket_ref(socket)
-    diagnostics: list[SystemDiagnostic] = []
-
-    strategy.run(
-        index=_make_index(
-            {"root-a": {"dep"}, "root-b": {"dep"}, "dep": set()},
-            root_ids={"root-a", "root-b"},
-        ),
-        blueprints={"root-a": blueprint_a, "root-b": blueprint_b},
-        phase4_results={},
-        broken_spell_ids=set(),
-        diagnostics=diagnostics,
-        spell_system_states=None,
-        spell_lookup={},
-        cancel_event=None,
-    )
-
-    roots = {diag.root_id for diag in diagnostics}
-    assert roots == {"root-a"}
 
 
 def test_component_root_reachability_no_orphans() -> None:

@@ -5,9 +5,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy import (
     CodegenCreationDiscoveryStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy import (
-    FallbackNoOverridesCodegenCreationDiscoveryStrategy,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_codegen_creation_discovery_strategy import (
     GeneralizedCodegenCreationDiscoveryStrategy,
 )
@@ -58,11 +55,16 @@ class CodegenCreationDiscoveryStrategyBuilder(Cleanable):
     def _load_defaults(self) -> None:
         """
         Populate the default phase-11 discovery strategy registry.
+
+        Contract:
+            Registers the solo, many_only and generalized claims in that
+            order. The fallback no-overrides claim is retired (2026-09-26):
+            plan discovery always selects one of the three, and a plan none
+            of them claims fails discovery with RuntimeError.
         """
         solo_strategy = SoloCodegenCreationDiscoveryStrategy()
         many_only_strategy = ManyOnlyCodegenCreationDiscoveryStrategy()
         generalized_strategy = GeneralizedCodegenCreationDiscoveryStrategy()
-        fallback_strategy = FallbackNoOverridesCodegenCreationDiscoveryStrategy()
         self._strategies_by_name[
             solo_strategy.strategy_id
         ] = solo_strategy
@@ -72,9 +74,6 @@ class CodegenCreationDiscoveryStrategyBuilder(Cleanable):
         self._strategies_by_name[
             generalized_strategy.strategy_id
         ] = generalized_strategy
-        self._strategies_by_name[
-            fallback_strategy.strategy_id
-        ] = fallback_strategy
 
     def get_strategy(
             self,

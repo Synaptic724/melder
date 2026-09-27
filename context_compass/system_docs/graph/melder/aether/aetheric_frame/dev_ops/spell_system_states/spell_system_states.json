@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
- "source_sha256": "e8c32a967e0baf7c6f470bc3d8006d01d0efe2132d9c2cc7a172cf98e9581260",
+ "source_sha256": "c0db04ea6fd06ebc450df2cd16f80ace5f169049cbf5d85ae7750b3a4d0bee4b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states": {
@@ -60,14 +60,15 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ade45ee2085bf88ad24f8bd0c21ba54379ee858d34934825748c0d7e477e29b5",
+   "span_sha256": "8f711cd351e08e80d856a0986da4de08753de0da8ab06070c146f0370fafe178",
    "role": "Per-frame lineage and resolution state registry.",
    "responsibilities": [
     "owns lineage state by index id and spell id",
     "tracks dirty lineages and local topologies",
     "owns per-conduit resolution state buckets",
     "provides targeted dependency and contract invalidation",
-    "indexes OVERRIDE_REQUIRED consumers alongside collection frame watchers without adding construction edges"
+    "indexes OVERRIDE_REQUIRED consumers alongside collection frame watchers without adding construction edges",
+    "watches UNRESOLVED_INPUT consumers under their expected-type frame key so a later matching bind re-resolves them"
    ],
    "owns_state": [
     "_states_by_index_id",

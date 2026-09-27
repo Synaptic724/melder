@@ -1,0 +1,27 @@
+AFTER (this lane's change), 3.14.7t, VM copy with its own melder package root.
+-- cache growth probe, three fresh processes
+== process 1
+live spell ids: ['cd1f471d9367', 'fc8972a04ec0']
+bundle payload ids: ['cd1f471d9367', 'fc8972a04ec0']
+bundle payload count: 2 bytes: 2990
+== process 2
+live spell ids: ['cd1f471d9367', 'fc8972a04ec0']
+bundle payload ids: ['cd1f471d9367', 'fc8972a04ec0']
+bundle payload count: 2 bytes: 2990
+== process 3
+live spell ids: ['cd1f471d9367', 'fc8972a04ec0']
+bundle payload ids: ['cd1f471d9367', 'fc8972a04ec0']
+bundle payload count: 2 bytes: 2990
+-- stale consumer probe, variants A, B, B, B
+== variant A
+variant=A engine=bb2303f9f04f car=b65effb21259 cached=['b65effb21259', 'bb2303f9f04f']
+car.engine variant: A | engine is unique: True
+== variant B
+variant=B engine=fb6bb566bdeb car=b65effb21259 cached=['b65effb21259', 'fb6bb566bdeb']
+car.engine variant: B | engine is unique: True
+== variant B
+variant=B engine=fb6bb566bdeb car=b65effb21259 cached=['b65effb21259', 'fb6bb566bdeb']
+car.engine variant: B | engine is unique: True
+== variant B
+variant=B engine=fb6bb566bdeb car=b65effb21259 cached=['b65effb21259', 'fb6bb566bdeb']
+car.engine variant: B | engine is unique: True

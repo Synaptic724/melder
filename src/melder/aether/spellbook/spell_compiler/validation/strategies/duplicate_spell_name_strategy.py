@@ -106,7 +106,8 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
             name_collisions = pass_cache.get("duplicate_name_collisions")
         if name_collisions is None:
             name_collisions = {}
-            for spell_id, other_spell in spellbook._spell_id_pool.items():
+            # A copy: concurrent binds change the live pool under the Spellbook lock, not held here.
+            for spell_id, other_spell in spellbook._spell_id_pool.copy().items():
                 other_name = other_spell.spell_name
                 if not other_name:
                     continue

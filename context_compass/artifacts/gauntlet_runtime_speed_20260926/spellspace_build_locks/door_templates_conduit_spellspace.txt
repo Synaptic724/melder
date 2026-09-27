@@ -1,0 +1,45 @@
+# melder_2 VM, 2026-09-26T21:18:34Z: dump_templates.py on tree_0270: creation-context door templates for unique_per_conduit and spellspace.
+----- <creation_context_no_overrides_only_template:spellspace:0:0>
+def _creation_context_no_overrides_only_template(
+        _spell,
+        _spell_id,
+        _owner_creations,
+        _no_overrides_executor,
+        _SpellSpaceScopeError,
+        _existing_creation_missing_message,
+        _spellspace_required_message,
+    ):
+    def _creation_context_execute_no_overrides_only(meld):
+        caller_creations = meld._spellspace_creations
+        creation = caller_creations._creations.get(_spell_id)
+        if creation is not None:
+            return creation
+        with (caller_creations._slot_guards.get(_spell_id) or caller_creations.slot_guard(_spell_id)):
+            creation = caller_creations._creations.get(_spell_id)
+            if creation is None:
+                instance = _no_overrides_executor(meld)
+                return instance
+            return creation
+    return _creation_context_execute_no_overrides_only
+----- <creation_context_no_overrides_only_template:unique_per_conduit:0:0>
+def _creation_context_no_overrides_only_template(
+        _spell,
+        _spell_id,
+        _owner_creations,
+        _no_overrides_executor,
+        _SpellSpaceScopeError,
+        _existing_creation_missing_message,
+        _spellspace_required_message,
+    ):
+    def _creation_context_execute_no_overrides_only(meld):
+        caller_creations = meld._conduit_creations
+        creation = caller_creations._creations.get(_spell_id)
+        if creation is not None:
+            return creation
+        with (caller_creations._slot_guards.get(_spell_id) or caller_creations.slot_guard(_spell_id)):
+            creation = caller_creations._creations.get(_spell_id)
+            if creation is None:
+                instance = _no_overrides_executor(meld)
+                return instance
+            return creation
+    return _creation_context_execute_no_overrides_only

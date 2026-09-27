@@ -85,24 +85,8 @@
    "id": "src.melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies",
    "kind": "package",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/",
-   "member_count": 5,
+   "member_count": 4,
    "shared_suffix": "strategy",
-   "cohesion": 1.0
-  },
-  {
-   "id": "src.melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.steps",
-   "kind": "package",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/",
-   "member_count": 5,
-   "shared_suffix": "step",
-   "cohesion": 1.0
-  },
-  {
-   "id": "src.melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps",
-   "kind": "package",
-   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/",
-   "member_count": 5,
-   "shared_suffix": "step",
    "cohesion": 1.0
   },
   {
@@ -125,7 +109,7 @@
    "id": "src.melder.aether.spellbook.spell_compiler.codegen_planner.strategies",
    "kind": "package",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/strategies/",
-   "member_count": 4,
+   "member_count": 3,
    "shared_suffix": "strategy",
    "cohesion": 1.0
   },
@@ -149,7 +133,7 @@
    "id": "src.melder.aether.spellbook.spell_compiler.system.validation",
    "kind": "package",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/",
-   "member_count": 24,
+   "member_count": 23,
    "shared_suffix": "strategy",
    "cohesion": 0.96
   },
@@ -173,7 +157,7 @@
    "id": "src.melder.crystallizer.crystal_analysis.preflight",
    "kind": "package",
    "file": "src/melder/crystallizer/crystal_analysis/preflight/",
-   "member_count": 12,
+   "member_count": 13,
    "shared_suffix": "strategy",
    "cohesion": 0.92
   },
@@ -285,7 +269,7 @@
    "id": "src.melder.utilities.custom_exceptions",
    "kind": "package",
    "file": "src/melder/utilities/custom_exceptions/",
-   "member_count": 11,
+   "member_count": 12,
    "shared_suffix": "error",
    "cohesion": 1.0
   }

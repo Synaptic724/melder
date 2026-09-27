@@ -1,0 +1,16 @@
+Two fresh processes, 3.14.7t, device-tree src (VM copy). Bind.spell_id_inspector(obj, existence=unique).
+shape                      profile                  stable  repr_string (run 1) | defaults
+function                   CallableBindingProfile   NO      <function make_engine at 0x379aada3000> | ['3']
+function_object_default    CallableBindingProfile   NO      <function make_with_object_default at 0x379aada2640> | ['<object object at 0x379a8560260>']
+function_contract_default  CallableBindingProfile   NO      <function make_with_contract_default at 0x379aada21c0> | ["<SpellContract spell=None spellframe='EngineFrame' binding_name='main' override=None>"]
+decorated_function         CallableBindingProfile   NO      <function decorated_factory at 0x379aa677bc0> | ['1']
+lambda                     CallableBindingProfile   NO      <function <lambda> at 0x379aa677f80> | []
+bound_method               CallableBindingProfile   NO      <bound method Workshop.build of <probe_user_shapes.Workshop object at 0x379a858e590>> | []
+static_method              CallableBindingProfile   NO      <function Workshop.build_static at 0x379aa678a00> | []
+class_method               CallableBindingProfile   yes     <bound method Workshop.build_class of <class 'probe_user_shapes.Workshop'>> | []
+partial                    CallableBindingProfile   NO      functools.partial(<function make_engine at 0x379aada3000>, size=4) | ['4']
+callable_instance          CallableBindingProfile   NO      <probe_user_shapes.CallableFactory object at 0x379a858e710> | []
+instance_default_repr      InstanceBindingProfile   NO      <probe_user_shapes.Settings object at 0x379a858e890> | []
+instance_custom_repr       InstanceBindingProfile   yes     NamedSettings(prod) | []
+instance_dataclass         InstanceBindingProfile   yes     ValueSettings(level=2) | []
+class                      ClassBindingProfile      yes     None | []

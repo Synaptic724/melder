@@ -1,7 +1,7 @@
 import inspect
 import types
 import typing
-from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, Union, get_args, get_origin
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Set, Tuple, Union, get_args, get_origin
 
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell import Spell
@@ -32,9 +32,6 @@ from melder.aether.spellbook.spell_compiler.phases.shared_compiler_executions im
 )
 from melder.aether.spellbook.spell_compiler.phases.utility import (
     CompilerPhaseUtility,
-)
-from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
-    DirectedAcyclicWorkGraph,
 )
 from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.profiles.resolution_profile import (
@@ -120,7 +117,7 @@ class CompilerPhase3:
             spellbook: Spellbook,
     ) -> Generator[tuple[Any, Any], Any, None]:
         """
-            Iterate all visible spells via the Spellbook's live spell_id_pool.
+            Iterate all visible spells via a copy of the Spellbook's spell_id_pool.
             
             Purpose:
                 Provide a single internal iterator that Phase 3 can use for
@@ -128,12 +125,16 @@ class CompilerPhase3:
             Contract:
                 - Yields "(spell_index, spell)" in the insertion order of
                   "_spell_id_pool".
-                - Uses the Spellbook's live "_spell_id_pool" directly; no copies
-                  or snapshots are created.
+                - Iterates a copy of "_spell_id_pool" taken in one call when the
+                  iteration starts. A concurrent bind, notch, contract grant or
+                  transfer changes the live dict under the Spellbook lock, which
+                  this pass does not hold (meld-time reruns run outside any
+                  transaction); iterating it live raised "dictionary changed size
+                  during iteration".
             Returns:
-                Iterator[Tuple[SpellIndex, Spell]]: Live iteration stream.
+                Iterator[Tuple[SpellIndex, Spell]]: Stream over the copy.
         """
-        for spell_instance in spellbook._spell_id_pool.values():
+        for spell_instance in spellbook._spell_id_pool.copy().values():
             yield spell_instance.spell_index, spell_instance
 
     def _normalize_annotation_for_matching(self, annotation: Any) -> Any:
@@ -446,6 +447,8 @@ class CompilerPhase3:
         Prefer matching resolvable providers. Only when none exist may a single
         non-resolvable definition be selected for an OVERRIDE_REQUIRED input.
         Matching and index grouping happen first; capability does not change them.
+        When nothing matches at all, the mapping is empty: the caller records an
+        UNRESOLVED_INPUT socket, which the constructing meld must supply.
 
         Args:
             spell:
@@ -457,11 +460,12 @@ class CompilerPhase3:
 
         Returns:
             Dict[Any, Spell]:
-                Mapping from matched `spell_index` to spell.
+                Mapping from matched `spell_index` to spell. Empty when no
+                registered spell matches the annotation.
 
         Raises:
-            RuntimeError: If zero candidates are found or multiple candidates
-                match the annotation constraints.
+            RuntimeError: If multiple candidates match the annotation
+                constraints (ambiguity is a configuration error, not an input).
         """
         annotation = self._normalize_annotation_for_matching(dep.target_annotation)
         binding_name: Optional[str] = None
@@ -490,11 +494,11 @@ class CompilerPhase3:
             candidates = resolvable_candidates
 
         if not candidates:
-            raise RuntimeError(
-                f"SpellCrafter Phase 3: no DI candidate found for parameter "
-                f"{dep.param_name!r} on spell {spell.spell_name!r} "
-                f"(annotation={annotation!r})."
-            )
+            # Nothing registered provides this type. `_build_local_frame_dag`
+            # records an UNRESOLVED_INPUT socket instead of failing resolution;
+            # the constructing meld supplies the value or raises
+            # UnresolvedInputError when this object is built.
+            return {}
 
         if len(candidates) > 1:
             names = ", ".join(
@@ -698,6 +702,7 @@ class CompilerPhase3:
             *,
             requirements: SpellRequirements,
             socket_references: Dict[tuple[str, int], List[str]],
+            socket_unresolved: Optional[Set[tuple[str, int]]] = None,
     ) -> SpellLocalTopology:
         """
             Internal helper for Phase 3.
@@ -711,6 +716,9 @@ class CompilerPhase3:
             For each: class:`SpellSymbolicDependency`:
                 * Determine declaration kind, then mark selected descriptive targets
                   OVERRIDE_REQUIRED without altering Phase-1/2 declaration facts.
+                * Mark single typed sockets listed in "socket_unresolved" (no
+                  registered provider at all) UNRESOLVED_INPUT. They keep their
+                  dependency_key so a later matching bind re-resolves this spell.
                 * Copy "is_collection" and "is_optional" flags from the
                   symbolic graph.
                 * Look up any concrete targets via "socket_targets" using
@@ -742,8 +750,14 @@ class CompilerPhase3:
             referenced_spell_ids = tuple(socket_references.get((dep.param_name, dep.position), ()))
             if referenced_spell_ids:
                 socket_kind = SocketKind.OVERRIDE_REQUIRED
+            elif socket_unresolved and (dep.param_name, dep.position) in socket_unresolved:
+                socket_kind = SocketKind.UNRESOLVED_INPUT
             dependency_key = None
-            if spell.resolvable and socket_kind in (SocketKind.NORMAL, SocketKind.OVERRIDE_REQUIRED):
+            if spell.resolvable and socket_kind in (
+                    SocketKind.NORMAL,
+                    SocketKind.OVERRIDE_REQUIRED,
+                    SocketKind.UNRESOLVED_INPUT,
+            ):
                 dependency_key = self._dependency_key_for_dep(dep)
 
             descriptor = SpellSocketDescriptor(
@@ -776,22 +790,19 @@ class CompilerPhase3:
             graph: SpellSymbolicGraph,
             cancellation_event: Optional[CancellationEvent],
             *,
-            return_dependencies: bool = False,
             resolution_pass_cache: Optional[Dict[str, Any]] = None,
-    ) -> Union[DirectedAcyclicWorkGraph, Tuple[DirectedAcyclicWorkGraph, List[str]]]:
+    ) -> Tuple[List[str], List[str]]:
         """
             Internal helper for Phase 3.
             
-            Build the concrete DAG for this Spell's **local frame** and emit
-            constructor topology into SpellSystemStates.
+            Resolve this Spell's **local frame** into id rows and emit constructor
+            topology into SpellSystemStates.
             
             Responsibilities:
-                * Add a DAG node for the root Spell (current SpellIndex version).
                 * For each symbolic dependency:
                       - resolve normal DI shapes via direct Spellbook map iteration,
-                      - add DAG nodes for resolved dependency spells,
-                      - add edges from each dependency node to the root node,
-                        tagging edges with "param_name" and "socket_kind".
+                      - record each resolved dependency spell id as a direct
+                        dependency of the root (this spell).
                 * Track, per constructor socket "(param_name, position)", the
                   concrete dependency spell ids resolved in this phase.
                 * Build a: class:`SpellLocalTopology` from the symbolic graph plus
@@ -799,19 +810,49 @@ class CompilerPhase3:
                 * Call into: class:`SpellSystemStates`:
                       - record direct dependency spell ids, and
                       - register the local topology for this Spell.
+                * Compute the ordered local frame: the distinct dependency ids in
+                  ascending id order, then the root id last. This is the order the
+                  per-spell dependency DAG used to yield (dependencies first, ties
+                  broken by id, root last); the graph object is no longer built.
+            
+            Returns:
+                Tuple[List[str], List[str]]:
+                    ``(ordered_node_ids, dependency_spell_ids)`` where
+                    ``ordered_node_ids`` is the local frame order described above
+                    and ``dependency_spell_ids`` lists the resolved dependency ids
+                    in resolution order (a spell resolved through two sockets
+                    appears twice; callers de-duplicate as needed).
+            
+            Raises:
+                ValueError:
+                    If ``requirements`` or ``graph`` is None.
+                RuntimeError:
+                    If the spell has no bound SpellIndex / current spell id, or
+                    when annotation resolution is ambiguous (see the resolvers).
             
             Important:
                 * This helper does **not** mutate the Spell object. All artifacts
-                  (DAG, topology, dependency ids) remain in these SpellCrafter and
+                  (topology, dependency ids) remain in this SpellCrafter and
                   SpellSystemStates.
-                * If "return_dependencies" is True, it returns a tuple of
-                  "(dag, dependency_spell_ids)"; otherwise it returns only the DAG.
                 * SpellContract sockets take part in the
-                  symbolic graph and topology but do not produce DAG edges or
+                  symbolic graph and topology but do not produce dependency ids or
                   concrete targets at this stage.
                 * Selected non-resolvable definitions produce reference-only
                   OVERRIDE_REQUIRED inputs. Non-resolvable roots retain their own
                   declarations/topology without resolving constructor requirements.
+                * A single typed dependency that no registered spell provides
+                  produces an UNRESOLVED_INPUT socket (no dependency id) instead of
+                  failing: the constructing meld supplies it.
+                * The per-socket target rows carry everything the retired DAG held
+                  (parent id, child id, parameter name; every edge was NORMAL), so
+                  no edge list is kept beside them.
+                * A constructor that takes its own class resolves to the spell
+                  itself. That self-resolution is RECORDED - in the dependency ids,
+                  the socket targets, the registry and `Spell.dependencies` - and
+                  kept out of the ordered frame, so Phase 4's SELF_DEPENDENCY check
+                  refuses the spell through the readable validation report instead
+                  of a Phase-3 abort (owner decision 2026-09-26; the retired DAG
+                  raised ValueError here).
         """
         if requirements is None:
             raise ValueError("requirements must not be None.")
@@ -824,7 +865,6 @@ class CompilerPhase3:
             raise RuntimeError("SpellCrafter has no bound Spell with a SpellIndex.")
 
         root_id = self._get_required_current_spell_id(spell)
-        dag = DirectedAcyclicWorkGraph()
 
         # Pass-scoped candidate index (None -> original scan semantics).
         # Built lazily once per resolution pass; eq-risky pools disable it.
@@ -833,9 +873,6 @@ class CompilerPhase3:
             if spell.resolvable else None
         )
 
-        # Register the root node first.
-        dag.add_node(key=root_id, payload=spell)
-
         # Track all dependency spell IDs for SpellSystemStates.
         dependency_spell_ids: List[str] = []
 
@@ -843,13 +880,15 @@ class CompilerPhase3:
         # keyed by (param_name, position) -> [spell_id, ...]
         socket_targets: Dict[tuple[str, int], List[str]] = {}
         socket_references: Dict[tuple[str, int], List[str]] = {}
+        # Single typed sockets with no registered provider: recorded, not refused.
+        socket_unresolved: Set[tuple[str, int]] = set()
 
         for dep in graph.dependencies if spell.resolvable else ():
             CompilerPhaseUtility.throw_if_cancelled(cancellation_event)
 
             di_shape = dep.di_shape
 
-            # Only "normal" DI shapes produce concrete DAG edges for now.
+            # Only "normal" DI shapes produce concrete dependency ids for now.
             if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
                 resolved = self._resolve_single_by_annotation(
                     spell,
@@ -867,46 +906,44 @@ class CompilerPhase3:
                 resolved = self._resolve_spellmap_default(spell, spellbook, dep)
             else:
                 # SpellContract / PLAIN and any future shapes
-                # are currently metadata-only at the DAG level. They still
-                # participate in the local topology below.
+                # are currently metadata-only at the dependency level. They
+                # still participate in the local topology below.
                 resolved = {}
 
-            if not resolved:
-                continue
-
             key = (dep.param_name, dep.position)
+            if not resolved:
+                if di_shape is ParameterDIShape.SINGLE_BY_ANNOTATION:
+                    # Nothing registered provides this typed parameter; keep it
+                    # as an unresolved input instead of failing resolution.
+                    socket_unresolved.add(key)
+                continue
 
             for spell_index, spell_obj in resolved.items():
                 dep_spell_id = spell_index.selected_spell_id
                 if not spell_obj.resolvable:
                     if (
                             di_shape is ParameterDIShape.SPELLMAP_DEFAULT
-                            and dep.spellmap_default.spell_override is not None
+                            and dep.spellmap_default.override is not None
                     ):
                         raise RuntimeError(
                             f"Parameter {dep.param_name!r} on spell {spell.spell_name!r} selects "
-                            f"non-resolvable definition {spell_obj.spell_name!r} with a spell_override "
+                            f"non-resolvable definition {spell_obj.spell_name!r} with an override "
                             "construction payload. Remove that payload and supply the consumer "
                             "parameter through a meld override."
                         )
                     socket_references.setdefault(key, []).append(dep_spell_id)
                     continue
+                # A self-resolution (dep_spell_id == root_id) is recorded like any
+                # other dependency; Phase 4 reports it as SELF_DEPENDENCY.
                 dependency_spell_ids.append(dep_spell_id)
                 socket_targets.setdefault(key, []).append(dep_spell_id)
-
-                dag.add_node(key=dep_spell_id, payload=spell_obj)
-                dag.add_dependency(
-                    parent_key=dep_spell_id,
-                    child_key=root_id,
-                    param_name=dep.param_name,
-                    socket_kind=self._socket_kind_for_dep(dep),
-                )
 
         # Snapshot local topology for this spell's constructor.
         topology = self._build_local_topology(
             spell, graph, socket_targets,
             requirements=requirements,
             socket_references=socket_references,
+            socket_unresolved=socket_unresolved,
         )
 
         # Update spell-system state with dependency IDs and local topology.
@@ -920,10 +957,12 @@ class CompilerPhase3:
                 topology,
             )
 
-        if return_dependencies:
-            return dag, dependency_spell_ids
-
-        return dag
+        # Local frame order: distinct dependencies ascending by id, root last -
+        # the topological order of the star graph phase 3 used to materialize.
+        # A recorded self-resolution is not a frame node of its own.
+        ordered_node_ids: List[str] = sorted(set(dependency_spell_ids) - {root_id})
+        ordered_node_ids.append(root_id)
+        return ordered_node_ids, dependency_spell_ids
 
     def run(
             self,
@@ -935,15 +974,14 @@ class CompilerPhase3:
             resolution_pass_cache: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Phase 3 - Build the local-frame DAG and constructor topology.
+        Phase 3 - Resolve the local frame and constructor topology.
 
         Responsibilities:
             * Consume the Phase 2 symbolic graph and resolve each socket into
               concrete dependency spell ids.
-            * Build the local constructor DAG
-              (:class:`DirectedAcyclicWorkGraph`) rooted at this spell, where:
-                  - dependency spells are parents,
-                  - this spell is the child/root node.
+            * Compute the ordered local frame rooted at this spell (resolved
+              dependencies first, ascending by id; this spell last) as id rows -
+              no per-spell graph object is built (retired 2026-09-26).
             * Build and register a :class:`SpellLocalTopology` describing the
               constructor sockets (normal sockets and SpellContract sockets)
               and the resolved target spell ids.
@@ -973,7 +1011,7 @@ class CompilerPhase3:
               instead of auto-running earlier phases.
             * Assumes the bound Spell is attached to a Spellbook; direct
               Spellbook map iteration is used for resolution.
-            * Stores the local DAG and direct dependency list on the Spell via
+            * Stores the direct dependency list on the Spell via
               :meth:`Spell._add_build_details`, and keeps a
               :class:`SpellResolutionFrame` on this compiler artifact.
             * Does not return a value; callers rely on:
@@ -994,25 +1032,17 @@ class CompilerPhase3:
         required_spell_system_states = self._get_required_spell_system_states(
             spell_system_states
         )
-        dag_with_dependencies = self._build_local_frame_dag(
+        ordered_node_ids, dependency_spell_ids = self._build_local_frame_dag(
             spell=spell,
             spellbook=spellbook,
             spell_system_states=required_spell_system_states,
             requirements=artifact._requirements,
             graph=artifact._symbolic_graph,
             cancellation_event=cancel_event,
-            return_dependencies=True,
             resolution_pass_cache=resolution_pass_cache,
         )
-        if not isinstance(dag_with_dependencies, tuple):
-            raise RuntimeError(
-                "SpellCrafter Phase 3 expected a DAG/dependency tuple when return_dependencies=True."
-            )
-        dag, dependency_spell_ids = dag_with_dependencies
 
-        # Topological order of node ids (deps first, then root).
-        ordered_node_ids = dag.collect_dependency_ids()
-
+        # Ordered local frame (deps first, then root) computed as rows.
         artifact._resolution_frame = SpellResolutionFrame(
             spell_id=self._get_required_current_spell_id(spell),
             ordered_node_ids=ordered_node_ids,
@@ -1022,7 +1052,6 @@ class CompilerPhase3:
         unique_dependencies = list(dict.fromkeys(dependency_spell_ids))
         try:
             spell._add_build_details(
-                dag=dag,
                 dependencies=unique_dependencies,
             )
         except AttributeError:

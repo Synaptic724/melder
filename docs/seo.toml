@@ -1,0 +1,14 @@
+schema_version = 1
+
+# Expand this list when a page-specific description has been authored and reviewed.
+required_descriptions = [
+  "index.html",
+  "beginner/dependency-injection.html",
+  "beginner/lifetimes.html",
+  "beginner/cleanup.html",
+  "beginner/capstone.html",
+  "advanced/inspection-walkthrough.html",
+  "expert/codegen.html",
+  "examples/hello-melder.html",
+  "examples/intermediate/15-constructor-di-by-annotation.html",
+]

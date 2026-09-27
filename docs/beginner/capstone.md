@@ -1,3 +1,11 @@
+---
+myst:
+  html_meta:
+    description: >-
+      Build an orders application with ordinary Python objects, constructor injection,
+      shared resources, fresh handlers, and explicit cleanup using Melder.
+---
+
 # Build a complete beginner application
 
 Build a small orders application with ordinary Python objects, one bootstrap,

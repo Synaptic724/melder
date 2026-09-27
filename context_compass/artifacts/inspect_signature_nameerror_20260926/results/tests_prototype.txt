@@ -1,0 +1,21 @@
+# sandbox 3.14.0rc2t, -X gil=0; m2 = unmodified snapshot, m3 = prototype
+## new regression file on the unmodified snapshot (must fail)
+FAILED tests/component/melder/spellbook/test_type_checking_annotation_introspection.py::test_late_bind_over_type_checking_annotated_provider_melds_in_dynamic_world
+FAILED tests/component/melder/spellbook/test_type_checking_annotation_introspection.py::test_occurrence_contract_fallbacks_read_defaults_through_type_checking_annotations
+FAILED tests/component/melder/spellbook/test_type_checking_annotation_introspection.py::test_conduit_ward_contract_keys_read_through_type_checking_annotations
+FAILED tests/component/melder/spellbook/test_type_checking_annotation_introspection.py::test_bind_fingerprint_text_is_address_free_for_type_checking_annotations
+FAILED tests/component/melder/spellbook/test_type_checking_annotation_introspection.py::test_package_describe_renders_type_checking_annotation
+FAILED tests/component/melder/spellbook/test_type_checking_annotation_introspection.py::test_protocol_crafter_mirrors_class_with_type_checking_annotations
+FAILED tests/component/melder/spellbook/test_type_checking_annotation_introspection.py::test_protocol_crafter_mirrors_melder_conduit
+FAILED tests/component/melder/spellbook/test_type_checking_annotation_introspection.py::test_detailed_profile_of_spell_with_type_checking_annotations
+8 failed in 1.95s
+## new tests on the prototype
+22 passed in 0.61s
+## tests/component: snapshot vs prototype
+2068 passed, 44 skipped, 1 xfailed in 33.39s
+2076 passed, 44 skipped, 1 xfailed in 34.34s
+## tests/unit/melder on prototype (3 failures are stale build-asset stamps, identical on the snapshot)
+FAILED tests/unit/melder/build_assets/test_system_documents_builder.py::test_shipped_entries_carry_sections_and_a_digest
+FAILED tests/unit/melder/build_assets/test_system_documents_builder.py::test_unavailable_entry_matches_a_live_entry_key_for_key
+FAILED tests/unit/melder/test_package_version_metadata.py::test_generated_build_assets_are_stamped_for_the_live_version
+3 failed, 8037 passed, 3 skipped, 7 xfailed in 68.05s (0:01:08)

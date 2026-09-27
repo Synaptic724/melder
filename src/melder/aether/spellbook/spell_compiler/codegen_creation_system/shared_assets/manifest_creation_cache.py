@@ -17,7 +17,10 @@ schema and hydration; this module only routes.
 
 Contract:
     - `build_package(spell)` is family-agnostic: it exports whatever manifest
-      the producing family stored on the creation artifact.
+      the producing family stored on the creation artifact - unless the spell's
+      lane plans carry a contract payload value the cache path cannot replay,
+      in which case it returns `None` and the spell stays on the in-process
+      compile path (owner option B, 2026-09-26).
     - `load_creation_context_lazy(...)` dispatches on `family_id` with an
       explicit branch per supported family. Unknown families raise, so cache
       payloads from newer/unknown builds degrade to a cold-load skip in the
@@ -37,6 +40,14 @@ MANY_ONLY_FAMILY_ID = "many_only_codegen_creation"
 def build_package(spell: Any) -> Dict[str, Any]:
     """
     Build the marshal-safe cache package for one manifest-first spell.
+
+    Contract:
+        - Exports the family manifest exactly as the producing family stored it.
+        - Every manifest is replayable by construction (2026-09-26): a contract
+          override payload entry is either a scalar written as itself or the
+          phase-9 reference to the consumer's live descriptor, resolved at
+          hydration; the emission gate that refused object payloads (owner
+          option B, task 4) is retired with it.
 
     Raises:
         RuntimeError:

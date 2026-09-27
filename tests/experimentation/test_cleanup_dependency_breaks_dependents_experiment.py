@@ -1,11 +1,14 @@
 """
-Experiment: cleaning up a shared dependency must BREAK its dependents.
+Experiment: cleaning up a shared dependency's spell gates its dependents.
 
 Purpose / expected behaviour (this is the point of invalidation on cleanup):
     A spell that is a dependency of other spells is cleaned up. The dependents
-    must NOT keep resolving against the now-removed dependency -- they must become
-    gated/invalid and FAIL to meld. A dependent that still resolves after its
-    dependency was disposed is a correctness violation.
+    become gated and re-resolve. The file name records the original contract,
+    under which they then FAILED to meld. Since 2026-09-26 (owner decision) a
+    removed provider leaves an unresolved input instead: dependent objects built
+    before the cleanup keep being served with the dependency they already hold
+    (Melder stops tracking it, it does not close it); a dependent built after the
+    cleanup needs the value supplied by the meld or a new provider.
 
 Method (dynamic mode):
     Bind three leaf dependencies (Dep1, Dep2, Dep3) and two consumers:
@@ -17,11 +20,12 @@ Method (dynamic mode):
        work and are cached).
     2. cleanup_spell(Dep1).
     3. Confirm both roots flip to gated on the SpellSystemStates plane.
-    4. MELD BOTH roots again AFTER cleanup -- expected to BREAK (unresolvable).
+    4. MELD BOTH roots again AFTER cleanup -- the stored instances are reused.
     5. Control: notify_spell_changed(Dep1) to show the CCM meld-gate plane.
 
 Asserts the purpose: both dependents meld before cleanup, both are gated after,
-and both FAIL to resolve after. All evidence is printed before any assert.
+and both stored dependents are served again after. All evidence is printed
+before any assert.
 
 This is an experimentation surface, not production runtime code.
 """
@@ -211,7 +215,7 @@ def test_cleanup_dependency_breaks_dependents_experiment() -> None:
             "is_root_dirty(other_root)_after": ccm_dirty_other,
         })
 
-        # --- Phase D2: MELD BOTH dependents AFTER cleanup (expected to BREAK) ---
+        # --- Phase D2: MELD BOTH dependents AFTER cleanup (stored instances reused) ---
         root_after = _try_meld(conduit, root_id)
         other_after = _try_meld(conduit, other_root_id)
         print("EXPERIMENT_D2_MELD_AFTER")
@@ -236,13 +240,13 @@ def test_cleanup_dependency_breaks_dependents_experiment() -> None:
             "gated" in (root_validity_after or "").lower()
             and "gated" in (other_validity_after or "").lower()
         )
-        both_broke_after = (not root_after[0]) and (not other_after[0])
+        both_reused_after = root_after[0] and other_after[0]
         print("EXPERIMENT_F_VERDICT")
         print({
             "both_dependents_melded_before_cleanup": both_melded_before,
             "both_dependents_gated_after_cleanup": both_gated_after,
-            "both_dependents_broke_after_cleanup": both_broke_after,
-            "purpose_satisfied": both_melded_before and both_gated_after and both_broke_after,
+            "both_stored_dependents_reused_after_cleanup": both_reused_after,
+            "purpose_satisfied": both_melded_before and both_gated_after and both_reused_after,
         })
 
         # Assert the purpose (evidence already printed above).
@@ -254,9 +258,9 @@ def test_cleanup_dependency_breaks_dependents_experiment() -> None:
             f"dependents were not gated after cleanup -- "
             f"root={root_validity_after}, other={other_validity_after}"
         )
-        assert both_broke_after, (
-            f"PURPOSE VIOLATED: a dependent still resolved after its dependency was "
-            f"cleaned up; both were expected to break (unresolvable) -- "
+        assert both_reused_after, (
+            f"PURPOSE VIOLATED: a dependent built before the cleanup was not served "
+            f"again; stored dependents keep the dependency they hold -- "
             f"root_after={root_after}, other_after={other_after}"
         )
     finally:

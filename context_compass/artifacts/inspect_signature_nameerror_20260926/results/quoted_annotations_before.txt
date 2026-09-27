@@ -1,0 +1,11 @@
+quoted annotations: 608 (whole-string 481, quoted inside a generic 127) in 158 modules; modules with `from __future__ import annotations`: 4
+    41 melder/aether/conduit/conduit.py
+    34 melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py
+    29 melder/nexus/configuration/nexus_configuration.py
+    25 melder/utilities/helpers/package.py
+    19 melder/aether/aetheric_frame/aetheric_frame_configuration.py
+    18 melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py
+    17 melder/utilities/data_structures/weak_data_structures/weak_concurrent_set.py
+    11 melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py
+    10 melder/aether/spellbook/configuration/spellbook_configuration.py
+    10 melder/crystallizer/asset_management/external_persistence_manager_configuration.py

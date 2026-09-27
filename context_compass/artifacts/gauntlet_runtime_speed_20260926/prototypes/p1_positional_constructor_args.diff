@@ -1,0 +1,73 @@
+--- orig_generalized_manifest_no_overrides_compiler.py
++++ patched_positional.py
+@@ -136,6 +136,7 @@
+             When rows are invalid or the root instance key is unresolvable.
+     """
+     rows = resolve_contract_payload_rows(rows=rows, spell_lookup=spell_lookup)
++    rows = _m2_annotate_positional(rows=rows, spell_lookup=spell_lookup)
+     runtime_rows = build_runtime_rows(
+         rows=rows,
+         spell_lookup=spell_lookup,
+@@ -286,6 +287,33 @@
+     return "\n".join(lines)
+ 
+ 
++def _m2_annotate_positional(*, rows, spell_lookup):
++    """PROTOTYPE (melder_2, VM copy only): mark the signature-order prefix of dependency params a class takes positionally."""
++    import inspect as _inspect
++    out = []
++    for row in rows:
++        row = dict(row)
++        names = ()
++        spell = spell_lookup.get(row["spell_id"])
++        shape = row_inlinable_common_shape(row) if row.get("spell_is_callable") is not None else None
++        if spell is not None and shape is not None and isinstance(spell.spell, type):
++            try:
++                params = list(_inspect.signature(spell.spell).parameters.values())
++            except (TypeError, ValueError):
++                params = []
++            dep_names = {name for name, _keys in shape}
++            prefix = []
++            for param in params:
++                if param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD) and param.name in dep_names:
++                    prefix.append(param.name)
++                else:
++                    break
++            names = tuple(prefix)
++        row["_m2_positional_names"] = names
++        out.append(row)
++    return tuple(out)
++
++
+ def _append_step_resolution_source(
+         *,
+         lines: list,
+@@ -613,6 +641,9 @@
+         # member count (parity with the generic `_build_kwargs_no_overrides`:
+         # collection socket -> list even with 1 member; >=2 deps -> list).
+         flat_dep_cursor = 0
++        m2_positional = (row or {}).get("_m2_positional_names", ()) if positional is None else ()
++        m2_values = {}
++        m2_keyword_lines = []
+         for param_name, dependency_keys in inlinable_params:
+             if key_to_step_index is not None:
+                 references = [
+@@ -633,9 +664,15 @@
+                 value_expression = references[0]
+             else:
+                 value_expression = "[" + ", ".join(references) + "]"
+-            lines.append(
+-                f"{indent}        {param_name}={value_expression},"
+-            )
++            if param_name in m2_positional:
++                m2_values[param_name] = value_expression
++            else:
++                m2_keyword_lines.append(
++                    f"{indent}        {param_name}={value_expression},"
++                )
++        for m2_name in m2_positional:
++            lines.append(f"{indent}        {m2_values[m2_name]},")
++        lines.extend(m2_keyword_lines)
+         for payload_index, payload_name in enumerate(payload_names):
+             lines.append(
+                 f"{indent}        {payload_name}"

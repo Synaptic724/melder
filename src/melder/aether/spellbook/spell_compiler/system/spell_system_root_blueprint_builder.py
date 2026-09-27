@@ -15,16 +15,12 @@ from typing import (
 from melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph import (
     DirectedAcyclicWorkGraph,
 )
-from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, SocketRef
 from melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.system.spell_system_adjacency_snapshot import (
         SpellSystemAdjacencySnapshot,
-    )
-    from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import (
-        SpellLocalTopology,
     )
 
 class SpellSystemRootBlueprintBuilder:
@@ -42,7 +38,11 @@ class SpellSystemRootBlueprintBuilder:
         * This is *purely structural*:
               - node payloads are None,
               - param_name and socket_kind on edges are left unset (None).
-          Socket metadata and DagIndex are overlaid in later Phase-5 steps.
+        * Each blueprint owns a fresh PathRegistry; Phase 8 mints the
+          root-relative path ids of its occurrences into it. Nothing here walks
+          logical paths, so the cost follows spells and edges, never the number
+          of paths (the per-path socket overlay that ran here had no reader
+          that needed it and was retired on 2026-09-26).
     """
     __slots__: list[str] = [
         "_reachable_by_id",
@@ -105,16 +105,6 @@ class SpellSystemRootBlueprintBuilder:
                 dag=dag,
                 ordered_node_ids=ordered_ids,  # Sequence[str] in topo order
                 requires_spellspace_request=requires_spellspace_request_by_id.get(root_spell_id, False),
-                socket_refs=None,              # Phase-5 socket overlay will populate
-                dag_index=None,                # Phase-5 DagIndex builder will populate
-            )
-
-            topologies = snapshot.topologies
-            if topologies is None:
-                raise RuntimeError("Missing topologies in SpellSystemAdjacencySnapshot")
-            self._overlay_sockets_and_index(
-                blueprint=blueprint,
-                topologies=topologies,
             )
 
             result[root_spell_id] = blueprint
@@ -139,7 +129,8 @@ class SpellSystemRootBlueprintBuilder:
         Contract:
             - Uses the same structural semantics as build_root_blueprints.
             - The resulting DAG includes all nodes reachable from root_spell_id.
-            - SocketRefs and DagIndex are overlaid from snapshot topologies.
+            - The blueprint owns a fresh PathRegistry; Phase 8 mints the path
+              ids it needs.
             - Does not mutate the snapshot.
             - Produces deterministic node/edge insertion order for equivalent
               dependency graphs.
@@ -175,16 +166,6 @@ class SpellSystemRootBlueprintBuilder:
             dag=dag,
             ordered_node_ids=ordered_ids,  # Sequence[str] in topo order
             requires_spellspace_request=requires_spellspace_request_by_id.get(root_spell_id, False),
-            socket_refs=None,              # Phase-5 socket overlay will populate
-            dag_index=None,                # Phase-5 DagIndex builder will populate
-        )
-
-        topologies = snapshot.topologies
-        if topologies is None:
-            raise RuntimeError("Missing topologies in SpellSystemAdjacencySnapshot")
-        self._overlay_sockets_and_index(
-            blueprint=blueprint,
-            topologies=topologies,
         )
 
         return blueprint
@@ -431,60 +412,3 @@ class SpellSystemRootBlueprintBuilder:
         ordered_node_ids: List[str] = dag.collect_dependency_ids()
 
         return dag, ordered_node_ids
-
-    def _overlay_sockets_and_index(
-            self,
-            blueprint: RootResolutionBlueprint,
-            topologies: Dict[str, Optional[SpellLocalTopology]],
-    ) -> None:
-        """
-        Overlay SocketRefs and prepare the PathRegistry for the blueprint.
-
-        Contract:
-            - PathIds are extended via the blueprint PathRegistry.
-            - DagIndex maps are built lazily when overrides are requested.
-        """
-        queue: Deque[Tuple[str, int]] = deque()
-
-        # Start with a fresh index to avoid stale entries in case of reuse.
-        blueprint.replace_dag_index(DagIndex())
-        blueprint.check_cleaned()
-        socket_refs = blueprint._socket_refs
-        path_registry = blueprint.path_registry
-        path_registry.check_cleaned()
-        root_path_id = path_registry.root_path_id
-        root_key = (blueprint.root_spell_id, root_path_id)
-        queue.append(root_key)
-
-        visited: Set[Tuple[str, int]] = {root_key}
-        # Cache per (parent path id, param name) to avoid repeated registry lookups.
-        path_cache: Dict[Tuple[int, str], int] = {}
-
-        while queue:
-            node_id, path_id = queue.popleft()
-
-            topology = topologies.get(node_id)
-            if topology is None:
-                continue
-
-            for socket_desc in topology.sockets:
-                param_name = socket_desc.param_name
-                cache_key = (path_id, param_name)
-                socket_path_id = path_cache.get(cache_key)
-                if socket_path_id is None:
-                    socket_path_id = path_registry.extend_path(path_id, param_name)
-                    path_cache[cache_key] = socket_path_id
-                socket_ref = SocketRef(
-                    node_id=node_id,
-                    param_name=param_name,
-                    param_path_id=socket_path_id,
-                    socket_kind=socket_desc.socket_kind,
-                )
-                socket_refs.append(socket_ref)
-
-                for target_id in socket_desc.target_spell_ids:
-                    target_key = (target_id, socket_path_id)
-                    if target_key in visited:
-                        continue
-                    visited.add(target_key)
-                    queue.append(target_key)

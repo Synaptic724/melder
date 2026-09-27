@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "fe3686f112a8eb630b8489ec350e096369ebbc06716a1bb31d51a28d4b111bce",
+ "source_sha256": "92bf7b90687b3d78f5f774f6ac5342425f9b0ab4b7866d82aba4fbded6725063",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -117,7 +117,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b475c14ca80b62d7a390ca0de00a79f9cdf17246f3fe81d9853d159a5fd0bf54",
+   "span_sha256": "9fb4a8408785947ab61e52b80bd461ad7edfdc9b8867518299fbdfbbd978dd0e",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
@@ -133,7 +133,8 @@
     "restores temporary lesser and prewarmed Space hooks after disposal and before publishing ready shells to their pools",
     "assigns creation-only names to fresh/pooled lessers and retires named discovery before idle publication",
     "emits dynamic named structural ancestry and publishes named Nexus lifecycle under existing scope locks",
-    "reserves promotion names and exchanges aliases without changing the live conduit identity"
+    "reserves promotion names and exchanges aliases without changing the live conduit identity",
+    "serves warm automatic id melds (plain or with a non-empty dict override payload) straight from Meld's fast-door entry with ConduitMeld's guard ladder, returning an existing object's bound object without the door call"
    ],
    "owns_state": [
     "_meld",
@@ -150,7 +151,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "15a03a25cc9ea49d6bf696c4156bf63995e21f7043ab9b36f26ff50ad9e6bb34"
+   "semantics_authored_against": "9fb4a8408785947ab61e52b80bd461ad7edfdc9b8867518299fbdfbbd978dd0e"
   }
  },
  "edges_out": [

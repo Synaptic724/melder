@@ -11,6 +11,7 @@ from pathlib import Path, PurePosixPath
 
 from example_catalog import ExampleCatalog
 from site_model import Page
+from page_metadata import PageMetadata
 
 
 class ReadmeSections:
@@ -111,13 +112,21 @@ class Curriculum:
         return source.read_text(encoding="utf-8")
 
     def _chapter(self, chapter: dict) -> None:
-        """Resolve one chapter's canonical prose and exact lesson links; reject ambiguity."""
+        """Resolve canonical prose, metadata ownership and exact lesson links before generation.
+
+        README chapters may declare an editorial description in the manifest.
+        Authored chapters own their frontmatter; a second manifest description
+        raises ValueError rather than publishing competing metadata.
+        """
         identifier, title, level = chapter["id"], chapter["title"], chapter["level"]
         if level not in ExampleCatalog._LEVELS or not identifier.startswith(level + "/"):
             raise ValueError(f"Chapter {identifier} does not belong to a learning level.")
         has_readme, has_source = "readme" in chapter, "source" in chapter
         if has_readme == has_source:
             raise ValueError(f"Chapter {identifier} needs one README heading or authored source.")
+        if has_source and "description" in chapter:
+            raise ValueError(f"Authored chapter {identifier} must keep its description in source frontmatter.")
+        description = PageMetadata.description(chapter.get("description"), identifier)
         body = self.readme.body(chapter["readme"]) if has_readme else self._source(chapter["source"])
         if "end_before" in chapter:
             marker = chapter["end_before"]
@@ -125,7 +134,7 @@ class Curriculum:
                 raise ValueError(f"Chapter {identifier} lost its README boundary marker: {marker}")
             body = body[:body.index(marker)].rstrip()
         if has_readme:
-            body = f"# {title}\n\n" + body
+            body = PageMetadata.frontmatter(description) + f"# {title}\n\n" + body
         body = self._rewrite_tour_links(identifier, body)
         selected = []
         for reference in chapter.get("lessons", []):
@@ -153,12 +162,15 @@ class Curriculum:
         self.bodies[identifier] = body
 
     def _rewrite_tour_links(self, identifier: str, body: str) -> str:
-        """Translate the README's tour references into the four-level site routes."""
+        """Translate the README's tour and known guide links into local four-level site routes."""
         mappings = {
             "[Part I](#-read-only-rooms-for-endpoints)": ("Advanced: read-only rooms", "advanced/read-only-rooms"),
             "[Part I](#part-i--the-basics)": ("Beginner", "beginner/index"),
             "[Part II](#part-ii--the-ceiling)": ("Expert", "expert/index"),
             "[documentation](#documentation)": ("full contents", "contents"),
+            "[configuration guide](https://github.com/Synaptic724/melder/blob/prod/docs/intermediate/configuration.md)": (
+                "configuration guide", "intermediate/configuration"
+            ),
         }
         for original, (label, destination) in mappings.items():
             body = body.replace(original, f"[{label}]({self._relative(identifier, destination)})")

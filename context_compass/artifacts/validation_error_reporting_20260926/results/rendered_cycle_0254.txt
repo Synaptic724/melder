@@ -1,0 +1,16 @@
+RAISED melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError
+Spellbook validation failed; one or more spells are broken. Broken spells: CycleA (id=377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f, frame=None); CycleB (id=3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe, frame=None)
+Diagnostics:
+Phase 4 issues:
+- Spell 'CycleA' (id=377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f, frame=None):
+    - [error] CIRCULAR_DEPENDENCY (source=CircularDependencyStrategy): Circular dependency detected starting from spell 'CycleA': 377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f -> 3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe -> 377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f -> 377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f.
+      details: {'cycle': ['377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f', '3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe', '377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f']}
+    - [error] BINDING_RESOLUTION_CYCLE (source=BindingResolutionCycleStrategy): Spell 'CycleA' participates in a binding resolution cycle: cyclea:__default__ -> cycleb:__default__ -> cyclea:__default__.
+      details: {'spell_id': '377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f', 'root_binding_key': 'cyclea:__default__', 'cycle_keys': ['cyclea:__default__', 'cycleb:__default__', 'cyclea:__default__'], 'cycle_spells': {'cyclea:__default__': ['377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f'], 'cycleb:__default__': ['3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe']}}
+- Spell 'CycleB' (id=3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe, frame=None):
+    - [error] CIRCULAR_DEPENDENCY (source=CircularDependencyStrategy): Circular dependency detected starting from spell 'CycleB': 3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe -> 377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f -> 3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe -> 3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe.
+      details: {'cycle': ['3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe', '377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f', '3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe']}
+    - [error] BINDING_RESOLUTION_CYCLE (source=BindingResolutionCycleStrategy): Spell 'CycleB' participates in a binding resolution cycle: cyclea:__default__ -> cycleb:__default__ -> cyclea:__default__.
+      details: {'spell_id': '3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe', 'root_binding_key': 'cycleb:__default__', 'cycle_keys': ['cyclea:__default__', 'cycleb:__default__', 'cyclea:__default__'], 'cycle_spells': {'cyclea:__default__': ['377864d4649c5a32e28dde4d03b816bdd6eee1ba25ab431e940b791e694d047f'], 'cycleb:__default__': ['3ba8e3be488db164dff326efcb10f4b7f35e1bcb0a4fa36fdde57360d0057ffe']}}
+Phase 6 diagnostics:
+  (none recorded)

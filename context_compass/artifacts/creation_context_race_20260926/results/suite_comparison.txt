@@ -1,0 +1,18 @@
+# tests/unit failing ids, patched vs unpatched (same VM copy layout), 2026-09-26
+patched: 47 failed, 8251 passed, 3 skipped, 7 xfailed, 387 errors in 38.27s
+unpatched: 47 failed, 8228 passed, 3 skipped, 7 xfailed, 387 errors in 38.29s
+ids only in patched: 0
+ids only in unpatched: 0
+failing files (both copies):
+    167 ERROR tests/unit/github_workflows/test_ci_policy.py
+     59 ERROR tests/unit/github_workflows/test_source_qualification.py
+     57 ERROR tests/unit/github_workflows/test_candidate_publication.py
+     49 ERROR tests/unit/github_workflows/test_python_runtime_matrix.py
+     26 FAILED tests/unit/github_workflows/test_workflow_contracts.py
+     26 ERROR tests/unit/github_workflows/test_distributions.py
+     21 ERROR tests/unit/github_workflows/test_checkout_identity.py
+     18 FAILED tests/unit/architecture_and_design/test_architecture_docs_tool.py
+      6 ERROR tests/unit/github_workflows/test_sdist_normalization.py
+      2 FAILED tests/unit/melder/build_assets/test_system_documents_builder.py
+      2 ERROR tests/unit/github_workflows/test_workflow_contracts.py
+      1 FAILED tests/unit/llm_support/test_builder.py

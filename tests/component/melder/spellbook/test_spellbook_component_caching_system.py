@@ -10,7 +10,11 @@ from melder.aether.aetheric_frame.aetheric_frame_configuration import (
     AethericFrameConfiguration,
 )
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
+    CodegenSignature,
+)
 from melder.nexus.nexus import Nexus
 from melder.utilities.caching_system.caching_system import CachingSystem
 from tests.mocks.spellbook.core_classes import BasicService
@@ -600,3 +604,72 @@ def test_component_spell_emit_cache_skips_existing_spell_id_payload() -> None:
     assert spell is not None
     spell._get_or_build_creation_context()
     assert spell.emit_cache() is False
+
+
+class _PayloadObject:
+    """Object payload probe with the default `object.__repr__`; never enters a row."""
+
+
+PAYLOAD_OBJECT = _PayloadObject()
+
+
+class MapPayloadConsumer:
+    """
+    Consumer whose provider arrives through a `SpellMap` carrying an object payload.
+
+    Contract:
+        - Phase 9 records the payload against the provider's dependency occurrence
+          (2026-09-26), so `BasicService(marker=PAYLOAD_OBJECT)` is what the executor builds.
+    """
+
+    def __init__(
+            self,
+            service: BasicService = SpellMap(spell=BasicService, override={"marker": PAYLOAD_OBJECT}),
+    ) -> None:
+        """
+        Capture the mapped provider.
+
+        Args:
+            service:
+                Provider resolved through the SpellMap default.
+        """
+        self.service = service
+
+
+def test_component_spell_with_object_payload_is_staged_as_a_reference() -> None:
+    """
+    A spell whose plan carries an object payload is staged at conjure end like any other
+    (the option-B refusal is retired, 2026-09-26): the bundle exists, the payload's rows carry
+    the phase-9 reference instead of the object, and the first meld hands the provider the
+    object by identity.
+
+    Returns:
+        None.
+    """
+    cache_root_path = _prepare_cache_root(
+        _package_root() / "tests/component/melder/spellbook/_cache_emit_object_payload"
+    )
+    cache_root_fragment = _build_cache_root_fragment(cache_root_path)
+    _activate_aether_cache_configuration(
+        cache_root_fragment=cache_root_fragment,
+        enabled=True,
+    )
+    spellbook = _make_spellbook()
+    spellbook.bind(spell=BasicService, existence="unique", permissions="create")
+    consumer_id = spellbook.bind(spell=MapPayloadConsumer, existence="unique", permissions="create")
+    _conjure_root(spellbook, name="root")
+
+    caching_system = spellbook._get_or_create_caching_system()
+    assert caching_system.has_spell_payload(consumer_id) is True
+    assert caching_system.bundle_path.exists() is True
+    payload = caching_system.get_spell_payload(consumer_id)
+    assert payload is not None
+    rows = payload["manifest"]["no_overrides"]["steps_rows"]
+    row_values = [value for row in rows for _name, value in row["contract_payload_items"]]
+    assert CodegenSignature.build_contract_override_ref(consumer_id, "service", "marker") in row_values
+    assert not any(isinstance(value, _PayloadObject) for value in row_values)
+
+    instance = spellbook._conduit.meld(spell_id=consumer_id)
+
+    assert isinstance(instance, MapPayloadConsumer)
+    assert instance.service.marker is PAYLOAD_OBJECT

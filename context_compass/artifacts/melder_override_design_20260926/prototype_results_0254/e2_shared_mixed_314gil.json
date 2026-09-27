@@ -1,0 +1,189 @@
+{
+ "python": "3.14.7 (main, Sep  1 2026, 14:18:09) [Clang 22.1.3 ]",
+ "gil_enabled": true,
+ "graph": "shared_mixed",
+ "verified": {
+  "normal/current": "ok",
+  "normal/v2": "ok",
+  "empty_tuple/current": "ok",
+  "empty_tuple/v2": "ok",
+  "root_one_reused/current": "ok",
+  "root_one_reused/v2": "ok",
+  "shared_supplied/current": "ok",
+  "shared_supplied/v2": "ok",
+  "python_root_only/lower_bound": "ok"
+ },
+ "rows": [
+  {
+   "graph": "shared_mixed",
+   "case": "normal",
+   "variant": "current",
+   "median_ns": 1003.9847798204361,
+   "min_ns": 988.1203505771697,
+   "max_ns": 1246.6165882855921,
+   "samples_ns": [
+    999.8038905515177,
+    988.1203505771697,
+    1003.9847798204361,
+    1030.1847370671228,
+    1246.6165882855921,
+    997.9831124412142,
+    1018.5306968790081
+   ],
+   "iterations": 23390,
+   "percent_of_current_normal": 100.0
+  },
+  {
+   "graph": "shared_mixed",
+   "case": "normal",
+   "variant": "v2",
+   "median_ns": 725.8750933912926,
+   "min_ns": 713.8974393805611,
+   "max_ns": 833.3478910548122,
+   "samples_ns": [
+    725.8750933912926,
+    770.089519798954,
+    720.7694423690824,
+    739.1247028458874,
+    833.3478910548122,
+    721.9674319092576,
+    713.8974393805611
+   ],
+   "iterations": 29446,
+   "percent_of_current_normal": 138.31371112760095
+  },
+  {
+   "graph": "shared_mixed",
+   "case": "empty_tuple",
+   "variant": "current",
+   "median_ns": 2481.155915108216,
+   "min_ns": 2442.272010926665,
+   "max_ns": 2745.610317293549,
+   "samples_ns": [
+    2481.155915108216,
+    2442.272010926665,
+    2460.329691111578,
+    2745.610317293549,
+    2473.006513973524,
+    2500.0849968480775,
+    2519.651502416474
+   ],
+   "iterations": 9518,
+   "percent_of_current_normal": 40.46439700572574
+  },
+  {
+   "graph": "shared_mixed",
+   "case": "empty_tuple",
+   "variant": "v2",
+   "median_ns": 1037.0855628796692,
+   "min_ns": 1001.3787859204688,
+   "max_ns": 1049.278359398561,
+   "samples_ns": [
+    1048.2461332988669,
+    1049.278359398561,
+    1040.1621644909742,
+    1001.3787859204688,
+    1006.8735082503986,
+    1023.5187626556374,
+    1037.0855628796692
+   ],
+   "iterations": 23211,
+   "percent_of_current_normal": 96.80828812549252
+  },
+  {
+   "graph": "shared_mixed",
+   "case": "root_one_reused",
+   "variant": "current",
+   "median_ns": 2336.5888793677996,
+   "min_ns": 2260.459963819861,
+   "max_ns": 2796.4747215081406,
+   "samples_ns": [
+    2309.0410358945064,
+    2336.5888793677996,
+    2260.459963819861,
+    2285.1841378653717,
+    2796.4747215081406,
+    2337.1484337808247,
+    2345.4045510806436
+   ],
+   "iterations": 10503,
+   "percent_of_current_normal": 42.96796876359695
+  },
+  {
+   "graph": "shared_mixed",
+   "case": "root_one_reused",
+   "variant": "v2",
+   "median_ns": 733.4886761307362,
+   "min_ns": 728.0365467150875,
+   "max_ns": 753.3685704853087,
+   "samples_ns": [
+    733.4886761307362,
+    732.6185209640146,
+    728.0365467150875,
+    728.9013205678442,
+    745.5622647738528,
+    753.3685704853087,
+    740.6565203037306
+   ],
+   "iterations": 30290,
+   "percent_of_current_normal": 136.87802041015928
+  },
+  {
+   "graph": "shared_mixed",
+   "case": "shared_supplied",
+   "variant": "current",
+   "median_ns": 2396.4120090293454,
+   "min_ns": 2324.047494356659,
+   "max_ns": 3918.6856884875847,
+   "samples_ns": [
+    2396.4120090293454,
+    2355.090293453725,
+    2436.7460045146727,
+    2391.866546275395,
+    3918.6856884875847,
+    2469.924966139955,
+    2324.047494356659
+   ],
+   "iterations": 11075,
+   "percent_of_current_normal": 41.89533252368799
+  },
+  {
+   "graph": "shared_mixed",
+   "case": "shared_supplied",
+   "variant": "v2",
+   "median_ns": 852.8620689655172,
+   "min_ns": 840.5154419595315,
+   "max_ns": 1119.2631559619551,
+   "samples_ns": [
+    840.5154419595315,
+    852.8620689655172,
+    868.2293342146818,
+    858.6063310197936,
+    1119.2631559619551,
+    842.0037457309684,
+    840.8616282912857
+   ],
+   "iterations": 27231,
+   "percent_of_current_normal": 117.71947848943779
+  },
+  {
+   "graph": "shared_mixed",
+   "case": "python_root_only",
+   "variant": "lower_bound",
+   "median_ns": 137.50565,
+   "min_ns": 132.55337,
+   "max_ns": 179.56302,
+   "samples_ns": [
+    134.13443,
+    137.50565,
+    137.89054,
+    165.55269,
+    179.56302,
+    137.22531,
+    132.55337
+   ],
+   "iterations": 100000,
+   "percent_of_current_normal": 730.1407468132662
+  }
+ ]
+}

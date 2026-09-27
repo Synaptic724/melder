@@ -1,0 +1,14 @@
+3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ]
+RAISES "C" | None               TypeError: unsupported operand type(s) for |: 'str' and 'NoneType'
+RAISES None | "C"               TypeError: unsupported operand type(s) for |: 'NoneType' and 'str'
+RAISES "A" | "B"                TypeError: unsupported operand type(s) for |: 'str' and 'str'
+RAISES C | "C"                  TypeError: unsupported operand type(s) for |: 'type' and 'str'
+RAISES int | "C"                TypeError: unsupported operand type(s) for |: 'type' and 'str'
+RAISES list[int] | "C"          TypeError: unsupported operand type(s) for |: 'types.GenericAlias' and 'str'
+RAISES Any | "C"                TypeError: unsupported operand type(s) for |: '_AnyMeta' and 'str'
+OK     Optional[int] | "C"      -> int | None | ForwardRef('C')
+OK     Union[int, str] | "C"    -> int | str | ForwardRef('C')
+OK     (int | None) | "C"       -> int | None | ForwardRef('C')
+OK     "C" | Optional[int]      -> ForwardRef('C') | int | None
+OK     List[int] | "C"          -> typing.List[int] | ForwardRef('C')
+OK     T | "C"                  -> ~T | ForwardRef('C')

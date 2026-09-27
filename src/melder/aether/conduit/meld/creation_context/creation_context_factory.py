@@ -38,10 +38,14 @@ class CreationContextFactory(Cleanable):
         already provisioned a gate for).
 
     Threading:
-        Deliberately LOCK-FREE and race-tolerant. Two threads may build a
-        context for the same spell concurrently; both builds are equivalent and
-        the spell owns whichever lands, so the loser is simply discarded rather
-        than being an error worth locking against.
+        LOCK-FREE on the ready path. The cold path elects exactly one builder
+        through the spell's CounterSwitch (followers park until it publishes).
+        A builder that fails records the cause on the spell and releases its
+        claim, so followers wake and report that cause instead of waiting for
+        a publication that will never come. Input stability comes from the
+        spell-index gate: dynamic melds build and execute while holding a
+        ticket, and rebuild windows drain those tickets before phases replace
+        the plan (see CreationContextRebuild).
 
     Lifecycle / Cleanup:
         Cleanable. It does NOT own the contexts it produces - `Spell` owns them
@@ -59,13 +63,12 @@ class CreationContextFactory(Cleanable):
         in - the builder itself stays policy-free.
 
     System Context:
-        The lock-free choice is worth understanding rather than copying
-        blindly. Context construction is IDEMPOTENT and side-effect-free with
-        respect to shared state: two racing builds produce equivalent objects,
-        and the spell's slot is the single point of truth for which one wins.
-        Taking a lock here would serialize the cold path of every distinct
-        spell for no correctness gain - and under free-threaded 3.14t that
-        contention would be paid on every core.
+        The ready path stays lock-free because it runs on every meld; the
+        cold path is a per-spell election, never a global lock, so cold builds
+        of different spells never contend. The factory does not guard its
+        inputs: a build reads the spell's phase-11 plan, and keeping that plan
+        present during the build is the rebuild window's job, not the
+        factory's.
         The gate injection is why this class is dynamic-aware at all. In
         dynamic mode, execution admission is per-spell-index rather than
         per-conduit, so the factory resolves or creates ONE gate per index and
@@ -291,6 +294,25 @@ class CreationContextFactory(Cleanable):
         self._cleanup_creation_context(previous_creation_context)
         return built_creation_context
 
+    def resolve_spell_index_gate(self, spell: "Spell") -> Optional[CreationGate]:
+        """
+        Return the shared spell-index CreationGate the spell's contexts use.
+
+        Contract:
+            - Automatic mode: returns None (no runtime admission gate).
+            - Dynamic mode: returns the controller's gate for the spell's
+              stable index id, creating it on first use exactly as
+              `build_for_spell` would.
+
+        Args:
+            spell: Spell whose index gate is resolved.
+
+        Returns:
+            Optional[CreationGate]:
+                The gate borrowed from the frame's controller, or None.
+        """
+        return self._resolve_runtime_gate_for_spell(spell)[0]
+
     def get_or_build_for_spell(self, spell: "Spell") -> "CreationContext":
         """
         Resolve one spell-owned context via spell-level CounterSwitch election.
@@ -298,17 +320,31 @@ class CreationContextFactory(Cleanable):
         Contract:
             - Uses `spell._creation_context_switch.selector()` for one-leader
               get-or-build election.
-            - Leader builds/publishes context and opens latch to state `2`.
-            - Followers block while pending (`state == 1`) and then read cache.
+            - Leader builds/publishes context and opens latch to state `2`,
+              then clears any recorded build failure.
+            - Leader failure records the exception on
+              `spell._creation_context_failure`, releases its claim (state
+              1 -> 0, which wakes followers) and re-raises the original.
+            - Followers block while pending (`state == 1`) and then read the
+              published context; a follower woken by a failed leader raises
+              RuntimeError chained from the recorded cause.
             - Context ownership remains on Spell (`spell._creation_context`).
             - Does not use `spell._lock` for hot-path access/publication.
             - Does not inspect `CreationContext.is_cleaned`; switch state is
               treated as the single source of truth for readiness.
             - Single selector pass: no retry loops.
 
+        Args:
+            spell: Spell whose context is resolved.
+
         Returns:
             CreationContext:
                 Spell-owned cached or newly built context.
+
+        Raises:
+            RuntimeError:
+                Propagated from `CreationContextBuilder.build` for the leader;
+                raised for a follower when no context was published.
         """
         creation_context_switch = spell._creation_context_switch
         if creation_context_switch.state >= 2:
@@ -321,18 +357,33 @@ class CreationContextFactory(Cleanable):
         switch_state = creation_context_switch.selector()
         if switch_state == 1:
             creation_gate, index_id = self._resolve_runtime_gate_for_spell(spell)
-            built_creation_context = CreationContextBuilder.build(
-                spell,
-                dynamic_environment=self._dynamic_environment,
-                creation_gate=creation_gate,
-                creation_gate_index_id=index_id,
-            )
+            try:
+                built_creation_context = CreationContextBuilder.build(
+                    spell,
+                    dynamic_environment=self._dynamic_environment,
+                    creation_gate=creation_gate,
+                    creation_gate_index_id=index_id,
+                )
+            except BaseException as error:
+                # Release the claim so parked followers wake and report this
+                # cause; a pending latch with no builder would park them forever.
+                spell._creation_context_failure = error
+                if creation_context_switch.state == 1:
+                    creation_context_switch.advance(-1)
+                raise
             spell._creation_context = built_creation_context
             creation_context_switch.advance(1)
+            spell._creation_context_failure = None
             self._stage_cache_after_publish(spell, built_creation_context)
             return built_creation_context
         creation_context = spell._creation_context
         if creation_context is None:
+            failure = spell._creation_context_failure
+            if failure is not None:
+                raise RuntimeError(
+                    "Spell creation context was not published: the selected "
+                    f"builder failed ({type(failure).__name__}: {failure})."
+                ) from failure
             raise RuntimeError(
                 "Spell creation context was not published by the selected builder."
             )

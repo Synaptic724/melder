@@ -1,81 +1,81 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py",
-  "source_sha256": "ad3d2b05396120b8c76901eb78f8bf9d6360319b80caf2b92fbd382c582993f6",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.crystallizer.crystal_analysis.conduit_hierarchy": {
-      "id": "melder.crystallizer.crystal_analysis.conduit_hierarchy",
-      "label": "conduit_hierarchy",
-      "kind": "module",
-      "file": "src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py",
-      "lineno": 1,
-      "include": true,
-      "role": "Stateless recorded conduit hierarchy validation and expansion.",
-      "responsibilities": [
-        "coalesces unnamed support from surviving named carriers",
-        "validates Book/root/parent/name/policy structure and orders parents first"
-      ],
-      "owns_state": [],
-      "phases": [
-        "validation",
-        "restore"
-      ],
-      "semantics_authored_against": ""
-    },
-    "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy": {
-      "id": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
-      "label": "ConduitHierarchy",
-      "kind": "class",
-      "file": "src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py",
-      "lineno": 5,
-      "bases": [],
-      "markers": [],
-      "public_methods": [
-        "build",
-        "configuration",
-        "role"
-      ],
-      "shape": {
-        "method_count": 7,
-        "has_bases": false,
-        "trivial": false
-      },
-      "span_sha256": "313cd9c18bab81f441425124221afd11fd13e6386c5e67110ad62b0d3268eed9",
-      "include": true,
-      "role": "Stateless recorded conduit hierarchy validation and expansion.",
-      "responsibilities": [
-        "coalesces unnamed support from surviving named carriers",
-        "validates Book/root/parent/name/policy structure and orders parents first"
-      ],
-      "owns_state": [],
-      "phases": [
-        "validation",
-        "restore"
-      ],
-      "semantics_authored_against": "313cd9c18bab81f441425124221afd11fd13e6386c5e67110ad62b0d3268eed9"
-    }
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py",
+ "source_sha256": "ad3d2b05396120b8c76901eb78f8bf9d6360319b80caf2b92fbd382c582993f6",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystal_analysis.conduit_hierarchy": {
+   "id": "melder.crystallizer.crystal_analysis.conduit_hierarchy",
+   "label": "conduit_hierarchy",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Stateless recorded conduit hierarchy validation and expansion.",
+   "responsibilities": [
+    "coalesces unnamed support from surviving named carriers",
+    "validates Book/root/parent/name/policy structure and orders parents first"
+   ],
+   "owns_state": [],
+   "phases": [
+    "validation",
+    "restore"
+   ],
+   "semantics_authored_against": ""
   },
-  "edges_out": [],
-  "edge_candidates": [
-    {
-      "from": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
-      "to_label": "ValueError",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "deque": "collections.deque",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple"
-  },
-  "collapse_candidate": {
-    "module": "melder.crystallizer.crystal_analysis.conduit_hierarchy",
-    "class": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
-    "label": "ConduitHierarchy"
+  "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy": {
+   "id": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
+   "label": "ConduitHierarchy",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py",
+   "lineno": 5,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "build",
+    "configuration",
+    "role"
+   ],
+   "shape": {
+    "method_count": 7,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "313cd9c18bab81f441425124221afd11fd13e6386c5e67110ad62b0d3268eed9",
+   "include": true,
+   "role": "Stateless recorded conduit hierarchy validation and expansion.",
+   "responsibilities": [
+    "coalesces unnamed support from surviving named carriers",
+    "validates Book/root/parent/name/policy structure and orders parents first"
+   ],
+   "owns_state": [],
+   "phases": [
+    "validation",
+    "restore"
+   ],
+   "semantics_authored_against": "313cd9c18bab81f441425124221afd11fd13e6386c5e67110ad62b0d3268eed9"
   }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
+   "to_label": "ValueError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "deque": "collections.deque",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystal_analysis.conduit_hierarchy",
+  "class": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
+  "label": "ConduitHierarchy"
+ }
 }

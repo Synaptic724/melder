@@ -1,7 +1,10 @@
 from enum import Enum
 import inspect
 from functools import lru_cache
-from typing import Any, Optional, Tuple, Union, TypeVar, Type, ClassVar
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Tuple, Union, TypeVar, Type, ClassVar
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell import Spell
 
 
 
@@ -421,3 +424,34 @@ class SpellInputUtils:
         frame_key = SpellInputUtils.normalize_frame_key(frame_base)
         bind_key = SpellInputUtils.normalize_binding_name(binding_name)
         return frame_key, bind_key
+
+    @staticmethod
+    def describe_spell_id(spell_id: Optional[str], spells: Mapping[str, Spell]) -> str:
+        """
+        Name a spell version id for a user-facing message.
+
+        Purpose:
+            Validation and resolution run on spell version ids; users know spells
+            by name. Messages call this so a 64-character id is shown only when
+            no name is available.
+
+        Contract:
+            - Returns the spell's name, quoted, when `spells` holds `spell_id`.
+            - Otherwise returns "spell id <first 12 characters>"; `None` gives
+              "an unknown spell".
+            - Pure; reads one mapping entry and the spell's name.
+
+        Args:
+            spell_id: Spell version id, or None.
+            spells: Visible spell id -> Spell lookup (a spellbook's
+                `_spell_id_pool` or a phase's `spell_lookup`).
+
+        Returns:
+            str: Display text such as "'CodecPacket'" or "spell id 3ba8e3be488d".
+        """
+        if spell_id is None:
+            return "an unknown spell"
+        spell = spells.get(spell_id)
+        if spell is not None:
+            return repr(spell.spell_name)
+        return f"spell id {spell_id[:12]}"

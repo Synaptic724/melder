@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/helpers/package.py",
- "source_sha256": "8d36a769fba4d21759fae69970f54effb30b5c53ebe32757058d0a2d25b5a591",
+ "source_sha256": "ac5442a91ed4b65c05ae88cce97555028bd33ec4c76fd9826c29ee41e2ad1b8a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.helpers.package": {
@@ -25,7 +25,7 @@
    "label": "Package",
    "kind": "class",
    "file": "src/melder/utilities/helpers/package.py",
-   "lineno": 51,
+   "lineno": 53,
    "bases": [
     "Cleanable"
    ],
@@ -60,7 +60,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "7314ac34e376854df0c02bcd5be84152637dd90217f2e5a23136490d0e457b7c",
+   "span_sha256": "12284a341af3e4f84e2a919a2e0b153d119911e417da091b6cb4c76c9552c7af",
    "role": "Packaged callable/result helper wrapper.",
    "responsibilities": [
     "wraps a callable and its result metadata in one reusable helper object"
@@ -134,14 +134,16 @@
   {
    "alias": "Pack",
    "target": "Package",
-   "lineno": 997
+   "lineno": 1009
   }
  ],
  "imports": {
+  "Format": "annotationlib.Format",
   "update_wrapper": "functools.update_wrapper",
   "RLock": "threading.RLock",
   "SimpleNamespace": "types.SimpleNamespace",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SignatureReflection": "melder.utilities.helpers.signature_reflection.SignatureReflection",
   "new_ulid": "melder.utilities.helpers.ulid_factory.new_ulid",
   "Callable": "typing.Callable",
   "Generic": "typing.Generic",
@@ -164,5 +166,18 @@
   "module": "melder.utilities.helpers.package",
   "class": "melder.utilities.helpers.package.Package",
   "label": "Package"
- }
+ },
+ "edges_authored": [
+  {
+   "from": "melder.utilities.helpers.package.Package",
+   "to": "melder.utilities.helpers.signature_reflection.SignatureReflection",
+   "relation": "uses",
+   "why": "Package.describe renders its signature through SignatureReflection.display_signature.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
 }

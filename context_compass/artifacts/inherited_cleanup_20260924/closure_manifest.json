@@ -1,0 +1,18 @@
+{
+  "completed_at": "2026-09-24T11:24:41Z",
+  "ticket": "tickets/tasks/completed/2026-09-24_investigate_inherited_cleanup_profiling_task.md",
+  "patch_directory": "system_docs/patches/completed/inherited_disposal_2026_09_24/",
+  "patch_sha256": {
+    "component_patch_binding_index.md": "48edbdf30eaf9d13c396c3d1457b109addbd17123ad3998e43855bc7df3d91b4",
+    "component_patch_binding.md": "0974c984eb59ae5b006f97352a15a179f611c91af69434a6a77edbfa482c31e8",
+    "architecture_patch_index.md": "fb33bb85e459e7cf92458e99c231fc5d6c9a1e95b0bce2d42e9650821115c5fe",
+    "architecture_patch.md": "979e90cfac96784cd763c455373788cc9fd907401e0de350897cb655db5cffd6"
+  },
+  "patch_hashes_preserved": true,
+  "qualified_source_hashes_preserved": true,
+  "release_document": "release_docs/next_version_release.md",
+  "release_sha256": "29a120475561a156bb8de2d0f85ae50aef168b2aeeb96596d2f039cccdc5c481",
+  "board_sync_verified": true,
+  "closed_anchor_count": 12,
+  "existing_release_notes_preserved": true
+}

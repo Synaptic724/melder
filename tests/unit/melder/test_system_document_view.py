@@ -30,6 +30,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.spellbook.spellbook import Spellbook
 from melder.nexus.nexus import Nexus
 from melder._build_assets._system_documents import system_documents
 from melder.utilities.ai_native_support_tools.system_document_view import (
@@ -54,7 +55,9 @@ def fresh_singletons() -> None:
 
     Contract:
         - AetherUtilitySystem, Nexus, and Aether are reset before and after
-          each test.
+          each test; after the test a fresh Aether is booted and bound to
+          `Spellbook._aether`, so later tests find a live world (a reset alone
+          boots nothing, and `Spellbook()` needs the Nexus an Aether boot builds).
 
     Purpose:
         Importing this module imports `melder`, which boots `Aether()` at
@@ -78,6 +81,7 @@ def fresh_singletons() -> None:
     AetherUtilitySystem._reset_singleton_for_tests()
     Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
+    Spellbook._aether = Aether()
 
 
 def _available(name: str) -> SystemDocumentView:

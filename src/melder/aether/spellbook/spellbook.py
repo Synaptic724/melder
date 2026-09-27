@@ -964,6 +964,11 @@ class Spellbook(Cleanable):
             - Requires the spell to belong to this Spellbook.
             - Stages the current phase-11 artifact cache payload.
             - Hands the payload to the Spellbook-owned `CachingSystem`.
+            - Every constructed spell's payload is replayable (2026-09-26): rows
+              carry contract override payload entries as scalars or as phase-9
+              references resolved against the live descriptor at hydration, so
+              no emission gate refuses a plan here any more (the option-B gate
+              of task 4 is retired).
 
         Args:
             spell:
@@ -999,17 +1004,15 @@ class Spellbook(Cleanable):
                     artifact._spell_codegen_creation.metadata.get(
                         MANIFEST_METADATA_KEY
                     )
-                    is not None
+                    is None
             ):
-                # Manifest-first family output (generalized, solo, ...): the
-                # manifest already IS the cache payload, so export is a
-                # metadata read instead of a full both-lane recompile.
-                spell_payload = build_manifest_package(spell)
-            else:
-                from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
-                    build_package,
-                )
-                spell_payload = build_package(spell)
+                # Every codegen family publishes a manifest; the legacy
+                # non-manifest codec is retired (2026-09-26), so a creation
+                # without one has no cache payload.
+                return False
+            # The manifest already IS the cache payload, so export is a
+            # metadata read instead of a full both-lane recompile.
+            spell_payload = build_manifest_package(spell)
         except Exception as exc:
             if self._logger is not None:
                 self._logger.error(
@@ -6544,6 +6547,7 @@ class Spellbook(Cleanable):
             dynamic: bool = False,
             name: str | None = None,
             conduit_logger: Any | None = None,
+            validation_warnings: bool = False,
     ) -> Conduit:
         """
         Public API
@@ -6567,6 +6571,14 @@ class Spellbook(Cleanable):
                 An optional name for the conduit.
             conduit_logger (Any, optional):
                 An optional logger instance to attach to the conduit for logging purposes.
+            validation_warnings (bool, optional):
+                If True, log this Spellbook's validation warnings once, grouped by
+                warning code, at WARNING level through the Spellbook logger. Warnings
+                never stop conjure; they flag things that may fail later, such as a
+                typed parameter no registered spell provides (UNRESOLVED_INPUT, which
+                the meld that constructs that spell must supply). Useful while
+                learning or debugging a new graph. Defaults to False, which logs
+                nothing.
 
         Returns:
             Conduit: The newly created Conduit instance.
@@ -6625,6 +6637,7 @@ class Spellbook(Cleanable):
                 dynamic=self._settle_or_inherit_conjure_mode(dynamic),
                 name=name,
                 conduit_logger=conduit_logger,
+                validation_warnings=validation_warnings,
             )
         finally:
             mediator.end_transaction_for_identity(
@@ -6867,6 +6880,7 @@ class Spellbook(Cleanable):
             dynamic: bool,
             name: str | None,
             conduit_logger: Any | None,
+            validation_warnings: bool,
     ) -> Conduit:
         """
         Internal
@@ -6885,6 +6899,8 @@ class Spellbook(Cleanable):
               mode when public frame setup already locked it, and binds the frame
               posture. Rich values stay frozen; the recorded world receives its
               Book and settled frame twins, including Rift visibility policy.
+            - Passes `validation_warnings` to the creation system unchanged; only
+              the public `conjure()` supplies it.
         Threading:
             - The CONJURE embargo is acquired by `conjure()` BEFORE this method
               takes the Spellbook lock, preserving embargo-then-lock ordering so
@@ -6961,6 +6977,7 @@ class Spellbook(Cleanable):
                 name=name,
                 conduit_logger=conduit_logger,
                 phase_scheduler_cls=PhaseScheduler,
+                validation_warnings=validation_warnings,
             )
             try:
                 return spellbook_creation_system.conjure()

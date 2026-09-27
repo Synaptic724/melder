@@ -46,6 +46,7 @@ lessons = ["beginner:09", "beginner:17", "beginner:25", "beginner:38"]
 [[chapter]]
 id = "beginner/dependency-injection"
 title = "Constructor dependency injection"
+description = "Learn constructor dependency injection in Melder and follow a complete runnable Python example with typed dependencies."
 level = "beginner"
 readme = "🟢 Dependency Injection"
 end_before = "When an annotation isn't specific enough"
@@ -54,6 +55,7 @@ lessons = ["intermediate:15", "beginner:16"]
 [[chapter]]
 id = "beginner/lifetimes"
 title = "Choose an instance lifetime"
+description = "Choose among Melder's six object lifetimes and follow examples of shared, scoped, and freshly constructed Python objects."
 level = "beginner"
 readme = "🟢 Six Lifetimes, Not Three"
 lessons = ["beginner:02", "beginner:13", "beginner:14", "beginner:15", "beginner:29"]
@@ -68,6 +70,7 @@ lessons = ["beginner:05", "beginner:27", "beginner:34"]
 [[chapter]]
 id = "beginner/cleanup"
 title = "Cleanup and memory ownership"
+description = "Configure Melder's disposal methods, understand cleanup order and failure handling, and follow examples of resource and memory ownership."
 level = "beginner"
 readme = "🟢 Teardown Is Part of Registration"
 lessons = ["beginner:08", "beginner:10", "beginner:35", "beginner:41"]

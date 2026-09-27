@@ -1,0 +1,73 @@
+# Files changed by the validation_error_reporting lane (2026-09-26), for the owner's commit. Verified against git below.
+# Source
+src/melder/utilities/helpers/general_helpers.py
+src/melder/utilities/custom_exceptions/spellbook_validation_error.py
+src/melder/aether/spellbook/spellbook_creation_system.py
+src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py
+src/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.py
+src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py
+src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py
+src/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.py
+src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py
+src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py
+src/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.py
+src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py
+src/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.py
+src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py
+src/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.py
+src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.py
+# Tests
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py
+tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_annotation_shape_guard_strategy.py
+tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_required_holes_strategy.py
+tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_circular_dependency_strategy.py
+tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_parameter_policy_strategy.py
+tests/unit/melder/spellbook/spell_crafter/system/validation/test_scope_ordering_strategy.py
+tests/unit/melder/spellbook/spell_crafter/system/validation/test_cycle_detection_strategy.py
+tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_6_local.py
+tests/unit/melder/utilities/helpers/test_general_helpers.py
+tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_strategies.py
+tests/unit/melder/aether/conduit/meld/test_meld.py
+tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py
+tests/integration/melder/spellbook/test_spellbook_integration_validation_report.py   (new)
+# Docs, graph, release note (these files also carry other agents' same-day changes)
+release_docs/next_version_release.md
+context_compass/system_docs/src_architecture.md
+context_compass/system_docs/src_architecture_index.md
+context_compass/system_docs/src_components.md
+context_compass/system_docs/src_components_index.md
+context_compass/system_docs/src_graph.md
+context_compass/system_docs/src_graph_index.md
+context_compass/system_docs/graph/melder/utilities/helpers/general_helpers.json
+context_compass/system_docs/graph/melder/utilities/custom_exceptions/spellbook_validation_error.json
+context_compass/system_docs/graph/melder/aether/spellbook/spellbook_creation_system.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/dangling_dependency_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/parameter_policy_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/scope_ordering_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/visibility_gap_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/system/validation/broken_spell_in_dag_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/phases/compiler_phase_6.json
+# Patch lane and ContextCompass records
+context_compass/system_docs/patches/completed/validation_error_reporting_2026_09_26/   (3 files; moved from
+  patches/active/ at closure - stage the deletion of the active/ copies committed in a62df80cb as well)
+context_compass/artifacts/validation_error_reporting_20260926/
+context_compass/tickets/tasks/completed/2026-09-26_review_conjure_validation_error_reporting_task.md   (moved from tickets/tasks/ at closure)
+context_compass/attention_board.md
+context_compass/artifact_board.md
+context_compass/mailbox_board.md
+
+# Status 2026-09-26T15:50:26Z (checked with git, content compared ignoring line endings):
+# - ALREADY COMMITTED in a62df80cb (2026-09-26T15:45:52Z): all 16 source files, all 12 changed tests and the new
+#   integration test, src_components/src_architecture and their indexes, the three patch docs.
+# - STILL UNCOMMITTED (finished after that commit): release_docs/next_version_release.md,
+#   context_compass/system_docs/src_graph.md, src_graph_index.md, the 16 graph descriptors listed above,
+#   the ticket, the three boards, and newer files under context_compass/artifacts/validation_error_reporting_20260926/.
+# Leave out of a folder-level `git add`: many files in these folders show as modified by line endings only.
+

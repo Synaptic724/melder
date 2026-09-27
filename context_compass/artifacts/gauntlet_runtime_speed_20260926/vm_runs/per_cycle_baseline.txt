@@ -1,0 +1,32 @@
+# melder_2 VM probes 2026-09-26, CPython 3.14.7t -X gil=0, one worker thread, cold-start copy (see ../vm_environment.txt)
+melder lane=request ns/cycle median=15,014 min=14,768 max=16,035 reps=5x2000 thread=worker
+dishka lane=request ns/cycle median=9,670 min=9,468 max=9,783 reps=5x2000 thread=worker
+dependency-injector lane=request ns/cycle median=21,789 min=21,442 max=22,295 reps=5x2000 thread=worker
+melder lane=worker_a ns/cycle median=10,246 min=10,019 max=10,408 reps=5x2000 thread=worker
+dishka lane=worker_a ns/cycle median=6,992 min=6,929 max=7,160 reps=5x2000 thread=worker
+dependency-injector lane=worker_a ns/cycle median=12,983 min=12,769 max=13,197 reps=5x2000 thread=worker
+melder lane=worker_b ns/cycle median=10,237 min=10,108 max=10,650 reps=5x2000 thread=worker
+dishka lane=worker_b ns/cycle median=7,293 min=7,227 max=7,373 reps=5x2000 thread=worker
+dependency-injector lane=worker_b ns/cycle median=12,694 min=12,645 max=12,918 reps=5x2000 thread=worker
+melder lane=request cycles=4000 sum_of_step_medians=12,548 ns
+  lesser_create          median=    838 ns  ( 6.7%)  mean=    902
+  lesser_meld_1st        median=  1,783 ns  (14.2%)  mean=  1,879
+  lesser_meld_2nd        median=    324 ns  ( 2.6%)  mean=    344
+  space_enter            median=    238 ns  ( 1.9%)  mean=    260
+  space_meld_marker_1st  median=  1,770 ns  (14.1%)  mean=  1,829
+  space_meld_marker_2nd  median=    343 ns  ( 2.7%)  mean=    349
+  space_meld_outer       median=    339 ns  ( 2.7%)  mean=    350
+  root_meld(variant)     median=  5,080 ns  (40.5%)  mean=  5,754
+  space_exit             median=    875 ns  ( 7.0%)  mean=    970
+  lesser_cleanup         median=    959 ns  ( 7.6%)  mean=  1,042
+melder lane=worker_b cycles=4000 sum_of_step_medians=8,265 ns
+  lesser_create          median=    831 ns  (10.1%)  mean=    932
+  lesser_meld_1st        median=  1,054 ns  (12.8%)  mean=  1,147
+  lesser_meld_2nd        median=    302 ns  ( 3.7%)  mean=    324
+  space_enter            median=    233 ns  ( 2.8%)  mean=    254
+  space_meld_marker_1st  median=  1,048 ns  (12.7%)  mean=  1,131
+  space_meld_marker_2nd  median=    334 ns  ( 4.0%)  mean=    360
+  space_meld_outer       median=    325 ns  ( 3.9%)  mean=    351
+  root_meld(variant)     median=  2,668 ns  (32.3%)  mean=  3,050
+  space_exit             median=    585 ns  ( 7.1%)  mean=    635
+  lesser_cleanup         median=    885 ns  (10.7%)  mean=    974

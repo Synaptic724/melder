@@ -1618,7 +1618,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
     def __or__(
             self,
-            other: "WeakConcurrentDict[_K, _V]" | Mapping[_K, _V] | Iterable[Tuple[_K, _V]],
+            other: Union[WeakConcurrentDict[_K, _V], Mapping[_K, _V], Iterable[Tuple[_K, _V]]],
     ) -> "WeakConcurrentDict[_K, _V]":
         """
         Merge this dict with another mapping or iterable into a new weak dict.
@@ -1654,7 +1654,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
     def __ior__(
             self,
-            other: "WeakConcurrentDict[_K, _V]" | Mapping[_K, _V] | Iterable[Tuple[_K, _V]],
+            other: Union[WeakConcurrentDict[_K, _V], Mapping[_K, _V], Iterable[Tuple[_K, _V]]],
     ) -> "WeakConcurrentDict[_K, _V]":
         """
         In-place merge (`|=`) with another mapping or iterable.
@@ -1682,7 +1682,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
     def __ror__(
             self,
-            other: "WeakConcurrentDict[_K, _V]" | Mapping[_K, _V] | Iterable[Tuple[_K, _V]],
+            other: Union[WeakConcurrentDict[_K, _V], Mapping[_K, _V], Iterable[Tuple[_K, _V]]],
     ) -> "WeakConcurrentDict[_K, _V]":
         """
         Right-hand merge to support ``mapping | WeakConcurrentDict`` (PEP 584 style).

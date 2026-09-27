@@ -7,6 +7,7 @@ from typing import Any, Dict, Type, ClassVar
 # Melder imports
 from melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility import InspectorUtility
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.signature_reflection import SignatureReflection
 
 
 #region ClassInspector
@@ -128,8 +129,9 @@ class ClassInspector(Cleanable):
                 "id": id(c), # Memory address (unique identifier)
                 "decorated": self._is_probably_decorated() or hasattr(c, "_decorated") or hasattr(c, "_marked"),
                 "bases": [b.__name__ for b in getattr(c, "__bases__", ())], # Names of base classes
-                # eval_str=True resolves forward references if possible
-                "annotations": inspect.get_annotations(c, eval_str=True, globals=getattr(module, '__dict__', None)),
+                # eval_str=True resolves forward references if possible; see
+                # _class_annotations for the unavailable-name case.
+                "annotations": self._class_annotations(c, module),
                 "metaclass": type(c).__name__, # Name of the metaclass
                 "mro": [m.__name__ for m in inspect.getmro(c)], # Method Resolution Order (class names)
                 "slots": getattr(c, "__slots__", None), # Value of __slots__ if defined
@@ -144,6 +146,32 @@ class ClassInspector(Cleanable):
                 "dynamic_access": dynamic_flags,
             }
         )
+
+    def _class_annotations(self, c: Type, module: Any) -> Dict[str, Any]:
+        """
+        Return the class-level annotations of `c` for the header record.
+
+        Contract:
+            - Evaluates with `inspect.get_annotations(..., eval_str=True)` against
+              the class's module so string annotations resolve where possible.
+            - When an annotation names something unbound at runtime (a
+              TYPE_CHECKING-only import under Python 3.14 lazy annotations), that
+              evaluation raises NameError; the annotations are then read without
+              evaluating those names (`SignatureReflection.class_annotations`), so
+              an unavailable name appears as its source text instead of failing
+              the whole inspection.
+
+        Args:
+            c: Class being inspected.
+            module: Module object the class belongs to, or None.
+
+        Returns:
+            Dict[str, Any]: Attribute name to annotation value.
+        """
+        try:
+            return inspect.get_annotations(c, eval_str=True, globals=getattr(module, '__dict__', None))
+        except NameError:
+            return SignatureReflection.class_annotations(c)
 
     def _source(self) -> None:
         """
@@ -245,7 +273,7 @@ class ClassInspector(Cleanable):
                 try:
                     # Use the member as-is for signature (primary view == wrapper if any)
                     # Keep wrapper; do not unwrap here for primary signature
-                    sig = inspect.signature(self._resolve_signature_target(obj))
+                    sig = SignatureReflection.display_signature(self._resolve_signature_target(obj))
                     info["signature"] = str(sig)
                     info["parameters"] = [
                         {
@@ -268,7 +296,7 @@ class ClassInspector(Cleanable):
                     signature_target = self._resolve_signature_target(obj)
                     if u_target is not signature_target:
                         try:
-                            u_sig = inspect.signature(u_target)
+                            u_sig = SignatureReflection.display_signature(u_target)
                             info["original_signature"] = str(u_sig)
                             info["original_parameters"] = [
                                 {
