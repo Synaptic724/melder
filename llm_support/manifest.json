@@ -2,14 +2,14 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 2917411,
-        "lines": 70346,
+        "bytes": 2958753,
+        "lines": 71133,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "5d31dc06c7730e17ac2cc74185ebd36b79998cc26cb0c63a73e8ad99aa8db5c9"
+        "sha256": "35101fc4989270ee3fc168ddddf0e2fea7b291eee392f858d2fa4b6f06876d78"
       },
-      "content_bytes": 2711069,
-      "content_lines": 67380,
-      "file_count": 370,
+      "content_bytes": 2749905,
+      "content_lines": 68127,
+      "file_count": 375,
       "files": {
         ".gitattributes": {
           "content_bytes": 2466,
@@ -2099,10 +2099,22 @@
           "content_sha256": "0b8400cd23255199095b7fc5ffbe4caa6c59b6534f1536765d751525d53d6a74",
           "source_encoding": "utf-8"
         },
+        "docs/seo.toml": {
+          "content_bytes": 435,
+          "content_lines": 14,
+          "content_sha256": "d38af79ab179970caa286c7ed2a3fc013f6191d89d0a4342d2fea5d4fccd5ec3",
+          "source_encoding": "utf-8"
+        },
         "docs/tests/test_build_docs.py": {
           "content_bytes": 12754,
           "content_lines": 230,
           "content_sha256": "7e2f41a419965899a1af28083177609d2e5ffd0fd8b821f9cef121d12b545e24",
+          "source_encoding": "utf-8"
+        },
+        "docs/tests/test_check_seo.py": {
+          "content_bytes": 12517,
+          "content_lines": 212,
+          "content_sha256": "7691f98e4cf048456c788792da2e5de20d49ee3a97196b3cca8ad3f1fe689f61",
           "source_encoding": "utf-8"
         },
         "docs/tests/test_curriculum.py": {
@@ -2115,6 +2127,12 @@
           "content_bytes": 6986,
           "content_lines": 126,
           "content_sha256": "ea570a5a5b6d5c2c3a1170e5f798d56e1eac287f313333621db12ade86b5178e",
+          "source_encoding": "utf-8"
+        },
+        "docs/tests/test_page_metadata.py": {
+          "content_bytes": 9041,
+          "content_lines": 168,
+          "content_sha256": "43758423d8212f0acb5f51cc75752d254924a265d10bc7d99540959c4acdb69f",
           "source_encoding": "utf-8"
         },
         "docs/tests/test_references.py": {
@@ -2153,6 +2171,12 @@
           "content_sha256": "5b3c5f530247f131840f7d60b360e4810bef5db2da6b9c6d16cb6abc9c1c8e17",
           "source_encoding": "utf-8"
         },
+        "docs/tools/check_seo.py": {
+          "content_bytes": 15248,
+          "content_lines": 315,
+          "content_sha256": "febf18865fc8efc6bab9ed509e84bf7d1e5fffafa52afb9aa868ffcbcd568f6e",
+          "source_encoding": "utf-8"
+        },
         "docs/tools/check_site.py": {
           "content_bytes": 6880,
           "content_lines": 142,
@@ -2187,6 +2211,12 @@
           "content_bytes": 3510,
           "content_lines": 72,
           "content_sha256": "9c406c13a3d2fe9700bc9d18cd96a4ccf0c1977224e7b597a079e2f66e000050",
+          "source_encoding": "utf-8"
+        },
+        "docs/tools/page_metadata.py": {
+          "content_bytes": 1595,
+          "content_lines": 38,
+          "content_sha256": "455b2395dc270ae50b546d78518a8110b4f9dc09f35bbc96a4ded2cec87464d6",
           "source_encoding": "utf-8"
         },
         "docs/tools/site_model.py": {
@@ -2233,12 +2263,12 @@
         }
       },
       "index": {
-        "bytes": 62228,
-        "lines": 392,
+        "bytes": 62927,
+        "lines": 397,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "90da3b262ea125bb28ec4d30ec52e1418fc4aa74d35f61e2de0d454622a582bc"
+        "sha256": "fa53fe98cb271edef83164489879d8fda852116085669fad3af276db72c9b5db"
       },
-      "source_fingerprint": "73a553aaa703c0c2b9579599ebd9d9e541c0907b7084f0a439b7f4397e73ef1c"
+      "source_fingerprint": "25e05422fc495181282798beea55e220185212f8ed5331a8d237bbc37d73cb5c"
     },
     "src": {
       "bundle": {

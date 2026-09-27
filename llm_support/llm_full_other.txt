@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 73a553aaa703c0c2b9579599ebd9d9e541c0907b7084f0a439b7f4397e73ef1c
-FILE COUNT: 370
+SOURCE FINGERPRINT: 25e05422fc495181282798beea55e220185212f8ed5331a8d237bbc37d73cb5c
+FILE COUNT: 375
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -66470,6 +66470,28 @@ SOURCE ENCODING: utf-8
 END FILE: docs/requirements.txt
 ================================================================================
 ================================================================================
+BEGIN FILE: docs/seo.toml
+CONTENT SHA256: d38af79ab179970caa286c7ed2a3fc013f6191d89d0a4342d2fea5d4fccd5ec3
+SOURCE ENCODING: utf-8
+================================================================================
+schema_version = 1
+
+# Expand this list when a page-specific description has been authored and reviewed.
+required_descriptions = [
+  "index.html",
+  "beginner/dependency-injection.html",
+  "beginner/lifetimes.html",
+  "beginner/cleanup.html",
+  "beginner/capstone.html",
+  "advanced/inspection-walkthrough.html",
+  "expert/codegen.html",
+  "examples/hello-melder.html",
+  "examples/intermediate/15-constructor-di-by-annotation.html",
+]
+================================================================================
+END FILE: docs/seo.toml
+================================================================================
+================================================================================
 BEGIN FILE: docs/tests/test_build_docs.py
 CONTENT SHA256: 7e2f41a419965899a1af28083177609d2e5ffd0fd8b821f9cef121d12b545e24
 SOURCE ENCODING: utf-8
@@ -66708,6 +66730,226 @@ if __name__ == "__main__":
 END FILE: docs/tests/test_build_docs.py
 ================================================================================
 ================================================================================
+BEGIN FILE: docs/tests/test_check_seo.py
+CONTENT SHA256: 7691f98e4cf048456c788792da2e5de20d49ee3a97196b3cca8ad3f1fe689f61
+SOURCE ENCODING: utf-8
+================================================================================
+"""Exercise actual local publication outcomes without network or search-engine assumptions."""
+
+import html
+import json
+import os
+import shutil
+import subprocess
+import sys
+import unittest
+import uuid
+import xml.etree.ElementTree as ET
+from pathlib import Path
+from typing import Optional
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+
+from check_seo import SeoCheck, SeoMetadata, SeoReport
+
+
+class SeoCheckTests(unittest.TestCase):
+    """Audit synthetic generated sites and CLI behavior inside one contained workspace per test."""
+
+    _BASE = "https://example.invalid/en/latest/"
+
+    def setUp(self) -> None:
+        """Create a fixture with inherited Windows permissions and explicit cleanup containment."""
+        parent = Path(__file__).resolve().parents[1] / "_build/test-workspaces"
+        parent.mkdir(parents=True, exist_ok=True)
+        self.root = parent / uuid.uuid4().hex
+        self.root.mkdir()
+        if not self.root.resolve().is_relative_to(parent.resolve()):
+            raise ValueError("SEO fixture escaped the generated workspace.")
+        self.addCleanup(shutil.rmtree, self.root)
+
+    @classmethod
+    def page(cls, name: str = "index.html", title: str = "Melder", description: Optional[str] = "An example.",
+             extra: str = "") -> str:
+        """Return an ordinary HTML document with one explicit canonical and optional description."""
+        meta = "" if description is None else f'<meta name="description" content="{html.escape(description, quote=True)}">'
+        return (f'<html lang="en"><head><title>{html.escape(title)}</title>'
+                f'<link rel="canonical" href="{cls._BASE}{name}">{meta}{extra}'
+                '</head><body><h1>Melder</h1></body></html>')
+
+    def site(self, pages: dict[str, str], urls: Optional[list[str]] = None) -> None:
+        """Write the supplied fixture pages and a namespaced page sitemap."""
+        for name, content in pages.items():
+            path = self.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8")
+        sitemap = ET.Element("urlset", xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
+        for url in urls if urls is not None else [self._BASE + name for name in pages]:
+            entry = ET.SubElement(sitemap, "url")
+            ET.SubElement(entry, "loc").text = url
+        ET.ElementTree(sitemap).write(self.root / "sitemap.xml", encoding="utf-8", xml_declaration=True)
+
+    @staticmethod
+    def messages(report: SeoReport) -> list[str]:
+        """Expose observed issue text for behavior assertions independent of internal parser state."""
+        return [issue["message"] for issue in report["issues"]]
+
+    def test_valid_site_needs_no_local_robots_override(self) -> None:
+        """A valid RTD build passes without replacing the platform's root robots.txt file."""
+        self.site({"index.html": self.page()})
+        report = SeoCheck(self.root, self._BASE, ("index.html",)).run()
+        self.assertEqual((report["content_pages"], report["errors"], report["warnings"]), (1, 0, 0))
+
+    def test_description_requirement_is_an_explicit_policy(self) -> None:
+        """Optional metadata warns, while the same absent value fails a required-page policy."""
+        self.site({"index.html": self.page(description=None)})
+        optional = SeoCheck(self.root, self._BASE).run()
+        required = SeoCheck(self.root, self._BASE, ("index.html",)).run()
+        self.assertEqual((optional["errors"], optional["warnings"]), (0, 1))
+        self.assertEqual((required["errors"], required["warnings"]), (1, 0))
+
+    def test_duplicate_titles_fail_but_repeated_descriptions_warn(self) -> None:
+        """Shared titles are ambiguous publication results; descriptions remain editorial warnings."""
+        self.site({"index.html": self.page(), "guide.html": self.page("guide.html", title=" MELDER ")})
+        report = SeoCheck(self.root, self._BASE).run()
+        self.assertTrue(any("Duplicate title" in message for message in self.messages(report)))
+        self.assertTrue(any(issue["level"] == "warning" and "Duplicate description" in issue["message"]
+                            for issue in report["issues"]))
+
+    def test_wrong_or_multiple_canonicals_fail(self) -> None:
+        """Canonical ownership and version-local destinations must be unambiguous."""
+        for content in (self.page("wrong.html"), self.page(extra='<link rel="canonical" href="other">')):
+            with self.subTest(content=content):
+                self.site({"index.html": content})
+                report = SeoCheck(self.root, self._BASE).run()
+                self.assertTrue(any("canonical" in message.lower() for message in self.messages(report)))
+                self.assertGreater(report["errors"], 0)
+
+    def test_missing_title_cannot_be_satisfied_by_body_markup(self) -> None:
+        """A title outside head cannot disguise an absent document title."""
+        content = self.page().replace("<title>Melder</title>", "").replace("<body>", "<body><title>Fake</title>")
+        self.site({"index.html": content})
+        self.assertTrue(any("nonempty title" in message for message in self.messages(SeoCheck(self.root, self._BASE).run())))
+
+    def test_duplicate_description_tags_fail(self) -> None:
+        """Two generators cannot publish competing description tags on the same page."""
+        self.site({"index.html": self.page(extra='<meta name="description" content="Second">')})
+        self.assertTrue(any("More than one description" in message
+                            for message in self.messages(SeoCheck(self.root, self._BASE).run())))
+
+    def test_noindex_is_allowed_only_for_intentional_previews(self) -> None:
+        """Robots and googlebot directives fail public mode but remain visible in preview reports."""
+        for name, value in (("robots", "NOINDEX,follow"), ("googlebot", "none")):
+            with self.subTest(name=name):
+                self.site({"index.html": self.page(extra=f'<meta name="{name}" content="{value}">')})
+                public = SeoCheck(self.root, self._BASE).run()
+                preview = SeoCheck(self.root, self._BASE, allow_noindex=True).run()
+                self.assertTrue(any("Unexpected noindex" in message for message in self.messages(public)))
+                self.assertEqual(preview["errors"], 0)
+                self.assertTrue(preview["pages"][0]["noindex"])
+
+    def test_sitemap_destinations_and_inclusion_are_checked(self) -> None:
+        """Wrong hosts, missing destinations, traversal, queries, omissions and duplicates are failures."""
+        cases = (
+            (["https://elsewhere.invalid/index.html"], "outside the expected base"),
+            ([self._BASE + "absent.html"], "existing local file"),
+            ([self._BASE + "../outside.html"], "existing local file"),
+            ([self._BASE + "index.html?q=test"], "Query or fragment"),
+            ([], "Content page missing"),
+            ([self._BASE + "index.html", self._BASE + "index.html"], "Duplicate sitemap URL"),
+        )
+        for urls, expected in cases:
+            with self.subTest(expected=expected):
+                self.site({"index.html": self.page()}, urls)
+                self.assertTrue(any(expected in message
+                                    for message in self.messages(SeoCheck(self.root, self._BASE).run())))
+
+    def test_missing_or_wrong_sitemap_shape_fails(self) -> None:
+        """A missing sitemap and a version index are not accepted as the expected page urlset."""
+        (self.root / "index.html").write_text(self.page(), encoding="utf-8")
+        self.assertTrue(any("Missing sitemap" in message
+                            for message in self.messages(SeoCheck(self.root, self._BASE).run())))
+        (self.root / "sitemap.xml").write_text('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>')
+        self.assertTrue(any("page-level sitemap" in message
+                            for message in self.messages(SeoCheck(self.root, self._BASE).run())))
+
+    def test_empty_audit_and_unmatched_globs_fail(self) -> None:
+        """Empty or misspelled audit scopes cannot silently claim successful coverage."""
+        self.site({})
+        empty = SeoCheck(self.root, self._BASE, ("missing/*.html",)).run()
+        self.assertTrue(any("No content HTML" in message for message in self.messages(empty)))
+        self.assertTrue(any("matched no page" in message for message in self.messages(empty)))
+
+    def test_utility_pages_are_not_public_content_requirements(self) -> None:
+        """Source, search and download HTML may omit SEO metadata without failing content policy."""
+        self.site({"index.html": self.page()})
+        for name in ("search.html", "_modules/example.html", "downloads/example.html"):
+            path = self.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("<html><body>Utility</body></html>", encoding="utf-8")
+        report = SeoCheck(self.root, self._BASE).run()
+        self.assertEqual((report["content_pages"], report["errors"]), (1, 0))
+
+    def test_report_survives_a_later_run(self) -> None:
+        """Reusing an audit instance cannot mutate the result already returned to its caller."""
+        self.site({"index.html": self.page()})
+        check = SeoCheck(self.root, self._BASE)
+        first = check.run()
+        self.site({"index.html": self.page(description=None)})
+        second = check.run()
+        self.assertEqual(first["pages"][0]["description"], "An example.")
+        self.assertEqual(first["issues"], [])
+        self.assertEqual(second["warnings"], 1)
+
+    def test_invalid_inputs_and_policy_are_rejected(self) -> None:
+        """Bad roots/base URLs and malformed policy values are input failures, not valid audits."""
+        for base in ("/relative/", "ftp://example.invalid/", self._BASE + "?x=1", self._BASE + "#part"):
+            with self.subTest(base=base), self.assertRaises(ValueError):
+                SeoCheck(self.root, base)
+        with self.assertRaises(ValueError):
+            SeoCheck(self.root / "missing", self._BASE)
+        policy = self.root / "seo.toml"
+        policy.write_text('schema_version = 1\nrequired_descriptions = ["index.html"]\n')
+        self.assertEqual(SeoCheck.policy_patterns(policy), ("index.html",))
+        policy.write_text('schema_version = 1\nrequired_descriptions = [42]\n')
+        with self.assertRaises(ValueError):
+            SeoCheck.policy_patterns(policy)
+
+    def test_metadata_decodes_entities_and_ignores_body_directives(self) -> None:
+        """Parsed text reflects human content; body metadata cannot introduce indexing policy."""
+        content = self.page(title='A & B', description='A "quoted" café').replace(
+            "<body>", '<body><meta name="robots" content="noindex">'
+        )
+        metadata = SeoMetadata(content)
+        self.assertEqual(metadata.titles, ["A & B"])
+        self.assertEqual(metadata.descriptions, ['A "quoted" café'])
+        self.assertEqual(metadata.robots, [])
+
+    def test_cli_reports_success_policy_failure_and_input_failure(self) -> None:
+        """CLI exit codes and JSON reflect actual policy outcomes, including RTD external previews."""
+        self.site({"index.html": self.page(extra='<meta name="robots" content="noindex">')})
+        command = [sys.executable, str(Path(__file__).resolve().parents[1] / "tools/check_seo.py"),
+                   str(self.root), "--base-url", self._BASE, "--json", str(self.root / "report.json")]
+        environment = dict(os.environ)
+        environment.pop("READTHEDOCS_VERSION_TYPE", None)
+        public = subprocess.run(command, capture_output=True, text=True, env=environment)
+        self.assertEqual(public.returncode, 1, public.stdout + public.stderr)
+        environment["READTHEDOCS_VERSION_TYPE"] = "external"
+        preview = subprocess.run(command, capture_output=True, text=True, env=environment)
+        self.assertEqual(preview.returncode, 0, preview.stdout + preview.stderr)
+        report = json.loads((self.root / "report.json").read_text(encoding="utf-8"))
+        self.assertTrue(report["allow_noindex"])
+        (self.root / "sitemap.xml").write_text("<not-valid", encoding="utf-8")
+        unreadable = subprocess.run(command, capture_output=True, text=True, env=environment)
+        self.assertEqual(unreadable.returncode, 2, unreadable.stdout + unreadable.stderr)
+
+
+if __name__ == "__main__":
+    unittest.main()
+================================================================================
+END FILE: docs/tests/test_check_seo.py
+================================================================================
+================================================================================
 BEGIN FILE: docs/tests/test_curriculum.py
 CONTENT SHA256: ec003cc135676ad6e61742bb4da649c0d7255c7ca67e3a881922d51b0f7aa79a
 SOURCE ENCODING: utf-8
@@ -66923,6 +67165,182 @@ if __name__ == "__main__":
     unittest.main()
 ================================================================================
 END FILE: docs/tests/test_example_catalog.py
+================================================================================
+================================================================================
+BEGIN FILE: docs/tests/test_page_metadata.py
+CONTENT SHA256: 43758423d8212f0acb5f51cc75752d254924a265d10bc7d99540959c4acdb69f
+SOURCE ENCODING: utf-8
+================================================================================
+"""Verify metadata ownership, input validation and actual Sphinx HTML escaping."""
+
+import json
+import shutil
+import subprocess
+import sys
+import unittest
+import uuid
+from html.parser import HTMLParser
+from pathlib import Path
+from typing import Optional
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+
+from curriculum import Curriculum
+from example_catalog import ExampleCatalog
+
+
+class DescriptionTags(HTMLParser):
+    """Collect decoded descriptions and public fragment targets from rendered HTML."""
+
+    def __init__(self, content: str) -> None:
+        """Parse one document and retain its description tag values in occurrence order."""
+        super().__init__(convert_charrefs=True)
+        self.values: list[str] = []
+        self.identifiers: set[str] = set()
+        self.feed(content)
+        self.close()
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
+        """Record description metadata after HTML entity decoding has reconstructed the text."""
+        attributes = dict(attrs)
+        identifier = attributes.get("id")
+        if identifier:
+            self.identifiers.add(identifier)
+        if tag == "meta" and attributes.get("name") == "description":
+            self.values.append(attributes.get("content") or "")
+
+
+class PageMetadataTests(unittest.TestCase):
+    """Build a small real catalog/curriculum with no imports of executable lesson code."""
+
+    def setUp(self) -> None:
+        """Create an isolated repository-shaped fixture with contained, inherited-permission cleanup."""
+        parent = Path(__file__).resolve().parents[1] / "_build/test-workspaces"
+        parent.mkdir(parents=True, exist_ok=True)
+        self.root = parent / uuid.uuid4().hex
+        self.root.mkdir()
+        if not self.root.resolve().is_relative_to(parent.resolve()):
+            raise ValueError("Metadata fixture escaped the documentation workspace.")
+        self.addCleanup(shutil.rmtree, self.root)
+        self.docs = self.root / "docs"
+        self.docs.mkdir()
+        (self.root / "README.md").write_text("# Tour\n\n## Topic\n\nKeep this original paragraph.\n", encoding="utf-8")
+        self.catalog_path = self.docs / "catalog.toml"
+        self.manifest = 'schema_version = 1\nrepository_url = "https://example.invalid/repo"\nsource_ref = "fixture"\n'
+        for number, level in enumerate(ExampleCatalog._LEVELS, 1):
+            directory = f"{number:02d}_{level}"
+            source = self.root / "UX_and_AIX_experiences" / directory
+            source.mkdir(parents=True)
+            (source / "01_example.py").write_text(
+                f'"""TIER: {level}\nGOAL: Keep the original lesson text.\nSURFACE EXERCISED: example\n"""\n'
+                'raise RuntimeError("Documentation must not execute this lesson")\n', encoding="utf-8"
+            )
+            self.manifest += (f'\n[[level]]\nslug = "{level}"\ndirectory = "{directory}"\n'
+                              'sources = ["01_example.py"]\n')
+        self.catalog_path.write_text(self.manifest, encoding="utf-8")
+        self.curriculum_path = self.docs / "curriculum.toml"
+        self.chapter = ('schema_version = 1\n[[chapter]]\nid = "beginner/topic"\n'
+                        'title = "Topic"\nlevel = "beginner"\nreadme = "Topic"\n')
+
+    def _catalog_description(self, value: object) -> None:
+        """Write a TOML editorial value without interpreting its content as syntax."""
+        self.catalog_path.write_text(
+            self.manifest + '\n[[lesson]]\nsource = "UX_and_AIX_experiences/01_beginner/01_example.py"\n'
+            + "description = " + json.dumps(value, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+
+    def _render(self, catalog: ExampleCatalog, curriculum: Curriculum) -> Path:
+        """Render actual generator bodies with their assets and valid fixture navigation."""
+        source = self.root / "render-source"
+        source.mkdir()
+        (source / "conf.py").write_text(
+            "extensions = ['myst_parser']\nroot_doc = 'index'\n", encoding="utf-8"
+        )
+        bodies = dict(catalog.bodies)
+        bodies["examples/index"] = "# Examples\n" + bodies["examples/index"]
+        bodies.update(curriculum.bodies)
+        bodies["contents"] = "# Full contents\n"
+        for level in ExampleCatalog._LEVELS:
+            bodies[level + "/index"] = "# " + level.title() + "\n"
+        for identifier, body in bodies.items():
+            destination = source / (identifier + ".md")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(body, encoding="utf-8")
+        catalog.write_assets(source)
+        (source / "index.md").write_text(
+            "# Fixture\n\n```{toctree}\n\n" + "\n".join(bodies) + "\n```\n", encoding="utf-8"
+        )
+        output = self.root / "html"
+        result = subprocess.run(
+            [sys.executable, "-m", "sphinx", "-q", "-b", "html", "-W", str(source), str(output)],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        return output
+
+    def test_descriptions_survive_real_html_rendering_without_changing_prose(self) -> None:
+        """Quotes, Unicode and YAML-looking text remain one literal description in each generator."""
+        value = 'Explain "shared" & fresh objects: café.\n---\nrobots: noindex'
+        expected = 'Explain "shared" & fresh objects: café. --- robots: noindex'
+        self._catalog_description(value)
+        self.curriculum_path.write_text(
+            self.chapter + "description = " + json.dumps(value, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        catalog = ExampleCatalog(self.root, self.catalog_path)
+        curriculum = Curriculum(self.root, self.curriculum_path, catalog)
+        output = self._render(catalog, curriculum)
+        lesson = (output / "examples/beginner/01-example.html").read_text(encoding="utf-8")
+        chapter = (output / "beginner/topic.html").read_text(encoding="utf-8")
+        self.assertEqual(DescriptionTags(lesson).values, [expected])
+        self.assertEqual(DescriptionTags(chapter).values, [expected])
+        self.assertIn("Keep the original lesson text.", lesson)
+        self.assertIn("Keep this original paragraph.", chapter)
+        self.assertNotIn('name="robots"', lesson + chapter)
+        other = (output / "examples/advanced/01-example.html").read_text(encoding="utf-8")
+        self.assertEqual(DescriptionTags(other).values, [])
+
+    def test_invalid_lesson_description_names_the_source(self) -> None:
+        """Supplied empty/nontext metadata is rejected instead of silently generating bad HTML."""
+        for value in ("", "  ", 42, ["fragment"]):
+            with self.subTest(value=value):
+                self._catalog_description(value)
+                with self.assertRaisesRegex(ValueError, "Description for UX_and_AIX_experiences/01_beginner"):
+                    ExampleCatalog(self.root, self.catalog_path)
+
+    def test_editorial_title_preserves_the_published_heading_fragment(self) -> None:
+        """A distinct search title keeps the old heading address available in actual HTML."""
+        self.catalog_path.write_text(
+            self.manifest + '\n[[lesson]]\nsource = "UX_and_AIX_experiences/01_beginner/01_example.py"\n'
+            'title = "An improved example title"\nlegacy_anchor = "example"\n', encoding="utf-8"
+        )
+        self.curriculum_path.write_text(self.chapter, encoding="utf-8")
+        catalog = ExampleCatalog(self.root, self.catalog_path)
+        curriculum = Curriculum(self.root, self.curriculum_path, catalog)
+        output = self._render(catalog, curriculum)
+        lesson = (output / "examples/beginner/01-example.html").read_text(encoding="utf-8")
+        self.assertIn("example", DescriptionTags(lesson).identifiers)
+        self.assertIn("An improved example title", lesson)
+
+    def test_invalid_chapter_description_names_the_page(self) -> None:
+        """A malformed chapter value fails while source data is loaded, before publication."""
+        catalog = ExampleCatalog(self.root, self.catalog_path)
+        self.curriculum_path.write_text(self.chapter + "description = 42\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "Description for beginner/topic"):
+            Curriculum(self.root, self.curriculum_path, catalog)
+
+    def test_authored_chapter_rejects_a_second_description_owner(self) -> None:
+        """An authored page cannot receive competing manifest and frontmatter descriptions."""
+        catalog = ExampleCatalog(self.root, self.catalog_path)
+        authored = self.chapter.replace('readme = "Topic"', 'source = "topic.md"')
+        self.curriculum_path.write_text(authored + 'description = "Duplicate owner"\n', encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "Authored chapter beginner/topic.*source frontmatter"):
+            Curriculum(self.root, self.curriculum_path, catalog)
+
+
+if __name__ == "__main__":
+    unittest.main()
+================================================================================
+END FILE: docs/tests/test_page_metadata.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/tests/test_references.py
@@ -67858,6 +68276,329 @@ if __name__ == "__main__":
     raise SystemExit(DocumentationBuilder().run())
 ================================================================================
 END FILE: docs/tools/build_docs.py
+================================================================================
+================================================================================
+BEGIN FILE: docs/tools/check_seo.py
+CONTENT SHA256: febf18865fc8efc6bab9ed509e84bf7d1e5fffafa52afb9aa868ffcbcd568f6e
+SOURCE ENCODING: utf-8
+================================================================================
+"""Audit built documentation metadata using only local HTML/XML and explicit policy.
+
+This complements check_site.py. It does not query search engines, HTTP headers,
+redirects or robots.txt; Read the Docs serves its own platform-managed robots file.
+"""
+
+import argparse
+import fnmatch
+import json
+import os
+import sys
+import tomllib
+import xml.etree.ElementTree as ET
+from html.parser import HTMLParser
+from pathlib import Path
+from typing import Literal, Optional, TypedDict
+from urllib.parse import quote, unquote, urlsplit
+
+
+class SeoIssue(TypedDict):
+    """One publication error or warning tied to its relative page or sitemap path."""
+
+    level: str
+    path: str
+    message: str
+
+
+class SeoPage(TypedDict):
+    """Decoded metadata observed on one included HTML document."""
+
+    path: str
+    title: str
+    description: str
+    canonical: str
+    h1_count: int
+    noindex: bool
+
+
+class SeoReport(TypedDict):
+    """Deterministic local audit result; counts describe checks, never search ranking."""
+
+    base_url: str
+    html_directory: str
+    content_pages: int
+    errors: int
+    warnings: int
+    allow_noindex: bool
+    issues: list[SeoIssue]
+    pages: list[SeoPage]
+    limitations: str
+
+
+class SeoMetadata(HTMLParser):
+    """Parse head metadata and headings without executing scripts or retaining handles."""
+
+    def __init__(self, content: str) -> None:
+        """Parse a document; missing or duplicate elements remain visible to the policy check."""
+        super().__init__(convert_charrefs=True)
+        self._in_head = False
+        self._in_title = False
+        self._in_h1 = False
+        self.titles: list[str] = []
+        self.h1s: list[str] = []
+        self.descriptions: list[str] = []
+        self.canonicals: list[str] = []
+        self.robots: list[str] = []
+        self.lang = ""
+        self.feed(content)
+        self.close()
+
+    @staticmethod
+    def normalized(value: str) -> str:
+        """Fold HTML whitespace without changing punctuation or Unicode text."""
+        return " ".join(value.split())
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
+        """Collect declared elements; description/canonical/robots values must come from head."""
+        values = dict(attrs)
+        if tag == "html":
+            self.lang = (values.get("lang") or "").strip()
+        elif tag == "head":
+            self._in_head = True
+        elif tag == "title" and self._in_head:
+            self._in_title = True
+            self.titles.append("")
+        elif tag == "h1":
+            self._in_h1 = True
+            self.h1s.append("")
+        elif tag == "meta" and self._in_head:
+            name = (values.get("name") or "").casefold()
+            content = self.normalized(values.get("content") or "")
+            if name == "description":
+                self.descriptions.append(content)
+            elif name in ("robots", "googlebot"):
+                self.robots.append(content.casefold())
+        elif tag == "link" and self._in_head:
+            if "canonical" in (values.get("rel") or "").casefold().split():
+                self.canonicals.append((values.get("href") or "").strip())
+
+    def handle_endtag(self, tag: str) -> None:
+        """End text collection at its element boundary, including a closed head."""
+        if tag == "head":
+            self._in_head = False
+            self._in_title = False
+        elif tag == "title":
+            self._in_title = False
+        elif tag == "h1":
+            self._in_h1 = False
+
+    def handle_data(self, data: str) -> None:
+        """Accumulate nested text only for the currently open title or main heading."""
+        if self._in_title:
+            self.titles[-1] += data
+        if self._in_h1:
+            self.h1s[-1] += data
+
+
+class SeoCheck:
+    """Audit one HTML build with explicit canonical, description and indexing policy.
+
+    The instance retains parsed values only. Repeated run() calls reset those
+    values and produce the same result for identical files. Generated pages are
+    never modified; filesystem/parse failures propagate to the CLI's input error.
+    """
+
+    _IGNORED_PARTS = frozenset(("_static", "_modules", "_sources", "_downloads", "downloads"))
+    _IGNORED_PAGES = frozenset(("search.html", "genindex.html", "py-modindex.html", "404.html"))
+    _SITEMAP_NS = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+
+    def __init__(self, directory: Path, base_url: str, required: tuple[str, ...] = (),
+                 allow_noindex: bool = False) -> None:
+        """Validate immutable inputs before reading pages; raise ValueError for invalid roots/base URLs."""
+        self.root = directory.resolve()
+        self.base_url = base_url.rstrip("/") + "/"
+        parsed = urlsplit(self.base_url)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc or parsed.query or parsed.fragment:
+            raise ValueError("Canonical base must be an absolute HTTP(S) URL without query or fragment.")
+        if not self.root.is_dir():
+            raise ValueError(f"HTML directory does not exist: {self.root}")
+        self._base_path = parsed.path
+        self.required = required
+        self.allow_noindex = allow_noindex
+        self.issues: list[SeoIssue] = []
+        self.pages: list[SeoPage] = []
+        self._sitemap_urls: set[str] = set()
+        self._matched_required: set[str] = set()
+        self._has_sitemap = False
+
+    def _issue(self, level: str, path: str, message: str) -> None:
+        """Append one ordered issue without changing page or source data."""
+        self.issues.append({"level": level, "path": path, "message": message})
+
+    def _sitemap(self) -> None:
+        """Validate the page sitemap and contained local destinations before auditing inclusion."""
+        path = self.root / "sitemap.xml"
+        if not path.is_file():
+            self._issue("error", "sitemap.xml", "Missing sitemap; build with READTHEDOCS_CANONICAL_URL.")
+            return
+        if not path.resolve().is_relative_to(self.root):
+            self._issue("error", "sitemap.xml", "Sitemap escapes the output directory via symlink.")
+            return
+        tree = ET.parse(path)
+        if tree.getroot().tag != self._SITEMAP_NS + "urlset":
+            self._issue("error", "sitemap.xml", "Expected the generated page-level sitemap (urlset).")
+            return
+        self._has_sitemap = True
+        for element in tree.findall(f"{self._SITEMAP_NS}url/{self._SITEMAP_NS}loc"):
+            url = (element.text or "").strip()
+            if url in self._sitemap_urls:
+                self._issue("error", "sitemap.xml", f"Duplicate sitemap URL: {url}")
+            self._sitemap_urls.add(url)
+            self._sitemap_target(url)
+
+    def _sitemap_target(self, url: str) -> None:
+        """Check one sitemap URL's version/base and corresponding contained output file."""
+        if not url.startswith(self.base_url):
+            self._issue("error", "sitemap.xml", f"URL is outside the expected base: {url}")
+            return
+        parsed = urlsplit(url)
+        if parsed.query or parsed.fragment:
+            self._issue("error", "sitemap.xml", f"Query or fragment in sitemap URL: {url}")
+        relative = unquote(parsed.path[len(self._base_path):])
+        if not relative or relative.endswith("/"):
+            relative += "index.html"
+        target = (self.root / relative).resolve()
+        if not target.is_relative_to(self.root) or not target.is_file():
+            self._issue("error", "sitemap.xml", f"URL does not map to an existing local file: {url}")
+
+    def _page(self, path: Path, relative: str) -> None:
+        """Parse and check one content page, recording its exact decoded metadata."""
+        if not path.resolve().is_relative_to(self.root):
+            self._issue("error", relative, "HTML file escapes the output directory via symlink.")
+            return
+        meta = SeoMetadata(path.read_text(encoding="utf-8"))
+        expected = self.base_url + quote(relative, safe="/")
+        matched = {pattern for pattern in self.required if fnmatch.fnmatchcase(relative, pattern)}
+        self._matched_required.update(matched)
+        title = meta.normalized(meta.titles[0]) if meta.titles else ""
+        description = meta.descriptions[0] if meta.descriptions else ""
+        canonical = meta.canonicals[0] if meta.canonicals else ""
+        if len(meta.titles) != 1 or not title:
+            self._issue("error", relative, "Expected exactly one nonempty title in head.")
+        if len(meta.h1s) != 1 or not meta.normalized(meta.h1s[0]):
+            self._issue("warning", relative, "Expected one clear nonempty H1 (editorial convention).")
+        if not meta.lang:
+            self._issue("warning", relative, "Missing HTML lang attribute.")
+        if len(meta.descriptions) > 1:
+            self._issue("error", relative, "More than one description tag; choose one metadata owner.")
+        if not description:
+            self._issue("error" if matched else "warning", relative, "Missing nonempty description.")
+        if len(meta.canonicals) != 1 or not canonical:
+            self._issue("error", relative, "Expected exactly one nonempty canonical link in head.")
+        elif canonical != expected:
+            self._issue("error", relative, f"Expected canonical {expected}; found {canonical}.")
+        noindex = any({"noindex", "none"}.intersection(value.replace(",", " ").split()) for value in meta.robots)
+        if noindex and not self.allow_noindex:
+            self._issue("error", relative, "Unexpected noindex on an indexed content page.")
+        if self._has_sitemap and expected not in self._sitemap_urls:
+            self._issue("error", relative, "Content page missing from the version sitemap.")
+        if self._has_sitemap and canonical and canonical not in self._sitemap_urls:
+            self._issue("error", relative, "Canonical does not appear in the version sitemap.")
+        self.pages.append({"path": relative, "title": title, "description": description,
+                           "canonical": canonical, "h1_count": len(meta.h1s), "noindex": noindex})
+
+    def _duplicates(self, field: Literal["title", "description"], level: str) -> None:
+        """Report shared nonempty text after whitespace normalization and Unicode case folding."""
+        grouped: dict[str, list[str]] = {}
+        for page in self.pages:
+            value = page[field]
+            if value:
+                grouped.setdefault(value.casefold(), []).append(page["path"])
+        for value, paths in sorted(grouped.items()):
+            if len(paths) > 1:
+                self._issue(level, ", ".join(paths), f"Duplicate {field}: {value}")
+
+    def run(self) -> SeoReport:
+        """Return a stable report; propagate unreadable input errors instead of claiming a pass.
+
+        Result lists are copied so a later run clearing this instance's working
+        collections cannot alter a report already handed to its caller.
+        """
+        self.issues.clear()
+        self.pages.clear()
+        self._sitemap_urls.clear()
+        self._matched_required.clear()
+        self._has_sitemap = False
+        self._sitemap()
+        for path in sorted(self.root.rglob("*.html")):
+            relative_path = path.relative_to(self.root)
+            relative = relative_path.as_posix()
+            if self._IGNORED_PARTS.intersection(relative_path.parts) or relative in self._IGNORED_PAGES:
+                continue
+            self._page(path, relative)
+        if not self.pages:
+            self._issue("error", ".", "No content HTML files found.")
+        for pattern in sorted(set(self.required) - self._matched_required):
+            self._issue("error", ".", f"Required-description pattern matched no page: {pattern}")
+        self._duplicates("title", "error")
+        self._duplicates("description", "warning")
+        return {"base_url": self.base_url, "html_directory": str(self.root),
+                "content_pages": len(self.pages), "errors": sum(item["level"] == "error" for item in self.issues),
+                "warnings": sum(item["level"] == "warning" for item in self.issues),
+                "allow_noindex": self.allow_noindex, "issues": list(self.issues), "pages": list(self.pages),
+                "limitations": "Local HTML/XML only; no live headers, robots, redirects, indexing or ranking checks."}
+
+    @staticmethod
+    def policy_patterns(path: Optional[Path]) -> tuple[str, ...]:
+        """Read an optional schema-versioned TOML policy; reject malformed required-page lists."""
+        if path is None:
+            return ()
+        payload = tomllib.loads(path.read_text(encoding="utf-8"))
+        patterns = payload.get("required_descriptions")
+        if (payload.get("schema_version") != 1 or not isinstance(patterns, list)
+                or not all(isinstance(value, str) and value.strip() for value in patterns)):
+            raise ValueError("SEO policy requires schema_version = 1 and a list of nonempty required_descriptions.")
+        return tuple(patterns)
+
+    @classmethod
+    def main(cls) -> int:
+        """Run the CLI: return 0 for valid output, 1 for policy errors, 2 for unreadable inputs.
+
+        RTD external builds are intentional previews and may retain noindex.
+        Other callers opt in with --allow-noindex. Only the optional JSON report
+        is written; errors leave the generated pages and source tree untouched.
+        """
+        parser = argparse.ArgumentParser(description=__doc__)
+        parser.add_argument("directory", type=Path)
+        parser.add_argument("--base-url", required=True)
+        parser.add_argument("--policy", type=Path)
+        parser.add_argument("--require-description", action="append", default=[], metavar="GLOB")
+        parser.add_argument("--allow-noindex", action="store_true", help="Allow intentionally unindexed previews.")
+        parser.add_argument("--json", type=Path, dest="json_path")
+        args = parser.parse_args()
+        try:
+            required = cls.policy_patterns(args.policy) + tuple(args.require_description)
+            preview = args.allow_noindex or os.environ.get("READTHEDOCS_VERSION_TYPE") == "external"
+            report = cls(args.directory, args.base_url, required, preview).run()
+            if args.json_path:
+                args.json_path.parent.mkdir(parents=True, exist_ok=True)
+                args.json_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        except (OSError, ValueError, ET.ParseError) as error:
+            sys.stderr.write(f"SEO audit could not run: {error}\n")
+            return 2
+        sys.stdout.write(f"Audited {report['content_pages']} content pages: "
+                         f"{report['errors']} errors, {report['warnings']} warnings.\n")
+        errors = [issue for issue in report["issues"] if issue["level"] == "error"]
+        for issue in errors[:30]:
+            sys.stderr.write(f"ERROR: {issue['path']}: {issue['message']}\n")
+        if report["warnings"] or len(errors) > 30:
+            sys.stdout.write("Use --json for all page metadata and individual issues.\n")
+        return 1 if report["errors"] else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(SeoCheck.main())
+================================================================================
+END FILE: docs/tools/check_seo.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/tools/check_site.py
@@ -68882,6 +69623,52 @@ if __name__ == "__main__":
     sys.stdout.write(str(TectonicInstaller().install()) + "\n")
 ================================================================================
 END FILE: docs/tools/install_tectonic.py
+================================================================================
+================================================================================
+BEGIN FILE: docs/tools/page_metadata.py
+CONTENT SHA256: 455b2395dc270ae50b546d78518a8110b4f9dc09f35bbc96a4ded2cec87464d6
+SOURCE ENCODING: utf-8
+================================================================================
+"""Validate editorial descriptions and serialize generated MyST metadata safely.
+
+The formatter owns no resources or shared state. Authored pages keep their own
+frontmatter; generated chapters and lessons use these helpers before their body.
+"""
+
+import json
+
+
+class PageMetadata:
+    """Provide pure description validation and one-owner MyST frontmatter rendering."""
+
+    @staticmethod
+    def description(value: object, owner: str) -> str:
+        """Return normalized editorial text, or an empty string for absent metadata.
+
+        Supplied values must be nonempty strings. A malformed value raises
+        ValueError naming its owning chapter or lesson before generation writes.
+        Whitespace is folded for a single readable HTML description.
+        """
+        if value is None:
+            return ""
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"Description for {owner} must be a nonempty string when supplied.")
+        return " ".join(value.split())
+
+    @staticmethod
+    def frontmatter(description: str) -> str:
+        """Render one description block, or no block for an absent description.
+
+        The argument is normalized text from description(). JSON string quoting
+        is valid YAML and keeps quotes, punctuation and control characters from
+        becoming metadata syntax. The caller appends its unchanged page body.
+        """
+        if not description:
+            return ""
+        value = json.dumps(description, ensure_ascii=False)
+        return f"---\nmyst:\n  html_meta:\n    description: {value}\n---\n\n"
+================================================================================
+END FILE: docs/tools/page_metadata.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/tools/site_model.py
