@@ -1,0 +1,16 @@
+{
+ "unique_root": {
+  "validity_after_cleanup": "SpellValidity.gated",
+  "meld_after": "same stored instance",
+  "socket_after": [
+   "UNRESOLVED_INPUT"
+  ]
+ },
+ "many_root": {
+  "validity_after_cleanup": "SpellValidity.gated",
+  "meld_after": "UnresolvedInputError: [MELD] Execution failed for spell 'Root' (4539ddd12a3515977aa316b44d9192e75379730f9b76bffadf91655a9d21ec89) at node 4539ddd12a3515977aa316b44d9192e75379730f9b76",
+  "socket_after": [
+   "UNRESOLVED_INPUT"
+  ]
+ }
+}

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py",
- "source_sha256": "b8dea64f5189f78fb3e6f10ad6c627922e23334ee8bd875fa454426a40f58caf",
+ "source_sha256": "21af7b586f0bdaf0015df2e0a71b71ae75e8c2a248df36f7c8ba86cb21516ddb",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_no_overrides_compiler": {
@@ -10,27 +10,28 @@
    "kind": "module",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_no_overrides_compiler.py",
    "lineno": 1,
-   "role": "Family-owned no-overrides lane compiler for the generalized family.",
+   "role": "Opt-in singleton warm-tail specializer of the generalized family and the row helpers the hydrator shares with it.",
    "responsibilities": [
-    "emits no-overrides executor source from generalized manifest rows",
-    "builds flat runtime bindings and transient unrolled lanes for no-overrides execution",
-    "hydrates inner no-overrides executors through the process-wide executor factory cache"
+    "selects specializable steps and emits the singleton specializer's row-driven source",
+    "hydrates the specialized executor through the process-wide executor factory cache; it deopts to the site-plan normal plan",
+    "resolves contract payload rows and the root instance key, and computes inlinable shapes and positional-prefix names (P1)"
    ],
    "owns_state": [
-    "EXECUTOR_NAME",
     "_STEP_STATIC_NAMESPACE",
-    "_TRANSIENT_STATIC_NAMESPACE",
-    "_TRANSIENT_SCHEMA_SEQUENCE_FIELDS"
+    "SPECIALIZED_EXECUTOR_NAME",
+    "_SPECIALIZED_FACTORY_SOURCE_NAME"
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   }
  },
  "edges_out": [],
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
+  "FunctionType": "types.FunctionType",
   "Any": "typing.Any",
   "Callable": "typing.Callable",
   "Dict": "typing.Dict",
@@ -38,10 +39,9 @@
   "Sequence": "typing.Sequence",
   "Tuple": "typing.Tuple",
   "Existence": "melder.aether.spellbook.existence.existence.Existence",
+  "CodegenCreationSchemaHelpers": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
   "SpellGeneralizedCodegenPlanTargetKind": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.SpellGeneralizedCodegenPlanTargetKind",
-  "build_transient_no_overrides_source": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.build_transient_no_overrides_source",
   "construct_spell_instance": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.construct_spell_instance",
-  "normalize_transient_schema": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.normalize_transient_schema",
   "raise_meld_construction_error": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.raise_meld_construction_error",
   "register_spell_instance": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.register_spell_instance",
   "register_spell_instance_prebound": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library.register_spell_instance_prebound",

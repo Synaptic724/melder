@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/conduit_meld.py",
- "source_sha256": "30a2617e717a762742e621aa2b6ada970309ae180e55c8898fbb872a5329bd2e",
+ "source_sha256": "edd6e30c2ec4010a3fb6a460e3978f45dc89710563c8cc55c1abd91fd9430331",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.conduit_meld": {
@@ -44,14 +44,16 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6f3fb0677c3c29d60eb5b0c34323b9563ef0ff2dd87c4f75d3281083b9d24591",
+   "span_sha256": "4d8c7ec3255c162c38a88df2fbee88b719683a255c46b9bf70777c13a49bf357",
    "role": "Conduit-facing meld front door.",
    "responsibilities": [
     "routes conduit-local unique_per_conduit and many storage through ConduitCreations",
     "rejects spellspace-request spells on the conduit entry path",
     "provides reuse-only and live-creation status probes over conduit-scoped storage",
     "authorizes conduit-local, spell-owner, lineage-root and cluster-leader purge before delegating single or all retirement to Creations",
-    "refuses immutable non-resolvable registrations before normal resolution and reuse-only access"
+    "refuses immutable non-resolvable registrations before normal resolution and reuse-only access",
+    "admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo",
+    "serves warm automatic id melds from the fast-door entry: plain melds (an existing object's bound object directly) and non-empty dict override payloads through the live override executor slot"
    ],
    "owns_state": [],
    "phases": [
@@ -59,7 +61,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "de30ad74e3ff43af2cfd1c219c5e382b3ba46382defbd291817d3b9a17604633"
+   "semantics_authored_against": "4d8c7ec3255c162c38a88df2fbee88b719683a255c46b9bf70777c13a49bf357"
   }
  },
  "edges_out": [

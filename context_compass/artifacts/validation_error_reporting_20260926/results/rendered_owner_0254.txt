@@ -1,0 +1,46 @@
+RAISED melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError
+Spellbook validation failed; one or more spells are broken. Broken spells: ClassProfile (id=458a83cee7dfea3f983138e49f013c7b03d7de38ff0839b9428fb99de884ef27, frame=None); CodecPacket (id=f6224556b51dead6da08ad18df48c622432c7eae1a0f4f1fcd6e89d21500c771, frame=None)
+Diagnostics:
+Phase 4 issues:
+- Spell 'ClassProfile' (id=458a83cee7dfea3f983138e49f013c7b03d7de38ff0839b9428fb99de884ef27, frame=None):
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'name' on spell 'ClassProfile' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'name', 'position': 0, 'annotation': <class 'str'>}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'qualname' on spell 'ClassProfile' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'qualname', 'position': 1, 'annotation': <class 'str'>}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'module' on spell 'ClassProfile' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'module', 'position': 2, 'annotation': <class 'str'>}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'mro' on spell 'ClassProfile' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'mro', 'position': 3, 'annotation': list[str]}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'bases' on spell 'ClassProfile' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'bases', 'position': 4, 'annotation': list[str]}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'methods' on spell 'ClassProfile' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'methods', 'position': 5, 'annotation': dict[str, __main__.MethodProfile]}
+    - [warning] LIST_ELEMENT_NOT_DI_TARGET (source=AnnotationShapeGuardStrategy): Parameter 'mro' on spell 'ClassProfile' uses list[<class 'str'>], which is not a DI frame/type. Collection DI only works for list[FrameType].
+      details: {'parameter_name': 'mro', 'annotation': list[str]}
+    - [warning] LIST_ELEMENT_NOT_DI_TARGET (source=AnnotationShapeGuardStrategy): Parameter 'bases' on spell 'ClassProfile' uses list[<class 'str'>], which is not a DI frame/type. Collection DI only works for list[FrameType].
+      details: {'parameter_name': 'bases', 'annotation': list[str]}
+    - [error] UNSUPPORTED_COLLECTION_SHAPE (source=AnnotationShapeGuardStrategy): Parameter 'methods' on spell 'ClassProfile' uses unsupported collection annotation dict[str, __main__.MethodProfile] for DI. Only list[T] is supported for collection DI.
+      details: {'parameter_name': 'methods', 'annotation': dict[str, __main__.MethodProfile]}
+- Spell 'CodecPacket' (id=f6224556b51dead6da08ad18df48c622432c7eae1a0f4f1fcd6e89d21500c771, frame=None):
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'v' on spell 'CodecPacket' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'v', 'position': 0, 'annotation': <class 'int'>}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'id' on spell 'CodecPacket' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'id', 'position': 1, 'annotation': <class 'str'>}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'ts' on spell 'CodecPacket' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'ts', 'position': 2, 'annotation': <class 'float'>}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'kind' on spell 'CodecPacket' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'kind', 'position': 3, 'annotation': <class 'str'>}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'intent' on spell 'CodecPacket' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'intent', 'position': 4, 'annotation': <class 'str'>}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'ttl_ms' on spell 'CodecPacket' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'ttl_ms', 'position': 5, 'annotation': <class 'int'>}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'policy' on spell 'CodecPacket' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'policy', 'position': 6, 'annotation': dict[str, typing.Any]}
+    - [warning] REQUIRED_HOLE (source=RequiredHolesStrategy): Parameter 'payload' on spell 'CodecPacket' cannot be satisfied by Melder DI and has no default. The caller must supply a value (e.g. via spell overrides or manual composition).
+      details: {'parameter_name': 'payload', 'position': 7, 'annotation': dict[str, typing.Any]}
+    - [error] UNSUPPORTED_COLLECTION_SHAPE (source=AnnotationShapeGuardStrategy): Parameter 'policy' on spell 'CodecPacket' uses unsupported collection annotation dict[str, typing.Any] for DI. Only list[T] is supported for collection DI.
+      details: {'parameter_name': 'policy', 'annotation': dict[str, typing.Any]}
+    - [error] UNSUPPORTED_COLLECTION_SHAPE (source=AnnotationShapeGuardStrategy): Parameter 'payload' on spell 'CodecPacket' uses unsupported collection annotation dict[str, typing.Any] for DI. Only list[T] is supported for collection DI.
+      details: {'parameter_name': 'payload', 'annotation': dict[str, typing.Any]}
+Phase 6 diagnostics:
+  (none recorded)

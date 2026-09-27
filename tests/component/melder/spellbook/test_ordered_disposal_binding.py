@@ -40,7 +40,7 @@ class OrderedDisposalService:
 
 
 class InheritedOnlyDisposal(OrderedDisposalService):
-    """An empty own namespace keeps inherited-only methods outside current profile matching."""
+    """Inherit disposal methods without adding duplicate subclass implementations."""
 
 
 def service_factory() -> OrderedDisposalService:
@@ -206,15 +206,27 @@ def test_fluent_binder_forwards_explicit_disposal_names(priority: bool) -> None:
         assert spell.disposal_method_names == (["flush", "stop", "close"] if priority else ["stop", "close", "flush"])
 
 
-@pytest.mark.parametrize("target", [InheritedOnlyDisposal, service_factory, OrderedDisposalService()])
+@pytest.mark.parametrize("target", [service_factory, OrderedDisposalService()])
 def test_disposal_matching_stays_with_existing_class_profile(target: object) -> None:
-    """Inherited-only, factory, and prebuilt-instance methods remain outside class-profile matching."""
+    """Factory and prebuilt-instance methods remain outside class binding disposal matching."""
     with configured_book(["flush", "close"], True) as book:
         spell_id = book.bind(spell=target, existence="unique", disposal_method_names=["stop"])
         spell = book.find_spell_by_id(spell_id)
         assert spell is not None
         assert spell.disposal_method_names == []
         assert spell.has_disposal_methods is False
+
+
+def test_inherited_class_disposal_preserves_book_and_spell_order() -> None:
+    """Inherited methods participate in the same book-first ordering as declared methods."""
+    with configured_book(["flush", "close"], True) as book:
+        spell_id = book.bind(
+            spell=InheritedOnlyDisposal, existence="many", disposal_method_names=["stop"],
+        )
+        spell = book.find_spell_by_id(spell_id)
+        assert spell is not None
+        assert spell.disposal_method_names == ["flush", "close", "stop"]
+        assert spell.has_disposal_methods is True
 
 
 def test_raw_configuration_can_bind_without_disposal_name_property() -> None:
@@ -350,3 +362,31 @@ with configured_book(["flush", "close"]) as book:
         records.append(json.loads(result.stdout))
     assert records[0] == records[1] == records[2]
     assert records[0][1] == ["stop", "flush", "close"]
+class OrderedDisposalConsumer:
+    """Consume one disposal-bearing service, so a site plan (not the solo lane) builds the service."""
+
+    def __init__(self, service: OrderedDisposalService) -> None:
+        """Keep the injected service."""
+        self.service = service
+
+
+@pytest.mark.parametrize("service_existence", ["many", "unique_per_conduit"])
+@pytest.mark.parametrize("priority,expected", [
+    (False, ["stop", "flush", "close"]),
+    (True, ["flush", "close", "stop"]),
+])
+def test_plan_families_dispose_dependencies_in_bound_order(
+        service_existence: str,
+        priority: bool,
+        expected: list[str],
+) -> None:
+    """A dependency built by a site plan (many_only when all-many, generalized otherwise) disposes in bound order."""
+    with configured_book(["flush", "close"], priority) as book:
+        book.bind(
+            spell=OrderedDisposalService, existence=service_existence, disposal_method_names=["close", "stop"],
+        )
+        consumer_id = book.bind(spell=OrderedDisposalConsumer, existence="many")
+        conduit = book.conjure()
+        consumer = conduit.meld(spell_id=consumer_id)
+        conduit.permanent_cleanup()
+        assert consumer.service.calls == expected

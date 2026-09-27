@@ -135,34 +135,36 @@ def _make_context(
     return context, issues
 
 
-def test_component_annotation_shape_guard_flags_unsupported_collection_shape() -> None:
+def test_component_annotation_shape_guard_leaves_set_parameters_to_the_caller() -> None:
     """
     Purpose:
-        Validate AnnotationShapeGuardStrategy flags unsupported collection annotations.
+        Validate that a set[T] constructor parameter is a caller input, not a DI error.
     Contract:
-        - set[T] DI annotations yield UNSUPPORTED_COLLECTION_SHAPE errors.
+        - Phase 1 never injects set[T]; AnnotationShapeGuardStrategy emits no issue for it.
+        - RequiredHolesStrategy reports it as REQUIRED_HOLE with the list-only collection hint.
     Returns:
         None.
     Raises:
-        AssertionError: If the unsupported collection shape is not reported.
+        AssertionError: If the guard judges the parameter or the hint is missing.
     """
     spellbook = _make_spellbook()
     strategy = AnnotationShapeGuardStrategy()
+    holes = RequiredHolesStrategy()
 
     class UsesSet:
         """
         Purpose:
-            Provide a spell with an unsupported collection DI annotation.
+            Provide a spell whose constructor takes a caller-supplied set of services.
         Contract:
-            - Declares set[BasicService] as a DI dependency.
+            - Declares set[BasicService], which Melder never injects.
         Args:
-            services: Injected services collection.
+            services: Services collection supplied by the caller.
         """
 
         def __init__(self, services: set[BasicService]) -> None:
             """
             Purpose:
-                Capture the injected services.
+                Capture the supplied services.
             Contract:
                 Stores the services on the instance.
             Args:
@@ -190,23 +192,25 @@ def test_component_annotation_shape_guard_flags_unsupported_collection_shape() -
         )
         try:
             strategy.validate(context)
-            assert len(issues) == 1
-            issue = issues[0]
-            assert issue.code == "UNSUPPORTED_COLLECTION_SHAPE"
-            assert issue.severity == "error"
+            assert issues == []
+            holes.validate(context)
+            assert [issue.code for issue in issues] == ["REQUIRED_HOLE"]
+            assert "Melder injects collections only as list[T]" in issues[0].message
         finally:
             context.cleanup()
     finally:
+        holes.cleanup()
         strategy.cleanup()
         spellbook.cleanup()
 
 
-def test_component_annotation_shape_guard_warns_on_list_non_di_element() -> None:
+def test_component_annotation_shape_guard_leaves_list_of_data_silent() -> None:
     """
     Purpose:
-        Validate AnnotationShapeGuardStrategy warns on list elements that are not DI targets.
+        Validate AnnotationShapeGuardStrategy treats a list of plain data as a caller input.
     Contract:
-        - list[int] yields LIST_ELEMENT_NOT_DI_TARGET warnings.
+        - list[int] yields no LIST_ELEMENT_NOT_DI_TARGET warning (2026-09-26); only a user
+          class inside the element draws it.
     Returns:
         None.
     Raises:
@@ -256,10 +260,7 @@ def test_component_annotation_shape_guard_warns_on_list_non_di_element() -> None
         )
         try:
             strategy.validate(context)
-            assert len(issues) == 1
-            issue = issues[0]
-            assert issue.code == "LIST_ELEMENT_NOT_DI_TARGET"
-            assert issue.severity == "warning"
+            assert [issue.code for issue in issues if issue.code == "LIST_ELEMENT_NOT_DI_TARGET"] == []
         finally:
             context.cleanup()
     finally:
@@ -587,16 +588,17 @@ def test_component_resolution_frame_presence_strategy_flags_missing_frame() -> N
         spellbook.cleanup()
 
 
-def test_component_resolution_frame_presence_strategy_warns_on_missing_graph() -> None:
+def test_component_resolution_frame_presence_strategy_accepts_phase3_frame() -> None:
     """
     Purpose:
-        Validate ResolutionFramePresenceStrategy warns when dependency graph is missing.
+        Validate ResolutionFramePresenceStrategy is silent once Phase 3 has produced the frame.
     Contract:
-        - Missing dependency_graph yields a MISSING_DEPENDENCY_GRAPH warning.
+        - A real Phase-3 resolution frame yields no issue; the strategy inspects nothing else
+          (the per-spell dependency graph object was retired 2026-09-26).
     Returns:
         None.
     Raises:
-        AssertionError: If the expected warning is not reported.
+        AssertionError: If any issue is reported.
     """
     spellbook = _make_spellbook()
     strategy = ResolutionFramePresenceStrategy()
@@ -608,18 +610,19 @@ def test_component_resolution_frame_presence_strategy_warns_on_missing_graph() -
         )
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
+        compiler_test_helpers.run_phase_requirements(spell)
+        compiler_test_helpers.run_phase_symbolic_graph(spell)
+        compiler_test_helpers.run_phase_local_frame(spell)
+        assert spell.dependency_graph is None
 
         context, issues = _make_context(
             spell=spell,
             spellbook=spellbook,
-            resolution_frame=object(),
+            resolution_frame=spell.resolution_frame,
         )
         try:
             strategy.validate(context)
-            assert len(issues) == 1
-            issue = issues[0]
-            assert issue.code == "MISSING_DEPENDENCY_GRAPH"
-            assert issue.severity == "warning"
+            assert issues == []
         finally:
             context.cleanup()
     finally:

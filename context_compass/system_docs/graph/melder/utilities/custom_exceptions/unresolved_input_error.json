@@ -1,0 +1,109 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/utilities/custom_exceptions/unresolved_input_error.py",
+ "source_sha256": "47177e20a26628787192e7e79a9d9a964aa42f73e59f5c2cb73c9d4da667fa5b",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.utilities.custom_exceptions.unresolved_input_error": {
+   "id": "melder.utilities.custom_exceptions.unresolved_input_error",
+   "label": "unresolved_input_error",
+   "kind": "module",
+   "file": "src/melder/utilities/custom_exceptions/unresolved_input_error.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Raised at meld before an object is constructed without a value for a typed parameter no registered spell provides; names the consumer, parameter, expected type and override keys.",
+   "responsibilities": [
+    "separate a missing caller-supplied input from every other constructor failure",
+    "build the error before construction through for_unsupplied, shared by the site plans and the solo call target"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": ""
+  },
+  "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError": {
+   "id": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+   "label": "UnresolvedInputError",
+   "kind": "class",
+   "file": "src/melder/utilities/custom_exceptions/unresolved_input_error.py",
+   "lineno": 15,
+   "bases": [
+    "MeldExecutionError"
+   ],
+   "markers": [],
+   "public_methods": [
+    "expected_type_name",
+    "for_unsupplied"
+   ],
+   "shape": {
+    "method_count": 4,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "8c781b5f1f2aa84706399d76f53b8ad4ea83287e44b88f6c114ab3da766babe8",
+   "include": true,
+   "role": "MeldExecutionError subclass for an UNRESOLVED_INPUT socket the constructing call did not supply.",
+   "responsibilities": [
+    "names the first missing parameter and its expected type, and lists every missing parameter in signature order",
+    "for_unsupplied builds the error for sockets a plan or solo call target knows are unsupplied, before any construction (no cause)",
+    "expected_type_name renders Optional, ForwardRef, quoted-string and class annotations as one display name shared with the Phase-4 warning",
+    "reads the expected type from the constructor signature when the error is built, because Phase 1-4 artifacts are released after resolution"
+   ],
+   "owns_state": [
+    "expected_type",
+    "unresolved_params"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "8c781b5f1f2aa84706399d76f53b8ad4ea83287e44b88f6c114ab3da766babe8"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+   "to_label": "MeldExecutionError",
+   "relation": "specializes",
+   "to": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Any": "typing.Any",
+  "Collection": "typing.Collection",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "SocketKind": "melder.aether.spellbook.spell_compiler.dag.socket_kind.SocketKind",
+  "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
+  "Spell": "melder.aether.spellbook.spell.Spell",
+  "SpellSocketDescriptor": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellSocketDescriptor"
+ },
+ "collapse_candidate": {
+  "module": "melder.utilities.custom_exceptions.unresolved_input_error",
+  "class": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+  "label": "UnresolvedInputError"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.utilities.custom_exceptions.unresolved_input_error.UnresolvedInputError",
+   "to": "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates",
+   "relation": "uses",
+   "why": "for_unsupplied reads the consumer's live Phase-3 topology to select the named UNRESOLVED_INPUT sockets.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  }
+ ]
+}

@@ -168,3 +168,13 @@ sources = [
 source = "UX_and_AIX_experiences/01_beginner/01_hello_meld.py"
 id = "examples/hello-melder"
 title = "Hello Melder"
+description = "Create your first Melder dependency graph: bind a plain Python class, conjure a conduit, and resolve an instance using a complete runnable script."
+
+[[lesson]]
+source = "UX_and_AIX_experiences/02_intermediate/15_constructor_di_by_annotation.py"
+description = "Run a complete Python constructor-injection example: bind Database and ReportService, resolve the service, and verify its injected dependency."
+
+[[lesson]]
+source = "UX_and_AIX_experiences/02_intermediate/36_late_binding_with_spellcontract.py"
+title = "Late binding with SpellContract: runnable example"
+legacy_anchor = "late-binding-with-spellcontract"

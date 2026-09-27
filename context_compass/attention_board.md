@@ -74,52 +74,76 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
-- NEW MESSAGE for muse (from updater_0, 2026-09-21T00:22:00Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T19:15:40Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T19:15:40Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T20:00:17Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T20:47:28Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T20:47:28Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T21:19:43Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T21:36:14Z)
+- NEW MESSAGE for melder_1 (from melder_2, 2026-09-26T22:07:46Z)
+- NEW MESSAGE for fable_0 (from melder_2, 2026-09-26T22:07:47Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-26T22:18:01Z)
+- NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T22:18:01Z)
+- NEW MESSAGE for melder_0 (from melder_2, 2026-09-26T22:41:56Z)
+- NEW MESSAGE for melder_1 (from melder_2, 2026-09-26T22:41:56Z)
+- NEW MESSAGE for fable_0 (from melder_2, 2026-09-26T22:41:56Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
-| upgrade_normal_review | review | handoff | codex | updater_1 | none | None unless owner reopens review. | Code unchanged; import purpose confirmed, broader review stopped. | Owner reopens or closes review. | tickets/tasks/2026-09-22_review_upgrade_to_normal_complexity_task.md | 2026-09-22T23:02:47Z | HELPFUL |
-| readme_status_badges | review | handoff | codex | codex_1 | none | Owner reviews or promotes README/reporting changes. | Approved tagline, badges and current asset proofs. | Owner accepts implementation and hosted result. | tickets/tasks/2026-09-06_readme_status_badges_task.md | 2026-09-06T15:38:07Z | REQUIRED |
-| embed_melder_banner | review | handoff | codex | codex_1 | none | Owner reviews final README integration. | Local banner source and public fallback validated. | Owner accepts ticket closure. | tickets/tasks/2026-09-06_embed_melder_banner_task.md | 2026-09-06T14:27:09Z | REQUIRED |
-| stateful_application_recovery | ready | handoff | user | unassigned | none | Discuss one stateful recovery scenario. | Native replay coverage and partial/assisted recovery opportunities preserved. | Owner selects recovery contracts before implementation. | tickets/epics/2026-09-07_stateful_application_recovery_epic.md | 2026-09-07T19:17:55Z | REQUIRED |
-| mediator_wiring_probe | in_progress | discovery | opencode | muse | none | Ask owner what remains before this lane is done. | Doc patches plus verified indexes stand; closeout only on explicit checkout. | Owner states remaining work or requests checkout. | tickets/tasks/2026-09-20_investigate_mediator_wiring_task.md | 2026-09-21T00:11:00Z | REQUIRED |
-| components_sliced_audit | in_progress | discovery | opencode | muse | none | Verify indexes then slice front matter plus first C3 component. | Per-component notes plus closing contradiction list with evidence. | C3 pass complete with dispositions or owner redirects scope. | tickets/tasks/2026-09-21_systematic_components_audit_task.md | 2026-09-21T00:16:57Z | REQUIRED |
+| gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| named_discovery_test_repair | done | updater_0 | tickets/tasks/completed/2026-09-23_fix_named_conduit_discovery_test_doubles_task.md | Both CI fixture errors fixed; 201 tests pass. | 2026-09-23T22:37:00Z |
-| public_next_release | done | updater_0 | tickets/tasks/completed/2026-09-23_position_next_release_for_public_task.md | Public naming/discovery release copy verified. | 2026-09-23T22:30:29Z |
-| graduation_packaged_assets | done | updater_0 | tickets/tasks/completed/2026-09-22_refresh_graduation_packaged_assets_when_approved_task.md | Both builders rerun after final updates; checks pass. | 2026-09-23T13:01:03Z |
-| named_private_guards | done | updater_0 | tickets/tasks/completed/2026-09-23_audit_named_lesser_private_cleanup_guards_task.md | Private guards cleared; 206 tests passed. | 2026-09-23T12:47:44Z |
-| 2026-09-06_named_lesser_conduit_discovery_epic | done | updater_0 | tickets/epics/completed/2026-09-06_named_lesser_conduit_discovery_epic.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
-| 2026-09-06_named_conduit_directory_lifecycle_story | done | updater_0 | tickets/stories/completed/2026-09-06_named_conduit_directory_lifecycle_story.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
-| 2026-09-06_named_conduit_crystallizer_contract_story | done | updater_0 | tickets/stories/completed/2026-09-06_named_conduit_crystallizer_contract_story.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
-| 2026-09-06_named_conduit_nexus_consumers_story | done | updater_0 | tickets/stories/completed/2026-09-06_named_conduit_nexus_consumers_story.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
-| 2026-09-06_named_conduit_validation_docs_story | done | updater_0 | tickets/stories/completed/2026-09-06_named_conduit_validation_docs_story.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
-| 2026-09-06_named_conduit_semantics_task | done | updater_0 | tickets/tasks/completed/2026-09-06_named_conduit_semantics_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
-| 2026-09-06_named_conduit_cross_system_discovery_task | done | updater_0 | tickets/tasks/completed/2026-09-06_named_conduit_cross_system_discovery_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
-| 2026-09-22_refresh_named_lesser_conduit_plan_task | done | updater_0 | tickets/tasks/completed/2026-09-22_refresh_named_lesser_conduit_plan_task.md | Named feature delivered; assets held separately. | 2026-09-23T11:55:35Z |
+| melder_seo_starter_review | done | seo_0 | tickets/tasks/completed/2026-09-26_review_melder_seo_starter_task.md | Inspected the starter and live Sphinx site; corrected the plan and retained the existing homepage. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_build_blockers | done | seo_0 | tickets/tasks/completed/2026-09-26_repair_docs_build_blockers_task.md | Fixed UnresolvedInputError selection and shortened 20 archive paths with byte-preserving Windows checkout verification. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_metadata_links | done | seo_0 | tickets/tasks/completed/2026-09-26_apply_sphinx_metadata_and_links_task.md | Added nine descriptions, a short title suffix and the local configuration link while preserving existing content. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_seo_checks | done | seo_0 | tickets/tasks/completed/2026-09-26_integrate_sphinx_seo_checks_task.md | Integrated SEO checks and preserved the lesson anchor; 60 docs tests, 29 workflow tests and real HTML checks pass. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_build_repair_story | done | seo_0 | tickets/stories/completed/2026-09-26_repair_documentation_builds_story.md | Accepted the verified API-selection and Windows archive-path repairs. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_discoverability_story | done | seo_0 | tickets/stories/completed/2026-09-26_refine_sphinx_discoverability_story.md | Accepted metadata, local linking and publication checks; RTD-managed crawler files retained. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_publication_quality | done | seo_0 | tickets/epics/completed/2026-09-26_sphinx_publication_quality_epic.md | Delivered build repairs and bounded SEO improvements at 0.2.77; owner accepted turn-in before the final asset rebuild. Next: none. | 2026-09-27T00:30:31Z |
+| gauntlet_nested_slot_guard | done | melder_2 | tickets/tasks/completed/2026-09-26_remove_nested_slot_guard_take_task.md | Door-held first builds take their build lock once (0.2.73); VM -3.3%/-3.6% per worker cycle; docs, graph, assets and LLM bundles at 0.2.74; owner run 0.919x dishka; owner turn-in. | 2026-09-26T23:01:16Z |
+| gauntlet_spellspace_build_locks | done | melder_2 | tickets/tasks/completed/2026-09-26_spellspace_build_locks_task.md | Spellspace confinement does not cover foreign-thread melds; the nested take was the safe win (own task); a lock-free path needs a thread rule; owner turn-in. | 2026-09-26T23:01:16Z |
+| gauntlet_p4_spellspace_warm_lane | done | melder_2 | tickets/tasks/completed/2026-09-26_spellspace_meld_warm_id_lane_task.md | SpellSpace.meld warm id lane (0.2.68): about -17% per cached space meld; SpellSpace window at parity in the owner's runs; owner turn-in. | 2026-09-26T23:01:16Z |
+| gauntlet_p1_positional_args | done | melder_2 | tickets/tasks/completed/2026-09-26_emit_positional_constructor_args_task.md | Positional constructor args applied (16:16Z); superseded on the normal path by the site-plan lowering (P5 keeps the rule); owner turn-in. | 2026-09-26T23:01:16Z |
+| gauntlet_tail_spikes | done | melder_2 | tickets/tasks/completed/2026-09-26_attribute_gauntlet_tail_spikes_task.md | Tail spikes attributed: turn-0 first use, no GC in the loop; confirmed on Windows; owner turn-in. | 2026-09-26T23:01:16Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
-- upgrade_normal_review: SWITCH_TRIGGER is explicit owner reopening or closure; further review was stopped.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-22_review_upgrade_to_normal_complexity_task.md.
-- readme_status_badges: SWITCH_TRIGGER is owner acceptance or first hosted coverage failure evidence.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-06_readme_status_badges_task.md.
-- embed_melder_banner: SWITCH_TRIGGER is owner acceptance or a requested presentation adjustment.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-06_embed_melder_banner_task.md.
-- stateful_application_recovery: SWITCH_TRIGGER is owner selection of a concrete stateful recovery scenario.
-  RESUME_HIERARCHY: tickets/epics/2026-09-07_stateful_application_recovery_epic.md -> linked source investigation and related scope/identity work.
-- mediator_wiring_probe: SWITCH_TRIGGER is owner statement of remaining work or explicit checkout request.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-20_investigate_mediator_wiring_task.md.
-- components_sliced_audit: SWITCH_TRIGGER is completed C3 pass with contradiction dispositions or owner scope redirect.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-21_systematic_components_audit_task.md.
+- gauntlet_runtime_speed: SWITCH_TRIGGER is the owner's pick among the open levers, or the owner's
+  answer on the SpellSpace scope RISK; P1, P4, the tail, build locks and nested slot guard are turned in. The lever-1 lifecycle is closed as measured (21:15Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
+  tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md.
+### Device VM git hazard (melder_2, 2026-09-26)
+- The connected folder refuses deletes, so any git command that refreshes the index from the device VM
+  (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.
+  Run git there with `GIT_OPTIONAL_LOCKS=0` and read-only commands only; if a lock appears, report it.
+### Agent Message-Pass Protocol (melder_0 <-> melder_1; owner-set 2026-09-25)
+- Channel: `mailbox_board.md` `## Messages` plus one alert line under `## Message Alerts` here,
+  per `agent_onboarding/default/general/skills/mailbox_protocol.md`. No harness-native messaging.
+  Durable findings go in the sender's ticket `## Notes` BEFORE the message is sent.
+- IDs: melder_0 sends `M0-<seq>`, melder_1 sends `M1-<seq>` (per-sender, starting at 1). The ID leads
+  CLAIM; replies cite the originating ID. TYPE: NOTICE assignment/status, HANDOFF results,
+  QUESTION blockers, ACK receipt.
+- Wait loop: while blocked on the peer, re-read the mailbox every 30 seconds - PowerShell
+  `Start-Sleep -Seconds 30` on Windows shells, `sleep 30` on POSIX shells. Keep each wait call under the
+  runtime's tool timeout and re-issue it. A wait timeout is NOT an ACK. Independent work continues
+  between checks; do not poll when not blocked.
+- Consume in one pass: copy actionable content into the active ticket `## Notes`, delete the message,
+  clear its alert line, update your `last_checked`. Send an ACK when `ACK_REQUESTED: true`.
+- Shared-file writes: re-read immediately before writing, change only the anchored lines, read back to
+  confirm the edit landed; on mismatch re-read and retry. Never overwrite or delete the peer's
+  messages or rows.
+- Split work: one writer per production file; the owning ticket names the writer.
+### Versioning (owner, 2026-09-26)
+- Owner: "each change we make is a notch of 0.01 so its fine". Each change gets its own patch notch of
+  `src/melder/__version__.py` (0.2.58 -> 0.2.59); lanes notching one after another is expected, not a conflict.
+  The release-note header follows `__version__`.
 <!-- END USER-DEFINED: notes -->

@@ -1,0 +1,33 @@
+files scanned: 3
+findings: 16
+dynamic: modules imported 3, TYPE_CHECKING names bound 2, annotation owners evaluated 22
+
+== STRING_IN_UNION: 8
+  STRING_IN_UNION src/ctrlpkg/seeded.py:11 Engine.limit -- 'Engine' | None
+  STRING_IN_UNION src/ctrlpkg/seeded.py:13 Engine.peer(other) -- 'Engine' | None
+  STRING_IN_UNION src/ctrlpkg/seeded.py:16 Engine.back(return) -- None | 'Engine'
+  STRING_IN_UNION src/ctrlpkg/seeded.py:22 Engine.Inner.f(x) -- int | 'Engine'
+  STRING_IN_UNION src/ctrlpkg/seeded.py:26 module_var -- 'Decimal' | None
+  STRING_IN_UNION src/ctrlpkg/seeded.py:32 outer.inner(x) -- Optional[Engine] | 'Engine'
+  STRING_IN_UNION src/ctrlpkg/seeded.py:36 literal_union(mode) -- 'a' | 'b'
+  STRING_IN_UNION src/ctrlpkg/seeded.py:40 in_string(x) -- 'Engine' | None (inside a string annotation)
+
+== UNDEFINED_NAME: 1
+  UNDEFINED_NAME  src/ctrlpkg/seeded.py:44 undefined(x) -- Missing
+
+== UNPARSEABLE_STRING: 0
+
+== EVAL_ERROR: 7
+  EVAL_ERROR      src/ctrlpkg/seeded.py:1 ctrlpkg.seeded -- TypeError: unsupported operand type(s) for |: 'str' and 'NoneType'
+  EVAL_ERROR      src/ctrlpkg/seeded.py:8 ctrlpkg.seeded.Engine -- TypeError: unsupported operand type(s) for |: 'str' and 'NoneType'
+  EVAL_ERROR      src/ctrlpkg/seeded.py:13 ctrlpkg.seeded.Engine.peer -- TypeError: unsupported operand type(s) for |: 'str' and 'NoneType'
+  EVAL_ERROR      src/ctrlpkg/seeded.py:16 ctrlpkg.seeded.Engine.back -- TypeError: unsupported operand type(s) for |: 'NoneType' and 'str'
+  EVAL_ERROR      src/ctrlpkg/seeded.py:22 ctrlpkg.seeded.Engine.Inner.f -- TypeError: unsupported operand type(s) for |: 'type' and 'str'
+  EVAL_ERROR      src/ctrlpkg/seeded.py:36 ctrlpkg.seeded.literal_union -- TypeError: unsupported operand type(s) for |: 'str' and 'str'
+  EVAL_ERROR      src/ctrlpkg/seeded.py:44 ctrlpkg.seeded.undefined -- NameError: name 'Missing' is not defined
+
+== TC_IMPORT_ERROR: 0
+
+== IMPORT_ERROR: 0
+
+policy counts (not defects): PEP 604 unions 8, quoted annotations 11

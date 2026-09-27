@@ -1,0 +1,30 @@
+# Files for the owner's commit - self-referencing constructor lane (melder_1, 2026-09-26)
+# Source and tests (this lane)
+src/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.py
+src/melder/utilities/custom_exceptions/spellbook_validation_error.py
+tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_self_validation_strategy.py
+tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py
+tests/integration/melder/spellbook/test_spellbook_integration_self_dependency.py   (new)
+# NOT this lane: compiler_phase_3.py and test_compiler_phase_3.py carry the Phase-3 half inside fable_0's C-C lane
+# Docs, graph, release note
+context_compass/system_docs/src_components.md
+context_compass/system_docs/src_components_index.md
+context_compass/system_docs/src_architecture.md
+context_compass/system_docs/src_architecture_index.md
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/validation/strategies/self_validation_strategy.json
+context_compass/system_docs/graph/melder/utilities/custom_exceptions/spellbook_validation_error.json
+context_compass/system_docs/src_graph.md
+context_compass/system_docs/src_graph_index.md
+release_docs/next_version_release.md
+# Patch lane and ContextCompass records
+context_compass/system_docs/patches/completed/self_dependency_report_2026_09_26/   (2 files, new)
+context_compass/artifacts/self_dependency_report_20260926/
+context_compass/tickets/tasks/completed/2026-09-26_report_self_referencing_constructor_as_validation_error_task.md
+context_compass/attention_board.md
+context_compass/artifact_board.md
+context_compass/mailbox_board.md
+# Leave out of a folder-level `git add`: many files in these folders show as modified by line endings only.
+# Packaged documents and LLM bundles are not rebuilt (owner's asset rebuild).
+# Status (checked with git, ignoring line endings): the five source/test files are ALREADY COMMITTED in
+# afded5ce6 (2026-09-26T16:56:14Z). Still uncommitted: src_components/src_architecture and indexes, the two
+# graph descriptors, src_graph and index, the release note, the patch lane, artifacts, ticket and boards.

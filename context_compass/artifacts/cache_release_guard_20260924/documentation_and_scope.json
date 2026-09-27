@@ -1,0 +1,27 @@
+{
+  "documents": {
+    "src_architecture": {
+      "before_lines": 2646,
+      "after_lines": 2683,
+      "removed_metadata_only": {
+        "- Updated: 2026-09-23": 1
+      },
+      "original_retained_at": "src_architecture_before.md"
+    },
+    "src_components": {
+      "before_lines": 8957,
+      "after_lines": 8999,
+      "removed_metadata_only": {
+        "- Updated: 2026-09-23": 1
+      },
+      "original_retained_at": "src_components_before.md"
+    }
+  },
+  "changed_source_before_final_assets": [
+    "src/melder/__version__.py",
+    "src/melder/utilities/caching_system/caching_system.py"
+  ],
+  "source_count": 595,
+  "runtime_version": "0.2.51",
+  "verified_at": "2026-09-24T09:43:28Z"
+}

@@ -1,0 +1,17 @@
+# melder_2 VM 2026-09-26 ~17:45Z: lever 2 sizing, probe_affine.py on the device tree copy (in-process pool patch, no src change), CPython 3.14.7t, 2 vCPU
+# gauntlet-shaped: 3 new threads per iteration (request x10, worker_a x25, worker_b x30), per-thread CPU time per cycle (time.thread_time_ns), 20 warm-up iterations excluded, 300 iterations, 6 interleaved pairs
+base iters=300 worker_a=15,088ns  request=22,606ns  worker_b=15,731ns | shells own=34% foreign=66% new=0 | wall/iter median=3,382us
+affine iters=300 worker_b=13,633ns  worker_a=13,474ns  request=20,821ns | shells own=100% foreign=0% new=0 | wall/iter median=3,302us
+base iters=300 worker_b=14,836ns  worker_a=14,221ns  request=21,614ns | shells own=32% foreign=68% new=0 | wall/iter median=3,268us
+affine iters=300 worker_b=14,107ns  worker_a=13,544ns  request=20,384ns | shells own=100% foreign=0% new=0 | wall/iter median=3,220us
+base iters=300 worker_b=13,983ns  request=20,535ns  worker_a=13,711ns | shells own=33% foreign=67% new=0 | wall/iter median=3,159us
+affine iters=300 worker_b=13,514ns  worker_a=12,971ns  request=19,206ns | shells own=100% foreign=0% new=0 | wall/iter median=2,964us
+base iters=300 worker_b=15,727ns  request=22,410ns  worker_a=14,207ns | shells own=34% foreign=66% new=0 | wall/iter median=3,088us
+affine iters=300 worker_b=13,603ns  worker_a=13,050ns  request=19,928ns | shells own=100% foreign=0% new=0 | wall/iter median=2,956us
+base iters=300 worker_b=14,317ns  worker_a=14,170ns  request=20,607ns | shells own=32% foreign=68% new=0 | wall/iter median=2,760us
+affine iters=300 worker_a=13,011ns  request=19,540ns  worker_b=13,338ns | shells own=100% foreign=0% new=0 | wall/iter median=2,896us
+base iters=300 request=20,722ns  worker_b=14,493ns  worker_a=13,863ns | shells own=31% foreign=69% new=0 | wall/iter median=3,091us
+affine iters=300 worker_b=13,723ns  request=19,856ns  worker_a=13,239ns | shells own=100% foreign=0% new=0 | wall/iter median=3,007us
+## medians
+base    request= 21,168 (+0.0%)  wall_us=  3,125 (+0.0%)  worker_a= 14,188 (+0.0%)  worker_b= 14,664 (+0.0%)
+affine  request= 19,892 (-6.0%)  wall_us=  2,986 (-4.5%)  worker_a= 13,144 (-7.4%)  worker_b= 13,618 (-7.1%)

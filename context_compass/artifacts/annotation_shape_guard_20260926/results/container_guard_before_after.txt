@@ -1,0 +1,30 @@
+# probe_container_params.py, one fresh process per case, 3.14.7t
+## before (device-tree src via VM copy)
+dict_of_class: CONJURE FAILED SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: Consumer (id=a230681a3cf6135dded33460251d7896e13c07ec60a9fe14c981a78736ed24
+dict_of_any: CONJURE FAILED SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: Consumer (id=180e897b6cb31aa636a81a5ce01fbf6c7285484a520fb4fb52fcd20844e096
+set_of_class: CONJURE FAILED SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: Consumer (id=27b75fd4dc0c338e9da430902bc7aabfe32b2046895ae6b246a09c9ce137f0
+tuple_of_class: CONJURE FAILED SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: Consumer (id=d86db9318e65b49f7f1ef792473c90bd854374404ec134ac41a8b7b5334067
+dict_of_class_defaulted: CONJURE FAILED SpellbookValidationError: Spellbook validation failed; one or more spells are broken. Broken spells: Consumer (id=1912b7c7f0984f2737a10629b948c54dbfc53821ceea669f3da255a9f88ef0
+dict_of_int: conjure ok; meld ok; supplied value passed through by identity: True
+## issue list for dict_of_any (before): REQUIRED_HOLE warning and UNSUPPORTED_COLLECTION_SHAPE error on the same parameter 'meta'
+## prototype (VM copy: PLAIN -> severity warning; typing.Any not a DI target)
+dict_of_class: conjure ok; meld ok; supplied value passed through by identity: True
+dict_of_any: conjure ok; meld ok; supplied value passed through by identity: True
+set_of_class: conjure ok; meld ok; supplied value passed through by identity: True
+tuple_of_class: conjure ok; meld ok; supplied value passed through by identity: True
+dict_of_class_defaulted: conjure ok; meld ok; supplied value passed through by identity: True
+dict_of_int: conjure ok; meld ok; supplied value passed through by identity: True
+## suites on the VM copy with the prototype file (3.14.7t, -X gil=0)
+tests/unit: 8594 passed, 3 skipped, 7 xfailed
+tests/component: 1 failed (test_component_annotation_shape_guard_flags_unsupported_collection_shape asserts severity 'error'), 2108 passed
+tests/integration: 3 failed = test_conjure_with_unsupported_collection_shape_raises (asserts conjure raises) + 2 concurrency tests
+concurrency file with ORIGINAL src restored, 6 runs: 5 runs failed 3-5 tests each with RuntimeError('Cannot build CreationContext before spell_codegen_creation exists...') - pre-existing
+## after (final fix in the VM copy: container branch removed, Any excluded, REQUIRED_HOLE hint)
+dict_of_class: conjure ok; meld ok; supplied value passed through by identity: True
+dict_of_any: conjure ok; meld ok; supplied value passed through by identity: True
+set_of_class: conjure ok; meld ok; supplied value passed through by identity: True
+tuple_of_class: conjure ok; meld ok; supplied value passed through by identity: True
+dict_of_class_defaulted: conjure ok; meld ok; supplied value passed through by identity: True
+dict_of_int: conjure ok; meld ok; supplied value passed through by identity: True
+tests: 9 new/changed tests fail on the original source and pass with the fix
+suites with the fix (3.14.7t, -X gil=0): unit 8595 passed; component 2109 passed; integration 1926 passed, 1 xpassed (existing non-strict Fault-B xfail)

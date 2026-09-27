@@ -238,7 +238,7 @@ def test_explicit_spellmap_keeps_the_false_target_even_with_a_provider(compiler_
 @pytest.mark.parametrize("payload", [{}, {"x": 1}, []])
 def test_false_spellmap_refuses_provider_construction_payload(compiler_book: Spellbook, payload: object) -> None:
     """Even an empty explicit construction payload is incompatible with a disabled provider."""
-    descriptor = SpellMap(spell=Definition, spell_override=payload)
+    descriptor = SpellMap(spell=Definition, override=payload)
 
     class MappedConsumer:
         """Declare an incompatible construction payload on a descriptive definition."""
@@ -250,7 +250,7 @@ def test_false_spellmap_refuses_provider_construction_payload(compiler_book: Spe
     try:
         compiler_book.bind(spell=Definition, existence="unique", resolvable=False)
         consumer_id = compiler_book.bind(spell=MappedConsumer, existence="unique")
-        with pytest.raises(RuntimeError, match="non-resolvable.*spell_override"):
+        with pytest.raises(RuntimeError, match="non-resolvable.*override"):
             _local_topology(compiler_book, consumer_id, indexed=False)
     finally:
         descriptor.cleanup()
@@ -351,7 +351,7 @@ def test_phase5_executable_view_excludes_definitions_but_keeps_local_topology(
         expected_roots = {anchor_id} if include_consumer else set()
         assert set(artifact._entire_dag_blueprint_phase5) == expected_roots
         if include_consumer:
-            socket, = artifact._root_blueprint_phase5.socket_refs
+            socket, = compiler_book._spell_system_states.get_local_topology_by_id(anchor_id).sockets
             assert socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
     finally:
         compiler.cleanup()
@@ -442,7 +442,13 @@ def test_required_input_rows_survive_both_planner_variants(compiler_book: Spellb
             assert signature_input[6:] == expected[0][1:]
         compiler.run_phase_patch_maps(consumer)
         plan = consumer._compiler_artifact._spell_codegen_plan
-        for variant in (plan.no_overrides_plan, plan.overrides_plan):
+        variants = [plan.no_overrides_plan]
+        if family == "many_only":
+            # many_only plans no override lane since S3b-1: override melds compile from these rows.
+            assert plan.overrides_plan is None
+        else:
+            variants.append(plan.overrides_plan)
+        for variant in variants:
             step = next(step for step in variant.steps if step.instance_key[0] == consumer_id)
             assert step.required_override_params == expected
             assert all(key[0] != definition_id for _, keys in step.dependency_resolution_order for key in keys)

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from melder.__version__ import __version__
 from melder.utilities.caching_system.caching_system import CachingSystem
 
 
@@ -17,6 +18,13 @@ EXPECTED_CACHE_VERSION_HISTORY = {
     6: "zero_provider_required_collections",
     7: "root_visible_family_selection",
     8: "ordinary_defaults_are_plain",
+    9: "exact_melder_release_compatibility",
+    10: "creation_slot_build_guards",
+    11: "unresolved_input_sockets",
+    12: "complete_bundle_restage",
+    13: "collection_member_paths",
+    14: "override_site_plan_lanes",
+    15: "structural_snapshot_rows",
 }
 
 
@@ -50,6 +58,7 @@ def test_cache_schema_version_history_accepts_only_current_bundle(
     bundle_path.parent.mkdir(parents=True, exist_ok=True)
     bundle_path.write_bytes(marshal.dumps({
         "version": bundle_version,
+        "melder_version": __version__,
         "python": sys.implementation.cache_tag,
         "frame_name": frame_name,
         "conduit_name": conduit_name,

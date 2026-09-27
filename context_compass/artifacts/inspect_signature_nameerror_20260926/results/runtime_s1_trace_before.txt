@@ -1,0 +1,9 @@
+PhaseExecutionError ['add_note', 'args', 'errors', 'phase_name', 'with_traceback']
+inner: <class 'list'> 1
+NameError("name 'Decimal' is not defined")
+    melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py 195 analyze
+    melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py 767 _build_occurrence_graph
+    melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py 891 _collect_occurrence_dependencies
+    melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py 978 _apply_spell_contract_dependencies
+    melder/aether/spellbook/spell_compiler/spell_analyzer/strategies/spell_occurrence_graph_analyzer_strategy.py 1016 _iter_spell_contract_defaults
+    /home/claude/work/probes_inspect/probe_user_mod.py 24 __annotate__

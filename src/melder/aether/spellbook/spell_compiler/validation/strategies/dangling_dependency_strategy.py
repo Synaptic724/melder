@@ -106,8 +106,9 @@ class DanglingDependenciesStrategy(SpellValidationStrategy):
                         severity="error",
                         code="DANGLING_DEPENDENCY",
                         message=(
-                            f"Spell {spell.spell_name!r} depends on spell_id={dep_id!r}, "
-                            "but no such spell is visible in the owning Spellbook."
+                            f"Spell {spell.spell_name!r} depends on spell id {dep_id[:12]}, "
+                            "which this Spellbook does not hold. Bind that dependency in "
+                            "this Spellbook, or remove the parameter that needs it."
                         ),
                         details={"missing_spell_id": dep_id},
                     )

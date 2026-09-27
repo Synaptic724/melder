@@ -37,8 +37,10 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
 
     Contract:
         - Builds a binding-key graph from available requirements.
-        - Excludes non-resolvable constructors and resolved OVERRIDE_REQUIRED sockets.
-          Descriptive references are never reconstruction of a construction edge.
+        - Excludes non-resolvable constructors, resolved OVERRIDE_REQUIRED sockets
+          and UNRESOLVED_INPUT sockets. Descriptive references are never
+          reconstruction of a construction edge, and an unresolved input has no
+          provider to form one.
         - Reports cycles reachable from the spell under validation.
         - Does not mutate spells, spellbooks, or requirements.
 
@@ -137,7 +139,8 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             cycle_key_set.update(cycle)
 
         binding_to_spells: Dict[Tuple[str, str], List[str]] = {}
-        for spell_id, spell_instance in spellbook._spell_id_pool.items():
+        # A copy: concurrent binds change the live pool under the Spellbook lock, not held here.
+        for spell_id, spell_instance in spellbook._spell_id_pool.copy().items():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
             spell_key = spell_instance.key
@@ -184,14 +187,15 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             Model every spell's DI requirements as binding-key edges so cycle
             traversal can run per spell against one shared structure.
         Contract:
-            - Pure read over `spellbook._spell_id_pool` and each spell's
+            - Pure read over a copy of `spellbook._spell_id_pool` (concurrent binds
+              change the live dict under the Spellbook lock) and each spell's
               phase-1 requirements; mutates nothing on spells or spellbook.
             - Spell node keys come from `Spell.key`, the bind-time normalized
               canonical key, so no per-build re-normalization happens here.
             - The result is treated as immutable by all consumers; pass-cache
               reuse depends on that.
             - Consults durable Phase-3 topology when present to exclude required
-              supplied inputs. Before topology exists, declaration-only analysis
+              supplied and unresolved inputs. Before topology exists, declaration-only analysis
               remains available; non-resolvable constructors never contribute edges.
         Args:
             spellbook: Owning Spellbook whose local pool should be modeled.
@@ -205,7 +209,8 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
         """
         binding_graph: Dict[Tuple[str, str], Set[Tuple[str, str]]] = {}
 
-        for spell_id, spell_instance in spellbook._spell_id_pool.items():
+        # A copy: concurrent binds change the live pool under the Spellbook lock, not held here.
+        for spell_id, spell_instance in spellbook._spell_id_pool.copy().items():
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 
@@ -228,6 +233,7 @@ class BindingResolutionCycleStrategy(SpellValidationStrategy):
             for param in parameters:
                 if topology is not None and any(
                         socket.socket_kind is SocketKind.OVERRIDE_REQUIRED
+                        or socket.socket_kind is SocketKind.UNRESOLVED_INPUT
                         for socket in topology.get_sockets_for_param(param.name)
                 ):
                     continue

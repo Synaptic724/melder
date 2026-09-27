@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/creations/cluster_creations.py",
- "source_sha256": "6df125a5a74225bff05fac1d0bf79ca76d833a40606db9a86e6afda935ef29f9",
+ "source_sha256": "2d92c86c7b7da8cfea51a6146135b5e1c60a8dae18dd2bc9065540fa8283168d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.creations.cluster_creations": {
@@ -19,7 +19,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "6df125a5a74225bff05fac1d0bf79ca76d833a40606db9a86e6afda935ef29f9"
+   "semantics_authored_against": ""
   },
   "melder.aether.conduit.creations.cluster_creations.ClusterCreations": {
    "id": "melder.aether.conduit.creations.cluster_creations.ClusterCreations",
@@ -45,7 +45,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c1f259d0e3aa31a235313f0c90ba9c73d7fe86e83a1800979b02df1edd9ee8e2",
+   "span_sha256": "f05490ed344d753340af427c1bec0da32c5a18cd8f3d98c03690165dfa22ce5b",
    "include": true,
    "role": "Facade over the elected leader's store; references, never owns.",
    "responsibilities": [
@@ -56,7 +56,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "c1f259d0e3aa31a235313f0c90ba9c73d7fe86e83a1800979b02df1edd9ee8e2"
+   "semantics_authored_against": "f05490ed344d753340af427c1bec0da32c5a18cd8f3d98c03690165dfa22ce5b"
   }
  },
  "edges_out": [

@@ -94,12 +94,25 @@ class _FreshCreationsProbe:
         "_creations",
         "_disposable_creations",
         "_lock",
+        "_slot_guards",
     ]
 
     def __init__(self) -> None:
         self._creations = {}
         self._disposable_creations = {}
         self._lock = _NullLock()
+        # Generated code reads this map directly on the guard hit path.
+        self._slot_guards: dict[str, _NullLock] = {}
+
+    def slot_guard(self, spell_id: str) -> _NullLock:
+        """
+        Mirror `Creations.slot_guard` for the single-threaded measurement loop.
+
+        The probe measures lane cost, not contention, so the slot's build guard
+        is the same no-op lock the probe uses for its store lock.
+        """
+        _ = spell_id
+        return self._lock
 
     def reset(self) -> None:
         """

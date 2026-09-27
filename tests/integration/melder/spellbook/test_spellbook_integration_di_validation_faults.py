@@ -173,7 +173,7 @@ def test_fault_a_distinct_binding_names_should_clear_error() -> None:
 # Fault B - annotation-shape guard ignores di_shape precedence
 # =========================================================================== #
 class GenuineUnsupportedSet:
-    """A real set[IPlugin] DI annotation (no SpellMap): must be flagged."""
+    """A set[IPlugin] parameter without a SpellMap: a caller input, reported as a REQUIRED_HOLE."""
 
     def __init__(self, plugins: set) -> None:
         self.plugins = plugins
@@ -197,14 +197,16 @@ GenuineUnsupportedSet.__init__.__annotations__["plugins"] = set[IPlugin]
 MappedButSetAnnotated.__init__.__annotations__["plugins"] = set[IPlugin]
 
 
-def test_fault_b_control_genuine_set_shape_errors() -> None:
-    """CONTROL (should pass): a real set[IPlugin] DI annotation is flagged."""
+def test_fault_b_control_set_parameter_is_a_caller_input() -> None:
+    """CONTROL: a set[IPlugin] parameter is a caller input - a REQUIRED_HOLE warning, not a shape error."""
     spellbook = _make_spellbook()
     try:
         spell_id = spellbook.bind(spell=GenuineUnsupportedSet, existence=Existence.unique, permissions="create")
         spell = _get_spell(spellbook, spell_id)
         _phases_1_4(spell)
-        assert "UNSUPPORTED_COLLECTION_SHAPE" in _codes4(spell)
+        codes = _codes4(spell)
+        assert "UNSUPPORTED_COLLECTION_SHAPE" not in codes
+        assert "REQUIRED_HOLE" in codes
     finally:
         spellbook.cleanup()
 

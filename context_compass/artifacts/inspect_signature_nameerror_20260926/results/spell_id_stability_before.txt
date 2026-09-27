@@ -1,0 +1,14 @@
+=== run 1 (separate process)
+Engine 77f86a28dbef52e63dced083ff0be3f60fde19fc016c9ba6d3c050200734eaeb
+Car cd3566004c6d6ef2257c0959b22b675d5138ac72ade6b966c002e84cf565bdfc
+Garage e6b2c30aa9399fd33b52c6b5c9b392823263e8c45b169228cd4795078a9c04c6
+make_car b04efe06a4d6af6592faeacf709cbd523e2bf758e389677d041a08953455dd42
+Car init_signature: (engine: probe_user_mod.Engine, price: ForwardRef('Decimal', owner=<function Car.__init__ at 0x2e2ec950840>) | None = None) -> None
+Car annotations: {}
+=== run 2 (separate process)
+Engine 77f86a28dbef52e63dced083ff0be3f60fde19fc016c9ba6d3c050200734eaeb
+Car 24ae7ba63beef98b4fb1445da55967cdc5c214b682322e3a0fd39a867ea5575e
+Garage e6b2c30aa9399fd33b52c6b5c9b392823263e8c45b169228cd4795078a9c04c6
+make_car 5ce5585dac322210c84f9063beaba6e0ff5ebba4bd48027ff0b718cb3b0a27ad
+Car init_signature: (engine: probe_user_mod.Engine, price: ForwardRef('Decimal', owner=<function Car.__init__ at 0x45c16950840>) | None = None) -> None
+Car annotations: {}

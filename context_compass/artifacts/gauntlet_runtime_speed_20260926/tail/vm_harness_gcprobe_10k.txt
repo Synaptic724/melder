@@ -1,0 +1,96 @@
+[dependency-injector] gc probe (mode=normal, gc_enabled=True) | collections=0 (none), collected=0, pause_total=0.000ms, pause_max=0.000ms | gc.get_stats delta: total=+0 (g0=+0, g1=+0, g2=+0)
+[dependency-injector] per-turn GC attribution | turns_with_collection=0/10000 | slowest 15 turns, time-ordered (turn | total | threaded | gc_during | gen0_live):
+    turn    588 | total=   3.282ms | thr=   2.734ms | gc_during= no | gen0_live=7770
+    turn    594 | total=   4.049ms | thr=   3.378ms | gc_during= no | gen0_live=7770
+    turn    599 | total=   3.385ms | thr=   2.695ms | gc_during= no | gen0_live=7770
+    turn    610 | total=   3.202ms | thr=   2.639ms | gc_during= no | gen0_live=7770
+    turn    614 | total=   3.360ms | thr=   2.801ms | gc_during= no | gen0_live=7770
+    turn    643 | total=   3.322ms | thr=   2.956ms | gc_during= no | gen0_live=7770
+    turn    694 | total=   4.654ms | thr=   3.276ms | gc_during= no | gen0_live=7770
+    turn    695 | total=   4.116ms | thr=   2.927ms | gc_during= no | gen0_live=7770
+    turn    696 | total=   3.462ms | thr=   2.334ms | gc_during= no | gen0_live=7770
+    turn    701 | total=   3.489ms | thr=   2.747ms | gc_during= no | gen0_live=7770
+    turn    704 | total=   3.256ms | thr=   2.487ms | gc_during= no | gen0_live=7770
+    turn    707 | total=   3.773ms | thr=   2.255ms | gc_during= no | gen0_live=7770
+    turn   9438 | total=   4.262ms | thr=   2.227ms | gc_during= no | gen0_live=7770
+    turn   9796 | total=   3.198ms | thr=   2.016ms | gc_during= no | gen0_live=7770
+    turn   9797 | total=   3.568ms | thr=   2.030ms | gc_during= no | gen0_live=7770
+[dependency-injector] per-turn heap pressure gen0_live | first10%_avg=7770.0 | last10%_avg=7770.0 | min=7769 | max=7770
+[dependency-injector] gauntlet config: gil=disabled, setup_singletons=5, iterations=10000, threads=3, request_scopes=10, worker_a_scopes=25, worker_b_scopes=30, request_objects_min=630, hot_objects_per_iter_min=1880, setup=20.653ms
+[dependency-injector] gauntlet total(10000)=16712.27ms | avg=1.671ms | median=1.585ms | p95=2.215ms | p99=2.466ms | min=1.081ms | max=4.654ms | stdev=0.325ms | cv=19.5%
+[dependency-injector] gauntlet bootstrap per-iter | avg=0.011ms | median=0.011ms | p95=0.013ms | p99=0.023ms | min=0.008ms | max=0.147ms | stdev=0.004ms | cv=36.1%
+[dependency-injector] gauntlet threaded phase per-iter | avg=1.411ms | median=1.318ms | p95=1.929ms | p99=2.153ms | min=0.860ms | max=3.378ms | stdev=0.311ms | cv=22.0%
+[dependency-injector] outer-scope create | avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.639ms | stdev=0.001ms | cv=1074.7%
+[dependency-injector] outer-scope cleanup | avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.000ms | stdev=0.000ms | cv=0.0%
+[dependency-injector] outer-scope whole-cycle | avg=0.027ms | median=0.014ms | p95=0.081ms | p99=0.248ms | min=0.011ms | max=1.614ms | stdev=0.062ms | cv=232.0%
+[dependency-injector] request-scope create | avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.128ms | stdev=0.000ms | cv=379.9%
+[dependency-injector] request-scope cleanup | avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.000ms | stdev=0.000ms | cv=0.0%
+[dependency-injector] request-scope whole-cycle | avg=0.019ms | median=0.010ms | p95=0.051ms | p99=0.190ms | min=0.008ms | max=1.604ms | stdev=0.051ms | cv=268.4%
+[dependency-injector] gauntlet throughput | hot_scopes=650000, hot_scopes/s=38,894, hot_objects/s_min=1,124,922, cleanup=4.333ms
+[dependency-injector] lane=request | cycles=100000, objects_min=6300000, variants=(33287, 33420, 33293), wall_cycles/s=7,089, wall_objects/s_min=446,619, active_cycles/s=28,893, active_objects/s_min=1,820,231, outer_create[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.255ms | stdev=0.001ms | cv=917.9%], outer_cleanup[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.000ms | stdev=0.000ms | cv=0.0%], outer_total[avg=0.048ms | median=0.024ms | p95=0.145ms | p99=0.461ms | min=0.018ms | max=1.407ms | stdev=0.087ms | cv=180.0%], request_create[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.053ms | stdev=0.000ms | cv=375.9%], request_cleanup[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.000ms | stdev=0.000ms | cv=0.0%], request_total[avg=0.035ms | median=0.018ms | p95=0.107ms | p99=0.278ms | min=0.014ms | max=1.301ms | stdev=0.073ms | cv=209.6%]
+[dependency-injector] lane=worker_a | cycles=250000, objects_min=6250000, variants=(83489, 82953, 83558), wall_cycles/s=17,723, wall_objects/s_min=443,075, active_cycles/s=58,748, active_objects/s_min=1,468,695, outer_create[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.051ms | stdev=0.000ms | cv=276.8%], outer_cleanup[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.000ms | stdev=0.000ms | cv=0.0%], outer_total[avg=0.024ms | median=0.013ms | p95=0.065ms | p99=0.241ms | min=0.011ms | max=1.614ms | stdev=0.060ms | cv=248.6%], request_create[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.128ms | stdev=0.000ms | cv=506.5%], request_cleanup[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.000ms | stdev=0.000ms | cv=0.0%], request_total[avg=0.017ms | median=0.010ms | p95=0.025ms | p99=0.181ms | min=0.008ms | max=1.604ms | stdev=0.049ms | cv=287.5%]
+[dependency-injector] lane=worker_b | cycles=300000, objects_min=6000000, variants=(100336, 100021, 99643), wall_cycles/s=21,268, wall_objects/s_min=425,352, active_cycles/s=63,533, active_objects/s_min=1,270,665, outer_create[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.639ms | stdev=0.001ms | cv=1459.9%], outer_cleanup[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.000ms | stdev=0.000ms | cv=0.0%], outer_total[avg=0.022ms | median=0.012ms | p95=0.050ms | p99=0.213ms | min=0.011ms | max=1.277ms | stdev=0.052ms | cv=236.9%], request_create[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.040ms | stdev=0.000ms | cv=221.1%], request_cleanup[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.000ms | stdev=0.000ms | cv=0.0%], request_total[avg=0.016ms | median=0.009ms | p95=0.023ms | p99=0.162ms | min=0.008ms | max=1.272ms | stdev=0.043ms | cv=274.6%]
+[dishka] gc probe (mode=normal, gc_enabled=True) | collections=0 (none), collected=0, pause_total=0.000ms, pause_max=0.000ms | gc.get_stats delta: total=+0 (g0=+0, g1=+0, g2=+0)
+[dishka] per-turn GC attribution | turns_with_collection=0/10000 | slowest 15 turns, time-ordered (turn | total | threaded | gc_during | gen0_live):
+    turn      0 | total=   3.358ms | thr=   2.535ms | gc_during= no | gen0_live=10942
+    turn   3865 | total=   2.461ms | thr=   2.128ms | gc_during= no | gen0_live=10943
+    turn   4002 | total=   2.477ms | thr=   2.230ms | gc_during= no | gen0_live=10943
+    turn   4088 | total=   2.826ms | thr=   2.343ms | gc_during= no | gen0_live=10943
+    turn   4586 | total=   2.565ms | thr=   2.112ms | gc_during= no | gen0_live=10943
+    turn   4626 | total=   2.696ms | thr=   1.983ms | gc_during= no | gen0_live=10943
+    turn   6171 | total=   2.469ms | thr=   1.916ms | gc_during= no | gen0_live=10943
+    turn   6549 | total=   2.789ms | thr=   2.375ms | gc_during= no | gen0_live=10943
+    turn   8139 | total=   2.807ms | thr=   2.466ms | gc_during= no | gen0_live=10943
+    turn   8149 | total=   2.700ms | thr=   2.467ms | gc_during= no | gen0_live=10943
+    turn   8680 | total=   2.460ms | thr=   2.198ms | gc_during= no | gen0_live=10943
+    turn   8690 | total=   2.551ms | thr=   2.012ms | gc_during= no | gen0_live=10943
+    turn   9149 | total=   2.522ms | thr=   2.285ms | gc_during= no | gen0_live=10943
+    turn   9779 | total=   2.449ms | thr=   2.138ms | gc_during= no | gen0_live=10943
+    turn   9887 | total=   2.482ms | thr=   2.161ms | gc_during= no | gen0_live=10943
+[dishka] per-turn heap pressure gen0_live | first10%_avg=10943.0 | last10%_avg=10943.0 | min=10942 | max=10943
+[dishka] gauntlet config: gil=disabled, setup_singletons=5, iterations=10000, threads=3, request_scopes=10, worker_a_scopes=25, worker_b_scopes=30, request_objects_min=630, hot_objects_per_iter_min=1880, setup=30.473ms
+[dishka] gauntlet total(10000)=14507.57ms | avg=1.451ms | median=1.394ms | p95=2.075ms | p99=2.285ms | min=0.734ms | max=3.358ms | stdev=0.321ms | cv=22.1%
+[dishka] gauntlet bootstrap per-iter | avg=0.012ms | median=0.011ms | p95=0.012ms | p99=0.019ms | min=0.009ms | max=0.431ms | stdev=0.005ms | cv=43.3%
+[dishka] gauntlet threaded phase per-iter | avg=1.189ms | median=1.129ms | p95=1.803ms | p99=2.022ms | min=0.514ms | max=2.535ms | stdev=0.317ms | cv=26.7%
+[dishka] outer-scope create | avg=0.001ms | median=0.000ms | p95=0.001ms | p99=0.003ms | min=0.000ms | max=1.006ms | stdev=0.010ms | cv=1115.9%
+[dishka] outer-scope cleanup | avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.327ms | stdev=0.001ms | cv=504.2%
+[dishka] outer-scope whole-cycle | avg=0.014ms | median=0.007ms | p95=0.019ms | p99=0.200ms | min=0.005ms | max=1.482ms | stdev=0.048ms | cv=343.4%
+[dishka] request-scope create | avg=0.000ms | median=0.000ms | p95=0.001ms | p99=0.001ms | min=0.000ms | max=0.847ms | stdev=0.003ms | cv=585.9%
+[dishka] request-scope cleanup | avg=0.000ms | median=0.000ms | p95=0.001ms | p99=0.001ms | min=0.000ms | max=0.221ms | stdev=0.001ms | cv=181.9%
+[dishka] request-scope whole-cycle | avg=0.006ms | median=0.005ms | p95=0.009ms | p99=0.017ms | min=0.003ms | max=1.064ms | stdev=0.021ms | cv=323.6%
+[dishka] gauntlet throughput | hot_scopes=650000, hot_scopes/s=44,804, hot_objects/s_min=1,295,876, cleanup=4.840ms
+[dishka] lane=request | cycles=100000, objects_min=6300000, variants=(33514, 33097, 33389), wall_cycles/s=8,411, wall_objects/s_min=529,894, active_cycles/s=125,768, active_objects/s_min=7,923,378, outer_create[avg=0.001ms | median=0.001ms | p95=0.002ms | p99=0.003ms | min=0.000ms | max=0.901ms | stdev=0.014ms | cv=1034.0%], outer_cleanup[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.126ms | stdev=0.000ms | cv=435.5%], outer_total[avg=0.023ms | median=0.010ms | p95=0.077ms | p99=0.288ms | min=0.008ms | max=1.482ms | stdev=0.061ms | cv=270.3%], request_create[avg=0.001ms | median=0.000ms | p95=0.001ms | p99=0.001ms | min=0.000ms | max=0.600ms | stdev=0.002ms | cv=404.4%], request_cleanup[avg=0.001ms | median=0.001ms | p95=0.001ms | p99=0.001ms | min=0.000ms | max=0.128ms | stdev=0.001ms | cv=137.8%], request_total[avg=0.008ms | median=0.007ms | p95=0.011ms | p99=0.016ms | min=0.005ms | max=0.932ms | stdev=0.015ms | cv=184.2%]
+[dishka] lane=worker_a | cycles=250000, objects_min=6250000, variants=(83412, 83078, 83510), wall_cycles/s=21,028, wall_objects/s_min=525,688, active_cycles/s=201,376, active_objects/s_min=5,034,395, outer_create[avg=0.001ms | median=0.000ms | p95=0.001ms | p99=0.003ms | min=0.000ms | max=1.006ms | stdev=0.011ms | cv=1181.8%], outer_cleanup[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.102ms | stdev=0.000ms | cv=301.9%], outer_total[avg=0.013ms | median=0.007ms | p95=0.016ms | p99=0.184ms | min=0.005ms | max=1.358ms | stdev=0.052ms | cv=396.1%], request_create[avg=0.000ms | median=0.000ms | p95=0.001ms | p99=0.001ms | min=0.000ms | max=0.847ms | stdev=0.004ms | cv=803.0%], request_cleanup[avg=0.000ms | median=0.000ms | p95=0.001ms | p99=0.001ms | min=0.000ms | max=0.116ms | stdev=0.001ms | cv=147.3%], request_total[avg=0.005ms | median=0.004ms | p95=0.007ms | p99=0.011ms | min=0.003ms | max=1.064ms | stdev=0.012ms | cv=251.3%]
+[dishka] lane=worker_b | cycles=300000, objects_min=6000000, variants=(100238, 99949, 99813), wall_cycles/s=25,233, wall_objects/s_min=504,661, active_cycles/s=137,515, active_objects/s_min=2,750,296, outer_create[avg=0.001ms | median=0.000ms | p95=0.001ms | p99=0.003ms | min=0.000ms | max=0.836ms | stdev=0.006ms | cv=951.1%], outer_cleanup[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.000ms | min=0.000ms | max=0.327ms | stdev=0.001ms | cv=646.4%], outer_total[avg=0.012ms | median=0.007ms | p95=0.017ms | p99=0.150ms | min=0.006ms | max=1.049ms | stdev=0.039ms | cv=324.6%], request_create[avg=0.000ms | median=0.000ms | p95=0.001ms | p99=0.001ms | min=0.000ms | max=0.784ms | stdev=0.002ms | cv=354.8%], request_cleanup[avg=0.000ms | median=0.000ms | p95=0.000ms | p99=0.001ms | min=0.000ms | max=0.221ms | stdev=0.001ms | cv=229.1%], request_total[avg=0.007ms | median=0.005ms | p95=0.010ms | p99=0.067ms | min=0.004ms | max=1.042ms | stdev=0.027ms | cv=376.9%]
+[melder] gc probe (mode=normal, gc_enabled=True) | collections=0 (none), collected=0, pause_total=0.000ms, pause_max=0.000ms | gc.get_stats delta: total=+0 (g0=+0, g1=+0, g2=+0)
+[melder] per-turn GC attribution | turns_with_collection=0/10000 | slowest 15 turns, time-ordered (turn | total | threaded | gc_during | gen0_live):
+    turn      0 | total=  11.836ms | thr=   9.614ms | gc_during= no | gen0_live=6060
+    turn   7797 | total=   5.963ms | thr=   1.596ms | gc_during= no | gen0_live=6112
+    turn   7813 | total=   5.236ms | thr=   2.640ms | gc_during= no | gen0_live=6112
+    turn   7815 | total=   6.338ms | thr=   4.870ms | gc_during= no | gen0_live=6112
+    turn   7818 | total=   4.979ms | thr=   3.930ms | gc_during= no | gen0_live=6112
+    turn   7825 | total=   6.026ms | thr=   2.898ms | gc_during= no | gen0_live=6112
+    turn   9245 | total=   6.561ms | thr=   4.231ms | gc_during= no | gen0_live=6112
+    turn   9272 | total=   5.057ms | thr=   2.997ms | gc_during= no | gen0_live=6112
+    turn   9282 | total=   4.847ms | thr=   2.318ms | gc_during= no | gen0_live=6112
+    turn   9660 | total=   5.553ms | thr=   1.975ms | gc_during= no | gen0_live=6112
+    turn   9672 | total=   6.266ms | thr=   3.241ms | gc_during= no | gen0_live=6112
+    turn   9678 | total=   6.952ms | thr=   5.073ms | gc_during= no | gen0_live=6112
+    turn   9682 | total=   5.044ms | thr=   1.803ms | gc_during= no | gen0_live=6112
+    turn   9697 | total=   6.022ms | thr=   3.778ms | gc_during= no | gen0_live=6112
+    turn   9701 | total=   6.199ms | thr=   4.282ms | gc_during= no | gen0_live=6112
+[melder] per-turn heap pressure gen0_live | first10%_avg=6111.9 | last10%_avg=6112.0 | min=6060 | max=6112
+[melder] gauntlet config: gil=disabled, setup_singletons=5, iterations=10000, threads=3, request_scopes=10, worker_a_scopes=25, worker_b_scopes=30, request_objects_min=630, hot_objects_per_iter_min=1880, setup=113.185ms
+[melder] gauntlet total(10000)=17608.76ms | avg=1.761ms | median=1.713ms | p95=2.548ms | p99=3.115ms | min=0.824ms | max=11.836ms | stdev=0.453ms | cv=25.7%
+[melder] gauntlet bootstrap per-iter | avg=0.016ms | median=0.015ms | p95=0.020ms | p99=0.031ms | min=0.013ms | max=0.819ms | stdev=0.009ms | cv=56.7%
+[melder] gauntlet threaded phase per-iter | avg=1.466ms | median=1.434ms | p95=2.246ms | p99=2.676ms | min=0.560ms | max=9.614ms | stdev=0.405ms | cv=27.6%
+[melder] outer-scope create | avg=0.004ms | median=0.001ms | p95=0.004ms | p99=0.020ms | min=0.001ms | max=3.829ms | stdev=0.039ms | cv=921.0%
+[melder] outer-scope cleanup | avg=0.002ms | median=0.001ms | p95=0.002ms | p99=0.004ms | min=0.001ms | max=2.464ms | stdev=0.016ms | cv=861.3%
+[melder] outer-scope whole-cycle | avg=0.014ms | median=0.009ms | p95=0.023ms | p99=0.092ms | min=0.006ms | max=7.353ms | stdev=0.046ms | cv=321.4%
+[melder] request-scope create | avg=0.001ms | median=0.000ms | p95=0.002ms | p99=0.003ms | min=0.000ms | max=0.556ms | stdev=0.002ms | cv=356.9%
+[melder] request-scope cleanup | avg=0.001ms | median=0.001ms | p95=0.002ms | p99=0.003ms | min=0.000ms | max=2.471ms | stdev=0.004ms | cv=423.5%
+[melder] request-scope whole-cycle | avg=0.006ms | median=0.005ms | p95=0.011ms | p99=0.016ms | min=0.003ms | max=5.758ms | stdev=0.012ms | cv=201.6%
+[melder] gauntlet throughput | hot_scopes=650000, hot_scopes/s=36,913, hot_objects/s_min=1,067,651, cleanup=18.466ms
+[melder] lane=request | cycles=100000, objects_min=6300000, variants=(33351, 33510, 33139), wall_cycles/s=6,821, wall_objects/s_min=429,715, active_cycles/s=125,120, active_objects/s_min=7,882,568, outer_create[avg=0.007ms | median=0.001ms | p95=0.006ms | p99=0.261ms | min=0.001ms | max=2.442ms | stdev=0.051ms | cv=679.4%], outer_cleanup[avg=0.003ms | median=0.001ms | p95=0.003ms | p99=0.005ms | min=0.001ms | max=1.332ms | stdev=0.022ms | cv=845.1%], outer_total[avg=0.021ms | median=0.012ms | p95=0.033ms | p99=0.330ms | min=0.008ms | max=7.353ms | stdev=0.062ms | cv=289.5%], request_create[avg=0.001ms | median=0.000ms | p95=0.003ms | p99=0.004ms | min=0.000ms | max=0.556ms | stdev=0.004ms | cv=466.3%], request_cleanup[avg=0.001ms | median=0.001ms | p95=0.002ms | p99=0.003ms | min=0.001ms | max=0.417ms | stdev=0.003ms | cv=205.5%], request_total[avg=0.008ms | median=0.007ms | p95=0.015ms | p99=0.019ms | min=0.004ms | max=5.758ms | stdev=0.021ms | cv=256.6%]
+[melder] lane=worker_a | cycles=250000, objects_min=6250000, variants=(83424, 83368, 83208), wall_cycles/s=17,052, wall_objects/s_min=426,304, active_cycles/s=184,660, active_objects/s_min=4,616,491, outer_create[avg=0.004ms | median=0.001ms | p95=0.003ms | p99=0.010ms | min=0.001ms | max=3.829ms | stdev=0.037ms | cv=1024.2%], outer_cleanup[avg=0.002ms | median=0.001ms | p95=0.002ms | p99=0.004ms | min=0.001ms | max=2.464ms | stdev=0.016ms | cv=880.1%], outer_total[avg=0.013ms | median=0.009ms | p95=0.020ms | p99=0.056ms | min=0.006ms | max=5.498ms | stdev=0.043ms | cv=335.6%], request_create[avg=0.000ms | median=0.000ms | p95=0.001ms | p99=0.003ms | min=0.000ms | max=0.450ms | stdev=0.001ms | cv=295.1%], request_cleanup[avg=0.001ms | median=0.001ms | p95=0.002ms | p99=0.003ms | min=0.001ms | max=1.022ms | stdev=0.003ms | cv=330.0%], request_total[avg=0.005ms | median=0.005ms | p95=0.009ms | p99=0.015ms | min=0.003ms | max=3.074ms | stdev=0.009ms | cv=170.1%]
+[melder] lane=worker_b | cycles=300000, objects_min=6000000, variants=(99514, 100264, 100222), wall_cycles/s=20,463, wall_objects/s_min=409,252, active_cycles/s=179,422, active_objects/s_min=3,588,432, outer_create[avg=0.004ms | median=0.001ms | p95=0.004ms | p99=0.010ms | min=0.001ms | max=1.919ms | stdev=0.037ms | cv=978.4%], outer_cleanup[avg=0.002ms | median=0.001ms | p95=0.002ms | p99=0.004ms | min=0.001ms | max=1.378ms | stdev=0.015ms | cv=828.1%], outer_total[avg=0.013ms | median=0.009ms | p95=0.020ms | p99=0.057ms | min=0.006ms | max=2.997ms | stdev=0.042ms | cv=316.6%], request_create[avg=0.001ms | median=0.000ms | p95=0.001ms | p99=0.003ms | min=0.000ms | max=0.364ms | stdev=0.001ms | cv=271.0%], request_cleanup[avg=0.001ms | median=0.001ms | p95=0.001ms | p99=0.003ms | min=0.000ms | max=2.471ms | stdev=0.005ms | cv=576.9%], request_total[avg=0.006ms | median=0.005ms | p95=0.009ms | p99=0.015ms | min=0.003ms | max=2.477ms | stdev=0.010ms | cv=172.4%]

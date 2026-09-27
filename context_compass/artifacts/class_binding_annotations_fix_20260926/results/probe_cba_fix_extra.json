@@ -1,0 +1,66 @@
+{
+ "ResolvedFields": {
+  "id": "be5872ec4efed324",
+  "keys": [
+   "count",
+   "name"
+  ],
+  "values": {
+   "count": "<class 'int'>",
+   "name": "<class 'str'>"
+  }
+ },
+ "TypeCheckingField": {
+  "id": "702c39b8cdd61c3a",
+  "keys": [
+   "amount",
+   "extra",
+   "label"
+  ],
+  "values": {
+   "amount": "'Decimal'",
+   "label": "<class 'str'>",
+   "extra": "'Decimal'"
+  }
+ },
+ "QuotedUnavailable": {
+  "id": "b6374ae9f7e23b5b",
+  "keys": [
+   "amount",
+   "label"
+  ],
+  "values": {
+   "amount": "'Decimal'",
+   "label": "<class 'str'>"
+  }
+ },
+ "NestedUnavailable": {
+  "id": "aa1fb409aa666f5a",
+  "keys": [
+   "amounts",
+   "count",
+   "total"
+  ],
+  "values": {
+   "amounts": "'list[Decimal]'",
+   "total": "'Optional[Decimal]'",
+   "count": "<class 'int'>"
+  }
+ },
+ "DataclassField": {
+  "id": "09e7e8d712c0ad96",
+  "keys": [
+   "amount",
+   "label"
+  ],
+  "values": {
+   "amount": "'Decimal'",
+   "label": "<class 'str'>"
+  }
+ },
+ "NoAnnotations": {
+  "id": "d471254ed25ef4c4",
+  "keys": [],
+  "values": {}
+ }
+}

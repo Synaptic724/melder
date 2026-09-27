@@ -10,10 +10,13 @@ if TYPE_CHECKING:
 
 class ResolutionFramePresenceStrategy(SpellValidationStrategy):
     """
-    Ensure Phase 3 has actually produced a resolution frame and DAG.
+    Ensure Phase 3 has actually produced a resolution frame.
 
-    This is the most basic structural check: if you somehow skip Phase 3 or
-    fail to attach a dependency graph, the spell is not resolvable.
+    This is the most basic structural check: if you somehow skip Phase 3, the
+    spell is not resolvable. The former second check - a warning when the frame
+    existed but `Spell.dependency_graph` was None - was retired on 2026-09-26
+    together with the per-spell dependency graph object; the ordered frame on
+    the compiler artifact is the only Phase-3 artifact this strategy inspects.
 
     Contract:
     - Verifies that Phase 3 produced the minimum runtime artifacts needed for
@@ -36,8 +39,7 @@ class ResolutionFramePresenceStrategy(SpellValidationStrategy):
 
     AGENT_PURPOSE:
         access: internal. Phase-4 structural gate: emits MISSING_RESOLUTION_FRAME (error) when
-        Phase 3 produced no resolution frame, or MISSING_DEPENDENCY_GRAPH (warning) when the
-        frame exists but the spell has no attached dependency graph.
+        Phase 3 produced no resolution frame. (MISSING_DEPENDENCY_GRAPH retired 2026-09-26.)
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -52,7 +54,7 @@ class ResolutionFramePresenceStrategy(SpellValidationStrategy):
         """
         super().__init__(
             name="resolution_frame_presence",
-            description="Verifies that Phase 3 produced a resolution frame and DAG.",
+            description="Verifies that Phase 3 produced a resolution frame.",
         )
 
     def validate(self, context: SpellValidationContext) -> None:
@@ -62,8 +64,7 @@ class ResolutionFramePresenceStrategy(SpellValidationStrategy):
         Contract:
         - Stops early if the validation context has been cancelled.
         - Emits `MISSING_RESOLUTION_FRAME` when no resolution frame exists.
-        - Emits `MISSING_DEPENDENCY_GRAPH` when the frame exists but the spell
-          still has no attached dependency graph.
+        - Emits nothing when the frame exists.
         """
         self.check_cleaned()
 
@@ -79,25 +80,10 @@ class ResolutionFramePresenceStrategy(SpellValidationStrategy):
                     severity="error",
                     code="MISSING_RESOLUTION_FRAME",
                     message=(
-                        f"Phase 3 (local resolution frame / DAG) has not been "
+                        f"Phase 3 (local resolution frame) has not been "
                         f"run for spell {spell.spell_name!r}."
                     ),
                     details={},
                 )
             )
             return
-
-        # Frame exists but dependency graph is missing – suspicious but not fatal.
-        if spell.dependency_graph is None:
-            context.issues.append(
-                SpellValidationIssue(
-                    severity="warning",
-                    code="MISSING_DEPENDENCY_GRAPH",
-                    message=(
-                        "Spell has a resolution frame but no attached dependency "
-                        "graph (Spell.dependency_graph is None). This is unusual "
-                        "for normal meld pipelines."
-                    ),
-                    details={},
-                )
-            )

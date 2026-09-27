@@ -1,0 +1,6 @@
+# override_lane_cost.py on ~/work/melder (device tree + S3a), 2026-09-26T13:23:46Z, medians of 7 setups
+python 3.14.7 gil=False
+shallow  setup     4.21 ms | override-lane    0.04 ms (0.9%) | 
+wide     setup     6.42 ms | override-lane    0.08 ms (1.2%) | p9:spell_injection_processor=0.08, p9:spell_override_targeting_processor=0.05, p9:spell_site_graph_processor=0.09
+diamond  setup     4.68 ms | override-lane    0.08 ms (1.6%) | p10:no_overrides_plan=0.06, p9:spell_injection_processor=0.05, p9:spell_site_graph_processor=0.06
+deep     setup    42.44 ms | override-lane    5.33 ms (12.6%) | p10:no_overrides_plan=3.27, p10:overrides_plan=1.44, p11:override_rows=1.26, p11:serialize_targets=0.39, p9:spell_injection_processor=2.55, p9:spell_occurrence_contract_processor=1.26, p9:spell_occurrence_instance_processor=0.48, p9:spell_occurrence_order_processor=0.79, p9:spell_override_targeting_processor=2.24, p9:spell_runtime_processor=0.15, p9:spell_site_graph_processor=3.88

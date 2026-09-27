@@ -1,0 +1,16 @@
+# Owner-run on Windows, pasted verbatim by the owner on 2026-09-26 (~20:50Z), tree 0.2.70, .venv_new (3.14t), PowerShell.
+# Caveat added by melder_2: on Windows time.perf_counter_ns() ticks every 100 ns (step medians are multiples of 100) and
+# time.thread_time_ns() advances in 15.625 ms scheduler ticks, so a 3000-cycle block reads as 2 or 3 ticks
+# (10,417 or 15,625 ns per cycle); the contention lines below carry no usable resolution.
+
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> $env:MELDER_ROOT = "C:\Users\Mark\PycharmProjects\melder_private"
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> $d = "context_compass\artifacts\gauntlet_runtime_speed_20260926\lever1"
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .venv_new\Scripts\python.exe -X gil=0 "$d\probe_steps2.py" melder worker_a 4000
+melder lane=worker_a cycles=4000 sum_of_medians=9,200 ns | outer_create=1,000 outer_1st=1,100 outer_2nd=400 req_enter=300 marker_1st=900 marker_2nd=300 outer_inherited=400 group_build=800 root_build=1,800 root_cached=400 req_exit=700 outer_cleanup=1,100
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .venv_new\Scripts\python.exe -X gil=0 "$d\probe_steps2.py" dishka worker_a 4000
+dishka lane=worker_a cycles=4000 sum_of_medians=8,600 ns | outer_create=500 outer_1st=1,400 outer_2nd=300 req_enter=500 marker_1st=600 marker_2nd=300 outer_inherited=400 group_build=1,000 root_build=2,700 root_cached=300 req_exit=400 outer_cleanup=200
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .venv_new\Scripts\python.exe -X gil=0 "$d\probe_contention.py" melder worker_a 3 3000
+melder lane=worker_a threads=3 cycles/block=3000 | cpu ns/cycle per thread: 15,625 15,625 15,625
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private> .venv_new\Scripts\python.exe -X gil=0 "$d\probe_contention.py" dishka worker_a 3 3000
+dishka lane=worker_a threads=3 cycles/block=3000 | cpu ns/cycle per thread: 15,625 10,417 10,417
+(.venv_new) PS C:\Users\Mark\PycharmProjects\melder_private>

@@ -1,12 +1,16 @@
 """
-Family-owned no-overrides lane compiler for the generalized family.
+Opt-in singleton specializer and shared row helpers for the generalized family.
 
-This module owns the no-overrides lane end to end:
-    - row-driven source emission (manifest rows in, factory source out;
-      no live spells touched during emission),
-    - executor bindings construction (flat arrays + slotted runtime rows),
-    - hydration through the process-wide executor factory cache (one compile
-      plus one exec per source shape per process; one factory call per spell).
+Normal melds run the site-plan runtime's normal plan since S2b-2; the row-driven step and
+transient emitters this module owned were retired on 2026-09-26 (R2). What remains:
+    - the opt-in singleton warm-tail specializer
+      (`generalized_singleton_specialization_enabled`): `select_specializable_step_indexes`,
+      `emit_specialized_step_plan_source` and `build_specialized_no_overrides_executor`
+      (row-driven source, hydrated through the process-wide executor factory cache; it deopts
+      to the site-plan normal plan);
+    - row helpers the hydrator and the specializer share: `resolve_contract_payload_rows`,
+      `resolve_root_instance_key_from_rows`, `row_inlinable_common_shape` and the positional
+      prefix helpers (`positional_dependency_names`, P1).
 
 Emission semantics are a faithful port of the legacy step-plan emitter with
 one deliberate hot-path improvement: reuse reads are inlined as direct
@@ -22,14 +26,16 @@ Row requirements beyond the shared phase-11 row schema:
       family manifest builder.
 """
 
+from types import FunctionType
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers import (
+    CodegenCreationSchemaHelpers,
+)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library import (
     SpellGeneralizedCodegenPlanTargetKind,
-    build_transient_no_overrides_source,
     construct_spell_instance,
-    normalize_transient_schema,
     raise_meld_construction_error,
     register_spell_instance,
     register_spell_instance_prebound,
@@ -49,29 +55,6 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
     SpellSpaceScopeError,
 )
 
-EXECUTOR_NAME = "_no_overrides_codegen_creation_executor"
-
-_STEP_FACTORY_SOURCE_NAME = (
-    "<melder_generalized_no_overrides_step_factory>"
-)
-_TRANSIENT_FACTORY_SOURCE_NAME = (
-    "<melder_generalized_no_overrides_transient_factory>"
-)
-
-_STEP_BINDING_NAMES = (
-    "steps",
-    "step_spells",
-    "step_spell_ids",
-    "step_disposal_methods",
-    "step_existences",
-    "step_instance_keys",
-    "step_dep_keys",
-    "step_owner_creations",
-    "step_targets",
-    "step_contract_values",
-    "step_positional_args",
-    "root_instance_key",
-)
 
 _STEP_STATIC_NAMESPACE = {
     "MeldExecutionError": MeldExecutionError,
@@ -83,198 +66,15 @@ _STEP_STATIC_NAMESPACE = {
     "_register_spell_instance": register_spell_instance,
 }
 
-_TRANSIENT_STATIC_NAMESPACE = {
-    "MeldExecutionError": MeldExecutionError,
-}
-
-_TRANSIENT_SCHEMA_SEQUENCE_FIELDS = (
-    "dep1",
-    "dep2a", "dep2b",
-    "dep3a", "dep3b", "dep3c",
-    "dep4a", "dep4b", "dep4c", "dep4d",
-    "dep5a", "dep5b", "dep5c", "dep5d", "dep5e",
-    "dep6a", "dep6b", "dep6c", "dep6d", "dep6e", "dep6f",
-    "dep7a", "dep7b", "dep7c", "dep7d", "dep7e", "dep7f", "dep7g",
-    "dep8a", "dep8b", "dep8c", "dep8d", "dep8e", "dep8f", "dep8g", "dep8h",
-)
-
 
 # ---------------------------------------------------------------------------
 # Public hydration entrypoint
 # ---------------------------------------------------------------------------
 
-def hydrate_no_overrides_executor(
-        *,
-        rows: Sequence[Dict[str, Any]],
-        transient_schema: Optional[Dict[str, Any]],
-        root_instance_key: Optional[Tuple[str, Optional[int]]],
-        root_spell_id: Optional[str],
-        spell_lookup: Dict[str, Any],
-) -> Callable[..., Any]:
-    """
-    Hydrate the inner no-overrides executor from manifest rows.
-
-    Contract:
-        - Emission is a pure function of rows/schema; live spells are touched
-          only by bindings construction.
-        - Transient unrolled emission is used exactly under the legacy rule:
-          schema present, every step `many`, no step registering, and all
-          call modes supported by the unrolled builder.
-        - One compile + one exec per source shape per process via the factory
-          cache; one factory call here.
-
-    Raises:
-        RuntimeError:
-            When rows are invalid or the root instance key is unresolvable.
-    """
-    runtime_rows = build_runtime_rows(
-        rows=rows,
-        spell_lookup=spell_lookup,
-    )
-
-    if transient_schema is not None and _rows_support_transient(rows):
-        normalized_schema = normalize_transient_schema(
-            transient_schema=transient_schema,
-        )
-        transient_source = build_transient_no_overrides_source(
-            transient_schema=normalized_schema,
-        )
-        if transient_source is not None:
-            bindings = _build_transient_bindings(
-                normalized_schema=normalized_schema,
-                runtime_rows=runtime_rows,
-            )
-            factory_source = build_executor_factory_source(
-                inner_source=transient_source,
-                binding_names=tuple(bindings.keys()),
-                executor_name=EXECUTOR_NAME,
-            )
-            factory = get_or_build_executor_factory(
-                factory_source=factory_source,
-                source_name=_TRANSIENT_FACTORY_SOURCE_NAME,
-                static_namespace=_TRANSIENT_STATIC_NAMESPACE,
-            )
-            return factory(bindings)
-
-    resolved_root_instance_key = resolve_root_instance_key_from_rows(
-        rows=rows,
-        explicit_root_instance_key=root_instance_key,
-        root_spell_id=root_spell_id,
-    )
-    inner_source = emit_step_plan_source(
-        rows=rows,
-        root_instance_key=resolved_root_instance_key,
-    )
-    bindings = _build_step_bindings(
-        rows=rows,
-        runtime_rows=runtime_rows,
-        root_instance_key=resolved_root_instance_key,
-    )
-    factory_source = build_executor_factory_source(
-        inner_source=inner_source,
-        binding_names=_STEP_BINDING_NAMES,
-        executor_name=EXECUTOR_NAME,
-    )
-    factory = get_or_build_executor_factory(
-        factory_source=factory_source,
-        source_name=_STEP_FACTORY_SOURCE_NAME,
-        static_namespace=_STEP_STATIC_NAMESPACE,
-    )
-    return factory(bindings)
-
 
 # ---------------------------------------------------------------------------
 # Row-driven emission (owned)
 # ---------------------------------------------------------------------------
-
-def emit_step_plan_source(
-        *,
-        rows: Sequence[Dict[str, Any]],
-        root_instance_key: Tuple[str, Any],
-) -> str:
-    """
-    Emit the inner no-overrides step-plan executor source from manifest rows.
-
-    Contract:
-        - Pure function of row data plus the root key's POSITION (the emitted
-          source embeds step indices only, never identity values, so factory
-          sharing across same-shape spells is preserved).
-        - Faithful port of the legacy step-plan emission semantics (existence
-          routing, lock disciplines, registration stores, inlined common-shape
-          constructors) with reuse reads inlined as direct `_creations.get`
-          dict reads.
-        - LOCALS MODE: when every step is inlinable and every dependency key
-          resolves to an emitted step, step results live in per-step local
-          variables and dependency reads compile to direct local loads - no
-          `instance_results` dict, no tuple-key hashing, and no runtime root
-          presence check (root assignment is statically guaranteed).
-        - DICT MODE: any generic-constructor step falls back to the
-          `instance_results` dict so `_construct_spell_instance` keeps its
-          full recipe surface.
-    """
-    key_to_step_index: Dict[Any, int] = {}
-    for step_index, row in enumerate(rows):
-        key_to_step_index[tuple(row["instance_key"])] = step_index
-
-    locals_mode = True
-    normalized_root_key = (root_instance_key[0], root_instance_key[1])
-    if normalized_root_key not in key_to_step_index:
-        locals_mode = False
-    if locals_mode:
-        for row in rows:
-            inlinable_params = row_inlinable_common_shape(row)
-            if inlinable_params is None:
-                locals_mode = False
-                break
-            for _param_name, dependency_keys in inlinable_params:
-                for dependency_key in dependency_keys:
-                    dependency_key_tuple = (
-                        dependency_key[0],
-                        dependency_key[1],
-                    )
-                    if dependency_key_tuple not in key_to_step_index:
-                        locals_mode = False
-                        break
-                if not locals_mode:
-                    break
-            if not locals_mode:
-                break
-
-    # Step-constant aliases execute ONCE at factory-call time (per
-    # hydration) and reach the executor as CLOSURE CELLS: zero per-call
-    # setup, LOAD_DEREF at use sites, and - decisive under free-threading -
-    # no per-call incref/decref sweep over shared spells/stores the way
-    # signature defaults are filled. Probe-measured: the default-param form
-    # of this hoist was a wash (fill cost == removed bytecode).
-    lines = _step_alias_hoist_lines(
-        rows=rows,
-        locals_mode=locals_mode,
-    )
-    lines.append(f"def {EXECUTOR_NAME}(meld):")
-    if not locals_mode:
-        lines.append("    instance_results = {}")
-    for step_index, row in enumerate(rows):
-        _append_step_resolution_source(
-            lines=lines,
-            step_index=step_index,
-            row=row,
-            key_to_step_index=key_to_step_index if locals_mode else None,
-        )
-    if locals_mode:
-        lines.append(
-            f"    return instance_{key_to_step_index[normalized_root_key]}"
-        )
-    else:
-        lines.extend([
-            "    if root_instance_key not in instance_results:",
-            "        raise MeldExecutionError(",
-            "            spell_id=root_instance_key[0],",
-            "            spell_name=root_instance_key[0],",
-            "            message=f\"No-overrides codegen root instance '{root_instance_key[0]}' is missing.\",",
-            "        )",
-            "    return instance_results[root_instance_key]",
-        ])
-    return "\n".join(lines)
 
 
 def _append_step_resolution_source(
@@ -283,6 +83,7 @@ def _append_step_resolution_source(
         step_index: int,
         row: Dict[str, Any],
         key_to_step_index: Optional[Dict[Any, int]] = None,
+        positional_names: Tuple[str, ...] = (),
 ) -> None:
     """
     Append emitted source for one step from its manifest row.
@@ -291,6 +92,8 @@ def _append_step_resolution_source(
         - When `key_to_step_index` is supplied (locals mode), step results
           are plain locals: no `instance_results` stores are emitted and
           inlined constructor dependencies compile to direct local loads.
+        - `positional_names` is the step's positional-dependency prefix; it is
+          forwarded unchanged to every constructor emission for this step.
     """
     existence = Existence[row["existence"]]
     inlinable_params = row_inlinable_common_shape(row)
@@ -327,10 +130,13 @@ def _append_step_resolution_source(
             indent="    ",
             key_to_step_index=key_to_step_index,
             row=row,
+            positional_names=positional_names,
         )
         if has_disposal_methods:
             # `many` is transient (a new instance per meld, never cached), so
-            # the append is lockless -- matching the solo / many_only families.
+            # there is no build guard. The append goes through
+            # `add_many_creations`, which takes the store lock as a leaf (the
+            # former lockless inline append could lose a first-use bucket).
             _append_register_source(
                 lines=lines,
                 step_index=step_index,
@@ -347,9 +153,9 @@ def _append_step_resolution_source(
     if existence in (
             Existence.unique_per_conduit,
             Existence.unique_per_spell_space,
-            # cluster/lineage are CALLER + creations_lock now (meld supplies the
-            # leader / lineage-root store as caller_creations), so they take the
-            # same reuse-read + creations-lock path as unique_per_conduit -- which
+            # cluster/lineage are CALLER-routed (meld supplies the leader /
+            # lineage-root store as caller_creations), so they take the same
+            # reuse-read + slot-guard path as unique_per_conduit -- which
             # correctly threads key_to_step_index for locals mode. (The fall-
             # through 'plain' branch below does not, and is unreachable.)
             Existence.unique_per_conduit_cluster,
@@ -361,7 +167,9 @@ def _append_step_resolution_source(
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
             ),
             f"    if instance_{step_index} is None:",
-            f"        with creations_{step_index}._lock:",
+            # Build-once under this slot's guard; `add_creation` takes the
+            # store lock itself as a leaf (see Creations.slot_guard).
+            f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
             (
                 f"            instance_{step_index} = "
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
@@ -375,6 +183,7 @@ def _append_step_resolution_source(
             indent="                ",
             key_to_step_index=key_to_step_index,
             row=row,
+            positional_names=positional_names,
         )
         _append_register_source(
             lines=lines,
@@ -401,33 +210,10 @@ def _append_step_resolution_source(
             f"    if instance_{step_index} is None:",
             f"        use_spell_lock_{step_index} = True",
             f"        if use_spell_lock_{step_index}:",
+            # `unique` has one slot (its owner store), so Spell._lock is its
+            # slot guard; the recheck is a plain dict read and `add_creation`
+            # takes the store lock itself as a leaf.
             f"            with spell_{step_index}._lock:",
-            f"                with creations_{step_index}._lock:",
-            (
-                f"                    instance_{step_index} = "
-                f"creations_{step_index}._creations.get(spell_id_{step_index})"
-            ),
-            f"                if instance_{step_index} is None:",
-        ])
-        _emit_construct_instance(
-            lines=lines,
-            step_index=step_index,
-            inlinable_params=inlinable_params,
-            indent="                    ",
-            key_to_step_index=key_to_step_index,
-            row=row,
-        )
-        lines.append(f"                    with creations_{step_index}._lock:")
-        _append_register_source(
-            lines=lines,
-            step_index=step_index,
-            indent="                        ",
-            existence=existence,
-            has_disposal_methods=has_disposal_methods,
-        )
-        lines.extend([
-            "        else:",
-            f"            with creations_{step_index}._lock:",
             (
                 f"                instance_{step_index} = "
                 f"creations_{step_index}._creations.get(spell_id_{step_index})"
@@ -441,6 +227,32 @@ def _append_step_resolution_source(
             indent="                    ",
             key_to_step_index=key_to_step_index,
             row=row,
+            positional_names=positional_names,
+        )
+        _append_register_source(
+            lines=lines,
+            step_index=step_index,
+            indent="                    ",
+            existence=existence,
+            has_disposal_methods=has_disposal_methods,
+        )
+        lines.extend([
+            "        else:",
+            f"            with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
+            (
+                f"                instance_{step_index} = "
+                f"creations_{step_index}._creations.get(spell_id_{step_index})"
+            ),
+            f"                if instance_{step_index} is None:",
+        ])
+        _emit_construct_instance(
+            lines=lines,
+            step_index=step_index,
+            inlinable_params=inlinable_params,
+            indent="                    ",
+            key_to_step_index=key_to_step_index,
+            row=row,
+            positional_names=positional_names,
         )
         _append_register_source(
             lines=lines,
@@ -461,7 +273,7 @@ def _append_step_resolution_source(
             f"creations_{step_index}._creations.get(spell_id_{step_index})"
         ),
         f"    if instance_{step_index} is None:",
-        f"        with creations_{step_index}._lock:",
+        f"        with (creations_{step_index}._slot_guards.get(spell_id_{step_index}) or creations_{step_index}.slot_guard(spell_id_{step_index})):",
         (
             f"            instance_{step_index} = "
             f"creations_{step_index}._creations.get(spell_id_{step_index})"
@@ -474,6 +286,7 @@ def _append_step_resolution_source(
         inlinable_params=inlinable_params,
         indent="                ",
         row=row,
+        positional_names=positional_names,
     )
     _append_register_source(
         lines=lines,
@@ -552,6 +365,7 @@ def _emit_construct_instance(
         indent: str,
         key_to_step_index: Optional[Dict[Any, int]] = None,
         row: Optional[Dict[str, Any]] = None,
+        positional_names: Tuple[str, ...] = (),
 ) -> None:
     """
     Append construction source for one step at `indent`.
@@ -567,6 +381,21 @@ def _emit_construct_instance(
           the generic path keeps an overridden name at its original dict
           position instead - visible only to constructors introspecting
           `**kwargs` insertion order for payload-overridden names.
+        - Dependency values named in `positional_names` compile to leading
+          positional arguments in that order, which is the target's own
+          parameter order (see `positional_dependency_names`); every other
+          dependency stays a keyword. A step with a `*positional_N` payload
+          splat ignores the prefix, because the splat already owns the
+          leading positions. Why: on CPython 3.14 a positional class call
+          takes the interpreter's specialized allocate-and-init path, while a
+          keyword call builds a kwargs dict and goes through the generic
+          `type.__call__` route (3.14t: 77 ns vs 170 ns for a two-parameter
+          class).
+
+    Raises:
+        RuntimeError:
+            When a `positional_names` entry is not an emitted dependency of
+            this step.
     """
     if inlinable_params is None:
         lines.append(
@@ -593,6 +422,12 @@ def _emit_construct_instance(
         )
         if positional is not None:
             lines.append(f"{indent}        *positional_{step_index},")
+        # Signature-order prefix first (positional), then every other
+        # dependency by keyword, then payload keywords. A payload splat owns
+        # the leading positions, so it disables the prefix.
+        leading_names = positional_names if positional is None else ()
+        leading_values: Dict[str, str] = {}
+        keyword_lines: list = []
         # Flat cursor over the row's flattened dependency-key tuple: single-dep
         # NON-collection params compile to one scalar reference; collection-DI
         # params compile to an order-preserving list literal REGARDLESS of
@@ -619,9 +454,20 @@ def _emit_construct_instance(
                 value_expression = references[0]
             else:
                 value_expression = "[" + ", ".join(references) + "]"
-            lines.append(
-                f"{indent}        {param_name}={value_expression},"
-            )
+            if param_name in leading_names:
+                leading_values[param_name] = value_expression
+            else:
+                keyword_lines.append(
+                    f"{indent}        {param_name}={value_expression},"
+                )
+        for leading_name in leading_names:
+            if leading_name not in leading_values:
+                raise RuntimeError(
+                    f"Positional prefix name '{leading_name}' is not an "
+                    f"emitted dependency of step {step_index}."
+                )
+            lines.append(f"{indent}        {leading_values[leading_name]},")
+        lines.extend(keyword_lines)
         for payload_index, payload_name in enumerate(payload_names):
             lines.append(
                 f"{indent}        {payload_name}"
@@ -647,24 +493,34 @@ def _append_register_source(
         has_disposal_methods: bool,
 ) -> None:
     """
-    Append inline registration stores specialized for one existence mode.
+    Append registration calls specialized for one existence mode.
 
     Contract:
-        - Emits direct `_creations` / `_disposable_creations` stores instead
-          of `add_creation` / `add_many_creations` calls. The store methods
-          are lock-free with caller-held locking, and every branch inside
-          them is decided by fingerprint-stable facts (existence, disposal),
-          so the call is pure dispatch overhead on this path.
-        - The legacy duplicate-key guard is intentionally not emitted: every
-          caller registers under `creations._lock` immediately after a locked
-          re-check found no live entry, and disposal/live slots are co-written
-          only by this path, so duplicates are structurally impossible here.
-        - The `many` slot is always a list for this spell id because existence
-          is fingerprint-stable; the legacy non-list slot guard is likewise
-          structurally unreachable.
+        - Callers hold only the slot's build lock (slot guard, or Spell._lock
+          for unique) around this block, never the store lock. (Before
+          2026-09-25 the caller held the store lock across the whole build,
+          and the disposal-bearing `many` append ran with no lock at all.)
+        - Singleton entries WITHOUT disposal methods publish with one direct
+          `_creations` store: the build lock excludes every other publisher of
+          the key and a single dict store is atomic, so no store lock and no
+          duplicate check are needed (the same reasoning as the lock-free
+          branch of `Creations.add_creation`; measured to matter on the cold
+          path). A store retired by `cleanup()` fails on its missing registry.
+        - Singleton entries WITH disposal methods, and every disposal-bearing
+          `many` append, go through `add_creation` / `add_many_creations`,
+          which take the store lock as a LEAF so the live and disposal writes
+          land together, and refuse a store cleaned during the build.
         - Both storage shapes retain the bound Spell disposal list directly,
           matching Creations registration without allocating a copied policy.
     """
+    disposal_arguments = (
+        [
+            f"{indent}    has_disposal_methods=True,",
+            f"{indent}    disposal_methods=disposal_methods_{step_index},",
+        ]
+        if has_disposal_methods
+        else []
+    )
     if existence in (
             Existence.unique,
             Existence.unique_per_conduit,
@@ -672,47 +528,29 @@ def _append_register_source(
             Existence.unique_per_conduit_lineage,
             Existence.unique_per_spell_space,
     ):
-        lines.append(
-            f"{indent}creations_{step_index}._creations"
-            f"[spell_id_{step_index}] = instance_{step_index}"
-        )
-        if has_disposal_methods:
+        if not has_disposal_methods:
             lines.append(
-                f"{indent}creations_{step_index}._disposable_creations"
-                f"[spell_id_{step_index}] = "
-                f"(instance_{step_index}, disposal_methods_{step_index})"
+                f"{indent}creations_{step_index}._creations"
+                f"[spell_id_{step_index}] = instance_{step_index}"
             )
+            return
+        lines.extend([
+            f"{indent}creations_{step_index}.add_creation(",
+            f"{indent}    spell_id_{step_index},",
+            f"{indent}    instance_{step_index},",
+            *disposal_arguments,
+            f"{indent})",
+        ])
         return
 
     if existence is Existence.many:
         # Callers emit this block only when disposal truth is present.
         lines.extend([
-            (
-                f"{indent}many_live_{step_index} = "
-                f"creations_{step_index}._creations.get(spell_id_{step_index})"
-            ),
-            f"{indent}if many_live_{step_index} is None:",
-            f"{indent}    many_live_{step_index} = []",
-            (
-                f"{indent}    creations_{step_index}._creations"
-                f"[spell_id_{step_index}] = many_live_{step_index}"
-            ),
-            f"{indent}many_live_{step_index}.append(instance_{step_index})",
-            (
-                f"{indent}many_disposable_{step_index} = "
-                f"creations_{step_index}._disposable_creations"
-                f".get(spell_id_{step_index})"
-            ),
-            f"{indent}if many_disposable_{step_index} is None:",
-            f"{indent}    many_disposable_{step_index} = []",
-            (
-                f"{indent}    creations_{step_index}._disposable_creations"
-                f"[spell_id_{step_index}] = many_disposable_{step_index}"
-            ),
-            (
-                f"{indent}many_disposable_{step_index}.append("
-                f"(instance_{step_index}, disposal_methods_{step_index}))"
-            ),
+            f"{indent}creations_{step_index}.add_many_creations(",
+            f"{indent}    spell_id_{step_index},",
+            f"{indent}    instance_{step_index},",
+            *disposal_arguments,
+            f"{indent})",
         ])
         return
 
@@ -775,6 +613,152 @@ def row_inlinable_common_shape(
     return tuple(params)
 
 
+def positional_dependency_names(
+        *,
+        target: Any,
+        dependency_param_names: Tuple[str, ...],
+) -> Tuple[str, ...]:
+    """
+    Return the leading dependency parameters `target` receives by position.
+
+    Purpose:
+        Let emitted constructor calls pass dependency values positionally.
+        On CPython 3.14 a positional class call takes the interpreter's
+        specialized allocate-and-init path; a keyword call builds a kwargs
+        dict and runs the generic `type.__call__` route (measured on 3.14t:
+        77 ns vs 170 ns for a two-parameter class).
+
+    Contract:
+        - Qualifies only plain construction: `target` is a class whose
+          metaclass keeps `type.__call__`, whose `__new__` is
+          `object.__new__` (so it ignores the arguments), and whose
+          `__init__` is a plain Python function. Anything else returns `()`
+          and the step keeps its keyword call.
+        - Reads parameter order from `__init__.__code__` - the function that
+          actually receives the arguments - so a positional value binds to
+          exactly the parameter the keyword would have named. Annotations,
+          `__signature__` and wrapper metadata are never consulted or
+          evaluated (a TYPE_CHECKING-only annotation cannot raise here).
+        - Returns the longest prefix of the positional parameters (after
+          `self`, positional-only included) whose every name is in
+          `dependency_param_names`. The first parameter that is not a
+          dependency - a default, an unresolved input, a payload name -
+          ends the prefix, so no value can shift into another parameter.
+          Keyword-only parameters are never in the prefix.
+        - Pure: attribute reads only, no side effects.
+
+    Args:
+        target:
+            The step's construction target (`Spell.spell`).
+        dependency_param_names:
+            Parameter names the step fills from resolved dependencies, as
+            returned by `row_inlinable_common_shape`.
+
+    Returns:
+        Tuple[str, ...]: Prefix names in the target's parameter order; empty
+        when the target does not qualify or its first parameter is not a
+        dependency.
+    """
+    if not dependency_param_names or not isinstance(target, type):
+        return ()
+    if type(target).__call__ is not type.__call__:
+        return ()
+    if target.__new__ is not object.__new__:
+        return ()
+    initializer = target.__init__
+    if type(initializer) is not FunctionType:
+        return ()
+    code = initializer.__code__
+    prefix = []
+    for parameter_name in code.co_varnames[1:code.co_argcount]:
+        if parameter_name not in dependency_param_names:
+            break
+        prefix.append(parameter_name)
+    return tuple(prefix)
+
+
+def rows_positional_dependency_names(
+        *,
+        rows: Sequence[Dict[str, Any]],
+        spell_lookup: Dict[str, Any],
+) -> Tuple[Tuple[str, ...], ...]:
+    """
+    Compute each row's positional-dependency prefix from its live target.
+
+    Contract:
+        - One tuple per row, in row order, for
+          `emit_specialized_step_plan_source`.
+        - Non-inlinable rows (generic constructor, existing creation), rows
+          with no dependency parameters and rows whose call carries a
+          `*positional_N` payload splat get `()` without a spell lookup.
+        - Every other row gets `positional_dependency_names` over its
+          `Spell.spell`, with the dependency names from
+          `row_inlinable_common_shape`.
+        - Expects RESOLVED rows (`resolve_contract_payload_rows`), the same
+          rows emission receives.
+
+    Args:
+        rows:
+            Resolved manifest step rows for the no-overrides lane.
+        spell_lookup:
+            Spell id -> live Spell for every step row.
+
+    Returns:
+        Tuple[Tuple[str, ...], ...]: Positional prefix names per row.
+
+    Raises:
+        RuntimeError:
+            When an inlinable row's spell is missing from `spell_lookup`.
+    """
+    names_by_row = []
+    for row in rows:
+        inlinable_params = row_inlinable_common_shape(row)
+        if not inlinable_params:
+            names_by_row.append(())
+            continue
+        _payload_names, positional = _row_contract_call_extras(row)
+        if positional is not None:
+            names_by_row.append(())
+            continue
+        spell = spell_lookup.get(row["spell_id"])
+        if spell is None:
+            raise RuntimeError(
+                "Cannot compute the positional dependency prefix: spell "
+                f"'{row['spell_id']}' is missing from spell_lookup."
+            )
+        names_by_row.append(positional_dependency_names(
+            target=spell.spell,
+            dependency_param_names=tuple(
+                param_name for param_name, _keys in inlinable_params
+            ),
+        ))
+    return tuple(names_by_row)
+
+
+def _require_positional_names_per_row(
+        *,
+        rows: Sequence[Dict[str, Any]],
+        positional_dependency_names: Optional[Tuple[Tuple[str, ...], ...]],
+) -> None:
+    """
+    Fail fast when a positional-prefix tuple does not match the rows.
+
+    Raises:
+        RuntimeError:
+            When `positional_dependency_names` is supplied with a length
+            other than `len(rows)`.
+    """
+    if (
+            positional_dependency_names is not None
+            and len(positional_dependency_names) != len(rows)
+    ):
+        raise RuntimeError(
+            "positional_dependency_names must hold exactly one entry per "
+            f"row: {len(positional_dependency_names)} entries for "
+            f"{len(rows)} rows."
+        )
+
+
 def _row_contract_call_extras(
         row: Dict[str, Any],
 ) -> Optional[Tuple[Tuple[str, ...], Optional[Any]]]:
@@ -803,6 +787,10 @@ def _row_contract_call_extras(
         - Payload VALUES never appear in emitted source (identity-free
           emission); they ride the `step_contract_values` /
           `step_positional_args` bindings.
+        - A row straight from a manifest may carry phase-9 REFERENCES in place
+          of object values (2026-09-26); this helper reads only names and the
+          positional container's shape, so it is correct on raw and on resolved
+          rows alike. `_build_step_bindings` resolves the values before binding.
 
     Args:
         row: One manifest step row.
@@ -941,7 +929,7 @@ def _step_alias_hoist_lines(
 
 def _row_contract_value_binding(row: Dict[str, Any]) -> Tuple[Any, ...]:
     """
-    Build one row's frozen contract-payload value tuple for bindings.
+    Build one row's contract-payload value tuple for bindings.
 
     Contract:
         - Values are ordered exactly like the emission-order payload names
@@ -949,6 +937,9 @@ def _row_contract_value_binding(row: Dict[str, Any]) -> Tuple[Any, ...]:
           position, last value; `__args__` excluded), so
           `contract_values_N[j]` pairs with the j-th emitted payload keyword.
         - Rows without an inlinable payload contribute an empty tuple.
+        - Expects a RESOLVED row (`_build_step_bindings` replaces phase-9
+          references with live values first); on a raw manifest row the tuple
+          would carry the references themselves.
     """
     extras = _row_contract_call_extras(row)
     if extras is None:
@@ -958,6 +949,53 @@ def _row_contract_value_binding(row: Dict[str, Any]) -> Tuple[Any, ...]:
         return ()
     payload_map: Dict[str, Any] = dict(row["contract_payload_items"])
     return tuple(payload_map[name] for name in payload_names)
+
+
+def resolve_contract_payload_rows(
+        *,
+        rows: Sequence[Dict[str, Any]],
+        spell_lookup: Dict[str, Any],
+) -> Tuple[Dict[str, Any], ...]:
+    """
+    Replace the phase-9 references in manifest rows with the consumer's live values.
+
+    Purpose:
+        The single resolution point of the manifest-first no-overrides lane
+        (2026-09-26): rows persist a contract override payload entry as a
+        scalar or as a reference to the consumer's descriptor, and this turns
+        every reference back into the object the descriptor holds right now,
+        before runtime rows, bindings or specialization read the rows.
+
+    Contract:
+        - Rows without a payload and without a positional override are returned
+          as they are (same object); every other row is a shallow copy with
+          `contract_payload_items` and `contract_positional_override` resolved
+          through `CodegenCreationSchemaHelpers.resolve_contract_payload_row_values`.
+        - `spell_lookup` must contain the consumer named by each reference; it
+          always does for a lane's own step spells, because the consumer is a
+          step of the same lane.
+        - Descriptor reads are memoized per call; the input rows are never
+          mutated.
+
+    Raises:
+        RuntimeError:
+            When a reference cannot be resolved (consumer missing from
+            `spell_lookup`, descriptor without a payload, key absent).
+    """
+    descriptor_cache: Dict[Tuple[str, str], Any] = {}
+    resolved_rows = []
+    for row in rows:
+        if not row["has_contract_payload"] and row["contract_positional_override"] is None:
+            resolved_rows.append(row)
+            continue
+        items, positional = CodegenCreationSchemaHelpers.resolve_contract_payload_row_values(
+            row, spell_lookup, descriptor_cache,
+        )
+        resolved_row = dict(row)
+        resolved_row["contract_payload_items"] = items
+        resolved_row["contract_positional_override"] = positional
+        resolved_rows.append(resolved_row)
+    return tuple(resolved_rows)
 
 
 # ---------------------------------------------------------------------------
@@ -972,6 +1010,12 @@ def _build_step_bindings(
 ) -> Dict[str, Any]:
     """
     Build flat step-lane bindings from manifest rows plus runtime rows.
+
+    Contract:
+        - Expects RESOLVED rows (`resolve_contract_payload_rows`): the
+          `step_contract_values` and `step_positional_args` bindings are read
+          straight off the rows, so a raw manifest row would bind its phase-9
+          references instead of the live values.
     """
     return {
         "steps": runtime_rows,
@@ -1028,62 +1072,6 @@ def _build_step_bindings(
         ),
         "root_instance_key": root_instance_key,
     }
-
-
-def _build_transient_bindings(
-        *,
-        normalized_schema: Dict[str, Any],
-        runtime_rows: Tuple[CodegenStepRuntimeRow, ...],
-) -> Dict[str, Any]:
-    """
-    Build transient-lane bindings from the normalized schema plus live targets.
-
-    Raises:
-        RuntimeError:
-            When schema step count mismatches rows or a step is not callable.
-    """
-    step_count = normalized_schema["step_count"]
-    if step_count != len(runtime_rows):
-        raise RuntimeError(
-            "generalized transient schema step_count does not match rows."
-        )
-    transient_targets = []
-    for step_index, runtime_row in enumerate(runtime_rows):
-        spell = runtime_row.spell
-        if not (
-                spell.is_class_spell
-                or spell.is_method_spell
-                or spell.is_lambda_spell
-        ):
-            raise RuntimeError(
-                "generalized transient lane requires callable steps; "
-                f"step {step_index} is not callable."
-            )
-        transient_targets.append(spell.spell)
-
-    bindings: Dict[str, Any] = {
-        "transient_root_index": normalized_schema["root_step_index"],
-        "transient_targets": tuple(transient_targets),
-        "steps": runtime_rows,
-    }
-    for field_name in _TRANSIENT_SCHEMA_SEQUENCE_FIELDS:
-        bindings[f"transient_{field_name}"] = normalized_schema[field_name]
-    return bindings
-
-
-def _rows_support_transient(rows: Sequence[Dict[str, Any]]) -> bool:
-    """
-    Row-driven port of the transient-support rule.
-
-    Contract:
-        - True only when every row is Existence.many and no row registers.
-    """
-    for row in rows:
-        if row["existence"] != Existence.many.name:
-            return False
-        if row["must_register"]:
-            return False
-    return True
 
 
 def resolve_root_instance_key_from_rows(
@@ -1169,6 +1157,7 @@ def emit_specialized_step_plan_source(
         rows: Sequence[Dict[str, Any]],
         captured_step_indexes: Tuple[int, ...],
         root_instance_key: Tuple[str, Any],
+        positional_dependency_names: Optional[Tuple[Tuple[str, ...], ...]] = None,
 ) -> str:
     """
     Emit the specialized no-overrides executor source for one capture shape.
@@ -1177,7 +1166,8 @@ def emit_specialized_step_plan_source(
         Replace each captured `unique` step's warm walk (spell tuple load +
         `_owner_creations` attr read + shared `_creations` dict get + None
         branch) with one frame-local int compare, while emitting every
-        non-captured step exactly as the generic emitter does.
+        non-captured step through the shared per-step emitters, exactly as
+        the retired generic step emitter did (R2, 2026-09-26).
 
     Contract:
         - Pure function of rows plus capture POSITIONS: the source embeds step
@@ -1214,14 +1204,24 @@ def emit_specialized_step_plan_source(
             reference `unique` rows (validated).
         root_instance_key:
             Resolved root instance key for the lane.
+        positional_dependency_names:
+            Optional per-row positional-dependency prefixes (see
+            `positional_dependency_names`); non-captured steps receive theirs
+            so their direct calls pass the P1-safe positional prefix.
 
     Returns:
         str: Identity-free specialized executor source (one `def` statement).
 
     Raises:
         RuntimeError:
-            When the capture set is empty or references a non-`unique` row.
+            When the capture set is empty or references a non-`unique` row,
+            or when `positional_dependency_names` does not hold one entry per
+            row.
     """
+    _require_positional_names_per_row(
+        rows=rows,
+        positional_dependency_names=positional_dependency_names,
+    )
     if not captured_step_indexes:
         raise RuntimeError(
             "specialized emission requires a non-empty capture set; callers "
@@ -1237,8 +1237,9 @@ def emit_specialized_step_plan_source(
                 f"'{rows[step_index]['existence']}'."
             )
 
-    # Mirror the generic emitter's locals-mode decision exactly so the
-    # non-captured steps compile identically in both bodies.
+    # Locals mode follows the rule the retired generic step emitter used (the
+    # root key is a step and every row's dependency keys resolve to steps), so
+    # non-captured steps compile exactly as they did before R2.
     key_to_step_index: Dict[Any, int] = {}
     for step_index, row in enumerate(rows):
         key_to_step_index[tuple(row["instance_key"])] = step_index
@@ -1346,6 +1347,11 @@ def emit_specialized_step_plan_source(
             step_index=step_index,
             row=row,
             key_to_step_index=key_to_step_index if locals_mode else None,
+            positional_names=(
+                positional_dependency_names[step_index]
+                if positional_dependency_names is not None
+                else ()
+            ),
         )
 
     if root_is_captured:
@@ -1431,6 +1437,7 @@ def build_specialized_no_overrides_executor(
             When rows are invalid or the root instance key is unresolvable
             (mirrors the generic hydration contract).
     """
+    rows = resolve_contract_payload_rows(rows=rows, spell_lookup=spell_lookup)
     captured_step_indexes = select_specializable_step_indexes(rows)
     if not captured_step_indexes:
         return None
@@ -1466,6 +1473,10 @@ def build_specialized_no_overrides_executor(
         rows=rows,
         captured_step_indexes=captured_step_indexes,
         root_instance_key=resolved_root_instance_key,
+        positional_dependency_names=rows_positional_dependency_names(
+            rows=rows,
+            spell_lookup=spell_lookup,
+        ),
     )
 
     runtime_rows = build_runtime_rows(

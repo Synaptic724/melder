@@ -1,0 +1,39 @@
+{
+  "label": "after3_314gil",
+  "python": "3.14.7 (main, Sep  1 2026, 14:18:09) [Clang 22.1.3 ]",
+  "gil_enabled": true,
+  "scenarios": {
+    "warm_per_conduit_meld": {
+      "min_ns": 295.608705,
+      "median_ns": 302.40766
+    },
+    "many_control_meld": {
+      "min_ns": 388.04865,
+      "median_ns": 392.78075
+    },
+    "lesser_cycle_4_cold_builds": {
+      "min_ns": 2206.4845,
+      "median_ns": 2243.02185
+    },
+    "spellspace_cycle_4_cold_builds": {
+      "min_ns": 1443.27126,
+      "median_ns": 1460.51292
+    },
+    "purge_rebuild_per_conduit_root": {
+      "min_ns": 1997.4914,
+      "median_ns": 2037.99318
+    },
+    "purge_rebuild_unique": {
+      "min_ns": 1752.7807,
+      "median_ns": 1778.7607
+    },
+    "threads8_spellspace_cycle": {
+      "min_ns": 1467.0981125,
+      "median_ns": 1478.41135
+    },
+    "threads8_lesser_cycle": {
+      "min_ns": 2243.5285833333332,
+      "median_ns": 2263.8652916666665
+    }
+  }
+}

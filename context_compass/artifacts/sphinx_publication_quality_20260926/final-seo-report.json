@@ -1,0 +1,3881 @@
+{
+  "base_url": "https://melder.readthedocs.io/en/latest/",
+  "html_directory": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\docs\\_build\\html",
+  "content_pages": 301,
+  "errors": 0,
+  "warnings": 292,
+  "allow_noindex": false,
+  "issues": [
+    {
+      "level": "warning",
+      "path": "advanced/checkpoints.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "advanced/clusters.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "advanced/index.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "advanced/logging.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "advanced/nexus.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "advanced/overrides.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "advanced/policies.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "advanced/posture.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "advanced/read-only-rooms.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "advanced/viewers.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "advanced/workstation.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "advanced/worlds.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "beginner/addresses.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "beginner/errors.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "beginner/hello.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "beginner/index.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "beginner/install.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "beginner/registration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "beginner/rhythm.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "beginner/scopes.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "beginner/spellframes.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "contents.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/01-deep-spell-override-paths.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/02-frames-as-worlds.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/03-frame-posture-public-door.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/04-utility-system-logger.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/05-frame-posture-cheatsheet.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/06-frame-posture-object.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/07-aether-config-two-doors.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/08-nexus-enablement.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/09-opening-a-rift.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/10-the-room-and-its-fixtures.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/11-static-vs-capability-authority.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/12-the-workstation-canvas.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/13-the-frame-viewer-facade.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/14-the-describe-ladder.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/15-what-you-cannot-see.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/16-ward-policies.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/17-taking-a-checkpoint.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/18-loading-it-back.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/19-wildcard-and-broadcast-overrides.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/advanced/index.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/02-lifecycles-unique-vs-many.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/03-bind-functions-and-instances.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/04-named-bindings.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/05-lesser-conduit-scopes.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/06-error-vocabulary.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/07-strings-as-vocabulary.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/08-disposal-contract.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/09-spellframe-grouping.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/10-explicit-cleanup.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/11-bind-many-at-once.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/12-agent-first-read.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/13-existence-unique.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/14-existence-many.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/15-existence-unique-per-conduit.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/16-typed-melding.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/17-protocols-as-shapes.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/18-bootstrap-pattern.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/19-lifecycle-map.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/20-defaults-just-work.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/21-the-basic-rhythm.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/22-same-name-different-frames.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/23-reading-the-errors.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/24-same-class-many-names.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/25-frames-as-dict-classification.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/26-meld-address-forms.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/27-pass-the-conduit-around.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/28-real-objects-no-wrappers.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/29-many-state-isolation.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/30-double-bind-outcome.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/31-required-vocabulary.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/32-factory-functions.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/33-prebuilt-registry.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/34-scope-contrast-one-tree.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/35-disposal-multiple-methods.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/36-one-book-one-conduit.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/37-bind-vocabulary-cheatsheet.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/38-meld-a-frame-as-dict.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/39-agent-inventory-pattern.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/40-beginner-capstone.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/41-you-own-the-memory-now.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/beginner/index.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/01-pod-boot-the-order-is-the-product.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/02-persistence-mesh-your-code-their-lanes.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/03-research-sets-lanes-and-residency.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/04-diffs-are-derived-never-stored.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/05-protocol-crafter-the-tool-that-writes.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/06-two-knobs-and-a-terminator-per-rung.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/07-the-codegen-room-agents-writing-code.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/08-research-is-graduated-by-room.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/09-getting-data-into-your-database.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/10-deep-overrides-paths-through-a-graph.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/11-pointing-a-rift-at-your-own-frame.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/12-the-codegen-loop-end-to-end.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/13-one-workshop-many-worlds.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/14-compositions-a-subsystem-as-one-unit.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/15-campaigns-the-why-that-rides-along.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/16-rewiring-a-running-world.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/17-notch-swapping-a-live-object.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/18-the-package-reads-itself-to-you.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/19-the-codebase-as-a-walkable-graph.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/20-the-workstation-an-agents-workbench.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/21-many-agents-writing-code-at-once.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/22-asking-what-code-would-do-before-running-it.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/23-branching-the-record-and-joining-back.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/24-loading-a-whole-world-back.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/25-many-research-sets-one-world.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/26-codegen-create-modify-iterate.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/27-a-world-that-outlives-its-own-runtime.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/28-the-record-crosses-as-a-json-string.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/29-reading-your-own-recorded-code.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/30-composing-a-version-in-the-workshop.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/31-organising-lanes-after-the-fact.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/32-a-subsystems-blast-radius.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/33-what-a-synthetic-module-actually-is.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/34-several-worlds-of-record-in-one-process.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/35-the-gate-that-waits-for-readers.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/36-an-agent-builds-a-working-system.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/37-review-agent-bindings.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/38-named-scopes-in-nexus-and-restore.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/expert/index.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/index.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/01-scan-bind-decorator.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/02-spellbinder-full-chain.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/03-registration-hooks.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/04-spellspace-scoped-resolution.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/05-existence-unique-per-conduit-lineage.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/06-spell-metadata-kwargs.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/07-lesser-conduits-child-scopes.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/08-spell-override-construction.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/09-permissions-block-sharing.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/10-spellbinder-fluent-basics.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/11-permissions-linking-vocabulary.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/12-bind-lambda-spells.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/13-spell-ids-and-lookup.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/14-introspect-the-book.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/16-spellmap-defaults.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/17-collection-di.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/18-live-creation-probe.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/19-spellbook-configuration-basics.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/20-phase-scheduler-knobs.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/21-dynamic-linking-basics.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/22-permissions-create-vs-read.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/23-transfer-of-ownership.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/24-conduit-cloud.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/25-clusters-unique-per-cluster.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/26-conduit-categories-as-factories.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/27-sever-link.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/28-upgrade-to-normal.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/29-scoped-cleanup-lesser-conduits.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/30-config-disposal-and-the-frozen-law.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/31-spellbook-config-defined.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/32-config-meld-hooks.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/33-config-conduit-lifecycle-hooks.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/34-config-link-and-contract-hooks.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/35-one-config-every-book.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/36-late-binding-with-spellcontract.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/37-the-frame-conduit-cloud.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/39-purge-unneeded-objects.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/40-bind-lifecycle-hooks.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/41-named-lesser-conduits.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "examples/intermediate/index.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/agent-rooms.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/bind-hooks.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/compositions.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/concurrency.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/external-storage.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/governed-change.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/index.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/persistence.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/research.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/restore.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/self-documents.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/transactions.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "expert/walkthroughs.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/configuration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/connected-subsystems.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/dependency-injection.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/dynamic-linking.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/hooks.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/index.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/late-binding.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/module-registration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/overrides.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/ownership.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/permissions.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/registration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "intermediate/scopes.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "maintaining.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/binding/scan-bind.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/binding/spell.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/binding/spellbinder.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/binding/spellbook.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/binding/spellindex.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/binding.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/configuration/aether.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/configuration/aetherconfiguration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/configuration/aetherconfigurationbuilder.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/configuration/aethericframeconfiguration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/configuration/spellbookconfiguration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/configuration/systemstate.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/configuration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/connections/permissions.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/connections/policies.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/connections.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/errors/deadreferenceerror.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/errors/hookexecutionerror.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/errors/internalregistrationerror.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/errors/meldexecutionerror.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/errors/phaseexecutionerror.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/errors/phaseschedulererror.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/errors/phasetimeouterror.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/errors/spellbookvalidationerror.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/errors/spellspacescopeerror.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/errors/unresolvedinputerror.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/errors.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/helpers/cleanable.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/helpers/new-ulid.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/helpers/pack.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/helpers/package.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/helpers/protocolcrafter.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/helpers/ulid-factory.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/helpers.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/capabilitycommandsystem.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/codegencommandsystem.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/commandsystem.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/frameviewer.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/nexus.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/nexusconfiguration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/nexusconfigurationbuilder.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/nexusframemode.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/rift.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/riftconfiguration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/riftmemorysystem.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/riftspace.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/riftspacetype.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/staticcommandsystem.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/viewconduit.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/viewframe.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/viewmultiframe.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/viewspell.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection/workstation.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/inspection.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/metadata/systemdocumentview.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/metadata/systemgraphview.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/metadata.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/persistence/crystallizer.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/persistence/crystallizerbootstrap.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/persistence/crystallizerconfiguration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/persistence/crystallizerconfigurationbuilder.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/persistence/externalpersistencemanager.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/persistence/externalpersistencemanagerconfiguration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/persistence.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/research/diffengine.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/research/lanestate.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/research/lanetype.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/research/mutationresearch.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/research/mutationresearchconfiguration.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/research/mutationresearchconfigurationbuilder.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/research/researchlane.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/research/researchset.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/research.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/resolution/conduit.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/resolution/existence.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/resolution/spellcontract.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/resolution/spellmap.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/resolution/spellspace.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api/resolution.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/api.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/01_overview/capability_ladder.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/01_overview/what_melder_is.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/02_architecture/continuity_and_evolution.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/02_architecture/governance_and_change.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/02_architecture/mediated_access.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/02_architecture/ownership_and_lifetimes.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/02_architecture/runtime_model.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/02_architecture/system_context.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/03_usage/compose_an_application.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/03_usage/connect_subsystems.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/03_usage/isolate_worlds.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/03_usage/operate_through_a_rift.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/03_usage/preserve_and_evolve.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/03_usage/scope_work.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/04_tradeoffs/design_tradeoffs.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/05_engineering_drawings/index.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture/diagrams/index.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/architecture.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/downloads.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/glossary.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/releases.html",
+      "message": "Missing nonempty description."
+    },
+    {
+      "level": "warning",
+      "path": "reference/troubleshooting.html",
+      "message": "Missing nonempty description."
+    }
+  ],
+  "pages": [
+    {
+      "path": "advanced/checkpoints.html",
+      "title": "Create, seal, and read a checkpoint — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/checkpoints.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/clusters.html",
+      "title": "Share one instance across a cluster — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/clusters.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/index.html",
+      "title": "🟠 Advanced — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/inspection-walkthrough.html",
+      "title": "Inspect an explicitly selected world — Melder",
+      "description": "Inspect a selected Melder world: isolate frames, attach a Rift, navigate visible conduits and spells, and diagnose missing information.",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/inspection-walkthrough.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/logging.html",
+      "title": "Attach logging explicitly — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/logging.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/nexus.html",
+      "title": "Enable Nexus and open a Rift — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/nexus.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/overrides.html",
+      "title": "Target a dependency inside the graph — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/overrides.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/policies.html",
+      "title": "Read ward policy before changing it — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/policies.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/posture.html",
+      "title": "Configure the world before it starts — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/posture.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/read-only-rooms.html",
+      "title": "Read-only rooms for endpoints — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/read-only-rooms.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/viewers.html",
+      "title": "Survey first, then choose detail — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/viewers.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/workstation.html",
+      "title": "Own the room's working objects — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/workstation.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "advanced/worlds.html",
+      "title": "Frame boundaries: isolated worlds — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/advanced/worlds.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/addresses.html",
+      "title": "The address law — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/addresses.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/capstone.html",
+      "title": "Build a complete beginner application — Melder",
+      "description": "Build an orders application with ordinary Python objects, constructor injection, shared resources, fresh handlers, and explicit cleanup using Melder.",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/capstone.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/cleanup.html",
+      "title": "Cleanup and memory ownership — Melder",
+      "description": "Configure Melder's disposal methods, understand cleanup order and failure handling, and follow examples of resource and memory ownership.",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/cleanup.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/dependency-injection.html",
+      "title": "Constructor dependency injection — Melder",
+      "description": "Learn constructor dependency injection in Melder and follow a complete runnable Python example with typed dependencies.",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/dependency-injection.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/errors.html",
+      "title": "Understand errors and refusals — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/errors.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/hello.html",
+      "title": "Hello, Melder — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/hello.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/index.html",
+      "title": "🟢 Beginner — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/install.html",
+      "title": "Install and run Melder — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/install.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/lifetimes.html",
+      "title": "Choose an instance lifetime — Melder",
+      "description": "Choose among Melder's six object lifetimes and follow examples of shared, scoped, and freshly constructed Python objects.",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/lifetimes.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/registration.html",
+      "title": "What you can bind — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/registration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/rhythm.html",
+      "title": "Bind → conjure → meld — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/rhythm.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/scopes.html",
+      "title": "Scopes that nest — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/scopes.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "beginner/spellframes.html",
+      "title": "Spellframes and categories — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/beginner/spellframes.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "contents.html",
+      "title": "Full Contents — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/contents.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/01-deep-spell-override-paths.html",
+      "title": "Deep spell override paths — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/01-deep-spell-override-paths.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/02-frames-as-worlds.html",
+      "title": "Frames as worlds — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/02-frames-as-worlds.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/03-frame-posture-public-door.html",
+      "title": "Frame posture public door — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/03-frame-posture-public-door.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/04-utility-system-logger.html",
+      "title": "Utility system logger — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/04-utility-system-logger.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/05-frame-posture-cheatsheet.html",
+      "title": "Frame posture cheatsheet — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/05-frame-posture-cheatsheet.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/06-frame-posture-object.html",
+      "title": "Frame posture object — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/06-frame-posture-object.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/07-aether-config-two-doors.html",
+      "title": "Aether config two doors — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/07-aether-config-two-doors.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/08-nexus-enablement.html",
+      "title": "Nexus enablement — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/08-nexus-enablement.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/09-opening-a-rift.html",
+      "title": "Opening a rift — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/09-opening-a-rift.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/10-the-room-and-its-fixtures.html",
+      "title": "The room and its fixtures — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/10-the-room-and-its-fixtures.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/11-static-vs-capability-authority.html",
+      "title": "Static vs capability authority — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/11-static-vs-capability-authority.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/12-the-workstation-canvas.html",
+      "title": "The workstation canvas — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/12-the-workstation-canvas.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/13-the-frame-viewer-facade.html",
+      "title": "The frame viewer facade — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/13-the-frame-viewer-facade.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/14-the-describe-ladder.html",
+      "title": "The describe ladder — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/14-the-describe-ladder.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/15-what-you-cannot-see.html",
+      "title": "What you cannot see — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/15-what-you-cannot-see.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/16-ward-policies.html",
+      "title": "Ward policies — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/16-ward-policies.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/17-taking-a-checkpoint.html",
+      "title": "Taking a checkpoint — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/17-taking-a-checkpoint.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/18-loading-it-back.html",
+      "title": "Loading it back — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/18-loading-it-back.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/19-wildcard-and-broadcast-overrides.html",
+      "title": "Wildcard and broadcast overrides — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/19-wildcard-and-broadcast-overrides.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/advanced/index.html",
+      "title": "🟠 Advanced examples — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/advanced/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/02-lifecycles-unique-vs-many.html",
+      "title": "Lifecycles unique vs many — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/02-lifecycles-unique-vs-many.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/03-bind-functions-and-instances.html",
+      "title": "Bind functions and instances — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/03-bind-functions-and-instances.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/04-named-bindings.html",
+      "title": "Named bindings — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/04-named-bindings.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/05-lesser-conduit-scopes.html",
+      "title": "Lesser conduit scopes — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/05-lesser-conduit-scopes.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/06-error-vocabulary.html",
+      "title": "Error vocabulary — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/06-error-vocabulary.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/07-strings-as-vocabulary.html",
+      "title": "Strings as vocabulary — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/07-strings-as-vocabulary.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/08-disposal-contract.html",
+      "title": "Disposal contract — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/08-disposal-contract.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/09-spellframe-grouping.html",
+      "title": "Spellframe grouping — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/09-spellframe-grouping.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/10-explicit-cleanup.html",
+      "title": "Explicit cleanup — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/10-explicit-cleanup.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/11-bind-many-at-once.html",
+      "title": "Bind many at once — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/11-bind-many-at-once.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/12-agent-first-read.html",
+      "title": "Agent first read — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/12-agent-first-read.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/13-existence-unique.html",
+      "title": "Existence unique — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/13-existence-unique.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/14-existence-many.html",
+      "title": "Existence many — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/14-existence-many.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/15-existence-unique-per-conduit.html",
+      "title": "Existence unique per conduit — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/15-existence-unique-per-conduit.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/16-typed-melding.html",
+      "title": "Typed melding — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/16-typed-melding.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/17-protocols-as-shapes.html",
+      "title": "Protocols as shapes — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/17-protocols-as-shapes.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/18-bootstrap-pattern.html",
+      "title": "Bootstrap pattern — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/18-bootstrap-pattern.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/19-lifecycle-map.html",
+      "title": "Lifecycle map — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/19-lifecycle-map.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/20-defaults-just-work.html",
+      "title": "Defaults just work — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/20-defaults-just-work.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/21-the-basic-rhythm.html",
+      "title": "The basic rhythm — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/21-the-basic-rhythm.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/22-same-name-different-frames.html",
+      "title": "Same name different frames — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/22-same-name-different-frames.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/23-reading-the-errors.html",
+      "title": "Reading the errors — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/23-reading-the-errors.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/24-same-class-many-names.html",
+      "title": "Same class many names — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/24-same-class-many-names.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/25-frames-as-dict-classification.html",
+      "title": "Frames as dict classification — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/25-frames-as-dict-classification.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/26-meld-address-forms.html",
+      "title": "Meld address forms — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/26-meld-address-forms.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/27-pass-the-conduit-around.html",
+      "title": "Pass the conduit around — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/27-pass-the-conduit-around.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/28-real-objects-no-wrappers.html",
+      "title": "Real objects no wrappers — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/28-real-objects-no-wrappers.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/29-many-state-isolation.html",
+      "title": "Many state isolation — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/29-many-state-isolation.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/30-double-bind-outcome.html",
+      "title": "Double bind outcome — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/30-double-bind-outcome.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/31-required-vocabulary.html",
+      "title": "Required vocabulary — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/31-required-vocabulary.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/32-factory-functions.html",
+      "title": "Factory functions — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/32-factory-functions.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/33-prebuilt-registry.html",
+      "title": "Prebuilt registry — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/33-prebuilt-registry.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/34-scope-contrast-one-tree.html",
+      "title": "Scope contrast one tree — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/34-scope-contrast-one-tree.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/35-disposal-multiple-methods.html",
+      "title": "Disposal multiple methods — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/35-disposal-multiple-methods.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/36-one-book-one-conduit.html",
+      "title": "One book one conduit — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/36-one-book-one-conduit.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/37-bind-vocabulary-cheatsheet.html",
+      "title": "Bind vocabulary cheatsheet — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/37-bind-vocabulary-cheatsheet.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/38-meld-a-frame-as-dict.html",
+      "title": "Meld a frame as dict — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/38-meld-a-frame-as-dict.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/39-agent-inventory-pattern.html",
+      "title": "Agent inventory pattern — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/39-agent-inventory-pattern.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/40-beginner-capstone.html",
+      "title": "Beginner capstone — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/40-beginner-capstone.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/41-you-own-the-memory-now.html",
+      "title": "You own the memory now — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/41-you-own-the-memory-now.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/beginner/index.html",
+      "title": "🟢 Beginner examples — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/beginner/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/01-pod-boot-the-order-is-the-product.html",
+      "title": "Pod boot the order is the product — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/01-pod-boot-the-order-is-the-product.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/02-persistence-mesh-your-code-their-lanes.html",
+      "title": "Persistence mesh your code their lanes — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/02-persistence-mesh-your-code-their-lanes.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/03-research-sets-lanes-and-residency.html",
+      "title": "Research sets lanes and residency — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/03-research-sets-lanes-and-residency.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/04-diffs-are-derived-never-stored.html",
+      "title": "Diffs are derived never stored — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/04-diffs-are-derived-never-stored.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/05-protocol-crafter-the-tool-that-writes.html",
+      "title": "Protocol crafter the tool that writes — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/05-protocol-crafter-the-tool-that-writes.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/06-two-knobs-and-a-terminator-per-rung.html",
+      "title": "Two knobs and a terminator per rung — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/06-two-knobs-and-a-terminator-per-rung.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/07-the-codegen-room-agents-writing-code.html",
+      "title": "The codegen room agents writing code — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/07-the-codegen-room-agents-writing-code.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/08-research-is-graduated-by-room.html",
+      "title": "Research is graduated by room — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/08-research-is-graduated-by-room.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/09-getting-data-into-your-database.html",
+      "title": "Getting data into your database — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/09-getting-data-into-your-database.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/10-deep-overrides-paths-through-a-graph.html",
+      "title": "Deep overrides paths through a graph — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/10-deep-overrides-paths-through-a-graph.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/11-pointing-a-rift-at-your-own-frame.html",
+      "title": "Pointing a rift at your own frame — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/11-pointing-a-rift-at-your-own-frame.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/12-the-codegen-loop-end-to-end.html",
+      "title": "The codegen loop end to end — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/12-the-codegen-loop-end-to-end.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/13-one-workshop-many-worlds.html",
+      "title": "One workshop many worlds — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/13-one-workshop-many-worlds.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/14-compositions-a-subsystem-as-one-unit.html",
+      "title": "Compositions a subsystem as one unit — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/14-compositions-a-subsystem-as-one-unit.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/15-campaigns-the-why-that-rides-along.html",
+      "title": "Campaigns the why that rides along — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/15-campaigns-the-why-that-rides-along.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/16-rewiring-a-running-world.html",
+      "title": "Rewiring a running world — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/16-rewiring-a-running-world.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/17-notch-swapping-a-live-object.html",
+      "title": "Notch swapping a live object — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/17-notch-swapping-a-live-object.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/18-the-package-reads-itself-to-you.html",
+      "title": "The package reads itself to you — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/18-the-package-reads-itself-to-you.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/19-the-codebase-as-a-walkable-graph.html",
+      "title": "The codebase as a walkable graph — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/19-the-codebase-as-a-walkable-graph.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/20-the-workstation-an-agents-workbench.html",
+      "title": "The workstation an agents workbench — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/20-the-workstation-an-agents-workbench.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/21-many-agents-writing-code-at-once.html",
+      "title": "Many agents writing code at once — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/21-many-agents-writing-code-at-once.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/22-asking-what-code-would-do-before-running-it.html",
+      "title": "Asking what code would do before running it — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/22-asking-what-code-would-do-before-running-it.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/23-branching-the-record-and-joining-back.html",
+      "title": "Branching the record and joining back — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/23-branching-the-record-and-joining-back.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/24-loading-a-whole-world-back.html",
+      "title": "Loading a whole world back — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/24-loading-a-whole-world-back.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/25-many-research-sets-one-world.html",
+      "title": "Many research sets one world — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/25-many-research-sets-one-world.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/26-codegen-create-modify-iterate.html",
+      "title": "Codegen create modify iterate — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/26-codegen-create-modify-iterate.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/27-a-world-that-outlives-its-own-runtime.html",
+      "title": "A world that outlives its own runtime — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/27-a-world-that-outlives-its-own-runtime.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/28-the-record-crosses-as-a-json-string.html",
+      "title": "The record crosses as a json string — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/28-the-record-crosses-as-a-json-string.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/29-reading-your-own-recorded-code.html",
+      "title": "Reading your own recorded code — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/29-reading-your-own-recorded-code.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/30-composing-a-version-in-the-workshop.html",
+      "title": "Composing a version in the workshop — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/30-composing-a-version-in-the-workshop.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/31-organising-lanes-after-the-fact.html",
+      "title": "Organising lanes after the fact — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/31-organising-lanes-after-the-fact.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/32-a-subsystems-blast-radius.html",
+      "title": "A subsystems blast radius — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/32-a-subsystems-blast-radius.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/33-what-a-synthetic-module-actually-is.html",
+      "title": "What a synthetic module actually is — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/33-what-a-synthetic-module-actually-is.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/34-several-worlds-of-record-in-one-process.html",
+      "title": "Several worlds of record in one process — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/34-several-worlds-of-record-in-one-process.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/35-the-gate-that-waits-for-readers.html",
+      "title": "The gate that waits for readers — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/35-the-gate-that-waits-for-readers.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/36-an-agent-builds-a-working-system.html",
+      "title": "An agent builds a working system — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/36-an-agent-builds-a-working-system.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/37-review-agent-bindings.html",
+      "title": "Review agent bindings — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/37-review-agent-bindings.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/38-named-scopes-in-nexus-and-restore.html",
+      "title": "Named scopes in nexus and restore — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/38-named-scopes-in-nexus-and-restore.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/expert/index.html",
+      "title": "🔵 Expert examples — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/expert/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/hello-melder.html",
+      "title": "Hello Melder — Melder",
+      "description": "Create your first Melder dependency graph: bind a plain Python class, conjure a conduit, and resolve an instance using a complete runnable script.",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/hello-melder.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/index.html",
+      "title": "Learn by running examples — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/01-scan-bind-decorator.html",
+      "title": "Scan bind decorator — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/01-scan-bind-decorator.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/02-spellbinder-full-chain.html",
+      "title": "Spellbinder full chain — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/02-spellbinder-full-chain.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/03-registration-hooks.html",
+      "title": "Registration hooks — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/03-registration-hooks.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/04-spellspace-scoped-resolution.html",
+      "title": "Spellspace scoped resolution — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/04-spellspace-scoped-resolution.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/05-existence-unique-per-conduit-lineage.html",
+      "title": "Existence unique per conduit lineage — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/05-existence-unique-per-conduit-lineage.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/06-spell-metadata-kwargs.html",
+      "title": "Spell metadata kwargs — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/06-spell-metadata-kwargs.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/07-lesser-conduits-child-scopes.html",
+      "title": "Lesser conduits child scopes — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/07-lesser-conduits-child-scopes.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/08-spell-override-construction.html",
+      "title": "Spell override construction — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/08-spell-override-construction.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/09-permissions-block-sharing.html",
+      "title": "Permissions block sharing — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/09-permissions-block-sharing.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/10-spellbinder-fluent-basics.html",
+      "title": "Spellbinder fluent basics — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/10-spellbinder-fluent-basics.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/11-permissions-linking-vocabulary.html",
+      "title": "Permissions linking vocabulary — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/11-permissions-linking-vocabulary.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/12-bind-lambda-spells.html",
+      "title": "Bind lambda spells — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/12-bind-lambda-spells.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/13-spell-ids-and-lookup.html",
+      "title": "Spell ids and lookup — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/13-spell-ids-and-lookup.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/14-introspect-the-book.html",
+      "title": "Introspect the book — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/14-introspect-the-book.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/15-constructor-di-by-annotation.html",
+      "title": "Constructor di by annotation — Melder",
+      "description": "Run a complete Python constructor-injection example: bind Database and ReportService, resolve the service, and verify its injected dependency.",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/15-constructor-di-by-annotation.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/16-spellmap-defaults.html",
+      "title": "Spellmap defaults — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/16-spellmap-defaults.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/17-collection-di.html",
+      "title": "Collection di — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/17-collection-di.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/18-live-creation-probe.html",
+      "title": "Live creation probe — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/18-live-creation-probe.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/19-spellbook-configuration-basics.html",
+      "title": "Spellbook configuration basics — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/19-spellbook-configuration-basics.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/20-phase-scheduler-knobs.html",
+      "title": "Phase scheduler knobs — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/20-phase-scheduler-knobs.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/21-dynamic-linking-basics.html",
+      "title": "Dynamic linking basics — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/21-dynamic-linking-basics.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/22-permissions-create-vs-read.html",
+      "title": "Permissions create vs read — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/22-permissions-create-vs-read.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/23-transfer-of-ownership.html",
+      "title": "Transfer of ownership — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/23-transfer-of-ownership.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/24-conduit-cloud.html",
+      "title": "Conduit cloud — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/24-conduit-cloud.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/25-clusters-unique-per-cluster.html",
+      "title": "Clusters unique per cluster — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/25-clusters-unique-per-cluster.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/26-conduit-categories-as-factories.html",
+      "title": "Conduit categories as factories — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/26-conduit-categories-as-factories.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/27-sever-link.html",
+      "title": "Sever link — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/27-sever-link.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/28-upgrade-to-normal.html",
+      "title": "Upgrade to normal — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/28-upgrade-to-normal.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/29-scoped-cleanup-lesser-conduits.html",
+      "title": "Scoped cleanup lesser conduits — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/29-scoped-cleanup-lesser-conduits.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/30-config-disposal-and-the-frozen-law.html",
+      "title": "Config disposal and the frozen law — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/30-config-disposal-and-the-frozen-law.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/31-spellbook-config-defined.html",
+      "title": "Spellbook config defined — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/31-spellbook-config-defined.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/32-config-meld-hooks.html",
+      "title": "Config meld hooks — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/32-config-meld-hooks.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/33-config-conduit-lifecycle-hooks.html",
+      "title": "Config conduit lifecycle hooks — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/33-config-conduit-lifecycle-hooks.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/34-config-link-and-contract-hooks.html",
+      "title": "Config link and contract hooks — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/34-config-link-and-contract-hooks.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/35-one-config-every-book.html",
+      "title": "One config every book — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/35-one-config-every-book.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/36-late-binding-with-spellcontract.html",
+      "title": "Late binding with SpellContract: runnable example — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/36-late-binding-with-spellcontract.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/37-the-frame-conduit-cloud.html",
+      "title": "The frame conduit cloud — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/37-the-frame-conduit-cloud.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/39-purge-unneeded-objects.html",
+      "title": "Purge unneeded objects — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/39-purge-unneeded-objects.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/40-bind-lifecycle-hooks.html",
+      "title": "Bind lifecycle hooks — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/40-bind-lifecycle-hooks.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/41-named-lesser-conduits.html",
+      "title": "Named lesser conduits — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/41-named-lesser-conduits.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "examples/intermediate/index.html",
+      "title": "🟡 Intermediate examples — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/examples/intermediate/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/agent-rooms.html",
+      "title": "Give each agent an explicit room and target — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/agent-rooms.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/bind-hooks.html",
+      "title": "Review agent proposals with bind hooks — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/bind-hooks.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/codegen.html",
+      "title": "Validate → materialize → import → bind → meld — Melder",
+      "description": "Build a Python application from generated source with Melder: validate, materialize, import, bind, and resolve objects with controlled lifetimes.",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/codegen.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/compositions.html",
+      "title": "Compose a subsystem and inspect its impact — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/compositions.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/concurrency.html",
+      "title": "Several rooms, explicit shared worlds — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/concurrency.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/external-storage.html",
+      "title": "Connect storage through your callables — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/external-storage.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/governed-change.html",
+      "title": "Preview, stage, and govern structural change — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/governed-change.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/index.html",
+      "title": "🔵 Expert — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/persistence.html",
+      "title": "Record structure before you need to restore it — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/persistence.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/research.html",
+      "title": "Read versions, residency, and recorded code — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/research.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/restore.html",
+      "title": "Restore and cold boot — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/restore.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/self-documents.html",
+      "title": "Read the runtime's own documentation — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/self-documents.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/transactions.html",
+      "title": "Structural operations and admission — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/transactions.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "expert/walkthroughs.html",
+      "title": "Choose a complete operational walkthrough — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/expert/walkthroughs.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "index.html",
+      "title": "A runtime you can build on — Melder",
+      "description": "Melder is a Python dependency graph runtime. Explore dependency injection, instance lifetimes, cleanup, isolated worlds, and agent-operated infrastructure.",
+      "canonical": "https://melder.readthedocs.io/en/latest/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/configuration.html",
+      "title": "Configure the book before conjure — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/configuration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/connected-subsystems.html",
+      "title": "Compose platform → services → workflows — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/connected-subsystems.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/dependency-injection.html",
+      "title": "Constructor, explicit, and collection DI — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/dependency-injection.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/dynamic-linking.html",
+      "title": "Dynamic mode and linking conduits — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/dynamic-linking.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/hooks.html",
+      "title": "Observe registration and runtime lifecycles — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/hooks.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/index.html",
+      "title": "🟡 Intermediate — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/late-binding.html",
+      "title": "Late binding with SpellContract — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/late-binding.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/module-registration.html",
+      "title": "Declarative binding by module — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/module-registration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/overrides.html",
+      "title": "Flat overrides and live creation probes — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/overrides.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/ownership.html",
+      "title": "Named conduits, ownership transfer, and severing — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/ownership.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/permissions.html",
+      "title": "Link, pull, and choose permissions — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/permissions.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/registration.html",
+      "title": "Fluent registration and module scanning — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/registration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "intermediate/scopes.html",
+      "title": "Spell spaces, lineage, and scopes that end — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/intermediate/scopes.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "maintaining.html",
+      "title": "Maintain and publish the documentation — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/maintaining.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/binding/scan-bind.html",
+      "title": "scan_bind — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/binding/scan-bind.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/binding/spell.html",
+      "title": "Spell — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/binding/spell.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/binding/spellbinder.html",
+      "title": "SpellBinder — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/binding/spellbinder.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/binding/spellbook.html",
+      "title": "Spellbook — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/binding/spellbook.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/binding/spellindex.html",
+      "title": "SpellIndex — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/binding/spellindex.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/binding.html",
+      "title": "Binding and registration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/binding.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/configuration/aether.html",
+      "title": "Aether — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/configuration/aether.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/configuration/aetherconfiguration.html",
+      "title": "AetherConfiguration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/configuration/aetherconfiguration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/configuration/aetherconfigurationbuilder.html",
+      "title": "AetherConfigurationBuilder — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/configuration/aetherconfigurationbuilder.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/configuration/aethericframeconfiguration.html",
+      "title": "AethericFrameConfiguration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/configuration/aethericframeconfiguration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/configuration/spellbookconfiguration.html",
+      "title": "SpellbookConfiguration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/configuration/spellbookconfiguration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/configuration/systemstate.html",
+      "title": "SystemState — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/configuration/systemstate.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/configuration.html",
+      "title": "Book, frame, and root configuration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/configuration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/connections/permissions.html",
+      "title": "Permissions — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/connections/permissions.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/connections/policies.html",
+      "title": "Policies — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/connections/policies.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/connections.html",
+      "title": "Connections and permissions — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/connections.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/errors/deadreferenceerror.html",
+      "title": "DeadReferenceError — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/errors/deadreferenceerror.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/errors/hookexecutionerror.html",
+      "title": "HookExecutionError — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/errors/hookexecutionerror.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/errors/internalregistrationerror.html",
+      "title": "InternalRegistrationError — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/errors/internalregistrationerror.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/errors/meldexecutionerror.html",
+      "title": "MeldExecutionError — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/errors/meldexecutionerror.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/errors/phaseexecutionerror.html",
+      "title": "PhaseExecutionError — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/errors/phaseexecutionerror.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/errors/phaseschedulererror.html",
+      "title": "PhaseSchedulerError — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/errors/phaseschedulererror.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/errors/phasetimeouterror.html",
+      "title": "PhaseTimeoutError — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/errors/phasetimeouterror.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/errors/spellbookvalidationerror.html",
+      "title": "SpellbookValidationError — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/errors/spellbookvalidationerror.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/errors/spellspacescopeerror.html",
+      "title": "SpellSpaceScopeError — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/errors/spellspacescopeerror.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/errors/unresolvedinputerror.html",
+      "title": "UnresolvedInputError — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/errors/unresolvedinputerror.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/errors.html",
+      "title": "Public errors — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/errors.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/helpers/cleanable.html",
+      "title": "Cleanable — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/helpers/cleanable.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/helpers/new-ulid.html",
+      "title": "new_ulid — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/helpers/new-ulid.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/helpers/pack.html",
+      "title": "Pack — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/helpers/pack.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/helpers/package.html",
+      "title": "Package — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/helpers/package.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/helpers/protocolcrafter.html",
+      "title": "ProtocolCrafter — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/helpers/protocolcrafter.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/helpers/ulid-factory.html",
+      "title": "ULID_Factory — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/helpers/ulid-factory.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/helpers.html",
+      "title": "Public helpers — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/helpers.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/capabilitycommandsystem.html",
+      "title": "CapabilityCommandSystem — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/capabilitycommandsystem.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/codegencommandsystem.html",
+      "title": "CodegenCommandSystem — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/codegencommandsystem.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/commandsystem.html",
+      "title": "CommandSystem — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/commandsystem.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/frameviewer.html",
+      "title": "FrameViewer — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/frameviewer.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/nexus.html",
+      "title": "Nexus — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/nexus.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/nexusconfiguration.html",
+      "title": "NexusConfiguration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/nexusconfiguration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/nexusconfigurationbuilder.html",
+      "title": "NexusConfigurationBuilder — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/nexusconfigurationbuilder.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/nexusframemode.html",
+      "title": "NexusFrameMode — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/nexusframemode.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/rift.html",
+      "title": "Rift — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/rift.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/riftconfiguration.html",
+      "title": "RiftConfiguration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/riftconfiguration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/riftmemorysystem.html",
+      "title": "RiftMemorySystem — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/riftmemorysystem.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/riftspace.html",
+      "title": "RiftSpace — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/riftspace.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/riftspacetype.html",
+      "title": "RiftSpaceType — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/riftspacetype.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/staticcommandsystem.html",
+      "title": "StaticCommandSystem — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/staticcommandsystem.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/viewconduit.html",
+      "title": "ViewConduit — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/viewconduit.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/viewframe.html",
+      "title": "ViewFrame — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/viewframe.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/viewmultiframe.html",
+      "title": "ViewMultiFrame — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/viewmultiframe.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/viewspell.html",
+      "title": "ViewSpell — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/viewspell.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection/workstation.html",
+      "title": "Workstation — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection/workstation.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/inspection.html",
+      "title": "Nexus, Rifts, workstations, and views — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/inspection.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/metadata/systemdocumentview.html",
+      "title": "SystemDocumentView — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/metadata/systemdocumentview.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/metadata/systemgraphview.html",
+      "title": "SystemGraphView — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/metadata/systemgraphview.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/metadata.html",
+      "title": "Package metadata and self-documents — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/metadata.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/persistence/crystallizer.html",
+      "title": "Crystallizer — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/persistence/crystallizer.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/persistence/crystallizerbootstrap.html",
+      "title": "CrystallizerBootstrap — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/persistence/crystallizerbootstrap.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/persistence/crystallizerconfiguration.html",
+      "title": "CrystallizerConfiguration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/persistence/crystallizerconfiguration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/persistence/crystallizerconfigurationbuilder.html",
+      "title": "CrystallizerConfigurationBuilder — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/persistence/crystallizerconfigurationbuilder.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/persistence/externalpersistencemanager.html",
+      "title": "ExternalPersistenceManager — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/persistence/externalpersistencemanager.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/persistence/externalpersistencemanagerconfiguration.html",
+      "title": "ExternalPersistenceManagerConfiguration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/persistence/externalpersistencemanagerconfiguration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/persistence.html",
+      "title": "Persistence, restore, and storage integration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/persistence.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/research/diffengine.html",
+      "title": "DiffEngine — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/research/diffengine.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/research/lanestate.html",
+      "title": "LaneState — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/research/lanestate.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/research/lanetype.html",
+      "title": "LaneType — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/research/lanetype.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/research/mutationresearch.html",
+      "title": "MutationResearch — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/research/mutationresearch.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/research/mutationresearchconfiguration.html",
+      "title": "MutationResearchConfiguration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/research/mutationresearchconfiguration.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/research/mutationresearchconfigurationbuilder.html",
+      "title": "MutationResearchConfigurationBuilder — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/research/mutationresearchconfigurationbuilder.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/research/researchlane.html",
+      "title": "ResearchLane — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/research/researchlane.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/research/researchset.html",
+      "title": "ResearchSet — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/research/researchset.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/research.html",
+      "title": "Research, versions, and comparisons — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/research.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/resolution/conduit.html",
+      "title": "Conduit — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/resolution/conduit.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/resolution/existence.html",
+      "title": "Existence — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/resolution/existence.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/resolution/spellcontract.html",
+      "title": "SpellContract — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/resolution/spellcontract.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/resolution/spellmap.html",
+      "title": "SpellMap — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/resolution/spellmap.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/resolution/spellspace.html",
+      "title": "SpellSpace — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/resolution/spellspace.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api/resolution.html",
+      "title": "Resolution, scopes, and lifetimes — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api/resolution.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/api.html",
+      "title": "API Reference — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/api.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/01_overview/capability_ladder.html",
+      "title": "Capability Ladder — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/01_overview/capability_ladder.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/01_overview/what_melder_is.html",
+      "title": "What Melder Is — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/01_overview/what_melder_is.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/02_architecture/continuity_and_evolution.html",
+      "title": "Continuity and Evolution — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/02_architecture/continuity_and_evolution.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/02_architecture/governance_and_change.html",
+      "title": "Governance and Structural Change — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/02_architecture/governance_and_change.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/02_architecture/mediated_access.html",
+      "title": "Mediated Runtime Access — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/02_architecture/mediated_access.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/02_architecture/ownership_and_lifetimes.html",
+      "title": "Ownership and Lifetimes — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/02_architecture/ownership_and_lifetimes.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/02_architecture/runtime_model.html",
+      "title": "Runtime Model — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/02_architecture/runtime_model.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/02_architecture/system_context.html",
+      "title": "System Context — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/02_architecture/system_context.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/03_usage/compose_an_application.html",
+      "title": "Compose an Application — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/03_usage/compose_an_application.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/03_usage/connect_subsystems.html",
+      "title": "Connect Independently Owned Subsystems — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/03_usage/connect_subsystems.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/03_usage/isolate_worlds.html",
+      "title": "Isolate Worlds in One Process — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/03_usage/isolate_worlds.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/03_usage/operate_through_a_rift.html",
+      "title": "Operate Through a Rift — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/03_usage/operate_through_a_rift.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/03_usage/preserve_and_evolve.html",
+      "title": "Preserve and Evolve a World — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/03_usage/preserve_and_evolve.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/03_usage/scope_work.html",
+      "title": "Scope Work and Resources — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/03_usage/scope_work.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/04_tradeoffs/design_tradeoffs.html",
+      "title": "Design Tradeoffs — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/04_tradeoffs/design_tradeoffs.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/05_engineering_drawings/index.html",
+      "title": "Melder Engineering Drawings — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/05_engineering_drawings/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture/diagrams/index.html",
+      "title": "Diagram Contract — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture/diagrams/index.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/architecture.html",
+      "title": "Melder Architecture and Design — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/architecture.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/downloads.html",
+      "title": "Read offline — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/downloads.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/glossary.html",
+      "title": "Glossary — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/glossary.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/releases.html",
+      "title": "Releases and migration — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/releases.html",
+      "h1_count": 1,
+      "noindex": false
+    },
+    {
+      "path": "reference/troubleshooting.html",
+      "title": "Troubleshooting by symptom — Melder",
+      "description": "",
+      "canonical": "https://melder.readthedocs.io/en/latest/reference/troubleshooting.html",
+      "h1_count": 1,
+      "noindex": false
+    }
+  ],
+  "limitations": "Local HTML/XML only; no live headers, robots, redirects, indexing or ranking checks."
+}

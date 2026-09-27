@@ -10,7 +10,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
-from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
 @pytest.fixture(autouse=True)
@@ -1240,12 +1240,14 @@ def test_future_annotations_local_protocol_forward_ref_collection_resolves_by_na
         conduit.cleanup()
 
 
-def test_future_annotations_missing_forward_ref_raises_no_candidate() -> None:
+def test_future_annotations_missing_forward_ref_is_a_required_meld_input() -> None:
     """
     Purpose:
-        Validate unresolved forward refs raise a clear no-candidate error.
+        Validate an unresolved forward ref with no provider becomes a required meld input.
     Contract:
-        - Conjure fails when no DI candidates exist for the forward ref.
+        - Conjure succeeds; the parameter compiles as an unresolved input.
+        - Melding without the value raises UnresolvedInputError naming the forward ref
+          by its written name; supplying it by override constructs the service.
     Returns:
         None.
     Raises:
@@ -1282,10 +1284,12 @@ def test_future_annotations_missing_forward_ref_raises_no_candidate() -> None:
         permissions="create",
     )
 
-    with pytest.raises(PhaseExecutionError) as exc_info:
-        spellbook.conjure(name="root")
-
-    assert any(
-        "no DI candidate found" in str(error) and "MissingDependency" in str(error)
-        for error in exc_info.value.errors
-    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        with pytest.raises(UnresolvedInputError) as exc_info:
+            conduit.meld(_BrokenService)
+        assert exc_info.value.expected_type == "MissingDependency"
+        supplied = object()
+        assert conduit.meld(_BrokenService, override={"missing": supplied}).missing is supplied
+    finally:
+        conduit.cleanup()

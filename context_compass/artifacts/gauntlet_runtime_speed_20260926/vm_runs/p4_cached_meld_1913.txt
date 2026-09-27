@@ -1,0 +1,36 @@
+tree run 1
+space.meld(spell_id=outer)      252.0 ns  (net  242.9)
+space._meld.meld(outer)         196.8 ns  (net  187.7)
+lesser.meld(spell_id=outer)     225.6 ns  (net  216.5)
+lesser._meld.meld(outer)        203.0 ns  (net  193.8)
+empty listcomp                    9.1 ns  (net    0.0)
+p4 run 1
+space.meld(spell_id=outer)      212.3 ns  (net  203.2)
+space._meld.meld(outer)         198.8 ns  (net  189.7)
+lesser.meld(spell_id=outer)     229.2 ns  (net  220.1)
+lesser._meld.meld(outer)        203.8 ns  (net  194.6)
+empty listcomp                    9.1 ns  (net    0.0)
+tree run 2
+space.meld(spell_id=outer)      256.2 ns  (net  246.7)
+space._meld.meld(outer)         197.9 ns  (net  188.4)
+lesser.meld(spell_id=outer)     222.8 ns  (net  213.3)
+lesser._meld.meld(outer)        202.7 ns  (net  193.2)
+empty listcomp                    9.5 ns  (net    0.0)
+p4 run 2
+space.meld(spell_id=outer)      236.6 ns  (net  226.7)
+space._meld.meld(outer)         225.5 ns  (net  215.7)
+lesser.meld(spell_id=outer)     234.0 ns  (net  224.2)
+lesser._meld.meld(outer)        211.2 ns  (net  201.4)
+empty listcomp                    9.8 ns  (net    0.0)
+tree run 3
+space.meld(spell_id=outer)      262.8 ns  (net  253.0)
+space._meld.meld(outer)         203.3 ns  (net  193.6)
+lesser.meld(spell_id=outer)     240.8 ns  (net  231.0)
+lesser._meld.meld(outer)        209.7 ns  (net  200.0)
+empty listcomp                    9.8 ns  (net    0.0)
+p4 run 3
+space.meld(spell_id=outer)      207.7 ns  (net  198.8)
+space._meld.meld(outer)         196.2 ns  (net  187.4)
+lesser.meld(spell_id=outer)     221.0 ns  (net  212.1)
+lesser._meld.meld(outer)        203.1 ns  (net  194.3)
+empty listcomp                    8.8 ns  (net    0.0)

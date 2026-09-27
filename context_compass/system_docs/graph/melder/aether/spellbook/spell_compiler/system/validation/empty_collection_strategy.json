@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py",
- "source_sha256": "425101ff8d0177816fe4b6dc735e7dfcf510c62d1b44efac12becb1c1ab44a19",
+ "source_sha256": "7bcdc3691519b94ec3f4d22be43e57a7cf840c346d5bd29fb3ec54180fb8427b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy": {
@@ -12,14 +12,14 @@
    "lineno": 1,
    "include": true,
    "role": "Phase 6 check: required collection sockets with zero providers - an error in automatic books, a warning in dynamic ones.",
-   "semantics_authored_against": "425101ff8d0177816fe4b6dc735e7dfcf510c62d1b44efac12becb1c1ab44a19"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.system.validation.empty_collection_strategy.EmptyCollectionStrategy",
    "label": "EmptyCollectionStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/system/validation/empty_collection_strategy.py",
-   "lineno": 30,
+   "lineno": 31,
    "bases": [
     "SpellSystemValidationStrategy"
    ],
@@ -32,7 +32,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "d8f3cf63c9e2355c56f83637f5d38e3537dc3822dfc9ee71441b1c950b301048",
+   "span_sha256": "cfe4885477b088410cdc2ace4aeb3d8ba7c36ead6468f53ecc4f1436dabe5894",
    "include": true,
    "role": "The runtime-mode-sensitive check: a required collection socket that wired zero providers means two different things depending on the owning book's mode.",
    "responsibilities": [
@@ -43,7 +43,7 @@
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "d8f3cf63c9e2355c56f83637f5d38e3537dc3822dfc9ee71441b1c950b301048"
+   "semantics_authored_against": "cfe4885477b088410cdc2ace4aeb3d8ba7c36ead6468f53ecc4f1436dabe5894"
   }
  },
  "edges_out": [
@@ -73,6 +73,7 @@
   "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
   "SystemDiagnostic": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnostic",
   "SystemDiagnosticSeverity": "melder.aether.spellbook.spell_compiler.system.system_diagnostic.SystemDiagnosticSeverity",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
   "SpellSystemValidationStrategy": "melder.aether.spellbook.spell_compiler.system.validation.strategy_base.SpellSystemValidationStrategy",
   "RootResolutionBlueprint": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
   "Spell": "melder.aether.spellbook.spell.Spell",

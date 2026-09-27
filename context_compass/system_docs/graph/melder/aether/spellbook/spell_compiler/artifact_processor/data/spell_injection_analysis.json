@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py",
- "source_sha256": "e1378314a632fcca481811e420ad52fd75c28d075a7f4f5f6e7ec950799f1a3b",
+ "source_sha256": "f77a957b3f129a4d1aa0389cd41b878ac9092bdf02993e8a9b9ba33dc5d72879",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_injection_analysis": {
@@ -28,14 +28,15 @@
     "has_bases": false,
     "trivial": true
    },
-   "span_sha256": "56cb40fc8045c0e5d116e802a6f5d5437194085ce34a653dae459b6df83076cd",
+   "span_sha256": "f1e16833299ab59bd77120f7a203cb2d1c02aa13dfb2808739da3f676d5f8325",
    "include": true,
    "role": "Says where ONE injected parameter gets its value in the fitted injection section of the codegen model.",
    "responsibilities": [
     "carry is_collection forward from the phase-3 socket truth so planner and codegen can tell a one-member collection from single DI",
     "never let is_collection be inferred from dependency count - a collection socket with one wired provider still injects a list",
     "hold the dependency keys plus the override and contract keys for that parameter",
-    "carries override_required position, parameter kind and descriptive references without dependency instance keys"
+    "carries override_required position, parameter kind and descriptive references without dependency instance keys",
+    "carries unresolved_input sources with override key, position and parameter kind and no dependency keys"
    ],
    "owns_state": [
     "kind",
@@ -54,7 +55,7 @@
    "label": "SpellInjectionInstanceSpec",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py",
-   "lineno": 76,
+   "lineno": 81,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -63,7 +64,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "e6973b8ce72292068813f96085c1121a650ccd2ab09e82722106fdd3d004a63d",
+   "span_sha256": "dcdbb390ed145845e7e3ce37090480a3e0cf35c042292b741fe1044328eaf200",
    "include": true,
    "role": "The per-instance-key injection wiring and payload posture in the fitted model.",
    "responsibilities": [
@@ -88,7 +89,7 @@
    "label": "SpellInjectionAnalysis",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_injection_analysis.py",
-   "lineno": 153,
+   "lineno": 169,
    "bases": [
     "Cleanable"
    ],
@@ -101,7 +102,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ac3a2c4493b7a477abba83c6ae0039d140e01364a562b8429aa5c82cd382fb7a",
+   "span_sha256": "6a5473a026cbcb562cf2248d2757dcc8c40f1a2b8d8a2d2259988a550646e5fa",
    "role": "Processor-owned injection section for one spell model.",
    "responsibilities": [
     "stores per-instance injection specs and payload posture for one fitted model",

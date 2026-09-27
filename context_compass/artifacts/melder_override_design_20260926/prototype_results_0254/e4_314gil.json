@@ -1,0 +1,22 @@
+{
+ "python": "3.14.7 (main, Sep  1 2026, 14:18:09) [Clang 22.1.3 ]",
+ "gil_enabled": true,
+ "variants": {
+  "current": {
+   "rounds": 200,
+   "workers": 8,
+   "failures": [],
+   "failure_count": 0,
+   "median_round_ms": 0.9257765000256768,
+   "max_round_ms": 1.434704000075726
+  },
+  "v2": {
+   "rounds": 200,
+   "workers": 8,
+   "failures": [],
+   "failure_count": 0,
+   "median_round_ms": 1.035494500229106,
+   "max_round_ms": 1.4842839996163093
+  }
+ }
+}

@@ -1,0 +1,145 @@
+{
+  "melder_version": "0.2.52",
+  "melder_import": "C:\\Users\\Mark\\PycharmProjects\\melder_private\\src\\melder\\__init__.py",
+  "requirements": {
+    "Task": [
+      {
+        "name": "work_callable",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "<class 'melder.utilities.helpers.package.Package'>",
+        "has_default": false,
+        "di_shape": "SINGLE_BY_ANNOTATION"
+      },
+      {
+        "name": "work_type",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "str | None",
+        "has_default": true,
+        "di_shape": "PLAIN"
+      },
+      {
+        "name": "agentic_mode",
+        "kind": "KEYWORD_ONLY",
+        "annotation": "<class 'bool'>",
+        "has_default": true,
+        "di_shape": "PLAIN"
+      },
+      {
+        "name": "retries",
+        "kind": "KEYWORD_ONLY",
+        "annotation": "<class 'int'>",
+        "has_default": true,
+        "di_shape": "PLAIN"
+      },
+      {
+        "name": "timeout",
+        "kind": "KEYWORD_ONLY",
+        "annotation": "float | None",
+        "has_default": true,
+        "di_shape": "PLAIN"
+      },
+      {
+        "name": "metadata",
+        "kind": "KEYWORD_ONLY",
+        "annotation": "dict | None",
+        "has_default": true,
+        "di_shape": "PLAIN"
+      }
+    ],
+    "StackContext": [
+      {
+        "name": "agent_id",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "<class 'str'>",
+        "has_default": false,
+        "di_shape": "PLAIN"
+      },
+      {
+        "name": "entry",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "<class 'melder.utilities.helpers.package.Package'>",
+        "has_default": false,
+        "di_shape": "SINGLE_BY_ANNOTATION"
+      },
+      {
+        "name": "entry_name",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "<class 'str'>",
+        "has_default": false,
+        "di_shape": "PLAIN"
+      },
+      {
+        "name": "home",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "<class 'greenlet.greenlet'>",
+        "has_default": false,
+        "di_shape": "SINGLE_BY_ANNOTATION"
+      },
+      {
+        "name": "parent_id",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "str | None",
+        "has_default": true,
+        "di_shape": "PLAIN"
+      }
+    ],
+    "CommandCenter": [
+      {
+        "name": "name",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "<class 'str'>",
+        "has_default": false,
+        "di_shape": "PLAIN"
+      },
+      {
+        "name": "config",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "'CommandCenterConfig'",
+        "has_default": false,
+        "di_shape": "SINGLE_BY_ANNOTATION"
+      },
+      {
+        "name": "context_config",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "'SpectrumContextConfig'",
+        "has_default": false,
+        "di_shape": "SINGLE_BY_ANNOTATION"
+      },
+      {
+        "name": "builders",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "'SpectrumBuilders'",
+        "has_default": false,
+        "di_shape": "SINGLE_BY_ANNOTATION"
+      },
+      {
+        "name": "resources",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "'SpectrumResources'",
+        "has_default": false,
+        "di_shape": "SINGLE_BY_ANNOTATION"
+      },
+      {
+        "name": "utilities",
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "annotation": "'SpectrumUtilities'",
+        "has_default": false,
+        "di_shape": "SINGLE_BY_ANNOTATION"
+      },
+      {
+        "name": "conduit",
+        "kind": "KEYWORD_ONLY",
+        "annotation": "'Conduit'",
+        "has_default": false,
+        "di_shape": "SINGLE_BY_ANNOTATION"
+      },
+      {
+        "name": "spectrum",
+        "kind": "KEYWORD_ONLY",
+        "annotation": "'Spectrum'",
+        "has_default": false,
+        "di_shape": "SINGLE_BY_ANNOTATION"
+      }
+    ]
+  }
+}

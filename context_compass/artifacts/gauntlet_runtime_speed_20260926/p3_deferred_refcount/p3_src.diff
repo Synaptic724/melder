@@ -1,0 +1,273 @@
+--- copy_base/src/melder/aether/conduit/conduit.py	2026-09-26 16:17:30.526003900 +0000
++++ copy/src/melder/aether/conduit/conduit.py	2026-09-26 17:06:14.371085491 +0000
+@@ -45,6 +45,7 @@
+ )
+ from melder.aether.spellbook.bind.scan import Scan
+ from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
++from melder.utilities.helpers.refcount_deferral import RefcountDeferral
+ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
+ if TYPE_CHECKING:
+     from melder.nexus.nexus import Nexus
+@@ -2658,6 +2659,9 @@
+                     conduit_hooks=root_conduit._conduit_hooks,
+                     meld_hooks=root_conduit._meld_hooks,
+                 )
++                # A new pooled shell is reused by every thread that later leases it:
++                # defer its runtime objects (free-threaded builds; see RefcountDeferral).
++                RefcountDeferral.defer_graph(new_conduit)
+             if reused_from_pool:
+                 # Only pooled shells need the pooled_lesser -> lesser
+                 # transition; freshly constructed conduits already
+@@ -2705,6 +2709,9 @@
+                     conduit_hooks=root_conduit._conduit_hooks,
+                     meld_hooks=root_conduit._meld_hooks,
+                 )
++                # A new pooled shell is reused by every thread that later leases it:
++                # defer its runtime objects (free-threaded builds; see RefcountDeferral).
++                RefcountDeferral.defer_graph(new_conduit)
+             if reused_from_pool:
+                 # Only pooled shells need the pooled_lesser -> lesser
+                 # transition; freshly constructed conduits already
+--- copy_base/src/melder/aether/conduit/meld/conduit_meld.py	2026-09-26 16:17:30.497046900 +0000
++++ copy/src/melder/aether/conduit/meld/conduit_meld.py	2026-09-26 17:06:14.372085491 +0000
+@@ -2,6 +2,7 @@
+ 
+ from melder.aether.conduit.meld.meld import Meld
+ from melder.aether.spellbook.existence.existence import Existence
++from melder.utilities.helpers.refcount_deferral import RefcountDeferral
+ 
+ if TYPE_CHECKING:
+     from melder.aether.conduit.creations.conduit_creations import ConduitCreations
+@@ -588,7 +589,7 @@
+                     # per hit through the captured context. Reaching here with
+                     # an existing entry means a guard missed; the write below
+                     # is the in-place rebuild.
+-                    self._fast_meld_doors[fast_door_key] = (
++                    door_entry = (
+                         target_spell,
+                         creation_context,
+                         door_epoch_at_entry,
+@@ -597,6 +598,11 @@
+                         # the object, so a stale entry never keeps it alive.
+                         target_spell.user_created_object is not None,
+                     )
++                    # Free-threaded builds: every warm hit loads this entry and what it
++                    # reaches, from whichever thread melds. Defer it, and any context or
++                    # executor built after conjure, so those loads skip refcounting.
++                    RefcountDeferral.defer_graph(door_entry)
++                    self._fast_meld_doors[fast_door_key] = door_entry
+             else:
+                 instance = creation_context._overrides_executor(
+                     self,
+@@ -607,7 +613,7 @@
+                     # hooks, success), so one entry serves both fast arms. A
+                     # stored mutation override (dynamic spells only) never
+                     # gets an entry, so the plain fast lane cannot skip it.
+-                    self._fast_meld_doors[fast_door_key] = (
++                    door_entry = (
+                         target_spell,
+                         creation_context,
+                         door_epoch_at_entry,
+@@ -616,6 +622,11 @@
+                         # the object, so a stale entry never keeps it alive.
+                         target_spell.user_created_object is not None,
+                     )
++                    # Free-threaded builds: every warm hit loads this entry and what it
++                    # reaches, from whichever thread melds. Defer it, and any context or
++                    # executor built after conjure, so those loads skip refcounting.
++                    RefcountDeferral.defer_graph(door_entry)
++                    self._fast_meld_doors[fast_door_key] = door_entry
+             # Hot path: inline the staged-cache flag check; the emit helper is
+             # only entered when an emit is actually pending.
+             if self._spellbook._cache_emit_required:
+--- copy_base/src/melder/aether/conduit/meld/spellspace_meld.py	2026-09-26 16:17:30.504935700 +0000
++++ copy/src/melder/aether/conduit/meld/spellspace_meld.py	2026-09-26 17:06:14.372085491 +0000
+@@ -2,6 +2,7 @@
+ 
+ from melder.aether.conduit.meld.meld import Meld
+ from melder.aether.spellbook.existence.existence import Existence
++from melder.utilities.helpers.refcount_deferral import RefcountDeferral
+ 
+ if TYPE_CHECKING:
+     from melder.aether.conduit.creations.conduit_creations import ConduitCreations
+@@ -550,7 +551,7 @@
+                     # per hit through the captured context. Reaching here with
+                     # an existing entry means a guard missed; the write below
+                     # is the in-place rebuild.
+-                    self._fast_meld_doors[fast_door_key] = (
++                    door_entry = (
+                         target_spell,
+                         creation_context,
+                         door_epoch_at_entry,
+@@ -559,6 +560,11 @@
+                         # the object, so a stale entry never keeps it alive.
+                         target_spell.user_created_object is not None,
+                     )
++                    # Free-threaded builds: every warm hit loads this entry and what it
++                    # reaches, from whichever thread melds. Defer it, and any context or
++                    # executor built after conjure, so those loads skip refcounting.
++                    RefcountDeferral.defer_graph(door_entry)
++                    self._fast_meld_doors[fast_door_key] = door_entry
+             else:
+                 instance = creation_context._overrides_executor(
+                     self,
+@@ -569,7 +575,7 @@
+                     # hooks, success), so one entry serves both fast arms. A
+                     # stored mutation override (dynamic spells only) never
+                     # gets an entry, so the plain fast lane cannot skip it.
+-                    self._fast_meld_doors[fast_door_key] = (
++                    door_entry = (
+                         target_spell,
+                         creation_context,
+                         door_epoch_at_entry,
+@@ -578,6 +584,11 @@
+                         # the object, so a stale entry never keeps it alive.
+                         target_spell.user_created_object is not None,
+                     )
++                    # Free-threaded builds: every warm hit loads this entry and what it
++                    # reaches, from whichever thread melds. Defer it, and any context or
++                    # executor built after conjure, so those loads skip refcounting.
++                    RefcountDeferral.defer_graph(door_entry)
++                    self._fast_meld_doors[fast_door_key] = door_entry
+             # Hot path: inline the staged-cache flag check; the emit helper is
+             # only entered when an emit is actually pending.
+             if self._spellbook._cache_emit_required:
+--- copy_base/src/melder/aether/conduit/spell_space/spell_space_pool.py	2026-09-22 16:29:55.029944800 +0000
++++ copy/src/melder/aether/conduit/spell_space/spell_space_pool.py	2026-09-26 17:06:14.372085491 +0000
+@@ -2,6 +2,7 @@
+ 
+ from melder.aether.conduit.spell_space.spell_space import SpellSpace
+ from melder.utilities.general_base.abstract_elastic_pool import AbstractElasticPool
++from melder.utilities.helpers.refcount_deferral import RefcountDeferral
+ 
+ if TYPE_CHECKING:
+     from melder.aether.conduit.creations.conduit_creations import (
+@@ -134,7 +135,7 @@
+         Returns:
+             SpellSpace: A newly constructed spellspace bound to this pool.
+         """
+-        return SpellSpace(
++        space = SpellSpace(
+             owner_conduit_id=self._owner_conduit_id,
+             conduit_meld=self._conduit_meld,
+             owner_conduit_creations=self._owner_conduit_creations,
+@@ -142,6 +143,10 @@
+             spellspace_pool=self,
+             spellspace_stack_state=self._spellspace_stack_state,
+         )
++        # A pooled shell is leased by whichever thread enters a scope next:
++        # defer its runtime objects (free-threaded builds; see RefcountDeferral).
++        RefcountDeferral.defer_graph(space)
++        return space
+ 
+     def prepare_object(
+             self,
+--- copy_base/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py	2026-09-26 13:43:29.879039900 +0000
++++ copy/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py	2026-09-26 17:06:14.371085491 +0000
+@@ -53,6 +53,7 @@
+     SpellSpaceScopeError,
+ )
+ from melder.utilities.general_base.cleanable import Cleanable
++from melder.utilities.helpers.refcount_deferral import RefcountDeferral
+ 
+ 
+ class GeneralizedHydratedExecutors(Cleanable):
+@@ -205,6 +206,9 @@
+             )
+             resolver.cleanup()
+             hydrated_cell[0] = hydrated
++            # Hot executors are closures, which CPython does not defer itself;
++            # every melding thread loads them (free-threaded builds).
++            RefcountDeferral.defer_graph(hydrated)
+             published_context = spell._creation_context
+             if published_context is not None:
+                 published_context._no_overrides_executor = (
+@@ -725,6 +729,9 @@
+             resolved_cell[0] = plain_instance_door
+         final_door = resolved_cell[0]
+         if final_door is not None:
++            # A specialized door is a new closure every thread will load
++            # (free-threaded builds; see RefcountDeferral).
++            RefcountDeferral.defer_graph(final_door, specialized_hooks_door)
+             # Self-replacing slot contract: later melds skip the wrapper.
+             # On success both no-overrides slots swap together
+             # (CreationContext door contract); on decline only the instance
+--- copy_base/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py	2026-09-26 13:43:29.874251800 +0000
++++ copy/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py	2026-09-26 17:06:14.371085491 +0000
+@@ -42,6 +42,7 @@
+     SpellSpaceScopeError,
+ )
+ from melder.utilities.general_base.cleanable import Cleanable
++from melder.utilities.helpers.refcount_deferral import RefcountDeferral
+ 
+ 
+ class ManyOnlyHydratedExecutors(Cleanable):
+@@ -155,6 +156,9 @@
+                 spell=spell,
+             )
+             hydrated_cell[0] = hydrated
++            # Hot executors are closures, which CPython does not defer itself;
++            # every melding thread loads them (free-threaded builds).
++            RefcountDeferral.defer_graph(hydrated)
+             return hydrated
+ 
+     def _swap_hot_doors(hydrated: ManyOnlyHydratedExecutors) -> None:
+--- copy_base/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/hydration/solo_hydrator.py	2026-08-29 20:29:56.548974400 +0000
++++ copy/src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/solo/hydration/solo_hydrator.py	2026-09-26 17:06:14.371085491 +0000
+@@ -35,6 +35,7 @@
+     SpellSpaceScopeError,
+ )
+ from melder.utilities.general_base.cleanable import Cleanable
++from melder.utilities.helpers.refcount_deferral import RefcountDeferral
+ 
+ 
+ class SoloHydratedExecutors(Cleanable):
+@@ -154,6 +155,9 @@
+                 spell=spell,
+             )
+             hydrated_cell[0] = hydrated
++            # Hot executors are closures, which CPython does not defer itself;
++            # every melding thread loads them (free-threaded builds).
++            RefcountDeferral.defer_graph(hydrated)
+             return hydrated
+ 
+     def _swap_hot_doors(hydrated: SoloHydratedExecutors) -> None:
+--- copy_base/src/melder/aether/spellbook/spellbook.py	2026-09-26 14:16:48.061004600 +0000
++++ copy/src/melder/aether/spellbook/spellbook.py	2026-09-26 17:06:14.371085491 +0000
+@@ -49,6 +49,7 @@
+ from melder.utilities.helpers.general_helpers import EnumHelpers, SpellInputUtils
+ from melder.utilities.helpers.id_builder import IDBuilder
+ from melder.utilities.helpers.init_helpers import InitHelpers
++from melder.utilities.helpers.refcount_deferral import RefcountDeferral
+ from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
+ 
+ if TYPE_CHECKING:
+@@ -6632,7 +6633,7 @@
+             },
+         )
+         try:
+-            return self._conjure_within_transaction_window(
++            conduit = self._conjure_within_transaction_window(
+                 policy=policy,
+                 dynamic=self._settle_or_inherit_conjure_mode(dynamic),
+                 name=name,
+@@ -6644,6 +6645,10 @@
+                 identity=self._transaction_identity,
+                 transaction_type=ChangeTransactionType.CONJURE,
+             )
++        # Free-threaded builds: this thread owns the whole kernel it just built, and
++        # every other thread's meld reads it. Defer it (see RefcountDeferral).
++        RefcountDeferral.defer_graph(self, conduit)
++        return conduit
+ 
+     def _conjure_existing_conduit(
+             self,
+@@ -6866,6 +6871,8 @@
+                     hook_map=hook_map,
+                     cache_state=cache_state,
+                 )
++                # Free-threaded builds: defer the rebuilt kernel (see RefcountDeferral).
++                RefcountDeferral.defer_graph(self, conduit)
+                 return conduit
+         finally:
+             mediator.end_transaction_for_identity(

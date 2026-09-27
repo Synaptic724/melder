@@ -1,0 +1,24 @@
+# melder_2 VM runs 2026-09-26 ~16:45-17:00Z, refreshed copy (0.2.59 + melder_0 16:17Z + P1), CPython 3.14.7t -X gil=0, 2 vCPU
+## probe_owner.py: who created the pooled lesser shell (same thread / live main / exited thread)
+cached lesser meld   own=     221 ns  main=     315 (+42.8%)  dead=     223 (+1.0%)
+request cycle        own=  11,713 ns  main=  13,963 (+19.2%)  dead=  11,910 (+1.7%)
+cached lesser meld   own=     218 ns  main=     301 (+38.6%)  dead=     214 (-1.5%)
+worker_b cycle       own=   8,865 ns  main=  10,831 (+22.2%)  dead=   8,853 (-0.1%)
+## micro: worker-thread loads of an object owned by live main / an exited thread / deferred (4 loads)
+worker loads of main_alive    : 4x h.o.a =   54.6 ns
+worker loads of dead_thread   : 4x h.o.a =   19.7 ns
+worker loads of deferred_main : 4x h.o.a =   18.1 ns
+## probe_deferred.py: one fresh worker thread per lane, 3 x 3,000 cycles x 3 rounds; deferral scope after warm-up
+base threads=1 request=15,812ns  worker_a=11,761ns  worker_b=10,546ns
+scope=kernel deferred on 1614 objects (walked 13011, 13 ms) top=[('SocketRef', 329), ('DagNode', 211), ('FrameACLRule', 207), ('SpellParameterRequirement', 63), ('SpellSocketDescriptor', 63), ('DirectedAcyclicWorkGraph', 58), ('FrameACLRuleSet', 52), ('Spell', 29)]
+deferred:kernel threads=1 request=13,299ns  worker_a=9,842ns  worker_b=8,620ns
+scope=kernel+containers deferred on 6178 objects (walked 13011, 17 ms) top=[('tuple', 1546), ('dict', 1530), ('list', 768), ('set', 717), ('SocketRef', 329), ('DagNode', 211), ('FrameACLRule', 207), ('SpellParameterRequirement', 63)]
+deferred:kernel+containers threads=1 request=12,645ns  worker_a=9,070ns  worker_b=8,102ns
+scope=kernel+containers+functions deferred on 7184 objects (walked 13019, 18 ms) top=[('tuple', 1551), ('dict', 1530), ('cell', 770), ('list', 768), ('set', 717), ('SocketRef', 329), ('function', 223), ('DagNode', 211)]
+deferred:kernel+containers+functions threads=1 request=10,777ns  worker_a=8,380ns  worker_b=7,962ns
+scope=all deferred on 8959 objects (walked 21301, 25 ms) top=[('tuple', 1922), ('dict', 1896), ('list', 882), ('cell', 813), ('set', 730), ('SocketRef', 329), ('function', 248), ('DagNode', 211)]
+deferred:all threads=1 request=10,625ns  worker_a=8,133ns  worker_b=7,819ns
+base threads=1 request=16,056ns  worker_a=11,899ns  worker_b=10,791ns
+## probe_deferred.py, two concurrent threads (request + worker_a)
+base threads=2 worker_a=13,193ns  request=18,802ns
+deferred:kernel+containers+functions threads=2 worker_a=9,904ns  request=12,768ns

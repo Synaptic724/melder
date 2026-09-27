@@ -13,6 +13,7 @@ import pytest
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
@@ -365,14 +366,22 @@ def test_annotation_without_default_still_requests_injection(
     assert consumer.dependency is conduit.meld_existing_spell(spell=provider_id)
 
 
-def test_required_dependency_without_provider_still_refuses(
+def test_required_dependency_without_provider_is_a_required_meld_input(
         optional_runtime: OptionalResolutionRuntime,
 ) -> None:
-    """Guard the existing no-provider failure for a parameter with no Python default."""
-    with pytest.raises(RuntimeError, match="no DI candidate found for parameter 'dependency'"):
-        consumer_id = optional_runtime.bind_consumer(RequiresSomething)
-        conduit = optional_runtime.ensure_conduit()
+    """
+    A parameter with no Python default and no provider is still required, never defaulted.
+
+    Conjure succeeds (the parameter compiles as an unresolved input); the meld that
+    constructs the consumer must supply it, and omitting it raises UnresolvedInputError.
+    """
+    consumer_id = optional_runtime.bind_consumer(RequiresSomething)
+    conduit = optional_runtime.ensure_conduit()
+    with pytest.raises(UnresolvedInputError, match="RequiresSomething.dependency expects Something") as caught:
         conduit.meld(spell_id=consumer_id)
+    assert caught.value.param_name == "dependency"
+    supplied = Something("supplied")
+    assert conduit.meld(spell_id=consumer_id, override={"dependency": supplied}).dependency is supplied
 
 
 @pytest.mark.parametrize("optional_runtime", ("dynamic_prebind",), indirect=True)

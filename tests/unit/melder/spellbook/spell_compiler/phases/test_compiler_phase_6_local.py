@@ -208,10 +208,14 @@ def test_collect_local_blueprint_visibility_gap_diagnostics_dedupes_duplicate_mi
             "root": blueprint,
             "root-duplicate": blueprint,
         },
-        spell_lookup={"root": object()},
+        spell_lookup={"root": SimpleNamespace(spell_name="Root")},
     )
 
     assert len(diagnostics) == 2
+    assert all("not visible" in diag.message for diag in diagnostics)
+    named = {diag.root_id: diag.message for diag in diagnostics}
+    assert "'Root'" in named["root"]
+    assert "spell id root-duplic" in named["root-duplicate"]
     assert {(diag.root_id, diag.spell_id) for diag in diagnostics} == {
         ("root", "missing-dep"),
         ("root-duplicate", "missing-dep"),

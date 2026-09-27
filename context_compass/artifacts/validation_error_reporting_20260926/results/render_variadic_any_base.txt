@@ -1,0 +1,11 @@
+RAISED melder.utilities.custom_exceptions.spellbook_validation_error.SpellbookValidationError
+Spellbook validation failed; one or more spells are broken. Broken spells: Flexible (id=a407e9ab2a9bcb9b6ffeeaf7d1d230786d35bce7d57171170eb19929b53fb226, frame=None)
+Diagnostics:
+Phase 4 issues:
+- Spell 'Flexible' (id=a407e9ab2a9bcb9b6ffeeaf7d1d230786d35bce7d57171170eb19929b53fb226, frame=None):
+    - [error] VARIADIC_DI_UNSUPPORTED (source=ParameterPolicyStrategy): Parameter 'args' on spell 'Flexible' is variadic but annotated for DI. Variadic DI is not supported.
+      details: {'parameter_name': 'args'}
+    - [error] VARIADIC_DI_UNSUPPORTED (source=ParameterPolicyStrategy): Parameter 'kwargs' on spell 'Flexible' is variadic but annotated for DI. Variadic DI is not supported.
+      details: {'parameter_name': 'kwargs'}
+Phase 6 diagnostics:
+  (none recorded)

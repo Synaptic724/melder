@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py",
- "source_sha256": "b126f098b2a3fb44d43d91c915eb5b3148662bdbc2b8c07e3f6df2d1693a26f3",
+ "source_sha256": "2798861a144d23dad90825556260daa0171af410d769c2fd884c4ce7f5fb02bc",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_contract_processor_strategy": {
@@ -19,7 +19,7 @@
    "label": "SpellOccurrenceContractProcessorStrategy",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_occurrence_contract_processor_strategy.py",
-   "lineno": 32,
+   "lineno": 35,
    "bases": [
     "SpellArtifactProcessorStrategy"
    ],
@@ -29,11 +29,11 @@
     "strategy_id"
    ],
    "shape": {
-    "method_count": 12,
+    "method_count": 14,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "047134e2af0340f5c9116dc63147a927276396c22236453b6e7aec151863788c",
+   "span_sha256": "ff599cd04269aa4e8c0011920720804c6c26ac26f655f95ae8b2c92b90c63423",
    "role": "Processor strategy fitting SpellContract routing and payload facts into the codegen model.",
    "responsibilities": [
     "compiles SpellContract override payload maps from analyzer-owned occurrence graph truth",
@@ -44,7 +44,7 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "047134e2af0340f5c9116dc63147a927276396c22236453b6e7aec151863788c"
+   "semantics_authored_against": "8253988c67278b6da1470229b8c27e48fc6c85017fe21d42b15d48af75f568b9"
   }
  },
  "edges_out": [
@@ -77,6 +77,7 @@
  ],
  "published_aliases": [],
  "imports": {
+  "Format": "annotationlib.Format",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "Dict": "typing.Dict",
@@ -85,9 +86,11 @@
   "Optional": "typing.Optional",
   "Tuple": "typing.Tuple",
   "SpellContract": "melder.aether.conduit.meld.contracts.spell_contract.SpellContract",
+  "SpellMap": "melder.aether.conduit.meld.contracts.spell_map.SpellMap",
   "SystemState": "melder.aether.spellbook.configuration.system_state.SystemState",
   "SpellOccurrenceContractAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_occurrence_contract_analysis.SpellOccurrenceContractAnalysis",
   "SpellArtifactProcessorStrategy": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy.SpellArtifactProcessorStrategy",
+  "CodegenSignature": "melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature.CodegenSignature",
   "ParameterDIShape": "melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape.ParameterDIShape",
   "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
   "EnumHelpers": "melder.utilities.helpers.general_helpers.EnumHelpers",

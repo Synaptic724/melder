@@ -21,6 +21,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
@@ -85,12 +86,19 @@ class BrokenSpellInDagStrategy(SpellSystemValidationStrategy):
             dag = blueprint.dag
             for node_id in dag.nodes.keys():
                 if node_id in broken_spell_ids:
+                    node_label = SpellInputUtils.describe_spell_id(node_id, spell_lookup)
+                    root_label = SpellInputUtils.describe_spell_id(root_id, spell_lookup)
+                    if node_id == root_id:
+                        message = f"Root spell {node_label} is broken (see its own errors)."
+                    else:
+                        message = (
+                            f"Spell {root_label} depends on {node_label}, which is broken, so "
+                            f"root {root_label} cannot be built either."
+                        )
                     diagnostics.append(
                         SystemDiagnostic(
                             code="broken_spell_in_dag",
-                            message=(
-                                f"Broken spell '{node_id}' is reachable in root DAG '{root_id}'."
-                            ),
+                            message=message,
                             severity=SystemDiagnosticSeverity.ERROR,
                             spell_id=node_id,
                             root_id=root_id,
