@@ -2,12 +2,16 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-08-01-ux-aix-harness-red-remediation
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: examples_0
 - Priority: p1
 - Created: 2026-08-01T11:18:00Z
-- Updated: 2026-08-04T11:43:01Z
+- Updated: 2026-09-27T10:46:47Z
+- Completed: 2026-09-27T10:46:47Z
+- Summary: Turned in by owner directive: the four findings (disposal idempotency seed, shared-config unnamed conjure
+  collision, override singleton contamination, cheatsheet count drift) are implemented per the corrected
+  2026-08-04 handoff; the four child tasks parked at review are closed with the epic.
 
 ## Objective
 Drive the 7 reds from the owner's 2026-08-01 3.14t run to green WITHOUT destroying
@@ -224,6 +228,14 @@ ruling lands. No agent claims a green run.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+## State Transition Event - 2026-09-27T10:46:47Z
+- from_state: review
+- to_state: done
+- transition_reason: Owner directive 2026-09-27 ("close this and turn it in ... and then we'll focus on something
+  new"). The four child tasks had been moved to tasks/completed/ at Status review without closure
+  lines; they are closed in this pass. The one outstanding action (an owner harness pass on 3.14t)
+  is not recorded as run.
+
 ## Context / Handoff Summary
 CORRECTED 2026-08-04. This section previously read "Nothing edited in examples or
 source. Blocked on two owner rulings" - false on both counts since the owner's
@@ -240,3 +252,4 @@ and flagged rather than quietly finished.
 NOT RUN: this sandbox is Python 3.10 and melder requires >=3.14, so no agent claim
 of green exists or should be inferred. The one outstanding action is an owner
 `pytest UX_and_AIX_experiences/pytest_examples -v` on 3.14t.
+STATE 2026-09-27T10:46:47Z: DONE. Closed and turned in by the owner; child tasks closed; moved to completed/.

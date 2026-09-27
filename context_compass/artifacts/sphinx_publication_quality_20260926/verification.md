@@ -72,3 +72,12 @@
 - Logs: post_turn_in_assets.log, post_turn_in_llm.log and post_turn_in_asset_checks.log in this folder.
 - Only ContextCompass closure/evidence records were updated afterwards. The LLM classifier excludes
   direct ContextCompass paths in llm_support/_builder.py:90-91.
+
+## Requested rebuild after CI reported stale other corpus
+
+- Completed: 2026-09-27T00:38:43Z
+- Ran .venv_new/Scripts/python.exe llm_support/_builder.py.
+- Rebuilt the other corpus from 375 files and refreshed manifest.json.
+- Src and tests fingerprints and output proofs already matched.
+- Ran .venv_new/Scripts/python.exe llm_support/_builder.py --check; all three corpora passed.
+- Both commands exited 0.

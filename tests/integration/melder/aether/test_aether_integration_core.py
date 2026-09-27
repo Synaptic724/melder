@@ -137,8 +137,8 @@ def test_aether_resolves_conduit_by_name_id_and_spell_id() -> None:
     Purpose:
         Validate Aether resolves conduits by name, id, and spell id.
     Contract:
-        - get_conduit_by_id returns the owning conduit.
-        - get_conduit_by_name returns the owning conduit.
+        - _get_root_conduit_by_id returns the owning root conduit.
+        - _get_root_conduit_by_name returns the owning root conduit.
         - get_conduit_by_spell_id returns the owning conduit.
         - Missing lookups raise ValueError.
     Returns:
@@ -159,14 +159,14 @@ def test_aether_resolves_conduit_by_name_id_and_spell_id() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        assert aether._get_conduit_by_id(conduit.id, frame_name) is conduit
-        assert aether._get_conduit_by_name("root", frame_name) is conduit
+        assert aether._get_root_conduit_by_id(conduit.id, frame_name) is conduit
+        assert aether._get_root_conduit_by_name("root", frame_name) is conduit
         assert aether._get_conduit_by_spell_id(spell_id, frame_name) is conduit
 
         with pytest.raises(ValueError, match="not found"):
-            aether._get_conduit_by_name("missing", frame_name)
+            aether._get_root_conduit_by_name("missing", frame_name)
         with pytest.raises(ValueError, match="not found"):
-            aether._get_conduit_by_id("missing-id", frame_name)
+            aether._get_root_conduit_by_id("missing-id", frame_name)
     finally:
         conduit.cleanup()
         spellbook.cleanup()

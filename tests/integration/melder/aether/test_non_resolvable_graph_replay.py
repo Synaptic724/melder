@@ -152,7 +152,7 @@ def test_checkpoint_replay_preserves_false_and_reemits_it(tmp_path: Path, monkey
     report = rebooted.load_checkpoint(checkpoint_id)
     assert report["status"] == "complete"
     assert rebooted.get_spell_crystal(definition_id).describe()["resolvable"] is False
-    conduit = Aether().get_conduit_by_name("root", "recorded")
+    conduit = Aether().get_root_conduit_by_name("root", "recorded")
     assert conduit._spellbook._inactive_spells[parked_id].resolvable is False
     supplied = GraphImplementation()
     assert conduit.meld(spell_id=consumer_id, override={"definition": supplied}).definition is supplied

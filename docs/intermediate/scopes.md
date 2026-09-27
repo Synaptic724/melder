@@ -51,6 +51,13 @@ borrowed reference: it does not extend the owner's lifetime or make reuse after
 cleanup safe. Names are discovery addresses, not matching-lifetime tags; the
 registered `Existence` still decides where objects are shared.
 
+Aether reaches the same directory from the runtime root:
+`Aether().get_conduit_by_name("job-42")` returns the named scope in the default
+frame (pass `aetheric_frame_name` for another frame), and
+`Aether().get_conduit_by_id(job.id)` finds any live scope by id, named or
+anonymous. The root-only lookups carry root names, such as
+`get_root_conduit_by_name`.
+
 ### Promote only when independent ownership is needed
 
 In a dynamic world, `upgrade_to_normal(name=...)` promotes the existing child.

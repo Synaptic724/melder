@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-26
+- Updated: 2026-09-27
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -422,7 +422,8 @@ External interfaces are Python APIs:
 - `Conduit.notch_spell(...)`, `Conduit.add_to_spell_index(...)`, and
   `Conduit.remove_from_spell_index(...)` for transaction-backed SpellIndex
   member switching, move-in, and move-out flows. THE CONDUIT ADMITS THE
-  TRANSACTION - it calls `mediator.start_transaction(...)` ITSELF and calls into
+  TRANSACTION through the frame-local DevOps `TransactionMediator` (not the
+  aetheric plane) - it calls `mediator.start_transaction(...)` ITSELF and calls into
   Spellbook inside the held window. Spellbook exposes no public verb here.
   THE CHAIN HAS THREE LAYERS, NOT TWO, and the middle one is easy to miss:
   `Conduit.<verb>` (public; opens and closes the transaction) ->
@@ -442,6 +443,10 @@ External interfaces are Python APIs:
 - `Spellbook.conjure(...)` for building a root Conduit.
 - `Conduit.meld(...)` for resolving instances.
 - `Conduit.create_lesser_conduit(...)` for child scopes.
+- `Aether.get_conduit_by_name(...)` (named roots and active named lessers) and
+  `Aether.get_conduit_by_id(...)` (any live conduit) for frame-scoped discovery; root-only discovery is
+  the `*_root_*` family (`get_root_conduit_by_name`, `get_root_conduit_by_id`, `list_root_conduit_ids`,
+  ...), and `ConduitCloud.list_conduits()` lists one frame's named scopes (0.2.79).
 - `Conduit.link(...)` / `Conduit.sever_link(...)` for dynamic linking.
 - `SpellbookConfiguration` properties and hooks.
 - `Nexus.configure(...)`, `Nexus.activate(...)`, `Nexus.create_rift(...)`,
@@ -827,7 +832,8 @@ types to seven; each `cleanup()` was verified present on the class named.
 7. `Creations.cleanup()` calls each Spell's established methods in list order and may raise
    `ExceptionGroup` - it is the one teardown here that AGGREGATES failures
    rather than stopping at the first, so a single bad object cannot strand the
-   rest of the scope.
+   rest of the scope. Since 0.2.80 that holds per method too: every declared method
+   runs even after one fails, and each failure is chained from what the method raised.
 
 ## Runtime Type Names (Concrete, No Interface Layer)
 Re-absorbed 2026-08-02 from the patch lane; every class below was verified to
@@ -868,6 +874,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Disposal failures (2026-09-27, 0.2.80): Creations runs every declared disposal method of every object, in
+  declared order, even after one raises. Each failing method is one `RuntimeError` in the `ExceptionGroup` that
+  cleanup, clear_all and purge raise, chained from the exception the method raised; a refused late publication
+  chains its errors the same way. The error text never trusts the object's `__str__`, so one failing object
+  cannot strand the rest of a scope. Disposal order and which objects are disposed are unchanged.
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations._attempt_cleanup` and
+  `Creations._describe_for_disposal_error`.
 - Compiler pool reads (2026-09-26): a compiler pass never iterates the live `Spellbook._spell_id_pool`; it
   iterates a copy taken in one call (Phases 3, 4, 5, 6 frame-wide and the Phase-8 walk). Pool writers hold the
   Spellbook lock and passes run without it at meld time, so a concurrent bind used to abort revalidation. Phase 5
@@ -997,6 +1010,17 @@ each entry in `src_components.md`; this list is the set that crosses components.
   EVIDENCE: `src/melder/aether/aetheric_frame/conduit_cloud.py:ConduitCloud`,
   `src/melder/aether/conduit/conduit.py:Conduit._link_new_lesser_under_lock`,
   `Conduit._prepare_named_for_pool` and `Conduit.upgrade_to_normal`.
+- Conduit lookup coverage (2026-09-27, 0.2.79): Aether's lookups name what they cover. The `*_root_*` family
+  reads the frame's root maps only; `get_conduit_by_name` reads the frame Cloud's named directory, so a live
+  named lesser resolves by name at any depth and returns the same object as the Cloud; `get_conduit_by_id`
+  reads the root map, then every root ward's lineage, so anonymous lessers resolve by id. Scopes returned to
+  their pool or cleaned do not resolve. Lookups are frame-scoped (`aetheric_frame_name: str = "default"`, a
+  non-string raises TypeError), grant no lease and read snapshots (`dict.copy()` of the root map and of each
+  ward's child map), because links and pool returns write a ward's child map under two different locks.
+  Ownership stays root-only: spell-owner resolution and the transfer impact sweep use the root lookups.
+  EVIDENCE: `src/melder/aether/aether.py:Aether.get_conduit_by_name`, `Aether.get_conduit_by_id`,
+  `Aether._find_live_conduit` and
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._get_lesser_conduit`.
 - Dynamic named recording stores detached ancestor values inside each surviving named twin.
   Conduit-only tombstones retire scopes without removing their shared Book; sealed history is
   immutable. Both replay drivers use the common per-Book root/parent-first reconstruction with fresh
@@ -1260,6 +1284,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
   RuntimeError after its disposal methods run (2026-09-25). A reusable clear does not wait for
   in-flight builds; such a build publishes into the fresh store. Quiesce melds before cleanup.
   EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations._refuse_publish_into_cleaned_store`.
+- A conduit lookup given a non-string frame raises TypeError naming the lookup; a not-found lookup raises
+  ValueError naming the searched frame, and a missing custom frame keeps "Aetheric frame 'F' does not exist."
+  (0.2.79). Before 0.2.79 `Aether.get_conduit_by_name` answered over roots only, so a live named lesser raised
+  "not found" while its frame's Cloud returned it.
+  EVIDENCE: `src/melder/aether/aether.py:Aether._resolve_lookup_frame` and `Aether.get_conduit_by_name`.
 - Named collision/acquisition failures preserve other directory owners. Soft retirement failures
   retain ownership for retry and never publish idle; failed descendants prevent ancestor return.
   Hard teardown logs frame-summary publication failure and continues disposal. Cloud/Nexus reads
@@ -1320,7 +1349,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   manager/descriptor/ACL cleanup through the normal Aether frame detach path.
 - `SpellExaminer.create_profile(...)` raises `ValueError` when the requested
   profile name is not registered.
-- Cleanup errors are logged; Creations may raise ExceptionGroup.
+- Cleanup errors are logged; Creations may raise ExceptionGroup. Since 0.2.80 it holds one error per failing
+  disposal method, each chained from what that method raised; before, an object's first failure ended its
+  disposal and the original exception was dropped.
 - The four posture-gated operations all raise `RuntimeError` in automatic mode -
   linking, severing, `upgrade_to_normal`, and ownership transfer. They are
   listed separately below because they are separate call sites, but a reader
@@ -1758,9 +1789,9 @@ Aether and frames:
 
 - path: `src/melder/aether/aether.py`
   start_line: 1
-  end_line: 2456
-  loc: 2456
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 2690
+  loc: 2690
+  verified_at: 2026-09-27T11:46:59Z
   note: global singleton and frame registry.
 - path: `src/melder/aether/aether_utility_system.py`
   start_line: 1
@@ -2042,9 +2073,9 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: spell-local viewer helper.
 - path: `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py`
   start_line: 1
-  end_line: 340
-  loc: 340
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 333
+  loc: 333
+  verified_at: 2026-09-27T11:46:59Z
   note: static-room viewer overlay.
 - path: `src/melder/nexus/rift/rift_space/rift_space.py`
   start_line: 1
@@ -2102,15 +2133,15 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: immutable room-memory record object.
 - path: `src/melder/nexus/rift/command_system/command_system.py`
   start_line: 1
-  end_line: 1697
-  loc: 1697
-  verified_at: 2026-09-23T11:33:20Z
+  end_line: 1696
+  loc: 1696
+  verified_at: 2026-09-27T11:46:59Z
   note: shared room-local command surface.
 - path: `src/melder/nexus/rift/command_system/static_command_system.py`
   start_line: 1
-  end_line: 680
-  loc: 680
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 682
+  loc: 682
+  verified_at: 2026-09-27T11:46:59Z
   note: static command posture.
 - path: `src/melder/nexus/rift/command_system/capability_command_system.py`
   start_line: 1
@@ -2205,9 +2236,9 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: room-event publisher for codegen lifecycle signals.
 - path: `src/melder/aether/aetheric_frame/conduit_cloud.py`
   start_line: 1
-  end_line: 1018
-  loc: 1018
-  verified_at: 2026-09-23T12:28:41Z
+  end_line: 1051
+  loc: 1051
+  verified_at: 2026-09-27T11:46:59Z
   note: dynamic conduit registry.
 - path: `src/melder/aether/conduit/conduit_cluster.py`
   start_line: 1
@@ -2259,9 +2290,9 @@ Conduit runtime:
   note: conduit state enum.
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
-  end_line: 3788
-  loc: 3788
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 3813
+  loc: 3813
+  verified_at: 2026-09-27T11:46:59Z
   note: contracts and lineage.
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
   start_line: 1
@@ -2277,9 +2308,9 @@ Conduit runtime:
   note: permission enum.
 - path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
   start_line: 1
-  end_line: 1998
-  loc: 1998
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 2000
+  loc: 2000
+  verified_at: 2026-09-27T11:46:59Z
   note: ownership transfer.
 
 Resolution and creations:
@@ -2310,9 +2341,9 @@ Resolution and creations:
   note: SpellContract descriptor.
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 1125
-  loc: 1125
-  verified_at: 2026-09-25T23:40:00Z
+  end_line: 1189
+  loc: 1189
+  verified_at: 2026-09-27T13:27:50Z
   note: instance registry.
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
@@ -2566,6 +2597,23 @@ flowchart LR
   N[Normal meld] --> Q[Normal plan of the same runtime]
 ```
 
+### Conduit Lookup Coverage
+```text
+Aether lookup(frame: str = "default") -> _resolve_lookup_frame -> frame
+  *_root_*            -> frame root maps              -> roots
+  get_conduit_by_name -> frame ConduitCloud directory -> named roots + active named lessers
+  get_conduit_by_id   -> root map snapshot, then each root ward's lineage snapshot -> any live conduit
+```
+
+```mermaid
+flowchart LR
+  L[Aether lookup with frame name] --> R[Frame resolver: str required]
+  R --> F[Existing frame]
+  F -->|root lookups| M[Root maps: roots]
+  F -->|get_conduit_by_name| C[ConduitCloud: named roots and named lessers]
+  F -->|get_conduit_by_id| W[Root map, then ward lineages: any live conduit]
+```
+
 ### ASCII Context Diagram (C4)
 ```
 [User Code]
@@ -2796,6 +2844,17 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-27 disposal failures (0.2.80): one failing disposal method no longer stops an object's teardown;
+every declared method runs and every failure reaches the caller chained from its original exception. The
+cleanup sequence, the operational invariants, the failure modes and the code map carry it; the component map
+carries the per-method contract.
+
+2026-09-27 conduit lookup coverage (0.2.79): Aether's eight root-only lookups carry `*_root_*` names;
+`get_conduit_by_name` now answers over a frame's named scopes and `get_conduit_by_id` over every live conduit,
+lessers included; one frame resolver makes a non-string frame a TypeError; `ConduitCloud.list_conduits()`
+lists named scopes. The boundary list, the operational invariants, the failure modes, the diagrams and the code
+map carry it; the component map carries the lookup contract and the snapshot ward walk.
 
 2026-09-26 door-held first builds (0.2.73): the normal site plan of a per-conduit or SpellSpace root no longer
 re-takes the root's build lock that its door already holds, so each first build takes that lock once; the meld

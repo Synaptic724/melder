@@ -3,12 +3,18 @@
 ## Metadata
 - Task ID: TASK-2026-08-07-creations-disposal-all-methods
 - Story:
-- Status: in_progress
+- Status: done
 - Owner: cowork
 - Agent Name: melder_0
 - Priority: p2
 - Created: 2026-08-07T11:06:16Z
-- Updated: 2026-08-07T11:06:16Z
+- Updated: 2026-09-27T13:03:47Z
+- Completed: 2026-09-27T13:03:47Z
+- Closure Basis: owner acceptance and turn-in in chat (2026-09-27): "yeah accepted turn in everything call it all
+  and stay signed in but finish off your work".
+- Summary: The disposal-methods regression file (all declared methods invoked in order, `many` lane, pinned
+  stop-at-first-failure posture) passes on 3.14t (GIL 0 and 1) and the GIL build, agent-run; per-method error
+  aggregation stays an open owner decision, not taken at turn-in.
 
 ## Objective
 Add unit coverage proving `Creations` invokes EVERY declared disposal method for
@@ -39,13 +45,16 @@ is a deliberate edit rather than a silent behaviour drift.
 - to_state: in_progress
 - transition_reason: owner directed the test to be written and placed in unit tests;
   source fix already applied upstream, so the test is the remaining deliverable.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner turn-in of every melder_0 ticket (chat, 2026-09-27T13:03:47Z); the file is green today.
 
 ## Steps / Checklist
 - [x] Read the sibling regression modules for naming and style conventions
 - [x] Write the regression module
-- [ ] Owner runs the file on 3.14t
-- [ ] Record the result in `## Notes`
-- [ ] Ask owner to confirm acceptance criteria before closure
+- [x] Owner runs the file on 3.14t (agent-run instead on 2026-09-27; owner turned the task in)
+- [x] Record the result in `## Notes`
+- [x] Ask owner to confirm acceptance criteria before closure
 
 ## Deliverables
 - `tests/unit/melder/aether/conduit/creations/test_creations_disposal_all_methods_regression.py`
@@ -54,7 +63,8 @@ is a deliberate edit rather than a silent behaviour drift.
 - tests/unit/melder/aether/conduit/creations/test_creations_disposal_all_methods_regression.py
 
 ## Validation
-- Not run.
+- Run 2026-09-27 (agent, VM worktree byte-equal to the device file): 4 passed on 3.14.7t
+  PYTHON_GIL=0 and =1 and on the 3.14.7 GIL build; also inside the whole-tree run.
 - Recommended commands:
   - `pytest tests/unit/melder/aether/conduit/creations/test_creations_disposal_all_methods_regression.py -q`
   - `pytest tests/unit/melder/aether/conduit/creations -q`
@@ -67,18 +77,18 @@ is a deliberate edit rather than a silent behaviour drift.
 ## Applicable Anti-Patterns
 - [x] No status transition without evidence-backed transition reason.
 - [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
 - [x] Steps complete and checked off (authoring)
 - [x] Deliverables produced and linked
 - [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
+- [x] Validation status recorded
 - [x] Unknown-first discipline followed
 - [x] Notes quality maintained
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update
+- [x] Applicable anti-pattern checks are clear or escalated with evidence
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -127,7 +137,21 @@ is a deliberate edit rather than a silent behaviour drift.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-09-27T13:03:47Z
+  TYPE: MEASURE
+  CLAIM: The regression file runs green today: 4 passed on 3.14.7t PYTHON_GIL=0 and =1 and on the 3.14.7 GIL
+    build (VM worktree copy, byte-equal to the device file), and it sits inside today's whole-tree run. The
+    per-method error-aggregation question (DECISION note above) was not ruled; the owner turned the task in.
+  EVIDENCE:
+  - tests/unit/melder/aether/conduit/creations/test_creations_disposal_all_methods_regression.py:1-211
+  - context_compass/artifacts/aether_conduit_lookup_api_impl_20260927/suites_final_0279_vm.txt:1-38
+  IMPACT: The exit gate's green run exists (agent-run); the task closes on the owner's turn-in.
+  NEXT: none (closed).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
+Closed 2026-09-27T13:03:47Z by owner turn-in; the file is green on 3.14t and GIL (agent-run).
 Owner fixed `_attempt_cleanup` after the loop-never-iterates finding. This task
 adds the unit coverage that pins the fix: all declared methods invoked, declared
 order preserved, `many` lane covered, and the current stop-at-first-failure

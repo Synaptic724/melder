@@ -494,22 +494,27 @@ def test_public_methods_fail_after_cleanup(creations: Creations) -> None:
         creations.get_creation("spell-x")
 
 
-def test_attempt_cleanup_missing_method_returns_runtimeerror(
+def test_attempt_cleanup_missing_method_returns_one_chained_runtimeerror(
         creations: Creations,
 ) -> None:
     """
-    Verify disposal failures are wrapped when a method cannot be resolved.
+    Verify a method that cannot be resolved is one wrapped failure.
+
+    Since 2026-09-27 the helper returns every failure as a list, and each
+    wrapped error is chained from the exception the method lookup raised.
     """
     result = creations._attempt_cleanup((object(), ["dispose"]))
 
-    assert isinstance(result, RuntimeError)
-    assert "Failed to dispose object" in str(result)
+    assert len(result) == 1
+    assert isinstance(result[0], RuntimeError)
+    assert "Failed to dispose object" in str(result[0])
+    assert isinstance(result[0].__cause__, AttributeError)
 
 
-def test_attempt_cleanup_no_methods_returns_none(creations: Creations) -> None:
+def test_attempt_cleanup_no_methods_returns_no_errors(creations: Creations) -> None:
     """
-    Verify empty disposal method lists are treated as no-op.
+    Verify empty disposal method lists are treated as no-op (no errors returned).
     """
     probe = Probe()
 
-    assert creations._attempt_cleanup((probe, [])) is None
+    assert creations._attempt_cleanup((probe, [])) == []

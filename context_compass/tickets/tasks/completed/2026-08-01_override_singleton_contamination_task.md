@@ -2,13 +2,15 @@
 
 ## Metadata
 - Task ID: TASK-2026-08-01-override-singleton-contamination
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: examples_0
 - Priority: p2
 - Parent: EPIC-2026-08-01-ux-aix-harness-red-remediation
 - Created: 2026-08-01T11:18:00Z
-- Updated: 2026-08-01T12:58:00Z
+- Updated: 2026-09-27T10:46:47Z
+- Completed: 2026-09-27T10:46:47Z
+- Summary: FINDING-3 (override singleton contamination) implemented per the epic's corrected handoff.
 
 ## Problem / Opportunity
 1 red, and the most interesting one. A deep `spell_override` on a `unique` graph
@@ -134,8 +136,16 @@ Owner harness run; if (b), also the full unit + component meld surfaces.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+## State Transition Event - 2026-09-27T10:46:47Z
+- from_state: review
+- to_state: done
+- transition_reason: Owner directive 2026-09-27 ("close this and turn it in ... and then we'll focus on something
+  new") closing EPIC-2026-08-01-ux-aix-harness-red-remediation; the task was parked in
+  tasks/completed/ without closure lines and is closed with its epic.
+
 ## Context / Handoff Summary
 Mechanism proven in source. The failing assertion was a correct observation of real
 behavior; the lesson's prose was what was false, and the lesson now teaches the real
 rule. Ruled (a) via the owner's scope lock - no runtime change, no patch docs needed.
 Awaiting the owner harness run only.
+STATE 2026-09-27T10:46:47Z: DONE. Closed with its epic by owner directive.

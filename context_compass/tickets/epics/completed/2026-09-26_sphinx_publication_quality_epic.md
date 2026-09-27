@@ -180,6 +180,19 @@ Record program decisions here; tactical source findings belong in child tasks.
   REREAD: HELPFUL
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-09-27T00:38:43Z
+  TYPE: MEASURE
+  CLAIM: Owner requested only a rebuild after CI reported the other corpus stale.
+    The LLM builder refreshed other (375 files) and manifest.json; src/tests were already current.
+    The subsequent check passed for all three corpora; both commands exited 0.
+  EVIDENCE:
+  - .venv_new/Scripts/python.exe llm_support/_builder.py: actual output in this chat.
+  - .venv_new/Scripts/python.exe llm_support/_builder.py --check: all three OK in this chat.
+  IMPACT: Requested local regeneration is complete; the epic remains turned in.
+  NEXT: None.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [x] Work and evidence reviewed with owner.
 - [x] Acceptance confirmed and board/artifact sync completed.

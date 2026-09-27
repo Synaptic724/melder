@@ -245,7 +245,7 @@ def _live_spells() -> List[Tuple[Any, ...]]:
     """
     from melder.aether.aether import Aether
 
-    conduit = Aether().get_conduit_by_name(_LaneNames.CONDUIT, _LaneNames.FRAME)
+    conduit = Aether().get_root_conduit_by_name(_LaneNames.CONDUIT, _LaneNames.FRAME)
     return sorted(
         (
             row["spell_name"],

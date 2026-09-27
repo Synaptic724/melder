@@ -3,7 +3,7 @@ import time
 from contextlib import contextmanager
 from threading import RLock
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
@@ -1640,204 +1640,318 @@ class Aether(Cleanable):
                 )
         return self._ensure_default_frame()
 
-    def list_conduit_ids(
+    def _resolve_lookup_frame(
+            self,
+            aetheric_frame_name: str,
+            method_name: str,
+    ) -> AethericFrame:
+        """
+        Validate a conduit lookup's frame argument and return the existing frame it names.
+
+        Purpose:
+            One frame resolver shared by the ten conduit lookups, so a wrong frame argument fails the same
+            way on every one of them.
+
+        Contract:
+            - `aetheric_frame_name` must be a `str`. Anything else (None, an int, a tuple) raises TypeError
+              naming the calling lookup and the received type, before any registry is read. Before this
+              resolver existed, None surfaced as "Aetheric frame 'None' does not exist." and an unhashable
+              value as a bare dict error.
+            - Resolution is `_get_existing_frame`: "default" always resolves (it is created lazily when
+              absent); a custom frame must already exist.
+            - Creates no custom frame and takes no conduit lock.
+
+        Args:
+            aetheric_frame_name:
+                Frame name received by the public lookup.
+            method_name:
+                Name of the public lookup, used in the TypeError message and its log line.
+
+        Returns:
+            AethericFrame: The existing frame.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If a custom frame with that name does not exist.
+            RuntimeError: If Aether has been cleaned.
+        """
+        if not isinstance(aetheric_frame_name, str):
+            message = (
+                f"{method_name}: aetheric_frame_name must be a frame name string such as 'default'; "
+                f"got {type(aetheric_frame_name).__name__}."
+            )
+            self._logger.error(message, "_resolve_lookup_frame")
+            raise TypeError(message)
+        return self._get_existing_frame(aetheric_frame_name)
+
+    def list_root_conduit_ids(
             self,
             aetheric_frame_name: str = "default",
     ) -> tuple[str, ...]:
         """
-        Return the registered root conduit identifiers for one frame.
+        Return the ids of the ROOT conduits registered in one frame.
+
+        Contract:
+            - Covers normal root conduits only (the frame's root registry). Lesser scopes, named or
+              anonymous, are never listed; `get_conduit_by_id` reaches any live conduit by id and the
+              frame's `ConduitCloud` lists its named scopes.
+            - Returns a TUPLE SNAPSHOT; it goes stale as roots are conjured or cleaned.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            Reads the frame's root registry without taking a lock; a point-in-time answer.
 
         Args:
             aetheric_frame_name:
-                Name of the target frame.
+                Name of the target frame; a string, "default" when omitted.
 
         Returns:
             Tuple[str, ...]: Snapshot of root conduit ids.
 
         Raises:
-            ValueError: If the specified frame does not exist.
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
         """
         self.check_cleaned()
-        if aetheric_frame_name != "default":
-            try:
-                frame = self._aetheric_frames[aetheric_frame_name]
-            except KeyError:
-                self._logger.error(
-                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
-                    "list_conduit_ids",
-                    exc_info=True,
-                )
-                raise ValueError(
-                    f"Aetheric frame '{aetheric_frame_name}' does not exist."
-                )
-        else:
-            frame = self._ensure_default_frame()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "list_root_conduit_ids")
         return tuple(frame._conduits.keys())
 
-    def list_conduit_names(
+    def list_root_conduit_names(
             self,
             aetheric_frame_name: str = "default",
     ) -> tuple[str, ...]:
         """
-        Return the registered root conduit names for one frame.
+        Return the names of the ROOT conduits registered in one frame.
+
+        Contract:
+            - Covers normal root conduits only. Named lesser scopes are not roots and are never listed;
+              the frame's `ConduitCloud.list_conduit_names()` lists every named scope, roots included.
+            - Returns a TUPLE SNAPSHOT; it goes stale as roots are conjured or cleaned.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            Reads the frame's root name registry without taking a lock; a point-in-time answer.
 
         Args:
             aetheric_frame_name:
-                Name of the target frame.
+                Name of the target frame; a string, "default" when omitted.
 
         Returns:
             Tuple[str, ...]: Snapshot of root conduit names.
 
         Raises:
-            ValueError: If the specified frame does not exist.
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
         """
         self.check_cleaned()
-        if aetheric_frame_name != "default":
-            try:
-                frame = self._aetheric_frames[aetheric_frame_name]
-            except KeyError:
-                self._logger.error(
-                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
-                    "list_conduit_names",
-                    exc_info=True,
-                )
-                raise ValueError(
-                    f"Aetheric frame '{aetheric_frame_name}' does not exist."
-                )
-        else:
-            frame = self._ensure_default_frame()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "list_root_conduit_names")
         return tuple(frame._conduit_ids_by_name.keys())
 
-    def count_conduits(self, aetheric_frame_name: str = "default") -> int:
+    def count_root_conduits(self, aetheric_frame_name: str = "default") -> int:
         """
-        Return the number of registered root conduits for one frame.
+        Return the number of ROOT conduits registered in one frame.
+
+        Contract:
+            - Counts normal root conduits only; lesser scopes are never counted.
+            - Reads the size of the frame's root registry directly; it builds no id list.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            Reads the frame's root registry without taking a lock; a point-in-time count.
 
         Args:
             aetheric_frame_name:
-                Name of the target frame.
-
-        Contract:
-            - Derived from `list_conduit_ids(...)`, so it BUILDS THE WHOLE ID LIST just
-              to take its length. Prefer it for clarity, not for hot paths.
-            - Scoped to one aetheric frame.
-
-        Threading:
-            Inherits the listing call's synchronization; a point-in-time count.
-
-        Lifecycle / Cleanup:
-            Guarded indirectly, via the listing call it delegates to.
-
-        Raises:
-            RuntimeError: If Aether has been cleaned.
+                Name of the target frame; a string, "default" when omitted.
 
         Returns:
             int: Number of registered root conduits.
-        """
-        return len(self.list_conduit_ids(aetheric_frame_name))
 
-    def has_conduit_id(
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "count_root_conduits")
+        return len(frame._conduits)
+
+    def has_root_conduit_id(
             self,
             conduit_id: str,
             aetheric_frame_name: str = "default",
     ) -> bool:
         """
-        Return whether one root conduit id exists in one frame.
+        Return whether a ROOT conduit with this id is registered in one frame.
+
+        Contract:
+            - Answers over normal root conduits only, so False also covers "this is a live lesser scope's
+              id"; `get_conduit_by_id` resolves any live conduit.
+            - One membership test on the frame's root registry.
+            - Scoped to one frame, so False can mean "exists, but in a different frame".
+
+        Threading:
+            Reads the frame's root registry without taking a lock; a point-in-time answer.
 
         Args:
             conduit_id:
                 Root conduit id to check.
             aetheric_frame_name:
-                Name of the target frame.
-
-        Contract:
-            - A LINEAR SCAN, not a dict lookup: it materializes the full id list and
-              tests membership in it. Fine for occasional checks, wasteful in a loop.
-            - Scoped to one aetheric frame, so False can mean "exists, but in a
-              different frame".
-
-        Threading:
-            Inherits the listing call's synchronization; a point-in-time answer.
-
-        Lifecycle / Cleanup:
-            Guarded indirectly, via the listing call it delegates to.
-
-        Raises:
-            RuntimeError: If Aether has been cleaned.
+                Name of the target frame; a string, "default" when omitted.
 
         Returns:
-            bool: True when the conduit id exists in the target frame.
-        """
-        return conduit_id in self.list_conduit_ids(aetheric_frame_name)
+            bool: True when a root conduit with this id is registered in the frame.
 
-    def has_conduit_name(
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "has_root_conduit_id")
+        return conduit_id in frame._conduits
+
+    def has_root_conduit_name(
             self,
             name: str,
             aetheric_frame_name: str = "default",
     ) -> bool:
         """
-        Return whether one root conduit name exists in one frame.
+        Return whether a ROOT conduit with this name is registered in one frame.
+
+        Contract:
+            - Answers over normal root conduits only, so False also covers "this names a live lesser
+              scope"; `ConduitCloud.has_conduit_name` answers over every named scope.
+            - One membership test on the frame's root name registry.
+            - Scoped to one frame, so False can mean "exists, but in a different frame".
+
+        Threading:
+            Reads the frame's root name registry without taking a lock; a point-in-time answer.
 
         Args:
             name:
                 Root conduit name to check.
             aetheric_frame_name:
-                Name of the target frame.
-
-        Contract:
-            - A LINEAR SCAN over the name list, like the id variant.
-            - Only NAMED conduits can match, so False also covers "registered but
-              unnamed". Scoped to one aetheric frame.
-
-        Threading:
-            Inherits the listing call's synchronization; a point-in-time answer.
-
-        Lifecycle / Cleanup:
-            Guarded indirectly, via the listing call it delegates to.
-
-        Raises:
-            RuntimeError: If Aether has been cleaned.
+                Name of the target frame; a string, "default" when omitted.
 
         Returns:
-            bool: True when the conduit name exists in the target frame.
-        """
-        return name in self.list_conduit_names(aetheric_frame_name)
+            bool: True when a root conduit with this name is registered in the frame.
 
-    def find_conduit_id_by_name(
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "has_root_conduit_name")
+        return name in frame._conduit_ids_by_name
+
+    def find_root_conduit_id_by_name(
             self,
             name: str,
             aetheric_frame_name: str = "default",
-    ) -> str | None:
+    ) -> Optional[str]:
         """
-        Return the registered root conduit id for one name, if present.
+        Return the id of the ROOT conduit registered under a name in one frame, if any.
+
+        Contract:
+            - Answers over normal root conduits only; a named lesser scope's name returns None
+              (`ConduitCloud.find_conduit_id_by_name` answers over every named scope).
+            - Returns None instead of raising when no root has the name.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            One read of the frame's root name registry without taking a lock.
 
         Args:
             name:
                 Root conduit name to resolve.
             aetheric_frame_name:
-                Name of the target frame.
+                Name of the target frame; a string, "default" when omitted.
 
         Returns:
-            Optional[str]: Matching conduit id, or None when missing.
+            Optional[str]: The root conduit id, or None when no root has this name.
 
         Raises:
-            ValueError: If the specified frame does not exist.
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
         """
         self.check_cleaned()
-        if aetheric_frame_name != "default":
-            try:
-                frame = self._aetheric_frames[aetheric_frame_name]
-            except KeyError:
-                self._logger.error(
-                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
-                    "find_conduit_id_by_name",
-                    exc_info=True,
-                )
-                raise ValueError(
-                    f"Aetheric frame '{aetheric_frame_name}' does not exist."
-                )
-        else:
-            frame = self._ensure_default_frame()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "find_root_conduit_id_by_name")
         return frame._conduit_ids_by_name.get(name)
+
+    def get_root_conduit_by_name(
+            self,
+            name: str,
+            aetheric_frame_name: str = "default",
+    ) -> Conduit:
+        """
+        Return the ROOT conduit registered under a name in one frame.
+
+        Contract:
+            - Resolves normal root conduits only. A named lesser scope is not a root and raises here;
+              `get_conduit_by_name` resolves any named conduit, roots included, to the same object for a
+              root.
+            - Returns a borrowed reference; grants no lease.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            Reads the frame's root registries without taking a lock.
+
+        Args:
+            name:
+                Root conduit name to resolve.
+            aetheric_frame_name:
+                Name of the target frame; a string, "default" when omitted.
+
+        Returns:
+            Conduit: The matching root conduit.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the custom frame does not exist, or no root conduit in the frame has this name
+                (the message names the frame).
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        return self._get_root_conduit_by_name(name, aetheric_frame_name)
+
+    def get_root_conduit_by_id(
+            self,
+            conduit_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> Conduit:
+        """
+        Return the ROOT conduit with an id in one frame.
+
+        Contract:
+            - Resolves normal root conduits only. A lesser scope's id raises here; `get_conduit_by_id`
+              resolves any live conduit, roots included, to the same object for a root.
+            - Returns a borrowed reference; grants no lease.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            One read of the frame's root registry without taking a lock.
+
+        Args:
+            conduit_id:
+                Root conduit id to resolve.
+            aetheric_frame_name:
+                Name of the target frame; a string, "default" when omitted.
+
+        Returns:
+            Conduit: The matching root conduit.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the custom frame does not exist, or no root conduit in the frame has this id
+                (the message names the frame).
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        return self._get_root_conduit_by_id(conduit_id, aetheric_frame_name)
 
     def get_conduit_by_name(
             self,
@@ -1845,22 +1959,56 @@ class Aether(Cleanable):
             aetheric_frame_name: str = "default",
     ) -> Conduit:
         """
-        Return one registered root conduit by name.
+        Return the conduit registered under a name in one frame: a named root or an active named lesser.
+
+        Purpose:
+            Frame-wide discovery by name from the runtime root, so a named scope - a root, or a lesser
+            created with `create_lesser_conduit(name=...)` at any depth - resolves without holding its
+            parent.
+
+        Contract:
+            - Answers over the frame's NAMED directory, the one its `ConduitCloud` owns: every named normal
+              root and every active named lesser. The result is the same object as
+              `get_conduit_cloud(aetheric_frame_name).get_conduit_by_name(name)`.
+            - Names are unique within a frame, not across frames, so the lookup is frame-scoped. The frame
+              is optional and defaults to "default"; a scope in another frame is found only by naming that
+              frame.
+            - A named lesser returned to its pool retires its name first, so it does not resolve; neither
+              do anonymous lessers (`get_conduit_by_id` resolves those) nor cleaned scopes.
+            - Returns a borrowed reference and grants no lease: the scope's owner may return or clean it at
+              any time, after which the reference must not be used.
+            - Root-only resolution is `get_root_conduit_by_name`.
+
+        Threading:
+            One read of the Cloud's directory under the Cloud's leaf lock; invokes no callbacks.
 
         Args:
             name:
-                Root conduit name to resolve.
+                Exact name of the scope.
             aetheric_frame_name:
-                Name of the target frame.
+                Name of the frame to search; a string, "default" when omitted.
 
         Returns:
-            Conduit: Matching root conduit.
+            Conduit: The named conduit.
 
         Raises:
-            ValueError: If the frame does not exist or the conduit is missing.
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the custom frame does not exist, or no named scope in the frame has this name
+                (the message names the frame).
+            RuntimeError: If Aether or the frame's Cloud has been cleaned.
         """
         self.check_cleaned()
-        return self._get_conduit_by_name(name, aetheric_frame_name)
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "get_conduit_by_name")
+        try:
+            return frame._conduit_cloud.get_conduit_by_name(name)
+        except ValueError:
+            message = (
+                f"Conduit with name '{name}' not found in frame '{aetheric_frame_name}'. Only named roots and "
+                "active named lesser scopes resolve; pass aetheric_frame_name if the scope lives in another "
+                "frame."
+            )
+            self._logger.error(message, "get_conduit_by_name")
+            raise ValueError(message) from None
 
     def get_conduit_by_id(
             self,
@@ -1868,22 +2016,95 @@ class Aether(Cleanable):
             aetheric_frame_name: str = "default",
     ) -> Conduit:
         """
-        Return one registered root conduit by id.
+        Return any live conduit in one frame by id: a root, or a named or anonymous lesser at any depth.
+
+        Purpose:
+            Lead an id taken from a record, a log line or a descriptor back to the live scope from the
+            runtime root, whether or not that scope has a name.
+
+        Contract:
+            - Answers over LIVE conduits: the frame's root registry first, then every root's attached
+              lesser lineage, depth-first through each `ConduitWard`. Anonymous lessers resolve here; the
+              frame's `ConduitCloud` holds named scopes only and does not see them.
+            - Reads snapshots, never live registries: a scope attached or returned while the lookup runs
+              may or may not be found, and the lookup never fails because of it.
+            - A lesser returned to its pool is detached from its parent and a cleaned scope leaves its
+              registry, so neither resolves.
+            - Returns a borrowed reference and grants no lease.
+            - Frame-scoped; the frame is optional and defaults to "default". Root-only resolution is
+              `get_root_conduit_by_id`.
+            - Cost grows with the number of live scopes in the frame: a discovery call, not a hot path.
+
+        Threading:
+            Takes no lock and invokes no callbacks.
 
         Args:
             conduit_id:
-                Root conduit id to resolve.
+                Id of the conduit.
             aetheric_frame_name:
-                Name of the target frame.
+                Name of the frame to search; a string, "default" when omitted.
 
         Returns:
-            Conduit: Matching root conduit.
+            Conduit: The live conduit with this id.
 
         Raises:
-            ValueError: If the frame does not exist or the conduit is missing.
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the custom frame does not exist, or no live conduit in the frame has this id
+                (the message names the frame).
+            RuntimeError: If Aether has been cleaned.
         """
         self.check_cleaned()
-        return self._get_conduit_by_id(conduit_id, aetheric_frame_name)
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "get_conduit_by_id")
+        conduit = self._find_live_conduit(frame, conduit_id)
+        if conduit is None:
+            message = (
+                f"Conduit with id '{conduit_id}' not found in frame '{aetheric_frame_name}'. Ids resolve for "
+                "live roots and their attached lesser scopes; a scope returned to its pool or cleaned up no "
+                "longer resolves."
+            )
+            self._logger.error(message, "get_conduit_by_id")
+            raise ValueError(message)
+        return conduit
+
+    @staticmethod
+    def _find_live_conduit(frame: AethericFrame, conduit_id: str) -> Optional[Conduit]:
+        """
+        Search one frame's live conduits for an id: the root registry, then each root's lesser lineage.
+
+        Contract:
+            - Takes one `dict.copy()` snapshot of the frame's root registry (atomic on the free-threaded
+              build) and never iterates the live dict, which conjure and cleanup write on other threads.
+            - A root id is answered from the snapshot. Otherwise each root's `ConduitWard` searches its
+              attached lineage through `ConduitWard._get_lesser_conduit`, which snapshots every level.
+            - Skips a root whose `_conduit_ward` was deleted by hard teardown after the snapshot, and a
+              root whose ward is None.
+            - Read-only; takes no lock.
+
+        Args:
+            frame:
+                The resolved frame to search.
+            conduit_id:
+                Id of the conduit.
+
+        Returns:
+            Optional[Conduit]: The live conduit, or None when no root or attached lesser has this id.
+        """
+        roots = frame._conduits.copy()
+        root = roots.get(conduit_id)
+        if root is not None:
+            return root
+        for candidate in roots.values():
+            try:
+                conduit_ward = candidate._conduit_ward
+            except AttributeError:
+                # Hard teardown deleted this root's ward after the snapshot; its lineage went with it.
+                continue
+            if conduit_ward is None:
+                continue
+            lesser = conduit_ward._get_lesser_conduit(conduit_id)
+            if lesser is not None:
+                return lesser
+        return None
 
     def get_conduit_cloud(
             self,
@@ -1911,75 +2132,87 @@ class Aether(Cleanable):
         frame = self._get_existing_frame(aetheric_frame_name)
         return frame._conduit_cloud
 
-    def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> Conduit:
+    def _get_root_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> Conduit:
         """
         Find a root conduit within one frame by its registered name.
 
+        Contract:
+            - Reads the frame's root name registry, then its root registry; a name registered to an id that
+              has already left the root registry counts as missing.
+            - Root-only: named lesser scopes are not in these registries. The not-found message points the
+              caller at `get_conduit_by_name`.
+            - Frame resolution is shared with the public lookups (`_resolve_lookup_frame`), so a non-string
+              frame raises TypeError naming `get_root_conduit_by_name`.
+
         Args:
             name (str):
-                Name of the conduit.
+                Name of the root conduit.
             aetheric_frame_name (str):
                 Name of the frame to search.
 
         Returns:
             Conduit:
-                The matching conduit.
+                The matching root conduit.
 
         Raises:
-            ValueError: If the frame does not exist or the conduit is not found.
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the frame does not exist or no root conduit has this name in it.
+            RuntimeError: If Aether has been cleaned.
         """
         self.check_cleaned()
-        if aetheric_frame_name != "default":
-            try:
-                frame = self._aetheric_frames[aetheric_frame_name]
-            except KeyError:
-                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_conduit_by_name", exc_info=True)
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            frame = self._ensure_default_frame()
-
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "get_root_conduit_by_name")
         conduit_id = frame._conduit_ids_by_name.get(name)
         if conduit_id is not None:
             conduit = frame._conduits.get(conduit_id)
             if conduit is not None:
                 return conduit
 
-        self._logger.error(f"Conduit with name {name} not found.", "_get_conduit_by_name", exc_info=True)
-        raise ValueError(f"Conduit with name {name} not found.")
+        message = (
+            f"Root conduit with name '{name}' not found in frame '{aetheric_frame_name}'. Named lesser scopes "
+            "are not roots; use get_conduit_by_name to find any named conduit."
+        )
+        self._logger.error(message, "_get_root_conduit_by_name")
+        raise ValueError(message)
 
-    def _get_conduit_by_id(self, signature: str, aetheric_frame_name: str = "default") -> Conduit:
+    def _get_root_conduit_by_id(self, conduit_id: str, aetheric_frame_name: str = "default") -> Conduit:
         """
         Find a root conduit within one frame by its id.
 
+        Contract:
+            - One read of the frame's root registry.
+            - Root-only: lesser scopes are not in it. The not-found message points the caller at
+              `get_conduit_by_id`. Spell ownership resolves here (`_get_conduit_by_spell_id`) because
+              only roots own spells.
+            - Frame resolution is shared with the public lookups (`_resolve_lookup_frame`), so a non-string
+              frame raises TypeError naming `get_root_conduit_by_id`.
+
         Args:
-            signature (str):
-                Id of the conduit.
+            conduit_id (str):
+                Id of the root conduit.
             aetheric_frame_name (str):
                 Name of the frame to search.
 
         Returns:
             Conduit:
-                The matching conduit.
+                The matching root conduit.
 
         Raises:
-            ValueError: If the frame does not exist or the conduit is not found.
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the frame does not exist or no root conduit has this id in it.
+            RuntimeError: If Aether has been cleaned.
         """
         self.check_cleaned()
-        if aetheric_frame_name != "default":
-            try:
-                conduits = self._aetheric_frames[aetheric_frame_name]._conduits
-            except KeyError:
-                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_conduit_by_id", exc_info=True)
-                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
-        else:
-            frame = self._ensure_default_frame()
-            conduits = frame._conduits
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "get_root_conduit_by_id")
+        conduit = frame._conduits.get(conduit_id)
+        if conduit is not None:
+            return conduit
 
-        if signature in conduits:
-            return conduits[signature]
-
-        self._logger.error(f"Conduit with signature {signature} not found.", "_get_conduit_by_id", exc_info=True)
-        raise ValueError(f"Conduit with signature {signature} not found.")
+        message = (
+            f"Root conduit with id '{conduit_id}' not found in frame '{aetheric_frame_name}'. Lesser scopes "
+            "are not roots; use get_conduit_by_id to find any live conduit."
+        )
+        self._logger.error(message, "_get_root_conduit_by_id")
+        raise ValueError(message)
 
     def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Conduit:
         """
@@ -2012,8 +2245,9 @@ class Aether(Cleanable):
 
         # Locked lookup so a concurrent conjure cannot mutate the registry mid-scan.
         conduit_id = frame.find_conduit_id_for_spell(spell_id)
+        # Owners are roots: a lesser scope owns only the lifecycle of what it creates.
         if conduit_id is not None:
-            return self._get_conduit_by_id(conduit_id, aetheric_frame_name)
+            return self._get_root_conduit_by_id(conduit_id, aetheric_frame_name)
 
         self._logger.error(
             f"Spell version {spell_id} not found in any conduit.",

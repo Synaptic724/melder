@@ -2,12 +2,15 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-07-19-ux-aix-expert
-- Status: pending
+- Status: done
 - Owner: cowork
 - Agent Name: examples_0
 - Priority: p2
 - Created: 2026-07-19T12:52:00Z
-- Updated: 2026-08-01T10:41:33Z
+- Updated: 2026-09-27T10:46:47Z
+- Completed: 2026-09-27T10:46:47Z
+- Summary: Turned in by owner directive: lessons 01-32 and 42 probe rows authored by 2026-08-04 per the notes;
+  both coverage measures closed (34/34 research family, 55/55 public root); no agent-run green (3.14 required).
 
 ## Objective
 The operator's tier: CrystallizerBootstrap pod restart, external persistence meshes (user DB callables), profile/checkpoint operations, group composition and campaign evolution, synthesis previews, class_wraps-built custom decorators over bound spells, multi-frame orchestration.
@@ -1690,6 +1693,14 @@ The operator's tier: CrystallizerBootstrap pod restart, external persistence mes
   REREAD: REQUIRED
   SCORE_0_TO_10: 5
 
+## State Transition Event - 2026-09-27T10:46:47Z
+- from_state: pending (stale: the notes record lessons 01-32 and 42 probe rows authored by 2026-08-04)
+- to_state: done
+- transition_reason: Owner directive 2026-09-27 ("close this and turn it in ... and then we'll focus on something
+  new"). The recorded Status was never advanced past pending while the notes record the tier
+  authored to lesson 32; turned in as authored, with the two outstanding owner questions (parked-
+  candidate lookup behind notch_spell; the amended expert 06 not yet run) left as notes.
+
 ## Context / Handoff Summary
 Method: every example imports melder as md ONLY - a deep-path import in an example
 IS the finding. Examples are runnable scripts with honest asserts; they ride the
@@ -1741,3 +1752,5 @@ verified by raw byte comparison against HEAD with endings normalised away: 70
 lines added, 6 removed, and the 6 are the ladder table, the SURFACE line and the
 VERIFY line. `git diff --ignore-cr-at-eol` still MISREPORTS this repo; do not
 trust it.
+STATE 2026-09-27T10:46:47Z: DONE. Closed and turned in by the owner; moved to completed/. Outstanding questions remain
+recorded above.

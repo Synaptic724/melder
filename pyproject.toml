@@ -89,13 +89,13 @@ LinkedIn = "https://www.linkedin.com/in/mark-geleta-4b59b752/"
 test = [
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
-    "coverage>=7.15.0",
+    "coverage==7.16.1",
     # Parse workflow structure in CI contract tests; not a runtime dependency.
     "PyYAML>=6.0.3",
 ]
 
 lint = [
-    "ruff>=0.15.15",
+    "ruff==0.16.9",
 ]
 # Opt-in: parallel test execution (`pytest -n auto`).
 parallel = [
@@ -127,6 +127,7 @@ dev = [
     { include-group = "test" },
     { include-group = "lint" },
     { include-group = "build" },
+    "build==1.6.1",
 ]
 
 [tool.uv]

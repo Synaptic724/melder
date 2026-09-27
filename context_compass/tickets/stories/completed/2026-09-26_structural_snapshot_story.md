@@ -3,12 +3,16 @@
 ## Metadata
 - Story ID: STORY-2026-09-26-structural-snapshot
 - Epic: EPIC-2026-08-03-comptime-ir-phase-pipeline
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T15:03:58Z
-- Updated: 2026-09-26T18:43:15Z
+- Updated: 2026-09-27T12:37:34Z
+- Completed: 2026-09-27T12:37:34Z
+- Summary: I-1 shipped (cache generation 15): a warm conjure over an unchanged book replays the phase 3-4 rows and
+  skips phases 1-4; capture, hydrate v1, parity (with the frame caching-posture fix) and the promoted canonical
+  maps were accepted on owner-run suites; the owner-run measurement pass was waived at turn-in (VM: -27% warm conjure).
 
 ## User Narrative
 As the Melder owner, I want a conjure whose creation cache fully hits to skip the structural and resolution
@@ -76,6 +80,13 @@ rows - measured on the gauntlet before it is trusted.
 - to_state: in_progress
 - transition_reason: Owner selected I-1 (2026-09-26T15:03:58Z); opened by fable_0 with the patch-doc task routed
   first per `patch_framework_gating.md`; four design rulings requested.
+- from_state: in_progress
+- to_state: review
+- transition_reason: Tasks 1-6 accepted on owner-run suites (2026-09-26T18:43:15Z); only the owner-run measurement
+  line stayed open (event recorded at closure).
+- from_state: review
+- to_state: done
+- transition_reason: Owner turn-in directive (2026-09-27T12:37:34Z); measurement pass waived; nothing else open.
 
 ## Dependencies / Related Work
 - tickets/stories/completed/2026-09-25_ir_phase_pipeline_survey_story.md (D1-D6)
@@ -104,9 +115,10 @@ rows - measured on the gauntlet before it is trusted.
   tickets/tasks/completed/2026-09-26_structural_snapshot_parity_task.md (done 2026-09-26T18:43:15Z; opened 18:30:35Z, review
   18:31:52Z).
   Original line: invalidation parity - the D5 table as a test list (cold vs hydrated verdicts)
-- [ ] Task: measurement (owner-run) - breakdown harness with a caching-enabled cycle, gauntlet parity, warm
-  conjure before/after. Restore parity moved into task 5. Original line: restore parity and measurement -
-  fresh index ULIDs, gauntlet parity, warm conjure before/after
+- [x] Task: measurement (owner-run) - waived at the owner's turn-in (2026-09-27); owner-run pass: Not run. The VM
+  medians recorded in the hydrate task (warm conjure -27%, structural preparation -70% at 29 spells) and the
+  owner's acceptance ("it's faster for sure") stand as the recorded delta. Original line: breakdown harness with a
+  caching-enabled cycle, gauntlet parity, warm conjure before/after. Restore parity moved into task 5.
 - [x] Task: TASK-2026-09-26-promote-structural-snapshot-docs - canonical maps + indexes; patch folder retired.
   tickets/tasks/completed/2026-09-26_promote_structural_snapshot_docs_task.md (done 2026-09-26T18:43:15Z; opened 18:36:32Z).
 - [x] Enforce Ticket Microcycle across all linked tasks.
@@ -136,10 +148,10 @@ rows - measured on the gauntlet before it is trusted.
 - Concurrent edits on the cache seam (melder_0) -> NOTICE before patching; sequence after S3b lands.
 
 ## Applicable Anti-Patterns
-- [ ] No story-state transition without linked task-state evidence.
-- [ ] No closure while required tasks remain active or un-routed.
-- [ ] No implementation before the patch docs exist and are linked.
-- [ ] No row schema that carries an index ULID or a live object.
+- [x] No story-state transition without linked task-state evidence.
+- [x] No closure while required tasks remain active or un-routed.
+- [x] No implementation before the patch docs exist and are linked.
+- [x] No row schema that carries an index ULID or a live object.
 
 ## Open Questions
 - The four rulings below (Decision Log records the answers).
@@ -389,6 +401,43 @@ rows - measured on the gauntlet before it is trusted.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-09-27T10:49:46Z
+  TYPE: FACT
+  CLAIM: Seven overnight NOTICEs to fable_0 consumed (none needed an ACK): M0-40 (R1: phase-5 socket rows leave
+    shared_compiler_executions.py and the Phase-8 fast key; dag_index keeps PathRegistry only), M0-42 (R2: old
+    normal emitters retired; many_only_manifest gains build_many_only_executor_signature, signatures unchanged),
+    M0-44/M0-52 and M2-11/M2-14 (version notched 0.2.71 -> 0.2.74 with asset and LLM-bundle rebuilds - the
+    owner-owed rebuild from this lane is covered), M0-47 (meld-time compiler passes iterate a copy of
+    _spell_id_pool; the snapshot's conjure-time sweeps deliberately keep the live dict - conjure runs inside the
+    transaction window, so a concurrent bind cannot resize it there). Every message states that
+    structural_snapshot.py, spellbook_creation_system.py and caching_system.py were not touched. The release
+    notes were cut to release_docs/0.2.77.md (next_version_release.md is empty); this lane's three bullets live
+    there now.
+  EVIDENCE:
+  - release_docs/0.2.77.md (search "A warm conjure skips the structural phases")
+  - system_docs/patches/active/compiler_pool_snapshot_2026_09_26/architecture_patch.md
+  IMPACT: No action for this lane; the shipped shape and its notes are intact at 0.2.77.
+  NEXT: none (story stays in review pending the owner's measurement decision).
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: 7
+
+- DATETIME: 2026-09-27T12:37:34Z
+  TYPE: DECISION
+  CLAIM: Closed by owner directive at turn-in. Every implementation task (1-6) was accepted on owner-run suites on
+    2026-09-26; the patch folder was retired at promotion; the only open line - the owner-run measurement pass
+    with the breakdown harness - is waived, so the recorded delta is the VM measurement from the hydrate task plus
+    the owner's acceptance. Follow-ups outside this story, already recorded: the notch runtime defect (first meld
+    of a dependent after a provider notch) reported to the owner for another lane; `src_graph.md` regeneration on
+    3.14 and the commit of the new files are owner-owed.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-26_hydrate_structural_tier_at_conjure_task.md
+  - tickets/tasks/completed/2026-09-26_structural_snapshot_parity_task.md
+  - system_docs/patches/completed/structural_snapshot_2026_09_26/architecture_patch.md
+  IMPACT: I-1 is done under the IR epic; the epic's story line and handoff carry the closure.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
 - [x] Work walkthrough shared with user (per-task reports 2026-09-26)
 - [x] Acceptance criteria confirmed by user (tasks 1-6 accepted on owner-run suites)
@@ -422,6 +471,7 @@ regenerated, system-document tests green on the device tree. Open: owner accepta
 owner-run.
 STATE 2026-09-26T18:43:15Z: REVIEW. Tasks 1-6 DONE and accepted; patch folder retired. Only the owner-run measurement
 line is open; the story closes on the owner's word.
+STATE 2026-09-27T12:37:34Z: DONE. Closed at the owner's turn-in; measurement pass waived; epic line and board synced.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->
