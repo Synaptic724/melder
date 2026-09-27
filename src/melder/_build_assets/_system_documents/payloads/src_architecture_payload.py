@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 3087
-CONTENT_SHA256 = '11ff4c4f0b245d2a5fea53fe6c11f79ff65158582a702f39e56071fd6441c0f9'
+LINE_COUNT = 3102
+CONTENT_SHA256 = '44b8ca3795f93c6aa8061b857d14424ad099db895388350563204307cc344e24'
 
 TEXT = """# Src Architecture (C4)
 
@@ -850,7 +850,8 @@ types to seven; each `cleanup()` was verified present on the class named.
 7. `Creations.cleanup()` calls each Spell's established methods in list order and may raise
    `ExceptionGroup` - it is the one teardown here that AGGREGATES failures
    rather than stopping at the first, so a single bad object cannot strand the
-   rest of the scope.
+   rest of the scope. Since 0.2.80 that holds per method too: every declared method
+   runs even after one fails, and each failure is chained from what the method raised.
 
 ## Runtime Type Names (Concrete, No Interface Layer)
 Re-absorbed 2026-08-02 from the patch lane; every class below was verified to
@@ -891,6 +892,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Disposal failures (2026-09-27, 0.2.80): Creations runs every declared disposal method of every object, in
+  declared order, even after one raises. Each failing method is one `RuntimeError` in the `ExceptionGroup` that
+  cleanup, clear_all and purge raise, chained from the exception the method raised; a refused late publication
+  chains its errors the same way. The error text never trusts the object's `__str__`, so one failing object
+  cannot strand the rest of a scope. Disposal order and which objects are disposed are unchanged.
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations._attempt_cleanup` and
+  `Creations._describe_for_disposal_error`.
 - Compiler pool reads (2026-09-26): a compiler pass never iterates the live `Spellbook._spell_id_pool`; it
   iterates a copy taken in one call (Phases 3, 4, 5, 6 frame-wide and the Phase-8 walk). Pool writers hold the
   Spellbook lock and passes run without it at meld time, so a concurrent bind used to abort revalidation. Phase 5
@@ -1359,7 +1367,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   manager/descriptor/ACL cleanup through the normal Aether frame detach path.
 - `SpellExaminer.create_profile(...)` raises `ValueError` when the requested
   profile name is not registered.
-- Cleanup errors are logged; Creations may raise ExceptionGroup.
+- Cleanup errors are logged; Creations may raise ExceptionGroup. Since 0.2.80 it holds one error per failing
+  disposal method, each chained from what that method raised; before, an object's first failure ended its
+  disposal and the original exception was dropped.
 - The four posture-gated operations all raise `RuntimeError` in automatic mode -
   linking, severing, `upgrade_to_normal`, and ownership transfer. They are
   listed separately below because they are separate call sites, but a reader
@@ -2349,9 +2359,9 @@ Resolution and creations:
   note: SpellContract descriptor.
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 1125
-  loc: 1125
-  verified_at: 2026-09-25T23:40:00Z
+  end_line: 1189
+  loc: 1189
+  verified_at: 2026-09-27T13:27:50Z
   note: instance registry.
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
@@ -2852,6 +2862,11 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-27 disposal failures (0.2.80): one failing disposal method no longer stops an object's teardown;
+every declared method runs and every failure reaches the caller chained from its original exception. The
+cleanup sequence, the operational invariants, the failure modes and the code map carry it; the component map
+carries the per-method contract.
 
 2026-09-27 conduit lookup coverage (0.2.79): Aether's eight root-only lookups carry `*_root_*` names;
 `get_conduit_by_name` now answers over a frame's named scopes and `get_conduit_by_id` over every live conduit,

@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-09-27T11:47:18Z |
-| line_count | 2520 |
+| generated_at | 2026-09-27T13:27:51Z |
+| line_count | 2532 |
 | line_ending | lf |
-| content_sha256 | `9a470fc6be355c4954aa308f1904db72ba4ad1a5a2d083bfbbfb9a7680e5c4c7` |
+| content_sha256 | `79956408e0d695f73616ba9b0dff608fb73afbb648cb5d3dbfa1a11e9d351615` |
 | sections | 65 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -44,7 +44,7 @@ which you did.
 | 518-616 | 3 | C3 Components Catalog > Component: Integration Runtime Suite |
 | 617-706 | 3 | C3 Components Catalog > Component: Mock Fixture Corpus |
 | 707-769 | 3 | C3 Components Catalog > Component: Experimentation And Profiling Trees (Local Only) |
-| 770-1322 | 2 | C2 Subcomponents Catalog |
+| 770-1324 | 2 | C2 Subcomponents Catalog |
 | 772-780 | 3 | C2 Subcomponents Catalog > Subcomponent: `conftest.py` Path Bootstrap |
 | 781-791 | 3 | C2 Subcomponents Catalog > Subcomponent: Frame Posture Test Support |
 | 792-801 | 3 | C2 Subcomponents Catalog > Subcomponent: Nexus Viewer Matrix Support |
@@ -72,23 +72,23 @@ which you did.
 | 1199-1211 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Integration Cluster |
 | 1212-1224 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Integration Cluster |
 | 1225-1243 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Integration Cluster |
-| 1244-1271 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Integration Cluster |
-| 1272-1289 | 3 | C2 Subcomponents Catalog > Subcomponent: Multithreading Integration Cluster |
-| 1290-1304 | 3 | C2 Subcomponents Catalog > Subcomponent: Live Sim Integration Cluster |
-| 1305-1313 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Spellbook Fixtures |
-| 1314-1322 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Crystallizer Harnesses |
-| 1323-1399 | 2 | Method-Level Call Flows (C1) |
-| 1325-1330 | 3 | Method-Level Call Flows (C1) > Flow: Pytest Bootstrap |
-| 1331-1348 | 3 | Method-Level Call Flows (C1) > Flow: Singleton Reset And Re-Boot |
-| 1349-1355 | 3 | Method-Level Call Flows (C1) > Flow: Viewer Matrix Fixture Build |
-| 1356-1362 | 3 | Method-Level Call Flows (C1) > Flow: Static Rift JSON Bench |
-| 1363-1369 | 3 | Method-Level Call Flows (C1) > Flow: Capability Rift JSON Bench |
-| 1370-1383 | 3 | Method-Level Call Flows (C1) > Flow: CI Runtime Qualification |
-| 1384-1399 | 3 | Method-Level Call Flows (C1) > Flow: Concurrent-Writer Stand-In |
-| 1400-2346 | 2 | C1 Code Map (Core) |
-| 2347-2397 | 2 | Diagrams |
-| 2348-2374 | 3 | Diagrams > ASCII Component Diagram (C3/C2) |
-| 2375-2397 | 3 | Diagrams > Mermaid Component Diagram (C3/C2) |
-| 2398-2443 | 2 | Information Sources |
-| 2444-2453 | 2 | Open Questions |
-| 2454-2520 | 2 | Context / Handoff Summary |
+| 1244-1273 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Integration Cluster |
+| 1274-1291 | 3 | C2 Subcomponents Catalog > Subcomponent: Multithreading Integration Cluster |
+| 1292-1306 | 3 | C2 Subcomponents Catalog > Subcomponent: Live Sim Integration Cluster |
+| 1307-1315 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Spellbook Fixtures |
+| 1316-1324 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Crystallizer Harnesses |
+| 1325-1401 | 2 | Method-Level Call Flows (C1) |
+| 1327-1332 | 3 | Method-Level Call Flows (C1) > Flow: Pytest Bootstrap |
+| 1333-1350 | 3 | Method-Level Call Flows (C1) > Flow: Singleton Reset And Re-Boot |
+| 1351-1357 | 3 | Method-Level Call Flows (C1) > Flow: Viewer Matrix Fixture Build |
+| 1358-1364 | 3 | Method-Level Call Flows (C1) > Flow: Static Rift JSON Bench |
+| 1365-1371 | 3 | Method-Level Call Flows (C1) > Flow: Capability Rift JSON Bench |
+| 1372-1385 | 3 | Method-Level Call Flows (C1) > Flow: CI Runtime Qualification |
+| 1386-1401 | 3 | Method-Level Call Flows (C1) > Flow: Concurrent-Writer Stand-In |
+| 1402-2353 | 2 | C1 Code Map (Core) |
+| 2354-2404 | 2 | Diagrams |
+| 2355-2381 | 3 | Diagrams > ASCII Component Diagram (C3/C2) |
+| 2382-2404 | 3 | Diagrams > Mermaid Component Diagram (C3/C2) |
+| 2405-2450 | 2 | Information Sources |
+| 2451-2460 | 2 | Open Questions |
+| 2461-2532 | 2 | Context / Handoff Summary |

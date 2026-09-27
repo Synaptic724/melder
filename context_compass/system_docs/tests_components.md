@@ -1254,7 +1254,8 @@ Protects:
   clearing a contract keeps the link), ownership transfer end to end, and
   automatic-mode refusal of dynamic APIs
 - teardown: idempotent cleanup that blocks meld, and dependents disposed before
-  their dependencies
+  their dependencies; a failing disposal method no longer skips the object's later methods
+  (0.2.80)
 - door-held first builds (0.2.73): concurrent first melds of one root, on one
   conduit or in one shared SpellSpace, construct it and its dependency once
 Key Files (C1):
@@ -1265,6 +1266,7 @@ Key Files (C1):
 - `tests/integration/melder/conduit/test_conduit_integration_scope_resolution_alignment.py`
 - `tests/integration/melder/conduit/test_conduit_integration_spellspace_scope_safety.py`
 - `tests/integration/melder/conduit/test_conduit_integration_disposal_ordering.py`
+- `tests/integration/melder/conduit/test_conduit_integration_disposal_failures.py`
 - `tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py`
 - `tests/integration/melder/conduit/test_ordered_disposal_runtime.py`
 - `tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py`
@@ -2287,6 +2289,11 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 342
   loc: 342
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/integration/melder/conduit/test_conduit_integration_disposal_failures.py`
+  start_line: 1
+  end_line: 120
+  loc: 120
+  verified_at: 2026-09-27T13:27:50Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py`
   start_line: 1
   end_line: 154
@@ -2452,6 +2459,11 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-09-27 disposal failures (0.2.80): `test_conduit_integration_disposal_failures.py` joined the Conduit
+Integration Cluster (real conduit cleanup and managed SpellSpace exit run every disposal method after one
+fails). The unit regression `test_creations_disposal_failure_aggregation_regression.py` and the updated
+creations and component purge tests sit in files this map keeps below cluster level.
 
 2026-09-27 conduit lookup coverage (0.2.79): `test_aether_named_lesser_lookup.py` joined the Aether Integration
 Cluster (named lessers by name, anonymous and nested lessers by id, root-named lookups, returned scopes, frame

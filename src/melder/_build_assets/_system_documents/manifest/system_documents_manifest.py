@@ -19,8 +19,8 @@ Regenerate with:
 """
 
 MANIFEST_VERSION = "2.0.0"
-BUILT_FOR_VERSION = "0.2.79"
-SOURCE_SHA256 = "2ca476afbbef2460b14b0f8a357dd9b0872fd152ca360151bcb0cd604dcf3878"
+BUILT_FOR_VERSION = "0.2.81"
+SOURCE_SHA256 = "8930d5164e3e16db8ee1513ee179af84554bcbe5c7f32735b00247a840eac71e"
 DOCUMENT_COUNT = 4
 
 READ_ORDER = (
@@ -40,8 +40,8 @@ DOCUMENTS = {
         'addressing': 'section',
         'document_file': 'src_architecture.md',
         'payload_module': 'src_architecture_payload',
-        'line_count': 3087,
-        'content_sha256': '11ff4c4f0b245d2a5fea53fe6c11f79ff65158582a702f39e56071fd6441c0f9',
+        'line_count': 3102,
+        'content_sha256': '44b8ca3795f93c6aa8061b857d14424ad099db895388350563204307cc344e24',
     },
     '__components__': {
         'name': '__components__',
@@ -52,8 +52,8 @@ DOCUMENTS = {
         'addressing': 'section',
         'document_file': 'src_components.md',
         'payload_module': 'src_components_payload',
-        'line_count': 9913,
-        'content_sha256': '26d7ce6f13a4f5d10fe776b7a37f8644a0ef6a857041437b5d782bf9e8a7a06d',
+        'line_count': 9929,
+        'content_sha256': '5c30485333944e208b96861dad19b84d9cf2bd70f4789c44eebe36537635d910',
     },
     '__graph_network__': {
         'name': '__graph_network__',
@@ -65,7 +65,7 @@ DOCUMENTS = {
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
         'line_count': 27524,
-        'content_sha256': '30a3052487d3529a820212862998e9c6c2d0d522f2ce6999d11555a3e87d219a',
+        'content_sha256': 'f350c923e4f85b2c493cb020d430df7702e11e4ff7d844c9474189e1c77a3f34',
     },
     '__graph_details__': {
         'name': '__graph_details__',
@@ -77,6 +77,6 @@ DOCUMENTS = {
         'document_file': 'src_graph.md',
         'payload_module': 'src_graph_payload',
         'line_count': 27524,
-        'content_sha256': '30a3052487d3529a820212862998e9c6c2d0d522f2ce6999d11555a3e87d219a',
+        'content_sha256': 'f350c923e4f85b2c493cb020d430df7702e11e4ff7d844c9474189e1c77a3f34',
     },
 }

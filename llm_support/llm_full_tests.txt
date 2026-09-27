@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: e900810883073764d911ce647f71aa25d2247c7d2723292dc9aeca9fcabbd49a
+SOURCE FINGERPRINT: 6a727ef9a577181b15a40c1c18fea6b0bea7d5f8540a34124ca7919e8069e9bd
 FILE COUNT: 1019
 
 ================================================================================
@@ -11431,7 +11431,7 @@ END FILE: tests/component/melder/aether/conduit/test_conduit_component_policy_re
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_purge.py
-CONTENT SHA256: 505dd0e30bdb1301bfd7aa1dffa4eb9a719f79145fd845f4753da931d564d943
+CONTENT SHA256: b726640518194a6cd6f17b76b5c61b49c130986886229b89ce6b14aab4d1c46b
 SOURCE ENCODING: utf-8
 ================================================================================
 """Contracts for scoped purge, native disposal and creation-writer synchronization."""
@@ -11859,8 +11859,9 @@ def test_purge_many_preserves_disposal_order_and_aggregates_failures(
     """
     Purpose: Preserve the existing Creations disposal contract during targeted purge.
     Contract: Many runs newest-first; methods run in order. Failures from multiple
-        objects are collected while successful objects still complete. Unrelated
-        creations survive, and final cleanup does not repeat target disposal.
+        objects are collected while successful objects still complete, and since
+        2026-09-27 a failing method no longer skips its object's later methods.
+        Unrelated creations survive, and final cleanup does not repeat target disposal.
     Args: spellspace: Select the local SpellSpace instead of conduit storage.
     Returns: None; both expected failures are captured in one ExceptionGroup.
     """
@@ -11930,6 +11931,7 @@ def test_purge_many_preserves_disposal_order_and_aggregates_failures(
             (3, "first"),
             (3, "second"),
             (2, "first"),
+            (2, "second"),
             (1, "first"),
             (1, "second"),
         ]
@@ -11939,7 +11941,7 @@ def test_purge_many_preserves_disposal_order_and_aggregates_failures(
     finally:
         space.cleanup()
         root.permanent_cleanup()
-    assert len(events) == 7
+    assert len(events) == 8
     assert other.cleanup_calls == 1
 
 
@@ -172499,7 +172501,7 @@ END FILE: tests/unit/melder/aether/conduit/creations/test_conduit_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations.py
-CONTENT SHA256: 14b85ab4a3a745d73620c0bfbe2838038bb5db12c76f688b1cbbcfbd47ea24c2
+CONTENT SHA256: 6058b7e702ee1e04207a4222216e048d3ace2833bff6343a6f7b65175d07abe0
 SOURCE ENCODING: utf-8
 ================================================================================
 from unittest.mock import patch
@@ -172998,31 +173000,36 @@ def test_public_methods_fail_after_cleanup(creations: Creations) -> None:
         creations.get_creation("spell-x")
 
 
-def test_attempt_cleanup_missing_method_returns_runtimeerror(
+def test_attempt_cleanup_missing_method_returns_one_chained_runtimeerror(
         creations: Creations,
 ) -> None:
     """
-    Verify disposal failures are wrapped when a method cannot be resolved.
+    Verify a method that cannot be resolved is one wrapped failure.
+
+    Since 2026-09-27 the helper returns every failure as a list, and each
+    wrapped error is chained from the exception the method lookup raised.
     """
     result = creations._attempt_cleanup((object(), ["dispose"]))
 
-    assert isinstance(result, RuntimeError)
-    assert "Failed to dispose object" in str(result)
+    assert len(result) == 1
+    assert isinstance(result[0], RuntimeError)
+    assert "Failed to dispose object" in str(result[0])
+    assert isinstance(result[0].__cause__, AttributeError)
 
 
-def test_attempt_cleanup_no_methods_returns_none(creations: Creations) -> None:
+def test_attempt_cleanup_no_methods_returns_no_errors(creations: Creations) -> None:
     """
-    Verify empty disposal method lists are treated as no-op.
+    Verify empty disposal method lists are treated as no-op (no errors returned).
     """
     probe = Probe()
 
-    assert creations._attempt_cleanup((probe, [])) is None
+    assert creations._attempt_cleanup((probe, [])) == []
 ================================================================================
 END FILE: tests/unit/melder/aether/conduit/creations/test_creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/creations/test_creations_disposal_all_methods_regression.py
-CONTENT SHA256: 144a0200553ba1e9f6057393093ec384e27bef60bd0d2e3a88106e99446a775a
+CONTENT SHA256: f338cb9f5db3f7981f00bc41269bdf94ae1d312f9002047d24daee690b5fa71c
 SOURCE ENCODING: utf-8
 ================================================================================
 """Regression: `_attempt_cleanup` invoked only the FIRST disposal method.
@@ -173045,12 +173052,15 @@ Contract under test:
     Every declared disposal method is invoked, in DECLARED order, for both
     singleton (`add_creation`) and `many` (`add_many_creations`) entries.
 
-    The failure posture is pinned in its own test rather than assumed: the first
-    failing method currently ends disposal for that entry and surfaces one
-    error. That is the accepted current behaviour, not a guarantee - if disposal
-    later aggregates per-method failures the way
-    `_dispose_disposable_registry` already aggregates per-entry ones, the
-    failure test is the one to update.
+    The failure posture is pinned in its own test rather than assumed. Until
+    2026-09-27 the first failing method ended disposal for that entry and
+    surfaced one error; this file pinned that posture so a change would be a
+    deliberate edit. The owner then ruled that per-method failures aggregate
+    the way `_dispose_disposable_registry` already aggregates per-entry ones,
+    so the failure test now asserts that the methods declared after a failing
+    one still run. The full failure contract (one chained error per failing
+    method, safe error text) is covered by
+    `test_creations_disposal_failure_aggregation_regression.py`.
 """
 
 from typing import List
@@ -173093,13 +173103,13 @@ class FailingFirstDisposalProbe:
     """Creation double whose FIRST declared disposal method raises.
 
     Purpose:
-        Pin the current failure posture: disposal of one entry stops at the
-        first raising method rather than continuing through the remainder.
+        Pin the failure posture: a raising first method does not stop the
+        entry's remaining methods (owner decision, 2026-09-27).
 
     Contract:
         - `close()` records the call and then raises.
-        - `flush()` records the call; reaching it would prove the posture
-          changed.
+        - `flush()` records the call; it must still be reached after `close()`
+          fails.
     """
 
     def __init__(self) -> None:
@@ -173203,17 +173213,17 @@ def test_many_bucket_entries_each_invoke_every_declared_method() -> None:
     )
 
 
-def test_first_failing_method_ends_disposal_for_that_entry() -> None:
-    """PINS CURRENT POSTURE - not a guarantee.
+def test_first_failing_method_does_not_end_disposal_for_that_entry() -> None:
+    """PINS THE FAILURE POSTURE (updated 2026-09-27 on the owner's ruling).
 
-    Disposal of one entry stops at the first raising method and surfaces one
-    error through the aggregated `ExceptionGroup`. If per-method failures are
-    later collected the way per-entry failures already are, THIS is the test to
-    update - the three above stay valid either way.
+    A raising method no longer ends disposal of its entry: the method declared
+    after it still runs, and the one failure reaches the caller through the
+    aggregated `ExceptionGroup`. Until 2026-09-27 this test asserted the
+    opposite (disposal stopped at the first raising method).
 
     Contract assertions:
         - The failing method ran.
-        - The method declared after it did not.
+        - The method declared after it also ran.
         - Exactly one error reached the caller for this entry.
     """
     probe = FailingFirstDisposalProbe()
@@ -173228,8 +173238,8 @@ def test_first_failing_method_ends_disposal_for_that_entry() -> None:
     with pytest.raises(ExceptionGroup) as raised:
         store.cleanup()
 
-    assert probe.calls == ["close"], (
-        "expected disposal to stop at the first failing method; "
+    assert probe.calls == ["close", "flush"], (
+        "expected the method after a failing one to still run; "
         f"got {probe.calls}"
     )
     assert len(raised.value.exceptions) == 1, (

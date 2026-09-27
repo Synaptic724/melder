@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 77ace0e4cabbc783059e7ada4e5f15543f9f11574f5ee16b34de7dbc086bc1ff
-FILE COUNT: 376
+SOURCE FINGERPRINT: 4be0ec47f70a545b2e4c7c30a61198e30f5bfeb302f2636e36e87eb1a3de2bcb
+FILE COUNT: 378
 
 ================================================================================
 BEGIN FILE: .gitattributes
@@ -4569,7 +4569,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: a57cf2af2457ecc58524e6f65341e00f8966cc54a0539bc90672f78297c3463d
+CONTENT SHA256: 9f575513683268ec5966c760de72f122fd0d2bcd4432fa1efdf5e83204d41721
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -4602,6 +4602,7 @@ SOURCE ENCODING: utf-8
 
 **[Browse Examples](https://melder.readthedocs.io/en/latest/examples/index.html)**
 · **[Full Table of Contents](https://melder.readthedocs.io/en/latest/contents.html)**
+· **[Roadmap](#roadmap)**
 
 Beginner → Intermediate → Advanced → Expert
 
@@ -4819,6 +4820,24 @@ and be refused — **before a single object is constructed.**
 
 That's the difference between an AI that can *call* your system and an AI that
 can safely *evolve* it.
+
+---
+
+## Roadmap
+
+The planned path from API stabilization to a supported runtime and the Mojo migration.
+
+<a href="https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png">
+  <picture>
+    <source srcset="roadmap/melder-roadmap-art.png">
+    <img src="https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png"
+         alt="Melder roadmap: API stabilization, a supported 1.0 runtime, and staged Mojo migration through 2.0"
+         width="100%">
+  </picture>
+</a>
+
+[Read the detailed roadmap](https://github.com/Synaptic724/melder/blob/prod/roadmap/melder-roadmap-expanded.md)
+· [Open the image at full size](https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png)
 
 ---
 
@@ -70831,10 +70850,10 @@ END FILE: release_docs/0.2.50.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/0.2.77.md
-CONTENT SHA256: 547a27e66a9a65bef5a0b36e298082cc74a3f2d90bf8e40b12eed424a3e80bfb
+CONTENT SHA256: 691aeb618f5b38db28e6eaae77587cea5a4ab924b7934b044c580b1654ba0910
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.79
+# Melder 0.2.81
 
 **Unreleased**
 
@@ -70900,6 +70919,22 @@ while the frame's `ConduitCloud` returned the scope.
   can no longer make it fail with `dictionary changed size during iteration` on free-threaded Python.
 - **Room commands are unchanged.** The Nexus room commands and viewer methods of the same names keep
   their behaviour and access control.
+
+## Disposal runs every method and reports every failure
+
+When one of an object's disposal methods raises, Melder now still runs the methods declared after it. With
+a book whose `disposal_method_names` is `["close", "release"]`, an object whose `close()` raises still has
+`release()` called; before, `release()` was skipped and whatever it releases leaked.
+
+- **One error per failing method, with the real cause.** `purge`, leaving a `with conduit.enter_spellspace()`
+  block and the other scope teardowns raise the same `ExceptionGroup` as before, and conduit cleanup still
+  logs it. The group now holds one `RuntimeError` per failing method instead of one per object, and each
+  error's `__cause__` is the exception the method raised, with its type and traceback.
+- **One bad object cannot stop the rest.** Reporting a failure no longer relies on the failing object's
+  `__str__`; an object whose `__str__` also fails is named by type and id, and the other objects in the
+  scope are still disposed.
+- **Order is unchanged.** Methods run in the order the book declares them, and objects are disposed newest
+  first, as before.
 
 ## Override payload values reach the provider as the objects you gave
 
@@ -71438,6 +71473,8 @@ stay valid.
 
 ## Packaging and documentation
 
+- The README now includes the roadmap artwork after the product introduction, with quick navigation,
+  a full-size image link and a link to the detailed milestones.
 - The documentation homepage now says "A dependency graph runtime for Python". Its previous heading
   link remains valid; the existing guide cards, navigation and page layout are preserved.
 - Documentation builds check titles, descriptions, canonical URLs and sitemap destinations, with
@@ -71458,10 +71495,12 @@ stay valid.
   conjure validation report. They also cover override key-set plans and the site plans normal melds now
   share with them, unresolved inputs decided before construction, the structural snapshot that lets a warm
   conjure skip phases 1-4, self-referencing constructors and cycle consumers in the conjure report,
-  class binding-profile annotations, compiler steps that read a copy of the spell registry, and first builds
-  of per-conduit and SpellSpace objects that take their build lock once. The retired
-  override-targeting internals and normal-meld emitters no longer appear, and the graph documents drop the
-  modules this release deletes.
+  class binding-profile annotations, compiler steps that read a copy of the spell registry, first builds of
+  per-conduit and SpellSpace objects that take their build lock once, and what each Aether conduit lookup
+  covers (the root-only `*_root_*` family, `get_conduit_by_name` over named scopes and `get_conduit_by_id`
+  over every live conduit), and disposal that runs every declared method and reports each failure. The
+  retired override-targeting internals and normal-meld emitters no longer appear, and the graph documents drop
+  the modules this release deletes.
 - `UnresolvedInputError` joins the internal-registration guard. Like every Melder exception it can be
   raised and caught, but it cannot be bound as a spell.
 - The internal-registration guard drops the 27 internal classes this release removes (among them
@@ -71477,7 +71516,7 @@ stay valid.
   what each group of tests protects, and the rule that a test fixture resetting Melder's singletons must boot
   a fresh `Aether` afterwards. The registration-guard test and the system-document view tests no longer
   depend on the order the suite runs them in.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.78.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.81.
 ================================================================================
 END FILE: release_docs/0.2.77.md
 ================================================================================
@@ -71584,4 +71623,991 @@ SOURCE ENCODING: utf-8
 - 🌈 Customization: Providing advanced customization options for users' specific needs.
 ================================================================================
 END FILE: roadmap.md
+================================================================================
+================================================================================
+BEGIN FILE: roadmap/melder-roadmap-expanded.md
+CONTENT SHA256: c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder Roadmap
+
+**Status:** Expanded discussion draft — established direction plus labeled proposals  
+**Planning horizon:** Approximately two years from adoption, covering the full path to 2.0.
+
+## North star: governed runtime evolution of software
+
+Melder's intention is to make software evolvable through its running runtime.
+Humans and agents should be able to understand a live system, propose and research
+changes, obtain the required authority, introduce new capabilities, verify the
+outcome, and preserve or recover the resulting system through supported mechanisms.
+
+The intended product is not merely object construction, dependency injection, or
+an agent wrapper. It is a runtime foundation for the ongoing evolution of software,
+with service-management practices, operational evidence, change controls, and
+frame-owned governance built into that foundation.
+
+The 1.0 direction includes an agent-usable, ITIL-compatible service-management
+capability, the MutationResearch mechanics needed to support governed evolution,
+and additional frame-local systems. Full compatibility is a target to define and
+substantiate, not a claim that the current release is accredited or complete.
+
+The roadmap has three connected stages: stabilize the public API, complete the
+capabilities required by the runtime strategy, and progressively migrate the
+implementation to Mojo while retaining a supported Python interface.
+
+**API stability at 0.5 is not a feature freeze. Feature completion for the 1.0
+scope and completion of the Mojo migration at 2.0 are separate milestones.**
+
+The two-year horizon is a development target for the whole roadmap, not two years
+per stage. Individual release dates will be assigned as scope and dependencies
+are established. Releases must meet their acceptance criteria rather than ship
+solely to satisfy a date.
+
+## Milestones
+
+| Target | Focus | Intended outcome |
+| --- | --- | --- |
+| **0.4** | API consolidation and stabilization | Review and settle public contracts across all systems and subsystems; resolve known inconsistencies and planned breaking redesigns. |
+| **0.5** | Stable API baseline and alpha exit | Establish compatibility-protected public APIs, supported extension points, and an explicit deprecation process. |
+| **0.5–1.0** | Feature development, integration, and performance | Add the features and implementation work required to fulfill Melder's declared 1.0 strategy and capability claims, alongside verification and optimization. |
+| **1.0** | Complete supported runtime and dual licensing | Deliver the agreed 1.0 capabilities, supported tooling, documented contracts, and performance evidence. Make dual licensing available. |
+| **1.2** | Mojo: compiler and resolution surfaces | Migrate compiler and resolution implementations behind the supported interfaces. |
+| **1.4** | Mojo: backend | Migrate backend systems while preserving their documented behavior and interactions with other subsystems. |
+| **1.6** | Mojo: Nexus | Migrate Nexus and its supported operator-facing and agent-facing surfaces. |
+| **1.8** | Mojo: Crystallizer | Migrate Crystallizer and its persistence, checkpoint, and restoration responsibilities. |
+| **2.0** | Complete Mojo migration | Complete migration of all Melder runtime systems and subsystems to Mojo, retaining a supported Python interface over the completed core. |
+
+These are milestone targets, not a claim that the work has already shipped.
+Intermediate releases can deliver compatible features, fixes, and incremental
+migration work.
+
+## Through 0.5: stabilize the contracts
+
+By 0.4, the public APIs across Melder's systems and subsystems should be
+consolidated into a coherent design. By 0.5, that work should establish the
+compatibility baseline required to leave alpha.
+
+The protected surface includes documented behavior, not only method names.
+Configuration, inputs and outputs, errors, lifecycle and ownership rules,
+structured inspection results, operator commands, extension points, and
+persistence interfaces must have clear contracts appropriate to their role.
+
+Internal implementation details can continue to change. Existing public contracts
+must not become disposable merely because a subsystem is being expanded or
+rewritten.
+
+New features remain welcome after 0.5. Additions should extend established
+contracts compatibly. Genuinely experimental additions must be explicitly
+identified, with a clear process for becoming supported.
+
+## 0.5–1.0: build out the intended runtime
+
+This is an active feature-development phase, not merely a validation or
+maintenance phase.
+
+Melder will add the capabilities, integrations between subsystems, and
+implementation work necessary to fulfill the strategy defined for 1.0. The work
+includes closing architectural gaps, extending existing systems, completing
+operator workflows, and making the supported tooling effective in practice.
+
+The scope is the complete runtime, not only IoC or object resolution. Runtime
+operation, ownership and lifecycle management, inspection, agent-facing tooling,
+structural change, persistence, and recovery all belong in the release's
+capability planning.
+
+Correctness, usability, and performance will develop alongside the features.
+A capability is not complete merely because an API exists: it must be accessible
+through supported interfaces, work in the intended workflows, interact correctly
+with other systems, and have documented limits.
+
+Before 1.0, each capability claimed for that release must be connected to its
+implementation, documentation, working examples or tooling, and appropriate
+correctness and performance evidence. Significant unfinished work needed to
+support a 1.0 claim remains release work; it is not automatically deferred to the
+Mojo migration.
+
+**1.0 is the target for delivering Melder's declared runtime capabilities, not
+simply declaring the existing implementation stable.** It does not imply that
+every possible future feature has been invented or delivered.
+
+## 1.0 capability direction: an operational environment for evolution
+
+### Direction established for this roadmap
+
+The 0.5–1.0 phase includes active feature development across the runtime. It aims
+to make the declared 1.0 strategy usable and performant, not simply to stabilize
+or test the present implementation.
+
+Agents should be able to participate in a complete governed-change workflow:
+understand a service, investigate a problem or opportunity, propose a change,
+assemble evidence, obtain authorization, stage and enact the change, evaluate the
+outcome, and preserve the result or execute an approved recovery plan.
+
+New service-management and governance systems should have frame-local ownership,
+configuration, authority, and lifecycle. Separate frames must be able to adopt
+separate policies without accidentally sharing mutable approvals, change state,
+or operator authority.
+
+The following workstreams are **proposed elaborations of that direction**. They
+are not claims that these capabilities have already shipped. Names are functional
+working labels, not decisions about public class names, exact module boundaries,
+or guaranteed minor-release assignments. More systems may be introduced where
+needed to meet the north star.
+
+### Proposed workstream: frame-local service management and change enablement
+
+Provide a machine-readable service-management model that supports change requests,
+change models, authorization, scheduling, progress, verification, closure, and
+links to incidents, problems, configuration items, releases, and improvement work.
+
+Support a range of policy-driven change paths: pre-authorized repeatable changes,
+assessed normal changes, and expedited emergency changes with explicit authority
+and follow-up review. Not every operation should need a committee or synchronous
+human intervention. Equally, an agent should not gain authority merely by labeling
+its own request an emergency or assigning itself a low risk score.
+
+Record which policy revision and principal authorized a particular plan, the
+scope and limits of that authorization, and the evidence on which it depended.
+Policy changes and delegation changes must themselves follow controlled paths.
+
+Keep the long-running service-management workflow separate from short-lived
+structural transaction admission. Do not hold runtime locks while waiting for
+reviews, external systems, experiments, or an agent's next response. Revalidate
+approved preconditions when the operation actually enters the mutation path.
+
+### Proposed workstream: MutationResearch as the evidence foundation
+
+Extend MutationResearch and its associated systems to support the complete
+research side of runtime evolution. Connect candidate identities, source and
+structural diffs, composition changes, dependency impact, baselines, experiments,
+policy assessments, and observed outcomes through stable references.
+
+The research record should be able to explain what was proposed, why it was
+proposed, what alternatives were evaluated, which assumptions were used, what
+was measured, and which implemented outcome followed the decision.
+
+Preserve the distinction between a read-only candidate preview and actual
+execution. Add a separately controlled rehearsal mechanism for tests and
+benchmarks rather than making a preview secretly execute code. Record uncertainty
+and untested conditions explicitly; a structural diff is not proof of arbitrary
+runtime behavior or external side effects.
+
+Bind evidence to the exact candidate, target frame, affected baseline revisions,
+policy version, relevant configuration, and workload. If an affected dependency,
+approval, or policy changes, re-evaluate the affected evidence before promotion.
+An unrelated change elsewhere need not invalidate all work.
+
+Give each concurrent operation explicit principal, frame, campaign, and change
+identities. Ensure those identities survive retries and handoffs without leaking
+through a shared ambient default into another agent's work.
+
+Research should supply evidence to authorization, not automatically authorize its
+own conclusions. Preserve the separate ownership of research, policy decisions,
+runtime execution, and persistence custody.
+
+### Proposed workstream: service catalog, configuration, and desired state
+
+Add a frame-local service and configuration model that relates named services,
+capabilities, ownership, dependency contracts, and explicitly managed external
+resources to the live runtime graph.
+
+Distinguish desired state, an approved baseline, currently observed live state,
+and recorded historical state. Do not treat a stale checkpoint as proof of what
+is running now. Provide stable identities and reconciliation rules for updates,
+restores, external records, and frame replacement.
+
+Use runtime topology as evidence for a service-management configuration view;
+augment it with service meaning and explicit external-resource links rather than
+assuming every Python object is automatically a complete configuration item.
+
+### Proposed workstream: release, rollout, and state-transition coordination
+
+Provide controlled staging and promotion of versions and compositions. Define
+how rollout cohorts, compatibility checks, lifecycle hooks, health checks,
+quiescence, and policy decisions compose with existing mutation mechanisms.
+
+Specify what happens to in-flight calls, existing references, stateful instances,
+shared resources, and cleanup when an implementation changes. Support explicit
+state transfer or reconstruction where required. Do not imply that selecting a
+new implementation automatically rewrites every previously returned Python
+reference or preserves arbitrary state.
+
+Separate structural reversion, object-state recovery, and compensation for
+external actions. Recovery must state what it can restore and what remains
+irreversible. Returning to an older implementation is a new forward-recorded
+event, not deletion of the failed change's history.
+
+Canary and shadow execution are candidate techniques, not blanket guarantees of
+safe duplication: isolate or stub side effects before replaying a workload.
+
+### Proposed workstream: incidents, problems, service health, and improvement
+
+Extend the existing descriptive incident model with the supported operator
+workflows needed for triage, ownership, impact, problem investigation, known
+errors, remediation proposals, and verified resolution.
+
+Connect incidents and health evidence to MutationResearch campaigns and governed
+changes. Closing a record should not itself be presented as proof that the
+service recovered. Conversely, merely recording a suspected incident must not
+implicitly mutate the running graph.
+
+Add explicit monitoring/event integration, service objectives, and performance
+budgets so rollout decisions can use measured outcomes. Treat behavioral and
+performance risk as additional evidence; do not confuse it with the existing
+structural/resolution-validity risk signal.
+
+The improvement loop should connect the original operational need to the proposed
+change and its measured result. Telemetry collection must have declared overhead,
+privacy, retention, and failure behavior rather than imposing uncontrolled work on
+steady-state resolution.
+
+### Proposed workstream: durable agent operations and delegated authority
+
+Expose supported, discoverable, schema-versioned operations through the mediated
+agent-facing interfaces. Agents should not need internal manager references or
+undocumented object traversal to participate in service management.
+
+Provide operation identities, progress, cancellation, idempotent retry semantics,
+authorization expiry, and explicit recovery after interruption. A replacement
+agent should be able to inspect the current operation state and continue only
+within its own current authority. Restoring a record must not silently restore
+expired privileges.
+
+Support separate proposing, evaluating, approving, and executing roles where
+policy requires it. Pre-authorized automation remains possible within bounded
+models. Add structured refusal and escalation responses so agents can distinguish
+an invalid candidate, stale evidence, missing authority, contention, and a failed
+postcondition.
+
+### Proposed workstream: extensible frame-owned subsystem hosting
+
+Introduce or extend a stable hosting contract for new frame-local systems:
+capability discovery, configuration schemas, dependencies, construction order,
+activation, cleanup, version compatibility, observation, and persistence/restore
+participation.
+
+A system should be independently configurable without hidden process-global
+state. Optional systems should be disabled or lazy where appropriate, so the
+runtime does not require every application to pay for the entire governance stack.
+This is a performance design target to measure, not a promise of zero overhead.
+
+Agent and integration adapters should use these contracts rather than bypassing
+the frame's permissions or taking ownership of internal kernel managers.
+
+### Additional candidate: coordinated evolution across frame boundaries
+
+Support explicit protocols for changes that affect multiple independently governed
+frames. Each affected frame retains its own authority, policy, and local admission
+checks. A coordinator may exchange proposals and evidence but must not silently
+borrow another frame's authority.
+
+Define partial failure, cancellation, and compensation. Local structural
+transactions must not be described as global atomicity over multiple frames,
+processes, databases, or external systems without an implemented and verified
+protocol that actually provides it.
+
+The mechanism can begin as an integration or federation layer; it does not require
+removing the existing frame boundary or enabling arbitrary direct cross-frame
+references.
+
+### ITIL compatibility: make the goal testable
+
+Full ITIL compatibility remains the target. Before describing it as achieved,
+publish the targeted ITIL version and a practice-to-capability matrix identifying
+native runtime support, supported integration responsibilities, organizational
+roles, evidence, and any remaining gaps.
+
+A small collection of change-related features is not by itself proof of full
+compatibility. Practices outside direct runtime operation must be accounted for
+through explicit supported boundaries rather than silently omitted or declared
+satisfied by a ticket record. Select the precise baseline during scope definition;
+this draft does not silently choose between ITIL editions.
+
+Distinguish technical interoperability with selected ITSM products from alignment
+with ITIL practices. Versioned adapters, authentication, correlation, retries, and
+conflict reconciliation are implementation work, not automatic consequences of
+using common terminology. Vendor integrations remain candidates until supported
+products and versions are explicitly selected.
+
+Do not describe this roadmap as an accreditation. Formal PeopleCert tool-vendor
+accreditation would be a separate decision and assessment, not an outcome granted
+by publishing a compatibility matrix.
+
+### Architectural placement and boundaries
+
+The uploaded source already has frame-local DevOps ownership and separate
+incident, change-control, and risk managers. It also has an Aether-owned
+MutationResearch singleton with named research sets and a persistence emission
+boundary. These are foundations to extend, not absent systems to reinvent.
+
+The proposed frame-owned governance services do not require inventing a separate
+MutationResearch singleton inside every frame. One candidate design is to retain
+the shared research root while exposing properly partitioned frame-scoped research
+contexts. This requires explicit identity, authorization, publication, cleanup,
+retention, and restore rules; a frame name or filter alone is not isolation.
+Changing the root ownership model instead would be a deliberate architectural
+migration, not a description of the current implementation.
+
+Maintain four distinct responsibilities: research explains; governance authorizes;
+transactional runtime mechanisms enact; persistence preserves the declared record.
+Incident description and monitoring inform those decisions rather than becoming
+implicit mutation channels.
+
+Frame separation and in-process code checks should not be advertised as an
+operating-system sandbox for hostile code. Rehearsal of untrusted code requires
+appropriately isolated execution and explicitly controlled external effects.
+
+### Proposed 1.0 acceptance scenario
+
+Demonstrate an agent completing a governed runtime change through supported APIs:
+identify a service issue, open a correlated investigation, produce a candidate,
+attach static and executable evidence, receive the required authorization, stage
+and promote under current preconditions, and evaluate the resulting service.
+
+Demonstrate a refusal when the relevant baseline changed after approval; an
+interrupted agent handing off without duplicating the mutation; a separate frame
+remaining unaffected; and a controlled recovery whose limits are explicit.
+Preserve the complete causal record of success, refusal, and recovery.
+
+This scenario complements, rather than replaces, the full capability/ITIL coverage
+matrix, subsystem tests, supported-platform qualification, and performance gates.
+
+### Fit with the 0.5 contract baseline and the 2.0 migration
+
+Specify common operation, evidence, policy, frame-hosting, and persistence seams
+during the 0.4–0.5 API work. Their supported implementations and compatible
+extensions can continue to grow through 1.0. Do not represent the entire future
+feature set as frozen merely because the shared contracts are stable.
+
+Every runtime subsystem introduced for 1.0 is included in the 2.0 migration goal.
+MutationResearch and the new governance systems need explicit entries in the
+migration inventory; their intermediate release allocation remains to be decided.
+This does not change the owner's stated 1.2 compiler/resolution, 1.4 backend,
+1.6 Nexus, and 1.8 Crystallizer sequence.
+
+## Dual licensing at 1.0
+
+Dual licensing is planned to become available with the 1.0 release.
+
+The available license options and their exact terms will be published as part of
+that release. This roadmap does not itself change the current license or grant
+an alternative license before it is available.
+
+## 1.0–2.0: progressively migrate the core to Mojo
+
+After establishing the 1.0 runtime, Melder will use a strangler fig approach to
+replace its Python implementation subsystem by subsystem.
+
+Existing and migrated implementations will coexist during the transition.
+Supported interfaces and explicit internal boundaries will route work to the
+appropriate implementation. Each migrated subsystem must demonstrate the
+required behavior and performance before replacing its predecessor.
+
+Python access will remain available throughout the migration. The target at 2.0
+is a completed Mojo runtime behind a supported Python interface—not a period
+without Python access followed by its reintroduction at the end.
+
+The migration is of Melder's runtime implementation. It does not require
+applications, user-defined Python objects, or agent tooling to be rewritten in
+Mojo.
+
+### 1.2: compiler and resolution surfaces
+
+Begin with the compiler and resolution implementations. Establish and exercise
+the Python/Mojo boundary, preserve the supported compilation and resolution
+contracts, and measure performance through the actual Python-facing API.
+
+This milestone must qualify the interoperability and packaging approach needed
+by subsequent subsystem migrations, including the supported interpreter and
+concurrency configurations.
+
+### 1.4: backend
+
+Extend the migration into the backend. Preserve the contracts for runtime state,
+ownership, lifecycle behavior, coordination, and subsystem interaction wherever
+those responsibilities belong to the migrated backend.
+
+Mixed Python/Mojo operation must be verified before the remaining systems depend
+on the replacement backend.
+
+### 1.6: Nexus
+
+Migrate Nexus while preserving its supported interfaces and behavior for
+inspection, mediated operations, agent workspaces, and structured responses.
+
+Permission decisions, refusal behavior, object identity, and supported operations
+across migrated boundaries must remain consistent with the public contracts.
+
+### 1.8: Crystallizer
+
+Migrate Crystallizer, including its supported recording, checkpoint, and
+restoration workflows.
+
+Define and test the supported compatibility of persisted formats and restored
+systems across the migration. Where conversion is required, provide an explicit
+migration path rather than silently changing the meaning of existing data.
+
+### 2.0: complete the migration
+
+Complete migration of all Melder runtime systems and subsystems to Mojo and
+retire superseded Python core implementations.
+
+Python remains the supported interface and integration layer. The objective is
+to preserve the public programming model while changing the machinery beneath
+it; the 2.0 milestone is not an excuse for unrelated API churn.
+
+Completion requires the whole runtime to work through that interface, not merely
+a collection of individually ported subsystems.
+
+## Migration acceptance criteria
+
+A migration milestone is complete only when its replacement meets the supported
+behavioral contracts, works with the rest of the runtime, and satisfies defined
+performance and delivery criteria.
+
+Use shared contract tests and equivalent isolated workloads to compare old and
+new implementations. Verify outcomes, errors, identity and lifetime semantics,
+concurrency behavior, and relevant persistence behavior. For operations with
+side effects, comparisons must not execute the same real-world mutation twice.
+
+Measure end-to-end workloads through the Python interface, including
+interoperability overhead, memory use, and concurrency. Performance improvement
+is an engineering objective to demonstrate, not an automatic claim attached to
+a language change.
+
+Keep a controlled return path to the previous implementation until a migration
+stage is accepted, where state and persisted-format compatibility permit it.
+Document limits to reversal and data conversion explicitly.
+
+Mojo interoperability, the toolchain, supported platforms, and package delivery
+must be qualified as part of the migration. A subsystem does not become ready
+solely because its source has been translated.
+
+## Proposed compatibility and deprecation policy
+
+From 0.5 onward, documented public contracts are compatibility-protected.
+
+During the remaining 0.x series, planned removals require at least one
+minor-release series of advance notice. A deprecation introduced at 0.5.0, for
+example, remains supported throughout 0.5.x and can be removed no earlier than
+0.6.0. Planned deprecations should normally begin at minor-release boundaries;
+a late patch must not be used to create an effectively immediate removal.
+
+Each notice must identify the affected API, the version where deprecation begins,
+the earliest removal version, and the replacement or migration instructions.
+Deprecated behavior remains supported and tested during its notice period.
+
+From 1.0 onward, compatible additions can ship in minor releases, while
+incompatible public API removals or changes require a major release and must
+also satisfy the published notice policy. The 1.x Mojo migration should preserve
+the established public contracts.
+
+API compatibility, supported runtime environments, and persisted-data formats
+must each have explicit expectations; preserving function names alone is not
+enough.
+
+---
+
+**Stable contracts by 0.5. Governed runtime evolution, agent-usable service
+management, and the agreed capabilities and performance at 1.0, with dual licensing
+available. A fully migrated Mojo core with a Python interface at 2.0. One
+approximately two-year roadmap.**
+
+
+## Editorial and evidence notes
+
+This is a planning draft, not a statement that all proposed systems are currently
+implemented. The source review was static; no runtime verification or ITIL
+conformance assessment was performed. Companion file:
+`melder-roadmap-source-notes.md`.
+
+The original repository roadmap and the earlier draft have not been modified.
+================================================================================
+END FILE: roadmap/melder-roadmap-expanded.md
+================================================================================
+================================================================================
+BEGIN FILE: roadmap/melder-roadmap-source-notes.md
+CONTENT SHA256: 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f
+SOURCE ENCODING: utf-8
+================================================================================
+# Melder roadmap: source inspection notes
+
+Static inspection of the user-provided `melder.7z` snapshot. No Melder runtime or test suite was executed. Docstrings below describe intended contracts; they do not independently prove every claimed behavior. Line numbers refer to the extracted source, and hashes identify the exact inspected files.
+
+These notes distinguish existing source contracts from proposals in `melder-roadmap-expanded.md`.
+
+## AethericFrame
+
+File: `src/melder/aether/aetheric_frame/aetheric_frame.py`  
+SHA-256: `22438de3c9ce7cb6526a51e8232296301f65d61134eaaa4f42cb3d3792e4ecb8`  
+Excerpt: lines 29–67.
+
+```text
+29:     """
+30:     Manage one isolated runtime frame within `Aether`.
+31: 
+32:     `AethericFrame` is the per-frame ownership boundary beneath the global
+33:     `Aether` singleton. It owns the frame-local conduit registry, spell/index
+34:     registries, frame-level posture/config references, and the DevOps services
+35:     tied to that frame. It also owns the frame-local `ConduitCloud`, which in
+36:     turn owns the cluster registry and cluster lifecycle.
+37: 
+38:     Contract:
+39:       - Owns root conduits and their spell registries.
+40:       - Owns a stable root-conduit name index for per-frame lookup.
+41:       - Owns the version registry for all `SpellIndex` lineages in this frame.
+42:       - Owns one `DevOpsInformationRegistry` as the frame-local topology and
+43:         transaction mirror for reporting and future strategy resolution.
+44:       - Owns one `ConduitCloud` over the frame-local conduit registries.
+45:       - Owns `SpellSystemStates` and `DevOpsManager` for this frame.
+46:       - Owns one narrow frame-level AR posture object distinct from the richer
+47:         shared Spellbook configuration object.
+48:       - Detaches itself from `Aether` only after frame-owned cleanup completes.
+49: 
+50:     Threading / Concurrency:
+51:       - Uses one frame-local `RLock` to guard cleanup and frame-owned registry
+52:         mutation.
+53:       - Relies on child objects to guard their own internal state.
+54: 
+55:     Threading:
+56:         One frame-local `RLock` guards cleanup and frame-owned registry
+57:         mutation; children guard their own state. The frame does NOT take a
+58:         child's lock, which keeps the lock order strictly downward:
+59:         frame -> child, never child -> frame.
+60: 
+61:     Lifecycle / Cleanup:
+62:         Under V3 Horizon lazy frames, `import melder` creates ZERO frames - the
+63:         first `Spellbook` births the frame it names via `_ensure_frame`
+64:         (get-or-create is the intended semantic), and a collapsed configuration
+65:         falls back to a lazily created "default". Teardown detaches from
+66:         `Aether` only AFTER frame-owned cleanup completes, so a half-torn frame
+67:         is never reachable from the global registry.
+```
+
+## DevOpsManager
+
+File: `src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py`  
+SHA-256: `9984f1426364c2c08b254f8fa8b25e98bd10682a196968859006e1238f74e439`  
+Excerpt: lines 25–63.
+
+```text
+25:     """
+26:     Frame-level ownership root for DevOps and admission-control subsystems.
+27: 
+28:     `DevOpsManager` is the operational facade over the frame's health and
+29:     control-plane services. It owns and exposes the managers that describe
+30:     incidents, track dirty/pending change state, assess risk, and govern
+31:     conduit creation-gate admission.
+32: 
+33:     Owned subsystems:
+34:     - `IncidentManager`: descriptive incident recording
+35:     - `ChangeControlManager`: pending-change and dirty-root coordination
+36:     - `RiskManager`: risk posture tied back into spell-system state
+37:     - `CreationGateController`: conduit and lineage admission governance
+38:     - `SpellSystemStates`: frame-local state registry surfaced through this hub
+39:     - borrowed `DevOpsInformationRegistry`: frame-owned topology and
+40:       transaction mirror exposed through the manager boundary
+41: 
+42:     Contract:
+43:     - One `DevOpsManager` owns one coherent set of frame-local operational
+44:       managers.
+45:     - The information registry is borrowed from the owning frame rather than
+46:       created here, so runtime-object unregister flows are not coupled to
+47:       manager cleanup order.
+48:     - The manager is the intended boundary for higher-level tools or AI agents
+49:       that need to inspect or manipulate frame health.
+50:     - Cleanup is responsible for tearing down the owned manager graph in a
+51:       deterministic order and then dropping the borrowed registry reference.
+52: 
+53:     Threading:
+54:         Each owned manager guards its own state; this hub adds no lock of its
+55:         own and never reaches into a child's internals, keeping the lock order
+56:         strictly downward.
+57: 
+58:     Lifecycle / Cleanup:
+59:         One instance per `AethericFrame`, constructed in the frame's `__init__`.
+60:         Cleanup tears down the OWNED manager graph in deterministic order and
+61:         only then drops the BORROWED registry reference - owned children die
+62:         first, borrowed references are released last.
+63: 
+```
+
+## IncidentManager
+
+File: `src/melder/aether/aetheric_frame/dev_ops/incident_manager/incident_manager.py`  
+SHA-256: `8b3b71796dc37deecf2294a9f0db1bc1250763a3163888fdaecf72ded1d3bcea`  
+Excerpt: lines 19–57.
+
+```text
+19:     """
+20:     Frame-local registry of `Incident` records.
+21: 
+22:     `IncidentManager` is the descriptive side of the DevOps surface. It owns
+23:     the incident objects for one frame, allocates their ids, and provides the
+24:     lookup/filtering entrypoints that tooling, operators, or higher-level
+25:     automation can use to inspect that frame's incident history.
+26: 
+27:     Contract:
+28:     - The manager owns every `Incident` it creates.
+29:     - Incident ids are allocated sequentially for the lifetime of the manager.
+30:     - Query methods return current registry state only; no policy decisions are
+31:       made here.
+32:     - Cleanup is idempotent and tears down child incidents before clearing the
+33:       registry itself.
+34: 
+35:     Threading:
+36:         Registry mutation and id allocation are serialized internally.
+37:         Sequential id allocation means ids are frame-local and monotonic, not
+38:         globally unique across frames.
+39: 
+40:     Lifecycle / Cleanup:
+41:         Owned by `DevOpsManager`. Cleanup cleans child incidents FIRST and only
+42:         then clears the registry - children before container, matching the
+43:         repo-wide teardown posture.
+44: 
+45:     Registration:
+46:         MELDER KERNEL - guarded. Frame-owned; reached through `DevOpsManager`.
+47: 
+48:     Subsystem Context:
+49:         The DESCRIPTIVE side of DevOps, deliberately opposite the decisive
+50:         side. `RiskManager` and `ChangeControlManager` change what the runtime
+51:         DOES; this manager only records what happened. Its records are read by
+52:         tooling and agents, never by meld.
+53: 
+54:     System Context:
+55:         "No policy decisions are made here" is the whole contract and it is
+56:         worth respecting strictly. An incident registry that also gated
+57:         behaviour would make recording a problem indistinguishable from
+```
+
+## RiskManager
+
+File: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py`  
+SHA-256: `a3add707c9fc95e313056e42752efcef41ccac3173ed272f5fe96b7497d692b6`  
+Excerpt: lines 94–132.
+
+```text
+94:     """
+95:     DevOps risk tracking for meld validation gating.
+96: 
+97:     `RiskManager` is the conduit-local risk aggregator that feeds back into the
+98:     spellbook-level "validation required" signal used by Meld-facing runtime
+99:     flows. It does not validate spells itself. Instead, it watches validity
+100:     state changes and folds them into one operational question per conduit:
+101: 
+102:     "Does this conduit currently own or see any lineage whose state means meld
+103:     should not be trusted without another validation pass?"
+104: 
+105:     Risk model:
+106:     - structural risk is tracked by lineage id
+107:     - resolution risk is tracked by conduit-local lineage or spell id key
+108:     - any non-`SpellValidity.valid` state is treated as risky
+109:     - if either risk set is non-empty, the owning spellbook is marked as
+110:       requiring validation
+111: 
+112:     Operational role:
+113:     - register conduits and the spells they currently expose
+114:     - react to structural and per-conduit resolution validity changes
+115:     - keep conduit-local risk buckets current
+116:     - push one distilled validation-required flag back onto each spellbook
+117: 
+118:     Threading:
+119:     - Internal state is guarded by an `RLock`.
+120:     - Callers may invoke methods concurrently across conduits; updates are
+121:       folded into conduit-local buckets under the manager lock.
+122: 
+123:     Lifecycle:
+124:     - Owned by `DevOpsManager` and cleaned from that ownership boundary.
+125:     - After cleanup, public methods fail through `check_cleaned()`.
+126: 
+127:     Registration:
+128:         MELDER KERNEL - guarded. Frame-owned control-plane service reached
+129:         through `DevOpsManager`; never constructed by users.
+130: 
+131:     Subsystem Context:
+132:         The AGGREGATOR of the control plane. `SpellSystemStates` holds the
+```
+
+## ChangeControlManager
+
+File: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`  
+SHA-256: `1444dde9957c097733fdc9b373c410752246d56a6c34339fabafff040750a312`  
+Excerpt: lines 62–100.
+
+```text
+62:     """
+63:     Change-control registry for an Aetheric Frame.
+64: 
+65:     Purpose:
+66:         Provide DevOps-facing bookkeeping for spell lineages, dirty roots, and
+67:         change-control admission helpers. This is the frame-level control-plane
+68:         owner for admission, embargo, conflict, staging, and targeted
+69:         revalidation bookkeeping; it is not the hot-path resolver itself.
+70: 
+71:     Contract:
+72:         - Tracks pending change metadata by SpellIndex id.
+73:         - Tracks per-conduit component-of and dirty root state for targeted revalidation.
+74:         - Owns and coordinates the transaction/conflict/embargo/orchestrator
+75:           helper managers used by change-control flows.
+76:         - Exposes hook-registration seams for commit, abort, structural
+77:           validation, and dirty-marking behavior.
+78:         - Does not own SpellSystemStates lifecycle.
+79:     Args:
+80:         spell_system_states:
+81:             Spell system state container for this frame.
+82:     Returns:
+83:         None.
+84:     Raises:
+85:         ValueError: If spell_system_states is None.
+86:     Ownership:
+87:         Owns internal registries and the change-control manager instances.
+88: 
+89:     Threading:
+90:         All state mutations are guarded by an internal RLock.
+91:     Lifecycle:
+92:         cleanup() is idempotent and nulls internal references.
+93: 
+94:     Registration:
+95:         MELDER KERNEL - guarded. The frame's DevOps control-plane owner:
+96:         constructed and driven by the AethericFrame dev-ops layer; never
+97:         user-constructed or bound.
+98: 
+99:     Subsystem Context:
+100:         The top of the `change_control_manager` subsystem. It OWNS and wires the
+```
+
+## MutationResearch
+
+File: `src/melder/mutation_research/mutation_research.py`  
+SHA-256: `37b37cb10e0ae1d9d8e231e091082dec0d69d33e7c67548276720f53e4a55f36`  
+Excerpt: lines 39–77.
+
+```text
+39:     """
+40:     Singleton mutation-research root hosted by `Aether`.
+41: 
+42:     Purpose:
+43:         Own the formal declaration record of research over the live spell
+44:         world. The root manages `ResearchSet` networks by name (one
+45:         guaranteed `default` set), carries the mutation-research
+46:         configuration lifecycle, and is the ONLY object in the package that
+47:         touches the crystallizer: sets emit detached payloads through an
+48:         injected callback, and the root records them into the persistence
+49:         layer as the `MutationResearchCrystal` composition payload.
+50: 
+51:     Contract:
+52:         - Singleton, mirroring the hosting pattern used by `Nexus` and
+53:           `Crystallizer`; hosted by `Aether`, not by `AethericFrame`.
+54:         - Owns configuration state and the research-set registry.
+55:         - Emission is replace-on-emit through `Crystallizer.emit(...)` and is
+56:           a NO-OP while the crystallizer records nothing; lifecycle flips
+57:           ride the `RecordedUnitState` switch as before.
+58:         - Conduits and frames carry NO mutation dimension: the old
+59:           conduit/frame facades and SpellIndex-keyed sessions are out of the
+60:           model and gone.
+61: 
+62:     Threading:
+63:         Class lock guards singleton identity; instance verbs serialize under
+64:         the same reentrant lock. A dedicated reentrant emission lock makes
+65:         the persistence emission atomic (snapshot build + replace-on-emit
+66:         publication happen under one holder, so a paused emitter can never
+67:         publish a stale composition over a newer one). Lock order is
+68:         emission -> root -> set -> crystallizer, one-way: every path that
+69:         can trigger an emission while holding the root lock (set creation,
+70:         hydration) acquires the emission lock first.
+71: 
+72:     Lifecycle:
+73:         `cleanup()` cascades into owned sets and configuration, emits the
+74:         cleaned state while the record outlives the root, and resets
+75:         singleton bookkeeping; idempotent.
+76: 
+77:     Registration:
+```
+
+## MutationResearch.preview_candidate
+
+File: `src/melder/mutation_research/mutation_research.py`  
+SHA-256: `37b37cb10e0ae1d9d8e231e091082dec0d69d33e7c67548276720f53e4a55f36`  
+Excerpt: lines 2808–2846.
+
+```text
+2808:         """
+2809:         Mock one candidate codegen and report what would happen next.
+2810: 
+2811:         Purpose:
+2812:             The foresight centerpiece: BEFORE anything executes, binds, or
+2813:             records, answer what the candidate code defines, what it
+2814:             imports, how it differs from the version it would replace, and
+2815:             what blast radius that replacement would have - so an agent can
+2816:             guess what happens next instead of finding out.
+2817: 
+2818:         Contract:
+2819:             - Read-only: nothing executes, binds, or records.
+2820:             - Unparseable code answers honestly (`parse_error` row; the
+2821:               analysis/diff/impact sections go None) - previewing broken
+2822:               code is a legitimate question.
+2823:             - With `against_spell_id`, the candidate text adopts that
+2824:               spell's root module name so the would-be diff compares module
+2825:               universes honestly; the impact section is that root module's
+2826:               current blast radius joined with research residency.
+2827:             - With only `module_name`, the impact section is that module's
+2828:               radius; with neither, impact is None (nothing to center on).
+2829: 
+2830:         Args:
+2831:             code:
+2832:                 Candidate Python source text.
+2833:             against_spell_id:
+2834:                 Optional current version the candidate would replace.
+2835:             module_name:
+2836:                 Optional module identity for the candidate when no
+2837:                 against-version exists.
+2838:             set_name:
+2839:                 Research set for the impact residency join.
+2840: 
+2841:         Returns:
+2842:             Dict[str, object]:
+2843:                 `{"candidate_sha256", "module_name", "parse_error",
+2844:                 "defines", "import_roots", "diff", "impact",
+2845:                 "against_spell_id"}`.
+2846: 
+```
+
+## MutationResearch.record_world_entry
+
+File: `src/melder/mutation_research/mutation_research.py`  
+SHA-256: `37b37cb10e0ae1d9d8e231e091082dec0d69d33e7c67548276720f53e4a55f36`  
+Excerpt: lines 1243–1272.
+
+```text
+1243:         """
+1244:         Idempotently declare one world-entry into the default set.
+1245: 
+1246:         Purpose:
+1247:             The runtime-seam facade: the spellbook's bind and bind_inactive
+1248:             confirmation points call this on every dynamic-lane world entry
+1249:             once the root is active. Rediscovery (identical content, same
+1250:             SHA) is a quiet no-op - the runtime never fails on research
+1251:             bookkeeping.
+1252: 
+1253:         Contract:
+1254:             - CAMPAIGN DEFAULTS TO THE AMBIENT ONE: `campaign=None` inherits
+1255:               `active_campaign` rather than meaning "no campaign".
+1256:             - Records against the DEFAULT research set, not a named one.
+1257: 
+1258:         Args:
+1259:             spell_id:
+1260:                 Binding-signature SHA256 entering the world.
+1261:             staged:
+1262:                 True for parked (`bind_inactive`) entries.
+1263:             author:
+1264:                 Optional acting agent name.
+1265:             reason:
+1266:                 Optional reason line.
+1267: 
+1268:         Returns:
+1269:             bool:
+1270:                 True when a new declaration was recorded; False when the
+1271:                 identity was already declared.
+1272:         """
+```
+
+## MutationResearch.set_active_campaign
+
+File: `src/melder/mutation_research/mutation_research.py`  
+SHA-256: `37b37cb10e0ae1d9d8e231e091082dec0d69d33e7c67548276720f53e4a55f36`  
+Excerpt: lines 1064–1089.
+
+```text
+1064:         """
+1065:         Set the ambient research-campaign stamp.
+1066: 
+1067:         Purpose:
+1068:             Multi-agent campaigns stamp work ACROSS lanes; once set, every
+1069:             runtime auto-record routed through the root facades
+1070:             (`record_world_entry` / `record_promotion` - i.e. every dynamic
+1071:             bind, staged bind, and notch) carries this stamp until cleared,
+1072:             so campaign membership never depends on remembering to pass it.
+1073: 
+1074:         Contract:
+1075:             - Sets the AMBIENT DEFAULT that later group operations inherit when they pass
+1076:               `campaign=None`. It does not retroactively attribute earlier operations.
+1077:             - Rejects a non-string or empty campaign.
+1078: 
+1079:         Args:
+1080:             campaign:
+1081:                 Non-empty campaign name.
+1082: 
+1083:         Returns:
+1084:             None.
+1085: 
+1086:         Raises:
+1087:             ValueError:
+1088:                 If campaign is empty.
+1089:         """
+```
+
+## TransitionAct
+
+File: `src/melder/mutation_research/research_set/transition_entry.py`  
+SHA-256: `a9d0e76bc78c048cca1a0a0fab5fd2eb8cbb6e6f723e4d0d45c35559587690c2`  
+Excerpt: lines 10–48.
+
+```text
+10:     """
+11:     World-entry act vocabulary for the mutation-research journal.
+12: 
+13:     Purpose:
+14:         Name the only events the research record acknowledges. The stream is
+15:         forward-only and additive: history exists for understanding, never for
+16:         time travel, so there are deliberately NO checkout/rollback acts.
+17:         Returning to an old version is a NEW registration, not a rewind.
+18: 
+19:     Registration:
+20:         VALUE VOCABULARY. An enum is compared and
+21:         passed, never injected.
+22: 
+23:     Subsystem Context:
+24:         The act vocabulary stamped onto every `TransitionEntry` in a
+25:         `ResearchJournal`. The vocabulary is drawn from version control but is
+26:         deliberately NOT git: there is no merge, no rebase, and no checkout,
+27:         because those verbs all imply rewriting or relocating history that this
+28:         model treats as permanent.
+29: 
+30:     System Context:
+31:         The absent acts say more than the present ones. `promoted` changes what
+32:         is LIVE without changing which lane holds a version, and `restored`
+33:         rebuilds organization while itself being journalled - so even a rewind
+34:         of structure appears in history as a forward event. There is no act in
+35:         this enum that removes anything.
+36: 
+37:     Contract:
+38:         - `lane_created`: a research lane entered the network (optionally
+39:           anchored onto another lane's node).
+40:         - `registered`: a bound version was formally declared research and
+41:           landed in a lane (the world-entry moment; active bind-side).
+42:         - `staged`: a version entered the world PARKED (`bind_inactive`);
+43:           same declaration mechanics as `registered`, different runtime
+44:           posture at entry.
+45:         - `promoted`: the runtime selection moved (a notch repointed the
+46:           SpellIndex active member); journal-only - promotion changes what
+47:           is live, never which lane holds the version.
+48:         - `attached` / `detached`: a lane's ancestry anchor was organized onto
+```
+
+## Continuity is not arbitrary state rollback
+
+The architecture document distinguishes structural checkpoint reconstruction from live version promotion. It also states that not every live value or callable can be reconstructed from data alone.
+
+Source: `architecture_and_design/02_architecture/continuity_and_evolution.md`, sections "Continuity Path" and "Tradeoffs"; and `architecture_and_design/03_usage/preserve_and_evolve.md`, sections "Continuity Workflow" and "Evolution Workflow".
+
+## External terminology sources checked
+
+Checked on 2026-09-27. These sources support terminology and the distinction between a roadmap target and formal accreditation; they are not a complete ITIL practice-guide assessment.
+
+- [PeopleCert: ITIL 4 Practitioner — Change Enablement](https://www.peoplecert.org/browse-certifications/it-governance-and-service-management/ITIL-1/itil-4-practitioner-change-enablement-3794): risk assessment, authorization, change scheduling, roles, and practice outcomes.
+- [PeopleCert: ITIL Foundation Bridge (Version 5)](https://www.peoplecert.org/browse-mock-exams/it-governance-and-service-management/ITIL-1/ITIL-Foundation-Bridge-Version-5-Mock-exam-4159): establishes that a newer ITIL baseline exists, so compatibility should name a version.
+- [PeopleCert: ITIL-Accredited Tool Vendors programme](https://atv.peoplecert.org/): describes formal assessment of tool alignment and vendor expertise.
+- [PeopleCert: accreditation model](https://atv.peoplecert.org/accreditation/accreditation-model/): describes the practice-based tool/vendor assessment model.
+================================================================================
+END FILE: roadmap/melder-roadmap-source-notes.md
 ================================================================================

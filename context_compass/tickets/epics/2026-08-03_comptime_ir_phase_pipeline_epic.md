@@ -219,9 +219,11 @@ and tranche T1 are also closed. Milestones 2-5 not started; I-1 (structural snap
       approved 2026-09-26; patch docs first; five tasks (two added on owner rulings).
       tickets/stories/completed/2026-09-26_signature_determinism_and_phase8_digest_story.md (fable_0;
       done 2026-09-26T13:14:31Z, owner accepted; docs promoted)
-- [ ] Story: STORY-2026-09-26-structural-snapshot - I-1: a full creation-cache hit hydrates value rows
+- [x] Story: STORY-2026-09-26-structural-snapshot - I-1: a full creation-cache hit hydrates value rows
       for phases 1-7 and skips them; patch docs first, then capture / hydrate / invalidation parity / restore
-      parity tasks. tickets/stories/2026-09-26_structural_snapshot_story.md (fable_0, opened 2026-09-26)
+      parity tasks. tickets/stories/completed/2026-09-26_structural_snapshot_story.md (fable_0; opened
+      2026-09-26, done 2026-09-27T12:37:52Z; shipped as a 1-4 snapshot per the owner's ruling, generation 15; tasks 1-6
+      accepted on owner-run suites; measurement pass waived at turn-in)
 - [ ] Story: STORY-2026-08-03-ir-schema-design - define the node/edge schema,
       the symbolic id scheme, the version stamp, and the answer to the identity
       question. Owner ratification required.
@@ -1242,6 +1244,9 @@ UPDATE 2026-09-26T18:36:32Z (fable_0): task 5 (parity: D5 events, two processes,
 task 6 (promotion into the canonical maps, indexes regenerated) landed and in REVIEW; measurement stays owner-run.
 UPDATE 2026-09-26T18:43:15Z (fable_0): tasks 5-6 accepted and closed; I-1 story in REVIEW with every implementation task done and the
 patch folder retired; only the owner-run measurement pass is open.
+UPDATE 2026-09-27T12:37:52Z (fable_0): I-1 story turned in by the owner (measurement pass waived) and moved to
+tickets/stories/completed/2026-09-26_structural_snapshot_story.md; no fable_0 lane is routed on the board after this
+closure. Resume point after a compaction: this epic's Decision Log and IMPLEMENTATION ENTRY; wait for the owner's next lane.
 
 IMPLEMENTATION ENTRY - after S11 and the owner's explicit go, in this order:
 - I-0 signature-determinism test plus one serializer (small, compiler-side, protects today's cache;

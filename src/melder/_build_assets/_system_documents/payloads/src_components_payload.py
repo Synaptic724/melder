@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 9913
-CONTENT_SHA256 = '26d7ce6f13a4f5d10fe776b7a37f8644a0ef6a857041437b5d782bf9e8a7a06d'
+LINE_COUNT = 9929
+CONTENT_SHA256 = '5c30485333944e208b96861dad19b84d9cf2bd70f4789c44eebe36537635d910'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -2809,7 +2809,7 @@ Lifecycle/Cleanup:
   ordering structure was added: `_disposable_creations` is a plain dict, dict
   iteration is insertion-ordered by language guarantee, and insertion happens at
   creation time, so the registry already IS the creation-order record.
-  EVIDENCE: src/melder/aether/conduit/creations/creations.py:305-354.
+  EVIDENCE: src/melder/aether/conduit/creations/creations.py:365-413.
 - That covers ordering WITHIN one scope. Ordering BETWEEN scopes (lesser conduit
   before root, narrower existence before broader) remains owned by the conduit
   cleanup cascade, so the two axes compose without any graph walk.
@@ -2834,8 +2834,11 @@ Invariants/Guarantees:
 - `ConduitCreations` uses the conduit id as both owner id and scope id.
 - Disposal uses declared per-object method-name lists and does not wrap the
   live runtime store in a second `Creation.value` carrier.
-- Method names execute in list order. A failing method stops that object's remaining
-  methods; later objects are still attempted and errors aggregate.
+- Method names execute in list order, and every one runs even after an earlier one fails
+  (2026-09-27, 0.2.80; before, the first failure stopped that object's remaining methods).
+  Each failing method is one `RuntimeError` in the aggregated group, chained from the
+  exception it raised; the error text never depends on the object's own `__str__`, so a
+  failing object cannot strand the rest. Later objects are still attempted.
 - Registration and in-memory extract/restore retain the same inner list. Teardown releases
   entry references without clearing borrowed names.
 - Reverse traversal means reverse registry-key order and reverse order within each many bucket;
@@ -2843,7 +2846,8 @@ Invariants/Guarantees:
 - EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations._attempt_cleanup`.
 
 Failure Modes:
-- ExceptionGroup raised if any disposal errors occur.
+- ExceptionGroup raised if any disposal errors occur: one `RuntimeError` per failing method,
+  each with `__cause__` set to the exception that method raised (0.2.80).
 - RuntimeError when a build publishes into a store cleaned during that build; the
   new object's disposal methods run first (2026-09-25).
 - `SpellSpaceScopeError` if scope is misused. NOT RAISED BY THIS COMPONENT -
@@ -2859,9 +2863,12 @@ Observability:
   AGGREGATES failures instead of stopping at the first one, so a caller sees
   every badly behaved object at once rather than discovering them one redeploy
   at a time. A single failing disposal must not strand the rest of the scope.
+  Since 0.2.80 this holds per method as well, and every error keeps the original
+  exception as its cause, so the logged or raised group shows what actually failed.
   EVIDENCE:
-  - src/melder/aether/conduit/creations/creations.py:69-80
-  - src/melder/aether/conduit/creations/creations.py:223-239
+  - src/melder/aether/conduit/creations/creations.py:69-84
+  - src/melder/aether/conduit/creations/creations.py:227-243
+  - src/melder/aether/conduit/creations/creations.py:245-324
 
 Extension Points:
 - Disposal method names in `SpellbookConfiguration`. The registry calls a
@@ -5819,6 +5826,8 @@ Purpose:
 - Dispose instances across all existence categories in order.
 Contract/Interface:
 - `Creations.cleanup()`.
+- Every declared method of every object runs; each failing method is one chained `RuntimeError`,
+  aggregated into one `ExceptionGroup` (0.2.80).
 Data Structures:
 - Existence maps for unique/many/scope.
 Concurrency/Threading:
@@ -6351,7 +6360,8 @@ Key Files (C1):
 4. Creations.purge takes the slot's build lock (Spell._lock for unique, slot_guard for other slotted
    lifetimes, none for many), then _detach_purge_entries takes the store lock.
 5. Both maps detach the whole target or supplied instance. Single many removal preserves peer entries.
-6. After lock release, _attempt_cleanup or _dispose_many_creations runs the recorded disposal methods.
+6. After lock release, _attempt_cleanup or _dispose_many_creations runs every recorded disposal method,
+   collecting one chained error per failing method (0.2.80).
 7. Return the count or raise aggregated errors. Other keys, definitions and warmed contexts remain.
 These flows describe concrete method sequences for core behaviors.
 
@@ -7114,9 +7124,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 1125
-  loc: 1125
-  verified_at: 2026-09-25T23:40:00Z
+  end_line: 1189
+  loc: 1189
+  verified_at: 2026-09-27T13:27:50Z
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
   end_line: 134
@@ -9639,6 +9649,12 @@ Companion documents:
   and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-27 disposal failures (0.2.80): Creations runs every declared disposal method of an object even after
+one raises, and reports one `RuntimeError` per failing method, chained from the exception it raised, in the
+group cleanup, clear_all and purge already raise; error text no longer trusts the object's `__str__`. Promoted
+into Creations and SpellSpace (invariants, failure modes, observability), the Creations Disposal Pipeline and
+the purge flow; three `creations.py` citations remapped (69-84, 227-243, 365-413).
 
 2026-09-26 door-held first builds (0.2.73): the normal site plan of a unique_per_conduit or
 unique_per_spell_space root no longer re-takes the root's slot guard that its route door already holds, so a

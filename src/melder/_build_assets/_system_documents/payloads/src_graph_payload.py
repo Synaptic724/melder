@@ -15,7 +15,7 @@ Regenerate with:
 
 DOCUMENT_FILE = 'src_graph.md'
 LINE_COUNT = 27524
-CONTENT_SHA256 = '30a3052487d3529a820212862998e9c6c2d0d522f2ce6999d11555a3e87d219a'
+CONTENT_SHA256 = 'f350c923e4f85b2c493cb020d430df7702e11e4ff7d844c9474189e1c77a3f34'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `b8fb5c677afd3db2f44dcde2c8bb88d9e0e110209ab4f027e893d3a99848a0ec`
+- source_sha256: `60a4d2dd0e8e42c32c04ac2153e61fa9fa7c87cecc1ffffe339b077909a9b3a8`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `5378a8d20021f78bdb4b7edd2b94394f7bc2d04c4f92a1e76579407a199abcc3`
+- source_sha256: `f6e6cfc19003eb03309f55d3d15f994bac37626811313787ac1ba2624f95c5ec`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `349990027462cf5809ceb449a8647801bd2da2691207f37ce01f9ef16c3a81f0`
+- source_sha256: `14ef86921a1ed79d5c7bd207b959e50a0ea721e1aeba88187d7d21a76ab5dfab`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `5918f1ae3a2727f28ec994c0f2e9787a00e8b0ef03588bd5610a0b9682480a99`
+- source_sha256: `4d93830ff6b17ae12e94e6cdabc1cc734ed78ac826cd1bb34ca5dc3db5febb56`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `f64a16d1aef63f0a88dd85fee9b34b83a436ab2b0a1d209f0b913d1fcff2d249`
+- source_sha256: `8e0244a78e8507811e3abc7fc9a7c5076dce5a5b308f61357a0fb38c0b844cbf`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `40083163f3148f1bc1a0029d5bd47cac2ac9f718f4b42ebcc521a03f77603f03`
+- source_sha256: `b0f133a44e4be15ea126e162c40eedeaa0a27d0a29fddec7d4493b2b4565a230`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `610becfc4951767a608a7cc2a7845659685d331fe467ca47540f9155d22bee4d`
+- source_sha256: `03454ea5011c685ba36eabfa7402c47027ac6e85696ceb1e5d411bec2ab103f6`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `c4bdd0cbf34b0d49e74bd844929f21067e0ba1371c3355d1a5af42321438bfb2`
+- source_sha256: `fb79f560d3f5655f39ba2716847cb0fa78d8e0670cd5868d68678b99665a2461`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `130711bd344cdef28f14a1fd4f5274988bb866489e6eb5969324a5568ed1f546`
+- source_sha256: `77d77b2e0bfe76e0bf97408424c51c1208557a37f563c8aa3513456cfc22a7c3`
 - nodes: 1
 
 ### Nodes
@@ -5132,7 +5132,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `013f65cb5c6efa64b518e5bd0639adbbb31a9c6e353195928cde2a4f7e5faf3f`
+- source_sha256: `41f5312cdace218eb83494700b7a7c78ad503e49e2f947036c24f53d664c1936`
 - nodes: 2
 
 ### Nodes
@@ -5157,7 +5157,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - stores raw objects in one scoped live registry and cleanup entries in a separate registry
   - retains established Spell disposal lists through registration and in-memory transfer
-  - invokes methods in list order; the first method failure stops its object while other objects continue
+  - invokes every declared method in list order even after one fails; collects one RuntimeError per failing method, chained from the raised exception, and never lets one failing object strand the rest
   - supports reusable clear/reset and terminal cleanup without clearing borrowed method lists
   - owns one re-entrant build guard per slot (slot_guard) so generated code builds each slotted object once without holding the store lock
   - keeps the store lock a leaf around dict work; refuses (and disposes) publication into a store cleaned during the build

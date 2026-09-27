@@ -18,12 +18,15 @@ Contract under test:
     Every declared disposal method is invoked, in DECLARED order, for both
     singleton (`add_creation`) and `many` (`add_many_creations`) entries.
 
-    The failure posture is pinned in its own test rather than assumed: the first
-    failing method currently ends disposal for that entry and surfaces one
-    error. That is the accepted current behaviour, not a guarantee - if disposal
-    later aggregates per-method failures the way
-    `_dispose_disposable_registry` already aggregates per-entry ones, the
-    failure test is the one to update.
+    The failure posture is pinned in its own test rather than assumed. Until
+    2026-09-27 the first failing method ended disposal for that entry and
+    surfaced one error; this file pinned that posture so a change would be a
+    deliberate edit. The owner then ruled that per-method failures aggregate
+    the way `_dispose_disposable_registry` already aggregates per-entry ones,
+    so the failure test now asserts that the methods declared after a failing
+    one still run. The full failure contract (one chained error per failing
+    method, safe error text) is covered by
+    `test_creations_disposal_failure_aggregation_regression.py`.
 """
 
 from typing import List
@@ -66,13 +69,13 @@ class FailingFirstDisposalProbe:
     """Creation double whose FIRST declared disposal method raises.
 
     Purpose:
-        Pin the current failure posture: disposal of one entry stops at the
-        first raising method rather than continuing through the remainder.
+        Pin the failure posture: a raising first method does not stop the
+        entry's remaining methods (owner decision, 2026-09-27).
 
     Contract:
         - `close()` records the call and then raises.
-        - `flush()` records the call; reaching it would prove the posture
-          changed.
+        - `flush()` records the call; it must still be reached after `close()`
+          fails.
     """
 
     def __init__(self) -> None:
@@ -176,17 +179,17 @@ def test_many_bucket_entries_each_invoke_every_declared_method() -> None:
     )
 
 
-def test_first_failing_method_ends_disposal_for_that_entry() -> None:
-    """PINS CURRENT POSTURE - not a guarantee.
+def test_first_failing_method_does_not_end_disposal_for_that_entry() -> None:
+    """PINS THE FAILURE POSTURE (updated 2026-09-27 on the owner's ruling).
 
-    Disposal of one entry stops at the first raising method and surfaces one
-    error through the aggregated `ExceptionGroup`. If per-method failures are
-    later collected the way per-entry failures already are, THIS is the test to
-    update - the three above stay valid either way.
+    A raising method no longer ends disposal of its entry: the method declared
+    after it still runs, and the one failure reaches the caller through the
+    aggregated `ExceptionGroup`. Until 2026-09-27 this test asserted the
+    opposite (disposal stopped at the first raising method).
 
     Contract assertions:
         - The failing method ran.
-        - The method declared after it did not.
+        - The method declared after it also ran.
         - Exactly one error reached the caller for this entry.
     """
     probe = FailingFirstDisposalProbe()
@@ -201,8 +204,8 @@ def test_first_failing_method_ends_disposal_for_that_entry() -> None:
     with pytest.raises(ExceptionGroup) as raised:
         store.cleanup()
 
-    assert probe.calls == ["close"], (
-        "expected disposal to stop at the first failing method; "
+    assert probe.calls == ["close", "flush"], (
+        "expected the method after a failing one to still run; "
         f"got {probe.calls}"
     )
     assert len(raised.value.exceptions) == 1, (

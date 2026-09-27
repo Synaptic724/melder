@@ -1,0 +1,1148 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Melder README preview</title><style>
+body { box-sizing: border-box; max-width: 1012px; margin: 0 auto; padding: 40px;
+font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2328; }
+h1,h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; line-height: 1.3; }
+h2 { margin-top: 24px; } a { color: #0969da; } img { max-width: 100%; height: auto; }
+pre { overflow: auto; padding: 16px; border-radius: 6px; background: #f6f8fa; }
+table { border-collapse: collapse; } td,th { border: 1px solid #d1d9e0; padding: 6px 13px; }
+hr { border: 0; height: 1px; background: #d1d9e0; margin: 24px 0; }
+@media(max-width:600px) { body { padding: 20px; } }
+</style></head><body><div align="center">
+<!-- Local previews and GitHub use the repository asset; PyPI keeps the public img fallback. -->
+<a href="https://melder.readthedocs.io/en/latest/">
+  <picture>
+    <source srcset="/docs/_static/branding/melder-banner.jpg">
+    <img src="https://raw.githubusercontent.com/Synaptic724/melder/prod/docs/_static/branding/melder-banner.jpg"
+         alt="Melder — two mages channeling aether in a modern city">
+  </picture>
+</a>
+<h3 id="the-ai-native-dependency-graph-runtime">The AI-Native Dependency Graph Runtime</h3>
+<p><strong>Build, inspect, and control your Python application’s dependency graph.</strong></p>
+<p><a href="https://badge.fury.io/py/melder"><img src="https://badge.fury.io/py/melder.svg" alt="PyPI version" /></a>
+<a href="https://pypi.org/project/melder"><img src="https://img.shields.io/pypi/pyversions/melder" alt="Python Version" /></a>
+<a href="https://github.com/Synaptic724/melder/blob/prod/LICENSE"><img src="https://img.shields.io/github/license/Synaptic724/melder" alt="License" /></a>
+<a href="https://melder.readthedocs.io/en/latest/"><img src="https://readthedocs.org/projects/melder/badge/?version=latest" alt="Docs" /></a>
+<a href="https://pepy.tech/projects/melder"><img src="https://api.pepy.tech/badge/melder/month" alt="Monthly downloads" /></a>
+<a href="https://pepy.tech/projects/melder"><img src="https://api.pepy.tech/badge/melder" alt="Lifetime downloads" /></a></p>
+<p><a href="https://github.com/Synaptic724/melder/actions/workflows/ci.yml"><img src="https://github.com/Synaptic724/melder/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+<a href="https://codecov.io/gh/Synaptic724/melder"><img src="https://codecov.io/gh/Synaptic724/melder/branch/prod/graph/badge.svg" alt="Coverage" /></a>
+<a href="https://github.com/Synaptic724/melder/blob/prod/src/melder/py.typed"><img src="https://img.shields.io/badge/typing-typed-blue" alt="Typing: typed" /></a></p>
+<h3 id="-read-the-documentation">📚 <a href="https://melder.readthedocs.io/en/latest/">Read the Documentation</a></h3>
+<p><strong><a href="https://melder.readthedocs.io/en/latest/examples/index.html">Browse Examples</a></strong>
+· <strong><a href="https://melder.readthedocs.io/en/latest/contents.html">Full Table of Contents</a></strong>
+· <strong><a href="#roadmap">Roadmap</a></strong></p>
+<p>Beginner → Intermediate → Advanced → Expert</p>
+<h3 id="support-us">SUPPORT US</h3>
+<p>If you like the work we're doing, <a href="https://github.com/Synaptic724/melder">please give us a star on GitHub</a>.</p>
+</div>
+<pre><code class="language-bash">pip install melder
+</code></pre>
+<p><strong>Zero dependencies.</strong> Nothing else comes with it. Requires Python 3.14+.</p>
+<p>Working from a clone? Use the repository's <code>uv.lock</code> and
+<a href="https://github.com/Synaptic724/melder/blob/prod/CONTRIBUTING.md">locked contributor setup</a>.</p>
+<hr />
+<h2 id="what-melder-is">What Melder Is</h2>
+<p>Melder™ wires your application together — services, config, connections,
+handlers — and hands you instances when you ask for them. That part will feel
+familiar if you've used a DI container.</p>
+<p>The difference is what happens next. <strong>Dependency injection frameworks build
+your object graph and then forget it. Melder keeps it</strong> — as a live,
+inspectable, permissioned structure you can query, snapshot, restore, and change
+while the process is running.</p>
+<p>For the one-picture distinction, open
+<a href="https://raw.githubusercontent.com/Synaptic724/melder/prod/architecture_and_design/05_engineering_drawings/svg/di_container_vs_melder.svg">DI container versus Melder</a>.
+For the system-level view, start with
+<a href="https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/README.md">Architecture and design</a>.</p>
+<h3 id="how-it-works">How it works</h3>
+<p>Three verbs. That's the entire mental model.</p>
+<pre><code>bind  →  register what exists          (classes, functions, instances)
+conjure  →  compile + validate the graph   (once — cycles and gaps fail here)
+meld  →  resolve instances             (as often as you like)
+</code></pre>
+<p>Validation happens at <code>conjure()</code>, not at first use. A cycle, a missing
+provider, an ambiguous binding — you find out at startup, not at 3am.</p>
+<h3 id="who-its-for">Who it's for</h3>
+<p>Melder scales down to a script and up to a distributed backend. Find yourself
+here:</p>
+<p><strong>🟢 You're writing an app and tired of passing objects around</strong>
+Four lines gets you working DI with real lifetimes and automatic teardown. No
+config files, no YAML, no decorators, no base classes, and nothing new to
+install. If you've been threading a database handle through five function
+signatures, this is the fix.</p>
+<p><strong>🟢 You want your wiring checked before you ship it</strong>
+<code>conjure()</code> compiles and validates the entire graph up front. Cycles, missing
+providers, ambiguous resolutions — all surface at startup with a specific error,
+not at 3am on the one code path nobody exercised.</p>
+<p><strong>🟡 You're building a web service and want honest request scoping</strong>
+Per-request scopes that actually end, per-connection lifetimes, and cleanup that
+fires deterministically instead of whenever the GC feels like it. Works with any
+framework — Melder doesn't own your entry point.</p>
+<p><strong>🟡 Your app outgrew a single container</strong>
+One registry holding everything eventually becomes its own coupling problem —
+every subsystem can see every other, and one <code>conjure()</code> has to know the whole
+world before it starts. Instead, give each subsystem its <strong>own</strong> book and
+conduit: it owns its registry, exposes only what its permissions allow, and
+configures and tears down independently. Link them at runtime and pull specific
+spells across the boundary — <code>SpellContract</code> even lets a consumer be built
+<em>before</em> its provider exists, which a single shared container can't do.</p>
+<p><strong>🟠 You're running multi-tenant, plugin, or sandboxed workloads</strong>
+Aetheric frames are hard isolation walls inside one interpreter — separate
+registries, separate control planes, separate singletons. One process, many
+worlds, no leakage between them.</p>
+<p><strong>🟠 You write tests and want real isolation</strong>
+A fresh frame per test is a fresh world. No global container to reset, no state
+bleeding between cases, no ordering dependencies.</p>
+<p><strong>🚀 You're doing genuinely concurrent work on 3.14+</strong>
+Lock-disciplined throughout with a documented one-way lock order, built for
+free-threading rather than ported to it. Resolution never enters the transaction
+plane, so concurrent reads don't contend.</p>
+<p><strong>🔵 You're building agent infrastructure</strong>
+Hand an AI a permission-bounded room over a live system: it can read the graph,
+work on real objects, execute validated code, preview a change's blast radius,
+and hot-swap an implementation — with every structural change transacted and
+reversible. See <a href="#part-ii--the-ceiling">Part II</a>.</p>
+<p><strong>🔵 You're building a framework or platform on top</strong>
+The runtime is introspectable by design — the graph is a real structure you can
+query, snapshot, restore, and extend. Melder carries its own architecture docs
+inside the package so tooling can read the system without importing it.</p>
+<p><strong>✨ And whatever you build, the doors are already there</strong>
+This is the part worth understanding before you start. You do not have to decide
+today whether your project will ever involve AI. Build a plain application with
+plain classes — and the moment you want an agent to read your architecture,
+operate on live objects under a permission set, checkpoint a world, or propose a
+change and be shown its blast radius, <strong>those surfaces are already in the
+runtime you're using.</strong></p>
+<p>No migration. No second framework. No rewrite. Nothing to bolt on. Anything you
+build with Melder can be opened up to agents whenever you're ready — because the
+doors were built in from the beginning, sitting closed until you turn the handle.</p>
+<h3 id="who-its-not-for">Who it's <em>not</em> for</h3>
+<p>Straight answer, so you don't waste an afternoon:</p>
+<ul>
+<li><strong>You need Python 3.13 or older.</strong> Melder requires <strong>3.14+</strong>. That's not
+negotiable — the whole concurrency model assumes free-threading.</li>
+<li><strong>You want autowiring by magic.</strong> Melder is explicit: you bind what exists.
+There's no classpath scanning that guesses your intent.</li>
+<li><strong>You have three objects and a <code>main()</code>.</strong> Just construct them. A DI runtime
+earns its keep when wiring becomes a real problem, not before.</li>
+</ul>
+<h3 id="some-of-this-isnt-built-for-you">Some of this isn't built for you</h3>
+<p>Worth saying plainly: <strong>parts of Melder are designed for machines, not humans.</strong></p>
+<p>The AR rooms, the codegen surface, the research and impact views — those are
+built for an agent that can hold a whole object graph in working memory, issue
+hundreds of structured queries, and act on JSON-shaped answers. A human <em>can</em>
+drive them, and the API won't stop you, but you'd be hand-operating machinery
+built for something with different ergonomics than yours.</p>
+<p>That's deliberate, and it's why &quot;AI-native&quot; is a claim rather than a label.
+These surfaces weren't retrofitted for agents after the fact — an agent is the
+intended operator.</p>
+<p><strong>None of it is on your critical path.</strong> Everything in
+<a href="#part-i--the-basics">Part I</a> is written for humans first and stays complete on
+its own. If you never open a Rift or record a checkpoint, Melder is simply a
+fast, strict DI runtime and nothing is missing.</p>
+<h3 id="low-floor-high-ceiling">Low floor, high ceiling</h3>
+<p>Melder is <strong>beginner-first by design</strong>. Four lines gets you a working graph, and
+those four lines teach the whole runtime. Nothing in the advanced surface leaks into the simple
+path — no mandatory configuration, no ceremony you must understand before your
+first <code>meld()</code>.</p>
+<p>But the ceiling is <em>very</em> high. The same runtime that resolves your little
+service graph will checkpoint an entire distributed backend, hand an AI agent a
+permission-bounded room over live objects, and track every structural change
+under governance. You grow into it; it never asks you to grow into it first.</p>
+<h3 id="fast-enough-to-not-think-about">Fast enough to not think about</h3>
+<p>Melder holds <strong>very competitive speed</strong> against the fastest containers in
+Python — it keeps up with <code>dependency-injector</code> and <code>dishka</code>, the two names
+usually at the top of that list. And it does that while carrying a full graph
+runtime: validation, permissions, lifecycle tracking, and introspection that
+those containers don't attempt.</p>
+<p>For any real application, DI resolution was never your bottleneck — I/O is. What
+you get for that parity is a system you can actually <em>see</em>.</p>
+<h3 id="the-systems-layer-for-agentic-software">The systems layer for agentic software</h3>
+<p>The current AI tooling stack lives at the <strong>orchestration</strong> layer: chains,
+graphs of steps, prompt routing, tool registries. Those frameworks decide <em>what
+an agent should do next</em>, and they're good at it.</p>
+<p>None of them answer the layer below. When an agent calls a tool, what is it
+actually touching? Usually a loose function with no identity, no lifetime, no
+ownership, no memory of having been called, and no way to undo what it did.</p>
+<p><strong>Melder is that missing layer</strong> — the low-level runtime an agent operates
+<em>inside</em> rather than a bag of callables it operates <em>through</em>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Orchestration layer</th>
+<th style="text-align:left">Melder (runtime layer)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">Picks the next step</td>
+<td style="text-align:left">Owns the objects the step runs against</td>
+</tr>
+<tr>
+<td style="text-align:left">Tools are functions</td>
+<td style="text-align:left">Objects have identity, lifetime, and an owner</td>
+</tr>
+<tr>
+<td style="text-align:left">State lives in a scratchpad</td>
+<td style="text-align:left">State lives in scoped, permissioned instances</td>
+</tr>
+<tr>
+<td style="text-align:left">Changes are untracked</td>
+<td style="text-align:left">Every structural change is recorded and reversible</td>
+</tr>
+<tr>
+<td style="text-align:left">Access is all-or-nothing</td>
+<td style="text-align:left">Access is a compiled permission set per room</td>
+</tr>
+</tbody>
+</table>
+<p>The two compose cleanly. Let your orchestrator decide the plan — let Melder be
+the world the plan executes in, where the graph is inspectable, authority is
+bounded, and every change is accounted for.</p>
+<h3 id="change-as-a-first-class-operation">Change as a first-class operation</h3>
+<p>Here's the part that has no equivalent elsewhere.</p>
+<p>Most systems treat &quot;the code changed&quot; as something that happens <em>to</em> them —
+between deploys, invisibly, with a restart to absorb it. Melder treats
+structural change as an <strong>operation the runtime performs and records</strong>.</p>
+<p>Versions of bound units live in lanes with forward-only history and
+content-addressed identity — a unit's content hash <em>is</em> its identity, so the
+same thing re-entering is recognized as a rediscovery rather than a duplicate.
+Before anything changes, you can ask:</p>
+<ul>
+<li><strong>What's the blast radius?</strong> — everything transitively affected</li>
+<li><strong>What drifted?</strong> — how the running world diverges from the sealed one</li>
+<li><strong>What <em>would</em> happen?</strong> — a read-only preview of a candidate change: the
+diff, the radius, the verdict. Nothing executes, binds, or records.</li>
+</ul>
+<p>An agent can propose a structural change, be shown exactly what it would break,
+and be refused — <strong>before a single object is constructed.</strong></p>
+<p>That's the difference between an AI that can <em>call</em> your system and an AI that
+can safely <em>evolve</em> it.</p>
+<hr />
+<h2 id="roadmap">Roadmap</h2>
+<p>The planned path from API stabilization to a supported runtime and the Mojo migration.</p>
+<a href="https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png">
+  <picture>
+    <source srcset="/roadmap/melder-roadmap-art.png">
+    <img src="https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png"
+         alt="Melder roadmap: API stabilization, a supported 1.0 runtime, and staged Mojo migration through 2.0"
+         width="100%">
+  </picture>
+</a>
+<p><a href="https://github.com/Synaptic724/melder/blob/prod/roadmap/melder-roadmap-expanded.md">Read the detailed roadmap</a>
+· <a href="https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png">Open the image at full size</a></p>
+<hr />
+<h2 id="how-to-read-this">How to Read This</h2>
+<p>Every section below is tagged with the level it belongs to. <strong>Read in order and
+stop wherever you have what you need</strong> — nothing later is required to use
+anything earlier.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:left">Level</th>
+<th style="text-align:left">What it means</th>
+<th style="text-align:left">Who it's for</th>
+<th style="text-align:left">Runnable examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">🟢</td>
+<td style="text-align:left"><strong>Beginner</strong></td>
+<td style="text-align:left">The core runtime. Bind, resolve, categorize, scope, clean up.</td>
+<td style="text-align:left">Everyone. Start here.</td>
+<td style="text-align:left"><a href="https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/01_beginner"><code>01_beginner/</code></a></td>
+</tr>
+<tr>
+<td style="text-align:left">🟡</td>
+<td style="text-align:left"><strong>Intermediate</strong></td>
+<td style="text-align:left">Connection — module registration, dynamic linking, late binding across subsystems.</td>
+<td style="text-align:left">When one scope isn't enough.</td>
+<td style="text-align:left"><a href="https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/02_intermediate"><code>02_intermediate/</code></a></td>
+</tr>
+<tr>
+<td style="text-align:left">🟠</td>
+<td style="text-align:left"><strong>Advanced</strong></td>
+<td style="text-align:left">Frame isolation, read-only introspection rooms, clusters, deep overrides.</td>
+<td style="text-align:left">Multi-tenant or multi-world systems.</td>
+<td style="text-align:left"><a href="https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/03_advanced"><code>03_advanced/</code></a></td>
+</tr>
+<tr>
+<td style="text-align:left">🔵</td>
+<td style="text-align:left"><strong>Expert</strong></td>
+<td style="text-align:left">Agent rooms, transactions, checkpoints, governed mutation. Mostly machine-facing.</td>
+<td style="text-align:left">Building on Melder, or handing it to an AI.</td>
+<td style="text-align:left"><a href="https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/04_expert"><code>04_expert/</code></a></td>
+</tr>
+</tbody>
+</table>
+<p>This README is the tour. For system shape and design decisions, open
+<a href="https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/README.md">Architecture and design</a>;
+for the visual path, start with the
+<a href="https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/05_engineering_drawings/README.md">engineering drawings</a>.
+The folders above contain runnable scripts, verified together by the
+<a href="https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/pytest_examples"><code>pytest_examples/</code> harness</a>.</p>
+<p><strong>Pick a route:</strong></p>
+<ul>
+<li><strong>Evaluating Melder:</strong> read
+<a href="https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/01_overview/what_melder_is.md">What Melder is</a>,
+then scan the
+<a href="https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/05_engineering_drawings/README.md">engineering drawings</a>.</li>
+<li><strong>Building an application:</strong> enter <a href="#part-i--the-basics">Part I</a>, then work through
+the <a href="https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/01_beginner"><code>01_beginner/</code> examples</a>.</li>
+<li><strong>Building runtime or agent infrastructure:</strong> enter <a href="#part-ii--the-ceiling">Part II</a>,
+then continue into the <a href="https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/04_expert"><code>04_expert/</code> examples</a>.</li>
+</ul>
+<p><strong>If you just want dependency injection, the 🟢 sections are the entire
+product.</strong> You can stop at the end of them and never open Part II. Everything
+past that point is optional capability that stays dormant until you turn it on.</p>
+<hr />
+<p><a id="part-i--the-basics"></a></p>
+<h1 id="part-i--the-basics">Part I — The Basics</h1>
+<p><em>Written for humans. Complete on its own.</em></p>
+<p><sub>🟢 Beginner → 🟡 Intermediate → 🟠 Advanced</sub></p>
+<h2 id="-hello-melder">🟢 Hello, Melder</h2>
+<p><sub><strong>Beginner.</strong> The whole runtime in four lines.</sub></p>
+<pre><code class="language-python">import melder as md
+
+
+class Greeter:
+    &quot;&quot;&quot;A plain class — no base class, no metaclass, no decorator.&quot;&quot;&quot;
+
+    def greet(self) -&gt; str:
+        return &quot;hello from a melded instance&quot;
+
+
+book = md.Spellbook()
+book.bind(spell=Greeter, existence=&quot;unique&quot;)
+conduit = book.conjure()
+
+greeter = conduit.meld(&quot;Greeter&quot;)
+print(greeter.greet())
+
+assert conduit.meld(&quot;Greeter&quot;) is greeter   # `unique` → same instance
+</code></pre>
+<p>Your classes stay plain Python. Everything lives on <code>md.*</code> — if you ever need a
+deep import path, that's a bug in our public surface, not a pattern to copy.</p>
+<p>Pass the Python class or callable to <code>bind</code>; resolve it by its quoted registered
+name with <code>meld(&quot;Greeter&quot;)</code>. The tutorials use this name-based lookup throughout.
+Keep opaque machine identities explicit with <code>meld(spell_id=...)</code>.</p>
+<h2 id="-the-rhythm">🟢 The Rhythm</h2>
+<p><sub><strong>Beginner.</strong> Three verbs, one order.</sub></p>
+<pre><code class="language-python">book = md.Spellbook()
+
+# 1. bind everything
+book.bind(spell=Config, existence=&quot;unique&quot;)
+book.bind(spell=Server, existence=&quot;many&quot;)
+
+# 2. conjure ONCE  ← compiles + validates the entire graph
+conduit = book.conjure()
+
+# 3. meld everywhere
+server = conduit.meld(&quot;Server&quot;)
+</code></pre>
+<p><strong><code>conjure()</code> is where the work happens.</strong> Requirements extraction, graph
+construction, cycle detection, and runtime compilation all run there. A cycle, a
+missing provider, an ambiguous resolution — it raises <em>there</em>, not at 3am when
+the code path finally executes.</p>
+<blockquote>
+<p><strong>One book, one conjure.</strong> A Spellbook produces exactly one conduit, ever.
+More scopes? <code>create_lesser_conduit()</code>. Another root? Another book.</p>
+</blockquote>
+<h2 id="-the-address-law">🟢 The Address Law</h2>
+<p><sub><strong>Beginner.</strong> The one rule behind all resolution.</sub></p>
+<p>One rule governs all resolution:</p>
+<blockquote>
+<p><strong>Every spell lives at exactly one address: <code>(frame_key, binding_key)</code></strong>
+— <code>frame_key</code> is the <code>spellframe</code> if given, else the spell's name;
+<code>binding_key</code> is the <code>binding_name</code> if given, else the default slot.</p>
+</blockquote>
+<pre><code class="language-python">book.bind(spell=PostgresStore, existence=&quot;unique&quot;, binding_name=&quot;primary&quot;)
+book.bind(spell=SqliteStore,   existence=&quot;unique&quot;, binding_name=&quot;local&quot;)
+
+primary = conduit.meld(&quot;PostgresStore&quot;, binding_name=&quot;primary&quot;)
+</code></pre>
+<h2 id="-spellframes--categories-inside-a-world">🟢 Spellframes — Categories Inside a World</h2>
+<p><sub><strong>Beginner.</strong> The organizing half of every address.</sub></p>
+<p>A <code>spellframe</code> is the <strong>category</strong> half of the Address Law. It can be a plain
+string when you just want grouping, or a <code>Protocol</code> when you want a <em>shape</em>:</p>
+<pre><code class="language-python"># strings — organize by role
+book.bind(spell=UsersRepo, existence=&quot;unique&quot;,
+          spellframe=&quot;storage&quot;, binding_name=&quot;users&quot;)
+book.bind(spell=UsersApi,  existence=&quot;unique&quot;,
+          spellframe=&quot;web&quot;,     binding_name=&quot;users&quot;)
+
+repo = conduit.meld(spellframe=&quot;storage&quot;, binding_name=&quot;users&quot;)
+api  = conduit.meld(spellframe=&quot;web&quot;,     binding_name=&quot;users&quot;)
+</code></pre>
+<p>Same <code>binding_name</code>, two categories, <strong>two distinct addresses</strong> — names never
+collide across spellframes. And because a <code>Protocol</code> works as a spellframe, one
+category can mean &quot;everything that satisfies this shape,&quot; which is exactly what
+collection DI resolves:</p>
+<pre><code class="language-python">book.bind(spell=EmailHandler, existence=&quot;unique&quot;,
+          spellframe=Handler, binding_name=&quot;email&quot;)
+</code></pre>
+<h2 id="-dependency-injection">🟢 Dependency Injection</h2>
+<p><sub><strong>Beginner → Intermediate.</strong> Annotations, explicit targets, collections.</sub></p>
+<p>Annotate a constructor parameter. Melder builds the graph.</p>
+<pre><code class="language-python">class ReportService:
+    def __init__(self, database: Database) -&gt; None:   # ← injected
+        self.database = database
+
+book.bind(spell=Database, existence=&quot;unique&quot;)
+book.bind(spell=ReportService, existence=&quot;unique&quot;)
+conduit = book.conjure()
+
+report = conduit.meld(&quot;ReportService&quot;)
+</code></pre>
+<p>When an annotation isn't specific enough — two implementations of one shape, or
+a named binding — declare the target with <code>SpellMap</code> as the parameter default:</p>
+<pre><code class="language-python">class Consumer:
+    def __init__(self, store=md.SpellMap(PrimaryStore)) -&gt; None:
+        self.store = store
+</code></pre>
+<p><code>SpellMap</code> takes the full address: a concrete spell, a <code>spellframe</code>, a
+<code>binding_name</code>, or a combination. It obeys an <strong>exactly-one law</strong> — a target
+that matches zero spells or several fails at <code>conjure()</code>, not at runtime.</p>
+<p>Ask for a list and get every implementation — the plugin pattern in one
+annotation:</p>
+<pre><code class="language-python">class Dispatcher:
+    def __init__(self, handlers: list[Handler]) -&gt; None:   # ← all of them
+        self.handlers = handlers
+
+book.bind(spell=EmailHandler, existence=&quot;unique&quot;,
+          spellframe=Handler, binding_name=&quot;email&quot;)
+book.bind(spell=SmsHandler, existence=&quot;unique&quot;,
+          spellframe=Handler, binding_name=&quot;sms&quot;)
+</code></pre>
+<h2 id="-six-lifetimes-not-three">🟢 Six Lifetimes, Not Three</h2>
+<p><sub><strong>Beginner.</strong> Pick how long things live.</sub></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:left">Existence</th>
+<th style="text-align:left">One instance per</th>
+<th style="text-align:left">Use it for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">🟢</td>
+<td style="text-align:left"><code>unique</code></td>
+<td style="text-align:left">Process (frame)</td>
+<td style="text-align:left">Config, pools, caches</td>
+</tr>
+<tr>
+<td style="text-align:left">🟢</td>
+<td style="text-align:left"><code>unique_per_conduit</code></td>
+<td style="text-align:left">Scope</td>
+<td style="text-align:left">Request / session state</td>
+</tr>
+<tr>
+<td style="text-align:left">🟢</td>
+<td style="text-align:left"><code>many</code></td>
+<td style="text-align:left">Nothing — new every meld</td>
+<td style="text-align:left">Stateless workers, DTOs</td>
+</tr>
+<tr>
+<td style="text-align:left">🟡</td>
+<td style="text-align:left"><code>unique_per_conduit_lineage</code></td>
+<td style="text-align:left">A scope <strong>and its children</strong></td>
+<td style="text-align:left">Shared context down a tree</td>
+</tr>
+<tr>
+<td style="text-align:left">🟡</td>
+<td style="text-align:left"><code>unique_per_spell_space</code></td>
+<td style="text-align:left">A request-local space</td>
+<td style="text-align:left">Ephemeral request scoping</td>
+</tr>
+<tr>
+<td style="text-align:left">🟠</td>
+<td style="text-align:left"><code>unique_per_conduit_cluster</code></td>
+<td style="text-align:left">A named group of scopes</td>
+<td style="text-align:left">Cross-scope coordination</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The first three are the beginner set</strong> — they cover most systems and need
+nothing but a static conjure. The last three arrive with the features that give
+them meaning: lineage and spell spaces once you have nested scopes, clusters
+once conduits link into groups.</p>
+<blockquote>
+<p>Callables are always <code>unique</code>. Want a fresh object every time? Bind a <strong>class</strong>
+as <code>many</code>.</p>
+</blockquote>
+<h2 id="-teardown-is-part-of-registration">🟢 Teardown Is Part of Registration</h2>
+<p><sub><strong>Beginner.</strong> Cleanup without ceremony.</sub></p>
+<p>Declare your teardown <strong>vocabulary</strong> — the method names that mean &quot;clean
+yourself up&quot; in this system — and Melder calls them on the way down. No base
+class, no protocol, no context-manager ceremony:</p>
+<pre><code class="language-python">book = md.Spellbook()
+
+book.bind(
+    spell=PooledConnection,
+    existence=&quot;unique&quot;,
+    disposal_method_names=[&quot;close&quot;, &quot;shutdown&quot;],   # this binding's ordered methods
+)
+book.bind(
+    spell=BackgroundWorker,
+    existence=&quot;unique&quot;,
+    disposal_method_names=[&quot;shutdown&quot;],
+)
+
+conduit = book.conjure()
+...
+conduit.cleanup()     # calls each creation's matched methods in their declared order
+</code></pre>
+<p>Each bind's list belongs to <strong>that spell</strong>, not every later bind. Melder resolves
+matching class methods once at bind time and preserves their order:</p>
+<ul>
+<li>If the connection implements both names, <code>close()</code> runs before <code>shutdown()</code>.</li>
+<li>The worker uses its own <code>shutdown()</code> declaration.</li>
+<li>Missing names are omitted; duplicate names execute once.</li>
+</ul>
+<p>For book-wide methods, use <code>SpellbookConfiguration</code>. Its matching methods form
+one ordered block: last by default, or first with
+<code>with_enforce_priority_disposal_methods(True)</code>. Shared names belong to the book's
+block in either mode; spell-only names retain their own order. See the
+<a href="https://github.com/Synaptic724/melder/blob/prod/docs/intermediate/configuration.md">configuration guide</a>
+for both arrangements.</p>
+<p>Cleanup retains its existing reverse key/bucket traversal within each store. A failing
+method stops that object's remaining method calls; cleanup continues with other
+objects and aggregates failures into an <code>ExceptionGroup</code>.</p>
+<h2 id="-scopes-that-nest">🟢 Scopes That Nest</h2>
+<p><sub><strong>Beginner.</strong> Child scopes, no configuration.</sub></p>
+<pre><code class="language-python">root = book.conjure()
+child = root.create_lesser_conduit()
+
+assert root.meld(&quot;Config&quot;) is child.meld(&quot;Config&quot;)      # shared
+assert root.meld(&quot;Session&quot;) is not child.meld(&quot;Session&quot;) # per-scope
+</code></pre>
+<h2 id="-declarative-binding-by-module">🟡 Declarative Binding by Module</h2>
+<p><sub><strong>Intermediate.</strong> Register where the class lives.</sub></p>
+<p>Prefer to declare registration where the class lives? Tag it with
+<code>@md.scan_bind</code>, then register the whole module in one call.</p>
+<p><strong><code>services.py</code></strong> — declare intent next to the code:</p>
+<pre><code class="language-python">import melder as md
+
+
+@md.scan_bind(existence=&quot;unique&quot;)
+class MetricsHub:
+    pass
+
+
+@md.scan_bind(existence=&quot;many&quot;)
+class JobTicket:
+    pass
+</code></pre>
+<p><strong><code>main.py</code></strong> — decide when it actually binds:</p>
+<pre><code class="language-python">import melder as md
+import services
+
+book = md.Spellbook()
+bound = book.scan(services)        # ← binds every tagged class in the module
+conduit = book.conjure()
+
+hub = conduit.meld(&quot;MetricsHub&quot;)
+</code></pre>
+<p>The decorator <strong>stores intent only</strong> — nothing touches the runtime until
+<code>scan()</code> runs. Importing <code>services</code> registers nothing: no hidden global
+container filling up behind your back, no import-order puzzle to debug. You
+still decide when binding happens, and where.</p>
+<p>Mix freely: scan a module, then <code>bind()</code> a few more by hand.</p>
+<hr />
+<h2 id="-dynamic-mode--linking-conduits">🟡 Dynamic Mode &amp; Linking Conduits</h2>
+<p><sub><strong>Intermediate.</strong> Everything above works without this. Turn it on when
+separate parts of your system need to share.</sub></p>
+<p>By default a world is <strong>static</strong> — bind, conjure, resolve. Turn on dynamic mode
+and conduits gain the ability to connect to each other at runtime.</p>
+<p>The mode is decided <strong>once, by the first conjure</strong>, and then inherited:</p>
+<pre><code class="language-python"># SETTLEMENT — the first conjure on a fresh world sets the mode, and it locks
+owner = owner_book.conjure(dynamic=True, name=&quot;owner&quot;)
+
+# INHERITANCE — later books just attach; a plain conjure() inherits the mode.
+# You never repeat the flag.
+borrower = borrower_book.conjure(name=&quot;borrower&quot;)
+</code></pre>
+<p>Now link them and share a spell across the boundary:</p>
+<pre><code class="language-python">owner.link(borrower)                       # open a contract between the two
+
+borrower.add_spell_to_contract(            # ← the BORROWER asks
+    spell_id=spell_id,
+    conduit=owner,                         # ← from the conduit that OWNS it
+    permissions=&quot;create&quot;,
+)
+
+shared = borrower.meld(&quot;SharedDirectory&quot;)   # resolves the owner's spell
+</code></pre>
+<p><strong>Sharing is a pull, never a push.</strong> The conduit that wants the spell asks for
+it, and names the owner. An owner cannot force its objects into someone else's
+scope — so nothing arrives in your conduit that you didn't request.</p>
+<h2 id="-late-binding-with-spellcontract">🟡 Late Binding with <code>SpellContract</code></h2>
+<p><sub><strong>Intermediate.</strong> Wire whole subsystems together without either side
+importing the other.</sub></p>
+<p>A <code>SpellContract</code> is a <strong>hole you leave on purpose</strong>. The class declares the
+<em>shape</em> it needs; the provider arrives later, across a link:</p>
+<pre><code class="language-python">class ReportService:
+    def __init__(
+        self,
+        config: ConfigContract = md.SpellContract(
+            spellframe=ConfigContract, binding_name=&quot;platform&quot;,
+        ),
+    ) -&gt; None:
+        self.config = config        # ← filled from another conduit entirely
+</code></pre>
+<p>Name your conduits after the resolution ideas your app already has — <code>platform</code>,
+<code>services</code>, <code>workflows</code> — and the conduit names <em>become</em> your factory layer. No
+abstract factories, no service locator, no imports between subsystems.</p>
+<p><strong>The order of operations is the law.</strong> Per dependency edge, in this exact
+order:</p>
+<pre><code class="language-python">platform = platform_book.conjure(dynamic=True, name=&quot;platform&quot;)  # 1. provider
+services = services_book.conjure(dynamic=True, name=&quot;services&quot;)  # 2. consumer
+platform.link(services)                                          # 3. link — AFTER both exist
+services.add_spell_to_contract(                                  # 4. consumer pulls
+    spell_id=config_id, conduit=platform, permissions=&quot;create&quot;,
+)
+service = services.meld(spell_id=service_id)                    # 5. meld completes the binding
+</code></pre>
+<p>Assemble the chain edge by edge, in dependency order. <code>services</code> can then feed
+<code>workflows</code> with the identical five steps one level up — the finished product of
+one category becomes the dependency of the next.</p>
+<h2 id="-frame-boundaries--more-than-one-world-per-process">🟠 Frame Boundaries — More Than One World Per Process</h2>
+<p><sub><strong>Advanced.</strong> Hard isolation walls inside a single interpreter.</sub></p>
+<p>Everything so far has lived in one <strong>aetheric frame</strong> — the default world. A
+frame is the outermost boundary in Melder: it owns its own conduits, registries,
+control plane, and dynamic posture. Name a different one and you get a second
+world that shares nothing with the first:</p>
+<pre><code class="language-python">tenant_a = md.Spellbook(aetheric_frame=&quot;tenant-a&quot;)
+tenant_b = md.Spellbook(aetheric_frame=&quot;tenant-b&quot;)
+</code></pre>
+<p>Use distinct <code>binding_name</code> or <code>spellframe</code> values when binding the same class
+in both worlds. Spell IDs are unique across the process: an identical binding
+fingerprint produces the same ID even in another frame and is refused.
+A <code>unique</code> spell is a singleton <strong>per frame</strong> — not per process. Two distinct
+bindings, two frames, two instances, one interpreter.</p>
+<p>That makes frames the natural seam for multi-tenancy, plugin isolation, and test
+isolation (a fresh frame per test is a fresh world). Conduits link <em>within</em> a
+frame; they do not link across one — the wall is real.</p>
+<blockquote>
+<p>Don't confuse the two &quot;frames&quot;: <code>spellframe=</code> is an <strong>address key</strong> that
+categorizes spells <em>inside</em> a world. <code>aetheric_frame=</code> is the <strong>world itself</strong>.</p>
+</blockquote>
+<h3 id="three-widths-of-category">Three widths of category</h3>
+<p>Once you see it, the same idea repeats at three scales — each one a wider
+boundary than the last:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Scale</th>
+<th style="text-align:left">Categorizes</th>
+<th style="text-align:left">Owner</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong><code>spellframe</code></strong></td>
+<td style="text-align:left">Spells <em>within</em> one world</td>
+<td style="text-align:left">The book that bound them</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Conduit</strong></td>
+<td style="text-align:left">Worlds of resolution, linked by contract</td>
+<td style="text-align:left">Each conduit owns its category</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>aetheric_frame</code></strong></td>
+<td style="text-align:left">Entire isolated worlds</td>
+<td style="text-align:left">The frame itself</td>
+</tr>
+</tbody>
+</table>
+<p>Pick the narrowest one that expresses what you mean. Most systems need only the
+first; large ones grow into the second; the third is for genuine isolation.</p>
+<h2 id="-read-only-rooms-for-endpoints">🟠 Read-Only Rooms for Endpoints</h2>
+<p><sub><strong>Advanced.</strong> A safe window onto a running system — no agent required.</sub></p>
+<p>You don't need to be building AI to want a live view of your own runtime. A
+<code>static</code> Nexus room is exactly that: a read-only projection over a running frame
+that can inspect everything and change nothing.</p>
+<p>That makes it a natural backing for the introspection surfaces you'd otherwise
+hand-roll:</p>
+<ul>
+<li>a <strong>health endpoint</strong> that reports what's genuinely live, not what you hope is</li>
+<li>an <strong>admin panel</strong> listing resolved services and their scopes</li>
+<li>a <strong>debug view</strong> of the real dependency graph in production</li>
+</ul>
+<p>Because the room's authority is compiled and read-only, exposing it carries no
+mutation risk — the worst a caller can do is look. The <code>capability</code> and
+<code>codegen</code> rooms in <a href="#part-ii--the-ceiling">Part II</a> escalate from here.</p>
+<h3 id="what-else-this-readme-skips">What else this README skips</h3>
+<p>Real surfaces this page doesn't walk through — all covered in the
+<a href="#documentation">documentation</a>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:left">Surface</th>
+<th style="text-align:left">What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">🟡</td>
+<td style="text-align:left"><strong>Spell spaces</strong></td>
+<td style="text-align:left">Request-local scopes backing <code>unique_per_spell_space</code></td>
+</tr>
+<tr>
+<td style="text-align:left">🟡</td>
+<td style="text-align:left"><strong>Registration hooks</strong></td>
+<td style="text-align:left">pre / activation / post callbacks on the bind lifecycle</td>
+</tr>
+<tr>
+<td style="text-align:left">🟡</td>
+<td style="text-align:left"><strong><code>SpellBinder</code></strong></td>
+<td style="text-align:left">A fluent chained alternative to <code>bind(...)</code></td>
+</tr>
+<tr>
+<td style="text-align:left">🟡</td>
+<td style="text-align:left"><strong>Ownership transfer</strong></td>
+<td style="text-align:left">Move a spell's stewardship between conduits at runtime, repointing borrowers and clusters</td>
+</tr>
+<tr>
+<td style="text-align:left">🟠</td>
+<td style="text-align:left"><strong>Conduit clusters</strong></td>
+<td style="text-align:left">A named group of scopes sharing one instance, with an elected leader</td>
+</tr>
+<tr>
+<td style="text-align:left">🟠</td>
+<td style="text-align:left"><strong>Deep override paths</strong></td>
+<td style="text-align:left">Inject a variant into the <em>middle</em> of a live graph at meld time — <code>override={&quot;transport&gt;credentials&quot;: obj}</code> — without rebinding anything</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><a id="part-ii--the-ceiling"></a></p>
+<h1 id="part-ii--the-ceiling">Part II — The Ceiling</h1>
+<p><em>Mostly written for agents. Optional, and off unless you turn it on.</em>
+Everything above is a very good DI container. This is why Melder exists.</p>
+<blockquote>
+<p><strong>A note on the audience.</strong> The surfaces below assume an operator that reads
+structured output fast and issues many precise calls — an agent, in other
+words. They're documented here so you know the ceiling exists and can reason
+about what you're handing an agent. You are not expected to drive them by
+hand, and nothing in Part I depends on any of it.</p>
+</blockquote>
+<h2 id="-the-runtime-documents-itself">🔵 The Runtime Documents Itself</h2>
+<p><sub><strong>Expert / agent-facing.</strong> The package carries its own architecture.</sub></p>
+<p>Melder ships its own architecture as queryable objects <strong>inside the wheel</strong>. An
+agent reads the system before touching it — no web, no scraping, no RAG:</p>
+<pre><code class="language-python">import melder as md
+
+md.__architecture__     # system architecture (C4)
+md.__components__       # component catalog
+md.__graph_network__    # object relationship graph
+md.__graph_details__    # detailed wiring
+
+help(md)                # the workflow map
+</code></pre>
+<p>Most frameworks make an agent guess from source. Melder hands it the map.</p>
+<h2 id="-give-an-agent-a-room-not-your-process">🔵 Give an Agent a Room, Not Your Process</h2>
+<p><sub><strong>Expert / agent-facing.</strong> Bounded authority over a live frame.</sub></p>
+<p><code>Nexus</code> is the mediated access layer into the live object world. You open a
+<strong>Rift</strong> — a workspace over a running frame — and the room decides how much
+authority the occupant has.</p>
+<pre><code class="language-python">rift = nexus.create_rift(rift_name=&quot;alpha&quot;)
+conduit = rift.create_nexus_frame(frame_name=&quot;ops&quot;)   # rooted, live
+</code></pre>
+<p>Three room postures, escalating:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Room</th>
+<th style="text-align:left">What the occupant can do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>static</code></td>
+<td style="text-align:left">Read-only. Inspect live spells, never mutate topology.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>capability</code></td>
+<td style="text-align:left">Discover conduits, traverse contracts, activate spells, mutate topology.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>codegen</code></td>
+<td style="text-align:left">Everything above <strong>plus write and execute Python against live objects</strong>.</td>
+</tr>
+</tbody>
+</table>
+<p><code>static</code> is covered back in <a href="#-read-only-rooms-for-endpoints">Part I</a> — it needs
+no agent and works fine as a plain introspection endpoint. The two below are
+where authority starts escalating.</p>
+<h3 id="the-agents-seat">The agent's seat</h3>
+<p>Open a room over a live frame, and it comes with a workbench attached:</p>
+<pre><code class="language-python">rift = nexus.create_rift(rift_name=&quot;alpha&quot;)
+root = rift.create_nexus_frame(frame_name=&quot;ops&quot;)   # a real, rooted conduit
+rift.create_frame_link(&quot;ops&quot;)
+
+space       = rift.space              # the room
+viewer      = space.frame_viewer      # read the live graph
+workstation = space.workstation       # a bench to put objects on
+command     = space.command_system    # the room's verbs
+</code></pre>
+<p>The <strong>workstation</strong> is where an agent keeps what it's working on — bind a live
+object to a name, make it the active target, then operate on it:</p>
+<pre><code class="language-python">service = root.meld(&quot;ReportService&quot;)
+
+workstation.bind_object(&quot;svc&quot;, service)   # park a LIVE object on the bench
+workstation.set_target(&quot;svc&quot;)             # make it the active target
+workstation.call_target()                 # ...and drive it
+</code></pre>
+<p>Then the agent writes Python against that world. The generated code runs in a
+namespace you compiled — these five names and nothing else:</p>
+<pre><code class="language-python">code = &quot;&quot;&quot;
+# viewer / workstation / target / command / codegen — the whole namespace
+
+frames  = viewer.list_nexus_frame_names()   # read the live world
+current = target                            # the bench's active object
+result  = {&quot;frames&quot;: frames, &quot;kind&quot;: type(current).__name__}
+&quot;&quot;&quot;
+
+outcome = command.execute_codegen(code, frame_name=&quot;ops&quot;)
+# every fragment is VALIDATED before it runs; a rejected one never executes
+</code></pre>
+<p>The agent inspects the running system, works on real objects, and writes code
+against them — without ever holding a reference to your process.</p>
+<p>And the ACL is a <strong>dial</strong>, compiled per frame:</p>
+<pre><code class="language-python">imports_enabled          = False        # no imports at all
+allowed_import_module_roots = (&quot;json&quot;,) # ...or exactly these
+denied_builtin_names     = (&quot;eval&quot;,)    # kill specific builtins
+unsafe_reflection_allowed = False       # no type()/introspection escapes
+dunder_access_allowed    = False        # no __class__ walks
+recursive_codegen_allowed = False       # code that writes code
+</code></pre>
+<p>Every generated fragment is <strong>validated before it executes</strong>. <code>import math</code> in a
+json-only room is rejected. <code>type(command)</code> in a reflection-denied room is
+rejected. The agent gets a real seat at the runtime, bounded by a permission set
+you wrote.</p>
+<h2 id="-an-internal-devops-plane-with-real-transactions">🔵 An Internal DevOps Plane, With Real Transactions</h2>
+<p><sub><strong>Expert.</strong> How concurrent structural change stays safe.</sub></p>
+<p>The obvious question about everything above: <em>if an agent can rewire my topology
+while the system is running, what stops it corrupting the world?</em></p>
+<p>Melder carries a full <strong>internal DevOps environment</strong> — a control plane that
+admits, serializes, and audits every structural change. It isn't a lock around
+the container. It's a transaction system with <strong>ACID semantics</strong> over the
+object graph.</p>
+<p>Every structural mutation is a <strong>transaction</strong> in a named family:</p>
+<pre><code>bind · link · unlink · cluster_link · transfer_ownership
+add_to_index · remove_from_index · notch
+</code></pre>
+<p>Each one declares the scopes it touches and the <em>mode</em> it needs, then a mediator
+admits it — or makes it wait.</p>
+<p><strong>Atomicity</strong> — Scope acquisition is all-or-nothing. A request takes every scope
+it needs or none of them, and owns exactly one root session. Failures compensate:
+a refused operation rolls back its claims, and a mid-operation refusal restores
+everything it had already moved, in original order.</p>
+<p><strong>Consistency</strong> — Changes propagate as invalidation, not corruption. Touching a
+lineage marks dependents dirty; the resolver refuses to execute a stale graph and
+recompiles it first. A built-in consistency audit walks every bidirectional map
+looking for asymmetry — any mismatch is evidence a write bypassed the plane.</p>
+<p><strong>Isolation</strong> — Claims are <em>moded</em>, not binary: <code>x</code> exclusive, <code>s</code> shared, <code>ix</code>
+intent. Disjoint work admits in parallel; shared and intent claims coexist on the
+same scope; exclusive excludes everything. Two subsystems binding into different
+books never see each other. Two operations targeting the same conduit serialize.
+Waiting is bounded, and a timeout names <strong>which scope blocked and who held it</strong> —
+not a generic deadlock.</p>
+<p><strong>Durability</strong> — Committed structure is recorded to the persistence twin and
+survives into checkpoints (next section).</p>
+<p>Two design choices worth calling out:</p>
+<ul>
+<li><strong>Readers never enter the plane.</strong> <code>meld()</code> doesn't take transaction locks —
+resolution stays fast and is protected by validity gating instead. You pay for
+coordination only when you <em>change</em> something.</li>
+<li><strong>Ownership is asymmetric on purpose.</strong> Sharing is a <em>pull</em>: the conduit
+requesting a spell must be the one that gets it, and an owner cannot push its
+objects into someone else's scope.</li>
+</ul>
+<p>There's also a queryable operations catalog — live transaction activity, cluster
+fan-out, the blast radius of a proposed ownership transfer, a whole-frame
+operational rollup, and that registry consistency audit. It's caller-paid: nothing
+runs it for you, and it costs nothing until asked.</p>
+<h3 id="this-is-what-everything-else-stands-on">This is what everything else stands on</h3>
+<p>The DevOps plane isn't a side feature — it's the reason the rest of this README
+is safe to promise. Every capability above and below runs <em>through</em> it:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Capability</th>
+<th style="text-align:left">What the plane guarantees</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">🟡 <strong>Linking conduits</strong></td>
+<td style="text-align:left"><code>link</code> / <code>unlink</code> are transactions. Two subsystems wiring themselves simultaneously serialize on the shared scopes and proceed in parallel everywhere else.</td>
+</tr>
+<tr>
+<td style="text-align:left">🔵 <strong>Hot-swapping a live spell</strong></td>
+<td style="text-align:left"><code>notch</code> is a transaction. The index repoint, the parking of the old version, and dependent invalidation land atomically — a meld never observes a half-swapped index.</td>
+</tr>
+<tr>
+<td style="text-align:left">🔵 <strong>Agents mutating topology</strong></td>
+<td style="text-align:left">Generated code has no privileged path. <code>command.link_frame(...)</code> from a codegen room enters the same plane, takes the same claims, and waits like anything else.</td>
+</tr>
+<tr>
+<td style="text-align:left">🔵 <strong>Checkpoints</strong></td>
+<td style="text-align:left">Only committed structure is recorded. A checkpoint can't capture a half-applied transfer, so a restored world is one that actually existed.</td>
+</tr>
+<tr>
+<td style="text-align:left">🚀 <strong>Parallel everything</strong></td>
+<td style="text-align:left">Moded claims mean disjoint work never contends. This is what makes concurrent structural change <em>fast</em> rather than merely <em>survivable</em>.</td>
+</tr>
+</tbody>
+</table>
+<p>Take the plane away and every one of those becomes a race condition. That's why
+it's here, and why an agent gets to touch a live system at all.</p>
+<h2 id="-checkpoint-the-world-rebuild-it-cold">🔵 Checkpoint the World, Rebuild It Cold</h2>
+<p><sub><strong>Expert.</strong> Persistence, cold boot, and pod restarts.</sub></p>
+<p><code>Crystallizer</code> records a <strong>digital twin</strong> of your configured system — structure,
+never live instances:</p>
+<pre><code class="language-python">checkpoint_id = crystallizer.create_checkpoint(description=&quot;pre-migration&quot;)
+
+crystallizer.describe_profile()               # what's recorded right now
+crystallizer.describe_checkpoint(checkpoint_id)
+</code></pre>
+<p>Restore replays that world <strong>through public verbs only</strong> — the same <code>bind</code>,
+<code>conjure</code>, <code>link</code> calls you would have written. Which means:</p>
+<ul>
+<li><strong>Fresh identities always.</strong> ULIDs are minted new, never rehydrated.</li>
+<li><strong>All-or-nothing.</strong> Any stage failure tears down everything in reverse order.</li>
+<li><strong>An honest ledger.</strong> Anything unreplayable is a <em>named shortfall</em>, never a
+silent gap.</li>
+<li><strong>Drift detection.</strong> Every load re-hashes your source against the sealed
+fingerprint and announces divergence before building anything.</li>
+</ul>
+<h3 id="saving-is-half-of-it--loading-is-the-point">Saving is half of it — loading is the point</h3>
+<p>A checkpoint you can't boot from is a diary. <code>CrystallizerBootstrap</code> is the
+other half: <strong>one fluent chain that brings an entire world back on a cold
+process.</strong></p>
+<pre><code class="language-python">report = (
+    CrystallizerBootstrap()
+    .with_external_persistence_manager(          # optional: your own DB
+        ExternalPersistenceManagerConfiguration()
+        .with_upload_handler(upload)
+        .with_download_handler(download)
+        .with_list_handler(list_ids)
+    )
+    .with_profile(&quot;default&quot;)
+    .bootstrap()
+)
+
+report[&quot;activated&quot;]              # crystallizer live
+report[&quot;remote_reload&quot;]          # what was pulled back from your store
+report[&quot;restored_checkpoint_id&quot;] # which world it booted
+report[&quot;restore_report&quot;]         # per-stage build counts + shortfalls
+</code></pre>
+<p>That single chain does the whole cold start: activate → attach your storage →
+reload the local cache → pull from remote and re-flush it locally → verify the
+checkpoint chain → restore the newest world → hand you a report.</p>
+<p><strong>Storage is yours.</strong> Melder ships no database driver and no cloud SDK. You
+hand it four callables — store, fetch, list, delete — and it uses them. Your
+Postgres, your S3, your Redis, your rules. That's why the dependency list is
+empty.</p>
+<p>A pod restarts, pulls its last checkpoint, and rebuilds the world structurally
+intact — no serialized objects, no pickle, no version-brittle blobs. The spell
+identity that comes back is the <em>same content hash</em> that went in.</p>
+<h2 id="-structural-change-under-governance">🔵 Structural Change, Under Governance</h2>
+<p><sub><strong>Expert / agent-facing.</strong> Hot-swap a live implementation, with foresight and rollback.</sub></p>
+<p>This is where &quot;hot reload&quot; stops being a figure of speech. An agent can swap a
+live implementation for a new one on a running system — but first it has to
+answer the only question that matters: <strong>what does this break?</strong></p>
+<pre><code class="language-python">research = conduit.mutation_research     # the world's research record
+
+# 1. WHAT IS THIS THING NOW? — declared lane, live state, stored custody
+research.residency_view(spell_id)
+
+# 2. WHAT DOES IT COST TO TOUCH IT? — transitive blast radius,
+#    joined with which lanes and campaigns those spells live in
+research.impact_view(spell_id=spell_id)
+
+# 3. WHAT *WOULD* HAPPEN? — the read-only rehearsal
+candidate = &quot;&quot;&quot;
+class ReportService:
+    def run(self) -&gt; str:
+        return &quot;v2 report&quot;
+&quot;&quot;&quot;
+verdict = research.preview_candidate(candidate, against_spell_id=spell_id)
+# → what it defines, what it imports, how it differs from the version it
+#   would replace, and the radius that replacement would carry.
+#   NOTHING executes, binds, or records. It is a rehearsal, not a change.
+</code></pre>
+<h3 id="then-it-actually-changes-the-thing">Then it actually changes the thing</h3>
+<p>Foresight is half of it. The other half is the live swap — <strong>stage → notch →
+meld</strong>, on a running system, with the old version still sitting there:</p>
+<pre><code class="language-python"># 1. STAGE — bind a new version as an INACTIVE member of the existing index.
+#    It is parked and unresolvable: nothing melds it, nothing sees it yet.
+id_v2 = conduit.bind_inactive(
+    spell=ReportServiceV2,
+    spell_index=index,          # the index the current version lives in
+    existence=&quot;unique&quot;,
+    binding_name=&quot;v2&quot;,
+)
+
+# 2. NOTCH — promote v2 to ACTIVE. The outgoing version parks, the index
+#    pointer repoints, and dependents are marked for lazy recompile.
+conduit.notch_spell(spell_index=index, spell=spell_v2)
+assert index.selected_spell_id == id_v2
+
+# 3. MELD — the very next resolution builds the NEW version.
+service = conduit.meld(spell_id=id_v2)   # → ReportServiceV2
+</code></pre>
+<p>And because the old member is <strong>parked, not destroyed</strong>, rollback is the same
+verb pointed the other way:</p>
+<pre><code class="language-python">conduit.notch_spell(spell_index=index, spell=spell_v1)   # instant revert
+</code></pre>
+<blockquote>
+<p><strong>The parked version is still in the ecosystem.</strong> Notching does not dispose of
+anything — v1 remains a member of the index, holding its slot and its state.
+That's what makes the revert above instant, but it also means <strong>retirement is
+a deliberate act</strong>: the agent (or you) decides when a version leaves, and
+removes it explicitly. Nothing is swept up for you, and nothing disappears
+behind your back.</p>
+</blockquote>
+<p>That's the whole loop: an agent reads the system, previews a change, stages it
+beside the live one, promotes it, and can put it back — while the process keeps
+running. Every world entry and promotion lands in a journal you can walk, in
+<strong>lanes</strong> with forward-only history and content-addressed identity (a unit's
+content hash <em>is</em> its identity, so the same code re-entering is a rediscovery,
+not a duplicate).</p>
+<p>The point isn't that an agent <em>can</em> mutate your system. It's that it's shown the
+cost first, the change is staged rather than smashed in, and the previous
+version is one call away.</p>
+<h2 id="-all-of-it-in-real-parallel">🚀 All of It, in Real Parallel</h2>
+<p><sub><strong>Everyone.</strong> Free-threading is the foundation, not a feature.</sub></p>
+<p>Every DI library in Python was designed when threads couldn't run
+simultaneously. &quot;Thread-safe&quot; meant &quot;we put a mutex on it,&quot; because contention
+was theoretical.</p>
+<p>Melder was written after that stopped being true.</p>
+<ul>
+<li>Lock-disciplined registries and scopes with a <strong>documented one-way lock order</strong></li>
+<li>Concurrent resolution as a <strong>first-class path</strong>, not a footnote</li>
+<li>Real threads, real shared memory — <strong>no multiprocessing crutches</strong></li>
+<li>Warns at import if it detects a <strong>GIL-enabled</strong> build</li>
+</ul>
+<h3 id="two-planes-on-purpose">Two planes, on purpose</h3>
+<p>The reason Melder can be <em>both</em> fast and safe under real parallelism is that
+reads and writes don't share a road:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:left">Readers — <code>meld()</code></th>
+<th style="text-align:left">Writers — structural change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>Path</strong></td>
+<td style="text-align:left">Never enter the transaction plane</td>
+<td style="text-align:left">Admitted through the mediator</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Protection</strong></td>
+<td style="text-align:left">Validity gating: a stale graph is refused and recompiled</td>
+<td style="text-align:left">Moded scope claims (<code>x</code> / <code>s</code> / <code>ix</code>)</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Contention</strong></td>
+<td style="text-align:left">None with other readers</td>
+<td style="text-align:left">Only with work touching the same scopes</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Cost</strong></td>
+<td style="text-align:left">Resolution speed, uncompromised</td>
+<td style="text-align:left">Paid once, at the moment you change something</td>
+</tr>
+</tbody>
+</table>
+<p>Resolution — the thing you do thousands of times — carries no transaction
+overhead at all. Coordination is charged only to the thing you do rarely:
+changing the shape of the system.</p>
+<p>That split is what makes the whole design hold together. Without free-threading
+there'd be no real parallelism to protect. Without the mediator, parallel
+structural change would be a race. You need both, and Melder was built assuming
+both from the first line.</p>
+<hr />
+<h2 id="documentation">Documentation</h2>
+<p>Use the routes below to choose source-controlled architecture, runnable examples,
+hosted reference, or video walkthroughs. This README stays the runnable tour;
+long-form guides and API reference belong in the hosted documentation site.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:left">Where</th>
+<th style="text-align:left">What's there</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">🗺️</td>
+<td style="text-align:left"><strong><a href="https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/README.md">Architecture and design</a></strong></td>
+<td style="text-align:left">High-level pictures, runtime structure, utilization stories, and tradeoffs</td>
+</tr>
+<tr>
+<td style="text-align:left">🖼️</td>
+<td style="text-align:left"><strong><a href="https://github.com/Synaptic724/melder/blob/prod/architecture_and_design/05_engineering_drawings/README.md">Engineering drawings</a></strong></td>
+<td style="text-align:left">DI comparison, C4/C3/C2 views, use cases, lifecycle, coordination, recovery, and advanced flows</td>
+</tr>
+<tr>
+<td style="text-align:left">🧪</td>
+<td style="text-align:left"><strong><a href="https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences">Runnable examples</a></strong></td>
+<td style="text-align:left">Beginner-to-expert scripts organized by the same level ladder used in this README</td>
+</tr>
+<tr>
+<td style="text-align:left">✅</td>
+<td style="text-align:left"><strong><a href="https://github.com/Synaptic724/melder/tree/prod/UX_and_AIX_experiences/pytest_examples">Example verification</a></strong></td>
+<td style="text-align:left">Pytest harness and contract probes for the runnable curriculum</td>
+</tr>
+<tr>
+<td style="text-align:left">📘</td>
+<td style="text-align:left"><strong><a href="https://www.synapticaisystems.com/melder/intro/">Getting started</a></strong></td>
+<td style="text-align:left">The guided introduction — start here after this page</td>
+</tr>
+<tr>
+<td style="text-align:left">📚</td>
+<td style="text-align:left"><strong><a href="https://melder.readthedocs.io/en/latest/">melder.readthedocs.io</a></strong></td>
+<td style="text-align:left">Four learning levels, runnable examples, API reference, and full contents</td>
+</tr>
+<tr>
+<td style="text-align:left">▶️</td>
+<td style="text-align:left"><strong><a href="https://www.youtube.com/@SynapticAISystems">Synaptic AI on YouTube</a></strong></td>
+<td style="text-align:left">Walkthroughs, deep dives, and live builds</td>
+</tr>
+</tbody>
+</table>
+<h2 id="license">License</h2>
+<p>GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — see
+<a href="https://github.com/Synaptic724/melder/blob/prod/LICENSE">LICENSE</a>.</p>
+<p>The AGPL's network clause applies: if you run a modified version of Melder™ as a
+service that users interact with over a network, you must offer those users the
+corresponding source of your modified version.</p>
+<p><strong>Trademark.</strong> Melder™ is a trademark of Mark Thomas Geleta / Synaptic AI
+Systems. The AGPL grants rights in the software, not in the name — forks and
+redistributions must not use the Melder name or marks in a way that suggests
+endorsement by, or origin from, the trademark holder. See
+<a href="https://github.com/Synaptic724/melder/blob/prod/NOTICE">NOTICE</a>.</p>
+<h2 id="contributing">Contributing</h2>
+<p>Issues and design discussion welcome via
+<a href="https://github.com/Synaptic724/melder/issues">GitHub issues</a>.</p>
+<p>Melder is under active architectural development — if you're planning something
+substantial, open an issue first so we can align on direction.</p>
+<hr />
+<div align="center">
+<p>Built by <strong><a href="https://github.com/Synaptic724">Mark Geleta</a></strong> · Synaptic AI Systems</p>
+<p><sub>A better place for intelligence to live and work.</sub></p>
+</div>
+</body></html>
