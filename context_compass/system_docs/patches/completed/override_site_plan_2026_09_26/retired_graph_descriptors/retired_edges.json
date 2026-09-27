@@ -1,0 +1,295 @@
+[
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/artifact_processor/spell_artifact_processor_strategy_builder.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_artifact_processor_strategy_builder.SpellArtifactProcessorStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy.SpellOverrideTargetingProcessorStrategy",
+      "relation": "uses",
+      "why": "SpellArtifactProcessorStrategyBuilder registers the override-targeting processor strategy in its default chain.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/artifact_processor/spell_codegen_model.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model.SpellCodegenModel",
+      "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetingAnalysis",
+      "relation": "owns_lifecycle_of",
+      "why": "SpellCodegenModel owns the fitted override-targeting section for its spell.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    }
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.fallback_no_overrides_codegen_creation_discovery_strategy",
+      "relation": "uses",
+      "why": "CodegenCreationDiscoveryStrategyBuilder registers FallbackNoOverridesCodegenCreationDiscoveryStrategy in the default discovery chain.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/manifest_creation_cache.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache",
+      "relation": "uses",
+      "why": "manifest_creation_cache routes lazy reload into the concrete family caches that rebuild CreationContext from manifest packages.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/spell_codegen_strategy_builder.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codegen_strategy_builder.SpellCodegenStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy.FallbackNoOverridesCodegenCreationStrategy",
+      "relation": "uses",
+      "why": "SpellCodegenStrategyBuilder registers FallbackNoOverridesCodegenCreationStrategy in its default strategy catalog.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_library.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+      "relation": "uses",
+      "why": "generalized_runtime_library re-exports the generalized override targeting artifact through its audited helper surface.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_library.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_overrides_codegen_creation_compiler",
+      "relation": "uses",
+      "why": "generalized_runtime_library re-exports generalized override compiler helpers through its audited runtime helper surface.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_manifest_overrides_runtime",
+      "relation": "uses",
+      "why": "generalized_hydrator delegates override-lane executor hydration to generalized_manifest_overrides_runtime.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
+      "relation": "uses",
+      "why": "many_only_hydrator rebuilds override runtime against the compiler-owned many-only override targeting artifact.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler",
+      "relation": "uses",
+      "why": "many_only_hydrator delegates many-only overrides executor hydration to the many-only overrides compiler module.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    }
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/codegen_creation_discovery_strategy_builder.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.codegen_creation_discovery_strategy_builder.CodegenCreationDiscoveryStrategyBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation_discovery_system.strategies.generalized_cache_codegen_creation_discovery_strategy",
+      "relation": "uses",
+      "why": "CodegenCreationDiscoveryStrategyBuilder registers GeneralizedCacheCodegenCreationDiscoveryStrategy in the default discovery chain.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    "reason": "false since before this lane: the builder registers no generalized_cache strategy (S6 re-read, 2026-09-26)"
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.hydration.generalized_hydrator",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
+      "relation": "uses",
+      "why": "generalized_hydrator uses the generalized runtime library and helpers while rebuilding runtime doors from manifest truth.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    "reason": "false: generalized_hydrator imports nothing from generalized_runtime_library (S6 re-read, 2026-09-26)"
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanCallMode",
+      "relation": "uses",
+      "why": "generalized_no_overrides_codegen_creation_compiler uses SpellGeneralizedCodegenPlanCallMode when emitting transient generalized no-overrides call expressions.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    "reason": "false after this lane's retirements (S3b-2, R1, R2): the step and transient emitters that used these were retired in R2; the module imports none of them"
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan.SpellGeneralizedCodegenPlanTargetKind",
+      "relation": "uses",
+      "why": "generalized_no_overrides_codegen_creation_compiler uses SpellGeneralizedCodegenPlanTargetKind when emitting generalized no-overrides creations routing.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    "reason": "false after this lane's retirements (S3b-2, R1, R2): the step and transient emitters that used these were retired in R2; the module imports none of them"
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_no_overrides_codegen_creation_compiler.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_no_overrides_codegen_creation_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.executor_code_cache",
+      "relation": "uses",
+      "why": "generalized_no_overrides_codegen_creation_compiler uses the process-wide executor code cache for emitted no-overrides executor source.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    "reason": "false after this lane's retirements (S3b-2, R1, R2): the step and transient emitters that used these were retired in R2; the module imports none of them"
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_library.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler",
+      "relation": "uses",
+      "why": "generalized_runtime_library re-exports shared runtime-door compiler helpers for generalized-family compilers and hydrators.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    "reason": "false after this lane's retirements (S3b-2, R1, R2): generalized_runtime_library no longer imports the door compiler or the runtime row type"
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_runtime_library.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_library",
+      "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.compilers.generalized_runtime_rows.CodegenStepRuntimeRow",
+      "relation": "uses",
+      "why": "generalized_runtime_library re-exports the generalized runtime row type through its audited helper surface.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    "reason": "false after this lane's retirements (S3b-2, R1, R2): generalized_runtime_library no longer imports the door compiler or the runtime row type"
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_no_overrides_codegen_creation_compiler.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
+      "to": "melder.aether.spellbook.spell_compiler.executor_code_cache",
+      "relation": "uses",
+      "why": "many_only_no_overrides_codegen_creation_compiler uses the process-wide executor code cache for emitted no-overrides executors.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "runtime"
+      ],
+      "strength": "borrowed"
+    },
+    "reason": "false after this lane's retirements (S3b-2, R1, R2): the many_only emitters that compiled through the code cache were retired in R2"
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/blueprints/root_resolution_blueprint.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.blueprints.root_resolution_blueprint.RootResolutionBlueprint",
+      "to": "melder.aether.spellbook.spell_compiler.dag.dag_index.DagIndex",
+      "relation": "owns_lifecycle_of",
+      "why": "RootResolutionBlueprint owns the DagIndex used for later override targeting.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation",
+        "runtime",
+        "cleanup"
+      ],
+      "strength": "hard"
+    },
+    "reason": "false after this lane's retirements (S3b-2, R1, R2): DagIndex was retired in R1; the blueprint owns a PathRegistry"
+  },
+  {
+    "descriptor": "melder/aether/spellbook/spell_compiler/system/spell_system_root_blueprint_builder.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.system.spell_system_root_blueprint_builder.SpellSystemRootBlueprintBuilder",
+      "to": "melder.aether.spellbook.spell_compiler.topology.spell_local_topology.SpellLocalTopology",
+      "relation": "uses",
+      "why": "SpellSystemRootBlueprintBuilder overlays socket refs and dag-index data from spell-local topologies onto rooted blueprints.",
+      "cardinality": "one_to_many",
+      "phase": [
+        "validation"
+      ],
+      "strength": "borrowed"
+    },
+    "reason": "false after this lane's retirements (S3b-2, R1, R2): the per-path overlay that read local topologies was retired in S5a"
+  }
+]

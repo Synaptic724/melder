@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py",
- "source_sha256": "6d5b08058de8a0e65a36e97b2d3839a8584480efcca2b3da6d02fd67c8da5a92",
+ "source_sha256": "2893ed38dbe3e0affafd6da375012eb313bbeb45ede60fde1e510472317f4f12",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict": {
@@ -146,16 +146,16 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "63b74c2a4ed40d1a8494a63d04a13b62d9fc119245702cf68576f9cdab5e42b1",
+   "span_sha256": "e3eaf47b36b0e6d8b8c62fc69080081cc4c15d626ddd84e713b6a2308363eb72",
    "role": "Concurrent weak-key dictionary.",
    "responsibilities": [
-    "stores weakly referenced keys in a concurrent dictionary-like container"
+    "stores values weakly behind WeakRefNode wrappers under strong keys in a thread-safe dictionary-like container, pruning collected entries when auto_prune is enabled"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "63b74c2a4ed40d1a8494a63d04a13b62d9fc119245702cf68576f9cdab5e42b1"
+   "semantics_authored_against": "e3eaf47b36b0e6d8b8c62fc69080081cc4c15d626ddd84e713b6a2308363eb72"
   }
  },
  "edges_out": [

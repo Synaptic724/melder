@@ -1,0 +1,410 @@
+{
+ "python": "3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ]",
+ "gil_enabled": false,
+ "graph": "diamond",
+ "verified": {
+  "normal/current": "ok",
+  "normal/v2": "ok",
+  "empty_dict/current": "ok",
+  "empty_dict/v2": "ok",
+  "empty_tuple/current": "ok",
+  "empty_tuple/v2": "ok",
+  "root_one_reused/current": "ok",
+  "root_one_reused/v2": "ok",
+  "root_one_fresh/current": "ok",
+  "root_one_fresh/v2": "ok",
+  "root_all_reused/current": "ok",
+  "root_all_reused/v2": "ok",
+  "root_args_tuple/current": "MeldExecutionError: [MELD] Execution failed for spell 'DiamondRoot' (ea79cc72bf9c68630f11beb0f43ba95699e27f6c51e310e01e820a76ad8cf155): Erro",
+  "root_args_tuple/v2": "ok",
+  "python_root_only/lower_bound": "ok",
+  "original_override/current": "ok",
+  "original_override/v2": "ok",
+  "nested_reused/current": "ok",
+  "nested_reused/v2": "ok",
+  "nested_exact/current": "ok",
+  "nested_exact/v2": "ok"
+ },
+ "rows": [
+  {
+   "graph": "diamond",
+   "case": "normal",
+   "variant": "current",
+   "median_ns": 453.7095934759446,
+   "min_ns": 444.8024342267027,
+   "max_ns": 483.9205802803049,
+   "samples_ns": [
+    444.8024342267027,
+    453.7095934759446,
+    483.9205802803049,
+    453.9636095402016,
+    456.7487705925744,
+    451.8859519711499,
+    450.50172117039585
+   ],
+   "iterations": 48804,
+   "percent_of_current_normal": 100.0
+  },
+  {
+   "graph": "diamond",
+   "case": "normal",
+   "variant": "v2",
+   "median_ns": 425.2727085309034,
+   "min_ns": 417.34791572176636,
+   "max_ns": 444.74164020945864,
+   "samples_ns": [
+    417.34791572176636,
+    444.74164020945864,
+    437.9246072650806,
+    421.17133962808725,
+    425.2727085309034,
+    427.6702882117676,
+    423.1193872922937
+   ],
+   "iterations": 48506,
+   "percent_of_current_normal": 106.68674108979997
+  },
+  {
+   "graph": "diamond",
+   "case": "empty_dict",
+   "variant": "current",
+   "median_ns": 541.0981029138252,
+   "min_ns": 531.6646497210168,
+   "max_ns": 554.3058648481091,
+   "samples_ns": [
+    542.3929572225667,
+    552.4489770613764,
+    554.3058648481091,
+    540.5223806571606,
+    538.8487042777433,
+    531.6646497210168,
+    541.0981029138252
+   ],
+   "iterations": 40325,
+   "percent_of_current_normal": 83.84978454603859
+  },
+  {
+   "graph": "diamond",
+   "case": "empty_dict",
+   "variant": "v2",
+   "median_ns": 519.7705901714054,
+   "min_ns": 510.39015621439603,
+   "max_ns": 527.7358280375724,
+   "samples_ns": [
+    525.435855887789,
+    514.2254601615313,
+    527.7358280375724,
+    519.7705901714054,
+    512.1978884472238,
+    510.39015621439603,
+    523.119047016229
+   ],
+   "iterations": 39497,
+   "percent_of_current_normal": 87.29035502495903
+  },
+  {
+   "graph": "diamond",
+   "case": "empty_tuple",
+   "variant": "current",
+   "median_ns": 2212.6841811587465,
+   "min_ns": 2189.9936761833906,
+   "max_ns": 2429.3313493908677,
+   "samples_ns": [
+    2199.730028829164,
+    2248.585976006696,
+    2206.27220310611,
+    2259.5366874360643,
+    2429.3313493908677,
+    2189.9936761833906,
+    2212.6841811587465
+   ],
+   "iterations": 10753,
+   "percent_of_current_normal": 20.504941344062228
+  },
+  {
+   "graph": "diamond",
+   "case": "empty_tuple",
+   "variant": "v2",
+   "median_ns": 728.4677429408465,
+   "min_ns": 716.2192545035218,
+   "max_ns": 761.3378732157328,
+   "samples_ns": [
+    725.0344386960045,
+    728.5033036215171,
+    751.9278813189553,
+    728.4677429408465,
+    761.3378732157328,
+    716.2192545035218,
+    722.4067817739824
+   ],
+   "iterations": 32086,
+   "percent_of_current_normal": 62.282729451314495
+  },
+  {
+   "graph": "diamond",
+   "case": "root_one_reused",
+   "variant": "current",
+   "median_ns": 2071.446279508123,
+   "min_ns": 2041.289740597792,
+   "max_ns": 2133.836190647159,
+   "samples_ns": [
+    2056.82344493313,
+    2041.289740597792,
+    2103.3514944798494,
+    2084.7849385153936,
+    2133.836190647159,
+    2064.2784310205548,
+    2071.446279508123
+   ],
+   "iterations": 11141,
+   "percent_of_current_normal": 21.90303451092541
+  },
+  {
+   "graph": "diamond",
+   "case": "root_one_reused",
+   "variant": "v2",
+   "median_ns": 516.1334550139575,
+   "min_ns": 502.8737384582349,
+   "max_ns": 603.0929783122182,
+   "samples_ns": [
+    517.4551928995777,
+    506.0336053253167,
+    522.4806742538115,
+    516.1334550139575,
+    603.0929783122182,
+    502.8737384582349,
+    511.0304559444564
+   ],
+   "iterations": 27942,
+   "percent_of_current_normal": 87.90548046603087
+  },
+  {
+   "graph": "diamond",
+   "case": "root_one_fresh",
+   "variant": "current",
+   "median_ns": 2097.1053543913713,
+   "min_ns": 2049.1939522342063,
+   "max_ns": 2166.235747303544,
+   "samples_ns": [
+    2155.312596302003,
+    2166.235747303544,
+    2097.1053543913713,
+    2093.952715716487,
+    2049.1939522342063,
+    2051.703582434515,
+    2123.7237095531586
+   ],
+   "iterations": 10384,
+   "percent_of_current_normal": 21.63504053460498
+  },
+  {
+   "graph": "diamond",
+   "case": "root_one_fresh",
+   "variant": "v2",
+   "median_ns": 533.7003352554647,
+   "min_ns": 525.2347324661392,
+   "max_ns": 603.708435027491,
+   "samples_ns": [
+    603.708435027491,
+    537.5835858924501,
+    527.2785034196057,
+    533.7003352554647,
+    525.2347324661392,
+    542.6261767466809,
+    527.9087568727371
+   ],
+   "iterations": 37285,
+   "percent_of_current_normal": 85.01204955375732
+  },
+  {
+   "graph": "diamond",
+   "case": "root_all_reused",
+   "variant": "current",
+   "median_ns": 2592.7864571557766,
+   "min_ns": 2528.8765543748586,
+   "max_ns": 3324.1210716708115,
+   "samples_ns": [
+    2602.9100158263623,
+    2583.9004069635994,
+    2581.8900067827267,
+    2592.7864571557766,
+    3324.1210716708115,
+    2596.3919285552793,
+    2528.8765543748586
+   ],
+   "iterations": 8846,
+   "percent_of_current_normal": 17.49891867198554
+  },
+  {
+   "graph": "diamond",
+   "case": "root_all_reused",
+   "variant": "v2",
+   "median_ns": 426.6424634301463,
+   "min_ns": 423.72736909052367,
+   "max_ns": 433.1810260758957,
+   "samples_ns": [
+    425.9335170659317,
+    426.6424634301463,
+    431.86771252914986,
+    433.1810260758957,
+    430.38954844180626,
+    425.5944668221327,
+    423.72736909052367
+   ],
+   "iterations": 47170,
+   "percent_of_current_normal": 106.34421848875105
+  },
+  {
+   "graph": "diamond",
+   "case": "root_args_tuple",
+   "variant": "v2",
+   "median_ns": 574.0830828323313,
+   "min_ns": 562.6481017590737,
+   "max_ns": 578.6343520374081,
+   "samples_ns": [
+    571.4124916499666,
+    577.9290525495435,
+    578.6343520374081,
+    574.8780338454687,
+    562.6481017590737,
+    565.1328490313962,
+    574.0830828323313
+   ],
+   "iterations": 35928,
+   "percent_of_current_normal": 79.03204380061075
+  },
+  {
+   "graph": "diamond",
+   "case": "python_root_only",
+   "variant": "lower_bound",
+   "median_ns": 122.22295,
+   "min_ns": 121.61216,
+   "max_ns": 126.8783,
+   "samples_ns": [
+    122.12475,
+    123.91897,
+    122.22295,
+    124.05039,
+    126.8783,
+    121.64023,
+    121.61216
+   ],
+   "iterations": 100000,
+   "percent_of_current_normal": 371.21472970170055
+  },
+  {
+   "graph": "diamond",
+   "case": "original_override",
+   "variant": "current",
+   "median_ns": 2132.143040136635,
+   "min_ns": 2045.6526046114432,
+   "max_ns": 2207.2573014517507,
+   "samples_ns": [
+    2045.6526046114432,
+    2137.990520922289,
+    2161.3072587532024,
+    2085.974295473954,
+    2207.2573014517507,
+    2117.394534585824,
+    2132.143040136635
+   ],
+   "iterations": 11710,
+   "percent_of_current_normal": 21.279510095479772
+  },
+  {
+   "graph": "diamond",
+   "case": "original_override",
+   "variant": "v2",
+   "median_ns": 544.6445683491623,
+   "min_ns": 526.2279906093266,
+   "max_ns": 566.8803489488848,
+   "samples_ns": [
+    526.2279906093266,
+    546.1556930957208,
+    544.6445683491623,
+    549.1041777825205,
+    566.8803489488848,
+    532.3853377441042,
+    536.3435065628001
+   ],
+   "iterations": 37484,
+   "percent_of_current_normal": 83.30379477594994
+  },
+  {
+   "graph": "diamond",
+   "case": "nested_reused",
+   "variant": "current",
+   "median_ns": 2079.0564440263406,
+   "min_ns": 2028.3985290344651,
+   "max_ns": 2546.2729838364835,
+   "samples_ns": [
+    2034.4796887026425,
+    2079.0564440263406,
+    2076.581972120072,
+    2097.9310698708628,
+    2546.2729838364835,
+    2086.239459505687,
+    2028.3985290344651
+   ],
+   "iterations": 11693,
+   "percent_of_current_normal": 21.82286078762161
+  },
+  {
+   "graph": "diamond",
+   "case": "nested_reused",
+   "variant": "v2",
+   "median_ns": 508.0699023406521,
+   "min_ns": 499.5252532118823,
+   "max_ns": 521.8780730972288,
+   "samples_ns": [
+    509.0994267328303,
+    502.78297419164795,
+    499.5252532118823,
+    508.0699023406521,
+    519.0180590487844,
+    521.8780730972288,
+    501.52078943194437
+   ],
+   "iterations": 44133,
+   "percent_of_current_normal": 89.30062406486344
+  },
+  {
+   "graph": "diamond",
+   "case": "nested_exact",
+   "variant": "current",
+   "median_ns": 2062.306006426629,
+   "min_ns": 2032.0639367224192,
+   "max_ns": 2163.013512400099,
+   "samples_ns": [
+    2032.0639367224192,
+    2062.306006426629,
+    2059.7218423004038,
+    2078.655433797479,
+    2162.9397709483396,
+    2033.5615885309385,
+    2163.013512400099
+   ],
+   "iterations": 12137,
+   "percent_of_current_normal": 22.000110170948396
+  },
+  {
+   "graph": "diamond",
+   "case": "nested_exact",
+   "variant": "v2",
+   "median_ns": 555.2051989651349,
+   "min_ns": 541.6092645065911,
+   "max_ns": 604.8243193298016,
+   "samples_ns": [
+    555.2051989651349,
+    545.1331033633115,
+    541.6092645065911,
+    562.7899716644081,
+    604.8243193298016,
+    543.6395959098189,
+    564.3074534926697
+   ],
+   "iterations": 40585,
+   "percent_of_current_normal": 81.71926241354164
+  }
+ ]
+}

@@ -201,14 +201,14 @@ class NeedsContract:
 
 
 class NeedsPluginSet:
-    """set[IPlugin] is an unsupported collection shape."""
+    """set[IPlugin] is a caller input: Melder never injects a set."""
 
     def __init__(self, plugins: set) -> None:  # annotated below via set[IPlugin]
         self.plugins = plugins
 
 
 class NeedsPluginDict:
-    """dict[str, IPlugin] is an unsupported collection shape."""
+    """dict[str, IPlugin] is a caller input: Melder never injects a dict."""
 
     def __init__(self, plugins: dict) -> None:  # annotated below via dict[str, IPlugin]
         self.plugins = plugins
@@ -598,26 +598,30 @@ def test_phase4_duplicate_name_still_errors_with_distinct_frame_and_binding() ->
         spellbook.cleanup()
 
 
-def test_phase4_unsupported_set_collection_shape_errors() -> None:
-    """set[IPlugin] is an UNSUPPORTED_COLLECTION_SHAPE error."""
+def test_phase4_set_collection_parameter_is_a_required_hole() -> None:
+    """set[IPlugin] is a caller input: a REQUIRED_HOLE warning, never a collection-shape error."""
     spellbook = _make_spellbook()
     try:
         spell_id = spellbook.bind(spell=NeedsPluginSet, existence=Existence.unique, permissions="create")
         spell = _get_spell(spellbook, spell_id)
         _phases_1_4(spell)
-        assert "UNSUPPORTED_COLLECTION_SHAPE" in _codes4(spell)
+        codes = _codes4(spell)
+        assert "UNSUPPORTED_COLLECTION_SHAPE" not in codes
+        assert "REQUIRED_HOLE" in codes
     finally:
         spellbook.cleanup()
 
 
-def test_phase4_unsupported_dict_collection_shape_errors() -> None:
-    """dict[str, IPlugin] is an UNSUPPORTED_COLLECTION_SHAPE error."""
+def test_phase4_dict_collection_parameter_is_a_required_hole() -> None:
+    """dict[str, IPlugin] is a caller input: a REQUIRED_HOLE warning, never a collection-shape error."""
     spellbook = _make_spellbook()
     try:
         spell_id = spellbook.bind(spell=NeedsPluginDict, existence=Existence.unique, permissions="create")
         spell = _get_spell(spellbook, spell_id)
         _phases_1_4(spell)
-        assert "UNSUPPORTED_COLLECTION_SHAPE" in _codes4(spell)
+        codes = _codes4(spell)
+        assert "UNSUPPORTED_COLLECTION_SHAPE" not in codes
+        assert "REQUIRED_HOLE" in codes
     finally:
         spellbook.cleanup()
 
@@ -666,7 +670,6 @@ def test_phase4_self_dependency_reports_self_and_cycle() -> None:
         spell_id = spellbook.bind(spell=Leaf, existence=Existence.unique, permissions="create")
         spell = _get_spell(spellbook, spell_id)
         spell.dependencies = [spell_id]
-        spell.dependency_graph = object()
         result = system.validate_spell(spell=spell, requirements=None, symbolic_graph=None, resolution_frame=object())
         try:
             codes = {issue.code for issue in result.issues}
@@ -692,23 +695,6 @@ def test_phase4_missing_resolution_frame_errors() -> None:
             result.cleanup()
     finally:
         system.cleanup()
-        spellbook.cleanup()
-
-
-def test_phase4_missing_dependency_graph_warns_not_broken() -> None:
-    """A missing dependency graph is a warning, not a break."""
-    spellbook = _make_spellbook()
-    try:
-        spell_id = spellbook.bind(spell=Leaf, existence=Existence.unique, permissions="create")
-        spell = _get_spell(spellbook, spell_id)
-        ch.run_phase_requirements(spell)
-        ch.run_phase_symbolic_graph(spell)
-        ch.run_phase_local_frame(spell)
-        spell.dependency_graph = None
-        ch.run_phase_validation(spell)
-        assert "MISSING_DEPENDENCY_GRAPH" in _codes4(spell)
-        assert spell.is_broken is False
-    finally:
         spellbook.cleanup()
 
 

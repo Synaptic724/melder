@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/manifest/generalized_manifest.py",
- "source_sha256": "3b4d1f992bbdf32f179dd91187344ed1648284e6e74d1b4a09c95b34a29eead0",
+ "source_sha256": "c8dabf9d81566ca300c4721641f12dda5a96083b66501003c410ddc2f9d3a5fd",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest": {
@@ -14,7 +14,8 @@
    "responsibilities": [
     "builds the family's marshal-safe generalized manifest from model and plan truth",
     "extends shared phase-11 rows with generalized-family flags needed by emitted source",
-    "validates and normalizes generalized manifest payloads for cache and hydration paths"
+    "validates and normalizes generalized manifest payloads for cache and hydration paths",
+    "carries no override section since manifest version 4: key-set plans compile from the no-overrides rows"
    ],
    "owns_state": [
     "MANIFEST_VERSION",
@@ -22,7 +23,8 @@
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   }
  },
  "edges_out": [],
@@ -32,7 +34,6 @@
   "Any": "typing.Any",
   "Dict": "typing.Dict",
   "Optional": "typing.Optional",
-  "Tuple": "typing.Tuple",
   "CodegenCreationSchemaHelpers": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.codegen_creation_schema_helpers.CodegenCreationSchemaHelpers",
   "GENERALIZED_FAMILY_ID": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.GENERALIZED_FAMILY_ID",
   "MANIFEST_METADATA_KEY": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache.MANIFEST_METADATA_KEY"

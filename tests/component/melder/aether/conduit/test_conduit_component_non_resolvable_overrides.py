@@ -143,18 +143,22 @@ def test_missing_required_values_keep_existing_constructor_failure(
 
 @pytest.mark.parametrize("family", ["many_only", "generalized"])
 @pytest.mark.parametrize("cached", [False, True])
-def test_whole_branch_override_preserves_existing_eager_construction(
+def test_whole_branch_override_skips_the_supplied_branch(
     runtime_book: Spellbook, family: str, cached: bool,
 ) -> None:
-    """Existing eager child construction still requires its input before the parent replaces it."""
+    """A supplied branch is used as given: its own input is never needed (design v2 B1).
+
+    Before the key-set plans the child was built first and failed on its missing
+    input; now it is not built, and a rule below it is validated but inactive.
+    """
     conduit, root_id = _build_runtime(runtime_book, family, cached)
     child = SuppliedConsumer(ExternalValue())
-    with pytest.raises((TypeError, MeldExecutionError), match="external"):
-        conduit.meld(spell_id=root_id, override={"child": child})
+    assert conduit.meld(spell_id=root_id, override={"child": child}).child is child
     result = conduit.meld(
-        spell_id=root_id, override={"child": child, "child>external": child.external},
+        spell_id=root_id, override={"child": child, "child>external": ExternalValue()},
     )
     assert result.child is child
+    assert result.child.external is child.external
 
 
 def test_unique_consumer_reuse_needs_no_repeated_supplied_value(runtime_book: Spellbook) -> None:
@@ -184,11 +188,12 @@ def test_explicit_definition_descriptor_uses_supplied_value(runtime_book: Spellb
     assert conduit.meld(spell_id=root_id, override={"external": value}).external is value
 
 
-def test_ordinary_branch_override_also_constructs_its_registered_child(runtime_book: Spellbook) -> None:
-    """Characterize eager construction independently of the new registration capability."""
+def test_ordinary_branch_override_skips_its_registered_child(runtime_book: Spellbook) -> None:
+    """A supplied child is not built, so its unsatisfiable plain input is never needed (design v2 B1)."""
     runtime_book.bind(spell=OrdinaryRequiredConsumer, existence="many")
     root_id = runtime_book.bind(spell=OrdinaryOuter, existence="many")
     conduit = runtime_book.conjure()
     child = OrdinaryRequiredConsumer(3)
+    assert conduit.meld(spell_id=root_id, override={"child": child}).child is child
     with pytest.raises((TypeError, MeldExecutionError), match="count"):
-        conduit.meld(spell_id=root_id, override={"child": child})
+        conduit.meld(spell_id=root_id)

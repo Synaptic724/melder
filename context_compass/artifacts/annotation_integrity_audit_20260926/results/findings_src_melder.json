@@ -1,0 +1,429 @@
+[
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/aether/conduit/meld/creation_context/creation_context.py",
+  "line": 239,
+  "owner": "CreationContext.execute(meld)",
+  "detail": "Meld (inside a string annotation)"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/aether/conduit/meld/creation_context/creation_context.py",
+  "line": 276,
+  "owner": "CreationContext.execute_no_hooks(meld)",
+  "detail": "Meld (inside a string annotation)"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py",
+  "line": 713,
+  "owner": "FrameACLProfileBuilder.create_profile(view_override_ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py",
+  "line": 714,
+  "owner": "FrameACLProfileBuilder.create_profile(command_override_ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py",
+  "line": 715,
+  "owner": "FrameACLProfileBuilder.create_profile(codegen_override_ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 73,
+  "owner": "FrameACLCompiler.__init__(profile_builder)",
+  "detail": "IFrameACLProfileBuilder"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 299,
+  "owner": "FrameACLCompiler._compile_frame_payload_fields(view_profile)",
+  "detail": "FrameACLViewProfile"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 300,
+  "owner": "FrameACLCompiler._compile_frame_payload_fields(precision_profile)",
+  "detail": "FrameACLViewProfile"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 342,
+  "owner": "FrameACLCompiler._compile_conduit_access(view_profile)",
+  "detail": "FrameACLViewProfile"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 343,
+  "owner": "FrameACLCompiler._compile_conduit_access(precision_profile)",
+  "detail": "FrameACLViewProfile"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 386,
+  "owner": "FrameACLCompiler._compile_spell_access(view_profile)",
+  "detail": "FrameACLViewProfile"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 387,
+  "owner": "FrameACLCompiler._compile_spell_access(precision_profile)",
+  "detail": "FrameACLViewProfile"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 771,
+  "owner": "FrameACLCompiler._collect_operation_effects(ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 791,
+  "owner": "FrameACLCompiler._collect_effective_operation_effects(base_ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 792,
+  "owner": "FrameACLCompiler._collect_effective_operation_effects(override_ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 815,
+  "owner": "FrameACLCompiler._collect_effective_operation_effects_from_rulesets(rulesets)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 841,
+  "owner": "FrameACLCompiler._collect_condition_string_values_from_rulesets(rulesets)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 875,
+  "owner": "FrameACLCompiler._collect_import_module_roots_from_rulesets(rulesets)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 914,
+  "owner": "FrameACLCompiler._collect_effective_spell_operation_effects_for_record(rulesets)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 941,
+  "owner": "FrameACLCompiler._as_frame_acl_ruleset(ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 941,
+  "owner": "FrameACLCompiler._as_frame_acl_ruleset(return)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 1031,
+  "owner": "FrameACLCompiler._spell_selector_rules_present_for_operation(rulesets)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 1054,
+  "owner": "FrameACLCompiler._collect_selector_spell_operation_effects_for_record(rulesets)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/frame_acl_configuration_chain.py",
+  "line": 458,
+  "owner": "FrameACLConfigurationChain._validate_revision_payload(configuration)",
+  "detail": "Any"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 81,
+  "owner": "FrameACLSetCompatibilityValidator.__init__(profile_builder)",
+  "detail": "IFrameACLProfileBuilder"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 444,
+  "owner": "FrameACLSetCompatibilityValidator._check_visibility_vs_enable(view_rulesets)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 445,
+  "owner": "FrameACLSetCompatibilityValidator._check_visibility_vs_enable(view_override_ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 446,
+  "owner": "FrameACLSetCompatibilityValidator._check_visibility_vs_enable(command_rulesets)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 447,
+  "owner": "FrameACLSetCompatibilityValidator._check_visibility_vs_enable(command_override_ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 509,
+  "owner": "FrameACLSetCompatibilityValidator._check_member_visibility_vs_command(view_rulesets)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 510,
+  "owner": "FrameACLSetCompatibilityValidator._check_member_visibility_vs_command(view_override_ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 511,
+  "owner": "FrameACLSetCompatibilityValidator._check_member_visibility_vs_command(command_rulesets)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 512,
+  "owner": "FrameACLSetCompatibilityValidator._check_member_visibility_vs_command(command_override_ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 559,
+  "owner": "FrameACLSetCompatibilityValidator._collect_operation_effects(ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 582,
+  "owner": "FrameACLSetCompatibilityValidator._collect_effective_operation_effects(base_ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 583,
+  "owner": "FrameACLSetCompatibilityValidator._collect_effective_operation_effects(override_ruleset)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "UNDEFINED_NAME",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 614,
+  "owner": "FrameACLSetCompatibilityValidator._collect_effective_operation_effects_from_rulesets(rulesets)",
+  "detail": "FrameACLRuleSet"
+ },
+ {
+  "kind": "STRING_IN_UNION",
+  "path": "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py",
+  "line": 1621,
+  "owner": "WeakConcurrentDict.__or__(other)",
+  "detail": "'WeakConcurrentDict[_K, _V]' | Mapping[_K, _V] | Iterable[Tuple[_K, _V]]"
+ },
+ {
+  "kind": "STRING_IN_UNION",
+  "path": "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py",
+  "line": 1657,
+  "owner": "WeakConcurrentDict.__ior__(other)",
+  "detail": "'WeakConcurrentDict[_K, _V]' | Mapping[_K, _V] | Iterable[Tuple[_K, _V]]"
+ },
+ {
+  "kind": "STRING_IN_UNION",
+  "path": "src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py",
+  "line": 1685,
+  "owner": "WeakConcurrentDict.__ror__(other)",
+  "detail": "'WeakConcurrentDict[_K, _V]' | Mapping[_K, _V] | Iterable[Tuple[_K, _V]]"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/configurations/profiles/builder/frame_acl_profile_builder.py",
+  "line": 706,
+  "owner": "melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder.FrameACLProfileBuilder.create_profile",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 73,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler.__init__",
+  "detail": "NameError: name 'IFrameACLProfileBuilder' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 297,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._compile_frame_payload_fields",
+  "detail": "NameError: name 'FrameACLViewProfile' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 339,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._compile_conduit_access",
+  "detail": "NameError: name 'FrameACLViewProfile' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 383,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._compile_spell_access",
+  "detail": "NameError: name 'FrameACLViewProfile' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 769,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_operation_effects",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 789,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_effective_operation_effects",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 813,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_effective_operation_effects_from_rulesets",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 837,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_condition_string_values_from_rulesets",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 873,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_import_module_roots_from_rulesets",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 911,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_effective_spell_operation_effects_for_record",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 940,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._as_frame_acl_ruleset",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 1028,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._spell_selector_rules_present_for_operation",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_compiler.py",
+  "line": 1050,
+  "owner": "melder.nexus.acl.frame_acl_compiler.FrameACLCompiler._collect_selector_spell_operation_effects_for_record",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/frame_acl_configuration_chain.py",
+  "line": 457,
+  "owner": "melder.nexus.acl.frame_acl_configuration_chain.FrameACLConfigurationChain._validate_revision_payload",
+  "detail": "NameError: name 'Any' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 78,
+  "owner": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator.__init__",
+  "detail": "NameError: name 'IFrameACLProfileBuilder' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 439,
+  "owner": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator._check_visibility_vs_enable",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 505,
+  "owner": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator._check_member_visibility_vs_command",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 557,
+  "owner": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator._collect_operation_effects",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 580,
+  "owner": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator._collect_effective_operation_effects",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ },
+ {
+  "kind": "EVAL_ERROR",
+  "path": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
+  "line": 612,
+  "owner": "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator.FrameACLSetCompatibilityValidator._collect_effective_operation_effects_from_rulesets",
+  "detail": "NameError: name 'FrameACLRuleSet' is not defined"
+ }
+]

@@ -39,6 +39,54 @@ Local previews include your uncommitted edits, while GitHub source links identif
 the checkout's current commit. Qualify the intended committed revision in CI and
 Read the Docs before treating that preview as a published release.
 
+## Search metadata and crawler files
+
+The site's short browser-title suffix is `Melder`. Keep visible page headings and the
+existing learning structure separate from this suffix.
+
+Descriptions have one source owner:
+
+- Authored Markdown pages use `myst.html_meta.description` in their YAML frontmatter.
+- README-derived chapters may set `description` in `docs/curriculum.toml`.
+- Saved lessons may set `description` in a `[[lesson]]` override in `docs/catalog.toml`.
+
+When changing a published lesson title, set its previous heading fragment in `legacy_anchor`
+so existing deep links still resolve. The target accepts lowercase letters, digits and hyphens.
+
+Generated descriptions must be nonempty strings when supplied. Authored chapters cannot also
+declare a manifest description. The generators validate and escape metadata before publishing it;
+they retain the canonical prose and downloaded example bytes.
+
+`docs/seo.toml` lists the reviewed pages whose descriptions are required. Add a page there after
+authoring its specific summary. Other missing descriptions are warnings, so broader coverage can
+grow without treating every unedited reference page as a publication failure.
+
+For a local publication audit, set `READTHEDOCS_CANONICAL_URL` before the HTML build. In PowerShell:
+
+```powershell
+$env:READTHEDOCS_CANONICAL_URL = "https://melder.readthedocs.io/en/latest/"
+python docs/tools/build_docs.py build
+python docs/tools/check_site.py
+python docs/tools/check_seo.py docs/_build/html --base-url $env:READTHEDOCS_CANONICAL_URL --policy docs/seo.toml --json docs/_build/seo-report.json
+```
+
+On POSIX shells, use `export READTHEDOCS_CANONICAL_URL="https://melder.readthedocs.io/en/latest/"`
+and pass `--base-url "$READTHEDOCS_CANONICAL_URL"`. CI supplies this audit base explicitly. Read the
+Docs supplies its own version-specific value; do not replace that value in the hosted configuration.
+
+The SEO check validates titles, description ownership, canonical links, sitemap inclusion and
+indexing directives. Exit codes are 0 for no policy errors, 1 for policy errors, and 2 for unreadable
+inputs. It reports optional descriptions and H1/language conventions as warnings. External RTD
+previews may retain intentional `noindex`; other intentional previews use `--allow-noindex`.
+The checker reads local HTML/XML only and does not claim Google indexing or ranking results.
+
+Read the Docs already serves the project's `robots.txt` at
+`https://melder.readthedocs.io/robots.txt`. Its generated file allows public versions, handles hidden
+versions, and advertises the root sitemap. Keep this platform-managed file unless a deliberate
+crawler-policy change calls for a custom replacement. A local build need not contain `robots.txt`.
+After publication, verify that root endpoint and `https://melder.readthedocs.io/sitemap.xml` return
+the intended rules and URLs. Local metadata checks do not verify those remote responses.
+
 ## Add a chapter or page
 
 - Add a guide to `docs/curriculum.toml`: its stable page ID, exact learning level,

@@ -368,3 +368,34 @@ def test_diagnostics_list_reused():
     )
     assert existing[0].code == "X"
     assert any(d.code == "cycle_detected" for d in existing)
+
+
+def test_cycle_message_names_blocked_spells_and_records_ids():
+    """The cycle diagnostic names the spells in or behind the cycle and keeps their ids in details."""
+    from types import SimpleNamespace
+
+    diagnostics = []
+    CycleDetectionStrategy().run(
+        index=_index(_node("a", {"b"}), _node("b", {"a"}), _node("c", set())),
+        blueprints={}, phase4_results={}, broken_spell_ids=set(), spell_system_states=object(),
+        spell_lookup={"a": SimpleNamespace(spell_name="Alpha"), "b": SimpleNamespace(spell_name="Beta")},
+        diagnostics=diagnostics, cancel_event=None,
+    )
+
+    assert len(diagnostics) == 1
+    assert "Cycle detected" in diagnostics[0].message
+    assert "'Alpha', 'Beta'" in diagnostics[0].message
+    assert diagnostics[0].details["blocked_spell_ids"] == ["a", "b"]
+
+
+def test_cycle_message_caps_the_named_list():
+    """More than ten blocked spells are summarised as "and N more"."""
+    nodes = [_node(f"n{i:02d}", {f"n{(i + 1) % 12:02d}"}) for i in range(12)]
+    diagnostics = []
+    CycleDetectionStrategy().run(
+        index=_index(*nodes), blueprints={}, phase4_results={}, broken_spell_ids=set(),
+        spell_system_states=object(), spell_lookup={}, diagnostics=diagnostics, cancel_event=None,
+    )
+
+    assert "and 2 more" in diagnostics[0].message
+    assert len(diagnostics[0].details["blocked_spell_ids"]) == 12

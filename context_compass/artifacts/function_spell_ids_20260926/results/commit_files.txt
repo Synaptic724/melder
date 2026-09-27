@@ -1,0 +1,46 @@
+# stable_callable_spell_ids lane: files to commit (content diff vs HEAD 446f462bc, CR-at-EOL ignored), 2026-09-26T11:24:58Z
+# new (untracked):
+tests/component/melder/spellbook/test_conjure_cache_restage.py
+tests/component/melder/spellbook/test_spell_id_process_stability.py
+tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py
+# modified:
+context_compass/system_docs/graph/melder/aether/spellbook/bind/bind.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.json
+context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.json
+context_compass/system_docs/graph/melder/aether/spellbook/spellbook_creation_system.json
+context_compass/system_docs/graph/melder/utilities/caching_system/caching_system.json
+context_compass/system_docs/patches/active/stable_callable_spell_ids_2026_09_26/architecture_patch.md
+context_compass/system_docs/patches/active/stable_callable_spell_ids_2026_09_26/component_patch_binding_pipeline.md
+context_compass/system_docs/src_architecture.md
+context_compass/system_docs/src_architecture_index.md
+context_compass/system_docs/src_components.md
+context_compass/system_docs/src_components_index.md
+context_compass/system_docs/src_graph.md
+context_compass/system_docs/src_graph_index.md
+context_compass/system_docs/tests_components.md
+context_compass/system_docs/tests_components_index.md
+llm_support/llm_full_other.txt
+llm_support/llm_full_other_index.md
+llm_support/llm_full_src.txt
+llm_support/llm_full_src_index.md
+llm_support/llm_full_tests.txt
+llm_support/llm_full_tests_index.md
+llm_support/manifest.json
+src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
+src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
+src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
+src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
+src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
+src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
+src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
+src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
+src/melder/aether/spellbook/bind/bind.py
+src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/inspector_utility.py
+src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/binding_profile.py
+src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py
+src/melder/aether/spellbook/spellbook_creation_system.py
+src/melder/utilities/caching_system/caching_system.py
+tests/component/melder/spellbook/test_codegen_signature_determinism.py
+tests/integration/melder/spellbook/test_cache_schema_version_integration.py
+# plus context_compass lane state: the task ticket, attention_board.md, artifact_board.md, mailbox_board.md, artifacts/function_spell_ids_20260926/

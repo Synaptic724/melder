@@ -1,0 +1,41 @@
+# before (device-tree src via synced VM copy, 3.14.7t): run 1
+{
+ "ResolvedFields": {
+  "id": "be5872ec4efed324",
+  "keys": [
+   "count",
+   "name"
+  ],
+  "values": {
+   "count": "<class 'int'>",
+   "name": "<class 'str'>"
+  }
+ },
+ "TypeCheckingField": {
+  "id": "2a86a107f16552c7",
+  "keys": [],
+  "values": {}
+ },
+ "QuotedUnavailable": {
+  "id": "75d03f620fbfe6c3",
+  "keys": [],
+  "values": {}
+ },
+ "NestedUnavailable": {
+  "id": "95d8320ac22d3e59",
+  "keys": [],
+  "values": {}
+ },
+ "DataclassField": {
+  "id": "1cb386302bfdf62b",
+  "keys": [],
+  "values": {}
+ },
+ "NoAnnotations": {
+  "id": "d471254ed25ef4c4",
+  "keys": [],
+  "values": {}
+ }
+}
+# run 2 (fresh process): identical to run 1: yes
+# PROBE_EXTRA_FIELD=1 (TypeCheckingField gains 'extra: Decimal'): identical to run 1: yes

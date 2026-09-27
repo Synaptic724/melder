@@ -1,0 +1,20 @@
+# Measurement environments available to melder_2, probed 2026-09-26 (UTC) by melder_2.
+# Device VM (device_bash on desktop-hcnutdq; Linux VM over the connected folder):
+python3: Python 3.10.12 (/usr/bin/python3); no 3.14 or 3.14t interpreter installed
+uv: /usr/local/bin/uv; pip3: /usr/local/bin/pip3
+nproc: 2
+memory: 3915 MB total
+network: https://pypi.org/simple/dishka/ -> HTTP 200
+# Cloud workspace (melder_2's own container):
+python3: Python 3.11.15; uv: /root/.local/bin/uv
+nproc: 2
+memory: 8032 MB total
+# Consequence: CPython 3.14t must be installed with uv before any run; DI_GAUNTLET_THREADS=3 is
+# oversubscribed on 2 vCPUs, so thread scaling and cross-thread refcount costs are not reproduced.
+# Owner machine (Windows, where the baselines ran): interpreter build, core count and affinity UNKNOWN.
+# VM copy built 2026-09-26T15:48Z by melder_2 (session scratch, outside the connected folder):
+interpreter: CPython 3.14.7 free-threading build (uv cpython-3.14.7+freethreaded-linux-x86_64-gnu), GIL disabled
+packages: dishka 1.10.1, dependency-injector 4.49.1, pytest 9.1.1; melder 0.2.57 from the copied src/ (no install)
+tree snapshot: working tree of the connected folder (HEAD a62df80cb plus 586 changed paths under src/), copied
+  without __melder_cache__, __pycache__ or *.prof, so every VM run starts with a cold creation cache
+runner: python -X gil=0 benchmarks/testing_other_di/real_world_gauntlet_gil_runner.py (DI_GAUNTLET_* env knobs)

@@ -1,0 +1,17 @@
+[
+  {
+    "descriptor": "context_compass/system_docs/graph/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.json",
+    "edge": {
+      "from": "melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3",
+      "to": "melder.aether.spellbook.spell_compiler.dag.directed_acyclic_work_graph.DirectedAcyclicWorkGraph",
+      "relation": "creates",
+      "why": "CompilerPhase3 builds the local constructor DAG for one spell.",
+      "cardinality": "one_to_one",
+      "phase": [
+        "validation"
+      ],
+      "strength": "hard"
+    },
+    "reason": "False since the structural-snapshot C-C change: Phase 3 computes the local frame as id rows and builds no DirectedAcyclicWorkGraph (compiler_phase_3.py imports none)."
+  }
+]

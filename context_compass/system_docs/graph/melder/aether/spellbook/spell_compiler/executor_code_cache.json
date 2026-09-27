@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/executor_code_cache.py",
- "source_sha256": "8b28bc45ad0427cde971db15068a5cfad6e5e86e52b10936a854b0a0969b1f05",
+ "source_sha256": "1a4c277dcf4b4b1f763d9bc24309c08b5f7cd1070957dd46d6d9ed45ba4146aa",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.executor_code_cache": {
@@ -24,7 +24,8 @@
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   }
  },
  "edges_out": [],

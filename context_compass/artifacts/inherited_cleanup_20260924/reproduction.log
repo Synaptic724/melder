@@ -1,0 +1,44 @@
+.F.F.F.FF.                                                               [100%]
+================================== FAILURES ===================================
+______ test_binding_retains_available_cleanup[explicit-InheritedCleanup] ______
+context_compass\artifacts\inherited_cleanup_20260924\test_inherited_cleanup_reproduction.py:70: in test_binding_retains_available_cleanup
+    assert spell.disposal_method_names == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_____ test_binding_retains_available_cleanup[configured-InheritedCleanup] _____
+context_compass\artifacts\inherited_cleanup_20260924\test_inherited_cleanup_reproduction.py:70: in test_binding_retains_available_cleanup
+    assert spell.disposal_method_names == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_________ test_runtime_calls_available_cleanup[many-InheritedCleanup] _________
+context_compass\artifacts\inherited_cleanup_20260924\test_inherited_cleanup_reproduction.py:83: in test_runtime_calls_available_cleanup
+    assert instance.calls == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+________ test_runtime_calls_available_cleanup[unique-InheritedCleanup] ________
+context_compass\artifacts\inherited_cleanup_20260924\test_inherited_cleanup_reproduction.py:83: in test_runtime_calls_available_cleanup
+    assert instance.calls == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_____________ test_multiple_inheritance_retains_available_cleanup _____________
+context_compass\artifacts\inherited_cleanup_20260924\test_inherited_cleanup_reproduction.py:92: in test_multiple_inheritance_retains_available_cleanup
+    assert spell.disposal_method_names == ["cleanup"]
+E   AssertionError: assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED context_compass/artifacts/inherited_cleanup_20260924/test_inherited_cleanup_reproduction.py::test_binding_retains_available_cleanup[explicit-InheritedCleanup]
+FAILED context_compass/artifacts/inherited_cleanup_20260924/test_inherited_cleanup_reproduction.py::test_binding_retains_available_cleanup[configured-InheritedCleanup]
+FAILED context_compass/artifacts/inherited_cleanup_20260924/test_inherited_cleanup_reproduction.py::test_runtime_calls_available_cleanup[many-InheritedCleanup]
+FAILED context_compass/artifacts/inherited_cleanup_20260924/test_inherited_cleanup_reproduction.py::test_runtime_calls_available_cleanup[unique-InheritedCleanup]
+FAILED context_compass/artifacts/inherited_cleanup_20260924/test_inherited_cleanup_reproduction.py::test_multiple_inheritance_retains_available_cleanup
+5 failed, 5 passed in 0.54s

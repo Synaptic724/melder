@@ -7,12 +7,42 @@ Contract:
 - Attempting to bind a Melder internal class raises `InternalRegistrationError`.
 """
 
+from typing import Iterator
+
 import pytest
 
 from melder._build_assets._bind_guard.bind_guard import INTERNAL_MANIFEST
 from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
 from melder.utilities.custom_exceptions.internal_registration_error import InternalRegistrationError
+
+
+def _boot_fresh_aether() -> None:
+    """Reset the runtime singletons, boot a new Aether and bind it to `Spellbook._aether`."""
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    Spellbook._aether = Aether()
+
+
+@pytest.fixture(autouse=True)
+def live_aether() -> Iterator[None]:
+    """
+    Run each test against a freshly booted Aether, and leave one behind.
+
+    Purpose:
+        `test_bind_rejects_internal_class` builds a Spellbook, which needs the Nexus an Aether boot
+        constructs. Without its own setup the test passed only when the test before it left a live
+        Aether, and failed after tests whose teardown reset the singletons without booting a new one.
+
+    Yields:
+        None.
+    """
+    _boot_fresh_aether()
+    yield
+    _boot_fresh_aether()
 
 
 def test_internal_manifest_contains_aether() -> None:

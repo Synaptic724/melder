@@ -621,7 +621,9 @@ def test_meld_forwards_explicit_spell_id(conduit_lesser: Conduit) -> None:
     Verify meld forwards explicit machine identity into the internal ID lane.
 
     Contract:
-        - `spell_id=` becomes the internal positional spell value.
+        - `spell_id=` becomes the internal positional spell value; with no warm
+          fast-door entry the automatic id lane calls the door positionally
+          (2026-09-26), with no keyword marshaling.
         - Human spell-name normalization is bypassed.
 
     Args:
@@ -631,18 +633,14 @@ def test_meld_forwards_explicit_spell_id(conduit_lesser: Conduit) -> None:
         AssertionError: If forwarding behavior is incorrect.
     """
     conduit_lesser._meld = MagicMock()
+    # The mock door has no warm fast-door entry, so the automatic id lane calls it.
+    conduit_lesser._meld._fast_meld_doors = {}
     conduit_lesser._meld.meld.return_value = "result"
 
     result = conduit_lesser.meld(spell_id="sha-1")
 
     assert result == "result"
-    conduit_lesser._meld.meld.assert_called_once_with(
-        "sha-1",
-        spell_name=None,
-        spellframe=None,
-        binding_name=None,
-        spell_override=None,
-    )
+    conduit_lesser._meld.meld.assert_called_once_with("sha-1")
 
 
 def test_meld_forwards_non_string_binding_name(conduit_lesser: Conduit) -> None:
@@ -831,6 +829,8 @@ def test_meld_does_not_fire_conduit_level_meld_hooks(
         events.append(("post", conduit))
 
     conduit_lesser._meld = MagicMock()
+    # The mock door has no warm fast-door entry, so the automatic id lane calls it.
+    conduit_lesser._meld._fast_meld_doors = {}
     conduit_lesser._meld.meld.return_value = "result"
     conduit_lesser.register_conduit_hooks(
         {
@@ -863,6 +863,8 @@ def test_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
         AssertionError: If hook dispatch is used on the no-hook path.
     """
     conduit_lesser._meld = MagicMock()
+    # The mock door has no warm fast-door entry, so the automatic id lane calls it.
+    conduit_lesser._meld._fast_meld_doors = {}
     conduit_lesser._meld.meld.return_value = "result"
     conduit_lesser._conduit_hooks = {}
     conduit_lesser._local_conduit_hooks = {}

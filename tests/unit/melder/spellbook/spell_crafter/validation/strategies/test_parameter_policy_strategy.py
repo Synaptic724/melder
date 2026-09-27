@@ -235,3 +235,41 @@ def test_parameter_policy_looks_like_di_target_heuristics() -> None:
     assert strategy._looks_like_di_target(_Frame) is True  # noqa: SLF001
     assert strategy._looks_like_di_target(int) is False  # noqa: SLF001
     assert strategy._looks_like_di_target(123) is False  # noqa: SLF001
+
+
+def test_parameter_policy_skips_variadic_any_annotation() -> None:
+    """*args: Any / **kwargs: Any are not DI (typing.Any is a class since 3.11), as in Phase 1."""
+    strategy = ParameterPolicyStrategy()
+    context = _Context(
+        requirements=_Requirements(
+            [
+                _Parameter(name="args", di_shape=ParameterDIShape.PLAIN, annotation=typing.Any,
+                           is_var_positional=True),
+                _Parameter(name="kwargs", di_shape=ParameterDIShape.PLAIN, annotation=typing.Any,
+                           is_var_keyword=True),
+            ]
+        )
+    )
+
+    strategy.validate(context)
+
+    assert context.issues == []
+
+
+def test_parameter_policy_variadic_message_says_what_to_do() -> None:
+    """The variadic error explains Melder never injects *args/**kwargs and points to list[...]."""
+    class Plugin:
+        """User class stand-in."""
+
+    strategy = ParameterPolicyStrategy()
+    context = _Context(
+        requirements=_Requirements(
+            [_Parameter(name="plugins", di_shape=ParameterDIShape.PLAIN, annotation=Plugin, is_var_positional=True)]
+        )
+    )
+
+    strategy.validate(context)
+
+    assert [issue.code for issue in context.issues] == ["VARIADIC_DI_UNSUPPORTED"]
+    assert "never injects variadic parameters" in context.issues[0].message
+    assert "list[...]" in context.issues[0].message

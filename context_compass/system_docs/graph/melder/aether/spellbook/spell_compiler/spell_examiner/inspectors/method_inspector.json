@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py",
- "source_sha256": "8d2af1cd991975d912733b1382f9b94e617ed0580d68ca9717ffc2359fa940d6",
+ "source_sha256": "6e93ef9f7d494e6c3abe590a347e0c61dad15f56e1f48460c80983e8a3a9799d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector": {
@@ -19,7 +19,7 @@
    "label": "MethodInspector",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/spell_examiner/inspectors/method_inspector.py",
-   "lineno": 14,
+   "lineno": 15,
    "bases": [
     "Cleanable"
    ],
@@ -33,7 +33,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3c3a7e8c72b55a00b7c378e85deb7529d8af00e9a870be33663436b515b0373a",
+   "span_sha256": "42099354dd753159184ac01e51f8968088999f078473a3dba000a640122592d6",
    "role": "Inspector producing structured callable inventories.",
    "responsibilities": [
     "inspects callable metadata, provenance, signature, traits, closure, and decoration state without invoking the callable"
@@ -47,7 +47,7 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "3c3a7e8c72b55a00b7c378e85deb7529d8af00e9a870be33663436b515b0373a"
+   "semantics_authored_against": "42099354dd753159184ac01e51f8968088999f078473a3dba000a640122592d6"
   }
  },
  "edges_out": [
@@ -74,7 +74,8 @@
   "Callable": "typing.Callable",
   "ClassVar": "typing.ClassVar",
   "InspectorUtility": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.inspector_utility.InspectorUtility",
-  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
+  "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
+  "SignatureReflection": "melder.utilities.helpers.signature_reflection.SignatureReflection"
  },
  "collapse_candidate": {
   "module": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector",
@@ -103,6 +104,18 @@
     "validation"
    ],
    "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.spell_examiner.inspectors.method_inspector.MethodInspector",
+   "to": "melder.utilities.helpers.signature_reflection.SignatureReflection",
+   "relation": "uses",
+   "why": "MethodInspector renders the callable signature through SignatureReflection so TYPE_CHECKING-only names cannot raise.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "validation",
+    "runtime"
+   ],
+   "strength": "borrowed"
   }
  ]
 }

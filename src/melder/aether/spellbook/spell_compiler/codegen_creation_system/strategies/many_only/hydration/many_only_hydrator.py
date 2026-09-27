@@ -6,15 +6,14 @@ program for this family. The live phase-11 step publishes lazy doors over it;
 the cache codec publishes lazy doors over it. Both produce identical hot
 doors at first meld.
 
-The no-overrides lane hydrates through the many_only compiler's public
-Codegen IR entrypoint (the manifest stores that IR verbatim). The override
-runtime is rebuilt through the bridged many_only finalize builder fed cached
-rows plus the live phase-5 path registry, mirroring the generalized family's
-hydration discipline.
+Both lanes run on `SitePlanOverrideRuntime` over the manifest's no-overrides
+rows (the Codegen IR the manifest stores verbatim): its normal plan (the empty
+key set) is the inner no-overrides executor since S2b-2 (2026-09-26), and it
+compiles one plan per override key set at first use, as in the generalized
+family.
 """
 
 import threading
-from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Tuple
 
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler import (
@@ -22,24 +21,18 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_asset
     compile_creation_context_hooks_overrides_only_executor,
     compile_creation_context_instance_no_overrides_executor,
 )
-from melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis import (
-    SpellOverrideTargetRef,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation import (
-    SpellOverrideTargetingCodegenCreation,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler import (
-    compile_no_overrides_codegen_creation_executor,
+    _hydrate_steps_from_rows,
+    _resolve_root_instance_key,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler import (
-    compile_overrides_codegen_creation_executor,
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering import (
+    SitePlanStep,
+)
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime import (
+    SitePlanOverrideRuntime,
 )
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.manifest.many_only_manifest import (
-    coerce_manifest_sequences,
     validate_many_only_manifest,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step import (
-    ManyOnlyFinalizeCreationContextStep,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import (
     MeldExecutionError,
@@ -48,10 +41,6 @@ from melder.utilities.custom_exceptions.spell_space_scope_error import (
     SpellSpaceScopeError,
 )
 from melder.utilities.general_base.cleanable import Cleanable
-
-# Null model stand-in for the bridged override-runtime builder: it only reads
-# `graph_shape` when no explicit path registry is supplied.
-_NULL_MODEL = SimpleNamespace(graph_shape=None)
 
 
 class ManyOnlyHydratedExecutors(Cleanable):
@@ -215,11 +204,11 @@ def hydrate_many_only_creation_executors(
     root spell.
 
     Contract:
-        - Requires phases 1-7 live (phase-5 path registry) and ownership
-          wiring (`spell._owner_creations`), which first-meld gates guarantee.
-        - The no-overrides door mirrors the legacy many_only finalize step:
-          the door-level fast-transient flag stays False because transient
-          unrolling is the inner executor's concern in this family.
+        - Requires phases 1-7 live (the site graph reads the live Phase-3
+          topologies) and ownership wiring (`spell._owner_creations`), which
+          first-meld gates guarantee.
+        - The door-level fast-transient flag stays False: the inner executor
+          is the site-plan runtime's normal plan.
     """
     validate_many_only_manifest(manifest)
     route_key = manifest["route_key"]
@@ -229,24 +218,15 @@ def hydrate_many_only_creation_executors(
         spell=spell,
         step_spell_ids=no_overrides_payload["step_spell_ids"],
     )
-    inner_no_overrides_executor = compile_no_overrides_codegen_creation_executor(
-        codegen_ir={
-            "steps_rows": no_overrides_payload["steps_rows"],
-            "root_spell_id": no_overrides_payload["root_spell_id"],
-            "transient_schema": no_overrides_payload["transient_schema"],
-        },
+    # One runtime serves both lanes (S2b-2, 2026-09-26): its normal plan is the
+    # inner no-overrides executor; override key sets compile on it.
+    site_plan_runtime = _build_site_plan_runtime(
+        no_overrides_payload=no_overrides_payload,
+        spell=spell,
         spell_lookup=spell_lookup,
     )
-    if inner_no_overrides_executor is None:
-        raise RuntimeError(
-            "many_only manifest hydration produced no no-overrides executor."
-        )
-
-    execute_with_overrides = _hydrate_overrides_runtime(
-        overrides_payload=manifest["overrides"],
-        spell=spell,
-        inner_no_overrides_executor=inner_no_overrides_executor,
-    )
+    inner_no_overrides_executor = site_plan_runtime.execute_normal
+    execute_with_overrides = site_plan_runtime.execute_with_overrides
 
     no_overrides_door = compile_creation_context_hooks_no_overrides_executor(
         resolve_route_key=route_key,
@@ -287,64 +267,54 @@ def hydrate_many_only_creation_executors(
     )
 
 
-def _hydrate_overrides_runtime(
+def _build_site_plan_runtime(
         *,
-        overrides_payload: Dict[str, Any],
+        no_overrides_payload: Dict[str, Any],
         spell: Any,
-        inner_no_overrides_executor: Callable[..., Any],
-) -> Callable[..., Any]:
+        spell_lookup: Dict[str, Any],
+) -> SitePlanOverrideRuntime:
     """
-    Rebuild the many_only override runtime from manifest rows.
+    Build the many_only site-plan runtime: the normal plan now, override plans per key set later.
 
     Contract:
-        - Reuses the bridged many_only finalize builder fed cached rows plus
-          the live phase-5 path registry, so per-shape override executors
-          still compile lazily at meld time.
+        - Reads the manifest's no-overrides step rows through the family's own
+          row hydration, so normal and override plans see the same steps
+          (design v2 S3a, S2b-2). The manifest's overrides payload is not read.
+        - The runtime builds its site graph and normal plan at construction
+          (first meld); it lives as long as the executors it hands out.
+
+    Args:
+        no_overrides_payload:
+            The manifest's `no_overrides` section.
+        spell:
+            Live root spell.
+        spell_lookup:
+            Live spell per step spell id.
+
+    Raises:
+        RuntimeError:
+            When no step carries the root instance key, or the site graph
+            cannot be built.
+
+    Returns:
+        SitePlanOverrideRuntime: The runtime.
     """
-    spell_lookup = _resolve_spell_lookup(
-        spell=spell,
-        step_spell_ids=overrides_payload["step_spell_ids"],
-    )
-    override_targeting = SpellOverrideTargetingCodegenCreation.from_analysis(
-        root_spell_id=overrides_payload["root_spell_id"],
-        targets_by_spec=_deserialize_targets_by_spec(
-            overrides_payload["targets_by_spec"],
-        ),
-        specificity_by_spec=dict(overrides_payload["specificity_by_spec"]),
-    )
-    path_registry = _resolve_live_path_registry(spell)
-    plan_rows = list(overrides_payload["plan_rows"])
-    plan_signature = coerce_manifest_sequences(
-        overrides_payload["plan_signature"]
-    )
-    empty_shape_key = coerce_manifest_sequences(
-        overrides_payload["empty_shape_key"]
-    )
-
-    baseline_executor = compile_overrides_codegen_creation_executor(
-        execution_plan=None,
-        override_targets_by_spell_id={},
-        any_overrides_present=False,
-        path_registry=path_registry,
-        plan_rows=plan_rows,
-        root_spell_id=overrides_payload["root_spell_id"],
+    rows = _hydrate_steps_from_rows(
+        steps_rows=no_overrides_payload["steps_rows"],
         spell_lookup=spell_lookup,
     )
-
-    finalize_step = ManyOnlyFinalizeCreationContextStep()
-    return finalize_step._build_overrides_runtime(
-        spell_codegen_model=_NULL_MODEL,
-        overrides_plan=None,
+    root_instance_key = _resolve_root_instance_key(
+        steps=rows,
+        root_spell_id=no_overrides_payload["root_spell_id"],
+    )
+    if root_instance_key is None:
+        raise RuntimeError(
+            "many_only override runtime could not resolve the root instance key."
+        )
+    return SitePlanOverrideRuntime(
+        steps=tuple(SitePlanStep.from_many_only_row(row) for row in rows),
         root_spell=spell,
-        base_no_overrides_executor=inner_no_overrides_executor,
-        override_targeting=override_targeting,
-        plan_signature=plan_signature,
-        path_registry=path_registry,
-        plan_rows=plan_rows,
-        override_root_spell_id=overrides_payload["root_spell_id"],
-        spell_lookup=spell_lookup,
-        empty_shape_key=empty_shape_key,
-        baseline_executor=baseline_executor,
+        root_instance_key=root_instance_key,
     )
 
 
@@ -371,41 +341,3 @@ def _resolve_spell_lookup(
             )
         spell_lookup[spell_id] = resolved_spell
     return spell_lookup
-
-
-def _resolve_live_path_registry(spell: Any) -> Any:
-    """
-    Return the live phase-5 path registry for override specialization.
-    """
-    artifact = spell._compiler_artifact
-    if artifact is None:
-        raise RuntimeError(
-            "Spell has no compiler artifact for manifest hydration."
-        )
-    root_blueprint = artifact._root_blueprint_phase5
-    if root_blueprint is None:
-        raise RuntimeError(
-            "Manifest hydration requires a live phase-5 root blueprint "
-            f"(spell_id={spell.spell_id})."
-        )
-    return root_blueprint.path_registry
-
-
-def _deserialize_targets_by_spec(
-        serialized_targets_by_spec: Dict[str, Any],
-) -> Dict[str, Tuple[SpellOverrideTargetRef, ...]]:
-    """
-    Rebuild processor override-target rows from serialized tuples.
-    """
-    rebuilt: Dict[str, Tuple[SpellOverrideTargetRef, ...]] = {}
-    for spec_key, target_rows in serialized_targets_by_spec.items():
-        rebuilt[spec_key] = tuple(
-            SpellOverrideTargetRef(
-                node_id=target_row[0],
-                param_path_id=target_row[1],
-                param_name=target_row[2],
-                socket_kind_value=target_row[3],
-            )
-            for target_row in target_rows
-        )
-    return rebuilt

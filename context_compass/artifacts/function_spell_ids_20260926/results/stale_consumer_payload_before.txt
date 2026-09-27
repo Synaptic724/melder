@@ -1,0 +1,53 @@
+Three+1 fresh processes, 3.14.7t, device-tree src (VM copy), one melder package root. Variants: A, B, B, B.
+== variant A
+variant=A engine=bb2303f9f04f car=b65effb21259 cached=['b65effb21259', 'bb2303f9f04f']
+car.engine variant: A | engine is unique: True
+== variant B
+variant=B engine=fb6bb566bdeb car=b65effb21259 cached=['b65effb21259', 'bb2303f9f04f', 'fb6bb566bdeb']
+car.engine variant: B | engine is unique: True
+== variant B
+        self,
+    )
+  File "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py", line 249, in _cold_no_overrides_instance_door
+    hydrated = _hydrate_once()
+  File "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py", line 205, in _hydrate_once
+    hydrated = hydrate_creation_executors(
+        manifest=manifest,
+        resolver=resolver,
+    )
+  File "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py", line 286, in hydrate_creation_executors
+    no_overrides_spell_lookup = _resolve_spell_lookup(
+        resolver=resolver,
+        step_spell_ids=no_overrides_payload["step_spell_ids"],
+    )
+  File "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py", line 421, in _resolve_spell_lookup
+    spell_lookup[spell_id] = resolver.resolve_spell(spell_id)
+                             ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py", line 229, in resolve_spell
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: generalized manifest references unknown spell_id 'bb2303f9f04fb89f07d29a547969331049ff62fa11dfe19ee72e6efbda92cef3'.
+== variant B
+        self,
+    )
+  File "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py", line 249, in _cold_no_overrides_instance_door
+    hydrated = _hydrate_once()
+  File "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py", line 205, in _hydrate_once
+    hydrated = hydrate_creation_executors(
+        manifest=manifest,
+        resolver=resolver,
+    )
+  File "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py", line 286, in hydrate_creation_executors
+    no_overrides_spell_lookup = _resolve_spell_lookup(
+        resolver=resolver,
+        step_spell_ids=no_overrides_payload["step_spell_ids"],
+    )
+  File "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py", line 421, in _resolve_spell_lookup
+    spell_lookup[spell_id] = resolver.resolve_spell(spell_id)
+                             ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_binding_resolver.py", line 229, in resolve_spell
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: generalized manifest references unknown spell_id 'bb2303f9f04fb89f07d29a547969331049ff62fa11dfe19ee72e6efbda92cef3'.

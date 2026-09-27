@@ -1,0 +1,9 @@
+b823784f48 (Mark 2026-06-28 242)         # Build-lane gate: enforce the resolution verdict only on a real
+b823784f48 (Mark 2026-06-28 243)         # from-scratch compile. A full cache hit replays a bundle whose verdict
+b823784f48 (Mark 2026-06-28 244)         # was already enforced when it was first built, so it must not
+b823784f48 (Mark 2026-06-28 245)         # re-validate or re-raise here.
+b823784f48 (Mark 2026-06-28 246)         if not cache_full_hit:
+b823784f48 (Mark 2026-06-28 247)             SpellbookCreationSystem._enforce_conduit_resolution_valid(
+b823784f48 (Mark 2026-06-28 248)                 spellbook=spellbook,
+b823784f48 (Mark 2026-06-28 249)                 conduit_id=conduit_id,
+b823784f48 (Mark 2026-06-28 250)             )

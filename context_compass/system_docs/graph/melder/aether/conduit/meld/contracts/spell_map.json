@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/contracts/spell_map.py",
- "source_sha256": "c313170dd39456396a9a136c16efd8b1429c8ffe37353a6bfc584f04b4c98211",
+ "source_sha256": "3d0a54bf2421cb59e482cf5a9d568da895260366b5ba232080bb9463a93a4ca8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.contracts.spell_map": {
@@ -43,7 +43,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "8be6cfc57ff17154a125c3548e8716fcae76cf7185f63d82f005d84cb84c06ab",
+   "span_sha256": "39972b932473e4e982db7b55f09fba98449b1e22d4250377a4b36156cb029981",
    "role": "Declarative local DI descriptor.",
    "responsibilities": [
     "describes normal spellbook-local DI identity and optional override payload",

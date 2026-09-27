@@ -1,0 +1,13 @@
+{'event': 'phase5.run_frame_wide'}
+{'event': 'setup done'}
+{'event': 'factory.get_or_build', 'switch_before': 0}
+{'event': 'after owner meld 1', 'context_id': 2796966842976, 'codegen_id': 2797032609296, 'no_overrides_signature_sha': 'e3d84d965e6266c0', 'override_rows_signature_sha': 'dc937b59892604f5'}
+{'event': 'phase5.run_local', 'conduit': 'borrower-1'}
+{'event': 'factory.get_or_build', 'switch_before': 0}
+{'event': 'after borrower-1 meld 1', 'context_id': 2796966844432, 'codegen_id': 2797099549344, 'no_overrides_signature_sha': 'e3d84d965e6266c0', 'override_rows_signature_sha': 'dc937b59892604f5'}
+{'event': 'phase5.run_local', 'conduit': 'borrower-2'}
+{'event': 'factory.get_or_build', 'switch_before': 0}
+{'event': 'after borrower-2 meld 1', 'context_id': 2796966854512, 'codegen_id': 2796999345696, 'no_overrides_signature_sha': 'e3d84d965e6266c0', 'override_rows_signature_sha': 'dc937b59892604f5'}
+{'event': 'after owner meld 2', 'context_id': 2796966854512, 'codegen_id': 2796999345696, 'no_overrides_signature_sha': 'e3d84d965e6266c0', 'override_rows_signature_sha': 'dc937b59892604f5'}
+{'event': 'after borrower-1 meld 2', 'context_id': 2796966854512, 'codegen_id': 2796999345696, 'no_overrides_signature_sha': 'e3d84d965e6266c0', 'override_rows_signature_sha': 'dc937b59892604f5'}
+{'event': 'after borrower-2 meld 2', 'context_id': 2796966854512, 'codegen_id': 2796999345696, 'no_overrides_signature_sha': 'e3d84d965e6266c0', 'override_rows_signature_sha': 'dc937b59892604f5'}

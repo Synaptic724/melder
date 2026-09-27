@@ -1,0 +1,34 @@
+# melder_2 VM runs 2026-09-26 ~16:35Z, refreshed copy (0.2.59 + melder_0 16:17Z fast path + P1), CPython 3.14.7t -X gil=0
+## probe_exit.py (request lane, worker thread)
+empty   space_exit=   267 ns  lesser_cleanup=   706 ns  (rounds: [(269.0, 715.0), (265.0, 697.0)])
+held    space_exit=   362 ns  lesser_cleanup=   824 ns  (rounds: [(362.0, 823.0), (362.0, 826.0)])
+normal  space_exit=   829 ns  lesser_cleanup=   931 ns  (rounds: [(825.0, 928.0), (833.0, 934.0)])
+## micro_prims.py (worker thread, main-owned objects)
+empty loop            5.1 ns/iter  (net   0.0)
+f()                  15.7 ns/iter  (net  10.6)
+o.m()                21.5 ns/iter  (net  16.3)
+with rlock           45.2 ns/iter  (net  40.1)
+o.m_lock()           89.2 ns/iter  (net  84.0)
+tlocal.attr          41.8 ns/iter  (net  36.7)
+dict set+pop         57.8 ns/iter  (net  52.6)
+deque append+pop     47.0 ns/iter  (net  41.9)
+2x slot store        54.1 ns/iter  (net  49.0)
+## probe_cached_meld.py (worker thread)
+space.meld(spell_id=marker)     255.4 ns  (net  246.0)
+space._meld.meld(marker)        200.7 ns  (net  191.3)
+space.meld(spell_id=outer)      258.2 ns  (net  248.8)
+space._meld.meld(outer)         199.7 ns  (net  190.3)
+lesser.meld(spell_id=outer)     222.7 ns  (net  213.3)
+lesser._meld.meld(outer)        207.5 ns  (net  198.1)
+empty listcomp                    9.4 ns  (net    0.0)
+## probe_fastpath_hit.py (main vs worker, lesser built on that thread) x2
+main dynamic_env: False | meld_hooks: False | entry: True | validation_required: False
+main lesser.meld(spell_id=outer)   174.8 ns
+main door m.meld(outer)            168.8 ns
+worker dynamic_env: False | meld_hooks: False | entry: True | validation_required: False
+worker lesser.meld(spell_id=outer)   355.2 ns
+worker door m.meld(outer)            352.6 ns
+main lesser.meld(spell_id=outer)   177.5 ns
+main door m.meld(outer)            160.1 ns
+worker lesser.meld(spell_id=outer)   331.1 ns
+worker door m.meld(outer)            350.5 ns

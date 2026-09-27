@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
- "source_sha256": "4b87953b661afef44faa59d2dca7a7553408d052752cecc461f832d94c9a5622",
+ "source_sha256": "7b60401c8b72150a2fdd470325b5655f1a08e8e8727aef7e40b4feb206d1d4be",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator": {
@@ -19,7 +19,7 @@
    "label": "FrameACLSetCompatibilityValidator",
    "kind": "class",
    "file": "src/melder/nexus/acl/validator/compatibility/frame_acl_set_compatibility_validator.py",
-   "lineno": 20,
+   "lineno": 26,
    "bases": [
     "Cleanable"
    ],
@@ -35,7 +35,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "51c7b43ea3dcd3f89ed9f0d3b65e8528fd5e56b3ff848f33662051fa40d42746",
+   "span_sha256": "b97f230a0153a13cd733a21653dc030a1241192d4ae61c3a33f531d035a61049",
    "role": "Cross-family ACL bundle compatibility validator.",
    "responsibilities": [
     "validates whether selected view, command, and codegen ACL policies are internally coherent",
@@ -51,7 +51,7 @@
     "refresh",
     "cleanup"
    ],
-   "semantics_authored_against": "51c7b43ea3dcd3f89ed9f0d3b65e8528fd5e56b3ff848f33662051fa40d42746"
+   "semantics_authored_against": "b97f230a0153a13cd733a21653dc030a1241192d4ae61c3a33f531d035a61049"
   }
  },
  "edges_out": [
@@ -100,7 +100,9 @@
   "FrameACLCommandConfiguration": "melder.nexus.acl.configurations.frame_acl_command_configuration.FrameACLCommandConfiguration",
   "FrameACLCodegenConfiguration": "melder.nexus.acl.configurations.frame_acl_codegen_configuration.FrameACLCodegenConfiguration",
   "FrameACLConfiguration": "melder.nexus.acl.frame_acl_configuration.FrameACLConfiguration",
-  "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration"
+  "FrameACLViewConfiguration": "melder.nexus.acl.configurations.frame_acl_view_configuration.FrameACLViewConfiguration",
+  "FrameACLProfileBuilder": "melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder.FrameACLProfileBuilder",
+  "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet"
  },
  "collapse_candidate": null,
  "edges_authored": [

@@ -106,6 +106,7 @@ class SpellGeneralizedCodegenPlanStep:
         "_allow_list_aggregation",
         "_uses_positional_override",
         "_contract_payload",
+        "_contract_payload_refs",
         "_contract_positional_override",
         "_has_contract_payload",
         "_lock_hint",
@@ -144,6 +145,7 @@ class SpellGeneralizedCodegenPlanStep:
             use_spell_lock_hint: bool,
             requires_spellspace: bool,
             owner_conduit_required: bool,
+            contract_payload_refs: Optional[Dict[str, Any]] = None,
             must_register: bool,
             disposal_method_names: List[str],
             required_override_params: Tuple[RequiredOverrideParam, ...] = (),
@@ -229,6 +231,7 @@ class SpellGeneralizedCodegenPlanStep:
         self._allow_list_aggregation = allow_list_aggregation
         self._uses_positional_override = uses_positional_override
         self._contract_payload = contract_payload
+        self._contract_payload_refs = contract_payload_refs
         self._contract_positional_override = contract_positional_override
         self._has_contract_payload = has_contract_payload
         self._lock_hint = lock_hint
@@ -381,6 +384,19 @@ class SpellGeneralizedCodegenPlanStep:
         Return the pre-normalized contract payload for this step.
         """
         return self._contract_payload
+
+    @property
+    def contract_payload_refs(self) -> Optional[Dict[str, Any]]:
+        """
+        Return the value-only reference map of `contract_payload`, or None.
+
+        Contract:
+            Keyed like `contract_payload` (`__args__` maps to a tuple of references);
+            phase-11 rows emit a reference wherever the payload value is not a
+            scalar, and hydration reads the live value back (2026-09-26). `None` on
+            steps that carry no payload or that predate the reference map.
+        """
+        return self._contract_payload_refs
 
     @property
     def contract_positional_override(self) -> Optional[Any]:
@@ -1238,6 +1254,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                     allow_list_aggregation=allow_list_aggregation,
                     uses_positional_override=uses_positional_override,
                     contract_payload=contract_payload,
+                    contract_payload_refs=injection_spec.contract_payload_refs,
                     contract_positional_override=contract_positional_override,
                     has_contract_payload=has_contract_payload,
                     lock_hint=lock_hint,
@@ -1599,6 +1616,7 @@ class SpellGeneralizedCodegenPlanBuilder:
                     allow_list_aggregation=allow_list_aggregation,
                     uses_positional_override=uses_positional_override,
                     contract_payload=contract_payload,
+                    contract_payload_refs=injection_spec.contract_payload_refs,
                     contract_positional_override=contract_positional_override,
                     has_contract_payload=has_contract_payload,
                     lock_hint=lock_hint,

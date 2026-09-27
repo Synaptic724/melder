@@ -1,6 +1,6 @@
 import inspect
 import typing
-from typing import TYPE_CHECKING, Any, Tuple, get_args, get_origin
+from typing import TYPE_CHECKING, Any, get_args, get_origin
 
 
 
@@ -27,9 +27,13 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
     shapes early (Phase 4), before resolution attempts fail at runtime.
 
     Contract:
-    - Rejects collection-style DI annotations that Melder does not support.
-    - Treats `list[T]` as the only collection DI form worth deeper inspection
-      in this first cut.
+    - Judges only shapes Phase 1 may inject: `list[T]` elements and forward
+      references. A set, frozenset, dict or tuple parameter is never injected -
+      Phase 1 classifies it PLAIN, a caller input - so this strategy does not
+      judge it; `RequiredHolesStrategy` reports it as a REQUIRED_HOLE whose
+      message says Melder injects collections only as `list[T]` (2026-09-26).
+      Phase 1 is the single decider of injection; this strategy never breaks a
+      spell over a parameter Phase 1 made a caller input.
     - Emits validation issues into the supplied context; it does not mutate the
       spell or attempt recovery.
     - Non-resolvable definitions retain ordinary Python annotations without
@@ -50,10 +54,11 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: internal. Phase-4 strategy: rejects unsupported collection DI annotation shapes.
-        Emits UNSUPPORTED_COLLECTION_SHAPE (set/dict/tuple of DI targets),
-        LIST_ELEMENT_NOT_DI_TARGET, and UNRESOLVED_FORWARD_REF. Only list[FrameType] is valid
-        collection DI.
+        access: internal. Phase-4 strategy: warns about list[T] elements and forward references
+        Melder cannot inject. Emits LIST_ELEMENT_NOT_DI_TARGET (only when a user class sits inside
+        the element, e.g. list[Optional[Plugin]]; plain data such as list[str] gets nothing) and
+        UNRESOLVED_FORWARD_REF (warnings). Only list[FrameType] is collection DI; set/dict/tuple
+        parameters are caller inputs, reported by RequiredHolesStrategy.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -68,7 +73,7 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
         """
         super().__init__(
             name="annotation_shape_guard",
-            description="Flags unsupported DI annotation shapes (set/dict/tuple, invalid list elements).",
+            description="Flags list elements and forward references Melder cannot inject.",
         )
 
     def validate(self, context: SpellValidationContext) -> None:
@@ -77,9 +82,10 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
 
         Contract:
             - Stops early if the validation context has been cancelled.
-            - Emits `UNSUPPORTED_COLLECTION_SHAPE`,
-              `UNRESOLVED_FORWARD_REF`, and `LIST_ELEMENT_NOT_DI_TARGET`
-              issues when the annotation shape violates the supported DI model.
+            - Emits `UNRESOLVED_FORWARD_REF` and `LIST_ELEMENT_NOT_DI_TARGET`
+              warnings when a list element or annotation cannot be injected.
+            - Emits nothing for set, frozenset, dict or tuple parameters: Phase 1
+              never injects them, so they are caller inputs, not DI errors.
             - Performs validation only; it does not rewrite annotations or
               normalize them.
         """
@@ -116,25 +122,6 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
             origin = get_origin(annotation)
             args = get_args(annotation)
 
-            if origin in (set, frozenset, dict, tuple):
-                if self._collection_args_have_di_targets(args):
-                    context.issues.append(
-                        SpellValidationIssue(
-                            severity="error",
-                            code="UNSUPPORTED_COLLECTION_SHAPE",
-                            message=(
-                                f"Parameter {param.name!r} on spell {spell.spell_name!r} "
-                                f"uses unsupported collection annotation {annotation!r} "
-                                "for DI. Only list[T] is supported for collection DI."
-                            ),
-                            details={
-                                "parameter_name": param.name,
-                                "annotation": annotation,
-                            },
-                        )
-                    )
-                continue
-
             if origin is list and len(args) == 1:
                 element = args[0]
                 if isinstance(element, typing.ForwardRef):
@@ -155,15 +142,19 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
                     )
                     continue
 
-                if not self._looks_like_di_target(element):
+                # Plain data lists (list[str], list[Any]) are ordinary caller
+                # inputs; warn only when a user class hides inside the element
+                # (list[Optional[Plugin]]), where injection may have been meant.
+                if not self._looks_like_di_target(element) and self._mentions_di_target(element):
                     context.issues.append(
                         SpellValidationIssue(
                             severity="warning",
                             code="LIST_ELEMENT_NOT_DI_TARGET",
                             message=(
-                                f"Parameter {param.name!r} on spell {spell.spell_name!r} "
-                                f"uses list[{element!r}], which is not a DI frame/type. "
-                                "Collection DI only works for list[FrameType]."
+                                f"Parameter {param.name!r} on spell {spell.spell_name!r} is "
+                                f"list[{element!r}]. Melder injects a list only when its element is "
+                                "one registered type (list[Plugin]), so this parameter is left for "
+                                "the caller to supply."
                             ),
                             details={
                                 "parameter_name": param.name,
@@ -189,21 +180,18 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
                     )
                 )
 
-    def _collection_args_have_di_targets(self, args: Tuple[Any, ...]) -> bool:
+    def _mentions_di_target(self, annotation: Any) -> bool:
         """
-        Return True if any collection args look like DI targets.
+        Report whether a DI-eligible class or forward reference appears among the
+        annotation's type arguments (one level down), as in `Optional[Plugin]`.
 
         Contract:
-            Ignores tuple-ellipsis markers and treats any remaining argument
-            that looks like a DI target as enough to trigger the unsupported
-            collection-shape path.
+            Only classes and forward references count; strings and literals do not.
         """
-        for arg in args:
-            if arg is Ellipsis:
-                continue
-            if self._looks_like_di_target(arg):
-                return True
-        return False
+        return any(
+            (inspect.isclass(arg) or isinstance(arg, typing.ForwardRef)) and self._looks_like_di_target(arg)
+            for arg in get_args(annotation)
+        )
 
     def _looks_like_di_target(self, annotation: Any) -> bool:
         """
@@ -211,9 +199,15 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
 
         Contract:
             Returns True for forward refs, string frame keys, and non-builtin
-            classes. This is intentionally heuristic rather than a full type
-            system.
+            classes, and False for `typing.Any`, matching Phase 1's
+            `SpellRequirementsFinder._looks_like_di_target`. This is
+            intentionally heuristic rather than a full type system.
         """
+        if annotation is typing.Any:
+            # A class since Python 3.11; Phase 1 never injects it, so neither
+            # may this check treat it as a DI target.
+            return False
+
         if isinstance(annotation, typing.ForwardRef):
             return True
 

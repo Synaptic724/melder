@@ -1,0 +1,55 @@
+# melder_2 VM runs 2026-09-26 ~16:50-17:05Z (refreshed copy, 3.14.7t -X gil=0, 2 vCPU)
+## run_variants.sh 8: probe_deferred.py interleaved, 8 processes per variant, one fresh worker thread per lane (medians)
+base                                     request= 15,432 (+0.0%)  worker_a= 11,590 (+0.0%)  worker_b= 10,528 (+0.0%)
+deferred:kernel                          request= 13,830 (-10.4%)  worker_a= 10,214 (-11.9%)  worker_b=  8,980 (-14.7%)
+deferred:kernel+functions+tuples         request= 12,317 (-20.2%)  worker_a=  9,543 (-17.7%)  worker_b=  9,622 (-8.6%)
+deferred:userfree                        request= 11,384 (-26.2%)  worker_a=  8,560 (-26.2%)  worker_b=  8,272 (-21.4%)
+deferred:kernel+containers+functions     request= 10,975 (-28.9%)  worker_a=  8,530 (-26.4%)  worker_b=  8,338 (-20.8%)
+## raw per-process lines
+base threads=1 request=13,858ns  worker_a=10,313ns  worker_b=8,859ns
+deferred:kernel threads=1 request=13,254ns  worker_a=9,423ns  worker_b=8,437ns
+deferred:kernel+functions+tuples threads=1 request=12,262ns  worker_a=9,761ns  worker_b=9,540ns
+deferred:userfree threads=1 request=11,846ns  worker_a=9,297ns  worker_b=8,670ns
+deferred:kernel+containers+functions threads=1 request=10,997ns  worker_a=8,551ns  worker_b=8,375ns
+base threads=1 request=15,762ns  worker_a=12,936ns  worker_b=11,173ns
+deferred:kernel threads=1 request=13,487ns  worker_a=10,058ns  worker_b=8,473ns
+deferred:kernel+functions+tuples threads=1 request=12,372ns  worker_a=9,557ns  worker_b=9,705ns
+deferred:userfree threads=1 request=11,127ns  worker_a=8,455ns  worker_b=8,124ns
+deferred:kernel+containers+functions threads=1 request=10,864ns  worker_a=8,111ns  worker_b=8,021ns
+base threads=1 request=15,603ns  worker_a=11,649ns  worker_b=10,532ns
+deferred:kernel threads=1 request=13,080ns  worker_a=9,323ns  worker_b=8,404ns
+deferred:kernel+functions+tuples threads=1 request=12,427ns  worker_a=10,056ns  worker_b=10,054ns
+deferred:userfree threads=1 request=11,044ns  worker_a=8,301ns  worker_b=8,174ns
+deferred:kernel+containers+functions threads=1 request=10,923ns  worker_a=8,366ns  worker_b=8,302ns
+base threads=1 request=15,322ns  worker_a=11,532ns  worker_b=10,608ns
+deferred:kernel threads=1 request=14,271ns  worker_a=10,486ns  worker_b=9,486ns
+deferred:kernel+functions+tuples threads=1 request=12,836ns  worker_a=9,806ns  worker_b=9,736ns
+deferred:userfree threads=1 request=11,627ns  worker_a=8,789ns  worker_b=8,832ns
+deferred:kernel+containers+functions threads=1 request=10,891ns  worker_a=8,308ns  worker_b=8,263ns
+base threads=1 request=13,641ns  worker_a=10,020ns  worker_b=8,810ns
+deferred:kernel threads=1 request=14,174ns  worker_a=10,371ns  worker_b=9,851ns
+deferred:kernel+functions+tuples threads=1 request=12,423ns  worker_a=9,529ns  worker_b=9,431ns
+deferred:userfree threads=1 request=11,788ns  worker_a=8,793ns  worker_b=8,843ns
+deferred:kernel+containers+functions threads=1 request=11,274ns  worker_a=8,558ns  worker_b=8,552ns
+base threads=1 request=13,723ns  worker_a=9,854ns  worker_b=8,944ns
+deferred:kernel threads=1 request=13,207ns  worker_a=9,617ns  worker_b=8,354ns
+deferred:kernel+functions+tuples threads=1 request=11,540ns  worker_a=8,904ns  worker_b=8,438ns
+deferred:userfree threads=1 request=11,299ns  worker_a=8,533ns  worker_b=8,124ns
+deferred:kernel+containers+functions threads=1 request=10,954ns  worker_a=8,509ns  worker_b=8,426ns
+base threads=1 request=15,619ns  worker_a=12,034ns  worker_b=10,523ns
+deferred:kernel threads=1 request=14,345ns  worker_a=10,461ns  worker_b=9,580ns
+deferred:kernel+functions+tuples threads=1 request=11,334ns  worker_a=8,645ns  worker_b=8,436ns
+deferred:userfree threads=1 request=11,401ns  worker_a=8,492ns  worker_b=8,267ns
+deferred:kernel+containers+functions threads=1 request=10,996ns  worker_a=8,607ns  worker_b=8,246ns
+base threads=1 request=15,542ns  worker_a=11,685ns  worker_b=10,786ns
+deferred:kernel threads=1 request=14,323ns  worker_a=10,626ns  worker_b=9,759ns
+deferred:kernel+functions+tuples threads=1 request=12,049ns  worker_a=9,360ns  worker_b=9,916ns
+deferred:userfree threads=1 request=11,366ns  worker_a=8,586ns  worker_b=8,278ns
+deferred:kernel+containers+functions threads=1 request=11,337ns  worker_a=8,562ns  worker_b=8,563ns
+## gauntlet_ownership.py, real 3-thread gauntlet, 200 iterations, twice: share of cycles whose pooled shell is owned by another thread
+request {'foreign shell': '63%', 'new shell': '0%', 'own shell': '37%'} {'foreign space': 1252, 'own space': 746}
+worker_a {'foreign shell': '71%', 'new shell': '0%', 'own shell': '29%'} {'foreign space': 3556, 'own space': 1434}
+worker_b {'foreign shell': '69%', 'new shell': '0%', 'own shell': '31%'} {'foreign space': 4157, 'own space': 1833}
+request {'foreign shell': '68%', 'new shell': '0%', 'own shell': '32%'} {'foreign space': 1362, 'own space': 632}
+worker_a {'foreign shell': '65%', 'new shell': '0%', 'own shell': '35%'} {'foreign space': 3246, 'own space': 1749}
+worker_b {'foreign shell': '68%', 'new shell': '0%', 'own shell': '32%'} {'foreign space': 4089, 'own space': 1903}

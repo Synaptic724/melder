@@ -37,12 +37,34 @@ class Creations(Cleanable):
           reorder, or clear that list; it owns the entries and their instances.
 
     Owned State:
-        `_owner_conduit_id`, a stable `_id`, one `RLock`, and the two registries
-        (`_creations`, `_disposable_creations`).
+        `_owner_conduit_id`, a stable `_id`, one store `RLock`, the two
+        registries (`_creations`, `_disposable_creations`) and the per-slot
+        build-guard table (`_slot_guards`).
 
     Threading:
-        One instance `RLock` guards both registries. Reads and writes race
-        freely under free-threaded 3.14t, so the lock is not optional.
+        Two lock roles, and keeping them apart is what makes resolution
+        deadlock-free.
+
+        - `_lock` (the store lock) is a LEAF lock over the two registries. It
+          is held only for dict reads and writes: publish of disposal-bearing
+          entries, many append, purge detach, extract/restore and whole-store
+          swap. It is never held while acquiring another lock and never
+          around user code. (A publish without disposal methods is one atomic
+          dict store under the caller's build lock; see `add_creation`.)
+        - `slot_guard(spell_id)` returns one `RLock` per slot - a spell id
+          whose Existence promises at most one object in this store. Generated
+          doors and plan steps hold it across recheck -> construct -> publish,
+          so only builders of the SAME slot wait for each other. `unique`
+          spells use `Spell._lock` for the same job, because a unique spell has
+          exactly one slot (its owner store).
+
+        Lock order is always build lock (slot guard or `Spell._lock`) first,
+        store lock last. Build locks are taken consumer before provider along
+        the dependency graph, which has no cycles, so no wait cycle can form.
+        Before 2026-09-25 the store lock itself was held across whole builds;
+        a thread holding it could then wait on a unique's `Spell._lock` while
+        that unique's builder waited on the store - a deadlock. Reads and writes
+        race freely under free-threaded 3.14t, so neither lock is optional.
 
     Lifecycle / Cleanup:
         Idempotent. Cleanup runs the declared disposal methods and AGGREGATES
@@ -96,6 +118,7 @@ class Creations(Cleanable):
         "_lock",
         "_creations",
         "_disposable_creations",
+        "_slot_guards",
     ]
 
     def __init__(
@@ -144,6 +167,9 @@ class Creations(Cleanable):
         self._lock = RLock()
         self._creations: Dict[str, Any] = {}
         self._disposable_creations: Dict[str, Any] = {}
+        # One build guard per slot, created on first use and kept for this
+        # store's lifetime (bounded by the number of spell ids built here).
+        self._slot_guards: Dict[str, RLock] = {}
         # Note: resolution-store selection for broad-lived existences
         # (`unique_per_conduit_lineage` lineage root, `unique_per_conduit_cluster`
         # elected-leader store) lives on the meld front doors
@@ -164,9 +190,17 @@ class Creations(Cleanable):
             - Raises `ExceptionGroup` after best-effort disposal attempts.
             - Drops the live field surface after cleanup so later use fails
               honestly instead of reading stale state.
+            - Keeps `_lock` as a deliberate post-cleanup tombstone: a build
+              that was already in flight (holding only its slot guard) may
+              still publish afterwards, and it must be able to take the store
+              lock and observe `_cleaned` instead of failing on a missing
+              attribute. See `add_creation`.
 
         Threading:
             - Performs the detach step under `_lock`.
+            - Does not wait for in-flight builds: they hold slot guards, not the
+              store lock. A build that publishes after this point is refused
+              and its object disposed by `add_creation`.
             - Disposal work happens after detach so callers cannot keep racing
               the live registries while cleanup is executing.
 
@@ -195,9 +229,11 @@ class Creations(Cleanable):
 
         del self._creations
         del self._disposable_creations
+        del self._slot_guards
         del self._owner_conduit_id
         del self._id
-        del self._lock
+        # `_lock` is intentionally retained (tombstone): a racing publish takes
+        # it and observes `_cleaned` rather than a missing attribute.
 
         if errors:
             raise ExceptionGroup("Errors occurred during cleaning", errors)
@@ -317,6 +353,105 @@ class Creations(Cleanable):
                 errors.extend(self._dispose_many_creations(value))
         return errors
 
+    def slot_guard(self, spell_id: str) -> RLock:
+        """
+        Return the build guard for one slot in this store.
+
+        Purpose:
+            Give "build this slot at most once" its own lock, so the store lock
+            only ever protects the registries and can stay a leaf. A slot is a
+            spell id whose Existence promises at most one object in this store:
+            `unique_per_conduit`, `unique_per_spell_space`,
+            `unique_per_conduit_lineage` and `unique_per_conduit_cluster`.
+            (`unique` uses `Spell._lock` instead; `many` has no slot.)
+
+        Contract:
+            - Returns the same `RLock` for a spell id on every call for this
+              store's lifetime, including across `clear_all()` and
+              `reset_for_pool()`.
+            - A hit is one lock-free dict read. The first request for a slot
+              publishes a new `RLock` with `dict.setdefault`, which is atomic on
+              a builtin dict with `str` keys (GIL and free-threaded builds), so
+              concurrent first requests converge on one guard.
+            - Returning or holding a guard never implies holding `_lock`.
+            - Generated doors and plan steps inline the hit as
+              `store._slot_guards.get(spell_id) or store.slot_guard(spell_id)`
+              (one method call fewer per cold build). `_slot_guards` is
+              therefore part of this class's internal contract: a plain
+              `dict` of spell id -> `RLock` whose entries are never replaced
+              or removed while the store is live.
+
+        Args:
+            spell_id:
+                Stable spell id of the slot being built or retired.
+
+        Returns:
+            RLock:
+                The slot's build guard. Re-entrant, so a door and the root plan
+                step (or a same-thread nested meld) can both take it.
+
+        Raises:
+            AttributeError:
+                After `cleanup()`, like every other live-surface read of a
+                retired store.
+
+        Threading:
+            Callers hold the guard across recheck -> construct -> publish and
+            acquire it BEFORE `_lock`, never while holding `_lock`.
+        """
+        guard = self._slot_guards.get(spell_id)
+        if guard is None:
+            guard = self._slot_guards.setdefault(spell_id, RLock())
+        return guard
+
+    def _refuse_publish_into_cleaned_store(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool,
+            disposal_methods: Optional[List[str]],
+    ) -> None:
+        """
+        Dispose an object whose build finished after this store was cleaned, then raise.
+
+        Purpose:
+            Keep the "a retired store owns nothing" rule when a build that held
+            only its slot guard finishes after `cleanup()`. The object was built
+            for this scope, so its declared disposal methods run here rather than
+            leaking an undisposed object to the caller.
+
+        Contract:
+            - Called only after `add_creation`/`add_many_creations` observed
+              `_cleaned` under `_lock`, with that lock already released.
+            - Runs the object's disposal methods (when declared) outside any lock.
+            - Always raises; never registers anything.
+
+        Args:
+            key: Spell id the object would have been published under.
+            item: The just-built object.
+            has_disposal_methods: Whether the spell declared disposal methods.
+            disposal_methods: The Spell-owned disposal method names.
+
+        Raises:
+            RuntimeError:
+                Always. Chained from the disposal failure when disposal failed.
+        """
+        disposal_error: Optional[Exception] = None
+        if has_disposal_methods:
+            disposal_error = self._attempt_cleanup(
+                (item, disposal_methods if disposal_methods is not None else [])
+            )
+        message = (
+            f"{self.__class__.__name__} was cleaned while creation '{key}' was "
+            f"being built; the new instance was not registered"
+            + (" and its disposal methods were run." if has_disposal_methods else ".")
+            + " Quiesce melds on a scope before cleaning it."
+        )
+        if disposal_error is not None:
+            raise RuntimeError(message) from disposal_error
+        raise RuntimeError(message)
+
     def add_creation(
             self,
             key: str,
@@ -337,19 +472,62 @@ class Creations(Cleanable):
               payload; there is no `Creation.value` wrapper in the live store.
             - Retains the supplied disposal list directly, including an empty
               list. Omitted names use an empty list when disposal is enabled.
+            - Refuses a cleaned store: the object is disposed (when it declared
+              disposal methods) and `RuntimeError` is raised.
+
+        Raises:
+            ValueError:
+                If the key is already registered.
+            RuntimeError:
+                If this store was cleaned while the object was being built.
+
+        Threading:
+            - Callers hold the slot's build lock (the slot guard, or
+              `Spell._lock` for `unique`) - that is what makes "check, build,
+              publish" happen once per slot - and never the store lock across
+              the build. A caller that still holds `_lock` re-enters it safely.
+            - Disposal-bearing entries publish under the store lock (`_lock`)
+              as a leaf, because the live and disposal writes must land
+              together relative to purge detach, reusable clears and cleanup
+              (a clear iterates the detached disposal map).
+            - Entries without disposal methods publish with ONE lock-free dict
+              write (measured: the leaf lock cost ~58 ns per cold build on
+              3.14t). This is safe because the build lock already excludes
+              every other publisher of the key, a single dict store is atomic
+              on GIL and free-threaded builds, and the only other writers are
+              whole-store swaps: a write racing `clear_all()`/`reset_for_pool()`
+              lands in the detached generation and is dropped with it (the
+              build straddled the clear; there is nothing to dispose). A write
+              racing `cleanup()` is a caller contract violation: it is refused
+              here, dropped with the detached map, or fails on the retired
+              store's missing registry - and has no disposal methods to leak.
 
         Returns:
             None.
         """
-        if key in self._creations or key in self._disposable_creations:
-            raise ValueError(f"Key {key} already exists in creations.")
-
-        self._creations[key] = item
-        if has_disposal_methods:
-            self._disposable_creations[key] = (
-                item,
-                disposal_methods if disposal_methods is not None else [],
-            )
+        if not has_disposal_methods:
+            if not self._cleaned:
+                if key in self._creations or key in self._disposable_creations:
+                    raise ValueError(f"Key {key} already exists in creations.")
+                self._creations[key] = item
+                return
+        else:
+            with self._lock:
+                if not self._cleaned:
+                    if key in self._creations or key in self._disposable_creations:
+                        raise ValueError(f"Key {key} already exists in creations.")
+                    self._creations[key] = item
+                    self._disposable_creations[key] = (
+                        item,
+                        disposal_methods if disposal_methods is not None else [],
+                    )
+                    return
+        self._refuse_publish_into_cleaned_store(
+            key,
+            item,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
 
     def add_many_creations(
             self,
@@ -382,38 +560,81 @@ class Creations(Cleanable):
             - Runs under `_lock` (re-entrant, shared with extract/restore/
               clear); every successfully returned managed creation is
               represented in both registries once this method returns.
+            - `_lock` is a leaf here: only dict work runs under it. A cleaned
+              store is refused the same way as in `add_creation`.
+
+        Raises:
+            ValueError:
+                If the key already holds a non-list slot.
+            RuntimeError:
+                If this store was cleaned while the object was being built.
 
         Returns:
             None.
         """
         with self._lock:
-            live_value = self._creations.get(key)
-            if live_value is None:
-                self._creations[key] = []
-                live_value = self._creations[key]
-            if not isinstance(live_value, list):
-                raise ValueError(
-                    f"Key {key} already exists in creations with non-list slot."
-                )
-            live_value.append(item)
-
-            if not has_disposal_methods:
-                return
-
-            disposable_value = self._disposable_creations.get(key)
-            if disposable_value is None:
-                self._disposable_creations[key] = []
-                disposable_value = self._disposable_creations[key]
-            if not isinstance(disposable_value, list):
-                raise ValueError(
-                    f"Key {key} already exists in disposable creations with non-list slot."
-                )
-            disposable_value.append(
-                (
+            if not self._cleaned:
+                self._append_many_locked(
+                    key,
                     item,
-                    disposal_methods if disposal_methods is not None else [],
+                    has_disposal_methods=has_disposal_methods,
+                    disposal_methods=disposal_methods,
                 )
+                return
+        self._refuse_publish_into_cleaned_store(
+            key,
+            item,
+            has_disposal_methods=has_disposal_methods,
+            disposal_methods=disposal_methods,
+        )
+
+    def _append_many_locked(
+            self,
+            key: str,
+            item: object,
+            *,
+            has_disposal_methods: bool,
+            disposal_methods: Optional[List[str]],
+    ) -> None:
+        """
+        Append one many creation and its disposal record; caller holds `_lock`.
+
+        Contract:
+            - The caller holds `_lock` and has checked the store is not cleaned.
+            - Creates first-use buckets and appends to both registries in one
+              critical section (BUG-073 invariant).
+
+        Raises:
+            ValueError:
+                If the key already holds a non-list live or disposable slot.
+        """
+        live_value = self._creations.get(key)
+        if live_value is None:
+            self._creations[key] = []
+            live_value = self._creations[key]
+        if not isinstance(live_value, list):
+            raise ValueError(
+                f"Key {key} already exists in creations with non-list slot."
             )
+        live_value.append(item)
+
+        if not has_disposal_methods:
+            return
+
+        disposable_value = self._disposable_creations.get(key)
+        if disposable_value is None:
+            self._disposable_creations[key] = []
+            disposable_value = self._disposable_creations[key]
+        if not isinstance(disposable_value, list):
+            raise ValueError(
+                f"Key {key} already exists in disposable creations with non-list slot."
+            )
+        disposable_value.append(
+            (
+                item,
+                disposal_methods if disposal_methods is not None else [],
+            )
+        )
 
     def get_creation(self, spell_id: str) -> Optional[Any]:
         """
@@ -484,10 +705,14 @@ class Creations(Cleanable):
                 processing of the selected objects. There is no disposal rollback.
 
         Threading / Concurrency:
-            Unique takes Spell._lock before this store's lock. Other modes take
-            only this store's lock, including lineage/cluster stores selected by
-            their Meld door. Both maps detach in one critical section. All
-            removal locks are released before any user disposal method runs.
+            Retirement takes the slot's build lock first, then this store's leaf
+            lock, so it waits for an in-flight build of the same slot and never
+            removes a half-built entry: `unique` takes Spell._lock;
+            `unique_per_conduit`, `unique_per_spell_space`, lineage and cluster
+            take `slot_guard(spell_id)` of this store (the lineage/cluster store
+            selected by their Meld door); `many` has no slot and takes only the
+            store lock. Both maps detach in one critical section. All removal
+            locks are released before any user disposal method runs.
 
         Lifecycle / Cleanup:
             Detached live references stay alive until lock release, so implicit
@@ -498,15 +723,21 @@ class Creations(Cleanable):
         self.check_cleaned()
         if not purge_all and creation is None:
             raise ValueError("Single-object purge requires a creation reference.")
-        if spell.existence is Existence.unique:
+        existence = spell.existence
+        if existence is Existence.unique:
             with spell._lock:
                 count, retired, disposal = self._detach_purge_entries(
                     spell, purge_all=purge_all, creation=creation,
                 )
-        else:
+        elif existence is Existence.many:
             count, retired, disposal = self._detach_purge_entries(
                 spell, purge_all=purge_all, creation=creation,
             )
+        else:
+            with self.slot_guard(spell.spell_id):
+                count, retired, disposal = self._detach_purge_entries(
+                    spell, purge_all=purge_all, creation=creation,
+                )
         errors: List[Exception] = []
         if isinstance(disposal, tuple):
             maybe_error = self._attempt_cleanup(disposal)
@@ -535,7 +766,9 @@ class Creations(Cleanable):
             preserving a strong reference to every removed live value.
 
         Contract:
-            - The caller already holds Spell._lock when Existence is unique.
+            - The caller already holds the slot's build lock: Spell._lock for
+              unique, this store's `slot_guard` for the other slotted
+              existences, none for many.
             - Rechecks cleaned state after acquiring the store lock.
             - Key membership determines presence; Existence determines whether
               the value is one object or an owned many bucket.
@@ -782,7 +1015,15 @@ class Creations(Cleanable):
             - Detaches live and disposable registries before disposal work.
             - Raises `ExceptionGroup` after best-effort disposal attempts.
             - Leaves this `Creations` instance reusable after the clear
-              completes.
+              completes. Slot guards are kept (they are per spell id, not per
+              generation).
+
+        Threading:
+            The swap runs under the leaf store lock. In-flight builds hold slot
+            guards, not the store lock, so this does not wait for them: a build
+            that started before the clear and publishes after it lands in the
+            fresh registry. Callers that need "nothing survives the clear" must
+            quiesce melds on this scope first, as pool return already does.
 
         Returns:
             None.

@@ -1,0 +1,6 @@
+{
+  "pytest_exit": 0,
+  "candidate_sha256": "5dea8551293b1b8cc35ee3ad2c88c6dc7644343593a6ebcf7b91d8b1907feb1e",
+  "executors_installed_and_restored": 10,
+  "timing": "Not measured; independent contract qualification only."
+}

@@ -1,0 +1,38 @@
+# melder_2 P3 prototype census and costs (VM copy = device tree ~17:10Z + apply_p3.py), CPython 3.14.7t
+## probe_walk_calls.py: every defer_graph call during one real gauntlet run (3 threads, 200 iterations)
+test_real_world_gauntlet.py:_build_runtime_melder            calls=     1 total=   34.61 ms deferred=12036
+test_real_world_gauntlet.py:_run_in_lesser_and_spellspace    calls=     3 total=    5.76 ms deferred=70
+generalized_hydrator.py:_cold_no_overrides_instance_door     calls=    17 total=    4.91 ms deferred=815
+spell_space.py:meld                                          calls=    36 total=    0.41 ms deferred=45
+spell_space_pool.py:acquire_untracked                        calls=     3 total=    0.39 ms deferred=27
+conduit.py:meld                                              calls=    19 total=    0.29 ms deferred=32
+solo_hydrator.py:_cold_no_overrides_instance_door            calls=     5 total=    0.15 ms deferred=90
+run total 0.5 s
+## probe_setup.py: gauntlet setup (bind + conjure, then spawn_singletons), 5 fresh processes each
+tree build_ops=757.1 ms spawn=0.3 ms
+p3   build_ops=145.5 ms spawn=0.5 ms
+tree build_ops=122.5 ms spawn=0.2 ms
+p3   build_ops=145.1 ms spawn=0.6 ms
+tree build_ops=126.7 ms spawn=0.2 ms
+p3   build_ops=139.1 ms spawn=0.4 ms
+tree build_ops=127.8 ms spawn=0.2 ms
+p3   build_ops=144.7 ms spawn=0.5 ms
+tree build_ops=125.8 ms spawn=0.2 ms
+p3   build_ops=137.2 ms spawn=0.5 ms
+## probe_steps.py request (the measuring thread warmed its own shell; kernel main-owned), 3 each
+tree melder lane=request cycles=3000 sum_of_step_medians=9,832 ns
+p3   melder lane=request cycles=3000 sum_of_step_medians=8,648 ns
+tree melder lane=request cycles=3000 sum_of_step_medians=9,918 ns
+p3   melder lane=request cycles=3000 sum_of_step_medians=8,743 ns
+tree melder lane=request cycles=3000 sum_of_step_medians=9,912 ns
+p3   melder lane=request cycles=3000 sum_of_step_medians=8,682 ns
+## probe_main.py: all cycles on the main thread (everything owned), 3 each
+tree main-thread request=14,146ns  worker_a=11,201ns  worker_b=10,893ns
+p3   main-thread request=9,994ns  worker_a=7,620ns  worker_b=7,412ns
+tree main-thread request=10,665ns  worker_a=8,088ns  worker_b=7,702ns
+p3   main-thread request=9,908ns  worker_a=7,366ns  worker_b=7,362ns
+tree main-thread request=10,369ns  worker_a=7,965ns  worker_b=7,955ns
+p3   main-thread request=10,214ns  worker_a=7,556ns  worker_b=7,712ns
+## probe_release.py with gc disabled: application objects released at scope exit / cleanup
+copy_base {'scoped object released at spellspace exit': True, 'existing object released after book+conduit cleanup': True, 'unique service released after book+conduit cleanup': True}
+copy {'scoped object released at spellspace exit': True, 'existing object released after book+conduit cleanup': True, 'unique service released after book+conduit cleanup': True}

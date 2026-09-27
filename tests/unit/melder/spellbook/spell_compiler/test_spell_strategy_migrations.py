@@ -27,9 +27,6 @@ from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_occurrence_order_processor_strategy import (
     SpellOccurrenceOrderProcessorStrategy,
 )
-from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_override_targeting_processor_strategy import (
-    SpellOverrideTargetingProcessorStrategy,
-)
 from melder.aether.spellbook.spell_compiler.artifact_processor.strategies.spell_runtime_processor_strategy import (
     SpellRuntimeProcessorStrategy,
 )
@@ -39,8 +36,6 @@ from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan i
 from melder.aether.spellbook.spell_compiler.codegen_planner.strategies.spell_generalized_codegen_plan_strategy import (
     SpellGeneralizedCodegenPlanStrategy,
 )
-from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
-from melder.aether.spellbook.spell_compiler.dag.target_spec import TargetSpecKind
 from melder.aether.spellbook.spell_compiler.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
 )
@@ -56,7 +51,6 @@ class _ModelProbe:
         self.instance_shape = None
         self.contract_shape = None
         self.injection_shape = None
-        self.override_targeting_shape = None
         self.spell_runtime_shape = None
         self.node_count = 0
         self.shared_node_count = 0
@@ -278,6 +272,7 @@ def test_injection_processor_strategy_ports_injection_plan_intent() -> None:
             "root": [(("root", 0), {"__args__": ("x",), "cfg": "payload"})]
         },
         contract_dependencies_complete=True,
+        contract_override_refs_by_occurrence={},
     )
     # The injection processor reads collection-socket truth from the durable
     # phase-3 topology registry on the owning spellbook; a None topology is the
@@ -311,7 +306,7 @@ def test_occurrence_contract_processor_strategy_ports_contract_payload_intent() 
     contract = SpellContract(
         spellframe="iface",
         binding_name="primary",
-        spell_override={"cfg": "payload"},
+        override={"cfg": "payload"},
     )
     requirements = SimpleNamespace(
         parameters=(
@@ -365,7 +360,7 @@ def test_occurrence_contract_processor_strategy_allows_missing_providers_only_in
     contract = SpellContract(
         spellframe="iface",
         binding_name="primary",
-        spell_override=("x", "y"),
+        override=("x", "y"),
     )
     requirements = SimpleNamespace(
         parameters=(
@@ -396,8 +391,10 @@ def test_occurrence_contract_processor_strategy_allows_missing_providers_only_in
 
     complete = strategy._compile_contract_overrides_for_occurrence(
         occurrence=("consumer", 0),
+        occurrence_graph={("consumer", 0): {}},
         overrides_by_occurrence=overrides_by_occurrence,
         overrides_by_spell_id=overrides_by_spell_id,
+        refs_by_occurrence={},
         spell_lookup=dynamic_spellbook._spell_id_pool,
         spellbook=dynamic_spellbook,
         path_registry=_PathRegistryProbe({0: 0}),
@@ -418,91 +415,14 @@ def test_occurrence_contract_processor_strategy_allows_missing_providers_only_in
     with pytest.raises(Exception, match="could not be resolved"):
         strategy._compile_contract_overrides_for_occurrence(
             occurrence=("consumer", 0),
+            occurrence_graph={("consumer", 0): {}},
             overrides_by_occurrence={},
             overrides_by_spell_id={},
+            refs_by_occurrence={},
             spell_lookup=automatic_spellbook._spell_id_pool,
             spellbook=automatic_spellbook,
             path_registry=_PathRegistryProbe({0: 0}),
         )
-
-
-def test_override_targeting_processor_strategy_ports_patch_map_target_rows() -> None:
-    """The override-targeting processor should derive path, unique, and broadcast target rows from rooted sockets."""
-    strategy = SpellOverrideTargetingProcessorStrategy()
-    model = _ModelProbe()
-    previous = _PreviousCleanup()
-    model.override_targeting_shape = previous
-    root_blueprint = SimpleNamespace(
-        socket_refs=(
-            SimpleNamespace(
-                node_id="root",
-                param_path_id=1,
-                param_name="svc",
-                socket_kind=SimpleNamespace(value=SocketKind.NORMAL.value),
-            ),
-            SimpleNamespace(
-                node_id="dep",
-                param_path_id=2,
-                param_name="svc",
-                socket_kind=SimpleNamespace(value=SocketKind.NORMAL.value),
-            ),
-        ),
-        path_registry=_PathRegistryProbe({1: 1, 2: 2}),
-        ensure_dag_index_built=lambda: None,
-    )
-    model.override_targeting_shape = previous
-
-    strategy.process(
-        object(),
-        SimpleNamespace(_root_blueprint_phase5=root_blueprint),
-        model,
-    )
-
-    assert model.target_spec_count == 4
-    assert model.targeted_socket_count == 2
-    assert model.targeted_spell_count == 2
-    assert model.max_targets_per_spec == 2
-    assert model.max_target_path_depth == 2
-    assert model.override_shape_family == "deep"
-    assert previous.cleanup_called is True
-
-
-def test_override_targeting_processor_strategy_helper_methods_port_patchmap_key_rules() -> None:
-    """Override-targeting helpers should preserve the old target-key and family classification rules."""
-    assert SpellOverrideTargetingProcessorStrategy._build_target_key(
-        kind=TargetSpecKind.BROADCAST,
-        param_name="svc",
-    ) == "**svc"
-    assert SpellOverrideTargetingProcessorStrategy._build_target_key(
-        kind=TargetSpecKind.UNIQUE,
-        param_name="svc",
-    ) == "*svc"
-    with pytest.raises(RuntimeError, match="Unsupported override target key kind"):
-        SpellOverrideTargetingProcessorStrategy._build_target_key(
-            kind="bad",
-            param_name="svc",
-        )
-
-    assert SpellOverrideTargetingProcessorStrategy._override_shape_family(
-        target_spec_count=0,
-        max_targets_per_spec=0,
-        max_target_path_depth=0,
-    ) == "none"
-    assert SpellOverrideTargetingProcessorStrategy._override_shape_family(
-        target_spec_count=1,
-        max_targets_per_spec=1,
-        max_target_path_depth=1,
-    ) == "simple"
-    assert SpellOverrideTargetingProcessorStrategy._override_shape_family(
-        target_spec_count=2,
-        max_targets_per_spec=3,
-        max_target_path_depth=1,
-    ) == "wide"
-    assert SpellOverrideTargetingProcessorStrategy._override_shape_family(
-        target_spec_count=2,
-        max_targets_per_spec=2,
-        max_target_path_depth=4,
-    ) == "deep"
 
 
 def test_runtime_processor_strategy_ports_execution_runtime_rows() -> None:

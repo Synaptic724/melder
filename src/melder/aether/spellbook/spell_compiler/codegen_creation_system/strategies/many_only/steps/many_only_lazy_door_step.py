@@ -91,7 +91,6 @@ class ManyOnlyLazyDoorStep(CodegenCreationFamilyStep):
         spell_codegen_creation.overrides_code_object = None
 
         no_overrides_payload = manifest["no_overrides"]
-        overrides_payload = manifest["overrides"]
         metadata = spell_codegen_creation.metadata
         metadata["hydration"] = "lazy_first_meld"
         metadata["no_overrides_lane_id"] = no_overrides_payload["lane_id"]
@@ -107,11 +106,5 @@ class ManyOnlyLazyDoorStep(CodegenCreationFamilyStep):
         )
         metadata["_no_overrides_executor_signature"] = (
             no_overrides_payload["executor_signature"]
-        )
-        metadata["override_lane_id"] = overrides_payload["lane_id"]
-        metadata["override_root_spell_id"] = overrides_payload["root_spell_id"]
-        metadata["override_step_count"] = len(overrides_payload["plan_rows"])
-        metadata["override_steps_rows_signature"] = (
-            overrides_payload["plan_signature"][2]
         )
         metadata["route_key"] = manifest["route_key"]

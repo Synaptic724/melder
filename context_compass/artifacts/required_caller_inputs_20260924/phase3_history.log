@@ -1,0 +1,12 @@
+63ef620e36 src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py      (Mark 2026-09-19 486)         resolvable_candidates = {
+63ef620e36 src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py      (Mark 2026-09-19 487)             index: candidate for index, candidate in candidates.items() if candidate.resolvable
+63ef620e36 src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py      (Mark 2026-09-19 488)         }
+63ef620e36 src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py      (Mark 2026-09-19 489)         if resolvable_candidates:
+63ef620e36 src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py      (Mark 2026-09-19 490)             candidates = resolvable_candidates
+63ef620e36 src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py      (Mark 2026-09-19 491) 
+b9ec49dee7 src/melder/aether/conduit/spell_compiler_system/phases/compiler_phase_3.py (Mark 2026-05-20 492)         if not candidates:
+b9ec49dee7 src/melder/aether/conduit/spell_compiler_system/phases/compiler_phase_3.py (Mark 2026-05-20 493)             raise RuntimeError(
+b9ec49dee7 src/melder/aether/conduit/spell_compiler_system/phases/compiler_phase_3.py (Mark 2026-05-20 494)                 f"SpellCrafter Phase 3: no DI candidate found for parameter "
+b9ec49dee7 src/melder/aether/conduit/spell_compiler_system/phases/compiler_phase_3.py (Mark 2026-05-20 495)                 f"{dep.param_name!r} on spell {spell.spell_name!r} "
+b9ec49dee7 src/melder/aether/conduit/spell_compiler_system/phases/compiler_phase_3.py (Mark 2026-05-20 496)                 f"(annotation={annotation!r})."
+b9ec49dee7 src/melder/aether/conduit/spell_compiler_system/phases/compiler_phase_3.py (Mark 2026-05-20 497)             )

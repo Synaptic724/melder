@@ -4,6 +4,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
     from melder.aether.conduit.creations.creations import Creations
+    from melder.aether.conduit.meld.meld import Meld
     from melder.aether.spellbook.spell import Spell
     from melder.utilities.synchronization.creation_gate import CreationGate
 
@@ -236,7 +237,7 @@ class CreationContext(Cleanable):
 
     def execute(
             self,
-            meld: "Meld",
+            meld: Meld,
             overrides: Optional[dict[str, Any]] = None,
     ) -> tuple[Any, bool]:
         """
@@ -273,7 +274,7 @@ class CreationContext(Cleanable):
 
     def execute_no_hooks(
             self,
-            meld: "Meld",
+            meld: Meld,
             overrides: Optional[dict[str, Any]] = None,
     ) -> Any:
         """

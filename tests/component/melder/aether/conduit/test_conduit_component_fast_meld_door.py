@@ -5,6 +5,7 @@ from melder import Aether, Conduit
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
 
 
@@ -270,13 +271,15 @@ def test_component_fast_door_preserves_reuse_semantics_per_existence() -> None:
         conduit.permanent_cleanup()
 
 
-def test_component_fast_door_skipped_for_override_payloads() -> None:
+def test_component_fast_door_serves_dict_override_payloads() -> None:
     """
     Purpose:
-        Verify caller override payloads always take the normal lane.
+        Verify an id-string meld with a dict override payload is served by the
+        fast lane once an entry exists (override arm, 2026-09-26).
     Contract:
-        - Override melds construct with the override payload applied.
-        - A poisoned fast-door entry is not executed by an override meld.
+        - The override meld applies the payload and returns before the
+          normal-lane spell-id-pool read.
+        - A later plain meld still rides the plain fast arm with defaults.
     """
     spellbook = _make_spellbook()
     spell_id = spellbook.bind(
@@ -293,9 +296,10 @@ def test_component_fast_door_skipped_for_override_payloads() -> None:
         spy = _install_lane_spy(conduit._meld)
         overridden = conduit.meld(spell_id=spell_id, override={"value": 7})
         assert overridden.value == 7
-        # Override payloads always take the normal lane (the fast lane cannot
-        # apply overrides), proven by the spell-id-pool read.
-        assert spy.normal_lane_entered
+        # The override arm reads the same entry and returns before the pool read.
+        assert not spy.normal_lane_entered
+        assert conduit.meld(spell_id=spell_id).value == 0
+        assert not spy.normal_lane_entered
     finally:
         conduit.permanent_cleanup()
 
@@ -966,5 +970,507 @@ def test_component_fast_door_spellspace_scopes_stay_isolated() -> None:
             assert isinstance(second, _SpaceMarkerService)
             assert second is not first
             assert next_space.meld(spell_id=marker_id) is second
+    finally:
+        conduit.permanent_cleanup()
+
+
+class _OverrideLeaf:
+    """
+    Purpose:
+        Dependency of `_OverrideRoot` for override fast-lane tests.
+    Contract:
+        - Instances are distinguishable by identity.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize an identity marker.
+        Returns:
+            None.
+        """
+        self.marker = object()
+
+
+class _OverrideRoot:
+    """
+    Purpose:
+        many_only root whose dependency an override supplies.
+    Contract:
+        - `leaf` is the injected or supplied `_OverrideLeaf`.
+    """
+
+    def __init__(self, leaf: _OverrideLeaf) -> None:
+        """
+        Purpose:
+            Record the dependency for identity assertions.
+        Args:
+            leaf: Injected or override-supplied leaf.
+        Returns:
+            None.
+        """
+        self.leaf = leaf
+
+
+def _make_overridable_conduit() -> tuple:
+    """
+    Purpose:
+        Build a non-dynamic spellbook with one `many` `_OverridableService`.
+    Returns:
+        tuple: (spellbook, spell_id, conduit).
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_OverridableService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    return spellbook, spell_id, spellbook.conjure(name="root")
+
+
+def test_component_fast_door_override_only_callers_build_the_entry() -> None:
+    """
+    Purpose:
+        Verify a successful full-lane override meld builds the fast-door entry.
+    Contract:
+        - The first override meld runs the full lane and leaves an entry.
+        - The second override meld is served by the fast lane with its own
+          payload applied.
+    """
+    spellbook, spell_id, conduit = _make_overridable_conduit()
+    try:
+        first = conduit.meld(spell_id=spell_id, override={"value": 3})
+        assert first.value == 3
+        assert spell_id in conduit._meld._fast_meld_doors
+
+        spy = _install_lane_spy(conduit._meld)
+        second = conduit.meld(spell_id=spell_id, override={"value": 4})
+        assert second.value == 4
+        assert second is not first
+        assert not spy.normal_lane_entered
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_override_lane_leaves_tuple_and_empty_payloads_to_full_lane() -> None:
+    """
+    Purpose:
+        Verify payloads that need normalization keep the full lane.
+    Contract:
+        - A tuple payload (root positional arguments) and an empty dict (no
+          overrides) are served by the full lane with today's results.
+    """
+    spellbook, spell_id, conduit = _make_overridable_conduit()
+    try:
+        conduit.meld(spell_id=spell_id)
+        spy = _install_lane_spy(conduit._meld)
+
+        assert conduit.meld(spell_id=spell_id, override=(5,)).value == 5
+        assert spy.normal_lane_entered
+
+        spy.normal_lane_entered = False
+        assert conduit.meld(spell_id=spell_id, override={}).value == 0
+        assert spy.normal_lane_entered
+    finally:
+        conduit.permanent_cleanup()
+
+
+@pytest.mark.parametrize("trip", ["spell_hooks", "meld_hooks", "validation"])
+def test_component_fast_door_override_lane_guard_trips_fall_to_full_lane(trip: str) -> None:
+    """
+    Purpose:
+        Verify every fast-door guard also protects the override arm.
+    Contract:
+        - After the trip, an override meld takes the full lane (pool read),
+          applies its payload and fires the attached hook when one exists.
+    """
+    spellbook, spell_id, conduit = _make_overridable_conduit()
+    try:
+        conduit.meld(spell_id=spell_id)
+        spy = _install_lane_spy(conduit._meld)
+        calls: list = []
+        if trip == "spell_hooks":
+            spellbook._spell_id_pool[spell_id]._set_hooks(
+                pre_hooks=[lambda: calls.append("pre")],
+            )
+        elif trip == "meld_hooks":
+            meld = conduit._meld
+            if meld._meld_hooks is None:
+                meld._meld_hooks = {}
+            # In-place mutation: the live `not self._meld_hooks` guard sees it.
+            meld._meld_hooks["on_meld_pre_resolve"] = [
+                lambda target: calls.append(target)
+            ]
+        else:
+            spellbook._set_spellbook_validation_required(True)
+
+        overridden = conduit.meld(spell_id=spell_id, override={"value": 9})
+        assert overridden.value == 9
+        assert spy.normal_lane_entered
+        assert len(calls) == (0 if trip == "validation" else 1)
+    finally:
+        if trip == "validation":
+            spellbook._set_spellbook_validation_required(False)
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_override_lane_guard_trips_on_context_invalidation() -> None:
+    """
+    Purpose:
+        Verify context invalidation sends override melds to the full lane,
+        which rebuilds the entry against the new context.
+    Contract:
+        - After `Spell._cleanup_creation_context()` with the production
+          resolution regating, the override meld reads the pool and applies
+          its payload.
+        - The rebuilt entry pins the new context and serves the next override
+          meld on the fast lane.
+    """
+    spellbook, spell_id, conduit = _make_overridable_conduit()
+    try:
+        conduit.meld(spell_id=spell_id)
+        spy = _install_lane_spy(conduit._meld)
+        spell = spellbook._spell_id_pool[spell_id]
+        spell._cleanup_creation_context()
+        spell.resolution_required = True
+        spell.resolution_complete = False
+
+        assert conduit.meld(spell_id=spell_id, override={"value": 2}).value == 2
+        assert spy.normal_lane_entered
+        assert conduit._meld._fast_meld_doors[spell_id][1] is spell._creation_context
+
+        spy.normal_lane_entered = False
+        assert conduit.meld(spell_id=spell_id, override={"value": 3}).value == 3
+        assert not spy.normal_lane_entered
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_override_lane_keeps_override_errors() -> None:
+    """
+    Purpose:
+        Verify a bad override key fails identically on the full and fast lanes.
+    Contract:
+        - Before any success there is no entry, so the first bad meld runs the
+          full lane and builds no entry.
+        - After a plain meld builds the entry, the same bad meld runs the fast
+          lane and raises the same exception type and message.
+        - The spell stays usable afterwards.
+    """
+    spellbook, spell_id, conduit = _make_overridable_conduit()
+    try:
+        with pytest.raises(Exception) as full_lane:
+            conduit.meld(spell_id=spell_id, override={"nosuch": 1})
+        assert spell_id not in conduit._meld._fast_meld_doors
+
+        conduit.meld(spell_id=spell_id)
+        spy = _install_lane_spy(conduit._meld)
+        with pytest.raises(Exception) as fast_lane:
+            conduit.meld(spell_id=spell_id, override={"nosuch": 1})
+        assert not spy.normal_lane_entered
+        assert type(fast_lane.value) is type(full_lane.value)
+        assert str(fast_lane.value) == str(full_lane.value)
+        assert conduit.meld(spell_id=spell_id, override={"value": 1}).value == 1
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_override_lane_serves_key_set_plans() -> None:
+    """
+    Purpose:
+        Verify a many_only root's key-set plan runs through the override arm.
+    Contract:
+        - The supplied leaf is used by identity, on the fast lane.
+    """
+    spellbook = _make_spellbook()
+    spellbook.bind(spell=_OverrideLeaf, existence=Existence.many, permissions="create")
+    root_id = spellbook.bind(spell=_OverrideRoot, existence=Existence.many, permissions="create")
+    conduit = spellbook.conjure(name="root")
+    try:
+        injected = conduit.meld(spell_id=root_id)
+        assert isinstance(injected.leaf, _OverrideLeaf)
+
+        spy = _install_lane_spy(conduit._meld)
+        supplied = _OverrideLeaf()
+        assert conduit.meld(spell_id=root_id, override={"leaf": supplied}).leaf is supplied
+        assert not spy.normal_lane_entered
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_override_lane_serves_spellspace_melds() -> None:
+    """
+    Purpose:
+        Verify the SpellSpaceMeld front door has the same override arm.
+    Contract:
+        - Inside a spellspace, an override meld after a plain meld is served by
+          the space's fast lane with its payload applied.
+    """
+    spellbook, spell_id, conduit = _make_overridable_conduit()
+    try:
+        with conduit.enter_spellspace() as space:
+            assert space.meld(spell_id=spell_id).value == 0
+            assert spell_id in space._meld._fast_meld_doors
+            spy = _install_lane_spy(space._meld)
+            assert space.meld(spell_id=spell_id, override={"value": 6}).value == 6
+            assert not spy.normal_lane_entered
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_conduit_and_door_fast_arms_serve_the_same_results() -> None:
+    """
+    Purpose:
+        Verify the Conduit-level id lane and the meld door's fast arm agree.
+    Contract:
+        - Plain and dict-override melds through `conduit.meld(spell_id=...)`
+          (Conduit arm) and `conduit._meld.meld(spell_id, ...)` (door arm) are
+          both served without the normal-lane pool read.
+        - `unique` reuse returns the one stored instance on both; override
+          payloads apply on both.
+    """
+    spellbook = _make_spellbook()
+    unique_id = spellbook.bind(
+        spell=_SharedUniqueService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    override_id = spellbook.bind(
+        spell=_OverridableService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        stored = conduit.meld(spell_id=unique_id)
+        conduit.meld(spell_id=override_id)
+        spy = _install_lane_spy(conduit._meld)
+        assert conduit.meld(spell_id=unique_id) is stored
+        assert conduit._meld.meld(unique_id) is stored
+        assert conduit.meld(spell_id=override_id, override={"value": 8}).value == 8
+        assert conduit._meld.meld(override_id, spell_override={"value": 9}).value == 9
+        assert not spy.normal_lane_entered
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_conduit_id_meld_raises_canonical_error_after_cleanup() -> None:
+    """
+    Purpose:
+        Verify the cleaned-conduit guard on the keyword id call shape.
+    Contract:
+        - `meld(spell_id=...)`, plain or with an override, on a cleaned conduit
+          raises the canonical `check_cleaned` RuntimeError.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_OverridableService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    conduit.meld(spell_id=spell_id)
+    conduit.permanent_cleanup()
+    with pytest.raises(RuntimeError, match="cleaned"):
+        conduit.meld(spell_id=spell_id)
+    with pytest.raises(RuntimeError, match="cleaned"):
+        conduit.meld(spell_id=spell_id, override={"value": 1})
+
+
+def test_component_conduit_id_meld_rejects_spell_and_spell_id_together() -> None:
+    """
+    Purpose:
+        Verify the Conduit-level lane leaves the mutual-exclusion check intact.
+    Contract:
+        - Passing both `spell` and `spell_id` still raises ValueError, even with a
+          warm fast-door entry.
+    """
+    spellbook = _make_spellbook()
+    spell_id = spellbook.bind(
+        spell=_OverridableService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        conduit.meld(spell_id=spell_id)
+        with pytest.raises(ValueError, match="not both"):
+            conduit.meld(_OverridableService, spell_id=spell_id)
+    finally:
+        conduit.permanent_cleanup()
+
+
+class _ExistingService:
+    """
+    Purpose:
+        Pre-built object bound as an existing-object spell.
+    Contract:
+        - Instances are distinguishable by identity; melds return the bound
+          object itself.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Create a plain object for binding as an existing creation.
+        Returns:
+            None.
+        """
+        self.value = 0
+
+
+def _bind_existing_and_conjure() -> tuple:
+    """
+    Purpose:
+        Build a non-dynamic conduit with one existing-object spell.
+    Contract:
+        - The object is bound with `Existence.unique`, as existing-object spells
+          require.
+    Returns:
+        tuple: `(spellbook, spell_id, conduit, existing_object)`.
+    """
+    spellbook = _make_spellbook()
+    existing = _ExistingService()
+    spell_id = spellbook.bind(
+        spell=existing,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    return spellbook, spell_id, conduit, existing
+
+
+def _poison_no_override_door(meld_door: object, spell_id: str) -> None:
+    """
+    Purpose:
+        Replace the warm context's no-override slot with a raising stub.
+    Contract:
+        - Uses the context captured in the door's fast-door entry, so any call
+          into the no-override door for this spell raises AssertionError; a
+          served meld therefore proves the door was not entered.
+    Args:
+        meld_door: Meld front door holding the warm entry.
+        spell_id: Spell id whose context slot is replaced.
+    Returns:
+        None.
+    """
+    context = meld_door._fast_meld_doors[spell_id][1]
+
+    def _door_must_not_run(meld: object) -> object:
+        """Fail the test if the existing-object fast lane enters the door."""
+        raise AssertionError("existing-object fast lane entered the no-override door")
+
+    context._no_overrides_instance_executor = _door_must_not_run
+
+
+def test_component_fast_door_existing_object_skips_the_door_on_all_readers() -> None:
+    """
+    Purpose:
+        Verify warm existing-object melds return the bound object without the door.
+    Contract:
+        - After one cold meld per door, `conduit.meld(spell_id=...)` (Conduit arm),
+          `conduit._meld.meld(spell_id)` (ConduitMeld arm) and `space.meld(...)`
+          (SpellSpaceMeld arm) return the bound object by identity while the
+          context's no-override door raises if entered, and none of them reads
+          the normal-lane spell-id pool.
+    """
+    spellbook, spell_id, conduit, existing = _bind_existing_and_conjure()
+    try:
+        assert conduit.meld(spell_id=spell_id) is existing
+        with conduit.enter_spellspace() as space:
+            assert space.meld(spell_id=spell_id) is existing
+            assert spell_id in space._meld._fast_meld_doors
+            _poison_no_override_door(conduit._meld, spell_id)
+            _poison_no_override_door(space._meld, spell_id)
+            conduit_spy = _install_lane_spy(conduit._meld)
+            space_spy = _install_lane_spy(space._meld)
+            assert conduit.meld(spell_id=spell_id) is existing
+            assert conduit._meld.meld(spell_id) is existing
+            assert space.meld(spell_id=spell_id) is existing
+            assert not conduit_spy.normal_lane_entered
+            assert not space_spy.normal_lane_entered
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_existing_object_override_keeps_the_refusal() -> None:
+    """
+    Purpose:
+        Verify an override on a warm existing object is still refused.
+    Contract:
+        - With a warm entry, a dict override payload raises the existing-object
+          MeldExecutionError from the override door; with the entry removed the
+          full lane raises the same type and message.
+        - Plain melds keep returning the bound object afterwards.
+    """
+    spellbook, spell_id, conduit, existing = _bind_existing_and_conjure()
+    try:
+        assert conduit.meld(spell_id=spell_id) is existing
+        assert spell_id in conduit._meld._fast_meld_doors
+        with pytest.raises(MeldExecutionError, match="already exists") as fast_lane:
+            conduit.meld(spell_id=spell_id, override={"value": 1})
+        del conduit._meld._fast_meld_doors[spell_id]
+        with pytest.raises(MeldExecutionError, match="already exists") as full_lane:
+            conduit.meld(spell_id=spell_id, override={"value": 1})
+        assert str(fast_lane.value) == str(full_lane.value)
+        assert conduit.meld(spell_id=spell_id) is existing
+        assert existing.value == 0
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_existing_object_guard_trips_on_spell_hooks() -> None:
+    """
+    Purpose:
+        Verify spell hooks still bypass the existing-object fast lane.
+    Contract:
+        - After a pre-cast hook attaches, the meld runs the hooks lane (pool
+          read), fires the hook and returns the bound object.
+        - After the hook detaches and the stale entry is dropped, warm melds are
+          served from the fast lane again.
+    """
+    spellbook, spell_id, conduit, existing = _bind_existing_and_conjure()
+    try:
+        assert conduit.meld(spell_id=spell_id) is existing
+        spy = _install_lane_spy(conduit._meld)
+        hook_calls: list[str] = []
+        spell = spellbook._spell_id_pool[spell_id]
+        spell._set_hooks(pre_hooks=[lambda: hook_calls.append("pre")])
+        assert conduit.meld(spell_id=spell_id) is existing
+        assert hook_calls == ["pre"]
+        assert spy.normal_lane_entered
+
+        spell._set_hooks(pre_hooks=[])
+        del conduit._meld._fast_meld_doors[spell_id]
+        assert conduit.meld(spell_id=spell_id) is existing
+        warm_spy = _install_lane_spy(conduit._meld)
+        assert conduit.meld(spell_id=spell_id) is existing
+        assert not warm_spy.normal_lane_entered
+        assert hook_calls == ["pre"]
+    finally:
+        conduit.permanent_cleanup()
+
+
+def test_component_fast_door_existing_object_removed_spell_fails_like_the_full_lane() -> None:
+    """
+    Purpose:
+        Verify a removed existing-object spell is never served from a stale entry.
+    Contract:
+        - After `cleanup_and_remove_spell`, a meld with the old entry still in
+          the registry raises the same exception type and message as the full
+          lane with the entry removed; the bound object is not returned.
+    """
+    spellbook, spell_id, conduit, existing = _bind_existing_and_conjure()
+    try:
+        assert conduit.meld(spell_id=spell_id) is existing
+        assert spell_id in conduit._meld._fast_meld_doors
+        spellbook.cleanup_and_remove_spell(spell_id)
+        with pytest.raises(Exception) as stale_entry:
+            conduit.meld(spell_id=spell_id)
+        conduit._meld._fast_meld_doors.pop(spell_id, None)
+        with pytest.raises(Exception) as full_lane:
+            conduit.meld(spell_id=spell_id)
+        assert type(stale_entry.value) is type(full_lane.value)
+        assert str(stale_entry.value) == str(full_lane.value)
     finally:
         conduit.permanent_cleanup()

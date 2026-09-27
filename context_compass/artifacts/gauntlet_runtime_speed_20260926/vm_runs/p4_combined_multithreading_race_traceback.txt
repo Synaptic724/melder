@@ -1,0 +1,75 @@
+..................................F.......                               [100%]
+=================================== FAILURES ===================================
+______________ test_racing_every_lazy_load_at_once_is_consistent _______________
+
+    def test_racing_every_lazy_load_at_once_is_consistent() -> None:
+        """
+        Different threads trip different lazy loads on the same instance.
+    
+        Purpose:
+            The three loads are independent, so a real agent population trips them
+            interleaved rather than one at a time. This is the shape that actually
+            occurs.
+        """
+        view = _cold("__graph_details__")
+        reference = system_documents.get("__graph_details__")
+        key = reference.index()[10].key
+    
+        def work(index: int) -> Any:
+            if index % 3 == 0:
+                return ("index", len(view.index()))
+            if index % 3 == 1:
+                return ("text", view.get(key))
+            return ("edges", len(view.node_ids()))
+    
+>       results = _contend(work)
+                  ^^^^^^^^^^^^^^
+
+tests/integration/melder/multithreading/test_multithreading_system_document_view.py:186: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/melder/multithreading/test_multithreading_system_document_view.py:97: in _contend
+    return list(pool.map(run, range(count)))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/concurrent/futures/_base.py:645: in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/concurrent/futures/_base.py:312: in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/concurrent/futures/_base.py:447: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/concurrent/futures/_base.py:396: in __get_result
+    raise self._exception
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/concurrent/futures/thread.py:86: in run
+    result = ctx.run(self.task)
+             ^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.14.7+freethreaded-linux-x86_64-gnu/lib/python3.14t/concurrent/futures/thread.py:73: in run
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+tests/integration/melder/multithreading/test_multithreading_system_document_view.py:94: in run
+    return work(index)
+           ^^^^^^^^^^^
+tests/integration/melder/multithreading/test_multithreading_system_document_view.py:183: in work
+    return ("text", view.get(key))
+                    ^^^^^^^^^^^^^
+src/melder/utilities/ai_native_support_tools/system_document_view.py:762: in get
+    span = self.section(key)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <SystemGraphView 'Melder Graph Details' 603 sections, 28396 lines, addressed by source_path, available>
+key = 'src/melder/_build_assets/_agent_documentation/_builder.py'
+
+    def section(self, key: str) -> Section:
+        """
+        Return one section by exact key.
+    
+        Args:
+            key: An exact key from `keys()`.
+    
+        Returns:
+            Section: The addressed span.
+    
+        Raises:
+            KeyError: When the key is not in the index. The message offers the

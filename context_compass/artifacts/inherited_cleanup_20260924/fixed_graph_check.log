@@ -1,0 +1,15 @@
+CHECK (no writes): 595 descriptors under C:\Users\Mark\PycharmProjects\melder_private\context_compass\system_docs\graph
+  nodes=1234  specializes=458  creates-candidates=1356
+  needing semantics=8  new=0  orphaned=0  skipped=0
+  interfaces=3  aliases=2  collapse-candidates=389  package-candidates=36
+  specializes=458  implements=0
+  edge targets resolved to ids: 454/458 (99%)
+
+  SEMANTICS_STALE - source changed under authored semantics; re-verify: 183
+    melder\__architecture__.json: UNVERIFIED node melder.__architecture__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__author__.json: UNVERIFIED node melder.__author__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__components__.json: UNVERIFIED node melder.__components__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__description__.json: UNVERIFIED node melder.__description__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__graph_details__.json: UNVERIFIED node melder.__graph_details__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__graph_network__.json: UNVERIFIED node melder.__graph_network__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed
+    melder\__license__.json: UNVERIFIED node melder.__license__ - authored prose with no stamp; reports SEMANTICS_STALE until read and --accept'ed

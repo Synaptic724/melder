@@ -1,90 +1,90 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py",
-  "source_sha256": "96316a4216021b14d369203ef0ab0831f50385d6b593493055bf31721912f684",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy": {
-      "id": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy",
-      "label": "conduit_hierarchy_strategy",
-      "kind": "module",
-      "file": "src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py",
-      "lineno": 1,
-      "include": true,
-      "role": "Named conduit topology preflight strategy.",
-      "responsibilities": [
-        "reports malformed child topology through the existing blocker contract"
-      ],
-      "owns_state": [],
-      "phases": [
-        "validation"
-      ],
-      "semantics_authored_against": ""
-    },
-    "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy": {
-      "id": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy",
-      "label": "ConduitHierarchyStrategy",
-      "kind": "class",
-      "file": "src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py",
-      "lineno": 7,
-      "bases": [
-        "PersistenceAnalysisStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "analyze",
-        "name"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": true,
-        "trivial": false
-      },
-      "span_sha256": "98ee0caa8b632ce98353bdba52ff14edb57ceb539acda8faa804a12d285e4f0f",
-      "include": true,
-      "role": "Named conduit topology preflight strategy.",
-      "responsibilities": [
-        "reports malformed child topology through the existing blocker contract"
-      ],
-      "owns_state": [],
-      "phases": [
-        "validation"
-      ],
-      "semantics_authored_against": "98ee0caa8b632ce98353bdba52ff14edb57ceb539acda8faa804a12d285e4f0f"
-    }
+ "schema_version": 1,
+ "source": "src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py",
+ "source_sha256": "96316a4216021b14d369203ef0ab0831f50385d6b593493055bf31721912f684",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy": {
+   "id": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy",
+   "label": "conduit_hierarchy_strategy",
+   "kind": "module",
+   "file": "src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Named conduit topology preflight strategy.",
+   "responsibilities": [
+    "reports malformed child topology through the existing blocker contract"
+   ],
+   "owns_state": [],
+   "phases": [
+    "validation"
+   ],
+   "semantics_authored_against": ""
   },
-  "edges_out": [
-    {
-      "from": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy",
-      "to_label": "PersistenceAnalysisStrategy",
-      "relation": "specializes",
-      "to": "melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy.PersistenceAnalysisStrategy"
-    }
-  ],
-  "edge_candidates": [],
-  "published_aliases": [],
-  "imports": {
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "ConduitHierarchy": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
-    "PersistenceAnalysisStrategy": "melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy.PersistenceAnalysisStrategy"
-  },
-  "collapse_candidate": {
-    "module": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy",
-    "class": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy",
-    "label": "ConduitHierarchyStrategy"
-  },
-  "edges_authored": [
-    {
-      "from": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy",
-      "to": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
-      "relation": "uses",
-      "cardinality": "many_to_one",
-      "phase": [
-        "validation",
-        "restore"
-      ],
-      "why": "Shares the stateless interpretation of recorded parent/Book structure; owns no live scopes."
-    }
-  ]
+  "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy": {
+   "id": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy",
+   "label": "ConduitHierarchyStrategy",
+   "kind": "class",
+   "file": "src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py",
+   "lineno": 7,
+   "bases": [
+    "PersistenceAnalysisStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "analyze",
+    "name"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "98ee0caa8b632ce98353bdba52ff14edb57ceb539acda8faa804a12d285e4f0f",
+   "include": true,
+   "role": "Named conduit topology preflight strategy.",
+   "responsibilities": [
+    "reports malformed child topology through the existing blocker contract"
+   ],
+   "owns_state": [],
+   "phases": [
+    "validation"
+   ],
+   "semantics_authored_against": "98ee0caa8b632ce98353bdba52ff14edb57ceb539acda8faa804a12d285e4f0f"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy",
+   "to_label": "PersistenceAnalysisStrategy",
+   "relation": "specializes",
+   "to": "melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy.PersistenceAnalysisStrategy"
+  }
+ ],
+ "edge_candidates": [],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "ConduitHierarchy": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
+  "PersistenceAnalysisStrategy": "melder.crystallizer.crystal_analysis.preflight.persistence_analysis_strategy.PersistenceAnalysisStrategy"
+ },
+ "collapse_candidate": {
+  "module": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy",
+  "class": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy",
+  "label": "ConduitHierarchyStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.crystallizer.crystal_analysis.preflight.conduit_hierarchy_strategy.ConduitHierarchyStrategy",
+   "to": "melder.crystallizer.crystal_analysis.conduit_hierarchy.ConduitHierarchy",
+   "relation": "uses",
+   "cardinality": "many_to_one",
+   "phase": [
+    "validation",
+    "restore"
+   ],
+   "why": "Shares the stateless interpretation of recorded parent/Book structure; owns no live scopes."
+  }
+ ]
 }

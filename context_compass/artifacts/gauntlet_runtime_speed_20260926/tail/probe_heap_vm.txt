@@ -1,0 +1,6 @@
+== melder: tracked after setup+2 turns = 96,309; before import of the harness = 9,469; added = 86,840
+   top added types: code=20,314, function=20,186, tuple=13,187, dict=7,872, cell=2,942, member_descriptor=2,840, list=2,702, ReferenceType=1,506, property=1,183, set=1,156, type=860, ModuleSpec=835, module=835, frozenset=809
+   tracked objects by top-level module of their type: builtins=86,268, weakref=2,051, melder=2,005, _frozen_importlib_external=1,135, _frozen_importlib=898, _thread=751, _abc=528, abc=499
+== dishka: tracked after setup+2 turns = 49,183; before import of the harness = 9,469; added = 39,714
+   top added types: code=9,882, function=9,614, tuple=4,999, dict=4,110, cell=1,374, ReferenceType=1,174, list=1,080, type=915, getset_descriptor=825, member_descriptor=376, property=333, builtin_function_or_method=330, set=329, method_descriptor=327
+   tracked objects by top-level module of their type: builtins=44,038, weakref=1,719, _frozen_importlib=381, _frozen_importlib_external=356, dataclasses=338, dishka=278, typing=273, pygments=211

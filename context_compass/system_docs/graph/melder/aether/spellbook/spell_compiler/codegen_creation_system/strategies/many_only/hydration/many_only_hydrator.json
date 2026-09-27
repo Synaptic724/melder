@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py",
- "source_sha256": "f4298b9dbd6ae9c0cd6e35b966611feb4aec9d0ffe590b4d1e94f6d91be46ec8",
+ "source_sha256": "64bbc10c14c063d0b23287e1d4639d9bff3d0dfae55b424c49f85c62d0adf430",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator": {
@@ -14,18 +14,19 @@
    "responsibilities": [
     "hydrates both many-only runtime doors from one manifest plus one root spell",
     "publishes cold lazy doors that hydrate once at first meld and swap hot doors into the published CreationContext",
-    "rebuilds many-only override runtime and no-overrides executor state from manifest truth"
+    "builds one SitePlanOverrideRuntime per root from the manifest's no-overrides rows: its normal plan is the inner executor and its dispatcher backs the override door"
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator.ManyOnlyHydratedExecutors": {
    "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator.ManyOnlyHydratedExecutors",
    "label": "ManyOnlyHydratedExecutors",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/hydration/many_only_hydrator.py",
-   "lineno": 57,
+   "lineno": 46,
    "bases": [
     "Cleanable"
    ],
@@ -70,7 +71,6 @@
  "edge_candidates": [],
  "published_aliases": [],
  "imports": {
-  "SimpleNamespace": "types.SimpleNamespace",
   "Any": "typing.Any",
   "Callable": "typing.Callable",
   "Dict": "typing.Dict",
@@ -79,13 +79,11 @@
   "compile_creation_context_hooks_no_overrides_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler.compile_creation_context_hooks_no_overrides_executor",
   "compile_creation_context_hooks_overrides_only_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler.compile_creation_context_hooks_overrides_only_executor",
   "compile_creation_context_instance_no_overrides_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler.compile_creation_context_instance_no_overrides_executor",
-  "SpellOverrideTargetRef": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_override_targeting_analysis.SpellOverrideTargetRef",
-  "SpellOverrideTargetingCodegenCreation": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-  "compile_no_overrides_codegen_creation_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler.compile_no_overrides_codegen_creation_executor",
-  "compile_overrides_codegen_creation_executor": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler.compile_overrides_codegen_creation_executor",
-  "coerce_manifest_sequences": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.manifest.many_only_manifest.coerce_manifest_sequences",
+  "_hydrate_steps_from_rows": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler._hydrate_steps_from_rows",
+  "_resolve_root_instance_key": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler._resolve_root_instance_key",
+  "SitePlanStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering.SitePlanStep",
+  "SitePlanOverrideRuntime": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime",
   "validate_many_only_manifest": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.manifest.many_only_manifest.validate_many_only_manifest",
-  "ManyOnlyFinalizeCreationContextStep": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step.ManyOnlyFinalizeCreationContextStep",
   "MeldExecutionError": "melder.utilities.custom_exceptions.meld_execution_error.MeldExecutionError",
   "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable"
@@ -108,39 +106,6 @@
    "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.creation_runtime_door_compiler",
    "relation": "uses",
    "why": "many_only_hydrator uses shared runtime-door compiler helpers to publish hook-wrapped many-only runtime doors.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "borrowed"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.artifacts.spell_override_targeting_codegen_creation.SpellOverrideTargetingCodegenCreation",
-   "relation": "uses",
-   "why": "many_only_hydrator rebuilds override runtime against the compiler-owned many-only override targeting artifact.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "borrowed"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
-   "relation": "uses",
-   "why": "many_only_hydrator delegates many-only no-overrides executor hydration to the many-only no-overrides compiler module.",
-   "cardinality": "one_to_one",
-   "phase": [
-    "runtime"
-   ],
-   "strength": "borrowed"
-  },
-  {
-   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator",
-   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_overrides_codegen_creation_compiler",
-   "relation": "uses",
-   "why": "many_only_hydrator delegates many-only overrides executor hydration to the many-only overrides compiler module.",
    "cardinality": "one_to_one",
    "phase": [
     "runtime"
@@ -180,6 +145,28 @@
     "cleanup"
    ],
    "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_override_runtime.SitePlanOverrideRuntime",
+   "relation": "creates",
+   "why": "Builds one runtime per root at hydration; the doors and executors it hands out keep the runtime alive.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.hydration.many_only_hydrator",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.compilers.many_only_no_overrides_codegen_creation_compiler",
+   "relation": "uses",
+   "why": "Reads the manifest's step rows and the root instance key through the many_only compiler's row hydration helpers.",
+   "cardinality": "one_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
   }
  ]
 }

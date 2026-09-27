@@ -1,3 +1,11 @@
+---
+myst:
+  html_meta:
+    description: >-
+      Build a Python application from generated source with Melder: validate,
+      materialize, import, bind, and resolve objects with controlled lifetimes.
+---
+
 # Validate → materialize → import → bind → meld
 
 Prerequisites: [an eligible agent room](agent-rooms.md),

@@ -108,15 +108,58 @@ def test_annotation_shape_guard_skips_none_annotation() -> None:
     assert context.issues == []
 
 
-def test_annotation_shape_guard_flags_unsupported_collection_di_shape() -> None:
+def test_annotation_shape_guard_leaves_container_parameters_to_phase_1() -> None:
+    """set/frozenset/dict/tuple parameters are PLAIN caller inputs in Phase 1; the guard emits nothing for them."""
     strategy = AnnotationShapeGuardStrategy()
+    plain = ParameterDIShape.PLAIN
     context = _Context(
-        requirements=_Requirements([_Parameter("dep", set["FrameKey"])])
+        requirements=_Requirements(
+            [
+                _Parameter("items", set["FrameKey"], plain),
+                _Parameter("frozen", frozenset["FrameKey"], plain),
+                _Parameter("by_name", dict[str, "FrameKey"], plain),
+                _Parameter("parts", tuple["FrameKey", ...], plain),
+                _Parameter("meta", dict[str, typing.Any], plain),
+            ]
+        )
     )
 
     strategy.validate(context)
 
-    assert [issue.code for issue in context.issues] == ["UNSUPPORTED_COLLECTION_SHAPE"]
+    assert context.issues == []
+
+
+def test_annotation_shape_guard_leaves_plain_data_lists_silent() -> None:
+    """list[Any] and list[str] are plain caller inputs: no list-element warning (2026-09-26)."""
+    strategy = AnnotationShapeGuardStrategy()
+    context = _Context(
+        requirements=_Requirements([
+            _Parameter("values", list[typing.Any], ParameterDIShape.PLAIN),
+            _Parameter("names", list[str], ParameterDIShape.PLAIN),
+        ])
+    )
+
+    strategy.validate(context)
+
+    assert context.issues == []
+
+
+def test_annotation_shape_guard_warns_when_a_user_class_hides_in_the_element() -> None:
+    """list[Optional[Plugin]] may have meant injection: warn, and say it is left to the caller."""
+    class Plugin:
+        """User class stand-in."""
+
+    strategy = AnnotationShapeGuardStrategy()
+    context = _Context(
+        requirements=_Requirements([
+            _Parameter("plugins", list[typing.Optional[Plugin]], ParameterDIShape.PLAIN),
+        ])
+    )
+
+    strategy.validate(context)
+
+    assert [issue.code for issue in context.issues] == ["LIST_ELEMENT_NOT_DI_TARGET"]
+    assert "left for the caller to supply" in context.issues[0].message
 
 
 def test_annotation_shape_guard_warns_for_list_forward_ref() -> None:
@@ -141,19 +184,6 @@ def test_annotation_shape_guard_warns_for_direct_forward_ref() -> None:
     strategy.validate(context)
 
     assert [issue.code for issue in context.issues] == ["UNRESOLVED_FORWARD_REF"]
-
-
-def test_collection_args_have_di_targets_ignores_ellipsis_and_detects_target() -> None:
-    strategy = AnnotationShapeGuardStrategy()
-
-    assert (
-        strategy._collection_args_have_di_targets((Ellipsis, "FrameKey"))  # noqa: SLF001
-        is True
-    )
-    assert (
-        strategy._collection_args_have_di_targets((Ellipsis, int))  # noqa: SLF001
-        is False
-    )
 
 
 def test_looks_like_di_target_heuristics_cover_supported_shapes() -> None:

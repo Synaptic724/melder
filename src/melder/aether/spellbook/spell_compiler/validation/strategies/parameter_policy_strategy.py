@@ -110,8 +110,11 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
                             severity="error",
                             code="VARIADIC_DI_UNSUPPORTED",
                             message=(
-                                f"Parameter {param.name!r} on spell {spell.spell_name!r} "
-                                "is variadic but annotated for DI. Variadic DI is not supported."
+                                f"Parameter {param.name!r} on spell {spell.spell_name!r} is "
+                                "variadic (*args/**kwargs) and annotated with an injectable type, "
+                                "but Melder never injects variadic parameters. Use a list[...] "
+                                "parameter to receive every registered implementation, or drop "
+                                "the annotation."
                             ),
                             details={"parameter_name": param.name},
                         )
@@ -182,7 +185,15 @@ class ParameterPolicyStrategy(SpellValidationStrategy):
     def _looks_like_di_target(self, annotation: Any) -> bool:
         """
         Best-effort check for DI-eligible annotations.
+
+        Contract:
+            False for `typing.Any` (a class since Python 3.11), matching Phase 1's
+            `SpellRequirementsFinder._looks_like_di_target`, so `*args: Any` and
+            `**kwargs: Any` are not reported as variadic DI (2026-09-26).
         """
+        if annotation is typing.Any:
+            return False
+
         if isinstance(annotation, typing.ForwardRef):
             return True
 

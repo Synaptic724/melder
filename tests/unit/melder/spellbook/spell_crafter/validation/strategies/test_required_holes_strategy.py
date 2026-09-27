@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional
+from typing import Any, Iterable, List, Optional
 from types import SimpleNamespace
 
 import pytest
@@ -468,3 +468,50 @@ def test_validate_cancellation_preempts() -> None:
 
     assert issues == []
     assert cancel_event.throw_calls == 1
+
+
+def test_validate_container_hole_names_list_only_collection_injection() -> None:
+    """
+    Purpose:
+        Ensure container-typed required holes say Melder injects collections only as list[T].
+    Contract:
+        set/frozenset/dict/tuple annotations add the hint naming the container; other annotations do not.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the hint is missing or attached to a non-container parameter.
+    """
+    class Operation:
+        """User class stand-in held inside the containers."""
+
+    strategy = RequiredHolesStrategy()
+    issues: list[SpellValidationIssue] = []
+    params = [
+        _ParamStub("ops", 0, dict[str, Operation]),
+        _ParamStub("tags", 1, set[Operation]),
+        _ParamStub("frozen", 2, frozenset[Operation]),
+        _ParamStub("parts", 3, tuple[Operation, ...]),
+        _ParamStub("count", 4, int),
+        _ParamStub("raw", 5, None),
+        _ParamStub("payload", 6, dict[str, Any]),
+        _ParamStub("labels", 7, set[str]),
+        _ParamStub("anything", 8, dict[str, object]),
+    ]
+    context = _make_context(
+        spell=_SpellStub(),
+        requirements=_RequirementsStub(required_holes=params),
+        issues=issues,
+    )
+
+    strategy.validate(context)
+
+    messages = {issue.details["parameter_name"]: issue.message for issue in issues}
+    for name, container in (("ops", "dict"), ("tags", "set"), ("frozen", "frozenset"), ("parts", "tuple")):
+        assert "Melder injects collections only as list[T]" in messages[name]
+        assert f"a {container} parameter is always supplied by the caller" in messages[name]
+    assert "list[T]" not in messages["count"]
+    assert "list[T]" not in messages["raw"]
+    # Plain data containers are ordinary caller inputs: no hint (2026-09-26).
+    for name in ("payload", "labels", "anything"):
+        assert "list[T]" not in messages[name]
+    assert all(issue.code == "REQUIRED_HOLE" for issue in issues)

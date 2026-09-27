@@ -37,6 +37,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.aether.spellbook.spell_compiler.system.validation.broken_spell_in_dag_strategy import (
     BrokenSpellInDagStrategy,
 )
@@ -93,9 +94,6 @@ from melder.aether.spellbook.spell_compiler.system.validation.root_viability_str
 )
 from melder.aether.spellbook.spell_compiler.system.validation.scope_ordering_strategy import (
     ScopeOrderingStrategy,
-)
-from melder.aether.spellbook.spell_compiler.system.validation.socket_ref_sanity_strategy import (
-    SocketRefSanityStrategy,
 )
 from melder.aether.spellbook.spell_compiler.system.validation.topology_dependency_mismatch_strategy import (
     TopologyDependencyMismatchStrategy,
@@ -214,9 +212,11 @@ class CompilerPhase6:
                         SystemDiagnostic(
                             code="visibility_gap_dependency_filtered",
                             message=(
-                                f"Spell '{spell_id}' parameter '{socket.param_name}' "
-                                f"depends on '{dependency_id}', but that dependency is "
-                                "not visible to this Spellbook."
+                                f"Spell {SpellInputUtils.describe_spell_id(spell_id, spell_lookup)} "
+                                f"parameter '{socket.param_name}' resolves to "
+                                f"{SpellInputUtils.describe_spell_id(dependency_id, spell_lookup)}, "
+                                "which is not visible to this Spellbook. Bind it in this "
+                                "Spellbook, or give this conduit access to it."
                             ),
                             severity=SystemDiagnosticSeverity.ERROR,
                             spell_id=spell_id,
@@ -270,9 +270,11 @@ class CompilerPhase6:
                     SystemDiagnostic(
                         code="visibility_gap_dependency_filtered",
                         message=(
-                            f"Root '{root_id}' references dependency "
-                            f"'{dependency_id}', but that dependency is not "
-                            "visible to this Spellbook."
+                            "The dependency graph of "
+                            f"{SpellInputUtils.describe_spell_id(root_id, spell_lookup)} includes "
+                            f"{SpellInputUtils.describe_spell_id(dependency_id, spell_lookup)}, "
+                            "which is not visible to this Spellbook. Bind it in this "
+                            "Spellbook, or give this conduit access to it."
                         ),
                         severity=SystemDiagnosticSeverity.ERROR,
                         spell_id=dependency_id,
@@ -323,7 +325,6 @@ class CompilerPhase6:
             ContractGraphCycleStrategy(),
             RootScaleLimitStrategy(),
             RootViabilityStrategy(),
-            SocketRefSanityStrategy(),
         ]
 
     def run_frame_wide(
@@ -361,7 +362,9 @@ class CompilerPhase6:
         phase4_results: Dict[str, Any] = {}
         broken_spell_ids: Set[str] = set()
 
-        spell_lookup: Dict[str, Spell] = spellbook._spell_id_pool
+        # One copy of the pool serves every stage and strategy of this pass: concurrent binds
+        # change the live dict under the Spellbook lock, which this pass does not hold.
+        spell_lookup: Dict[str, Spell] = spellbook._spell_id_pool.copy()
         for spell_id, spell_instance in spell_lookup.items():
             phase4_results[spell_id] = spell_instance._compiler_artifact._validation_result_phase4
             if spell_instance._compiler_artifact._is_broken:
