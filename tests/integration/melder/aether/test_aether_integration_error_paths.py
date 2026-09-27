@@ -106,8 +106,8 @@ def test_aether_conduit_lookup_missing_frame_raises() -> None:
     Purpose:
         Validate conduit lookups reject missing frames.
     Contract:
-        - _get_conduit_by_id raises ValueError for missing frames.
-        - _get_conduit_by_name raises ValueError for missing frames.
+        - _get_root_conduit_by_id raises ValueError for missing frames.
+        - _get_root_conduit_by_name raises ValueError for missing frames.
     Returns:
         None.
     Raises:
@@ -115,9 +115,9 @@ def test_aether_conduit_lookup_missing_frame_raises() -> None:
     """
     aether = Aether()
     with pytest.raises(ValueError, match="does not exist"):
-        aether._get_conduit_by_id("id", "missing-frame")
+        aether._get_root_conduit_by_id("id", "missing-frame")
     with pytest.raises(ValueError, match="does not exist"):
-        aether._get_conduit_by_name("name", "missing-frame")
+        aether._get_root_conduit_by_name("name", "missing-frame")
 
 
 def test_aether_conduit_cloud_register_unregister_missing_frame_raises() -> None:

@@ -1,0 +1,39 @@
+# melder_0 VM 2026-09-27T13:16:30Z: new disposal-failure tests against UNMODIFIED 0.2.79 (worktree /sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt; src equal to the device). Expected: red.
+E       assert None is ValueError('close failed')
+E        +  where None = RuntimeError("Failed to dispose object <test_creations_disposal_failure_aggregation_regression._DisposalProbe object at 0x24c760b1a50> using method 'close': close failed").__cause__
+            error = ValueError(f"{name} failed")
+E           ValueError: close failed
+FAILED tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py::test_later_methods_still_run_after_one_method_fails
+FAILED tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py::test_each_failing_method_reports_its_own_error_in_declared_order
+FAILED tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py::test_disposal_error_keeps_the_raised_exception_as_its_cause
+FAILED tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py::test_missing_method_is_one_failure_and_the_rest_still_run
+FAILED tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py::test_unprintable_failing_object_does_not_strand_the_rest_of_cleanup
+FAILED tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py::test_unprintable_failing_object_does_not_stop_clear_all
+FAILED tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py::test_purge_runs_every_method_of_each_many_member_and_reports_every_failure
+FAILED tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py::test_refused_publication_chains_every_disposal_failure
+FAILED tests/integration/melder/conduit/test_conduit_integration_disposal_failures.py::test_conduit_cleanup_runs_every_disposal_method_after_one_fails
+FAILED tests/integration/melder/conduit/test_conduit_integration_disposal_failures.py::test_spellspace_exit_runs_every_disposal_method_and_reports_the_failure
+10 failed in 0.19s
+# --tb=line reasons:
+E   AssertionError: assert ['close'] == ['close', 'flush', 'release']
+tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py:113: AssertionError: assert ['close'] == ['close', 'flush', 'release']
+E   AssertionError: assert ['close'] == ['close', 'flush', 'release']
+tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py:129: AssertionError: assert ['close'] == ['close', 'flush', 'release']
+E   assert None is ValueError('close failed')
+     +  where None = RuntimeError("Failed to dispose object <test_creations_disposal_failure_aggregation_regression._DisposalProbe object at 0x2cb68842e50> using method 'close': close failed").__cause__
+tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py:146: assert None is ValueError('close failed')
+E   AssertionError: assert ['close'] == ['close', 'release']
+tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py:161: AssertionError: assert ['close'] == ['close', 'release']
+E   AssertionError: assert [] == ['close']
+tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py:182: AssertionError: assert [] == ['close']
+E   ValueError: close failed
+E   RuntimeError: str() read a closed resource
+tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py:94: RuntimeError: str() read a closed resource
+E   AssertionError: assert ['close'] == ['close', 'release']
+tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py:220: AssertionError: assert ['close'] == ['close', 'release']
+E   AssertionError: assert ['close'] == ['close', 'release']
+tests/unit/melder/aether/conduit/creations/test_creations_disposal_failure_aggregation_regression.py:241: AssertionError: assert ['close'] == ['close', 'release']
+E   AssertionError: assert ['close'] == ['close', 'release']
+tests/integration/melder/conduit/test_conduit_integration_disposal_failures.py:101: AssertionError: assert ['close'] == ['close', 'release']
+E   AssertionError: assert ['close'] == ['close', 'release']
+tests/integration/melder/conduit/test_conduit_integration_disposal_failures.py:116: AssertionError: assert ['close'] == ['close', 'release']

@@ -1,0 +1,44 @@
+# melder_0 VM 2026-09-27T13:19:13Z: POST-CHANGE suites on the worktree (0.2.79 + the Creations disposal fix, 2 new and 2 updated test files; device not yet updated).
+# 3.14.7t PYTHON_GIL=0 over the whole tests/ tree; PYTHON_GIL=1 and the 3.14.7 GIL build on the affected subsets. test_workflow_contracts.py: PyYAML absent (environment).
+post_ft0 gil=0 tests/unit/melder/aether :: rc=0 :: 4113 passed in 15.36s (16s)
+post_ft0 gil=0 tests/integration/melder/aether :: rc=0 :: 729 passed in 17.12s (18s)
+post_ft0 gil=0 tests/component/melder/aether :: rc=1 :: 2 failed, 1213 passed, 1 xfailed in 10.61s (11s)
+  post_ft0: FAILED tests/component/melder/aether/conduit/test_conduit_component_purge.py::test_purge_many_preserves_disposal_order_and_aggregates_failures[False]
+  post_ft0: FAILED tests/component/melder/aether/conduit/test_conduit_component_purge.py::test_purge_many_preserves_disposal_order_and_aggregates_failures[True]
+post_ft0 gil=0 tests/unit/melder/spellbook :: rc=0 :: 2194 passed in 3.69s (5s)
+post_ft0 gil=0 tests/component/melder/spellbook :: rc=0 :: 776 passed in 16.82s (17s)
+post_ft0 gil=0 tests/integration/melder/spellbook :: rc=0 :: 583 passed, 2 skipped, 2 xfailed, 2 xpassed in 5.45s (7s)
+post_ft0 gil=0 tests/integration/melder/conduit :: rc=0 :: 275 passed in 3.89s (4s)
+post_ft0 gil=0 tests/integration/melder/multithreading :: rc=0 :: 42 passed in 14.17s (15s)
+post_ft0 DONE 13:20:46Z
+# component purge test updated for the new posture (marker 2 now runs its second method); rerun:
+post_ft0 gil=0 tests/component/melder/aether :: rc=0 :: 1215 passed, 1 xfailed in 10.09s (10s)
+post_ft0 gil=0 tests/unit/melder/utilities :: rc=0 :: 802 passed, 2 skipped, 7 xfailed in 7.41s (8s)
+post_ft0 gil=0 tests/component/melder/utilities :: rc=0 :: 41 passed, 23 skipped in 1.21s (1s)
+post_ft0 gil=0 tests/unit/melder/test_annotation_integrity.py tests/unit/melder/test_melder_registration_guard.py tests/unit/melder/test_package_author_metadata.py tests/unit/melder/test_package_description_metadata.py tests/unit/melder/test_package_license_metadata.py tests/unit/melder/test_package_public_surface.py tests/unit/melder/test_package_version_metadata.py tests/unit/melder/test_system_document_view.py tests/unit/melder/test_system_documents.py tests/unit/melder/build_assets :: rc=0 :: 260 passed, 1 skipped in 5.64s (6s)
+post_ft0 gil=0 tests/unit/melder/crystallizer :: rc=0 :: 565 passed in 2.13s (3s)
+post_ft0 gil=0 tests/integration/melder/crystallizer :: rc=0 :: 258 passed, 3 xfailed in 56.00s (56s)
+post_ft0 DONE 13:22:36Z
+post_ft0 gil=0 tests/component/melder/crystallizer :: rc=0 :: 110 passed in 0.41s (1s)
+post_ft0 gil=0 tests/unit/melder/mutation_research :: rc=0 :: 277 passed in 1.31s (1s)
+post_ft0 gil=0 tests/integration/melder/mutation_research :: rc=0 :: 66 passed in 0.48s (1s)
+post_ft0 gil=0 tests/component/melder/mutation_research :: rc=0 :: 40 passed in 0.28s (0s)
+post_ft0 gil=0 tests/integration/melder/live_sim :: rc=0 :: 1 passed, 1 xfailed in 0.20s (1s)
+post_ft0 gil=0 tests/unit/llm_support :: rc=0 :: 28 passed in 0.08s (0s)
+post_ft0 gil=0 tests/unit/architecture_and_design :: rc=0 :: 18 passed in 0.10s (0s)
+post_ft0 gil=0 --continue-on-collection-errors tests/unit/github_workflows :: rc=1 :: 385 passed, 1 error in 1.81s (2s)
+  post_ft0: ERROR tests/unit/github_workflows/test_workflow_contracts.py
+post_ft0 gil=0 tests/experimentation :: rc=0 :: 250 passed, 4 skipped in 9.13s (10s)
+post_ft0 DONE 13:23:00Z
+post_gil gil=- tests/unit/melder/aether/conduit :: rc=0 :: 1178 passed, 1 warning in 5.99s (6s)
+post_gil gil=- tests/component/melder/aether/conduit :: rc=0 :: 688 passed, 1 warning in 4.76s (5s)
+post_gil gil=- tests/integration/melder/conduit :: rc=0 :: 275 passed, 1 warning in 2.67s (3s)
+post_gil gil=- tests/integration/melder/aether :: rc=0 :: 729 passed, 1 warning in 15.17s (16s)
+post_gil DONE 13:23:30Z
+post_ft1 gil=1 tests/unit/melder/aether/conduit :: rc=0 :: 1178 passed, 1 warning in 6.88s (7s)
+post_ft1 gil=1 tests/component/melder/aether/conduit :: rc=0 :: 688 passed, 1 warning in 6.18s (7s)
+post_ft1 gil=1 tests/integration/melder/conduit :: rc=0 :: 275 passed, 1 warning in 3.53s (4s)
+post_ft1 gil=1 tests/integration/melder/multithreading :: rc=0 :: 42 passed, 1 warning in 4.24s (4s)
+post_ft1 DONE 13:23:56Z
+post_gil gil=- tests/integration/melder/crystallizer :: rc=0 :: 258 passed, 3 xfailed, 1 warning in 61.21s (0:01:01) (62s)
+post_gil DONE 13:24:58Z

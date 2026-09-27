@@ -210,52 +210,30 @@ def test_static_frame_viewer_live_projection_filters_and_owner_resolution_work(m
     )
     assert original_is_live(viewer, "ops", spell_record) is True
 
+    # Owner resolution is Aether's live lookup (roots and attached lessers); the viewer maps a miss to None.
     fake_lesser = object()
-    fake_ward = SimpleNamespace(_get_lesser_conduit=lambda conduit_id: fake_lesser)
-    fake_frame = SimpleNamespace(_conduits={"root": SimpleNamespace(_conduit_ward=fake_ward)})
+    seen_lookups: list[tuple[str, str]] = []
+
+    def live_lookup(conduit_id: str, frame_name: str) -> object:
+        """Stand in for Aether.get_conduit_by_id: record the call and return the live lesser."""
+        seen_lookups.append((conduit_id, frame_name))
+        return fake_lesser
+
     monkeypatch.setattr(
         StaticFrameViewer,
         "_aether",
-        SimpleNamespace(
-            get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(ValueError("missing")),
-            _aetheric_frames={"ops": fake_frame},
-            _ensure_default_frame=lambda: None,
-            _default_frame=fake_frame,
-        ),
+        SimpleNamespace(get_conduit_by_id=live_lookup),
         raising=False,
     )
-    assert original_get_owner(viewer, "ops", "missing") is fake_lesser
-    assert original_get_owner(viewer, "default", "missing") is fake_lesser
+    assert original_get_owner(viewer, "ops", "lesser-id") is fake_lesser
+    assert original_get_owner(viewer, "default", "lesser-id") is fake_lesser
+    assert seen_lookups == [("lesser-id", "ops"), ("lesser-id", "default")]
 
     monkeypatch.setattr(
         StaticFrameViewer,
         "_aether",
         SimpleNamespace(
             get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(ValueError("missing")),
-            _aetheric_frames={"ops": None},
-            _ensure_default_frame=lambda: None,
-            _default_frame=None,
-        ),
-        raising=False,
-    )
-    assert original_get_owner(viewer, "ops", "missing") is None
-
-    no_match_frame = SimpleNamespace(
-        _conduits={
-            "root": SimpleNamespace(_conduit_ward=None),
-            "root-2": SimpleNamespace(
-                _conduit_ward=SimpleNamespace(_get_lesser_conduit=lambda conduit_id: None)
-            ),
-        }
-    )
-    monkeypatch.setattr(
-        StaticFrameViewer,
-        "_aether",
-        SimpleNamespace(
-            get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(ValueError("missing")),
-            _aetheric_frames={"ops": no_match_frame},
-            _ensure_default_frame=lambda: None,
-            _default_frame=no_match_frame,
         ),
         raising=False,
     )

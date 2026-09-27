@@ -2,13 +2,15 @@
 
 ## Metadata
 - Task ID: TASK-2026-08-01-shared-config-unnamed-conjure-collision
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: examples_0
 - Priority: p3
 - Parent: EPIC-2026-08-01-ux-aix-harness-red-remediation
 - Created: 2026-08-01T11:18:00Z
-- Updated: 2026-08-01T12:58:00Z
+- Updated: 2026-09-27T10:46:47Z
+- Completed: 2026-09-27T10:46:47Z
+- Summary: FINDING-2 (shared-config unnamed conjure collision, example defect) implemented per the epic's corrected handoff.
 
 ## Problem / Opportunity
 1 red. `02_intermediate/35_one_config_every_book.py` conjures two books in the same
@@ -66,6 +68,14 @@ Owner harness run. Agent claims nothing.
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
 
+## State Transition Event - 2026-09-27T10:46:47Z
+- from_state: review
+- to_state: done
+- transition_reason: Owner directive 2026-09-27 ("close this and turn it in ... and then we'll focus on something
+  new") closing EPIC-2026-08-01-ux-aix-harness-red-remediation; the task was parked in
+  tasks/completed/ without closure lines and is closed with its epic.
+
 ## Context / Handoff Summary
 Diagnosed, one-line fix identified, deliberately held behind the two contract
 rulings so the suite's red count keeps pointing at the library defect.
+STATE 2026-09-27T10:46:47Z: DONE. Closed with its epic by owner directive.

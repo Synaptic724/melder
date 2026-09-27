@@ -124,7 +124,7 @@ def test_cached_restore_preserves_order_and_actual_cleanup(priority: bool, paral
     assert report["built_counts"]["spell_active"] == 1
     assert report["built_counts"]["spell_staged"] == 1
     assert not [row for row in report["shortfalls"] if row["kind"] in ("spell_crystal", "spell_index")]
-    conduit = Aether().get_conduit_by_name("disposal-root", "disposal-source")
+    conduit = Aether().get_root_conduit_by_name("disposal-root", "disposal-source")
     selected_id = record["index_payload"]["selected_spell_id"]
     parked_id = next(member for member in record["members"] if member != selected_id)
     selected_names = ["flush", "stop", "close"] if priority else ["stop", "close", "flush"]
@@ -236,7 +236,7 @@ def test_restore_changed_ids_preserves_anchor_and_exact_selected_member(priority
             parked_names = ["flush", "close"] if priority else ["close", "flush"]
             assert result["identity_map"][selected_recorded] == _expected_identity(selected_names)
             assert result["identity_map"][parked_recorded] == _expected_identity(parked_names)
-            conduit = Aether().get_conduit_by_name("disposal-root", "disposal-source")
+            conduit = Aether().get_root_conduit_by_name("disposal-root", "disposal-source")
             actual = conduit.meld("OrderedDisposalService")
             conduit.permanent_cleanup()
             assert actual.calls == parked_names
@@ -307,7 +307,7 @@ def test_changed_id_restore_regrants_contract_details() -> None:
             assert result["identity_map"][recorded_id] == expected_id
             assert result["built_counts"]["contract_detail"] >= 1
             assert not [row for row in result["shortfalls"] if row["kind"] == "contract"]
-            restored = Aether().get_conduit_by_name("borrower", "disposal-grant")
+            restored = Aether().get_root_conduit_by_name("borrower", "disposal-grant")
             instance = restored.meld(spell_id=expected_id)
             restored.permanent_cleanup()
             assert instance.calls == ["flush", "stop", "close"]

@@ -28,6 +28,7 @@
 
 **[Browse Examples](https://melder.readthedocs.io/en/latest/examples/index.html)**
 · **[Full Table of Contents](https://melder.readthedocs.io/en/latest/contents.html)**
+· **[Roadmap](#roadmap)**
 
 Beginner → Intermediate → Advanced → Expert
 
@@ -245,6 +246,24 @@ and be refused — **before a single object is constructed.**
 
 That's the difference between an AI that can *call* your system and an AI that
 can safely *evolve* it.
+
+---
+
+## Roadmap
+
+The planned path from API stabilization to a supported runtime and the Mojo migration.
+
+<a href="https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png">
+  <picture>
+    <source srcset="roadmap/melder-roadmap-art.png">
+    <img src="https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png"
+         alt="Melder roadmap: API stabilization, a supported 1.0 runtime, and staged Mojo migration through 2.0"
+         width="100%">
+  </picture>
+</a>
+
+[Read the detailed roadmap](https://github.com/Synaptic724/melder/blob/prod/roadmap/melder-roadmap-expanded.md)
+· [Open the image at full size](https://raw.githubusercontent.com/Synaptic724/melder/prod/roadmap/melder-roadmap-art.png)
 
 ---
 

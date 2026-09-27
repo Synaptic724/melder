@@ -2,13 +2,15 @@
 
 ## Metadata
 - Task ID: TASK-2026-08-01-frame-posture-cheatsheet-count-drift
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: examples_0
 - Priority: p3
 - Parent: EPIC-2026-08-01-ux-aix-harness-red-remediation
 - Created: 2026-08-01T11:18:00Z
-- Updated: 2026-08-01T12:58:00Z
+- Updated: 2026-09-27T10:46:47Z
+- Completed: 2026-09-27T10:46:47Z
+- Summary: FINDING-4 (frame posture cheatsheet count drift, example defect) implemented per the epic's corrected handoff.
 
 ## Problem / Opportunity
 1 red. `03_advanced/07_frame_posture_cheatsheet.py` prints 17 items from its own
@@ -76,6 +78,14 @@ Owner harness run.
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
 
+## State Transition Event - 2026-09-27T10:46:47Z
+- from_state: review
+- to_state: done
+- transition_reason: Owner directive 2026-09-27 ("close this and turn it in ... and then we'll focus on something
+  new") closing EPIC-2026-08-01-ux-aix-harness-red-remediation; the task was parked in
+  tasks/completed/ without closure lines and is closed with its epic.
+
 ## Context / Handoff Summary
 Cause identified and the live number established at 14 knobs + 3 presets. Held
 behind the two contract rulings per the epic's tranche order.
+STATE 2026-09-27T10:46:47Z: DONE. Closed with its epic by owner directive.

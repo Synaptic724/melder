@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/conduit_cloud.py",
- "source_sha256": "96511ab6e7cae0977ce24178015ee5e68216751d340b24726296c5373c3f5f4a",
+ "source_sha256": "7e8ced6177cb929bb34294315e7306e741d52e573673cfbcbc16a1305d07cb3b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.conduit_cloud": {
@@ -44,22 +44,24 @@
     "list_cluster_names",
     "list_conduit_ids",
     "list_conduit_names",
+    "list_conduits",
     "refresh_cluster_shares_for_conduit",
     "remove_conduit_from_cluster"
    ],
    "shape": {
-    "method_count": 30,
+    "method_count": 31,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "e0d9dc48870cb2dfdfdf1ff57bd638fd422d5df7fdbdd33f8061827574ff6959",
+   "span_sha256": "be9342d96a90ce3aca9d0fe2cca2d8f317e6c640ba3c7b39a5923ab1585e58f1",
    "role": "Frame-scoped registry of named conduits.",
    "responsibilities": [
     "stores conduit name to conduit mappings",
     "resolves conduits by name or id within one frame",
     "provides the frame-local named conduit lookup surface",
     "owns active named root/lesser discovery separately from borrowed normal-root maps",
-    "serializes frame-wide name admission, identity-safe retirement and temporary promotion claims"
+    "serializes frame-wide name admission, identity-safe retirement and temporary promotion claims",
+    "lists its named conduits as a tuple snapshot under its lock (list_conduits)"
    ],
    "owns_state": [
     "_named_conduits",
