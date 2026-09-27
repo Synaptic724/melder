@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aether.py",
- "source_sha256": "869db592dfb195e80576d1c5cf9160a285f9873dc0b3e8698722fe88bb0939e2",
+ "source_sha256": "296eed9ba6fd9a882efda8140efc93a64da0ceace552e6695cc98d3cbbc30d1b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aether": {
@@ -45,20 +45,22 @@
     "configuration",
     "configure",
     "configured",
-    "count_conduits",
+    "count_root_conduits",
     "create_configuration",
     "create_configuration_builder",
     "crystallizer",
     "enable_logging",
     "enroll_load_worker",
-    "find_conduit_id_by_name",
+    "find_root_conduit_id_by_name",
     "get_conduit_by_id",
     "get_conduit_by_name",
     "get_conduit_cloud",
-    "has_conduit_id",
-    "has_conduit_name",
-    "list_conduit_ids",
-    "list_conduit_names",
+    "get_root_conduit_by_id",
+    "get_root_conduit_by_name",
+    "has_root_conduit_id",
+    "has_root_conduit_name",
+    "list_root_conduit_ids",
+    "list_root_conduit_names",
     "logger",
     "logger",
     "mutation_research",
@@ -67,17 +69,18 @@
     "withdraw_load_worker"
    ],
    "shape": {
-    "method_count": 59,
+    "method_count": 63,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "ba66970f1107bf8fbd51a815f654cba3848c8921c0767494ff5284b262a72b54",
+   "span_sha256": "95fd21b3f6b118804b7ab9d73d0d5d9b8a63b8e10db2094e645325a021d5cd37",
    "role": "Global Melder substrate root.",
    "responsibilities": [
     "owns frames and frame registries",
     "hosts hidden support roots",
     "binds frame configuration",
-    "registers conduits and spell lineage state"
+    "registers conduits and spell lineage state",
+    "answers frame-scoped conduit lookups: root maps (*_root_*), the frame Cloud's named scopes (get_conduit_by_name) and every live conduit via root-ward lineage snapshots (get_conduit_by_id)"
    ],
    "owns_state": [
     "_aetheric_frames",
@@ -194,6 +197,7 @@
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
   "ClassVar": "typing.ClassVar",
+  "Optional": "typing.Optional",
   "AetherConfiguration": "melder.aether.aether_configuration.AetherConfiguration",
   "AetherConfigurationBuilder": "melder.aether.aether_configuration_builder.AetherConfigurationBuilder",
   "AetherUtilitySystem": "melder.aether.aether_utility_system.AetherUtilitySystem",

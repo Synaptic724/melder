@@ -2,13 +2,15 @@
 
 ## Metadata
 - Task ID: TASK-2026-08-01-ux-aix-harness-failure-triage
-- Status: in_progress
+- Status: done
 - Owner: cowork
 - Agent Name: examples_0
 - Priority: p1
 - Parent: EPIC-2026-07-19-ux-aix-intermediate (also touches -advanced)
 - Created: 2026-08-01T11:04:00Z
-- Updated: 2026-08-01T11:04:00Z
+- Updated: 2026-09-27T10:46:47Z
+- Completed: 2026-09-27T10:46:47Z
+- Summary: Discovery record of the four findings behind the 2026-08-01 harness reds; recorded DONE by the epic's child list.
 
 ## Problem / Opportunity
 Owner ran `UX_and_AIX_experiences/pytest_examples` on 3.14t: **7 failed, 113 passed
@@ -157,9 +159,17 @@ produce.
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
 
+## State Transition Event - 2026-09-27T10:46:47Z
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner directive 2026-09-27 ("close this and turn it in ... and then we'll focus on something
+  new") closing EPIC-2026-08-01-ux-aix-harness-red-remediation; the task was parked in
+  tasks/completed/ without closure lines and is closed with its epic.
+
 ## Context / Handoff Summary
 7 reds, 4 root causes, 2 of them owner-contract questions. Nothing has been edited:
 no example, no source, no assert. The two safe fixes (FINDING-2, FINDING-4) are
 one-liners held deliberately so all four land under one ruling pass rather than
 half-fixing the suite and losing the signal. Beginner tier is 41/41 green and its
 closure caveat is retired.
+STATE 2026-09-27T10:46:47Z: DONE. Closed with its epic by owner directive.

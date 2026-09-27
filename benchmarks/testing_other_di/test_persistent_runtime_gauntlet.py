@@ -20,8 +20,11 @@ Default runtime:
 Scenarios:
     fastapi_steady
         Saturated 10-thread request handling. Each worker repeatedly executes the
-        request-scope workload. This models a no-GIL FastAPI-like service using
-        threads instead of processes.
+        request-scope workload. It models the THREAD PATTERN of a no-GIL
+        FastAPI-like service (threads instead of processes); there is no HTTP,
+        no framework integration and no I/O - it is a persistent, threaded
+        scope-and-object-graph benchmark, and `app_work_ns` is the only
+        simulated application work.
 
     bursty_app
         Long-running worker app with synchronized active/idle bursts. Active
@@ -47,9 +50,13 @@ Degradation mode:
     Setting PERSISTENT_GAUNTLET_BUCKET_SECONDS > 0 turns on time-bucketed
     reporting: per-bucket cycles/s, sampled p50/p95/p99/max, GC collection
     counts, and GC pause totals (gc.callbacks based), plus a first-vs-last
-    bucket drift summary. This is the long-horizon instrument: GC-dependent
-    containers drift as heap pressure accumulates while deterministic
-    cleanup stays flat. The 300s summary alone averages that story away.
+    bucket drift summary. This is the long-horizon instrument. Hypothesis it
+    can confirm or reject: a runtime whose scope garbage is left to the
+    cyclic GC drifts as heap pressure accumulates, while deterministic
+    cleanup stays flat. Drift alone does not name a cause - contention,
+    scheduling, allocator behavior or the harness's own retained samples
+    can drift too - so read the gc lines next to the throughput lines. The
+    300s summary alone averages any drift away.
 
     Recommended 20-minute degradation run:
         PERSISTENT_GAUNTLET_SECONDS=1200 \
@@ -57,10 +64,35 @@ Degradation mode:
         pytest benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py -s
 
     Default output is unchanged when the bucket env is unset/0.
+
+Instrumentation modes:
+    PERSISTENT_GAUNTLET_INSTRUMENTATION=full (default) keeps the per-phase
+    timers and sampled percentiles; `minimal` counts cycles and elapsed time
+    only (about 1 us of harness accounting per cycle less), so the two modes
+    can be compared to bound the harness's own cost. The adapters' internal
+    clock reads are part of the measured call in both modes.
+
+Reading the numbers:
+    - cycles/s_wall is the headline: completed cycles over measured wall time.
+    - worker_active is elapsed time inside cycles summed over workers,
+      including time blocked or descheduled; it is not CPU time.
+    - objects_min counts are the declared graph's per-cycle minimums
+      (verified untimed by the scope-semantics phase and constructor counts),
+      not observed allocations; objects/s_request_active_min uses the
+      objects built inside the request phase only.
+    - Latencies are completion times of cycles in a saturated loop, not
+      client-observed latency under an external arrival rate: a stalled
+      worker simply starts fewer cycles.
+    - Setup time on the first run of a library in a process includes its
+      imports (the config line says whether imports were cold).
+    - Each (library, scenario) is one observation in one process; for
+      publication, repeat in fresh processes and vary the order.
 """
 
 import gc
+import importlib.metadata
 import os
+import platform
 import random
 import statistics
 import sys
@@ -92,6 +124,8 @@ import test_real_world_gauntlet as base
 
 _ONE_BILLION = 1_000_000_000
 _VARIANT_COUNT = getattr(base, "_VARIANT_COUNT", 3)
+_STARTUP_TIMEOUT_S = 60.0
+_JOIN_TIMEOUT_S = 120.0
 
 
 def _env_int(name: str, default: int) -> int:
@@ -151,6 +185,12 @@ class PersistentConfig:
     burst_worker_a_weight: int
     burst_worker_b_weight: int
     bucket_s: float = 0.0
+    instrumentation: str = "full"
+
+    @property
+    def minimal(self) -> bool:
+        """True when only cycle counts and elapsed time are recorded per cycle."""
+        return self.instrumentation == "minimal"
 
     @property
     def bucket_ns(self) -> int:
@@ -172,7 +212,10 @@ class PersistentConfig:
             burst_worker_a_weight=max(0, _env_int("PERSISTENT_BURST_WORKER_A_WEIGHT", 25)),
             burst_worker_b_weight=max(0, _env_int("PERSISTENT_BURST_WORKER_B_WEIGHT", 15)),
             bucket_s=max(0.0, _env_float("PERSISTENT_GAUNTLET_BUCKET_SECONDS", 0.0)),
+            instrumentation=(os.getenv("PERSISTENT_GAUNTLET_INSTRUMENTATION") or "full").strip().lower(),
         )
+        if cfg.instrumentation not in {"full", "minimal"}:
+            raise AssertionError("PERSISTENT_GAUNTLET_INSTRUMENTATION must be full or minimal")
         if cfg.duration_s <= 0:
             raise AssertionError("PERSISTENT_GAUNTLET_SECONDS must be > 0")
         if cfg.warmup_s < 0:
@@ -357,6 +400,7 @@ class LaneStats:
     name: str
     cycles: int = 0
     objects_min: int = 0
+    inner_objects_min: int = 0
     variant_counts: list[int] = field(default_factory=lambda: [0] * _VARIANT_COUNT)
     cycle_timer: SampledTimer = field(default_factory=SampledTimer)
     outer_create: SampledTimer = field(default_factory=SampledTimer)
@@ -366,9 +410,19 @@ class LaneStats:
     request_cleanup: SampledTimer = field(default_factory=SampledTimer)
     request_total: SampledTimer = field(default_factory=SampledTimer)
 
+    def add_cycle_minimal(self, variant: int, cycle_ns: int) -> None:
+        """Minimal instrumentation: count the cycle and its elapsed time, nothing else."""
+        self.cycles += 1
+        self.objects_min += base._lane_objects_per_cycle(self.name)
+        self.inner_objects_min += base._lane_inner_objects_per_cycle(self.name)
+        self.variant_counts[variant] += 1
+        self.cycle_timer.total_ns += cycle_ns
+        self.cycle_timer.count += 1
+
     def add_cycle(self, variant: int, cycle_ns: int, metrics: Any, *, take_sample: bool) -> None:
         self.cycles += 1
         self.objects_min += base._lane_objects_per_cycle(self.name)
+        self.inner_objects_min += base._lane_inner_objects_per_cycle(self.name)
         self.variant_counts[variant] += 1
         self.cycle_timer.add(cycle_ns, take_sample=take_sample)
         self.outer_create.add(metrics.outer_create_ns, take_sample=take_sample)
@@ -381,6 +435,7 @@ class LaneStats:
     def merge(self, other: "LaneStats") -> None:
         self.cycles += other.cycles
         self.objects_min += other.objects_min
+        self.inner_objects_min += other.inner_objects_min
         for i, value in enumerate(other.variant_counts):
             self.variant_counts[i] += value
         self.cycle_timer.merge(other.cycle_timer)
@@ -430,6 +485,11 @@ class PersistentResult:
     lib: str
     cfg: PersistentConfig
     gil_status: str
+    gil_status_at_setup: str
+    semantics_checks: int
+    environment: str
+    imports_cold: bool
+    cleanup_timed: bool
     setup_ns: int
     warmup_ns: int
     measured_ns: int
@@ -492,7 +552,10 @@ def _run_one_cycle(
     cycle_ns = time.perf_counter_ns() - t0
     if record:
         stats.active_ns += cycle_ns
-        stats.lanes[lane_name].add_cycle(variant, cycle_ns, metrics, take_sample=take_sample)
+        if cfg.minimal:
+            stats.lanes[lane_name].add_cycle_minimal(variant, cycle_ns)
+        else:
+            stats.lanes[lane_name].add_cycle(variant, cycle_ns, metrics, take_sample=take_sample)
         if bucket_ns > 0:
             bucket_ix = (t0 - measure_start_ns) // bucket_ns
             if bucket_ix >= 0:
@@ -517,9 +580,7 @@ def _worker_loop(
     ready: threading.Barrier,
     start_event: threading.Event,
     stop_event: threading.Event,
-    warmup_deadline_ns: int,
-    measure_start_ns: int,
-    end_ns: int,
+    deadlines: dict[str, int],
     out_stats: list[WorkerStats],
     errors: list[BaseException],
 ) -> None:
@@ -530,8 +591,12 @@ def _worker_loop(
     local_counter = 0
 
     try:
-        ready.wait()
+        ready.wait(timeout=_STARTUP_TIMEOUT_S)
         start_event.wait()
+        # Published by the main thread AFTER every worker reached the barrier,
+        # so thread start-up never eats into the warmup or the measurement.
+        measure_start_ns = deadlines["measure_start_ns"]
+        end_ns = deadlines["end_ns"]
         while not stop_event.is_set():
             now_ns = time.perf_counter_ns()
             if now_ns >= end_ns:
@@ -572,33 +637,59 @@ def _worker_loop(
         out_stats[worker_ix] = stats
 
 
+def _library_version(distribution: str) -> str:
+    try:
+        return importlib.metadata.version(distribution)
+    except importlib.metadata.PackageNotFoundError:
+        return "not-installed"
+
+
+def _environment_line() -> str:
+    """
+    One value-only line naming what the numbers were taken on: interpreter, cores, library versions, mapping.
+    """
+    return (
+        f"python={platform.python_version()} ({platform.python_implementation()}, "
+        f"free_threading={'yes' if sysconfig_free_threading() else 'no'}), "
+        f"cpu_count={os.cpu_count()}, platform={platform.system()}-{platform.machine()}, "
+        f"melder={_library_version('melder')}, dependency-injector={_library_version('dependency-injector')}, "
+        f"dishka={_library_version('dishka')}, dishka_layer_scope={base._dishka_layer_scope_name()}"
+    )
+
+
+def sysconfig_free_threading() -> bool:
+    import sysconfig
+    return bool(sysconfig.get_config_var("Py_GIL_DISABLED"))
+
+
+_LIB_IMPORT_ROOTS = {
+    "melder": "melder",
+    "dependency-injector": "dependency_injector",
+    "dishka": "dishka",
+}
+
+
 def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> PersistentResult:
+    gil_status_at_setup = _gil_status()
+    imports_cold = _LIB_IMPORT_ROOTS.get(lib, lib) not in sys.modules
     setup_t0 = time.perf_counter_ns()
     ops = base._build_ops(lib)
     try:
         ops.spawn_singletons()
         ops.bootstrap_fanout()
         setup_ns = time.perf_counter_ns() - setup_t0
+        # Untimed correctness phase: the declared lifetimes must hold before a
+        # single timed cycle runs (see base.verify_scope_semantics).
+        semantics_checks = base.verify_scope_semantics(ops)
 
         ready = threading.Barrier(cfg.threads + 1)
         start_event = threading.Event()
         stop_event = threading.Event()
         errors: list[BaseException] = []
         worker_stats: list[WorkerStats] = [WorkerStats() for _ in range(cfg.threads)]
-
-        now_ns = time.perf_counter_ns()
-        warmup_deadline_ns = now_ns + int(cfg.warmup_s * _ONE_BILLION)
-        measure_start_ns = warmup_deadline_ns
-        end_ns = measure_start_ns + int(cfg.duration_s * _ONE_BILLION)
-
-        gc_monitor: GcBucketMonitor | None = None
-        if cfg.bucket_ns > 0:
-            gc_monitor = GcBucketMonitor(
-                measure_start_ns=measure_start_ns,
-                end_ns=end_ns,
-                bucket_ns=cfg.bucket_ns,
-            )
-            gc_monitor.install()
+        # Filled in AFTER the readiness barrier and before the start event, so
+        # the clocks start when the workers can actually run.
+        deadlines: dict[str, int] = {}
 
         threads: list[threading.Thread] = []
         for worker_ix in range(cfg.threads):
@@ -611,9 +702,7 @@ def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> Pe
                     "ready": ready,
                     "start_event": start_event,
                     "stop_event": stop_event,
-                    "warmup_deadline_ns": warmup_deadline_ns,
-                    "measure_start_ns": measure_start_ns,
-                    "end_ns": end_ns,
+                    "deadlines": deadlines,
                     "out_stats": worker_stats,
                     "errors": errors,
                 },
@@ -623,15 +712,29 @@ def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> Pe
             threads.append(thread)
             thread.start()
 
-        ready.wait()
+        ready.wait(timeout=_STARTUP_TIMEOUT_S)
         actual_start_ns = time.perf_counter_ns()
+        measure_start_ns = actual_start_ns + int(cfg.warmup_s * _ONE_BILLION)
+        end_ns = measure_start_ns + int(cfg.duration_s * _ONE_BILLION)
+        deadlines["measure_start_ns"] = measure_start_ns
+        deadlines["end_ns"] = end_ns
+
+        gc_monitor: GcBucketMonitor | None = None
+        if cfg.bucket_ns > 0:
+            gc_monitor = GcBucketMonitor(
+                measure_start_ns=measure_start_ns,
+                end_ns=end_ns,
+                bucket_ns=cfg.bucket_ns,
+            )
+            gc_monitor.install()
+
         start_event.set()
         sleep_seconds = max(0.0, (end_ns - time.perf_counter_ns()) / _ONE_BILLION)
         if sleep_seconds > 0:
             time.sleep(sleep_seconds)
         stop_event.set()
         for thread in threads:
-            thread.join()
+            thread.join(timeout=_JOIN_TIMEOUT_S)
         actual_end_ns = time.perf_counter_ns()
 
         if gc_monitor is not None:
@@ -639,10 +742,26 @@ def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> Pe
 
         if errors:
             raise errors[0]
+        stuck = [thread.name for thread in threads if thread.is_alive()]
+        if stuck:
+            raise AssertionError(f"[{lib}] workers did not stop within {_JOIN_TIMEOUT_S:.0f}s: {stuck}")
 
         merged = WorkerStats()
         for stats in worker_stats:
             merged.merge(stats)
+
+        # Validation: the run must have measured real work on every worker.
+        total_cycles = sum(lane.cycles for lane in merged.lanes.values())
+        if total_cycles <= 0:
+            raise AssertionError(f"[{lib}] no cycle was recorded in the measured window")
+        idle_workers = [
+            index for index, stats in enumerate(worker_stats)
+            if sum(lane.cycles for lane in stats.lanes.values()) <= 0
+        ]
+        if idle_workers:
+            raise AssertionError(f"[{lib}] workers recorded no cycles: {idle_workers}")
+        if actual_end_ns - measure_start_ns < int(0.9 * cfg.duration_s * _ONE_BILLION):
+            raise AssertionError(f"[{lib}] measured window shorter than 90% of the configured duration")
 
         cleanup_t0 = time.perf_counter_ns()
         ops.cleanup()
@@ -653,6 +772,11 @@ def run_persistent_benchmark_with_cleanup(lib: str, cfg: PersistentConfig) -> Pe
             lib=lib,
             cfg=cfg,
             gil_status=_gil_status(),
+            gil_status_at_setup=gil_status_at_setup,
+            semantics_checks=semantics_checks,
+            environment=_environment_line(),
+            imports_cold=imports_cold,
+            cleanup_timed=ops.cleanup_timed,
             setup_ns=setup_ns,
             warmup_ns=max(0, measure_start_ns - actual_start_ns),
             measured_ns=max(0, actual_end_ns - measure_start_ns),
@@ -685,10 +809,23 @@ def _print_result(result: PersistentResult) -> None:
 
     print(
         f"[{result.lib}] persistent config: "
-        f"scenario={cfg.scenario}, gil={result.gil_status}, duration={cfg.duration_s:.1f}s, "
+        f"scenario={cfg.scenario}, gil={result.gil_status} (at setup: {result.gil_status_at_setup}), "
+        f"duration={cfg.duration_s:.1f}s, "
         f"warmup={cfg.warmup_s:.1f}s, threads={cfg.threads}, sample_every={cfg.sample_every}, "
-        f"app_work_ns={cfg.app_work_ns}, setup={_ms(result.setup_ns):.3f}ms, "
+        f"app_work_ns={cfg.app_work_ns}, instrumentation={cfg.instrumentation}, "
+        f"setup={_ms(result.setup_ns):.3f}ms (cold imports: {'yes' if result.imports_cold else 'no'}), "
         f"cleanup={_ms(result.cleanup_ns):.3f}ms"
+    )
+    print(f"[{result.lib}] persistent environment | {result.environment}")
+    print(
+        f"[{result.lib}] persistent notes | worker_active is elapsed time inside cycles (not CPU time); "
+        f"objects_min counts are the declared graph's per-cycle minimums (verified untimed), not observed "
+        f"allocations; latencies are saturated-loop completion times, not client-observed latency"
+    )
+    print(
+        f"[{result.lib}] scope semantics | verified untimed before the timed threads: "
+        f"{result.semantics_checks} assertions passed (sessions cached per outer scope, transient layer chain "
+        f"fresh per session, request objects request-local, app singletons shared, dependency identities)"
     )
     print(
         f"[{result.lib}] persistent summary | "
@@ -705,22 +842,43 @@ def _print_result(result: PersistentResult) -> None:
         if lane.cycles <= 0:
             continue
         lane_cycle_wall_s = measured_s
+        if cfg.minimal:
+            print(
+                f"[{result.lib}] persistent lane={lane_name} | "
+                f"cycles={lane.cycles:,}, objects_min={lane.objects_min:,}, variants={tuple(lane.variant_counts)}, "
+                f"cycles/s_wall={(lane.cycles / lane_cycle_wall_s) if lane_cycle_wall_s > 0 else 0.0:,.0f}, "
+                f"objects/s_wall_min={(lane.objects_min / lane_cycle_wall_s) if lane_cycle_wall_s > 0 else 0.0:,.0f}, "
+                f"cycle_avg={_ms(lane.cycle_timer.avg_ns()):.3f}ms (minimal instrumentation: no phase timers)"
+            )
+            continue
         lane_request_active_s = lane.request_total.total_ns / _ONE_BILLION if lane.request_total.total_ns > 0 else 0.0
+        # The inner-phase rate uses the objects built INSIDE the request phase
+        # (57/23/18 per cycle), never the whole-cycle minimum (63/25/20).
         print(
             f"[{result.lib}] persistent lane={lane_name} | "
             f"cycles={lane.cycles:,}, objects_min={lane.objects_min:,}, variants={tuple(lane.variant_counts)}, "
             f"cycles/s_wall={(lane.cycles / lane_cycle_wall_s) if lane_cycle_wall_s > 0 else 0.0:,.0f}, "
             f"objects/s_wall_min={(lane.objects_min / lane_cycle_wall_s) if lane_cycle_wall_s > 0 else 0.0:,.0f}, "
             f"cycles/s_request_active={(lane.cycles / lane_request_active_s) if lane_request_active_s > 0 else 0.0:,.0f}, "
-            f"objects/s_request_active_min={(lane.objects_min / lane_request_active_s) if lane_request_active_s > 0 else 0.0:,.0f}"
+            f"objects/s_request_active_min={(lane.inner_objects_min / lane_request_active_s) if lane_request_active_s > 0 else 0.0:,.0f} "
+            f"(inner objects only)"
         )
         print(f"[{result.lib}] lane={lane_name} cycle_total | {lane.cycle_timer.sampled_summary()}")
         print(f"[{result.lib}] lane={lane_name} outer_total | {lane.outer_total.sampled_summary()}")
         print(f"[{result.lib}] lane={lane_name} request_total | {lane.request_total.sampled_summary()}")
         print(f"[{result.lib}] lane={lane_name} outer_create | {lane.outer_create.sampled_summary()}")
-        print(f"[{result.lib}] lane={lane_name} outer_cleanup | {lane.outer_cleanup.sampled_summary()}")
+        if result.cleanup_timed:
+            print(f"[{result.lib}] lane={lane_name} outer_cleanup | {lane.outer_cleanup.sampled_summary()}")
+        else:
+            print(
+                f"[{result.lib}] lane={lane_name} outer_cleanup | not separately measured: the adapter has no "
+                f"scope teardown (scope garbage is left to the GC), so these fields are absent, not zero-cost"
+            )
         print(f"[{result.lib}] lane={lane_name} request_create | {lane.request_create.sampled_summary()}")
-        print(f"[{result.lib}] lane={lane_name} request_cleanup | {lane.request_cleanup.sampled_summary()}")
+        if result.cleanup_timed:
+            print(f"[{result.lib}] lane={lane_name} request_cleanup | {lane.request_cleanup.sampled_summary()}")
+        else:
+            print(f"[{result.lib}] lane={lane_name} request_cleanup | not separately measured (see outer_cleanup)")
 
 
 def _gc_gen_summary(bucket: GcBucketStats) -> str:
@@ -745,8 +903,9 @@ def _print_degradation(result: PersistentResult) -> None:
           when the measured window does not fill it.
         - Drift compares the FIRST complete bucket against the LAST complete
           bucket: cycles/s, sampled p99, and GC pause per bucket. Flat lines
-          mean the runtime does not degrade with heap age; drifting lines are
-          the GC-pressure signature this mode exists to expose.
+          mean throughput did not change over the window; drifting lines are
+          a prompt to read the gc columns beside them - GC pressure is the
+          hypothesis this mode tests, not a conclusion the drift proves.
     """
     cfg = result.cfg
     if cfg.bucket_ns <= 0 or not result.worker_stats.buckets:
@@ -825,8 +984,24 @@ def _print_degradation(result: PersistentResult) -> None:
         )
 
 
-_LIBS = _env_list("PERSISTENT_GAUNTLET_LIBS", ("melder","dependency-injector", "dishka"))
+_LIBS = _env_list("PERSISTENT_GAUNTLET_LIBS", ("dishka", "melder","dependency-injector"))
 _SCENARIOS = _env_list("PERSISTENT_GAUNTLET_SCENARIOS", ("fastapi_steady", "bursty_app"))
+
+
+@pytest.mark.parametrize("lib", _LIBS)
+def test_scope_semantics_parity(lib: str) -> None:
+    """
+    Untimed: every adapter delivers the declared lifetimes (the same checks the benchmark runs before timing).
+    """
+    ops = base._build_ops(lib)
+    try:
+        ops.spawn_singletons()
+        ops.bootstrap_fanout()
+        checks = base.verify_scope_semantics(ops)
+        print(f"[{lib}] scope semantics parity | {checks} assertions passed")
+        assert checks > 0
+    finally:
+        ops.cleanup()
 
 
 @pytest.mark.timeout(720000)

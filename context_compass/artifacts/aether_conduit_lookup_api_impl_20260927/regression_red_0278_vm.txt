@@ -1,0 +1,55 @@
+# melder_0 VM 2026-09-27T11:18:51Z: tests/integration/melder/aether/test_aether_named_lesser_lookup.py run against UNMODIFIED 0.2.78 (wt_base), 3.14.7t, --tb=line.
+# Expected: 12 red for the MF7 symptoms, 1 green (missing custom frame keeps its error; unchanged contract).
+FFFFFFFF.FFFF                                                            [100%]
+=================================== FAILURES ===================================
+E   ValueError: Conduit with name group-lookups not found.
+$VM_HOME/wt_base/src/melder/aether/aether.py:1948: ValueError: Conduit with name group-lookups not found.
+E   ValueError: Conduit with name group-lookups not found.
+$VM_HOME/wt_base/src/melder/aether/aether.py:1948: ValueError: Conduit with name group-lookups not found.
+E   ValueError: Conduit with name group not found.
+$VM_HOME/wt_base/src/melder/aether/aether.py:1948: ValueError: Conduit with name group not found.
+E   AssertionError: Regex pattern did not match.
+      Expected regex: "'subgroup-lookups' not found in frame 'lookups'"
+      Actual message: 'Conduit with name subgroup-lookups not found.'
+$VM_HOME/wt_base/tests/integration/melder/aether/test_aether_named_lesser_lookup.py:65: AssertionError: Regex pattern did not match.
+E   ValueError: Conduit with signature 01M3H9DF5AE58T6WK8D8KV4A4A not found.
+$VM_HOME/wt_base/src/melder/aether/aether.py:1982: ValueError: Conduit with signature 01M3H9DF5AE58T6WK8D8KV4A4A not found.
+E   ValueError: Conduit with signature 01M3H9DF5E83ZWNVNNPRA48WQD not found.
+$VM_HOME/wt_base/src/melder/aether/aether.py:1982: ValueError: Conduit with signature 01M3H9DF5E83ZWNVNNPRA48WQD not found.
+E   AttributeError: 'Aether' object has no attribute 'get_root_conduit_by_name'. Did you mean: 'get_conduit_by_name'?
+$VM_HOME/wt_base/tests/integration/melder/aether/test_aether_named_lesser_lookup.py:90: AttributeError: 'Aether' object has no attribute 'get_root_conduit_by_name'. Did you mean: 'get_conduit_by_name'?
+E   AssertionError: Regex pattern did not match.
+      Expected regex: "'group-frame-a' not found in frame 'frame-b'"
+      Actual message: 'Conduit with name group-frame-a not found.'
+$VM_HOME/wt_base/tests/integration/melder/aether/test_aether_named_lesser_lookup.py:109: AssertionError: Regex pattern did not match.
+E   KeyError: None
+
+During handling of the above exception, another exception occurred:
+E   ValueError: Aetheric frame 'None' does not exist.
+$VM_HOME/wt_base/src/melder/aether/aether.py:1937: ValueError: Aetheric frame 'None' does not exist.
+E   KeyError: 7
+
+During handling of the above exception, another exception occurred:
+E   ValueError: Aetheric frame '7' does not exist.
+$VM_HOME/wt_base/src/melder/aether/aether.py:1937: ValueError: Aetheric frame '7' does not exist.
+E   KeyError: ('default',)
+
+During handling of the above exception, another exception occurred:
+E   ValueError: Aetheric frame '('default',)' does not exist.
+$VM_HOME/wt_base/src/melder/aether/aether.py:1937: ValueError: Aetheric frame '('default',)' does not exist.
+E   AttributeError: 'ConduitCloud' object has no attribute 'list_conduits'. Did you mean: 'list_conduit_ids'?
+$VM_HOME/wt_base/tests/integration/melder/aether/test_aether_named_lesser_lookup.py:142: AttributeError: 'ConduitCloud' object has no attribute 'list_conduits'. Did you mean: 'list_conduit_ids'?
+=========================== short test summary info ============================
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_get_conduit_by_name_returns_named_lesser_scopes_at_any_depth[automatic]
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_get_conduit_by_name_returns_named_lesser_scopes_at_any_depth[dynamic]
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_get_conduit_by_name_needs_no_frame_argument_for_the_default_frame
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_named_scope_returned_to_its_pool_no_longer_resolves
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_get_conduit_by_id_returns_anonymous_and_nested_lessers[automatic]
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_get_conduit_by_id_returns_anonymous_and_nested_lessers[dynamic]
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_root_lookups_answer_over_roots_only
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_lookup_in_another_frame_names_the_frame_it_searched
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_lookup_frame_must_be_a_string[none]
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_lookup_frame_must_be_a_string[int]
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_lookup_frame_must_be_a_string[tuple]
+FAILED tests/integration/melder/aether/test_aether_named_lesser_lookup.py::test_conduit_cloud_lists_its_named_scopes_as_objects
+12 failed, 1 passed in 0.61s

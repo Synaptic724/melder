@@ -575,6 +575,39 @@ class ConduitCloud(Cleanable):
         with self._lock:
             return tuple(self._named_conduits.keys())
 
+    def list_conduits(self) -> Tuple[Conduit, ...]:
+        """
+        Return the named normal-root and lesser-scope conduits registered in this frame.
+
+        Purpose:
+            Hand callers the conduit objects behind the named directory, so discovery does not need one
+            `get_conduit_by_name` call per listed name.
+
+        Contract:
+            - Covers the same NAMED scopes as `list_conduit_names()` / `list_conduit_ids()`: every named normal
+              root and every active named lesser, at any depth. Anonymous lessers, idle pooled shells and
+              scopes still being constructed are absent.
+            - Returns a TUPLE SNAPSHOT taken under the lock; it goes stale the moment a named scope is
+              registered, retired or returned to its pool, and a listed scope may be cleaned afterwards.
+            - The conduits are borrowed: listing grants no lease and transfers no ownership. Order follows
+              registration but is not a contract; pair by `name` / `id`, not by position.
+
+        Threading:
+            Reads under `self._lock`, so the result is a coherent snapshot rather than a torn read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the cloud has been cleaned.
+
+        Returns:
+            Tuple[Conduit, ...]: Snapshot of the named conduits.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return tuple(self._named_conduits.values())
+
     def list_cloud_names(self) -> Tuple[str, ...]:
         """
         Return named normal and lesser scopes in either runtime mode.

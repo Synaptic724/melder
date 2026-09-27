@@ -309,7 +309,14 @@ class StaticFrameViewer(FrameViewer):
             conduit_id: str,
     ) -> Optional[Any]:
         """
-        Resolve one owner conduit, including lesser-conduit fallback.
+        Resolve one owner conduit, root or attached lesser, or None.
+
+        Contract:
+            - Resolves through `Aether.get_conduit_by_id`, which covers the
+              frame's live roots and their attached lesser lineage, named or
+              anonymous, at any depth.
+            - Returns None instead of raising when the frame does not exist or
+              no live conduit in it has this id.
 
         Args:
             frame_name:
@@ -323,18 +330,4 @@ class StaticFrameViewer(FrameViewer):
         try:
             return self._aether.get_conduit_by_id(conduit_id, frame_name)
         except ValueError:
-            if frame_name != "default":
-                frame = self._aether._aetheric_frames.get(frame_name)
-            else:
-                self._aether._ensure_default_frame()
-                frame = self._aether._default_frame
-            if frame is None:
-                return None
-            for root_conduit in frame._conduits.values():
-                conduit_ward = root_conduit._conduit_ward
-                if conduit_ward is None:
-                    continue
-                lesser_conduit = conduit_ward._get_lesser_conduit(conduit_id)
-                if lesser_conduit is not None:
-                    return lesser_conduit
-        return None
+            return None

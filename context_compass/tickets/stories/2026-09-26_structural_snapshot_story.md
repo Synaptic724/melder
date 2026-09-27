@@ -8,7 +8,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-09-26T15:03:58Z
-- Updated: 2026-09-26T18:43:15Z
+- Updated: 2026-09-27T10:49:46Z
 
 ## User Narrative
 As the Melder owner, I want a conjure whose creation cache fully hits to skip the structural and resolution
@@ -388,6 +388,26 @@ rows - measured on the gauntlet before it is trusted.
   NEXT: story to review; owner decides on the measurement pass and story closure.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-27T10:49:46Z
+  TYPE: FACT
+  CLAIM: Seven overnight NOTICEs to fable_0 consumed (none needed an ACK): M0-40 (R1: phase-5 socket rows leave
+    shared_compiler_executions.py and the Phase-8 fast key; dag_index keeps PathRegistry only), M0-42 (R2: old
+    normal emitters retired; many_only_manifest gains build_many_only_executor_signature, signatures unchanged),
+    M0-44/M0-52 and M2-11/M2-14 (version notched 0.2.71 -> 0.2.74 with asset and LLM-bundle rebuilds - the
+    owner-owed rebuild from this lane is covered), M0-47 (meld-time compiler passes iterate a copy of
+    _spell_id_pool; the snapshot's conjure-time sweeps deliberately keep the live dict - conjure runs inside the
+    transaction window, so a concurrent bind cannot resize it there). Every message states that
+    structural_snapshot.py, spellbook_creation_system.py and caching_system.py were not touched. The release
+    notes were cut to release_docs/0.2.77.md (next_version_release.md is empty); this lane's three bullets live
+    there now.
+  EVIDENCE:
+  - release_docs/0.2.77.md (search "A warm conjure skips the structural phases")
+  - system_docs/patches/active/compiler_pool_snapshot_2026_09_26/architecture_patch.md
+  IMPACT: No action for this lane; the shipped shape and its notes are intact at 0.2.77.
+  NEXT: none (story stays in review pending the owner's measurement decision).
+  REREAD: OPTIONAL
+  SCORE_0_TO_10: 7
 
 ## Closure Confirmation
 - [x] Work walkthrough shared with user (per-task reports 2026-09-26)

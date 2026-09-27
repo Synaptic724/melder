@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `1939ec53caa031da4cb858f82e3383e857ded18cffe6cd4b9b6d33fec1f13fe8`
+- source_sha256: `b8fb5c677afd3db2f44dcde2c8bb88d9e0e110209ab4f027e893d3a99848a0ec`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `ed0c6baccd78952221187b20ee5a5be1e819f4ffa06de2afbf4de4ef4eff90eb`
+- source_sha256: `5378a8d20021f78bdb4b7edd2b94394f7bc2d04c4f92a1e76579407a199abcc3`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `5e3fe2aba288eeb246704e8f6b138f94cdc16d3146e230f4b5217546e427e1c7`
+- source_sha256: `349990027462cf5809ceb449a8647801bd2da2691207f37ce01f9ef16c3a81f0`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `c8acf6681131b8659880223d7a30daacf7872e113e2c2435cc33d3001cc57262`
+- source_sha256: `5918f1ae3a2727f28ec994c0f2e9787a00e8b0ef03588bd5610a0b9682480a99`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `c6e6e74e1c22d8c70b54ed1ff4c3f0cc6903232a39c57ae2fe009b880cc50372`
+- source_sha256: `f64a16d1aef63f0a88dd85fee9b34b83a436ab2b0a1d209f0b913d1fcff2d249`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `b5b33ff96931813e12f0226e47ab8be9b8758f72ab695ec0903aeb97c82ca747`
+- source_sha256: `40083163f3148f1bc1a0029d5bd47cac2ac9f718f4b42ebcc521a03f77603f03`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `840cb2e9dbdcf4d146464c9835e8c46ae8ae911dfc2ebc6077582e24cdee272c`
+- source_sha256: `610becfc4951767a608a7cc2a7845659685d331fe467ca47540f9155d22bee4d`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `540928202dd3da9e09b97af6b4ed09c215c5273b9de3104320eea3499464e788`
+- source_sha256: `c4bdd0cbf34b0d49e74bd844929f21067e0ba1371c3355d1a5af42321438bfb2`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `9b9f4e33e93327422f969a3af92536cc3e1ff514ce9ac9b111f2d5deb4ede4bf`
+- source_sha256: `130711bd344cdef28f14a1fd4f5274988bb866489e6eb5969324a5568ed1f546`
 - nodes: 1
 
 ### Nodes
@@ -606,7 +606,7 @@ descriptors and reassemble.
 
 ## src/melder/aether/aether.py
 
-- source_sha256: `869db592dfb195e80576d1c5cf9160a285f9873dc0b3e8698722fe88bb0939e2`
+- source_sha256: `296eed9ba6fd9a882efda8140efc93a64da0ceace552e6695cc98d3cbbc30d1b`
 - nodes: 2
 
 ### Nodes
@@ -633,9 +633,10 @@ descriptors and reassemble.
   - hosts hidden support roots
   - binds frame configuration
   - registers conduits and spell lineage state
+  - answers frame-scoped conduit lookups: root maps (*_root_*), the frame Cloud's named scopes (get_conduit_by_name) and every live conduit via root-ward lineage snapshots (get_conduit_by_id)
 - owns_state: `_aetheric_frames`, `_default_frame`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `acquire_load_authority`, `activate`, `activated`, `aetheric_mediator`, `attach_logger`, `cleanup`, `cleanup_aetheric_frames`, `configuration`, `configure`, `configured`, `count_conduits`, `create_configuration` (+18 more)
+- public methods: `acquire_load_authority`, `activate`, `activated`, `aetheric_mediator`, `attach_logger`, `cleanup`, `cleanup_aetheric_frames`, `configuration`, `configure`, `configured`, `count_root_conduits`, `create_configuration` (+20 more)
 
 ### Edges out
 
@@ -974,7 +975,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/conduit_cloud.py
 
-- source_sha256: `96511ab6e7cae0977ce24178015ee5e68216751d340b24726296c5373c3f5f4a`
+- source_sha256: `7e8ced6177cb929bb34294315e7306e741d52e573673cfbcbc16a1305d07cb3b`
 - nodes: 2
 
 ### Nodes
@@ -997,9 +998,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - provides the frame-local named conduit lookup surface
   - owns active named root/lesser discovery separately from borrowed normal-root maps
   - serializes frame-wide name admission, identity-safe retirement and temporary promotion claims
+  - lists its named conduits as a tuple snapshot under its lock (list_conduits)
 - owns_state: `_named_conduits`, `_conduit_names_by_id`, `_reserved_conduit_names`, `_conduit_clusters`, `_devops_identity`, `_id`, `_name`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_conduit_to_cluster`, `cleanup`, `count_conduits`, `create_cluster`, `delete_cluster`, `find_conduit_id_by_name`, `frame_name`, `get_cluster`, `get_clusters_for_conduit`, `get_conduit`, `get_conduit_by_id`, `get_conduit_by_name` (+9 more)
+- public methods: `add_conduit_to_cluster`, `cleanup`, `count_conduits`, `create_cluster`, `delete_cluster`, `find_conduit_id_by_name`, `frame_name`, `get_cluster`, `get_clusters_for_conduit`, `get_conduit`, `get_conduit_by_id`, `get_conduit_by_name` (+10 more)
 
 ### Edges out
 
@@ -4643,7 +4645,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/conduit_ward.py
 
-- source_sha256: `f03efb5d01f9802e6c93b4bdddb7fe80f3a7a8ab5f3896efb18081e39ee9ed39`
+- source_sha256: `4b246e6890a1a06a58f5bd766a1061f8979fa7d4acd48579208757c38fd2e2be`
 - nodes: 2
 
 ### Nodes
@@ -4672,6 +4674,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - applies policy to link creation and severing
   - updates contracted spell visibility
   - retains failed descendant ownership and prevents ancestor pooling until child cleanup succeeds
+  - resolves attached lessers by id over per-level dict.copy() snapshots of its child map, skipping children whose ward was torn down
 - owns_state: `_contracts`, `_lesser_conduits`, `_parent_conduit`, `_root_conduit`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `cleanup_all_lesser_conduits`, `root_conduit`
@@ -4962,7 +4965,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
 
-- source_sha256: `b8ece173fc7064dd6fc4e108efc6cb998738548ab7193ccfdcbeccbbc69ab916`
+- source_sha256: `4ba34aecd53378bb5cf926d261da11264ce9109ee865d30b14bbc6fa47bbc37c`
 - nodes: 2
 
 ### Nodes
@@ -4986,6 +4989,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - preflights and executes dynamic spell ownership transfer between conduits
   - owns rollback bookkeeping, change-intent registration, and incident reporting for transfer operations
+  - sweeps ROOT conduits only (Aether root-named lookups) for impacted lineages; lessers own nothing but the lifecycle of what they create
 - owns_state: `source_conduit`, `target_conduit`, `spell`, `_preflight_summary`, `_change_control_manager`, `_incident_manager`, `_rollback_actions`
 - phases: `runtime`
 - public methods: `cleanup`, `execute`, `preflight`
@@ -23860,7 +23864,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/command_system.py
 
-- source_sha256: `8cac70ad93ba6e217130ab952ff1da1259a7af773d0dec1933e61b8e295e639a`
+- source_sha256: `6d75cc09c7f8f9198e1199d3946b8ade70076507d1664c15514ea702a88dfc0b`
 - nodes: 2
 
 ### Nodes
@@ -23883,6 +23887,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - binds command results into the workstation when requested
   - enforces room and ACL posture on command paths
   - resolves named access by the exact authorized published ID and rejects changed live names
+  - resolves conduit ids through Aether's live-conduit lookup after its ACL gates, keeping its frame and not-found errors
 - owns_state: `_id`, `_space`, `_workstation`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `command_system_id`, `describe_spells_in_conduit`, `execute_target_method`, `find_spell_id`, `find_spell_key`, `get_active_spellspace`, `get_nexus_frame`, `get_resolution_state`, `get_spell_by_id`, `get_spell_by_index_id`, `get_spell_by_source_id` (+7 more)
@@ -23914,7 +23919,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/command_system/static_command_system.py
 
-- source_sha256: `7c70af7a30ac45666d5fb1541b6ee8ed9833f7cf26a81919e0b235dd51ec4f8c`
+- source_sha256: `d2bd5af6ef4f7024abb09a9d6d5fa039c866770c0d006b68188f674a0d4c0e0c`
 - nodes: 2
 
 ### Nodes
@@ -23934,6 +23939,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - preserves the shared command API while denying topology mutation and direct create-path spell activation
   - restricts spell retrieval to already-live static-compatible spell lifecycles
+  - resolves spell owners through Aether's root lookup (owners are roots)
 - phases: `runtime`, `cleanup`
 - public methods: `describe_spell_status_by_id`, `describe_spell_status_by_index_id`, `describe_spell_status_by_source_id`, `get_conduit_by_id`, `get_conduit_by_name`, `get_conduit_cloud`, `get_spell_by_id`, `get_spell_by_index_id`, `get_spell_by_source_id`, `list_supported_command_methods`, `meld_existing_spell`
 
@@ -24113,7 +24119,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/nexus/rift/frame_viewer/static_frame_viewer.py
 
-- source_sha256: `9db5d16d9971de73bcca0d913a3bbe97f51eb943139dcd224d832139b72c0926`
+- source_sha256: `2134b59cdb40064850204b874e9bc059b528d2382e1d83afed89c1546c64bc92`
 - nodes: 2
 
 ### Nodes
@@ -24133,6 +24139,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - filters spell-facing visibility down to already-live spells
   - rebuilds filtered compiled access surfaces from the base view surface
+  - resolves spell owners through Aether's live-conduit lookup, None on a miss
 - owns_state: `_base_compiled_access_surfaces_by_frame_name`, `_filtered_compiled_access_surfaces_by_frame_name`
 - phases: `refresh`, `runtime`, `cleanup`
 - public methods: `clone`, `from_frame_viewer`, `list_spell_source_ids_for_frame`

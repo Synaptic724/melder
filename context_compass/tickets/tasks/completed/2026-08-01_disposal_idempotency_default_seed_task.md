@@ -2,13 +2,15 @@
 
 ## Metadata
 - Task ID: TASK-2026-08-01-disposal-idempotency-default-seed
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: examples_0
 - Priority: p1
 - Parent: EPIC-2026-08-01-ux-aix-harness-red-remediation
 - Created: 2026-08-01T11:18:00Z
-- Updated: 2026-08-01T12:58:00Z
+- Updated: 2026-09-27T10:46:47Z
+- Completed: 2026-09-27T10:46:47Z
+- Summary: FINDING-1 (disposal idempotency default seed) implemented per the epic's corrected handoff.
 
 ## Problem / Opportunity
 4 of the 7 harness reds. `disposal` and `disposal_method_names` are declared
@@ -372,7 +374,15 @@ so it is the regression surface that matters most.
 ## Context Management
 - CONTEXT_MANAGEMENT_REQUIRED: false
 
+## State Transition Event - 2026-09-27T10:46:47Z
+- from_state: review
+- to_state: done
+- transition_reason: Owner directive 2026-09-27 ("close this and turn it in ... and then we'll focus on something
+  new") closing EPIC-2026-08-01-ux-aix-harness-red-remediation; the task was parked in
+  tasks/completed/ without closure lines and is closed with its epic.
+
 ## Context / Handoff Summary
 Root cause proven, blast radius proven, working path proven, and the test suite's
 own comment proves the behavior was already known. Blocked on an owner ruling
 between A, B and C. Nothing edited.
+STATE 2026-09-27T10:46:47Z: DONE. Closed with its epic by owner directive.

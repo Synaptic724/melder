@@ -796,11 +796,13 @@ class TransferOfOwnership(Cleanable):
             if cluster_members:
                 conduit_ids.update([cid for cid in cluster_members if cid])
 
-        for conduit_id in self._aether.list_conduit_ids(self._frame_name):
+        # Roots only, by design: a lesser scope owns nothing but the lifecycle of what it creates, so the
+        # lineage sweep never needs the lesser lineage (owner ruling, 2026-09-27).
+        for conduit_id in self._aether.list_root_conduit_ids(self._frame_name):
             if not conduit_id:
                 continue
             try:
-                conduit = self._aether.get_conduit_by_id(
+                conduit = self._aether.get_root_conduit_by_id(
                     conduit_id,
                     self._frame_name,
                 )

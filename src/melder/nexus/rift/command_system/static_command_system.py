@@ -212,7 +212,8 @@ class StaticCommandSystem(CommandSystem):
             owner_conduit_id = spell_record.owner_conduit_id
             if not owner_conduit_id:
                 continue
-            owner_conduit = self._aether._get_conduit_by_id(
+            # Spell owners are roots.
+            owner_conduit = self._aether.get_root_conduit_by_id(
                 owner_conduit_id,
                 frame_name,
             )
@@ -628,7 +629,8 @@ class StaticCommandSystem(CommandSystem):
         is_live = False
         owner_conduit_id = spell_record.owner_conduit_id
         if owner_conduit_id:
-            owner_conduit = self._aether._get_conduit_by_id(
+            # Spell owners are roots.
+            owner_conduit = self._aether.get_root_conduit_by_id(
                 owner_conduit_id,
                 frame_name,
             )
