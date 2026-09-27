@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 40673161e579e6ce03954755a37d27c95178c82f5cbaacd41e562685aa64a912
-FILE COUNT: 1018
+SOURCE FINGERPRINT: e900810883073764d911ce647f71aa25d2247c7d2723292dc9aeca9fcabbd49a
+FILE COUNT: 1019
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -56389,7 +56389,7 @@ END FILE: tests/component/melder/spellbook/test_spellbook_component_structural_s
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_spellbook_component_structural_snapshot_parity.py
-CONTENT SHA256: dccbbdd06c796590229b718ed4b19143968fec8241392c2da44bb2b15d53f794
+CONTENT SHA256: 3d48738b129ff5a900673fb161a141a07459f865f9db057e25317e1ea6222f13
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -56776,7 +56776,7 @@ def test_crystallizer_restore_hydrates_with_fresh_index_ulids(
     assert report["status"] == "complete"
     assert spy.root_paths == ["miss", "full_hit"]
     assert spy.runs == 1
-    restored = Aether().get_conduit_by_name("root", aetheric_frame_name=FRAME)
+    restored = Aether().get_root_conduit_by_name("root", aetheric_frame_name=FRAME)
     car = restored.meld(spell=Car)
     assert isinstance(car.engine, Engine) and len(car.wheels) == 1
     assert rebooted.get_spell_crystal(ids["Car"]).id == ids["Car"]
@@ -91170,7 +91170,7 @@ END FILE: tests/integration/melder/aether/test_aether_integration_clusters_membe
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_aether_integration_core.py
-CONTENT SHA256: 7fb34cb3fe69d372f7b49a5cfac0eaa99775c2e268bd28a6a1b8637becdb616e
+CONTENT SHA256: e708d0c71d4c9a742164ffe86e1563d63a091b378d0b3c37a1bf72e634f13fd0
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -91312,8 +91312,8 @@ def test_aether_resolves_conduit_by_name_id_and_spell_id() -> None:
     Purpose:
         Validate Aether resolves conduits by name, id, and spell id.
     Contract:
-        - get_conduit_by_id returns the owning conduit.
-        - get_conduit_by_name returns the owning conduit.
+        - _get_root_conduit_by_id returns the owning root conduit.
+        - _get_root_conduit_by_name returns the owning root conduit.
         - get_conduit_by_spell_id returns the owning conduit.
         - Missing lookups raise ValueError.
     Returns:
@@ -91334,14 +91334,14 @@ def test_aether_resolves_conduit_by_name_id_and_spell_id() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        assert aether._get_conduit_by_id(conduit.id, frame_name) is conduit
-        assert aether._get_conduit_by_name("root", frame_name) is conduit
+        assert aether._get_root_conduit_by_id(conduit.id, frame_name) is conduit
+        assert aether._get_root_conduit_by_name("root", frame_name) is conduit
         assert aether._get_conduit_by_spell_id(spell_id, frame_name) is conduit
 
         with pytest.raises(ValueError, match="not found"):
-            aether._get_conduit_by_name("missing", frame_name)
+            aether._get_root_conduit_by_name("missing", frame_name)
         with pytest.raises(ValueError, match="not found"):
-            aether._get_conduit_by_id("missing-id", frame_name)
+            aether._get_root_conduit_by_id("missing-id", frame_name)
     finally:
         conduit.cleanup()
         spellbook.cleanup()
@@ -91953,7 +91953,7 @@ END FILE: tests/integration/melder/aether/test_aether_integration_devops.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_aether_integration_error_paths.py
-CONTENT SHA256: bfd7b46d89d82137195f014667261e510ea3372c43a8ccbf8ace384f702a3d45
+CONTENT SHA256: 3f4afff07e17e8adbe68dbb05bbdd68d659f7d7c5dd3226ef3db9bb1d826460d
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -92064,8 +92064,8 @@ def test_aether_conduit_lookup_missing_frame_raises() -> None:
     Purpose:
         Validate conduit lookups reject missing frames.
     Contract:
-        - _get_conduit_by_id raises ValueError for missing frames.
-        - _get_conduit_by_name raises ValueError for missing frames.
+        - _get_root_conduit_by_id raises ValueError for missing frames.
+        - _get_root_conduit_by_name raises ValueError for missing frames.
     Returns:
         None.
     Raises:
@@ -92073,9 +92073,9 @@ def test_aether_conduit_lookup_missing_frame_raises() -> None:
     """
     aether = Aether()
     with pytest.raises(ValueError, match="does not exist"):
-        aether._get_conduit_by_id("id", "missing-frame")
+        aether._get_root_conduit_by_id("id", "missing-frame")
     with pytest.raises(ValueError, match="does not exist"):
-        aether._get_conduit_by_name("name", "missing-frame")
+        aether._get_root_conduit_by_name("name", "missing-frame")
 
 
 def test_aether_conduit_cloud_register_unregister_missing_frame_raises() -> None:
@@ -92736,7 +92736,7 @@ END FILE: tests/integration/melder/aether/test_aether_integration_frame_cleanup.
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_aether_integration_frames.py
-CONTENT SHA256: 91a63def33001369b690e5bda209dca36c4062a53b17bf07023783494ef53ec0
+CONTENT SHA256: 2b7f8dc2f5fe63fff60b99c5bb2346502b502834a4dd3a18b3345f8f0d596dc8
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -92861,7 +92861,7 @@ def test_aether_frame_isolation_for_conduit_and_spell_lookup() -> None:
         with pytest.raises(ValueError, match="not found"):
             Aether().get_conduit_cloud("frame-a").get_conduit_by_name("root-b")
 
-        assert Aether().get_conduit_by_name("root-b", "frame-b") is conduit_b
+        assert Aether().get_root_conduit_by_name("root-b", "frame-b") is conduit_b
     finally:
         conduit_b.permanent_cleanup()
         conduit_a.permanent_cleanup()
@@ -93000,7 +93000,7 @@ def test_bottom_up_frame_cleanup_cleans_conduits_and_removes_frame() -> None:
     assert frame.cleaned is True
     assert conduit.cleaned is True
     with pytest.raises(ValueError, match="does not exist"):
-        aether._get_conduit_by_id(conduit_id, frame_name)
+        aether._get_root_conduit_by_id(conduit_id, frame_name)
     with pytest.raises(RuntimeError, match="already been cleaned"):
         conduit.meld(spell_id=spell_id)
 
@@ -93830,6 +93830,159 @@ def test_integration_aether_logging_configuration_keeps_automatic_logger_path_di
         spellbook.cleanup()
 ================================================================================
 END FILE: tests/integration/melder/aether/test_aether_logging_configuration_integration.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/aether/test_aether_named_lesser_lookup.py
+CONTENT SHA256: 525e09d79a864341ebc7f905d8b70ee1fb06a600b8ac865427cc7613f9e14a75
+SOURCE ENCODING: utf-8
+================================================================================
+"""Aether conduit lookups cover what their names say.
+
+Regression for ledger item MF7: on 0.2.78 `Aether.get_conduit_by_name` read only the frame's root maps, so a
+live named lesser scope looked absent from Aether while the frame's ConduitCloud returned it. Since 0.2.79 the
+root-only lookups carry `*_root_*` names, `get_conduit_by_name` answers over the frame's named scopes (named
+roots and active named lessers), `get_conduit_by_id` answers over every live conduit in the frame (roots and
+attached lessers, named or anonymous), and every lookup takes its frame as a string defaulting to "default".
+"""
+
+from collections.abc import Iterator
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.spellbook import Spellbook
+from tests._codegen_system_support import reset_runtime_singletons
+
+
+@pytest.fixture(autouse=True)
+def isolated_world() -> Iterator[None]:
+    """Give every scenario a fresh Aether and clean the singletons deterministically afterwards."""
+    reset_runtime_singletons()
+    try:
+        yield
+    finally:
+        reset_runtime_singletons()
+
+
+def _scope_tree(frame_name: str, *, dynamic: bool) -> tuple[Conduit, Conduit, Conduit]:
+    """Conjure one root in `frame_name`, a named lesser under it and a named lesser under that one."""
+    root = Spellbook(aetheric_frame=frame_name).conjure(name=f"root-{frame_name}", dynamic=dynamic)
+    group = root.create_lesser_conduit(name=f"group-{frame_name}")
+    subgroup = group.create_lesser_conduit(name=f"subgroup-{frame_name}")
+    return root, group, subgroup
+
+
+@pytest.mark.parametrize("dynamic", [False, True], ids=["automatic", "dynamic"])
+def test_get_conduit_by_name_returns_named_lesser_scopes_at_any_depth(dynamic: bool) -> None:
+    """Every named scope in the frame resolves through Aether to the same object the frame's Cloud holds."""
+    root, group, subgroup = _scope_tree("lookups", dynamic=dynamic)
+    aether = Aether()
+    cloud = aether.get_conduit_cloud("lookups")
+    for scope in (root, group, subgroup):
+        assert aether.get_conduit_by_name(scope.name, "lookups") is scope
+        assert cloud.get_conduit_by_name(scope.name) is scope
+
+
+def test_get_conduit_by_name_needs_no_frame_argument_for_the_default_frame() -> None:
+    """Scopes in the default frame resolve with the frame argument omitted."""
+    root = Spellbook().conjure(name="root")
+    group = root.create_lesser_conduit(name="group")
+    aether = Aether()
+    assert aether.get_conduit_by_name("group") is group
+    assert aether.get_conduit_by_name("root") is root
+    assert aether.get_conduit_by_id(group.id) is group
+
+
+def test_named_scope_returned_to_its_pool_no_longer_resolves() -> None:
+    """A returned named lesser leaves both the named and the live lookup; its parent still resolves."""
+    root, group, subgroup = _scope_tree("lookups", dynamic=True)
+    subgroup_id = subgroup.id
+    subgroup.cleanup()
+    aether = Aether()
+    with pytest.raises(ValueError, match="'subgroup-lookups' not found in frame 'lookups'"):
+        aether.get_conduit_by_name("subgroup-lookups", "lookups")
+    with pytest.raises(ValueError, match=f"'{subgroup_id}' not found in frame 'lookups'"):
+        aether.get_conduit_by_id(subgroup_id, "lookups")
+    assert aether.get_conduit_by_name("group-lookups", "lookups") is group
+    assert aether.get_conduit_by_id(group.id, "lookups") is group
+    assert aether.get_conduit_by_id(root.id, "lookups") is root
+
+
+@pytest.mark.parametrize("dynamic", [False, True], ids=["automatic", "dynamic"])
+def test_get_conduit_by_id_returns_anonymous_and_nested_lessers(dynamic: bool) -> None:
+    """Ids resolve for the root and for anonymous lessers at any depth, which the Cloud does not hold."""
+    root = Spellbook(aetheric_frame="lookups").conjure(name="root", dynamic=dynamic)
+    anonymous = root.create_lesser_conduit()
+    nested = anonymous.create_lesser_conduit()
+    aether = Aether()
+    for scope in (root, anonymous, nested):
+        assert aether.get_conduit_by_id(scope.id, "lookups") is scope
+    assert anonymous.id not in aether.get_conduit_cloud("lookups").list_conduit_ids()
+
+
+def test_root_lookups_answer_over_roots_only() -> None:
+    """The root-named lookups keep the root-only answers; a named lesser is not a root."""
+    root, group, _subgroup = _scope_tree("lookups", dynamic=False)
+    aether = Aether()
+    assert aether.get_root_conduit_by_name(root.name, "lookups") is root
+    assert aether.get_root_conduit_by_id(root.id, "lookups") is root
+    assert aether.list_root_conduit_ids("lookups") == (root.id,)
+    assert aether.list_root_conduit_names("lookups") == (root.name,)
+    assert aether.count_root_conduits("lookups") == 1
+    assert aether.has_root_conduit_id(group.id, "lookups") is False
+    assert aether.has_root_conduit_name(group.name, "lookups") is False
+    assert aether.find_root_conduit_id_by_name(group.name, "lookups") is None
+    with pytest.raises(ValueError, match="Root conduit with name 'group-lookups' not found in frame 'lookups'"):
+        aether.get_root_conduit_by_name(group.name, "lookups")
+    with pytest.raises(ValueError, match=f"Root conduit with id '{group.id}' not found in frame 'lookups'"):
+        aether.get_root_conduit_by_id(group.id, "lookups")
+
+
+def test_lookup_in_another_frame_names_the_frame_it_searched() -> None:
+    """A scope in one frame is absent from another, and the error names the frame that was searched."""
+    _root, group, _subgroup = _scope_tree("frame-a", dynamic=False)
+    Spellbook(aetheric_frame="frame-b").conjure(name="root-frame-b")
+    aether = Aether()
+    with pytest.raises(ValueError, match="'group-frame-a' not found in frame 'frame-b'"):
+        aether.get_conduit_by_name("group-frame-a", "frame-b")
+    with pytest.raises(ValueError, match="'group-frame-a' not found in frame 'default'"):
+        aether.get_conduit_by_name("group-frame-a")
+    with pytest.raises(ValueError, match="not found in frame 'frame-b'"):
+        aether.get_conduit_by_id(group.id, "frame-b")
+    assert aether.get_conduit_by_name("group-frame-a", "frame-a") is group
+
+
+def test_lookup_in_a_missing_custom_frame_keeps_the_frame_error() -> None:
+    """A custom frame that was never created still fails with the frame error, for both lookups."""
+    aether = Aether()
+    with pytest.raises(ValueError, match="Aetheric frame 'nowhere' does not exist."):
+        aether.get_conduit_by_name("anything", "nowhere")
+    with pytest.raises(ValueError, match="Aetheric frame 'nowhere' does not exist."):
+        aether.get_conduit_by_id("anything", "nowhere")
+
+
+@pytest.mark.parametrize("bad_frame", [None, 7, ("default",)], ids=["none", "int", "tuple"])
+def test_lookup_frame_must_be_a_string(bad_frame: object) -> None:
+    """A non-string frame fails fast with TypeError instead of a misleading not-found or dict error."""
+    root = Spellbook().conjure(name="root")
+    aether = Aether()
+    with pytest.raises(TypeError, match="aetheric_frame_name must be a frame name string"):
+        aether.get_conduit_by_name(root.name, bad_frame)
+    with pytest.raises(TypeError, match="aetheric_frame_name must be a frame name string"):
+        aether.get_conduit_by_id(root.id, bad_frame)
+
+
+def test_conduit_cloud_lists_its_named_scopes_as_objects() -> None:
+    """The Cloud returns the named root and named lessers it holds, by identity; anonymous lessers are absent."""
+    root, group, subgroup = _scope_tree("lookups", dynamic=True)
+    anonymous = root.create_lesser_conduit()
+    listed = Aether().get_conduit_cloud("lookups").list_conduits()
+    assert len(listed) == 3
+    assert {id(scope) for scope in listed} == {id(root), id(group), id(subgroup)}
+    assert all(scope is not anonymous for scope in listed)
+================================================================================
+END FILE: tests/integration/melder/aether/test_aether_named_lesser_lookup.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_capability_space_frame_and_workstation_integration.py
@@ -97706,7 +97859,7 @@ END FILE: tests/integration/melder/aether/test_nexus_viewer_general_helper_integ
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_non_resolvable_graph_replay.py
-CONTENT SHA256: a94023bf85a88684f5be31b43d1aebeb3a34be8ba7f188ff903ed7d2b9ccf2cf
+CONTENT SHA256: 2392d3bf71c16c458f2a195ba0ea75e30224f7aab09afd55d9480659c89235a5
 SOURCE ENCODING: utf-8
 ================================================================================
 """Non-resolvable definitions remain connected, inspectable and non-resolvable after replay."""
@@ -97863,7 +98016,7 @@ def test_checkpoint_replay_preserves_false_and_reemits_it(tmp_path: Path, monkey
     report = rebooted.load_checkpoint(checkpoint_id)
     assert report["status"] == "complete"
     assert rebooted.get_spell_crystal(definition_id).describe()["resolvable"] is False
-    conduit = Aether().get_conduit_by_name("root", "recorded")
+    conduit = Aether().get_root_conduit_by_name("root", "recorded")
     assert conduit._spellbook._inactive_spells[parked_id].resolvable is False
     supplied = GraphImplementation()
     assert conduit.meld(spell_id=consumer_id, override={"definition": supplied}).definition is supplied
@@ -116557,7 +116710,7 @@ END FILE: tests/integration/melder/crystallizer/test_named_lesser_persistence.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/crystallizer/test_ordered_disposal_replay.py
-CONTENT SHA256: 42c5122af79de714777c84cd6539299b9a0b89c325f06b61bb3283046ace54cf
+CONTENT SHA256: ea89498f90dc63d0b8506a9749aedda946ea03d68723553c8bb81bef9cde80d1
 SOURCE ENCODING: utf-8
 ================================================================================
 """Ordered disposal survives crystal capture, cached restore, and receiving-book graft policy."""
@@ -116686,7 +116839,7 @@ def test_cached_restore_preserves_order_and_actual_cleanup(priority: bool, paral
     assert report["built_counts"]["spell_active"] == 1
     assert report["built_counts"]["spell_staged"] == 1
     assert not [row for row in report["shortfalls"] if row["kind"] in ("spell_crystal", "spell_index")]
-    conduit = Aether().get_conduit_by_name("disposal-root", "disposal-source")
+    conduit = Aether().get_root_conduit_by_name("disposal-root", "disposal-source")
     selected_id = record["index_payload"]["selected_spell_id"]
     parked_id = next(member for member in record["members"] if member != selected_id)
     selected_names = ["flush", "stop", "close"] if priority else ["stop", "close", "flush"]
@@ -116798,7 +116951,7 @@ def test_restore_changed_ids_preserves_anchor_and_exact_selected_member(priority
             parked_names = ["flush", "close"] if priority else ["close", "flush"]
             assert result["identity_map"][selected_recorded] == _expected_identity(selected_names)
             assert result["identity_map"][parked_recorded] == _expected_identity(parked_names)
-            conduit = Aether().get_conduit_by_name("disposal-root", "disposal-source")
+            conduit = Aether().get_root_conduit_by_name("disposal-root", "disposal-source")
             actual = conduit.meld("OrderedDisposalService")
             conduit.permanent_cleanup()
             assert actual.calls == parked_names
@@ -116869,7 +117022,7 @@ def test_changed_id_restore_regrants_contract_details() -> None:
             assert result["identity_map"][recorded_id] == expected_id
             assert result["built_counts"]["contract_detail"] >= 1
             assert not [row for row in result["shortfalls"] if row["kind"] == "contract"]
-            restored = Aether().get_conduit_by_name("borrower", "disposal-grant")
+            restored = Aether().get_root_conduit_by_name("borrower", "disposal-grant")
             instance = restored.meld(spell_id=expected_id)
             restored.permanent_cleanup()
             assert instance.calls == ["flush", "stop", "close"]
@@ -158939,11 +159092,12 @@ END FILE: tests/unit/melder/aether/conduit/conduit_ward/contract/test_policies.p
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward.py
-CONTENT SHA256: 4cc17aa867829000ea91db849e394ca5d8fa5bfaab7f18bc55fd0ca38f013288
+CONTENT SHA256: 48e7a7c41db8b9081b644a0c25cd176a295438e470277e6e5bfe4c33ac8ce616
 SOURCE ENCODING: utf-8-bom
 ================================================================================
 import pytest
 import threading
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -159558,6 +159712,56 @@ def test_get_lesser_conduit_recursive(ward):
     ward._link_lesser_conduit(child)
     
     assert ward._get_lesser_conduit("child-1") is child
+    assert ward._get_lesser_conduit("missing") is None
+
+
+class _PopsSiblingOnIdRead:
+    """Lesser stand-in whose `_id` read removes a sibling from its parent's registry, as a pool return does."""
+
+    def __init__(self, parent_registry: dict, sibling_id: str) -> None:
+        """Remember the parent's live registry and the sibling to remove on the first `_id` read."""
+        self._parent_registry = parent_registry
+        self._sibling_id = sibling_id
+        self._conduit_ward = None
+
+    @property
+    def _id(self) -> str:
+        """Remove the sibling from the live parent registry, then return this stand-in's id."""
+        self._parent_registry.pop(self._sibling_id, None)
+        return "first"
+
+
+def test_get_lesser_conduit_walks_a_snapshot_when_a_child_detaches_mid_walk(ward):
+    """
+    Verify the lineage walk survives a child leaving the parent registry while it runs.
+
+    A child returning to its pool pops itself from the parent's registry under its OWN lock, so no lock the
+    walk could take prevents it; iterating the live dict raised "dictionary changed size during iteration".
+    The walk reads a snapshot, so it completes and still returns the child it had already seen.
+    """
+    second = MagicMock()
+    second._id = "second"
+    second._conduit_ward = None
+    ward._lesser_conduits["first"] = _PopsSiblingOnIdRead(ward._lesser_conduits, "second")
+    ward._lesser_conduits["second"] = second
+
+    assert ward._get_lesser_conduit("second") is second
+    assert "second" not in ward._lesser_conduits
+
+
+def test_get_lesser_conduit_skips_a_child_whose_ward_was_deleted(ward):
+    """
+    Verify a child whose ward hard teardown deleted is matched by id but not searched, and is never fatal.
+    """
+    torn_down = SimpleNamespace(_id="torn")
+    target = MagicMock()
+    target._id = "target"
+    target._conduit_ward = None
+    ward._lesser_conduits["torn"] = torn_down
+    ward._lesser_conduits["target"] = target
+
+    assert ward._get_lesser_conduit("target") is target
+    assert ward._get_lesser_conduit("torn") is torn_down
     assert ward._get_lesser_conduit("missing") is None
 
 
@@ -165635,7 +165839,7 @@ END FILE: tests/unit/melder/aether/conduit/conduit_ward/test_conduit_ward_sever_
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership.py
-CONTENT SHA256: f7d3af2ec2648e7e998f1759364a069c9ba66736e16fb129ff47bfd5802e510f
+CONTENT SHA256: 3852b89f8a2760c5ffa53f4bb28cd77794bbf1d6d035fc8c09f79b6d334cbb9d
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -166308,9 +166512,9 @@ class FakeAether:
         member_ids.update(owner_id for owner_id in cluster.shared_spells.keys() if owner_id)
         return list(member_ids)
 
-    def list_conduit_ids(self, frame_name: str) -> List[str]:
+    def list_root_conduit_ids(self, frame_name: str) -> List[str]:
         """
-        Return registered conduit ids for the requested frame.
+        Return registered root conduit ids for the requested frame.
 
         Args:
             frame_name: Frame name to inspect.
@@ -166320,9 +166524,9 @@ class FakeAether:
         frame = self._get_frame(frame_name)
         return list(frame._conduits.keys())
 
-    def get_conduit_by_id(self, conduit_id: str, frame_name: str) -> Any:
+    def get_root_conduit_by_id(self, conduit_id: str, frame_name: str) -> Any:
         """
-        Return a conduit by id from the requested frame.
+        Return a root conduit by id from the requested frame.
 
         Args:
             conduit_id: Conduit id to resolve.
@@ -170129,7 +170333,7 @@ END FILE: tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_o
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_contracts.py
-CONTENT SHA256: cc7c4f3740c4d421c006f64929b9004ec2ab683c8b5c9a756234c594d5e1cece
+CONTENT SHA256: f3cdac943dfaf59048ce1cfed5b675c81e2af80358df8042b8851390ec59983e
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -170766,9 +170970,9 @@ class FakeAether:
         member_ids.update(owner_id for owner_id in cluster.shared_spells.keys() if owner_id)
         return list(member_ids)
 
-    def list_conduit_ids(self, frame_name: str) -> List[str]:
+    def list_root_conduit_ids(self, frame_name: str) -> List[str]:
         """
-        Return registered conduit ids for the requested frame.
+        Return registered root conduit ids for the requested frame.
 
         Args:
             frame_name: Frame name to inspect.
@@ -170778,9 +170982,9 @@ class FakeAether:
         frame = self._get_frame(frame_name)
         return list(frame._conduits.keys())
 
-    def get_conduit_by_id(self, conduit_id: str, frame_name: str) -> Any:
+    def get_root_conduit_by_id(self, conduit_id: str, frame_name: str) -> Any:
         """
-        Return a conduit by id from the requested frame.
+        Return a root conduit by id from the requested frame.
 
         Args:
             conduit_id: Conduit id to resolve.
@@ -206636,12 +206840,13 @@ END FILE: tests/unit/melder/aether/spellbook/test_conjure_settle_or_inherit.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_aether.py
-CONTENT SHA256: 52ba264abb021751f1d4061f5e6d7ce11d011cecb9a3dc3da06ce79981d0aec9
+CONTENT SHA256: c45bff6cd1ae993ec2d2892f46fe10d1251d253806763389586affd33693cbf9
 SOURCE ENCODING: utf-8-bom
 ================================================================================
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from types import SimpleNamespace
 import pytest
 import threading
 from unittest.mock import MagicMock, patch, ANY
@@ -206669,6 +206874,7 @@ class _FrameConduitCloudStub:
         self._frame_mock = frame_mock
         self._registry = {}
         self._conduit_clusters = {}
+        self._named_conduits = {}
         self.frame_name = "default"
 
     def create_cluster(self, cluster_name: str) -> None:
@@ -206724,6 +206930,13 @@ class _FrameConduitCloudStub:
         conduit = self._frame_mock._conduits.get(conduit_id)
         if conduit is None:
             raise ValueError(f"Conduit with id {conduit_id} not found.")
+        return conduit
+
+    def get_conduit_by_name(self, name: str):
+        """Return one named scope from the stub's named directory, raising like ConduitCloud when missing."""
+        conduit = self._named_conduits.get(name)
+        if conduit is None:
+            raise ValueError("Conduit with name {0} not found.".format(name))
         return conduit
 
     def refresh_cluster_shares_for_conduit(self, conduit) -> None:
@@ -207305,33 +207518,33 @@ def test_unregister_root_conduit_missing_raises(aether_with_mocks):
     with pytest.raises(ValueError, match="does not exist"):
         frame_mock.unregister_root_conduit(conduit)
 
-def test_get_conduit_by_id(aether_with_mocks):
-    """_get_conduit_by_id retrieves from frame dict."""
+def test_get_root_conduit_by_id(aether_with_mocks):
+    """_get_root_conduit_by_id retrieves from the frame's root registry."""
     a = aether_with_mocks
     frame_mock = a._default_frame
     expected = MagicMock()
     frame_mock._conduits = {"target_id": expected}
     
-    result = a._get_conduit_by_id("target_id")
+    result = a._get_root_conduit_by_id("target_id")
     assert result is expected
 
-def test_get_conduit_by_id_missing_raises(aether_with_mocks):
-    """_get_conduit_by_id raises ValueError if missing."""
+def test_get_root_conduit_by_id_missing_raises(aether_with_mocks):
+    """_get_root_conduit_by_id raises ValueError naming the id and the searched frame."""
     a = aether_with_mocks
     a._default_frame._conduits = {}
-    with pytest.raises(ValueError, match="not found"):
-        a._get_conduit_by_id("missing")
+    with pytest.raises(ValueError, match="Root conduit with id 'missing' not found in frame 'default'"):
+        a._get_root_conduit_by_id("missing")
 
 
-def test_get_conduit_by_id_missing_custom_frame_raises(aether_with_mocks):
-    """_get_conduit_by_id should fail clearly for missing custom frames."""
+def test_get_root_conduit_by_id_missing_custom_frame_raises(aether_with_mocks):
+    """_get_root_conduit_by_id should fail clearly for missing custom frames."""
     a = aether_with_mocks
 
     with pytest.raises(ValueError, match="does not exist"):
-        a._get_conduit_by_id("missing", "missing_frame")
+        a._get_root_conduit_by_id("missing", "missing_frame")
 
-def test_get_conduit_by_name(aether_with_mocks):
-    """_get_conduit_by_name resolves through the frame name registry."""
+def test_get_root_conduit_by_name(aether_with_mocks):
+    """_get_root_conduit_by_name resolves through the frame's root name registry."""
     a = aether_with_mocks
     frame_mock = a._default_frame
     c1 = MagicMock()
@@ -207341,22 +207554,22 @@ def test_get_conduit_by_name(aether_with_mocks):
     frame_mock._conduits = {"id1": c1, "id2": c2}
     frame_mock._conduit_ids_by_name = {"bob": "id1", "alice": "id2"}
     
-    result = a._get_conduit_by_name("alice")
+    result = a._get_root_conduit_by_name("alice")
     assert result is c2
 
-def test_get_conduit_by_name_missing_raises(aether_with_mocks):
-    """_get_conduit_by_name raises ValueError if not found."""
+def test_get_root_conduit_by_name_missing_raises(aether_with_mocks):
+    """_get_root_conduit_by_name raises ValueError naming the name and the searched frame."""
     a = aether_with_mocks
-    with pytest.raises(ValueError, match="not found"):
-        a._get_conduit_by_name("nobody")
+    with pytest.raises(ValueError, match="Root conduit with name 'nobody' not found in frame 'default'"):
+        a._get_root_conduit_by_name("nobody")
 
 
-def test_get_conduit_by_name_missing_custom_frame_raises(aether_with_mocks):
-    """_get_conduit_by_name should fail clearly for missing custom frames."""
+def test_get_root_conduit_by_name_missing_custom_frame_raises(aether_with_mocks):
+    """_get_root_conduit_by_name should fail clearly for missing custom frames."""
     a = aether_with_mocks
 
     with pytest.raises(ValueError, match="does not exist"):
-        a._get_conduit_by_name("nobody", "missing_frame")
+        a._get_root_conduit_by_name("nobody", "missing_frame")
 
 def test_removed_register_conduit_cloud_helper_is_not_exposed(aether_with_mocks):
     """Aether no longer exposes the old conduit-cloud registration helper."""
@@ -207404,11 +207617,11 @@ def test_get_existing_frame_missing_frame_raises(aether_with_mocks):
         a._get_existing_frame("missing_frame")
 
 
-def test_aether_conduit_discovery_helpers_expose_frame_inventory(
+def test_aether_root_conduit_lookups_expose_frame_root_inventory(
         aether_with_mocks,
 ) -> None:
     """
-    Verify the generic conduit-discovery helpers expose root-frame inventory.
+    Verify the root-named lookups answer over the frame's root registry.
 
     Returns:
         None.
@@ -207425,21 +207638,24 @@ def test_aether_conduit_discovery_helpers_expose_frame_inventory(
     cloud = MagicMock()
     a._default_frame._conduit_cloud = cloud
 
-    assert a.list_conduit_ids() == ("c1", "c2")
-    assert a.list_conduit_names() == ("alpha", "beta")
-    assert a.count_conduits() == 2
-    assert a.has_conduit_id("c1") is True
-    assert a.has_conduit_name("alpha") is True
-    assert a.find_conduit_id_by_name("beta") == "c2"
-    assert a.get_conduit_by_id("c1") is conduit_a
-    assert a.get_conduit_by_name("beta") is conduit_b
+    assert a.list_root_conduit_ids() == ("c1", "c2")
+    assert a.list_root_conduit_names() == ("alpha", "beta")
+    assert a.count_root_conduits() == 2
+    assert a.has_root_conduit_id("c1") is True
+    assert a.has_root_conduit_id("c3") is False
+    assert a.has_root_conduit_name("alpha") is True
+    assert a.has_root_conduit_name("gamma") is False
+    assert a.find_root_conduit_id_by_name("beta") == "c2"
+    assert a.find_root_conduit_id_by_name("gamma") is None
+    assert a.get_root_conduit_by_id("c1") is conduit_a
+    assert a.get_root_conduit_by_name("beta") is conduit_b
 
 
-def test_aether_conduit_discovery_helpers_validate_custom_frame(
+def test_aether_root_conduit_lookups_validate_custom_frame(
         aether_with_mocks,
 ) -> None:
     """
-    Verify the generic conduit-discovery helpers fail clearly for missing frames.
+    Verify the root-named lookups fail clearly for missing frames.
 
     Returns:
         None.
@@ -207447,13 +207663,246 @@ def test_aether_conduit_discovery_helpers_validate_custom_frame(
     a = aether_with_mocks
 
     with pytest.raises(ValueError, match="does not exist"):
-        a.list_conduit_ids("missing_frame")
+        a.list_root_conduit_ids("missing_frame")
 
     with pytest.raises(ValueError, match="does not exist"):
-        a.list_conduit_names("missing_frame")
+        a.list_root_conduit_names("missing_frame")
 
     with pytest.raises(ValueError, match="does not exist"):
-        a.find_conduit_id_by_name("alpha", "missing_frame")
+        a.count_root_conduits("missing_frame")
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a.has_root_conduit_id("c1", "missing_frame")
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a.has_root_conduit_name("alpha", "missing_frame")
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a.find_root_conduit_id_by_name("alpha", "missing_frame")
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a.get_root_conduit_by_name("alpha", "missing_frame")
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a.get_root_conduit_by_id("c1", "missing_frame")
+
+
+@pytest.mark.parametrize("bad_frame", [None, 7, ["default"]], ids=["none", "int", "list"])
+@pytest.mark.parametrize(
+    ("method_name", "leading_args"),
+    [
+        ("list_root_conduit_ids", ()),
+        ("list_root_conduit_names", ()),
+        ("count_root_conduits", ()),
+        ("has_root_conduit_id", ("c1",)),
+        ("has_root_conduit_name", ("alpha",)),
+        ("find_root_conduit_id_by_name", ("alpha",)),
+        ("get_root_conduit_by_name", ("alpha",)),
+        ("get_root_conduit_by_id", ("c1",)),
+        ("get_conduit_by_name", ("alpha",)),
+        ("get_conduit_by_id", ("c1",)),
+    ],
+)
+def test_conduit_lookups_reject_non_string_frame_names(
+        aether_with_mocks,
+        method_name: str,
+        leading_args: tuple,
+        bad_frame: object,
+) -> None:
+    """
+    Verify all ten conduit lookups raise TypeError naming themselves for a non-string frame.
+
+    Returns:
+        None.
+    """
+    lookup = getattr(aether_with_mocks, method_name)
+    expected = (
+        f"{method_name}: aetheric_frame_name must be a frame name string such as 'default'; "
+        f"got {type(bad_frame).__name__}."
+    )
+
+    with pytest.raises(TypeError) as excinfo:
+        lookup(*leading_args, bad_frame)
+
+    assert str(excinfo.value) == expected
+
+
+@pytest.mark.parametrize(
+    "retired_name",
+    [
+        "list_conduit_ids",
+        "list_conduit_names",
+        "count_conduits",
+        "has_conduit_id",
+        "has_conduit_name",
+        "find_conduit_id_by_name",
+        "_get_conduit_by_name",
+        "_get_conduit_by_id",
+    ],
+)
+def test_retired_root_lookup_names_are_not_exposed(retired_name: str) -> None:
+    """
+    Verify the hard rename left no alias: the retired root-only names are gone from Aether.
+
+    Returns:
+        None.
+    """
+    assert not hasattr(Aether, retired_name)
+
+
+def test_get_conduit_by_name_returns_named_scopes_from_the_frame_cloud(aether_with_mocks) -> None:
+    """
+    Verify get_conduit_by_name answers over the frame Cloud's named directory: roots and lessers alike.
+
+    Returns:
+        None.
+    """
+    a = aether_with_mocks
+    root = MagicMock()
+    lesser = MagicMock()
+    a._default_frame._conduits = {"c1": root}
+    a._default_frame._conduit_ids_by_name = {"alpha": "c1"}
+    a._default_frame._conduit_cloud._named_conduits.update({"alpha": root, "group": lesser})
+
+    assert a.get_conduit_by_name("alpha") is root
+    assert a.get_conduit_by_name("group") is lesser
+    assert a.get_conduit_by_name("group", "default") is lesser
+
+
+def test_get_conduit_by_name_missing_names_the_frame(aether_with_mocks) -> None:
+    """
+    Verify a missing name raises ValueError naming the searched frame, without chaining the Cloud's error.
+
+    Returns:
+        None.
+    """
+    a = aether_with_mocks
+
+    with pytest.raises(ValueError, match="Conduit with name 'nobody' not found in frame 'default'") as excinfo:
+        a.get_conduit_by_name("nobody")
+
+    assert excinfo.value.__cause__ is None
+    assert excinfo.value.__suppress_context__ is True
+
+
+def test_get_conduit_by_name_missing_custom_frame_raises(aether_with_mocks) -> None:
+    """
+    Verify get_conduit_by_name keeps the frame error for a custom frame that does not exist.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(ValueError, match="Aetheric frame 'missing_frame' does not exist."):
+        aether_with_mocks.get_conduit_by_name("alpha", "missing_frame")
+
+
+def test_get_conduit_by_id_returns_a_root_from_the_frame_registry(aether_with_mocks) -> None:
+    """
+    Verify a root id is answered from the frame's root registry.
+
+    Returns:
+        None.
+    """
+    a = aether_with_mocks
+    root = SimpleNamespace(_conduit_ward=None)
+    a._default_frame._conduits = {"c1": root}
+
+    assert a.get_conduit_by_id("c1") is root
+
+
+def test_get_conduit_by_id_returns_a_lesser_found_under_any_root(aether_with_mocks) -> None:
+    """
+    Verify an id missing from the root registry is searched through every root's ward.
+
+    Returns:
+        None.
+    """
+    a = aether_with_mocks
+    lesser = object()
+    empty_ward = SimpleNamespace(_get_lesser_conduit=lambda conduit_id: None)
+    holding_ward = SimpleNamespace(
+        _get_lesser_conduit=lambda conduit_id: lesser if conduit_id == "lesser-1" else None
+    )
+    a._default_frame._conduits = {
+        "r1": SimpleNamespace(_conduit_ward=empty_ward),
+        "r2": SimpleNamespace(_conduit_ward=holding_ward),
+    }
+
+    assert a.get_conduit_by_id("lesser-1") is lesser
+
+
+def test_get_conduit_by_id_skips_roots_whose_ward_is_gone(aether_with_mocks) -> None:
+    """
+    Verify a root whose ward hard teardown deleted, or whose ward is None, is skipped rather than fatal.
+
+    Returns:
+        None.
+    """
+    a = aether_with_mocks
+    lesser = object()
+    a._default_frame._conduits = {
+        "torn-down": SimpleNamespace(),
+        "leaf": SimpleNamespace(_conduit_ward=None),
+        "holder": SimpleNamespace(
+            _conduit_ward=SimpleNamespace(_get_lesser_conduit=lambda conduit_id: lesser),
+        ),
+    }
+
+    assert a.get_conduit_by_id("lesser-1") is lesser
+
+
+def test_get_conduit_by_id_walks_a_snapshot_of_the_root_registry(aether_with_mocks) -> None:
+    """
+    Verify a root-registry change during the walk (a concurrent conjure or cleanup) cannot break the lookup.
+
+    The first root's ward removes the second root from the live registry, as a concurrent cleanup would;
+    iterating the live dict instead of a snapshot would raise "dictionary changed size during iteration".
+
+    Returns:
+        None.
+    """
+    a = aether_with_mocks
+    lesser = object()
+    roots: dict = {}
+
+    def remove_second_root(conduit_id: str) -> None:
+        """Drop the second root from the live registry mid-walk and report no match."""
+        roots.pop("r2", None)
+        return None
+
+    roots["r1"] = SimpleNamespace(_conduit_ward=SimpleNamespace(_get_lesser_conduit=remove_second_root))
+    roots["r2"] = SimpleNamespace(_conduit_ward=SimpleNamespace(_get_lesser_conduit=lambda conduit_id: lesser))
+    a._default_frame._conduits = roots
+
+    assert a.get_conduit_by_id("lesser-1") is lesser
+    assert "r2" not in roots
+
+
+def test_get_conduit_by_id_missing_names_the_frame(aether_with_mocks) -> None:
+    """
+    Verify an id no live conduit carries raises ValueError naming the searched frame.
+
+    Returns:
+        None.
+    """
+    a = aether_with_mocks
+    a._default_frame._conduits = {
+        "r1": SimpleNamespace(_conduit_ward=SimpleNamespace(_get_lesser_conduit=lambda conduit_id: None)),
+    }
+
+    with pytest.raises(ValueError, match="Conduit with id 'ghost' not found in frame 'default'"):
+        a.get_conduit_by_id("ghost")
+
+
+def test_get_conduit_by_id_missing_custom_frame_raises(aether_with_mocks) -> None:
+    """
+    Verify get_conduit_by_id keeps the frame error for a custom frame that does not exist.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(ValueError, match="Aetheric frame 'missing_frame' does not exist."):
+        aether_with_mocks.get_conduit_by_id("c1", "missing_frame")
 
 # ----------------------------------------------------------------------
 # 4. Delegation Tests (Configuration & Spells)
@@ -213218,7 +213667,7 @@ END FILE: tests/unit/melder/aether/test_codegen_validation_strategy_unit_matrix.
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_command_system_direct.py
-CONTENT SHA256: 25ae0eeee9a793ab7dac7ec4dc863abfad3003d64aadfab518557af09dbb1798
+CONTENT SHA256: 1d8974f709a18f1e7d5acfc11e45170e9d76ef0967877b95a99a394f864fa56b
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import SimpleNamespace
@@ -213456,6 +213905,32 @@ def test_command_system_conduit_lookup_reports_missing_lesser_conduit_and_name_m
     assert command_system.find_conduit_id_by_name("missing", frame_name="ops") is None
 
 
+def test_command_system_conduit_lookup_reports_a_missing_runtime_frame_before_the_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A lookup whose runtime frame Aether does not hold keeps the frame error, not the id error.
+
+    Returns:
+        None.
+    """
+    command_system, viewer, _ = _make_command_system()
+    viewer.compiled_access_surface.enabled_conduit_ids = ("missing-lesser",)
+    monkeypatch.setattr(
+        type(command_system),
+        "_aether",
+        SimpleNamespace(
+            get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(
+                ValueError(f"Aetheric frame '{frame_name}' does not exist.")
+            ),
+            _aetheric_frames={},
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Aetheric frame 'ops' does not exist."):
+        command_system.get_conduit_by_id("missing-lesser")
+
+
 def test_command_system_find_conduit_id_by_name_reraises_non_missing_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -213683,7 +214158,7 @@ END FILE: tests/unit/melder/aether/test_command_system_direct.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_conduit_cloud.py
-CONTENT SHA256: c6fcab497bfd3e5958700673c1b5ed118e85908f01011efd5b81377dddaf1c38
+CONTENT SHA256: dd2d9e87b0ecb59c5b02bede68f79399881f413e3e25709e583666d0a398ec7a
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -213852,6 +214327,52 @@ def test_list_cloud_names_reflects_published_named_directory(
     cloud._register_named_conduit(mock_conduit)
 
     assert cloud.list_cloud_names() == ("test_conduit",)
+
+
+def test_list_conduits_returns_the_named_scopes_by_identity(
+        conduit_cloud,
+        mock_conduit,
+) -> None:
+    """
+    Verify list_conduits returns the conduits behind the named directory and drops a retired name.
+    """
+    cloud, root_conduits, conduit_ids_by_name = conduit_cloud
+    root_conduits["conduit-1"] = mock_conduit
+    conduit_ids_by_name["test_conduit"] = "conduit-1"
+    lesser = MagicMock()
+    lesser.id = "lesser-1"
+    lesser._id = "lesser-1"
+    lesser.name = "group"
+    lesser._name = "group"
+    lesser._conduit_state = ConduitState.lesser
+
+    assert cloud.list_conduits() == ()
+
+    cloud._register_named_conduit(mock_conduit)
+    cloud._register_named_conduit(lesser)
+    listed = cloud.list_conduits()
+
+    assert isinstance(listed, tuple)
+    assert len(listed) == 2
+    assert {id(conduit) for conduit in listed} == {id(mock_conduit), id(lesser)}
+    assert {conduit._name for conduit in listed} == set(cloud.list_conduit_names())
+
+    cloud._unregister_named_conduit(lesser)
+    remaining = cloud.list_conduits()
+
+    assert len(remaining) == 1
+    assert remaining[0] is mock_conduit
+
+
+def test_list_conduits_raises_after_cleanup(conduit_cloud) -> None:
+    """
+    Verify list_conduits guards against use-after-clean like every Cloud read.
+    """
+    cloud, _, _ = conduit_cloud
+    cloud.cleanup()
+
+    with pytest.raises(RuntimeError):
+        cloud.list_conduits()
 
 
 def test_frame_name_property_returns_configured_name(conduit_cloud) -> None:
@@ -226918,7 +227439,7 @@ END FILE: tests/unit/melder/aether/test_lookup_container.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_nexus.py
-CONTENT SHA256: 60a72cab9d05a4565b262594699bb50edcc94c26c6f113ed5287c2933b948329
+CONTENT SHA256: 175606a2ed12d741237483f594aea6e178e478c928239b136546b1dc1d9ccd5e
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -230179,11 +230700,11 @@ def test_command_system_execute_target_method_can_force_strong_result_binding() 
     assert workstation.get("status", store="attributes") == "ops-done"
 
 
-def test_capability_command_system_can_get_conduit_by_id_with_lesser_fallback(
+def test_capability_command_system_get_conduit_by_id_resolves_lessers_through_aether(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify capability conduit lookup falls back to lesser-conduit lineage traversal when root lookup misses.
+    Verify capability conduit lookup returns a lesser through Aether's live lookup (roots, then root wards).
 
     Returns:
         None.
@@ -230203,15 +230724,18 @@ def test_capability_command_system_can_get_conduit_by_id_with_lesser_fallback(
             _get_lesser_conduit=lambda conduit_id: sentinel,
         )
     )
+    frame = SimpleNamespace(_conduits={"root-1": root_conduit})
+
+    def live_lookup(conduit_id: str, frame_name: str) -> object:
+        """Run Aether's live walk over the stub frame, raising like Aether.get_conduit_by_id on a miss."""
+        conduit = Aether._find_live_conduit(frame, conduit_id)
+        if conduit is None:
+            raise ValueError(f"Conduit with id '{conduit_id}' not found in frame '{frame_name}'.")
+        return conduit
+
     aether_stub = SimpleNamespace(
-        get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(
-            ValueError("missing")
-        ),
-        _aetheric_frames={
-            "ops": SimpleNamespace(
-                _conduits={"root-1": root_conduit},
-            )
-        },
+        get_conduit_by_id=live_lookup,
+        _aetheric_frames={"ops": frame},
     )
     monkeypatch.setattr(
         type(space.command_system),
@@ -230505,7 +231029,7 @@ def test_capability_command_system_denies_conduit_object_by_id_when_conduit_acl_
     monkeypatch.setattr(
         type(space.command_system),
         "_aether",
-        SimpleNamespace(_get_conduit_by_id=lambda conduit_id, frame_name: object()),
+        SimpleNamespace(get_conduit_by_id=lambda conduit_id, frame_name: object()),
     )
 
     with pytest.raises(
@@ -230733,7 +231257,7 @@ def test_static_room_returns_live_spell_runtime_object_by_index_id(
     )
     monkeypatch.setattr(
         type(type(space.command_system)._aether),
-        "_get_conduit_by_id",
+        "get_root_conduit_by_id",
         lambda self, conduit_id, frame_name: owner_conduit,
     )
 
@@ -231168,7 +231692,7 @@ def test_static_room_denies_many_and_spellspace_spell_runtime_object_access(
         type(space.command_system),
         "_aether",
         SimpleNamespace(
-            _get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+            get_root_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
         ),
     )
 
@@ -231249,7 +231773,7 @@ def test_static_command_system_reports_spell_status_for_live_spell() -> None:
         )
     )
     space.command_system._aether = SimpleNamespace(
-        _get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+        get_root_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
     )
 
     status = space.command_system.describe_spell_status_by_index_id(
@@ -231324,7 +231848,7 @@ def test_static_command_system_reports_spell_status_for_unsupported_spell() -> N
         has_live_creation=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: True
     )
     space.command_system._aether = SimpleNamespace(
-        _get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+        get_root_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
     )
 
     status = space.command_system.describe_spell_status_by_source_id(
@@ -231405,7 +231929,7 @@ def test_static_room_denies_spell_runtime_object_when_not_live(
     )
     monkeypatch.setattr(
         type(type(space.command_system)._aether),
-        "_get_conduit_by_id",
+        "get_root_conduit_by_id",
         lambda self, conduit_id, frame_name: owner_conduit,
     )
 
@@ -240626,7 +241150,7 @@ END FILE: tests/unit/melder/aether/test_spell_record.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_static_command_system_direct.py
-CONTENT SHA256: a91370650be6d12940beb7167041abfce500fddf43e332ecbd8e73c9fe834cca
+CONTENT SHA256: 88f35b46af8bf397d40ea7b65ecb943c132a51e687315fedd8cb8f6f846357aa
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import SimpleNamespace
@@ -240738,7 +241262,7 @@ def test_static_command_system_status_reports_missing_and_ambiguous_publication(
 
     viewer.descriptor.spell_records_by_key.pop("ops-spellbook:sha-1-shadow")
     command_system._aether = SimpleNamespace(
-        _get_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
+        get_root_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
             has_live_creation=lambda *, spell: False
         )
     )
@@ -240762,7 +241286,7 @@ def test_static_command_system_reports_ambiguous_index_and_command_disabled_not_
     viewer.descriptor.spell_records_by_key.pop("ops-spellbook:sha-2")
     viewer.compiled_access_surface.command_frame_enabled = False
     command_system._aether = SimpleNamespace(
-        _get_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
+        get_root_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
             has_live_creation=lambda *, spell: True
         )
     )
@@ -240773,7 +241297,7 @@ def test_static_command_system_reports_ambiguous_index_and_command_disabled_not_
     viewer.compiled_access_surface.command_frame_enabled = True
     viewer.compiled_access_surface.enabled_spell_index_ids = ("lineage-1",)
     command_system._aether = SimpleNamespace(
-        _get_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
+        get_root_conduit_by_id=lambda conduit_id, frame_name: SimpleNamespace(
             has_live_creation=lambda *, spell: False
         )
     )
@@ -240820,7 +241344,7 @@ END FILE: tests/unit/melder/aether/test_static_command_system_direct.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_static_frame_viewer.py
-CONTENT SHA256: 37e192dd61924e7041ab84d67280aadc0f692d1856898cac7b288efd1acd1dc7
+CONTENT SHA256: e8a15f11bce1a130253a9504e049e1eafa2446017aa30116ea2a19a6d791039f
 SOURCE ENCODING: utf-8
 ================================================================================
 from types import SimpleNamespace
@@ -241035,52 +241559,30 @@ def test_static_frame_viewer_live_projection_filters_and_owner_resolution_work(m
     )
     assert original_is_live(viewer, "ops", spell_record) is True
 
+    # Owner resolution is Aether's live lookup (roots and attached lessers); the viewer maps a miss to None.
     fake_lesser = object()
-    fake_ward = SimpleNamespace(_get_lesser_conduit=lambda conduit_id: fake_lesser)
-    fake_frame = SimpleNamespace(_conduits={"root": SimpleNamespace(_conduit_ward=fake_ward)})
+    seen_lookups: list[tuple[str, str]] = []
+
+    def live_lookup(conduit_id: str, frame_name: str) -> object:
+        """Stand in for Aether.get_conduit_by_id: record the call and return the live lesser."""
+        seen_lookups.append((conduit_id, frame_name))
+        return fake_lesser
+
     monkeypatch.setattr(
         StaticFrameViewer,
         "_aether",
-        SimpleNamespace(
-            get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(ValueError("missing")),
-            _aetheric_frames={"ops": fake_frame},
-            _ensure_default_frame=lambda: None,
-            _default_frame=fake_frame,
-        ),
+        SimpleNamespace(get_conduit_by_id=live_lookup),
         raising=False,
     )
-    assert original_get_owner(viewer, "ops", "missing") is fake_lesser
-    assert original_get_owner(viewer, "default", "missing") is fake_lesser
+    assert original_get_owner(viewer, "ops", "lesser-id") is fake_lesser
+    assert original_get_owner(viewer, "default", "lesser-id") is fake_lesser
+    assert seen_lookups == [("lesser-id", "ops"), ("lesser-id", "default")]
 
     monkeypatch.setattr(
         StaticFrameViewer,
         "_aether",
         SimpleNamespace(
             get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(ValueError("missing")),
-            _aetheric_frames={"ops": None},
-            _ensure_default_frame=lambda: None,
-            _default_frame=None,
-        ),
-        raising=False,
-    )
-    assert original_get_owner(viewer, "ops", "missing") is None
-
-    no_match_frame = SimpleNamespace(
-        _conduits={
-            "root": SimpleNamespace(_conduit_ward=None),
-            "root-2": SimpleNamespace(
-                _conduit_ward=SimpleNamespace(_get_lesser_conduit=lambda conduit_id: None)
-            ),
-        }
-    )
-    monkeypatch.setattr(
-        StaticFrameViewer,
-        "_aether",
-        SimpleNamespace(
-            get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(ValueError("missing")),
-            _aetheric_frames={"ops": no_match_frame},
-            _ensure_default_frame=lambda: None,
-            _default_frame=no_match_frame,
         ),
         raising=False,
     )

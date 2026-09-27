@@ -10,7 +10,7 @@
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-27T10:41:49Z
-- Updated: 2026-09-27T12:11:14Z
+- Updated: 2026-09-27T12:18:07Z
 
 ## Objective
 Land the owner-approved API in one change: the eight root-only Aether lookups become `*_root_*` names; the reused
@@ -358,6 +358,58 @@ usage migrates (TransferOfOwnership stays root-only; the CommandSystem and Stati
   NEXT: Read _build_asset_runner.py and llm_support/_builder.py in full, plus the procedure the 0.2.74 rebuild
     used, before running either builder.
   REREAD: REQUIRED
+  SCORE_0_TO_10: 8
+
+- DATETIME: 2026-09-27T12:16:35Z
+  TYPE: PLAN
+  CLAIM: Both builders read in full; rebuild plan. (1) The asset runner discovers _agent_documentation,
+    _bind_guard and _system_documents. The first two hash and harvest every src/melder .py; the third verifies the
+    architecture, components and graph documents against their indexes, then writes a section index, three payload
+    modules, the graph adjacency module and the manifest. write_payloads unlinks the old payloads first, which the
+    connected folder refuses (the 0.2.74 lane hit it), so the runner runs in the VM worktree, whose src .py files
+    and system docs equal the device's (diff at 12:12Z; only test .melc caches differ). Its eight outputs are
+    converted to CRLF like the committed files (all eight are CRLF on the device) and copied back after re-checking
+    that the device inputs and outputs did not move. (2) llm_support/_builder.py needs .git and reads the working
+    tree, so it runs on the device with GIT_OPTIONAL_LOCKS=0 (git ls-files only); it writes through a temporary
+    file and os.replace, no delete. The only untracked, non-ignored file outside context_compass is this lane's
+    regression test, so --include-untracked adds exactly that file, and a plain --check reports the tests corpus
+    stale until the owner commits it. (3) Another writer's edits to two benchmark gauntlet files (11:52Z) enter
+    only the LLM "other" corpus, as they stand at build time. Then: release note (lookup coverage in the packaged
+    system-documents bullet; asset line 0.2.78 -> 0.2.79), asset-currency suites on 3.14t and GIL, full tree on
+    3.14t.
+  EVIDENCE:
+  - src/melder/_build_assets/_build_asset_runner.py:246-362
+  - src/melder/_build_assets/_system_documents/_builder.py:374-435
+  - src/melder/_build_assets/_system_documents/_builder.py:542-627
+  - src/melder/_build_assets/_system_documents/_builder.py:974-1002
+  - llm_support/_builder.py:222-242
+  - llm_support/_builder.py:243-312
+  - llm_support/_builder.py:703-766
+  - context_compass/tickets/tasks/completed/2026-09-26_remove_nested_slot_guard_take_task.md:436-477
+  IMPACT: The version-stamp test turns green without deletes on the device. The LLM bundles describe the working
+    tree at build time, including one untracked file and another lane's edits.
+  NEXT: Run the asset runner in the worktree, convert to CRLF, --check.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-09-27T12:18:07Z
+  TYPE: MEASURE
+  CLAIM: Build assets rebuilt at v0.2.79. In the worktree the runner wrote agent documentation (460 entries), bind
+    guard (619, unchanged) and system documents (4; no pair refused); the eight outputs were converted to CRLF and
+    --check was OK (schema 2.0.0, key match). Before copying, the device's src .py files and the six system-document
+    files still equalled the worktree and its eight outputs still equalled the VM backup (asset_backup_0278). After
+    copying, all eight compare byte-equal and the device --check is OK. What moved: version stamps and source keys;
+    the architecture and components proofs (3044 -> 3087 and 9841 -> 9913 lines) and the graph's (27517 -> 27524);
+    the section index (784 -> 787 sections: the lookup-coverage diagram, the Aether Conduit Lookups subcomponent and
+    the lookup flow); the payload texts. Graph adjacency changed only its version stamp (no edge moved).
+  EVIDENCE:
+  - src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py:1-82
+  - src/melder/_build_assets/_system_documents/manifest/system_documents_index.py:1-818
+  - src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py:1-641
+  IMPACT: The version-stamp test's input is current. As after the 0.2.72 and 0.2.74 rebuilds, the graph descriptors
+    of the eight asset modules lag one rebuild (their source hashes sit inside the graph payload).
+  NEXT: LLM bundles on the device: --include-untracked with GIT_OPTIONAL_LOCKS=0, then --check with and without it.
+  REREAD: HELPFUL
   SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
