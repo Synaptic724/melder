@@ -203,8 +203,13 @@ class CommandSystem(Cleanable):
         Contract:
             - Enforces raw-runtime access, frame command enablement, and
               conduit-level ACL checks before touching Aether runtime state.
-            - Falls back through lesser-conduit lineage traversal when the root
-              conduit lookup misses.
+            - Resolves through `Aether.get_conduit_by_id`, which covers the
+              frame's live roots and their attached lesser lineage, named or
+              anonymous, at any depth.
+            - Keeps this surface's errors: a missing frame raises the frame
+              error from `_get_required_runtime_frame`, and an id that is not
+              live in the frame raises "Conduit id '<id>' was not found in
+              frame '<frame>'." chained from Aether's error.
             - Requires the caller to hold `self._lock`.
 
         Args:
@@ -232,21 +237,15 @@ class CommandSystem(Cleanable):
                 conduit_id,
                 frame_name,
             )
-        except ValueError:
-            frame = self._get_required_runtime_frame(frame_name)
-            for root_conduit in frame._conduits.values():
-                conduit_ward = root_conduit._conduit_ward
-                if conduit_ward is None:
-                    continue
-                lesser_conduit = conduit_ward._get_lesser_conduit(conduit_id)
-                if lesser_conduit is not None:
-                    return lesser_conduit
+        except ValueError as error:
+            # Re-raise in this surface's wording: the frame error first, else the id error.
+            self._get_required_runtime_frame(frame_name)
             raise ValueError(
                 "Conduit id '{0}' was not found in frame '{1}'.".format(
                     conduit_id,
                     frame_name,
                 )
-            )
+            ) from error
 
     def _get_conduit_by_name_locked(
             self,

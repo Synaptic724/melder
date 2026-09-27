@@ -427,6 +427,14 @@ _REQUEST_OBJECTS_PER_ROOT = 63
 _REQUEST_SCOPE_RUNS_DEFAULT = 10
 _WORKER_A_OBJECTS_PER_ROOT = 25
 _WORKER_B_OBJECTS_PER_ROOT = 20
+# Objects built INSIDE the request phase of one cycle (variant 0): the whole-cycle
+# minimum minus the outer-scope objects (session + its transient helper chain).
+# request: 63 - (RequestSession, Layer4..Layer1, BootstrapAObject) = 57
+# worker_a: 25 - (WorkerASession, BootstrapBObject) = 23
+# worker_b: 20 - (WorkerBSession, BootstrapCObject) = 18
+_REQUEST_INNER_OBJECTS_PER_ROOT = 57
+_WORKER_A_INNER_OBJECTS_PER_ROOT = 23
+_WORKER_B_INNER_OBJECTS_PER_ROOT = 18
 _WORKER_A_JOBS_DEFAULT = 25
 _WORKER_B_JOBS_DEFAULT = 30
 _BOOTSTRAP_FANOUT_PER_SINGLETON = 5
@@ -479,6 +487,14 @@ class _RuntimeOps:
     worker_a_scope_cycle: Callable[[int], _ScopeCycleMetrics]
     worker_b_scope_cycle: Callable[[int], _ScopeCycleMetrics]
     cleanup: Callable[[], None]
+    # Untimed: resolve the request lane's objects through two outer scopes and
+    # two requests so `verify_scope_semantics` can check identities. Never
+    # called from a timed path.
+    probe_scopes: Callable[[], dict[str, Any]] | None = None
+    # False when the adapter has no scope teardown to time: its cleanup
+    # fields are zero because nothing is measured there, not because
+    # teardown is free (dependency-injector leaves scope garbage to the GC).
+    cleanup_timed: bool = True
 
 
 @dataclass(frozen=True)
@@ -707,6 +723,8 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
                 root2 = _get(RequestRoot)
                 if not isinstance(root1, RequestRoot) or not isinstance(root2, RequestRoot):
                     raise AssertionError("Dependency Injector: request scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dependency Injector: request-scoped root not cached within the request")
 
         return _run_in_two_context_scopes(
             outer_cls=RequestSession,
@@ -731,6 +749,8 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
                 root2 = _get(WorkerAJobRoot)
                 if not isinstance(root1, WorkerAJobRoot) or not isinstance(root2, WorkerAJobRoot):
                     raise AssertionError("Dependency Injector: worker A scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dependency Injector: worker A root not cached within the request")
 
         return _run_in_two_context_scopes(
             outer_cls=WorkerASession,
@@ -755,6 +775,8 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
                 root2 = _get(WorkerBJobRoot)
                 if not isinstance(root1, WorkerBJobRoot) or not isinstance(root2, WorkerBJobRoot):
                     raise AssertionError("Dependency Injector: worker B scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dependency Injector: worker B root not cached within the request")
 
         return _run_in_two_context_scopes(
             outer_cls=WorkerBSession,
@@ -770,6 +792,29 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
                 reset()
         gc.collect()
 
+    def probe_scopes() -> dict[str, Any]:
+        probe: dict[str, Any] = {"shared": _get(AppSingletonE)}
+
+        def outer_run(tag: str) -> None:
+            probe[f"session_{tag}"] = _get(RequestSession)
+            probe[f"session_{tag}_again"] = _get(RequestSession)
+
+            def request_run() -> None:
+                probe[f"root_{tag}"] = _get(RequestRoot)
+                probe[f"root_{tag}_again"] = _get(RequestRoot)
+                probe[f"marker_{tag}"] = _get(RequestScopeMarker)
+                probe[f"group_{tag}"] = _get(RequestGroup)
+
+            def request_run_2() -> None:
+                probe[f"root_{tag}_request2"] = _get(RequestRoot)
+
+            contextvars.copy_context().run(request_run)
+            contextvars.copy_context().run(request_run_2)
+
+        for tag in ("a", "b"):
+            contextvars.Context().run(outer_run, tag)
+        return probe
+
     return _RuntimeOps(
         name="dependency-injector",
         spawn_singletons=spawn_singletons,
@@ -778,6 +823,8 @@ def _build_runtime_dependency_injector() -> _RuntimeOps:
         worker_a_scope_cycle=worker_a_scope_cycle,
         worker_b_scope_cycle=worker_b_scope_cycle,
         cleanup=cleanup,
+        probe_scopes=probe_scopes,
+        cleanup_timed=False,
     )
 
 
@@ -790,6 +837,17 @@ def _build_runtime_dishka() -> _RuntimeOps:
     request_scoped_types = set(_REQUEST_SCOPED_TYPES)
     request_scope_transients = set(_REQUEST_SCOPE_TRANSIENT_TYPES)
 
+    # GAUNTLET_DISHKA_LAYER_SCOPE selects where the transient Layer1-4Scope
+    # helpers live (they stay `cache=False`, the `Existence.many` equivalent):
+    #   app     - original mapping: Scope.APP, resolved through the root
+    #             container (and therefore under its lock) from every session;
+    #   session - Scope.SESSION, constructed inside the session container that
+    #             uses them. Bootstrap objects stay at Scope.APP either way
+    #             because `bootstrap_fanout` resolves them from the root.
+    layer_scope_name = _dishka_layer_scope_name()
+    layer_scope = Scope.SESSION if layer_scope_name == "session" else Scope.APP
+    layer_types = {Layer1Scope, Layer2Scope, Layer3Scope, Layer4Scope}
+
     provider = Provider()
     for cls in _ALL_CLASSES:
         if cls in singleton_types:
@@ -800,6 +858,8 @@ def _build_runtime_dishka() -> _RuntimeOps:
             provider.provide(cls, scope=Scope.REQUEST, cache=True)
         elif cls in request_scope_transients:
             provider.provide(cls, scope=Scope.REQUEST, cache=False)
+        elif cls in layer_types:
+            provider.provide(cls, scope=layer_scope, cache=False)
         else:
             provider.provide(cls, scope=Scope.APP, cache=False)
 
@@ -892,6 +952,8 @@ def _build_runtime_dishka() -> _RuntimeOps:
                 root2 = request_container.get(RequestRoot)
                 if not isinstance(root1, RequestRoot) or not isinstance(root2, RequestRoot):
                     raise AssertionError("Dishka: request scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dishka: request scope root not cached within the request")
 
         return _run_in_session_and_request_scopes(
             outer_cls=RequestSession,
@@ -916,6 +978,8 @@ def _build_runtime_dishka() -> _RuntimeOps:
                 root2 = request_container.get(WorkerAJobRoot)
                 if not isinstance(root1, WorkerAJobRoot) or not isinstance(root2, WorkerAJobRoot):
                     raise AssertionError("Dishka: worker A scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dishka: worker A scope root not cached within the request")
 
         return _run_in_session_and_request_scopes(
             outer_cls=WorkerASession,
@@ -940,6 +1004,8 @@ def _build_runtime_dishka() -> _RuntimeOps:
                 root2 = request_container.get(WorkerBJobRoot)
                 if not isinstance(root1, WorkerBJobRoot) or not isinstance(root2, WorkerBJobRoot):
                     raise AssertionError("Dishka: worker B scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Dishka: worker B scope root not cached within the request")
 
         return _run_in_session_and_request_scopes(
             outer_cls=WorkerBSession,
@@ -952,6 +1018,21 @@ def _build_runtime_dishka() -> _RuntimeOps:
         container.close()
         gc.collect()
 
+    def probe_scopes() -> dict[str, Any]:
+        probe: dict[str, Any] = {"shared": container.get(AppSingletonE)}
+        for tag in ("a", "b"):
+            with container(scope=Scope.SESSION) as outer_container:
+                probe[f"session_{tag}"] = outer_container.get(RequestSession)
+                probe[f"session_{tag}_again"] = outer_container.get(RequestSession)
+                with outer_container(scope=Scope.REQUEST) as request_container:
+                    probe[f"root_{tag}"] = request_container.get(RequestRoot)
+                    probe[f"root_{tag}_again"] = request_container.get(RequestRoot)
+                    probe[f"marker_{tag}"] = request_container.get(RequestScopeMarker)
+                    probe[f"group_{tag}"] = request_container.get(RequestGroup)
+                with outer_container(scope=Scope.REQUEST) as request_container:
+                    probe[f"root_{tag}_request2"] = request_container.get(RequestRoot)
+        return probe
+
     return _RuntimeOps(
         name="dishka",
         spawn_singletons=spawn_singletons,
@@ -960,6 +1041,7 @@ def _build_runtime_dishka() -> _RuntimeOps:
         worker_a_scope_cycle=worker_a_scope_cycle,
         worker_b_scope_cycle=worker_b_scope_cycle,
         cleanup=cleanup,
+        probe_scopes=probe_scopes,
     )
 
 
@@ -1107,6 +1189,8 @@ def _build_runtime_melder() -> _RuntimeOps:
                 root2 = space.meld(spell_id=spell_ids[RequestRoot])
                 if not isinstance(root1, RequestRoot) or not isinstance(root2, RequestRoot):
                     raise AssertionError("Melder: request scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Melder: request scope root not cached within the request")
 
         return _run_in_lesser_and_spellspace(
             outer_cls=RequestSession,
@@ -1131,6 +1215,8 @@ def _build_runtime_melder() -> _RuntimeOps:
                 root2 = space.meld(spell_id=spell_ids[WorkerAJobRoot])
                 if not isinstance(root1, WorkerAJobRoot) or not isinstance(root2, WorkerAJobRoot):
                     raise AssertionError("Melder: worker A scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Melder: worker A scope root not cached within the request")
 
         return _run_in_lesser_and_spellspace(
             outer_cls=WorkerASession,
@@ -1155,6 +1241,8 @@ def _build_runtime_melder() -> _RuntimeOps:
                 root2 = space.meld(spell_id=spell_ids[WorkerBJobRoot])
                 if not isinstance(root1, WorkerBJobRoot) or not isinstance(root2, WorkerBJobRoot):
                     raise AssertionError("Melder: worker B scope variant returned wrong type")
+                if root1 is not root2:
+                    raise AssertionError("Melder: worker B scope root not cached within the request")
 
         return _run_in_lesser_and_spellspace(
             outer_cls=WorkerBSession,
@@ -1173,6 +1261,24 @@ def _build_runtime_melder() -> _RuntimeOps:
             Conduit._aether = aether2
         gc.collect()
 
+    def probe_scopes() -> dict[str, Any]:
+        probe: dict[str, Any] = {"shared": _get(AppSingletonE)}
+        for tag in ("a", "b"):
+            lesser = conduit.create_lesser_conduit()
+            try:
+                probe[f"session_{tag}"] = lesser.meld(spell_id=spell_ids[RequestSession])
+                probe[f"session_{tag}_again"] = lesser.meld(spell_id=spell_ids[RequestSession])
+                with lesser.enter_spellspace() as space:
+                    probe[f"root_{tag}"] = space.meld(spell_id=spell_ids[RequestRoot])
+                    probe[f"root_{tag}_again"] = space.meld(spell_id=spell_ids[RequestRoot])
+                    probe[f"marker_{tag}"] = space.meld(spell_id=spell_ids[RequestScopeMarker])
+                    probe[f"group_{tag}"] = space.meld(spell_id=spell_ids[RequestGroup])
+                with lesser.enter_spellspace() as space:
+                    probe[f"root_{tag}_request2"] = space.meld(spell_id=spell_ids[RequestRoot])
+            finally:
+                lesser.cleanup()
+        return probe
+
     return _RuntimeOps(
         name="melder",
         spawn_singletons=spawn_singletons,
@@ -1181,7 +1287,104 @@ def _build_runtime_melder() -> _RuntimeOps:
         worker_a_scope_cycle=worker_a_scope_cycle,
         worker_b_scope_cycle=worker_b_scope_cycle,
         cleanup=cleanup,
+        probe_scopes=probe_scopes,
     )
+
+
+def _dishka_layer_scope_name() -> str:
+    """
+    Read GAUNTLET_DISHKA_LAYER_SCOPE (app|session; default app = the original mapping).
+    """
+    raw = (os.getenv("GAUNTLET_DISHKA_LAYER_SCOPE") or "app").strip().lower()
+    if raw not in {"app", "session"}:
+        raise AssertionError(f"GAUNTLET_DISHKA_LAYER_SCOPE must be app or session, got {raw!r}")
+    return raw
+
+
+def _layer_chain(session: Any) -> tuple[Any, ...]:
+    """
+    Return (Layer4, Layer3, Layer2, Layer1, BootstrapAObject) as reached from a RequestSession.
+    """
+    layer4 = session.scope
+    layer3 = layer4.prior
+    layer2 = layer3.prior
+    layer1 = layer2.prior
+    return layer4, layer3, layer2, layer1, layer1.entry
+
+
+def verify_scope_semantics(ops: _RuntimeOps) -> int:
+    """
+    Untimed correctness phase shared by every library: prove the adapter delivers the declared lifetimes.
+
+    Checks (request lane, two outer scopes "a"/"b", two requests inside "a"):
+        - session objects are cached within an outer scope and distinct across outer scopes;
+        - the transient Layer1-4Scope chain and BootstrapAObject are built fresh per session (never cached);
+        - request-scoped objects (root, marker) are cached within a request and distinct across requests,
+          including a second request inside the same session;
+        - app singletons are one object everywhere (root container, sessions, layer branches);
+        - dependency identities hold: roots and markers reference their session, every group references the
+          session, the five groups and fifty leaves of a root are distinct objects, the extra transient group
+          is not one of the root's groups and shares no leaf with it.
+
+    Returns:
+        int: number of assertions performed (for the report line).
+
+    Raises:
+        AssertionError: naming the library and the failed contract.
+    """
+    if ops.probe_scopes is None:
+        raise AssertionError(f"{ops.name}: adapter has no probe_scopes")
+    probe = ops.probe_scopes()
+    checks = 0
+
+    def expect(condition: bool, contract: str) -> None:
+        nonlocal checks
+        checks += 1
+        if not condition:
+            raise AssertionError(f"{ops.name}: scope semantics violated - {contract}")
+
+    shared = probe["shared"]
+    expect(isinstance(shared, AppSingletonE), "root container resolves AppSingletonE")
+    for tag in ("a", "b"):
+        session = probe[f"session_{tag}"]
+        expect(isinstance(session, RequestSession), f"session_{tag} type")
+        expect(session is probe[f"session_{tag}_again"], f"session_{tag} cached within its outer scope")
+        expect(session.shared is shared, f"session_{tag}.shared is the app singleton")
+        root = probe[f"root_{tag}"]
+        expect(root is probe[f"root_{tag}_again"], f"root_{tag} cached within its request")
+        expect(root.session is session, f"root_{tag}.session is its session")
+        marker = probe[f"marker_{tag}"]
+        expect(marker.session is session, f"marker_{tag}.session is its session")
+        root2 = probe[f"root_{tag}_request2"]
+        expect(root2 is not root, f"root_{tag} differs across two requests of one session")
+        expect(root2.session is session, f"root_{tag}_request2 still references the shared session")
+        groups = root.groups
+        expect(len(groups) == 5 and len({id(group) for group in groups}) == 5, f"root_{tag} has 5 distinct groups")
+        leaves = [leaf for group in groups for leaf in group.leaves]
+        expect(len(leaves) == 50 and len({id(leaf) for leaf in leaves}) == 50, f"root_{tag} has 50 distinct leaves")
+        for group in groups:
+            expect(group.session is session, f"root_{tag} groups reference the session")
+        extra = probe[f"group_{tag}"]
+        expect(extra.session is session, f"group_{tag}.session is its session")
+        expect(all(extra is not group for group in groups), f"group_{tag} is not one of the root's groups")
+        leaf_ids = {id(leaf) for leaf in leaves}
+        expect(all(id(leaf) not in leaf_ids for leaf in extra.leaves), f"group_{tag} shares no leaf with the root")
+        layer4, layer3, layer2, layer1, bootstrap = _layer_chain(session)
+        expect(isinstance(layer4, Layer4Scope) and isinstance(bootstrap, BootstrapAObject), f"layer chain of session_{tag}")
+        expect(layer1.shared is shared, f"Layer1Scope.shared of session_{tag} is the app singleton")
+        expect(isinstance(bootstrap.root, AppSingletonA), f"BootstrapAObject.root of session_{tag}")
+
+    expect(probe["session_a"] is not probe["session_b"], "sessions differ across outer scopes")
+    expect(probe["root_a"] is not probe["root_b"], "roots differ across outer scopes")
+    chain_a = _layer_chain(probe["session_a"])
+    chain_b = _layer_chain(probe["session_b"])
+    for index, name in enumerate(("Layer4Scope", "Layer3Scope", "Layer2Scope", "Layer1Scope", "BootstrapAObject")):
+        expect(chain_a[index] is not chain_b[index], f"{name} is transient (fresh per session)")
+    expect(chain_a[4].root is chain_b[4].root, "AppSingletonA shared through both bootstrap objects")
+    expect(chain_a[2].branch is chain_b[2].branch, "AppSingletonB shared through both Layer2Scope branches")
+    expect(chain_a[1].branch is chain_b[1].branch, "AppSingletonC shared through both Layer3Scope branches")
+    expect(chain_a[0].branch is chain_b[0].branch, "AppSingletonD shared through both Layer4Scope branches")
+    return checks
 
 
 def _build_ops(lib: str) -> _RuntimeOps:
@@ -1203,6 +1406,19 @@ def _lane_objects_per_cycle(name: str) -> int:
         return _WORKER_A_OBJECTS_PER_ROOT
     if name == "worker_b":
         return _WORKER_B_OBJECTS_PER_ROOT
+    raise AssertionError(f"Unknown lane: {name}")
+
+
+def _lane_inner_objects_per_cycle(name: str) -> int:
+    """
+    Objects built inside the request phase of one cycle (variant 0 minimum); see the constants.
+    """
+    if name == "request":
+        return _REQUEST_INNER_OBJECTS_PER_ROOT
+    if name == "worker_a":
+        return _WORKER_A_INNER_OBJECTS_PER_ROOT
+    if name == "worker_b":
+        return _WORKER_B_INNER_OBJECTS_PER_ROOT
     raise AssertionError(f"Unknown lane: {name}")
 
 

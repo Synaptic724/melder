@@ -166,6 +166,52 @@ def test_list_cloud_names_reflects_published_named_directory(
     assert cloud.list_cloud_names() == ("test_conduit",)
 
 
+def test_list_conduits_returns_the_named_scopes_by_identity(
+        conduit_cloud,
+        mock_conduit,
+) -> None:
+    """
+    Verify list_conduits returns the conduits behind the named directory and drops a retired name.
+    """
+    cloud, root_conduits, conduit_ids_by_name = conduit_cloud
+    root_conduits["conduit-1"] = mock_conduit
+    conduit_ids_by_name["test_conduit"] = "conduit-1"
+    lesser = MagicMock()
+    lesser.id = "lesser-1"
+    lesser._id = "lesser-1"
+    lesser.name = "group"
+    lesser._name = "group"
+    lesser._conduit_state = ConduitState.lesser
+
+    assert cloud.list_conduits() == ()
+
+    cloud._register_named_conduit(mock_conduit)
+    cloud._register_named_conduit(lesser)
+    listed = cloud.list_conduits()
+
+    assert isinstance(listed, tuple)
+    assert len(listed) == 2
+    assert {id(conduit) for conduit in listed} == {id(mock_conduit), id(lesser)}
+    assert {conduit._name for conduit in listed} == set(cloud.list_conduit_names())
+
+    cloud._unregister_named_conduit(lesser)
+    remaining = cloud.list_conduits()
+
+    assert len(remaining) == 1
+    assert remaining[0] is mock_conduit
+
+
+def test_list_conduits_raises_after_cleanup(conduit_cloud) -> None:
+    """
+    Verify list_conduits guards against use-after-clean like every Cloud read.
+    """
+    cloud, _, _ = conduit_cloud
+    cloud.cleanup()
+
+    with pytest.raises(RuntimeError):
+        cloud.list_conduits()
+
+
 def test_frame_name_property_returns_configured_name(conduit_cloud) -> None:
     """
     Verify frame_name exposes the configured owning frame name.

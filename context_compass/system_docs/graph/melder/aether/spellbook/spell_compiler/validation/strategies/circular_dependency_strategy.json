@@ -1,90 +1,90 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py",
-  "source_sha256": "895bcc08335ac53c0e295b53e2caac31e3e93c60fe6cf4b1f0e272ab27ce841e",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy",
-      "label": "circular_dependency_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py",
-      "lineno": 1,
-      "include": true,
-      "role": "Phase 4 check: multi-hop cycles by spell/version id.",
-      "responsibilities": [
-        "provides one validation or examination strategy/support surface"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ],
-      "semantics_authored_against": ""
-    },
-    "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
-      "label": "CircularDependencyStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py",
-      "lineno": 15,
-      "bases": [
-        "SpellValidationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "validate"
-      ],
-      "shape": {
-        "method_count": 2,
-        "has_bases": true,
-        "trivial": false
-      },
-      "span_sha256": "a2a55eb55eed75f014eebf6a8aacfa4266d55eb3c4f0ec21684fbbc4a148dc28",
-      "include": true,
-      "role": "The multi-hop cycle check at spell/version-id level; counterpart to SelfDependencyStrategy and to the binding-key cycle strategy.",
-      "responsibilities": [
-        "traverse the spellbook-wide dependency graph by spell/version id",
-        "report only cycles reachable from the spell under validation",
-        "leave dangling ids to DanglingDependenciesStrategy and never try to break cycles automatically",
-        "names the cycle's members (the loop closed once) and says how to break it; a spell outside the cycle is told which of its dependencies leads there and that it is not part of that cycle (_cycle_message)",
-        "builds its adjacency from a copy of the Spellbook spell pool taken in one call, because concurrent binds change the live dict"
-      ],
-      "phases": [
-        "compile"
-      ],
-      "semantics_authored_against": "a2a55eb55eed75f014eebf6a8aacfa4266d55eb3c4f0ec21684fbbc4a148dc28"
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py",
+ "source_sha256": "895bcc08335ac53c0e295b53e2caac31e3e93c60fe6cf4b1f0e272ab27ce841e",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy",
+   "label": "circular_dependency_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 4 check: multi-hop cycles by spell/version id.",
+   "responsibilities": [
+    "provides one validation or examination strategy/support surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": ""
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
-      "to_label": "SpellValidationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
-      "to_label": "SpellValidationIssue",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Optional": "typing.Optional",
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-    "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-    "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
-    "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
-    "label": "CircularDependencyStrategy"
+  "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
+   "label": "CircularDependencyStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py",
+   "lineno": 15,
+   "bases": [
+    "SpellValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "validate"
+   ],
+   "shape": {
+    "method_count": 2,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "a2a55eb55eed75f014eebf6a8aacfa4266d55eb3c4f0ec21684fbbc4a148dc28",
+   "include": true,
+   "role": "The multi-hop cycle check at spell/version-id level; counterpart to SelfDependencyStrategy and to the binding-key cycle strategy.",
+   "responsibilities": [
+    "traverse the spellbook-wide dependency graph by spell/version id",
+    "report only cycles reachable from the spell under validation",
+    "leave dangling ids to DanglingDependenciesStrategy and never try to break cycles automatically",
+    "names the cycle's members (the loop closed once) and says how to break it; a spell outside the cycle is told which of its dependencies leads there and that it is not part of that cycle (_cycle_message)",
+    "builds its adjacency from a copy of the Spellbook spell pool taken in one call, because concurrent binds change the live dict"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "a2a55eb55eed75f014eebf6a8aacfa4266d55eb3c4f0ec21684fbbc4a148dc28"
   }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
+   "to_label": "SpellValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
+   "to_label": "SpellValidationIssue",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Optional": "typing.Optional",
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.circular_dependency_strategy.CircularDependencyStrategy",
+  "label": "CircularDependencyStrategy"
+ }
 }

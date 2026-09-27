@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-09-26
+- Updated: 2026-09-27
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -881,7 +881,8 @@ Protects:
   permission, projection refresh through the Rift gate barrier
 - Rift constructor and frame-link guardrails, one primary space, idempotent cleanup
   that re-checks the cleaned flag under its lock; workstation binding and target
-  guardrails; command-system lookups, and one room memory per top-level public call
+  guardrails; command-system lookups (conduit ids resolve through Aether's live lookup and a
+  missing runtime frame keeps its frame error), and one room memory per top-level public call
 Key Files (C1):
 - `tests/unit/melder/aether/test_nexus.py`
 - `tests/unit/melder/aether/test_rift_runtime_contracts.py`
@@ -1185,11 +1186,15 @@ Purpose:
 Protects:
 - Rift frame viewers after passive publication; the extended viewer method matrix
   through both Nexus and Rift; the ACL chain provisioned on publish, advanced and
-  rolled back after conjure, and removed on frame detach
+  rolled back after conjure, and removed on frame detach; Aether's conduit lookups over real
+  scopes - named lessers by name at any depth, anonymous and nested lessers by id, roots through
+  the root-named lookups, returned scopes absent, frame-naming errors and the frame-string TypeError
+  (0.2.79 regression for named lessers looking absent from Aether)
 Key Files (C1):
 - `tests/integration/melder/aether/test_nexus_frame_surface_projection_integration.py`
 - `tests/integration/melder/aether/test_nexus_viewer_extended_surface_integration_matrix.py`
 - `tests/integration/melder/aether/test_frame_acl_chain_integration.py`
+- `tests/integration/melder/aether/test_aether_named_lesser_lookup.py`
 
 ### Subcomponent: Crystallizer Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1249,7 +1254,8 @@ Protects:
   clearing a contract keeps the link), ownership transfer end to end, and
   automatic-mode refusal of dynamic APIs
 - teardown: idempotent cleanup that blocks meld, and dependents disposed before
-  their dependencies
+  their dependencies; a failing disposal method no longer skips the object's later methods
+  (0.2.80)
 - door-held first builds (0.2.73): concurrent first melds of one root, on one
   conduit or in one shared SpellSpace, construct it and its dependency once
 Key Files (C1):
@@ -1260,6 +1266,7 @@ Key Files (C1):
 - `tests/integration/melder/conduit/test_conduit_integration_scope_resolution_alignment.py`
 - `tests/integration/melder/conduit/test_conduit_integration_spellspace_scope_safety.py`
 - `tests/integration/melder/conduit/test_conduit_integration_disposal_ordering.py`
+- `tests/integration/melder/conduit/test_conduit_integration_disposal_failures.py`
 - `tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py`
 - `tests/integration/melder/conduit/test_ordered_disposal_runtime.py`
 - `tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py`
@@ -1753,9 +1760,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/aether/test_command_system_direct.py`
   start_line: 1
-  end_line: 457
-  loc: 457
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 483
+  loc: 483
+  verified_at: 2026-09-27T11:46:59Z
 - path: `tests/unit/melder/crystallizer/test_crystallizer.py`
   start_line: 1
   end_line: 197
@@ -1971,6 +1978,11 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 283
   loc: 283
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/integration/melder/aether/test_aether_named_lesser_lookup.py`
+  start_line: 1
+  end_line: 145
+  loc: 145
+  verified_at: 2026-09-27T11:46:59Z
 - path: `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
   start_line: 1
   end_line: 215
@@ -2277,6 +2289,11 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 342
   loc: 342
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/integration/melder/conduit/test_conduit_integration_disposal_failures.py`
+  start_line: 1
+  end_line: 120
+  loc: 120
+  verified_at: 2026-09-27T13:27:50Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py`
   start_line: 1
   end_line: 154
@@ -2428,6 +2445,7 @@ graph TD
 - `tests/unit/melder/aether/test_rift_runtime_contracts.py`
 - `tests/unit/melder/aether/test_workstation.py`
 - `tests/unit/melder/aether/test_command_system_direct.py`
+- `tests/integration/melder/aether/test_aether_named_lesser_lookup.py`
 - direct filesystem inventory of `tests/`
 
 ## Open Questions
@@ -2441,6 +2459,17 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-09-27 disposal failures (0.2.80): `test_conduit_integration_disposal_failures.py` joined the Conduit
+Integration Cluster (real conduit cleanup and managed SpellSpace exit run every disposal method after one
+fails). The unit regression `test_creations_disposal_failure_aggregation_regression.py` and the updated
+creations and component purge tests sit in files this map keeps below cluster level.
+
+2026-09-27 conduit lookup coverage (0.2.79): `test_aether_named_lesser_lookup.py` joined the Aether Integration
+Cluster (named lessers by name, anonymous and nested lessers by id, root-named lookups, returned scopes, frame
+errors); the Aether/Nexus/Rift Unit Cluster's command-system lookups now resolve through Aether's live lookup.
+Unit coverage of the lookup family, the Cloud listing and the snapshot ward walk sits in files this map keeps
+below cluster level (`test_aether.py`, `test_conduit_cloud.py`, `test_conduit_ward.py`).
 
 REFRESHED 2026-09-26 (paired with the `tests_architecture` refresh). Every C3 entry
 and every test C2 cluster now carries a `Protects:` line naming the behaviour it

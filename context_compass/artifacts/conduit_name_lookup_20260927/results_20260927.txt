@@ -1,0 +1,90 @@
+######## python3.14t
+python 3.14.7 gil_enabled False melder 0.2.78
+== frame=probe_auto dynamic=False
+  name=root_probe_auto state=normal
+    Aether.get_conduit_by_name         '<Conduit root_probe_auto>'  (is expected object: True)
+    Aether.find_conduit_id_by_name     '01M3H4CT9TAV0SEPD6G1P9HVE6'
+    Aether.has_conduit_name            True
+    ConduitCloud.get_conduit_by_name   '<Conduit root_probe_auto>'  (is expected object: True)
+  name=group_probe_auto state=lesser
+    Aether.get_conduit_by_name         RAISES ValueError: Conduit with name group_probe_auto not found.
+    Aether.find_conduit_id_by_name     None
+    Aether.has_conduit_name            False
+    ConduitCloud.get_conduit_by_name   '<Conduit group_probe_auto>'  (is expected object: True)
+  name=subgroup_probe_auto state=lesser
+    Aether.get_conduit_by_name         RAISES ValueError: Conduit with name subgroup_probe_auto not found.
+    Aether.find_conduit_id_by_name     None
+    Aether.has_conduit_name            False
+    ConduitCloud.get_conduit_by_name   '<Conduit subgroup_probe_auto>'  (is expected object: True)
+    Aether.list_conduit_names          ('root_probe_auto',)
+    ConduitCloud.list_conduit_names    ('root_probe_auto', 'group_probe_auto', 'subgroup_probe_auto')
+  after subgroup.cleanup() (named lesser returned to its pool):
+    ConduitCloud.get_conduit_by_name   RAISES ValueError: Conduit with name subgroup_probe_auto not found.
+    ConduitCloud.list_conduit_names    ('root_probe_auto', 'group_probe_auto')
+== frame=probe_dyn dynamic=True
+  name=root_probe_dyn state=normal
+    Aether.get_conduit_by_name         '<Conduit root_probe_dyn>'  (is expected object: True)
+    Aether.find_conduit_id_by_name     '01M3H4CTBX0V42VETW7RWKGW7N'
+    Aether.has_conduit_name            True
+    ConduitCloud.get_conduit_by_name   '<Conduit root_probe_dyn>'  (is expected object: True)
+  name=group_probe_dyn state=lesser
+    Aether.get_conduit_by_name         RAISES ValueError: Conduit with name group_probe_dyn not found.
+    Aether.find_conduit_id_by_name     None
+    Aether.has_conduit_name            False
+    ConduitCloud.get_conduit_by_name   '<Conduit group_probe_dyn>'  (is expected object: True)
+  name=subgroup_probe_dyn state=lesser
+    Aether.get_conduit_by_name         RAISES ValueError: Conduit with name subgroup_probe_dyn not found.
+    Aether.find_conduit_id_by_name     None
+    Aether.has_conduit_name            False
+    ConduitCloud.get_conduit_by_name   '<Conduit subgroup_probe_dyn>'  (is expected object: True)
+    Aether.list_conduit_names          ('root_probe_dyn',)
+    ConduitCloud.list_conduit_names    ('root_probe_dyn', 'group_probe_dyn', 'subgroup_probe_dyn')
+  after subgroup.cleanup() (named lesser returned to its pool):
+    ConduitCloud.get_conduit_by_name   RAISES ValueError: Conduit with name subgroup_probe_dyn not found.
+    ConduitCloud.list_conduit_names    ('root_probe_dyn', 'group_probe_dyn')
+exit 0
+######## python3.14
+python 3.14.7 gil_enabled True melder 0.2.78
+== frame=probe_auto dynamic=False
+  name=root_probe_auto state=normal
+    Aether.get_conduit_by_name         '<Conduit root_probe_auto>'  (is expected object: True)
+    Aether.find_conduit_id_by_name     '01M3H4CTZK3K5SBWMJG5QVYFTA'
+    Aether.has_conduit_name            True
+    ConduitCloud.get_conduit_by_name   '<Conduit root_probe_auto>'  (is expected object: True)
+  name=group_probe_auto state=lesser
+    Aether.get_conduit_by_name         RAISES ValueError: Conduit with name group_probe_auto not found.
+    Aether.find_conduit_id_by_name     None
+    Aether.has_conduit_name            False
+    ConduitCloud.get_conduit_by_name   '<Conduit group_probe_auto>'  (is expected object: True)
+  name=subgroup_probe_auto state=lesser
+    Aether.get_conduit_by_name         RAISES ValueError: Conduit with name subgroup_probe_auto not found.
+    Aether.find_conduit_id_by_name     None
+    Aether.has_conduit_name            False
+    ConduitCloud.get_conduit_by_name   '<Conduit subgroup_probe_auto>'  (is expected object: True)
+    Aether.list_conduit_names          ('root_probe_auto',)
+    ConduitCloud.list_conduit_names    ('root_probe_auto', 'group_probe_auto', 'subgroup_probe_auto')
+  after subgroup.cleanup() (named lesser returned to its pool):
+    ConduitCloud.get_conduit_by_name   RAISES ValueError: Conduit with name subgroup_probe_auto not found.
+    ConduitCloud.list_conduit_names    ('root_probe_auto', 'group_probe_auto')
+== frame=probe_dyn dynamic=True
+  name=root_probe_dyn state=normal
+    Aether.get_conduit_by_name         '<Conduit root_probe_dyn>'  (is expected object: True)
+    Aether.find_conduit_id_by_name     '01M3H4CTZWZ5NVC8GAE8Y31PCC'
+    Aether.has_conduit_name            True
+    ConduitCloud.get_conduit_by_name   '<Conduit root_probe_dyn>'  (is expected object: True)
+  name=group_probe_dyn state=lesser
+    Aether.get_conduit_by_name         RAISES ValueError: Conduit with name group_probe_dyn not found.
+    Aether.find_conduit_id_by_name     None
+    Aether.has_conduit_name            False
+    ConduitCloud.get_conduit_by_name   '<Conduit group_probe_dyn>'  (is expected object: True)
+  name=subgroup_probe_dyn state=lesser
+    Aether.get_conduit_by_name         RAISES ValueError: Conduit with name subgroup_probe_dyn not found.
+    Aether.find_conduit_id_by_name     None
+    Aether.has_conduit_name            False
+    ConduitCloud.get_conduit_by_name   '<Conduit subgroup_probe_dyn>'  (is expected object: True)
+    Aether.list_conduit_names          ('root_probe_dyn',)
+    ConduitCloud.list_conduit_names    ('root_probe_dyn', 'group_probe_dyn', 'subgroup_probe_dyn')
+  after subgroup.cleanup() (named lesser returned to its pool):
+    ConduitCloud.get_conduit_by_name   RAISES ValueError: Conduit with name subgroup_probe_dyn not found.
+    ConduitCloud.list_conduit_names    ('root_probe_dyn', 'group_probe_dyn')
+exit 0

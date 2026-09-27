@@ -233,6 +233,32 @@ def test_command_system_conduit_lookup_reports_missing_lesser_conduit_and_name_m
     assert command_system.find_conduit_id_by_name("missing", frame_name="ops") is None
 
 
+def test_command_system_conduit_lookup_reports_a_missing_runtime_frame_before_the_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A lookup whose runtime frame Aether does not hold keeps the frame error, not the id error.
+
+    Returns:
+        None.
+    """
+    command_system, viewer, _ = _make_command_system()
+    viewer.compiled_access_surface.enabled_conduit_ids = ("missing-lesser",)
+    monkeypatch.setattr(
+        type(command_system),
+        "_aether",
+        SimpleNamespace(
+            get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(
+                ValueError(f"Aetheric frame '{frame_name}' does not exist.")
+            ),
+            _aetheric_frames={},
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Aetheric frame 'ops' does not exist."):
+        command_system.get_conduit_by_id("missing-lesser")
+
+
 def test_command_system_find_conduit_id_by_name_reraises_non_missing_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -120,7 +120,7 @@ def test_aether_frame_isolation_for_conduit_and_spell_lookup() -> None:
         with pytest.raises(ValueError, match="not found"):
             Aether().get_conduit_cloud("frame-a").get_conduit_by_name("root-b")
 
-        assert Aether().get_conduit_by_name("root-b", "frame-b") is conduit_b
+        assert Aether().get_root_conduit_by_name("root-b", "frame-b") is conduit_b
     finally:
         conduit_b.permanent_cleanup()
         conduit_a.permanent_cleanup()
@@ -259,7 +259,7 @@ def test_bottom_up_frame_cleanup_cleans_conduits_and_removes_frame() -> None:
     assert frame.cleaned is True
     assert conduit.cleaned is True
     with pytest.raises(ValueError, match="does not exist"):
-        aether._get_conduit_by_id(conduit_id, frame_name)
+        aether._get_root_conduit_by_id(conduit_id, frame_name)
     with pytest.raises(RuntimeError, match="already been cleaned"):
         conduit.meld(spell_id=spell_id)
 

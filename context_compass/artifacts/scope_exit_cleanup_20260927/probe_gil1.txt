@@ -1,0 +1,63 @@
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt/src/melder/__init__.py:190: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+python 3.14.7 gil_enabled=True melder=/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt/src/melder/__init__.py
+== p1_managed_with_normal
+   events_after_exit: ['close:many#1', 'close:space#1']
+   idle_before/during/after: (0, 0, 1)
+   next_lease_same_shell: True
+== p2_managed_with_failing
+   raised: ExceptionGroup[RuntimeError(cause=RuntimeError)]
+   events: ['close:space#1', 'close:failspace#1']
+   idle_before/after: (0, 0)
+   space_in_pool: False
+   space_cleaned: False
+   space_meld_cleaned: False
+   space_store_entries: 0
+== p3_stale_handle
+   events_after_first_exit: ['close:space#1']
+   stale_meld_error: None
+   stale_meld_label: space#2
+   next_lease_same_shell: True
+   next_lease_served_label: space#2
+   next_lease_got_stale_object: True
+   first_is_stale: False
+   events_after_second_exit: ['close:space#1', 'close:space#2']
+== p4_manual_cleanup
+   normal: {'events': ['close:space#1'], 'registered_after': False, 'pooled_after': True}
+   failing: {'raised': 'ExceptionGroup[RuntimeError(cause=RuntimeError)]', 'events': ['close:space#1', 'close:failspace#1'], 'registered_after': True, 'pooled_after': False, 'retry_error': None, 'registered_after_retry': False, 'pooled_after_retry': True}
+== p5_with_lesser
+   events_after_with_block: []
+   meld_after_block: conduit#1
+   events_after_explicit_cleanup: ['close:conduit#1']
+== p6_lesser_return_order
+   events_in_order: ['close:space#1', 'close:conduit#1', 'close:conduit#2']
+   parent_pooled: True
+   child_pooled: True
+   root_idle_before/after: (0, 2)
+== p7_lesser_return_failing_space
+   raised: None
+   logged_errors: ['Error cleaning spellspace for pool']
+   events: ['close:space#1', 'close:failspace#1', 'close:conduit#1']
+   lesser_pooled: True
+   space_pooled: False
+   space_cleaned: False
+== p8_lesser_return_failing_own
+   raised: ExceptionGroup[RuntimeError(cause=RuntimeError)]
+   events: ['close:conduit#1', 'close:failconduit#1']
+   still_child_of_root: True
+   state: lesser
+   pooled: False
+   retry_error: None
+   pooled_after_retry: True
+== p9_root_cleanup_failing
+   raised: None
+   logged_errors: ['Error cleaning spellspace', 'Error cleaning creations']
+   events: ['close:failspace#1', 'close:conduit#1', 'close:failconduit#1']
+   root_cleaned: True
+== p10_lesser_cleaned_inside_its_space
+   raised_at_with_exit: SpellSpaceScopeError(SpellSpace stack corruption detected while exiting.)
+   events: ['close:space#1']
+   lesser_pooled: True
+   space_in_lesser_pool: True

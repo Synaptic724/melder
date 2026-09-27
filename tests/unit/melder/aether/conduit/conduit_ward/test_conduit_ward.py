@@ -1,5 +1,6 @@
 ﻿import pytest
 import threading
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
     DevopsInformationRegistry,
@@ -614,6 +615,56 @@ def test_get_lesser_conduit_recursive(ward):
     ward._link_lesser_conduit(child)
     
     assert ward._get_lesser_conduit("child-1") is child
+    assert ward._get_lesser_conduit("missing") is None
+
+
+class _PopsSiblingOnIdRead:
+    """Lesser stand-in whose `_id` read removes a sibling from its parent's registry, as a pool return does."""
+
+    def __init__(self, parent_registry: dict, sibling_id: str) -> None:
+        """Remember the parent's live registry and the sibling to remove on the first `_id` read."""
+        self._parent_registry = parent_registry
+        self._sibling_id = sibling_id
+        self._conduit_ward = None
+
+    @property
+    def _id(self) -> str:
+        """Remove the sibling from the live parent registry, then return this stand-in's id."""
+        self._parent_registry.pop(self._sibling_id, None)
+        return "first"
+
+
+def test_get_lesser_conduit_walks_a_snapshot_when_a_child_detaches_mid_walk(ward):
+    """
+    Verify the lineage walk survives a child leaving the parent registry while it runs.
+
+    A child returning to its pool pops itself from the parent's registry under its OWN lock, so no lock the
+    walk could take prevents it; iterating the live dict raised "dictionary changed size during iteration".
+    The walk reads a snapshot, so it completes and still returns the child it had already seen.
+    """
+    second = MagicMock()
+    second._id = "second"
+    second._conduit_ward = None
+    ward._lesser_conduits["first"] = _PopsSiblingOnIdRead(ward._lesser_conduits, "second")
+    ward._lesser_conduits["second"] = second
+
+    assert ward._get_lesser_conduit("second") is second
+    assert "second" not in ward._lesser_conduits
+
+
+def test_get_lesser_conduit_skips_a_child_whose_ward_was_deleted(ward):
+    """
+    Verify a child whose ward hard teardown deleted is matched by id but not searched, and is never fatal.
+    """
+    torn_down = SimpleNamespace(_id="torn")
+    target = MagicMock()
+    target._id = "target"
+    target._conduit_ward = None
+    ward._lesser_conduits["torn"] = torn_down
+    ward._lesser_conduits["target"] = target
+
+    assert ward._get_lesser_conduit("target") is target
+    assert ward._get_lesser_conduit("torn") is torn_down
     assert ward._get_lesser_conduit("missing") is None
 
 

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/rift/command_system/command_system.py",
- "source_sha256": "8cac70ad93ba6e217130ab952ff1da1259a7af773d0dec1933e61b8e295e639a",
+ "source_sha256": "6d75cc09c7f8f9198e1199d3946b8ade70076507d1664c15514ea702a88dfc0b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.rift.command_system.command_system": {
@@ -50,14 +50,15 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "b3caf0db2de1d55a7e74c9694a02d3c8e9b65c30b348eec48fee25654295a408",
+   "span_sha256": "c8c2bc754ebe294400b68beec34ca08107b9a02af7ac39f51a37d2278645a10a",
    "role": "Room-local mediated command layer.",
    "responsibilities": [
     "resolves room-scoped records and runtime objects",
     "executes allowed runtime actions",
     "binds command results into the workstation when requested",
     "enforces room and ACL posture on command paths",
-    "resolves named access by the exact authorized published ID and rejects changed live names"
+    "resolves named access by the exact authorized published ID and rejects changed live names",
+    "resolves conduit ids through Aether's live-conduit lookup after its ACL gates, keeping its frame and not-found errors"
    ],
    "owns_state": [
     "_id",

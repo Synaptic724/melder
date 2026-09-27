@@ -382,7 +382,7 @@ def test_crystallizer_restore_hydrates_with_fresh_index_ulids(
     assert report["status"] == "complete"
     assert spy.root_paths == ["miss", "full_hit"]
     assert spy.runs == 1
-    restored = Aether().get_conduit_by_name("root", aetheric_frame_name=FRAME)
+    restored = Aether().get_root_conduit_by_name("root", aetheric_frame_name=FRAME)
     car = restored.meld(spell=Car)
     assert isinstance(car.engine, Engine) and len(car.wheels) == 1
     assert rebooted.get_spell_crystal(ids["Car"]).id == ids["Car"]

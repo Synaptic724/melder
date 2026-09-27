@@ -423,8 +423,9 @@ def test_purge_many_preserves_disposal_order_and_aggregates_failures(
     """
     Purpose: Preserve the existing Creations disposal contract during targeted purge.
     Contract: Many runs newest-first; methods run in order. Failures from multiple
-        objects are collected while successful objects still complete. Unrelated
-        creations survive, and final cleanup does not repeat target disposal.
+        objects are collected while successful objects still complete, and since
+        2026-09-27 a failing method no longer skips its object's later methods.
+        Unrelated creations survive, and final cleanup does not repeat target disposal.
     Args: spellspace: Select the local SpellSpace instead of conduit storage.
     Returns: None; both expected failures are captured in one ExceptionGroup.
     """
@@ -494,6 +495,7 @@ def test_purge_many_preserves_disposal_order_and_aggregates_failures(
             (3, "first"),
             (3, "second"),
             (2, "first"),
+            (2, "second"),
             (1, "first"),
             (1, "second"),
         ]
@@ -503,7 +505,7 @@ def test_purge_many_preserves_disposal_order_and_aggregates_failures(
     finally:
         space.cleanup()
         root.permanent_cleanup()
-    assert len(events) == 7
+    assert len(events) == 8
     assert other.cleanup_calls == 1
 
 
