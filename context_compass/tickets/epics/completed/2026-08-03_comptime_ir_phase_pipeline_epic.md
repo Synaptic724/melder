@@ -2,13 +2,18 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-08-03-comptime-ir-phase-pipeline
-- Status: in_progress
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-08-03T01:45:00Z
-- Updated: 2026-09-26T18:43:15Z
-- Target Window: claimed 2026-09-25; STORY-1 survey is the active lane
+- Updated: 2026-09-27T18:36:53Z
+- Completed: 2026-09-27T18:36:53Z
+- Summary: Closed by owner directive (2026-09-27, "close your epic"): Milestone 1 (phase survey, phases 1-7),
+  the improvement plan, tranche T1 (deterministic signatures, phase-8 digest, live contract operands) and I-1
+  (structural snapshot, generation 15) are delivered and accepted; the six IR-port stories (Milestones 2-5,
+  the value-only IR and the phase-11 hydration boundary) were never opened and retire with the epic.
+- Target Window: claimed 2026-09-25; closed 2026-09-27 after tranches T1 and I-1
 - Related Program/Initiative: SpellCompiler / Crystallizer / MutationResearch
 
 ## Problem / Opportunity
@@ -127,6 +132,9 @@ node that cannot be expressed that way is a node still holding a live object.
 - to_state: in_progress
 - transition_reason: Owner assigned the epic to fable_0 as the focus lane (2026-09-25); STORY-1
   opened as the entry point per the epic's own gate.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner turn-in directive (2026-09-27T18:36:53Z); delivered tranches accepted, IR-port stories retired.
 
 ## Success Metrics
 
@@ -202,6 +210,8 @@ review with nine records plus summary.md under artifacts/ir_phase_survey_2026092
 on owner acceptance of summary.md (phases 8-11 deferred by the 2026-09-26 ruling). Milestones 2-5 not started.
 Milestone status (2026-09-26T13:27:19Z): Milestone 1 DONE (owner turned in the survey story). The improvement-plan story
 and tranche T1 are also closed. Milestones 2-5 not started; I-1 (structural snapshot) is the next implementation entry.
+Milestone status (2026-09-27T18:36:53Z): CLOSED by owner directive. Milestone 1 done; I-1 delivered the memoization the epic
+was after (a warm conjure skips phases 1-4 on an unchanged book) without the IR port; Milestones 2-5 not pursued.
 
 ## Stories (Required to Complete)
 
@@ -237,16 +247,22 @@ and tranche T1 are also closed. Milestones 2-5 not started; I-1 (structural snap
       and emits; add the test that fails if any symbol is reachable from meld.
 - [ ] Story: STORY-2026-08-03-ir-hash-memoization - content-hash the IR and
       short-circuit recompile on an unchanged plan.
+Closure (2026-09-27T18:36:53Z): the six unchecked stories above were never opened; the epic closes by owner directive with
+Milestone 1, the improvement plan, T1 and I-1 delivered. Their memoization goal is met by I-1's structural
+snapshot without an IR port.
 
 ## Tasks (Cross-Cutting or Epic-Level)
 
-- [ ] Task: Author the required patch docs before any implementation story opens
-      (`patch_framework_gating.md` entry gate - this epic is system-impacting).
-- [ ] Task: Capture a gauntlet baseline before the first port lands, so parity
-      is measured rather than assumed.
-- [ ] Task: Update `src_architecture.md` and `src_components.md` with the IR
-      boundary; regenerate both `*_index.md` in the same pass.
-- [ ] Task: Verify Ticket Microcycle enforcement across active tickets/stories.
+- [x] Task: Author the required patch docs before any implementation story opens
+      (`patch_framework_gating.md` entry gate - this epic is system-impacting). Done per tranche: T1 and I-1
+      each opened with their own patch docs, promoted and archived under system_docs/patches/completed/.
+- [x] Task: Capture a gauntlet baseline before the first port lands, so parity
+      is measured rather than assumed. artifacts/ir_epic_gauntlet_baseline_20260925/ (owner-run, retained).
+- [x] Task: Update `src_architecture.md` and `src_components.md` with the IR
+      boundary; regenerate both `*_index.md` in the same pass. Done per tranche for what shipped (signature
+      leaf, phase-8 digest, live operands, structural snapshot); no IR boundary exists to document.
+- [x] Task: Verify Ticket Microcycle enforcement across active tickets/stories (every story and task under
+      this epic carries evidence-scored notes and STATE lines).
 
 ## Acceptance Criteria (Epic Done)
 
@@ -1154,10 +1170,30 @@ and tranche T1 are also closed. Milestones 2-5 not started; I-1 (structural snap
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
 
+- DATETIME: 2026-09-27T18:36:53Z
+  TYPE: DECISION
+  CLAIM: Epic closed by owner directive. Delivered under it: the phase survey (phases 1-7, drivers, the seam;
+    Milestone 1), the improvement plan (cost model, candidates), tranche T1 (one signature leaf, the phase-8
+    digest hoisted once per pass, live contract override operands) and I-1 (the structural snapshot: cache
+    generation 15, a warm conjure over an unchanged book skips phases 1-4, restored worlds keep their cache
+    posture). Not delivered and retired with the epic: the value-only IR schema, the phase 1-10 port, the
+    phase-11 hydration boundary and IR-hash memoization (six stories, Milestones 2-5); the acceptance criteria
+    written for that port are therefore not met and are not claimed. The epic's memoization aim is served by I-1.
+  EVIDENCE:
+  - tickets/stories/completed/2026-09-25_ir_phase_pipeline_survey_story.md
+  - tickets/stories/completed/2026-09-26_signature_determinism_and_phase8_digest_story.md
+  - tickets/stories/completed/2026-09-26_structural_snapshot_story.md
+  - release_docs/0.2.82.md:171-204
+  IMPACT: No open lane remains under this epic; a future IR port would open a new epic from the survey artifacts.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user (per-story and per-task reports, 2026-09-25 to 2026-09-27)
+- [x] Acceptance criteria confirmed by user - closure by owner directive 2026-09-27 ("close your epic ... you do
+      not need to ask me for approval"); the IR-port acceptance criteria above are retired unmet with the epic.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: program-level direction, cross-story tradeoffs, and tranche order.
@@ -1246,7 +1282,10 @@ UPDATE 2026-09-26T18:43:15Z (fable_0): tasks 5-6 accepted and closed; I-1 story 
 patch folder retired; only the owner-run measurement pass is open.
 UPDATE 2026-09-27T12:37:52Z (fable_0): I-1 story turned in by the owner (measurement pass waived) and moved to
 tickets/stories/completed/2026-09-26_structural_snapshot_story.md; no fable_0 lane is routed on the board after this
-closure. Resume point after a compaction: this epic's Decision Log and IMPLEMENTATION ENTRY; wait for the owner's next lane.
+closure. Resume point after a compaction: this epic's Decision Log and IMPLEMENTATION ENTRY; wait for the owner's
+next lane.
+UPDATE 2026-09-27T18:36:53Z (fable_0): EPIC CLOSED by owner directive and moved to tickets/epics/completed/; Milestone 1, the
+plan, T1 and I-1 delivered; the IR-port stories retired unopened. Nothing resumes here.
 
 IMPLEMENTATION ENTRY - after S11 and the owner's explicit go, in this order:
 - I-0 signature-determinism test plus one serializer (small, compiler-side, protects today's cache;

@@ -307,8 +307,11 @@ Concurrency/Threading:
 
 Invariants/Guarantees:
 - Package-root hardcopy docs remain queryable without conjuring a conduit.
-- The current packaged hardcopy payloads are placeholder markdown/json
-  carriers, not live regenerated architecture snapshots.
+- Packaged hardcopy payloads are live build-time ingestions of the system
+  docs with section addressing and a SHA verification gate (manifest 2.0.0;
+  the 1.0.0 placeholder envelopes are history).
+  EVIDENCE:
+  - src/melder/_build_assets/_system_documents/_builder.py:120-151
 - Public helper/config exports do not mutate runtime state merely by being
   imported from `melder`.
 
@@ -322,7 +325,8 @@ Observability:
 - Class-level agent-purpose strings on the packaged document modules.
 
 Extension Points:
-- Replacing placeholder hardcopy payloads with real packaged system docs.
+- Refreshing packaged hardcopy payloads when the system docs change (rebuild
+  assets; the placeholder-to-live replacement already landed).
 - Expanding root configuration policy beyond logger activation.
 - Extending protocol generation/file-maintenance helpers.
 
@@ -455,13 +459,17 @@ Responsibilities:
   `_apply_notch(...)`, `_apply_add_to_index(...)`,
   `_apply_remove_from_index(...)` that mutates index membership.
   Spellbook does NOT start these flows and exposes no public verb for them. The
-  CONDUIT admits the transaction, calling `mediator.start_transaction(...)`
-  itself and calling in here inside the held window.
+  CONDUIT admits the transaction through the frame-local DevOps
+  `TransactionMediator` (not the aetheric plane), calling
+  `mediator.start_transaction(...)` itself and calling in here inside the
+  held window.
   EVIDENCE:
   - src/melder/aether/spellbook/spellbook.py:3644, 3695 (`_notch_spell` -> `_apply_notch`)
   - src/melder/aether/spellbook/spellbook.py:3835, 3868 (`_add_to_spell_index` -> `_apply_add_to_index`)
   - src/melder/aether/spellbook/spellbook.py:4011, 4043 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
   - src/melder/aether/spellbook/spellbook.py:3680 (states the Conduit admits it)
+  - src/melder/aether/conduit/conduit.py:5124, 5200, 5280 (notch/add/remove
+    acquire `_get_required_transaction_mediator()`)
 - Run phase pipelines before conjure.
 - Conjure exactly one Conduit per Spellbook instance.
 - Provide SpellBinder fluent adapter.
@@ -595,8 +603,9 @@ Text is preserved as authored; only its location changed.
 - Maintains owned and contracted spell_id maps for O(1) resolution by current id.
 - Binds spells using `Bind` and tracks spell identifiers.
 - Interfaces with Aether for shared configuration and spell registry updates.
-- Starts transaction-backed SpellIndex mutation flows for active-member switch,
-  move-in, and move-out operations.
+- Serves the Conduit-admitted transaction-backed SpellIndex mutation flows
+  for active-member switch, move-in, and move-out operations (entry plus
+  apply seam; admission belongs to the Conduit).
 - Runs SpellCompiler phases and validation before Conduit creation.
 - Conjures a single Conduit per Spellbook instance.
 - Provides a `SpellBinder` fluent adapter for binding.
@@ -697,15 +706,20 @@ Inputs:
 - Spell object, spellframe, binding name, existence, permissions.
 
 Outputs:
-- TWO SHAPES FROM ONE ENTRYPOINT, decided by whether `spell` was supplied.
-  Called directly with a target, `bind` creates and returns the `Spell`. Called
-  without one it returns a DECORATOR that produces the Spell when applied to its
-  target. The decorator itself is not a Spell; both completed call forms produce one.
+- TWO SHAPES FROM ONE ENTRYPOINT, decided by whether `spell` was supplied,
+  at the `Bind` layer: called directly with a target, `bind` creates and
+  returns the `Spell`; called without one it returns a DECORATOR that
+  produces the Spell when applied to its target. The decorator itself is
+  not a Spell; both completed call forms produce one. One layer up,
+  `Spellbook.bind(...)` returns the spell ID (`str`), not the Spell.
 - A `SpellIndex` carrying the stable ULID identity the spell is addressed by.
 - Nothing at all from the internal-registration guard on the success path: it
   returns `None` when the candidate is bindable and raises otherwise.
   EVIDENCE:
-  - src/melder/aether/spellbook/bind/bind.py:244-292 (`bind` contract)
+  - src/melder/aether/spellbook/bind/bind.py:453-581 (`bind`, decorator,
+    `_bind_logic -> Spell`)
+  - src/melder/aether/spellbook/spellbook.py:5166-5178 (`Spellbook.bind
+    -> str`)
   - src/melder/aether/spellbook/bind/bind.py:84-97 (`assert_allowed`)
 
 Owned State:
@@ -969,8 +983,8 @@ Outputs:
   treats `freeze()` as merely sealing a dict will miss that it is the emission
   trigger.
   EVIDENCE:
-  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:258-276
-  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:659-680
+  - src/melder/aether/spellbook/configuration/spellbook_configuration.py:277-343
+    (`freeze` contract plus twin emission on both the fresh and re-freeze paths)
 
 Owned State:
 - `_properties`, `available_properties`, `_idempotent_keys`.
@@ -1044,8 +1058,9 @@ Responsibilities:
   `AetherUtilitySystem`.
 - Expose explicit post-boot logger control through `attach_logger(...)` and
   `enable_logging(...)`.
-- Lazily host the process-wide `MutationResearch` singleton root above
-  frame-local runtime state.
+- Eagerly host the process-wide `MutationResearch` singleton root above
+  frame-local runtime state (owner ruling 2026-08-03; built by Aether
+  alongside Crystallizer and Nexus).
 - Register conduits and spell lineages.
 - Provide selected-spell registry for spell ids.
 - Privately host singleton support roots for utility logging, crystallizer
@@ -1067,7 +1082,8 @@ Outputs:
 
 Owned State:
 - `_aetheric_frames`, `_default_frame`, `_logger`, `_aether_utility_system`,
-  `_crystallizer`, `_mutation_research`, `_nexus`.
+  `_crystallizer`, `_mutation_research`, `_nexus`, `_load_gate`,
+  `_aetheric_mediator`.
 - Singleton state (`_instance`, `_initialized`, `_lock`).
 
 Lifecycle/Cleanup:
@@ -1098,10 +1114,14 @@ Observability:
   reports the consequence rather than the action - it logs whether the default
   frame was cleared as a side effect of the removal, because losing the default
   frame silently is the failure this subsystem is most likely to produce.
-- Three `cleanup` log calls mark teardown boundaries, so a partially torn-down
-  singleton is distinguishable from one that never started.
+- The `cleanup` error log carries the failure with cause chained and
+  re-raises, so a child teardown error is never silent; singleton
+  bookkeeping still resets in the `finally`, and logger teardown follows
+  after the lock block. A partially torn-down singleton is therefore
+  distinguishable from one that never started.
   EVIDENCE:
-  - src/melder/aether/aether.py:398-401
+  - src/melder/aether/aether.py:320-332
+  - src/melder/aether/aether.py:334-337
 
 Extension Points:
 - Additional per-frame behaviours and registries, reached through the frame
@@ -1135,7 +1155,8 @@ Text is preserved as authored; only its location changed.
 - Registers conduits and spell indices.
 - Exposes ConduitCloud and ConduitCluster access via frame.
 - Privately hosts `Nexus`, `Crystallizer`, `AetherUtilitySystem`, and the
-  lazily constructed `MutationResearch` singleton root rather than exposing AR
+  eagerly constructed `MutationResearch` singleton root (owner ruling
+  2026-08-03) rather than exposing AR
   or mutation control through Aether's public surface directly.
 
 ### Component: AethericFrame Services
@@ -1241,7 +1262,7 @@ Observability:
 - Everything else is exceptions. A frame that is misbehaving without raising
   will produce no log output at all; do not read silence as health.
   EVIDENCE:
-  - src/melder/aether/aetheric_frame/aetheric_frame.py:733-740
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:750-761
 
 Extension Points:
 - Additional per-frame services constructed and owned in the same position as
@@ -1433,8 +1454,9 @@ Concurrency/Threading:
 - Instance `RLock` discipline at every level; one-way lock order
   (spellbook/frame/nexus/MR -> crystallizer -> persistence system ->
   profile).
-- CADENCE TICKER - VERIFIED 2026-08-03 against the code rather than carried
-  forward. `_maybe_create_automatic_checkpoint` takes `self._lock`, and inside
+- CADENCE TICKER - VERIFIED 2026-08-03 against the code, re-verified
+  2026-09-27. `_maybe_create_automatic_checkpoint` takes `self._lock`, and
+  inside
   it does only two things: compare elapsed wall time against
   `_checkpoint_interval_seconds`, and ADVANCE the stamp
   (`_last_automatic_checkpoint_monotonic = now`). It then RELEASES and does the
@@ -1452,14 +1474,15 @@ Concurrency/Threading:
   interleave an automatic seal mid-checkpoint. `record` is the same sink minus
   the ticker.
   EVIDENCE:
-  - src/melder/crystallizer/crystallizer.py:723-729 (`with self._lock` at :723;
-    elapsed check :724-728; stamp advanced at :729 - the last statement under
+  - src/melder/crystallizer/crystallizer.py:784-790 (`with self._lock` at :784;
+    elapsed check :785-789; stamp advanced at :790 - the last statement under
     the lock)
-  - src/melder/crystallizer/crystallizer.py:732-741 (outside the lock:
-    `_emit_policy_twin()` :732, `create_checkpoint(...)` :733, conditional
-    `flush_checkpoint(...)` :741)
-  - src/melder/crystallizer/crystallizer.py:687-693 (seal paths call `record`
-    directly, bypassing `emit` and therefore the ticker)
+  - src/melder/crystallizer/crystallizer.py:791-802 (outside the lock:
+    `_emit_policy_twin()` :793, `create_checkpoint(...)` :794-796,
+    conditional `flush_checkpoint(...)` :797-802)
+  - src/melder/crystallizer/crystallizer.py:1587-1594 (`emit` records through
+    the sink then runs the ticker; seal paths bypass `emit` and therefore
+    the ticker)
 - `SyntheticModule` uses registry locking for importlib-facing paths.
 
 Invariants/Guarantees:
@@ -2634,9 +2657,9 @@ Concurrency detail:
 - Ordered two-ward locking covers BOTH creation and severing. `_sever_link`
   takes `SafeGuard(self._lock, target_conduit._conduit_ward._lock)` before it
   looks for the contract.
-  EVIDENCE: src/melder/aether/conduit/conduit_ward/conduit_ward.py:957-975
-  (`_sever_link` at :957, `SafeGuard` acquired at :973, contract lookup at :974 -
-  the guard is taken BEFORE the lookup, which is the ordering claim).
+  EVIDENCE: src/melder/aether/conduit/conduit_ward/conduit_ward.py:992-1010
+  (`_sever_link` at :992, `SafeGuard` acquired at :1008, contract lookup at
+  :1009 - the guard is taken BEFORE the lookup, which is the ordering claim).
 
 Observability:
 - `SafeLogger` with 79 `error` sites and, unusually for this codebase, 11 `info`
@@ -4165,10 +4188,12 @@ Key Files (C1):
 Failure Modes:
 - Failed executions do NOT increment the builder counters, which keeps the
   "which checks does the system actually rely on" signal honest.
-- UNKNOWN: what `resolve(...)` raises for an unregistered strategy name. Not
-  verified in source.
-  Investigate: devops_information_strategy_builder.py, the resolve/execute
-  methods.
+- `resolve(...)` raises `NotImplementedError` naming the normalized strategy
+  name when nothing is registered for it; counters increment only after a
+  successful `execute(...)`, so a refused name never pollutes the counts.
+  EVIDENCE:
+  - src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py:173-195
+  - src/melder/aether/aetheric_frame/dev_ops/devops_information_strategy_builder.py:216-225
 
 Observability:
 - `get_execution_count(name)` and `list_execution_counts()` answer an otherwise
@@ -4519,8 +4544,13 @@ Failure Modes:
 Observability:
 - This component IS the observability surface for everything else, so its own
   instrumentation is deliberately minimal - it holds one `cleanup` marker and
-  two `setLevel` calls and nothing more. A logger that logs about itself
+  three `setLevel` calls (init, symbolic level change, numeric level change)
+  and nothing more. A logger that logs about itself
   through itself is a recursion waiting to happen.
+  EVIDENCE:
+  - src/melder/utilities/logger/safe_logger.py:140-141
+  - src/melder/utilities/logger/safe_logger.py:219-220
+  - src/melder/utilities/logger/safe_logger.py:242-243
 - Masking is applied on the way through rather than at the sink, so a subsystem
   cannot bypass it by holding the wrapped logger.
 

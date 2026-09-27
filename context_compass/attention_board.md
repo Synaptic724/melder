@@ -83,7 +83,6 @@ Message alert rules
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-27T11:40:40Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T11:40:40Z)
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-27T13:25:25Z)
-- NEW MESSAGE for fable_0 (from melder_0, 2026-09-27T13:25:25Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T13:25:25Z)
 <!-- END USER-DEFINED: alerts -->
 
@@ -94,12 +93,16 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | creations_disposal_failures | review | handoff | claude | melder_0 | none | Owner reviews and accepts; the SpellSpace follow-up moved to scope_exit_cleanup. | Every declared disposal method runs and every failure is reported together; tests, docs, notch. | New tests red on 0.2.79 and green after; suites green; owner accepts. | tickets/tasks/2026-09-27_aggregate_creations_disposal_method_failures_task.md | 2026-09-27T13:54:57Z | REQUIRED |
 | scope_exit_cleanup | review | handoff | claude | melder_0 | none | Owner discusses `with` as dispose and enter_lesser_conduit (STRATEGY_DISCUSSION note), then approves a build. | Evidence-backed map of where scope exit and pool return dispose objects and where they break the contract, with a proposed fix. | Owner reviews the findings and approves or redirects a fix lane. | tickets/tasks/2026-09-27_investigate_scope_exit_and_pool_return_cleanup_task.md | 2026-09-27T14:20:34Z | REQUIRED |
+| defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
+| defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| release_0_2_82 | done | fable_0 | tickets/tasks/completed/2026-09-27_organize_release_0_2_82_and_rebuild_assets_task.md | 0.2.82 release note written fresh in next_version_release.md; 0.2.77.md restored to its cut; IR epic closed; assets and bundles rebuilt as the owner-ordered final step. | 2026-09-27T18:44:17Z |
+| comptime_ir_phase_pipeline | done | fable_0 | tickets/epics/completed/2026-08-03_comptime_ir_phase_pipeline_epic.md | Closed by owner directive: survey (M1), plan, T1 and I-1 (structural snapshot) delivered; the six IR-port stories retired unopened. | 2026-09-27T18:40:36Z |
 | readme_roadmap | done | seo_0 | tickets/tasks/completed/2026-09-27_embed_readme_roadmap_task.md | Roadmap after the introduction, quick/full-size/detail links; browser and docs model verified. Next: none. | 2026-09-27T14:28:08Z |
 | aether_conduit_lookup_api | done | melder_0 | tickets/epics/completed/2026-09-27_aether_conduit_lookup_api_epic.md | Epic, 11 stories and the implementation task turned in at 0.2.79: *_root_* renames, NAMED/LIVE Aether lookups, ConduitCloud.list_conduits; assets and LLM bundles rebuilt; whole tree green on 3.14t. Next: none. | 2026-09-27T13:03:47Z |
 | conduit_name_lookup_lessers | done | melder_0 | tickets/tasks/completed/2026-09-27_trace_get_conduit_by_name_named_lesser_lookup_task.md | Cause and repro of the root-only name lookup (MF7); the fix shipped under the epic. Next: none. | 2026-09-27T13:03:47Z |
@@ -110,8 +113,6 @@ Message alert rules
 | ux_aix_harness_red_remediation | done | examples_0 | tickets/epics/completed/2026-08-01_ux_aix_harness_red_remediation_epic.md | Epic and its four parked child tasks closed by owner directive (2026-09-27); four findings implemented per the corrected handoff; harness pass not recorded. | 2026-09-27T10:47:06Z |
 | ux_aix_expert_experience | done | examples_0 | tickets/epics/completed/2026-07-19_ux_aix_expert_experience_epic.md | Closed by owner directive (2026-09-27); lessons 01-32 and 42 probe rows authored; no agent-run green. | 2026-09-27T10:47:06Z |
 | ux_aix_advanced_experience | done | examples_0 | tickets/epics/completed/2026-07-19_ux_aix_advanced_experience_epic.md | Closed by owner directive (2026-09-27); arcs A-E authored (18 lessons, 64 probe rows); last signal 61/64. | 2026-09-27T10:47:06Z |
-| sphinx_homepage_heading | done | seo_0 | tickets/tasks/completed/2026-09-27_replace_homepage_slogan_task.md | Descriptive Python runtime heading; prior fragment preserved; 301-page build/site/SEO checks pass. Next: none. | 2026-09-27T01:29:33Z |
-| melder_seo_starter_review | done | seo_0 | tickets/tasks/completed/2026-09-26_review_melder_seo_starter_task.md | Inspected the starter and live Sphinx site; corrected the plan and retained the existing homepage. Next: none. | 2026-09-27T00:30:31Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes

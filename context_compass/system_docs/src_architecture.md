@@ -422,7 +422,8 @@ External interfaces are Python APIs:
 - `Conduit.notch_spell(...)`, `Conduit.add_to_spell_index(...)`, and
   `Conduit.remove_from_spell_index(...)` for transaction-backed SpellIndex
   member switching, move-in, and move-out flows. THE CONDUIT ADMITS THE
-  TRANSACTION - it calls `mediator.start_transaction(...)` ITSELF and calls into
+  TRANSACTION through the frame-local DevOps `TransactionMediator` (not the
+  aetheric plane) - it calls `mediator.start_transaction(...)` ITSELF and calls into
   Spellbook inside the held window. Spellbook exposes no public verb here.
   THE CHAIN HAS THREE LAYERS, NOT TWO, and the middle one is easy to miss:
   `Conduit.<verb>` (public; opens and closes the transaction) ->

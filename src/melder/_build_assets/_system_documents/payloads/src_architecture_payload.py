@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 3102
-CONTENT_SHA256 = '44b8ca3795f93c6aa8061b857d14424ad099db895388350563204307cc344e24'
+LINE_COUNT = 3103
+CONTENT_SHA256 = '3d000653659b5426c13d8b9eac82ad72b3883172285c4181a4ebe89db0a79c20'
 
 TEXT = """# Src Architecture (C4)
 
@@ -441,7 +441,8 @@ External interfaces are Python APIs:
 - `Conduit.notch_spell(...)`, `Conduit.add_to_spell_index(...)`, and
   `Conduit.remove_from_spell_index(...)` for transaction-backed SpellIndex
   member switching, move-in, and move-out flows. THE CONDUIT ADMITS THE
-  TRANSACTION - it calls `mediator.start_transaction(...)` ITSELF and calls into
+  TRANSACTION through the frame-local DevOps `TransactionMediator` (not the
+  aetheric plane) - it calls `mediator.start_transaction(...)` ITSELF and calls into
   Spellbook inside the held window. Spellbook exposes no public verb here.
   THE CHAIN HAS THREE LAYERS, NOT TWO, and the middle one is easy to miss:
   `Conduit.<verb>` (public; opens and closes the transaction) ->
