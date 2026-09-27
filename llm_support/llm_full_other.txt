@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 908f6b405929fbbbe4e097d12bd897d5c2202aef431a97a6b2851abf128c5c2e
+SOURCE FINGERPRINT: 73a553aaa703c0c2b9579599ebd9d9e541c0907b7084f0a439b7f4397e73ef1c
 FILE COUNT: 370
 
 ================================================================================
@@ -2657,7 +2657,7 @@ END FILE: .github/workflows/ci.yml
 ================================================================================
 ================================================================================
 BEGIN FILE: .github/workflows/docs.yml
-CONTENT SHA256: c0ed3d3949f3b577bbc75ed41084c0bda3ca82c34b8060427dda9efbf16e1e93
+CONTENT SHA256: b9467d5210887f512e4cae6aa6f2cd14bfdf1a3cfaa8d0501effd574c6083259
 SOURCE ENCODING: utf-8
 ================================================================================
 name: Documentation
@@ -2674,6 +2674,9 @@ jobs:
     name: Docs / site and handbook
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Exercise real canonical/sitemap output in CI without changing RTD's version-specific base.
+      READTHEDOCS_CANONICAL_URL: https://melder.readthedocs.io/en/latest/
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -2691,6 +2694,11 @@ jobs:
         run: python docs/tools/build_docs.py build
       - name: Validate links, anchors, and canonical source downloads
         run: python docs/tools/check_site.py
+      - name: Validate publication metadata
+        run: >-
+          python docs/tools/check_seo.py docs/_build/html
+          --base-url "$READTHEDOCS_CANONICAL_URL" --policy docs/seo.toml
+          --json docs/_build/seo-report.json
       - name: Build the ePub handbook
         run: python docs/tools/build_docs.py handbook --builder epub
       - name: Install the verified PDF compiler
@@ -2708,6 +2716,7 @@ jobs:
             docs/_build/htmlzip/*.zip
             docs/_build/handbook-epub/*.epub
             docs/_build/handbook-pdf/*.pdf
+            docs/_build/seo-report.json
           if-no-files-found: error
           retention-days: 14
 ================================================================================
@@ -3451,7 +3460,7 @@ END FILE: .gitignore
 ================================================================================
 ================================================================================
 BEGIN FILE: .readthedocs.yaml
-CONTENT SHA256: 12b470217ab933f372ad67fd95f897d8c82f70e06d19c83f49d492f952c3e478
+CONTENT SHA256: ef20079a0a079d67f1ca1e5fe1a49c9b6a41fa25175014ce45088bd4387a9948
 SOURCE ENCODING: utf-8
 ================================================================================
 version: 2
@@ -3467,6 +3476,10 @@ build:
       html:
         - python docs/tools/build_docs.py build
         - python docs/tools/check_site.py
+        - >-
+          python docs/tools/check_seo.py docs/_build/html
+          --base-url "$READTHEDOCS_CANONICAL_URL" --policy docs/seo.toml
+          --json docs/_build/seo-report.json
         - python docs/tools/build_docs.py stage --builder html
       htmlzip:
         - python docs/tools/build_docs.py archive
@@ -63019,9 +63032,17 @@ END FILE: docs/advanced/index.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/advanced/inspection-walkthrough.md
-CONTENT SHA256: 801d79cb2f2ddb272a71d9beeb111f60ab2463333be6033aa7f03fa6ea0a69cd
+CONTENT SHA256: b52d954574fc0cb3bb78888029bc9acddc77ec0a17efbe0618d59ec193ed5093
 SOURCE ENCODING: utf-8
 ================================================================================
+---
+myst:
+  html_meta:
+    description: >-
+      Inspect a selected Melder world: isolate frames, attach a Rift, navigate visible
+      conduits and spells, and diagnose missing information.
+---
+
 # Inspect an explicitly selected world
 
 Prerequisites: [world boundaries](worlds.md), [Nexus setup](nexus.md), and
@@ -63263,7 +63284,7 @@ END FILE: docs/advanced/workstation.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/api.toml
-CONTENT SHA256: 0090e9c6df6713aa83bf60babd211c7478db8ee548f718e5773651e97d6824e0
+CONTENT SHA256: 9703cdc744c1c22834064b16f914137ac17996170a7e40aa21223d098ecb6ddf
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -63321,7 +63342,7 @@ exports = ["ProtocolCrafter", "Cleanable", "Pack", "Package", "ULID_Factory", "n
 id = "errors"
 title = "Public errors"
 guide = "reference/troubleshooting"
-exports = ["SpellbookValidationError", "MeldExecutionError", "SpellSpaceScopeError", "HookExecutionError", "InternalRegistrationError", "PhaseSchedulerError", "PhaseExecutionError", "PhaseTimeoutError", "DeadReferenceError"]
+exports = ["SpellbookValidationError", "MeldExecutionError", "UnresolvedInputError", "SpellSpaceScopeError", "HookExecutionError", "InternalRegistrationError", "PhaseSchedulerError", "PhaseExecutionError", "PhaseTimeoutError", "DeadReferenceError"]
 
 [[group]]
 id = "metadata"
@@ -63382,9 +63403,17 @@ END FILE: docs/api.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/beginner/capstone.md
-CONTENT SHA256: 315d0d673225fd242bbfe3d6964eee1b226c88ff391dca40f7dd5bddb0688934
+CONTENT SHA256: 70bfcdd10102558de58c22dcd4dbb5a4e8d304019a0e5b9167e544d1f025a220
 SOURCE ENCODING: utf-8
 ================================================================================
+---
+myst:
+  html_meta:
+    description: >-
+      Build an orders application with ordinary Python objects, constructor injection,
+      shared resources, fresh handlers, and explicit cleanup using Melder.
+---
+
 # Build a complete beginner application
 
 Build a small orders application with ordinary Python objects, one bootstrap,
@@ -63704,7 +63733,7 @@ END FILE: docs/beginner/registration.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/catalog.toml
-CONTENT SHA256: 8758eee86284ce1431a81e2ce753c45b261ac006f117c5ca88de5457bcf0a172
+CONTENT SHA256: bf8f4f77fa2acbba94061942a68e5e4ab7083d816536494c69b7c00510e0f7e4
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -63877,12 +63906,22 @@ sources = [
 source = "UX_and_AIX_experiences/01_beginner/01_hello_meld.py"
 id = "examples/hello-melder"
 title = "Hello Melder"
+description = "Create your first Melder dependency graph: bind a plain Python class, conjure a conduit, and resolve an instance using a complete runnable script."
+
+[[lesson]]
+source = "UX_and_AIX_experiences/02_intermediate/15_constructor_di_by_annotation.py"
+description = "Run a complete Python constructor-injection example: bind Database and ReportService, resolve the service, and verify its injected dependency."
+
+[[lesson]]
+source = "UX_and_AIX_experiences/02_intermediate/36_late_binding_with_spellcontract.py"
+title = "Late binding with SpellContract: runnable example"
+legacy_anchor = "late-binding-with-spellcontract"
 ================================================================================
 END FILE: docs/catalog.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/conf.py
-CONTENT SHA256: 488339c25cc6f0f5876c7cffa36a528e9ff8cf0d56869b8d029d3e92d9998655
+CONTENT SHA256: cab8932b58ac0892819af7db581981311fe578d37885032de984af9a9f8f8a79
 SOURCE ENCODING: utf-8
 ================================================================================
 """Configure Melder's documentation build without importing Melder for its version.
@@ -63941,7 +63980,7 @@ pygments_style = "default"
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 html_theme = "sphinx_rtd_theme"
-html_title = "Melder — a runtime you can build on"
+html_title = "Melder"
 html_short_title = "Melder"
 html_static_path = ["_static"]
 templates_path = ["_templates"]
@@ -64010,7 +64049,7 @@ END FILE: docs/conf.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/curriculum.toml
-CONTENT SHA256: c09d9ab346cfbb88723c60e0d8d4137da3e2a31acfac74daa8b58f60770c3afa
+CONTENT SHA256: 910902acbbee706affc206e7efe92906020339d93eced78c950385218d250987
 SOURCE ENCODING: utf-8
 ================================================================================
 schema_version = 1
@@ -64061,6 +64100,7 @@ lessons = ["beginner:09", "beginner:17", "beginner:25", "beginner:38"]
 [[chapter]]
 id = "beginner/dependency-injection"
 title = "Constructor dependency injection"
+description = "Learn constructor dependency injection in Melder and follow a complete runnable Python example with typed dependencies."
 level = "beginner"
 readme = "🟢 Dependency Injection"
 end_before = "When an annotation isn't specific enough"
@@ -64069,6 +64109,7 @@ lessons = ["intermediate:15", "beginner:16"]
 [[chapter]]
 id = "beginner/lifetimes"
 title = "Choose an instance lifetime"
+description = "Choose among Melder's six object lifetimes and follow examples of shared, scoped, and freshly constructed Python objects."
 level = "beginner"
 readme = "🟢 Six Lifetimes, Not Three"
 lessons = ["beginner:02", "beginner:13", "beginner:14", "beginner:15", "beginner:29"]
@@ -64083,6 +64124,7 @@ lessons = ["beginner:05", "beginner:27", "beginner:34"]
 [[chapter]]
 id = "beginner/cleanup"
 title = "Cleanup and memory ownership"
+description = "Configure Melder's disposal methods, understand cleanup order and failure handling, and follow examples of resource and memory ownership."
 level = "beginner"
 readme = "🟢 Teardown Is Part of Registration"
 lessons = ["beginner:08", "beginner:10", "beginner:35", "beginner:41"]
@@ -64593,9 +64635,17 @@ END FILE: docs/expert/bind-hooks.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/codegen.md
-CONTENT SHA256: 1baccb91c9034400425d86419eb01f929afc75f193880f20cb6d97a1b1029e98
+CONTENT SHA256: 15862032033ce406ddec9ef1d0aa9cb2ce479511dce74277d2a52e4c11aad3cd
 SOURCE ENCODING: utf-8
 ================================================================================
+---
+myst:
+  html_meta:
+    description: >-
+      Build a Python application from generated source with Melder: validate,
+      materialize, import, bind, and resolve objects with controlled lifetimes.
+---
+
 # Validate → materialize → import → bind → meld
 
 Prerequisites: [an eligible agent room](agent-rooms.md),
@@ -65088,9 +65138,17 @@ END FILE: docs/handbook.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/index.md
-CONTENT SHA256: eafab7927f209c6736c438e3cf712b9fb374e54d8ed42bf960db2e700d85049b
+CONTENT SHA256: 074c2201a08ca3c3461e70ef9b749ab132215a846e606d636635a28950785f41
 SOURCE ENCODING: utf-8
 ================================================================================
+---
+myst:
+  html_meta:
+    description: >-
+      Melder is a Python dependency graph runtime. Explore dependency injection,
+      instance lifetimes, cleanup, isolated worlds, and agent-operated infrastructure.
+---
+
 # A runtime you can build on
 
 Melder wires ordinary Python objects into a live dependency graph: services,
@@ -65815,7 +65873,7 @@ END FILE: docs/intermediate/scopes.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/maintaining.md
-CONTENT SHA256: e34fd39e119d2f5e767cab323c187f2d64b07bbf33a84417120ea023390e8dcc
+CONTENT SHA256: 93bf8d9ff941417e5594e0ac88370aa77121a872c2a5be199d2163ae38fef635
 SOURCE ENCODING: utf-8
 ================================================================================
 # Maintain and publish the documentation
@@ -65858,6 +65916,54 @@ import paths cannot reuse stale source-page backlinks. Edit canonical inputs, no
 Local previews include your uncommitted edits, while GitHub source links identify
 the checkout's current commit. Qualify the intended committed revision in CI and
 Read the Docs before treating that preview as a published release.
+
+## Search metadata and crawler files
+
+The site's short browser-title suffix is `Melder`. Keep visible page headings and the
+existing learning structure separate from this suffix.
+
+Descriptions have one source owner:
+
+- Authored Markdown pages use `myst.html_meta.description` in their YAML frontmatter.
+- README-derived chapters may set `description` in `docs/curriculum.toml`.
+- Saved lessons may set `description` in a `[[lesson]]` override in `docs/catalog.toml`.
+
+When changing a published lesson title, set its previous heading fragment in `legacy_anchor`
+so existing deep links still resolve. The target accepts lowercase letters, digits and hyphens.
+
+Generated descriptions must be nonempty strings when supplied. Authored chapters cannot also
+declare a manifest description. The generators validate and escape metadata before publishing it;
+they retain the canonical prose and downloaded example bytes.
+
+`docs/seo.toml` lists the reviewed pages whose descriptions are required. Add a page there after
+authoring its specific summary. Other missing descriptions are warnings, so broader coverage can
+grow without treating every unedited reference page as a publication failure.
+
+For a local publication audit, set `READTHEDOCS_CANONICAL_URL` before the HTML build. In PowerShell:
+
+```powershell
+$env:READTHEDOCS_CANONICAL_URL = "https://melder.readthedocs.io/en/latest/"
+python docs/tools/build_docs.py build
+python docs/tools/check_site.py
+python docs/tools/check_seo.py docs/_build/html --base-url $env:READTHEDOCS_CANONICAL_URL --policy docs/seo.toml --json docs/_build/seo-report.json
+```
+
+On POSIX shells, use `export READTHEDOCS_CANONICAL_URL="https://melder.readthedocs.io/en/latest/"`
+and pass `--base-url "$READTHEDOCS_CANONICAL_URL"`. CI supplies this audit base explicitly. Read the
+Docs supplies its own version-specific value; do not replace that value in the hosted configuration.
+
+The SEO check validates titles, description ownership, canonical links, sitemap inclusion and
+indexing directives. Exit codes are 0 for no policy errors, 1 for policy errors, and 2 for unreadable
+inputs. It reports optional descriptions and H1/language conventions as warnings. External RTD
+previews may retain intentional `noindex`; other intentional previews use `--allow-noindex`.
+The checker reads local HTML/XML only and does not claim Google indexing or ranking results.
+
+Read the Docs already serves the project's `robots.txt` at
+`https://melder.readthedocs.io/robots.txt`. Its generated file allows public versions, handles hidden
+versions, and advertises the root sitemap. Keep this platform-managed file unless a deliberate
+crawler-policy change calls for a custom replacement. A local build need not contain `robots.txt`.
+After publication, verify that root endpoint and `https://melder.readthedocs.io/sitemap.xml` return
+the intended rules and URLs. Local metadata checks do not verify those remote responses.
 
 ## Add a chapter or page
 
@@ -66603,7 +66709,7 @@ END FILE: docs/tests/test_build_docs.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/tests/test_curriculum.py
-CONTENT SHA256: d6fb5f7e297a6a57cb8af5faee3ee230010d1d79b2bb82cc43370461a6330c93
+CONTENT SHA256: ec003cc135676ad6e61742bb4da649c0d7255c7ca67e3a881922d51b0f7aa79a
 SOURCE ENCODING: utf-8
 ================================================================================
 """Protect canonical README section selection from truncation and code-fence confusion."""
@@ -66665,6 +66771,18 @@ class CurriculumRouteTests(unittest.TestCase):
         cluster = builder.generated_bodies["examples/intermediate/25-clusters-unique-per-cluster"]
         self.assertIn("../../advanced/clusters.md", cluster)
         self.assertIn("../../intermediate/connected-subsystems.md", cluster)
+
+    def test_cleanup_configuration_link_stays_inside_the_website(self) -> None:
+        """A README link becomes a version-local guide route without changing its canonical source."""
+        root = Path(__file__).resolve().parents[2]
+        readme = root / "README.md"
+        original = readme.read_bytes()
+        builder = DocumentationBuilder(root)
+        builder.load()
+        cleanup = builder.generated_bodies["beginner/cleanup"]
+        self.assertIn("[configuration guide](../intermediate/configuration.md)", cleanup)
+        self.assertNotIn("blob/prod/docs/intermediate/configuration.md", cleanup)
+        self.assertEqual(readme.read_bytes(), original)
 
 
 if __name__ == "__main__":
@@ -67893,7 +68011,7 @@ END FILE: docs/tools/check_site.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/tools/curriculum.py
-CONTENT SHA256: 6487317bdfa6406272c5139a0eb3b1ae4e369b1105444950bc14c41c3801605d
+CONTENT SHA256: 9958ee0ff7a61676e42b744e395164e072a8691a05a11eada901a7290b97eb5b
 SOURCE ENCODING: utf-8
 ================================================================================
 """Assemble level chapters from authored guides and explicit README sections.
@@ -67909,6 +68027,7 @@ from pathlib import Path, PurePosixPath
 
 from example_catalog import ExampleCatalog
 from site_model import Page
+from page_metadata import PageMetadata
 
 
 class ReadmeSections:
@@ -68009,13 +68128,21 @@ class Curriculum:
         return source.read_text(encoding="utf-8")
 
     def _chapter(self, chapter: dict) -> None:
-        """Resolve one chapter's canonical prose and exact lesson links; reject ambiguity."""
+        """Resolve canonical prose, metadata ownership and exact lesson links before generation.
+
+        README chapters may declare an editorial description in the manifest.
+        Authored chapters own their frontmatter; a second manifest description
+        raises ValueError rather than publishing competing metadata.
+        """
         identifier, title, level = chapter["id"], chapter["title"], chapter["level"]
         if level not in ExampleCatalog._LEVELS or not identifier.startswith(level + "/"):
             raise ValueError(f"Chapter {identifier} does not belong to a learning level.")
         has_readme, has_source = "readme" in chapter, "source" in chapter
         if has_readme == has_source:
             raise ValueError(f"Chapter {identifier} needs one README heading or authored source.")
+        if has_source and "description" in chapter:
+            raise ValueError(f"Authored chapter {identifier} must keep its description in source frontmatter.")
+        description = PageMetadata.description(chapter.get("description"), identifier)
         body = self.readme.body(chapter["readme"]) if has_readme else self._source(chapter["source"])
         if "end_before" in chapter:
             marker = chapter["end_before"]
@@ -68023,7 +68150,7 @@ class Curriculum:
                 raise ValueError(f"Chapter {identifier} lost its README boundary marker: {marker}")
             body = body[:body.index(marker)].rstrip()
         if has_readme:
-            body = f"# {title}\n\n" + body
+            body = PageMetadata.frontmatter(description) + f"# {title}\n\n" + body
         body = self._rewrite_tour_links(identifier, body)
         selected = []
         for reference in chapter.get("lessons", []):
@@ -68051,12 +68178,15 @@ class Curriculum:
         self.bodies[identifier] = body
 
     def _rewrite_tour_links(self, identifier: str, body: str) -> str:
-        """Translate the README's tour references into the four-level site routes."""
+        """Translate the README's tour and known guide links into local four-level site routes."""
         mappings = {
             "[Part I](#-read-only-rooms-for-endpoints)": ("Advanced: read-only rooms", "advanced/read-only-rooms"),
             "[Part I](#part-i--the-basics)": ("Beginner", "beginner/index"),
             "[Part II](#part-ii--the-ceiling)": ("Expert", "expert/index"),
             "[documentation](#documentation)": ("full contents", "contents"),
+            "[configuration guide](https://github.com/Synaptic724/melder/blob/prod/docs/intermediate/configuration.md)": (
+                "configuration guide", "intermediate/configuration"
+            ),
         }
         for original, (label, destination) in mappings.items():
             body = body.replace(original, f"[{label}]({self._relative(identifier, destination)})")
@@ -68215,7 +68345,7 @@ END FILE: docs/tools/docstring_format.py
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/tools/example_catalog.py
-CONTENT SHA256: c69eef2e6ae0009a3d4bc73793afcb703c779ddbb6c9415f10820ddc92a3194f
+CONTENT SHA256: 3f330a4dc4f4f3cdb5eaec7f42b93d4c7880708b8989a7bd1ccad58588e43e8b
 SOURCE ENCODING: utf-8
 ================================================================================
 """Render the saved curriculum without importing or executing its lesson modules.
@@ -68238,11 +68368,12 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 from site_model import Page
+from page_metadata import PageMetadata
 
 
 @dataclasses.dataclass(frozen=True)
 class Lesson:
-    """Value-only metadata derived from one actual lesson's header and source identity."""
+    """Value-only source identity, header facts, and optional editorial description for one lesson."""
 
     source: str
     level: str
@@ -68253,6 +68384,8 @@ class Lesson:
     surfaces: str
     topics: tuple[str, ...]
     digest: str
+    description: str = ""
+    legacy_anchor: str = ""
 
 
 class ExampleCatalog:
@@ -68357,7 +68490,7 @@ class ExampleCatalog:
             raise ValueError("The lesson catalog contains duplicate page identifiers.")
 
     def _lesson(self, path: Path, level: str, overrides: dict) -> Lesson:
-        """Extract syntax/header facts from one source, rejecting missing editorial contracts."""
+        """Extract source facts and validated editorial overrides before any output is written."""
         raw = self.source_bytes[path.relative_to(self.root).as_posix()]
         tree = ast.parse(raw.decode("utf-8-sig"), filename=str(path))
         fields = self.fields(ast.get_docstring(tree, clean=True) or "")
@@ -68373,8 +68506,13 @@ class ExampleCatalog:
         goal = override["GOAL"] if "GOAL" in override else fields["GOAL"]
         surfaces = override.get("SURFACE EXERCISED", fields.get("SURFACE EXERCISED", ""))
         topics = tuple(override.get("topics", self._topics(goal + " " + surfaces)))
+        description = PageMetadata.description(override.get("description"), relative)
+        legacy_anchor = override.get("legacy_anchor", "")
+        if (not isinstance(legacy_anchor, str)
+                or (legacy_anchor and re.fullmatch(r"[a-z0-9][a-z0-9-]*", legacy_anchor) is None)):
+            raise ValueError(f"Legacy heading anchor for {relative} must contain lowercase letters, digits or hyphens.")
         return Lesson(relative, level, path.stem[:2], identifier, title, goal, surfaces,
-                      topics, hashlib.sha256(raw).hexdigest())
+                      topics, hashlib.sha256(raw).hexdigest(), description, legacy_anchor)
 
     def _title(self, level: str) -> str:
         """Return the owner-defined visible label for a validated level."""
@@ -68418,7 +68556,7 @@ class ExampleCatalog:
                 f'<p id="example-results" role="status" aria-live="polite">{len(self.lessons)} examples</p>')
 
     def _lesson_body(self, lesson: Lesson) -> str:
-        """Render a complete source-backed lesson page without claiming that its assertions have run."""
+        """Render a source-backed lesson with optional description, without claiming its checks ran."""
         source_name = lesson.source.removeprefix("UX_and_AIX_experiences/")
         download = self._link(lesson.identifier, "downloads/" + source_name, "")
         guide = self._link(lesson.identifier, lesson.level + "/index")
@@ -68426,7 +68564,10 @@ class ExampleCatalog:
         bundle = self._link(lesson.identifier, "downloads/" + lesson.level + "-examples.zip", "")
         source_url = str(self._configuration["repository_url"]).rstrip('/') + f"/blob/{self._revision}/{lesson.source}"
         paragraphs = "\n\n".join(" ".join(block.split()) for block in lesson.goal.split("\n\n") if block.strip())
-        return (f"# {lesson.title}\n\n**{self._title(lesson.level)} · Lesson {lesson.number}**\n\n"
+        # Keep an established fragment address when editorial copy changes the automatic heading ID.
+        legacy_target = f"({lesson.legacy_anchor})=\n" if lesson.legacy_anchor else ""
+        return (PageMetadata.frontmatter(lesson.description)
+                + legacy_target + f"# {lesson.title}\n\n**{self._title(lesson.level)} · Lesson {lesson.number}**\n\n"
                 f"{paragraphs}\n\n## Before you run\n\n"
                 f"Use the [{lesson.level.title()} guide]({guide}) for prerequisite concepts. "
                 "Run from a checkout with Melder installed and Python 3.14 free-threading selected. "
@@ -69502,10 +69643,10 @@ END FILE: release_docs/0.2.50.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 1d3ca188e1563328feaaac72d3cdafa7e75f715d8e36379417fbfc07f249ede7
+CONTENT SHA256: f0c12608e2bcf20695b88cf073b82975606c871e94a9a46eb5f84c76b3358441
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.74
+# Melder 0.2.77
 
 **Unreleased**
 
@@ -70066,6 +70207,16 @@ stay valid.
 
 ## Packaging and documentation
 
+- Documentation builds check titles, descriptions, canonical URLs and sitemap destinations, with
+  intentional preview indexing handled separately. The late-binding example now has a distinct title
+  from its guide while preserving its old heading link. Read the Docs continues to serve the existing
+  generated `robots.txt` and sitemap.
+- Documentation page titles use the short Melder suffix. Selected guides and examples now carry
+  page-specific search descriptions through their existing source files and manifests. The cleanup
+  guide links directly to the website's configuration chapter; the visible homepage and guides remain.
+- The Sphinx API inventory now includes `UnresolvedInputError`, so documentation builds no longer
+  refuse the newly exported public error. Windows checkout also succeeds after shortening the retired
+  graph-descriptor archive paths; the archived contents and original-path mapping are preserved.
 - The packaged system documents (`melder.__architecture__`, `__components__`, `__graph_network__` and
   `__graph_details__`) are regenerated and describe unresolved inputs, `UnresolvedInputError`, the
   opt-in conjure warning report, process-stable spell ids, cache generation 12, caller-supplied container
@@ -70093,7 +70244,7 @@ stay valid.
   what each group of tests protects, and the rule that a test fixture resetting Melder's singletons must boot
   a fresh `Aether` afterwards. The registration-guard test and the system-document view tests no longer
   depend on the order the suite runs them in.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.74.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.77.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

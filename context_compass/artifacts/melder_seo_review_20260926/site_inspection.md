@@ -81,3 +81,16 @@ Observed routes:
   and generated injection/lifetimes/cleanup/Hello pages in full. The guide/example structure is explicit.
 - Read README lines 391-510: the external configuration link is authored at line 496, then retained
   by the curriculum renderer. Keep GitHub's README link useful; localize it when generating Sphinx.
+
+## Verification limits
+
+- robots.txt navigation was blocked by the browser client; the web fetch tool also could not
+  retrieve robots.txt or the root sitemap. Their deployed contents remain unverified. These tool
+  failures do not establish an HTTP failure or crawler problem on the site.
+- The stored local site-check.json says 300 declared pages, 366 HTML files, 36,469 local links,
+  and zero errors. It is historical output; no fresh whole-site link check is claimed in this pass.
+- Read the current curriculum/catalog test modules and docs workflow in full. Existing CI already
+  runs source-model checks, Sphinx with warnings treated as errors, site checks, and offline builds.
+- No browser layout defect or failed reader route was found in the inspected desktop paths.
+- No claim is made about Google indexing/ranking, all pages, mobile layout, HTTP headers, or
+  example runtime execution. These are different checks from reading the docs in a browser.

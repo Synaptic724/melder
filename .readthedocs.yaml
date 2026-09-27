@@ -11,6 +11,10 @@ build:
       html:
         - python docs/tools/build_docs.py build
         - python docs/tools/check_site.py
+        - >-
+          python docs/tools/check_seo.py docs/_build/html
+          --base-url "$READTHEDOCS_CANONICAL_URL" --policy docs/seo.toml
+          --json docs/_build/seo-report.json
         - python docs/tools/build_docs.py stage --builder html
       htmlzip:
         - python docs/tools/build_docs.py archive

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: b705e2b4cb62d6a2344b7449333d9e98b0410ee6f44677c5b859135d82f8f35b
+SOURCE FINGERPRINT: 40673161e579e6ce03954755a37d27c95178c82f5cbaacd41e562685aa64a912
 FILE COUNT: 1018
 
 ================================================================================
@@ -153227,7 +153227,7 @@ END FILE: tests/unit/github_workflows/test_source_qualification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/github_workflows/test_workflow_contracts.py
-CONTENT SHA256: 29159c5dc418680f9032216153637857f70449650623050eec3d1745655fff56
+CONTENT SHA256: 8dee74c40b7c86d07c0c46c84b3a824e54c4160c892dc3ed954cd53c1afbc880
 SOURCE ENCODING: utf-8
 ================================================================================
 """Prove safety-relevant workflow wiring using parsed YAML rather than substring matches."""
@@ -153299,6 +153299,26 @@ def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
         assert "continue-on-error" not in job
         assert "environment" not in job
         assert "timeout-minutes" in job
+
+
+def test_docs_metadata_validation_precedes_artifact_upload_and_rtd_staging() -> None:
+    """Both publication paths must apply the shared metadata policy after building HTML."""
+    job = workflow("docs.yml")["jobs"]["site"]
+    assert job["env"]["READTHEDOCS_CANONICAL_URL"] == "https://melder.readthedocs.io/en/latest/"
+    command = (
+        'python docs/tools/check_seo.py docs/_build/html --base-url "$READTHEDOCS_CANONICAL_URL" '
+        '--policy docs/seo.toml --json docs/_build/seo-report.json'
+    )
+    steps = job["steps"]
+    build = next(index for index, step in enumerate(steps) if step.get("run") == "python docs/tools/build_docs.py build")
+    audit = next(index for index, step in enumerate(steps) if step.get("run") == command)
+    assert build < audit < len(steps) - 1
+    assert "if" not in steps[audit] and "continue-on-error" not in steps[audit]
+    root = pathlib.Path(__file__).resolve().parents[3]
+    rtd = yaml.load((root / ".readthedocs.yaml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+    html_commands = rtd["build"]["jobs"]["build"]["html"]
+    assert html_commands.index("python docs/tools/build_docs.py build") < html_commands.index(command)
+    assert html_commands.index(command) < html_commands.index("python docs/tools/build_docs.py stage --builder html")
 
 
 @pytest.mark.parametrize(("name", "job_name"), [

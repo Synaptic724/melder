@@ -1,149 +1,133 @@
-# Melder documentation improvement proposal
+# Melder documentation improvement plan — revised after direct inspection
 
-> WITHDRAWN, 2026-09-26: The owner rejected the homepage-first direction and requested direct
-> rendered-site/guide inspection. This proposal and homepage-proposal.patch must not be applied.
-> A revised evidence-based plan will replace the proposal after that investigation.
-
-Owner-facing proposal from seo_0, 2026-09-26.
+Prepared by seo_0 on 2026-09-26. This replaces the earlier homepage-first proposal.
 Task: TASK-2026-09-26-review-melder-seo-starter.
 
-## Objective
+## What the inspection changed
 
-Help an unfamiliar Python developer understand Melder, find the guide for their problem,
-and run a complete example. Make that clarity survive future documentation builds.
+The existing homepage, guide structure, examples, and capstones are doing their jobs. I had
+proposed new content before reading the complete material already linked from those guides.
+That recommendation is withdrawn. Do not apply homepage-proposal.patch or its draft source copies.
 
-## 1. Fix the entry page
+Direct browser inspection covered the homepage, Beginner entry, injection/lifetimes/cleanup guides,
+the full linked injection example, beginner capstone, inspection walkthrough, expert codegen guide,
+the example catalog filter, and Read the Docs search. The relevant authored/generated sources,
+renderers, tests, and docs workflow were also read.
 
-Use this main heading:
+The capstone already contains a complete four-module application with constructor injection,
+shared and fresh instances, typed consumption, assertions, expected output, and explicit shutdown.
+The small concept pages deliberately link runnable source; they do not need to become duplicate
+capstones. The catalog has 138 examples, and its cleanup filter and hosted search worked.
 
-> A dependency graph runtime for Python
+## Confirmed findings
 
-Opening:
+| Finding | Evidence | Meaning |
+| --- | --- | --- |
+| Repeated slogan in browser titles | Live title plus docs/conf.py:57 | A small title-template cleanup; it does not justify a new visible homepage. |
+| Missing description metadata on six sampled pages | DOM inspection of capstone, injection example, lifetimes, cleanup, inspection walkthrough, codegen | Opportunity to supply page-specific snippet copy; absence does not mean the page cannot rank. |
+| Cleanup's configuration link leaves the docs for GitHub | README.md:496, generated cleanup page, live link | Keep readers on the matching version's Sphinx chapter while retaining the README's useful GitHub link. |
+| Canonicals and indexing metadata on those six pages | Each canonical matches its page; no robots/googlebot noindex found | No repair justified for these observed tags. |
+| Live site uses 0.2.50 while the current checkout uses 0.2.74 | Live source hash matches local prod and origin/prod, both 9c3ca5ff5; checkout is codex_features2 | Expected branch distinction, not evidence of failed deployment. |
 
-> Melder wires ordinary Python classes, functions, and instances into a live dependency graph.
-> Use dependency injection to connect services, choose when instances are shared or recreated,
-> and define how resources are cleaned up.
+## First change: narrow fixes to the existing site
 
-Keep the existing explanation of connected subsystems, isolated worlds, and agent-operated
-infrastructure immediately after it. The broader runtime capabilities remain visible.
+### 1. Shorten the shared browser-title suffix
 
-Concrete changes are drafted in `homepage-proposal.patch`:
+- Change only html_title in docs/conf.py from the full slogan to "Melder".
+- Keep the visible homepage heading, banner, cards, learning levels, and walkthroughs.
+- Result: the current homepage title becomes "A runtime you can build on — Melder"; a guide title
+  becomes "Constructor dependency injection — Melder".
+- The separate html_short_title already equals Melder.
 
-- `docs/conf.py`: use `html_title = "Melder"`.
-- `docs/index.md`: add the specific description, use the new heading, retain the old fragment,
-  and add six direct guide links before the existing four-level curriculum.
+Why: this removes actual repeated boilerplate. Choosing a new slogan is a separate editorial
+choice; it is not a prerequisite for improving the site's metadata.
 
-The draft leads with product description. The old slogan can be secondary brand copy elsewhere;
-it does not need to occupy the main homepage heading.
+### 2. Keep the configuration cross-link inside Sphinx
 
-The primary starting route remains the existing runnable Hello Melder example. Direct guide
-links answer concrete needs: dependency wiring, lifetime selection, cleanup, overrides, inspection,
-and agent access. Existing URLs and curriculum labels remain stable.
+- Extend docs/tools/curriculum.py::Curriculum._rewrite_tour_links for the known existing
+  configuration-guide URL so the generated cleanup chapter links to ../intermediate/configuration.md.
+- Retain the GitHub destination in the root README, where that link has a different audience.
+- Add a focused docs/tests/test_curriculum.py regression that verifies the generated local route
+  and preservation of the canonical README text.
+- Validate the resulting anchor/link through the existing site checker.
 
-### Verification before applying/publishing
+This fixes a demonstrated detour without replacing the guide or changing public URLs.
 
-The proposal passes `git apply --check --verbose`. It has not been applied or rendered.
-After adoption, run the documented build pipeline and inspect the resulting title, description,
-old heading fragment, and the six destinations. Review the actual browser layout on desktop and
-narrow screens. Normal release/version bookkeeping follows the owner's existing repository policy.
+## Second change: add descriptions through the existing source model
 
-## 2. Make the important guides complete
+Start with the homepage, the inspected guide pages, and the constructor-injection example. Author
+short descriptions of the content already present. This is metadata work, not a guide rewrite.
 
-Prioritize these three reader outcomes, in order:
+Use each existing source owner:
 
-1. **Constructor injection:** take a small application from manual construction to a complete
-   Melder graph. Include imports, class definitions, registration, conjure, resolution, an observable
-   result, and cleanup. Explain the relevant error and link to explicit selection.
-2. **Lifetimes:** show when repeated resolutions return the same or different objects, which scope
-   owns each object, and what changes when the scope ends. Describe Melder's exact six lifetimes
-   and boundaries; avoid an inaccurate process-global-singleton shorthand.
-3. **Cleanup and ownership:** show a scoped resource's full life, explicit disposal, the effect of
-   a retained reference, and what the application still owns. Keep the documented disposal contract
-   aligned with current implementation and runnable source.
+- Authored pages: MyST description frontmatter, with visible body content retained.
+- README-derived chapters: optional chapter description in docs/curriculum.toml, emitted by
+  docs/tools/curriculum.py. Do not fork those chapters just to add metadata.
+- Generated examples: optional editorial description on Lesson and its TOML override, consumed by
+  docs/tools/example_catalog.py. Do not add a config field that the renderer ignores.
+- Keep one description owner per page; test the final HTML for exactly one nonempty tag and correct
+  escaping. Do not repeat one generic description on every page.
 
-Use separate authored pages where a README excerpt cannot carry the full tutorial:
+Likely source scope for this change:
+- docs/index.md (metadata only)
+- docs/beginner/capstone.md, docs/advanced/inspection-walkthrough.md, docs/expert/codegen.md
+  (metadata only)
+- docs/curriculum.toml and docs/tools/curriculum.py
+- docs/catalog.toml and docs/tools/example_catalog.py
+- docs/tests/test_curriculum.py and docs/tests/test_example_catalog.py
 
-- `docs/beginner/dependency-injection.md`
-- `docs/beginner/lifetimes.md`
-- `docs/beginner/cleanup.md`
-- `docs/curriculum.toml`: keep each existing ID and select its authored source.
+Google may use a meta description or choose page text for its snippet. This work gives it useful,
+page-specific copy; it does not establish a ranking increase.
+[Google snippet guidance](https://developers.google.com/search/docs/appearance/snippet).
 
-Give the intermediate injection guide its own job: explicit selection and collections. Update its
-source/selector deliberately so it no longer repeats the beginner walkthrough.
+## Third change: adapt the starter's checker to the actual pipeline
 
-Use the existing saved examples as the starting evidence and keep executable source in
-`UX_and_AIX_experiences`, following that directory's instructions. Read the implementations and
-run the applicable examples on Python 3.14t before reporting them as working. Documentation rendering
-and runtime example execution are separate checks.
+Use it to catch regressions in the metadata we have deliberately added. Preserve the existing
+site checker, whose link/source-fidelity work is already part of CI.
 
-### Acceptance
+- Integrate the supplied tests under the existing docs test discovery and import conventions.
+- Bring new checker code into the selected role's typing/docstring conventions.
+- Require descriptions only for the reviewed pages initially.
+- Use an explicit base URL for a local/CI audit. The current builder emits a sitemap only when
+  READTHEDOCS_CANONICAL_URL is supplied; do not bolt on a check that assumes every local build has it.
+- Respect RTD's supplied base and intentional preview/version indexing policies.
+- Review sitemap/root-URL behavior before making the supplied exact self-canonical assumptions
+  a hard publication gate. The checker is an input, not an authority over hosting policy.
 
-A reader can start from each guide without undefined variables, missing setup, or invented output.
-The guide teaches the result and ownership boundary, and links to the next relevant topic.
-The existing inspection walkthrough and agent-access guide remain prominent so the site also
-explains the capabilities beyond dependency construction.
+Relevant files: docs/tools/check_seo.py and docs/tests/test_check_seo.py (new, adapted), the docs
+workflow, .readthedocs.yaml, and docs/maintaining.md. Final integration scope belongs in its own
+implementation ticket after the first metadata change is verified.
 
-## 3. Put descriptions and checks into the build pipeline
+## Verification
 
-Use authored frontmatter for guides. Extend the existing lesson model/loader/renderer with an
-optional editorial description for generated examples. A cleaned goal may provide a fallback
-only when it accurately describes that page.
+Run the established docs workflow after implementation:
 
-Relevant source surfaces are already identified:
+1. python -m unittest discover -s docs/tests -q
+2. python docs/tools/build_docs.py check
+3. python docs/tools/build_docs.py build
+4. python docs/tools/check_site.py
 
-- `docs/tools/example_catalog.py`: `Lesson`, `_lesson`, and `_lesson_body`.
-- `docs/catalog.toml`: editorial title/description overrides.
-- `docs/tests/test_example_catalog.py`: generation and metadata behavior.
-- Adapted checker and tests under `docs/tools` and `docs/tests`.
-- Existing docs build jobs, reviewed before adding any publication requirement.
+Inspect the rendered title, descriptions, and corrected cross-link in a browser. Existing handbook
+checks remain part of CI. These changes do not require new application examples or runtime changes.
 
-Adapt the supplied checker to the repository's source conventions and real generated output.
-Make malformed titles/canonicals and unintended indexing directives actionable. Establish intended
-version/preview exceptions before treating those assumptions as build failures. Require descriptions
-for the homepage and upgraded guides first; expand coverage as good descriptions are authored.
+No test suite or full build was run during this inspection. Browser route/filter/search checks
+were actually performed; the historical local report is identified separately in site_inspection.md.
 
-Keep the existing sitemap implementation. Add checks for real defects instead of adding another
-sitemap provider. No new SEO dependency has been identified as necessary for this proposal.
+## What remains unknown
 
-### Acceptance
+- The deployed robots.txt and root sitemap could not be retrieved through the available browser/web
+  tools. This is unverified, not evidence that either is broken. Inspect them before changing policy.
+- Google indexing, query impressions, click-through, and selected canonicals need actual Search
+  Console evidence. No diagnosis of poor rankings is established by this inspection.
+- The feature branch should reach the normal prod publication flow when the owner intends it to;
+  a private/local version increase alone does not justify changing RTD settings.
 
-Authored and generated metadata reach the final HTML, meaningful checker tests cover regressions,
-and approved preview/version behavior does not fail the build. The current site checker continues
-to verify links, anchors, assets, and source fidelity.
+## Scope decision
 
-## 4. Check what visitors and search engines actually receive
+Retain the existing homepage layout, guides, four levels, capstones, example catalog, search,
+URLs, and sitemap generator. Implement the title/cross-link corrections first, then descriptions,
+then enforce the verified metadata with the adapted checker. Select any later content work from
+observed reader questions or search data rather than assuming the current documentation is missing.
 
-After a reviewed build is published, inspect the homepage, one guide, one example, and one API
-page for the intended title, description, canonical URL, and indexing directives. Check the served
-root sitemap, redirects, and the published commit/version.
-
-Use Search Console data if available to distinguish branded queries from problem-oriented queries.
-Record a baseline before expanding topics. Treat search-result clicks and example downloads as
-interest signals; they do not prove successful adoption.
-
-Choose subsequent content from evidence. A worked object-lifecycle/ownership comparison or a live
-graph inspection example would expose specific capabilities. Performance comparisons require
-equivalent workloads, recorded versions, and actual measured results.
-
-## Order of work
-
-1. Adopt and verify the drafted homepage change.
-2. Deliver the three complete guides and distinct intermediate injection material.
-3. Add generated descriptions and integrate the reviewed checker.
-4. Verify the deployed result and use observed queries/problems to select follow-up content.
-
-The first change is ready for review as a two-file patch. The later changes need their own
-implementation tickets and source-level verification before editing. This proposal does not
-authorize an automatic publication or runtime API change.
-
-## Evidence and operating constraints
-
-- Existing review and verified source references: `review.md:1-163`.
-- Current homepage source: `docs/index.md:1-142`.
-- Site title configuration: `docs/conf.py:54-76`.
-- Authoring/build and example-execution requirements: `docs/maintaining.md:7-72`.
-- Stable chapter routes: `docs/curriculum.toml:46-72`, `106-111`, `137-143`, `270-291`.
-- The attached audit is a proposal; no claimed rankings, traffic, or synthetic test results are
-  carried forward as independently verified facts.
-
-No product files have been changed. The candidate page/configuration and patch are review artifacts.
+Detailed observed pages and limits: site_inspection.md. Earlier review/proposal artifacts are
+retained as history; their homepage and guide-rewrite recommendations are superseded here.

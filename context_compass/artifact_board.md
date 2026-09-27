@@ -85,13 +85,15 @@ Disposition values
 | tickets/stories/2026-07-19_melder_init_composition_story.md | system_docs/patches/active/melder_init_composition_2026_07_19/component_patch_package_root.md | patch_doc | active | promote_to_documentation | Init/pyproject before-after, additive export deltas, DEBUG_MODE removal. | 2026-07-19T11:53:00Z | REQUIRED |
 | tickets/epics/2026-08-03_comptime_ir_phase_pipeline_epic.md | artifacts/ir_epic_gauntlet_baseline_20260925/ | performance_baseline | active | retain_as_reference | Owner runs python -X importtime for the per-module setup attribution. | 2026-09-25T21:49:41Z | REQUIRED |
 | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | artifacts/gauntlet_runtime_speed_20260926/ | measurement_baseline | active | retain_as_reference | Owner baseline, VM runs, probes, P3 research (dropped), lever measurements; lever 1 step, parts and contention probes under lever1/. | 2026-09-26T20:46:19Z | REQUIRED |
-| tickets/tasks/2026-09-26_review_melder_seo_starter_task.md | artifacts/melder_seo_review_20260926/ | review_evidence | active | retain_as_reference | Review plus ordered improvement proposal and drafted homepage patch; owner direction next. | 2026-09-26T22:44:02Z | REQUIRED |
 <!-- END USER-DEFINED: active_artifacts -->
 
 ## Recently Cleared Artifacts
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/completed/2026-09-26_review_melder_seo_starter_task.md | artifacts/melder_seo_review_20260926/ | retain_as_reference | Starter review and direct site evidence retained; withdrawn homepage drafts remain historical only. | 2026-09-27T00:30:31Z |
+| tickets/epics/completed/2026-09-26_sphinx_publication_quality_epic.md | artifacts/sphinx_publication_quality_20260926/ | retain_as_reference | Verified build/SEO results, crawler evidence and byte-preserving path mapping retained. | 2026-09-27T00:30:31Z |
+| tickets/epics/completed/2026-09-26_sphinx_publication_quality_epic.md | system_docs/patches/completed/sphinx_seo_2026_09_26/ | promote_to_documentation | Promoted to docs/maintaining.md; all four patch contracts archived at owner turn-in. | 2026-09-27T00:30:31Z |
 | tickets/tasks/completed/2026-09-26_remove_nested_slot_guard_take_task.md | artifacts/gauntlet_runtime_speed_20260926/nested_slot_guard/ | retain_as_reference | Edit/apply/close scripts, src.diff, tests, VM suites (0.2.73 and 0.2.74), A/B, soak, decomposition. | 2026-09-26T23:01:16Z |
 | tickets/tasks/completed/2026-09-26_remove_nested_slot_guard_take_task.md | system_docs/patches/completed/nested_slot_guard_2026_09_26/ | promote_to_documentation | Promoted to src_architecture and src_components (door-held first builds, 0.2.73), the graph and the release note; three patch docs archived. | 2026-09-26T23:01:16Z |
 | tickets/tasks/completed/2026-09-26_spellspace_build_locks_task.md | artifacts/gauntlet_runtime_speed_20260926/spellspace_build_locks/ | retain_as_reference | Probes, prototype runs and the design sketch; the safe shape shipped as the nested task. | 2026-09-26T23:01:16Z |

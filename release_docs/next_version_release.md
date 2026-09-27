@@ -1,4 +1,4 @@
-# Melder 0.2.74
+# Melder 0.2.77
 
 **Unreleased**
 
@@ -559,6 +559,16 @@ stay valid.
 
 ## Packaging and documentation
 
+- Documentation builds check titles, descriptions, canonical URLs and sitemap destinations, with
+  intentional preview indexing handled separately. The late-binding example now has a distinct title
+  from its guide while preserving its old heading link. Read the Docs continues to serve the existing
+  generated `robots.txt` and sitemap.
+- Documentation page titles use the short Melder suffix. Selected guides and examples now carry
+  page-specific search descriptions through their existing source files and manifests. The cleanup
+  guide links directly to the website's configuration chapter; the visible homepage and guides remain.
+- The Sphinx API inventory now includes `UnresolvedInputError`, so documentation builds no longer
+  refuse the newly exported public error. Windows checkout also succeeds after shortening the retired
+  graph-descriptor archive paths; the archived contents and original-path mapping are preserved.
 - The packaged system documents (`melder.__architecture__`, `__components__`, `__graph_network__` and
   `__graph_details__`) are regenerated and describe unresolved inputs, `UnresolvedInputError`, the
   opt-in conjure warning report, process-stable spell ids, cache generation 12, caller-supplied container
@@ -586,4 +596,4 @@ stay valid.
   what each group of tests protects, and the rule that a test fixture resetting Melder's singletons must boot
   a fresh `Aether` afterwards. The registration-guard test and the system-document view tests no longer
   depend on the order the suite runs them in.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.74.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.77.

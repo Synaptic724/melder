@@ -95,25 +95,24 @@ Message alert rules
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
-| melder_seo_starter_review | in_progress | discovery | codex | seo_0 | none | Inspect rendered RTD/local pages and follow actual guide routes. | Revised plan grounded in site behavior; earlier homepage patch withdrawn. | Concrete findings and revised proposal delivered. | tickets/tasks/2026-09-26_review_melder_seo_starter_task.md | 2026-09-26T22:55:44Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| melder_seo_starter_review | done | seo_0 | tickets/tasks/completed/2026-09-26_review_melder_seo_starter_task.md | Inspected the starter and live Sphinx site; corrected the plan and retained the existing homepage. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_build_blockers | done | seo_0 | tickets/tasks/completed/2026-09-26_repair_docs_build_blockers_task.md | Fixed UnresolvedInputError selection and shortened 20 archive paths with byte-preserving Windows checkout verification. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_metadata_links | done | seo_0 | tickets/tasks/completed/2026-09-26_apply_sphinx_metadata_and_links_task.md | Added nine descriptions, a short title suffix and the local configuration link while preserving existing content. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_seo_checks | done | seo_0 | tickets/tasks/completed/2026-09-26_integrate_sphinx_seo_checks_task.md | Integrated SEO checks and preserved the lesson anchor; 60 docs tests, 29 workflow tests and real HTML checks pass. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_build_repair_story | done | seo_0 | tickets/stories/completed/2026-09-26_repair_documentation_builds_story.md | Accepted the verified API-selection and Windows archive-path repairs. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_discoverability_story | done | seo_0 | tickets/stories/completed/2026-09-26_refine_sphinx_discoverability_story.md | Accepted metadata, local linking and publication checks; RTD-managed crawler files retained. Next: none. | 2026-09-27T00:30:31Z |
+| sphinx_publication_quality | done | seo_0 | tickets/epics/completed/2026-09-26_sphinx_publication_quality_epic.md | Delivered build repairs and bounded SEO improvements at 0.2.77; owner accepted turn-in before the final asset rebuild. Next: none. | 2026-09-27T00:30:31Z |
 | gauntlet_nested_slot_guard | done | melder_2 | tickets/tasks/completed/2026-09-26_remove_nested_slot_guard_take_task.md | Door-held first builds take their build lock once (0.2.73); VM -3.3%/-3.6% per worker cycle; docs, graph, assets and LLM bundles at 0.2.74; owner run 0.919x dishka; owner turn-in. | 2026-09-26T23:01:16Z |
 | gauntlet_spellspace_build_locks | done | melder_2 | tickets/tasks/completed/2026-09-26_spellspace_build_locks_task.md | Spellspace confinement does not cover foreign-thread melds; the nested take was the safe win (own task); a lock-free path needs a thread rule; owner turn-in. | 2026-09-26T23:01:16Z |
 | gauntlet_p4_spellspace_warm_lane | done | melder_2 | tickets/tasks/completed/2026-09-26_spellspace_meld_warm_id_lane_task.md | SpellSpace.meld warm id lane (0.2.68): about -17% per cached space meld; SpellSpace window at parity in the owner's runs; owner turn-in. | 2026-09-26T23:01:16Z |
 | gauntlet_p1_positional_args | done | melder_2 | tickets/tasks/completed/2026-09-26_emit_positional_constructor_args_task.md | Positional constructor args applied (16:16Z); superseded on the normal path by the site-plan lowering (P5 keeps the rule); owner turn-in. | 2026-09-26T23:01:16Z |
 | gauntlet_tail_spikes | done | melder_2 | tickets/tasks/completed/2026-09-26_attribute_gauntlet_tail_spikes_task.md | Tail spikes attributed: turn-0 first use, no GC in the loop; confirmed on Windows; owner turn-in. | 2026-09-26T23:01:16Z |
-| updater_1_checkout | done | updater_1 | tickets/tasks/completed/2026-09-26_check_out_updater_1_task.md | Owner-directed checkout; departed roster, no active assignments; prior work retained. | 2026-09-26T22:20:35Z |
-| tests_system_docs_refresh | done | melder_0 | tickets/tasks/completed/2026-09-26_refresh_tests_system_docs_task.md | tests_architecture (91) and tests_components (85) describe the current suite; 0.2.74 notch and release bullet; owner turn-in. | 2026-09-26T22:18:52Z |
-| updater_0_checkout | done | updater_0 | tickets/tasks/completed/2026-09-26_checkout_updater_0_task.md | Departed; remaining assignment released and obsolete coordination retired. | 2026-09-26T22:17:12Z |
-| phase5_pool_snapshot | done | melder_0 | tickets/tasks/completed/2026-09-26_snapshot_phase5_live_spell_pool_task.md | Compiler passes read a copy of the spell pool; concurrent binds cannot abort revalidation (0.2.72); patch lane archived; owner turn-in. | 2026-09-26T21:59:01Z |
-| registration_guard_test_order | done | melder_0 | tickets/tasks/completed/2026-09-26_fix_registration_guard_test_order_task.md | View fixtures re-boot Aether and the guard test sets up its own world; order-independent; owner turn-in. | 2026-09-26T21:59:01Z |
-| override_site_plan_lowering | done | melder_0 | tickets/tasks/completed/2026-09-26_build_site_plan_lowering_task.md | S2-S6: key-set plans, normal melds on the lowering, unresolved inputs before construction, retirements; 0.2.71 docs, graph, assets, LLM bundles; owner turn-in. | 2026-09-26T21:09:12Z |
-| override_site_plan_story | done | melder_0 | tickets/stories/completed/2026-09-26_implement_override_site_plan_lowering_story.md | S1-S6 done; patch lane archived to system_docs/patches/completed/override_site_plan_2026_09_26/; owner turn-in. | 2026-09-26T21:09:12Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -147,6 +146,4 @@ Message alert rules
 - Owner: "each change we make is a notch of 0.01 so its fine". Each change gets its own patch notch of
   `src/melder/__version__.py` (0.2.58 -> 0.2.59); lanes notching one after another is expected, not a conflict.
   The release-note header follows `__version__`.
-- melder_seo_starter_review: SWITCH_TRIGGER is owner direction on homepage wording or review acceptance.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-26_review_melder_seo_starter_task.md.
 <!-- END USER-DEFINED: notes -->

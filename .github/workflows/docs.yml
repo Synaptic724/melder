@@ -12,6 +12,9 @@ jobs:
     name: Docs / site and handbook
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Exercise real canonical/sitemap output in CI without changing RTD's version-specific base.
+      READTHEDOCS_CANONICAL_URL: https://melder.readthedocs.io/en/latest/
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -29,6 +32,11 @@ jobs:
         run: python docs/tools/build_docs.py build
       - name: Validate links, anchors, and canonical source downloads
         run: python docs/tools/check_site.py
+      - name: Validate publication metadata
+        run: >-
+          python docs/tools/check_seo.py docs/_build/html
+          --base-url "$READTHEDOCS_CANONICAL_URL" --policy docs/seo.toml
+          --json docs/_build/seo-report.json
       - name: Build the ePub handbook
         run: python docs/tools/build_docs.py handbook --builder epub
       - name: Install the verified PDF compiler
@@ -46,5 +54,6 @@ jobs:
             docs/_build/htmlzip/*.zip
             docs/_build/handbook-epub/*.epub
             docs/_build/handbook-pdf/*.pdf
+            docs/_build/seo-report.json
           if-no-files-found: error
           retention-days: 14

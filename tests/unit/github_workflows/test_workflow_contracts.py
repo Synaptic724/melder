@@ -69,6 +69,26 @@ def test_reusable_mandatory_jobs_cannot_be_disabled(name: str) -> None:
         assert "timeout-minutes" in job
 
 
+def test_docs_metadata_validation_precedes_artifact_upload_and_rtd_staging() -> None:
+    """Both publication paths must apply the shared metadata policy after building HTML."""
+    job = workflow("docs.yml")["jobs"]["site"]
+    assert job["env"]["READTHEDOCS_CANONICAL_URL"] == "https://melder.readthedocs.io/en/latest/"
+    command = (
+        'python docs/tools/check_seo.py docs/_build/html --base-url "$READTHEDOCS_CANONICAL_URL" '
+        '--policy docs/seo.toml --json docs/_build/seo-report.json'
+    )
+    steps = job["steps"]
+    build = next(index for index, step in enumerate(steps) if step.get("run") == "python docs/tools/build_docs.py build")
+    audit = next(index for index, step in enumerate(steps) if step.get("run") == command)
+    assert build < audit < len(steps) - 1
+    assert "if" not in steps[audit] and "continue-on-error" not in steps[audit]
+    root = pathlib.Path(__file__).resolve().parents[3]
+    rtd = yaml.load((root / ".readthedocs.yaml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+    html_commands = rtd["build"]["jobs"]["build"]["html"]
+    assert html_commands.index("python docs/tools/build_docs.py build") < html_commands.index(command)
+    assert html_commands.index(command) < html_commands.index("python docs/tools/build_docs.py stage --builder html")
+
+
 @pytest.mark.parametrize(("name", "job_name"), [
     ("test-runtime.yml", "test"),
     ("release-candidate.yml", "install"),

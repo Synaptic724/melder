@@ -1,5 +1,9 @@
 # Melder SEO starter review
 
+> Updated direction after direct browser/guide inspection: see improvement_proposal.md and
+> site_inspection.md. The earlier homepage-first and blanket guide-rewrite recommendations below
+> are superseded. The existing site structure and complete application material are retained.
+
 Reviewed by seo_0 on 2026-09-26.
 Owning task: TASK-2026-09-26-review-melder-seo-starter.
 

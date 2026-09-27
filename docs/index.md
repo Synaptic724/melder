@@ -1,3 +1,11 @@
+---
+myst:
+  html_meta:
+    description: >-
+      Melder is a Python dependency graph runtime. Explore dependency injection,
+      instance lifetimes, cleanup, isolated worlds, and agent-operated infrastructure.
+---
+
 # A runtime you can build on
 
 Melder wires ordinary Python objects into a live dependency graph: services,

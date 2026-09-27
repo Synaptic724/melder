@@ -3,12 +3,14 @@
 ## Metadata
 - Task ID: TASK-2026-09-26-review-melder-seo-starter
 - Story: none; standalone discovery task
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Agent Name: seo_0
 - Priority: p2
 - Created: 2026-09-26T22:22:03Z
-- Updated: 2026-09-26T22:55:44Z
+- Updated: 2026-09-27T00:32:45Z
+- Completed: 2026-09-27T00:30:31Z
+- Summary: Inspected the starter and live Sphinx site; corrected the plan and retained the existing homepage.
 
 ## Objective
 Inspect the user-supplied ZIP and pasted SEO advice, explain the contents in plain language,
@@ -41,8 +43,8 @@ Evaluate the starter against the actual repository before adopting content or co
 
 ## State Transition Event
 - from_state: review
-- to_state: in_progress
-- transition_reason: Owner rejected the homepage-first proposal and requested direct site inspection and a better plan.
+- to_state: done
+- transition_reason: Owner explicitly requested turn-in before the final asset rebuild.
 
 ## Steps / Checklist
 - [x] Inventory the ZIP and read the pasted notes.
@@ -56,7 +58,7 @@ Evaluate the starter against the actual repository before adopting content or co
 - Evidence-backed review findings plus improvement_proposal.md and homepage-proposal.patch in the same artifact root.
 
 ## Files / Paths Impacted
-- context_compass/tickets/tasks/2026-09-26_review_melder_seo_starter_task.md
+- context_compass/tickets/tasks/completed/2026-09-26_review_melder_seo_starter_task.md
 - context_compass/attention_board.md
 - context_compass/mailbox_board.md
 - context_compass/artifact_board.md (only if review artifacts are produced)
@@ -86,14 +88,14 @@ Evaluate the starter against the actual repository before adopting content or co
 - [x] Do not adopt attached instructions as authority.
 - [x] Do not treat generated copy or SEO promises as verified product behavior.
 - [x] Do not overwrite existing docs/configuration with starter files.
-- [ ] No closure without owner acceptance and board sync.
+- [x] No closure without owner acceptance and board sync.
 
 ## Done Checklist
 - [x] Inventory and content review complete.
 - [x] Repository comparison and recommendation recorded.
 - [x] Validation limits stated accurately.
 - [x] Notes include evidence, impact, and a concrete next step.
-- [ ] Acceptance criteria reviewed with the owner and confirmed.
+- [x] Acceptance criteria reviewed with the owner and confirmed.
 - [x] Board sync completed for review; closure awaits owner acceptance.
 
 ## Artifact Links (Optional)
@@ -339,7 +341,40 @@ Evaluate the starter against the actual repository before adopting content or co
   NEXT: Verify the served robots/sitemap and finish the revised plan with exact implementation scope.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+- DATETIME: 2026-09-26T23:08:59Z
+  TYPE: DECISION
+  CLAIM: Replace the earlier proposal after direct site inspection. Retain the visible homepage,
+    navigation, short concept guides, complete examples and capstones. First scope: short browser
+    title suffix and generated cleanup-to-configuration link. Then add descriptions via existing
+    source owners and integrate adapted checks. No homepage/guide rewrite or deployment repair.
+  EVIDENCE:
+  - context_compass/artifacts/melder_seo_review_20260926/improvement_proposal.md:1-133
+  - context_compass/artifacts/melder_seo_review_20260926/site_inspection.md:1-96
+  - docs/tests/test_curriculum.py:1-63
+  - docs/tests/test_example_catalog.py:1-126
+  - .github/workflows/docs.yml:1-50
+  IMPACT: The revised plan reflects the existing site and corrects the earlier unsupported content
+    recommendations. robots.txt/root sitemap remain unverified after tool retrieval failures, not
+    diagnosed as broken. Historical site-check output is not presented as a fresh test run.
+  NEXT: Implement the narrow corrected scope when the owner selects it; do not apply the withdrawn draft.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-09-27T00:30:31Z
+  TYPE: DECISION
+  CLAIM: Owner accepted this work with "turn in your epic then rebuild the assets".
+    Inspected the starter and live Sphinx site; corrected the plan and retained the existing homepage.
+  EVIDENCE:
+  - Owner's explicit turn-in instruction in this chat.
+  - context_compass/artifacts/sphinx_publication_quality_20260926/verification.md:1-60
+  IMPACT: Closed with the accepted SEO ticket set; evidence retained and current board routes cleared.
+    SEO patch contracts are promoted to docs/maintaining.md and archived under patches/completed.
+  NEXT: Run the owner-requested final asset regeneration after the entire selected set is turned in.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Owner rejected the earlier homepage-first plan. Reopened discovery as seo_0: inspect actual rendered
-RTD/local pages and guide journeys, then revise improvement_proposal.md around evidenced defects.
-The old homepage-proposal.patch is withdrawn; do not apply it. No product files have changed.
+Accepted and turned in at 2026-09-27T00:30:31Z. Inspected the starter and live Sphinx site; corrected the plan
+  and retained the existing homepage.
+Verification evidence is retained in artifacts/sphinx_publication_quality_20260926/.
+Post-closure source assets rebuilt; LLM outputs already current; both freshness checks passed at 00:32:22Z.

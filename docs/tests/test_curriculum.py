@@ -58,6 +58,18 @@ class CurriculumRouteTests(unittest.TestCase):
         self.assertIn("../../advanced/clusters.md", cluster)
         self.assertIn("../../intermediate/connected-subsystems.md", cluster)
 
+    def test_cleanup_configuration_link_stays_inside_the_website(self) -> None:
+        """A README link becomes a version-local guide route without changing its canonical source."""
+        root = Path(__file__).resolve().parents[2]
+        readme = root / "README.md"
+        original = readme.read_bytes()
+        builder = DocumentationBuilder(root)
+        builder.load()
+        cleanup = builder.generated_bodies["beginner/cleanup"]
+        self.assertIn("[configuration guide](../intermediate/configuration.md)", cleanup)
+        self.assertNotIn("blob/prod/docs/intermediate/configuration.md", cleanup)
+        self.assertEqual(readme.read_bytes(), original)
+
 
 if __name__ == "__main__":
     unittest.main()

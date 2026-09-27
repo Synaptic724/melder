@@ -53,7 +53,7 @@ exports = ["ProtocolCrafter", "Cleanable", "Pack", "Package", "ULID_Factory", "n
 id = "errors"
 title = "Public errors"
 guide = "reference/troubleshooting"
-exports = ["SpellbookValidationError", "MeldExecutionError", "SpellSpaceScopeError", "HookExecutionError", "InternalRegistrationError", "PhaseSchedulerError", "PhaseExecutionError", "PhaseTimeoutError", "DeadReferenceError"]
+exports = ["SpellbookValidationError", "MeldExecutionError", "UnresolvedInputError", "SpellSpaceScopeError", "HookExecutionError", "InternalRegistrationError", "PhaseSchedulerError", "PhaseExecutionError", "PhaseTimeoutError", "DeadReferenceError"]
 
 [[group]]
 id = "metadata"

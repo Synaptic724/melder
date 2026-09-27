@@ -16,3 +16,12 @@
 
 The archive was extracted for static inspection beneath inputs/. No supplied program was executed.
 The owner's pasted audit was also copied to inputs/pasted_audit.txt for durable review evidence.
+
+## Current review direction
+
+- improvement_proposal.md is the revised plan after direct browser and guide inspection.
+- site_inspection.md records the actual rendered pages, source checks, and verification limits.
+- homepage-proposal.patch, homepage-proposal.md, and sphinx-conf-proposal.py are withdrawn drafts.
+  Do not apply them. The revised plan keeps the visible homepage and its existing navigation.
+- review.md retains the original ZIP assessment with a supersession notice for its earlier
+  homepage-first and guide-rewrite recommendations.
