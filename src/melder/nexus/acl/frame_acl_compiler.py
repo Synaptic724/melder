@@ -14,6 +14,13 @@ from melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile 
 
 from melder.nexus.frame_descriptor.spell_record import SpellRecord
 
+if TYPE_CHECKING:
+    from melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
+        FrameACLProfileBuilder,
+    )
+    from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
+    from melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile import FrameACLViewProfile
+
 class FrameACLCompiler(Cleanable):
     """
 
@@ -70,7 +77,7 @@ class FrameACLCompiler(Cleanable):
         "_profile_builder",
     ]
 
-    def __init__(self, profile_builder: IFrameACLProfileBuilder) -> None:
+    def __init__(self, profile_builder: FrameACLProfileBuilder) -> None:
         """
         Initialize one ACL compiler.
 
@@ -87,7 +94,7 @@ class FrameACLCompiler(Cleanable):
             raise TypeError("profile_builder cannot be None.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._profile_builder: IFrameACLProfileBuilder = profile_builder
+        self._profile_builder: FrameACLProfileBuilder = profile_builder
 
     def cleanup(self) -> None:
         """

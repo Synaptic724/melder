@@ -116,7 +116,7 @@ class SpellMap(Cleanable):
         "spell",
         "spellframe",
         "binding_name",
-        "spell_override",
+        "override",
     ]
 
     def __init__(
@@ -125,7 +125,7 @@ class SpellMap(Cleanable):
         *,
         spellframe: Optional[Any] = None,
         binding_name: Optional[str] = None,
-        spell_override: Optional[Union[dict, list, tuple]] = None,
+        override: Optional[Union[dict, list, tuple]] = None,
     ) -> None:
         """
         Create one `SpellMap` declarative descriptor.
@@ -160,16 +160,23 @@ class SpellMap(Cleanable):
                 case-insensitive matching. When `None`, default-binding semantics
                 remain intact.
 
-            spell_override:
-                Optional positional/keyword override payload propagated into the
-                meld pipeline when the target creation is finally constructed.
+            override:
+                Optional construction payload for the provider spell this descriptor
+                resolves to, applied when that provider is constructed for this
+                consumer:
 
-                Semantics:
-
-                - `dict`: keyword arguments
+                - `dict`: keyword arguments for the provider's constructor
                 - `list` / `tuple`: positional arguments
 
-                The descriptor stores this payload without interpreting it.
+                Values may be any Python object. They are never copied into the
+                compiled plan or the creation cache: phase 9 records a reference
+                to this descriptor and the executor reads the live value from it
+                at hydration, so the provider receives the object itself, by
+                identity (2026-09-26). A caller payload on `meld(override=...)`
+                still wins over this payload (override > contract > dependency).
+                A payload on a non-resolvable definition is refused by phase 3.
+
+                When `None`, no payload is attached.
 
         Raises:
             ValueError: If both `spell` and `spellframe` are omitted, because
@@ -191,8 +198,8 @@ class SpellMap(Cleanable):
             if binding_name is not None
             else None
         )
-        # Preserve the caller payload; None means no override is attached.
-        self.spell_override = spell_override
+        # Preserve the caller payload by reference; None means no payload is attached.
+        self.override = override
 
     def cleanup(self) -> None:
         """
@@ -214,10 +221,10 @@ class SpellMap(Cleanable):
         self._cleaned = True
 
         # Clear override payload if it is a container.
-        if isinstance(self.spell_override, (list, dict)):
-            self.spell_override.clear()
+        if isinstance(self.override, (list, dict)):
+            self.override.clear()
 
-        self.spell_override = None
+        self.override = None
         self.spell = None
         self.spellframe = None
         self.binding_name = None
@@ -340,5 +347,5 @@ class SpellMap(Cleanable):
             f"<SpellMap spell={self.spell!r} "
             f"spellframe={self.spellframe!r} "
             f"binding_name={self.binding_name!r} "
-            f"override={self.spell_override!r}>"
+            f"override={self.override!r}>"
         )

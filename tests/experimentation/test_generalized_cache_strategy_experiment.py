@@ -54,6 +54,9 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.g
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.manifest.generalized_manifest import (
     MANIFEST_METADATA_KEY,
 )
+from melder.aether.spellbook.spell_compiler.executor_code_cache import (
+    executor_code_cache_stats,
+)
 from melder.aether.spellbook.spell_compiler.executor_factory_cache import (
     executor_factory_cache_size,
 )
@@ -220,7 +223,9 @@ def test_generalized_manifest_strategy_experiment() -> None:
         assert reloaded_overridden.label == "reloaded"
         assert reloaded_overridden.leaf is live_plain.leaf
 
-        assert executor_factory_cache_size() >= 1
+        # Since S2b-2 (2026-09-26) both lanes run on the site-plan runtime, whose
+        # plans are compiled once per source through the executor code cache.
+        assert executor_code_cache_stats()["entries"] >= 1
 
         # ------------------------------------------------------------------
         # Lazy load: zero hydration at publish, hot-door swap on first meld.

@@ -1,0 +1,62 @@
+{
+  "python": "3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ]",
+  "gil": false,
+  "results": [
+    {
+      "case": "unique_many_scope",
+      "door": "lesser",
+      "cycle_formed": false,
+      "A_paused_holding_scope_store": true,
+      "C_requested_scope_store": false,
+      "C_stuck_elsewhere": false,
+      "A": [
+        "PViaM"
+      ],
+      "C": [
+        "UViaM"
+      ]
+    },
+    {
+      "case": "unique_many_scope",
+      "door": "space",
+      "cycle_formed": false,
+      "A_paused_holding_scope_store": true,
+      "C_requested_scope_store": false,
+      "C_stuck_elsewhere": false,
+      "A": [
+        "PViaM"
+      ],
+      "C": [
+        "UViaM"
+      ]
+    },
+    {
+      "case": "disposal_many",
+      "door": "lesser",
+      "cycle_formed": false,
+      "A_paused_holding_scope_store": true,
+      "C_requested_scope_store": false,
+      "C_stuck_elsewhere": false,
+      "A": [
+        "PDisp"
+      ],
+      "C": [
+        "UDisp"
+      ]
+    },
+    {
+      "case": "disposal_many",
+      "door": "space",
+      "cycle_formed": false,
+      "A_paused_holding_scope_store": true,
+      "C_requested_scope_store": false,
+      "C_stuck_elsewhere": false,
+      "A": [
+        "PDisp"
+      ],
+      "C": [
+        "UDisp"
+      ]
+    }
+  ]
+}

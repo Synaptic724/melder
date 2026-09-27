@@ -1,6 +1,5 @@
 import threading
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
-from types import CodeType, FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -16,8 +15,8 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity imp
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.conduit.meld.creation_context.creation_context import (
-    CreationContext,
+from melder.aether.spellbook.spell_compiler.structural_snapshot.structural_snapshot import (
+    StructuralSnapshot,
 )
 from melder.aether.spellbook.spell_compiler.spell_compiler_system import (
     SpellCompilerSystem,
@@ -127,6 +126,7 @@ class SpellbookCreationSystem(Cleanable):
         "_phase_scheduler_cls",
         "_policy",
         "_spellbook",
+        "_validation_warnings",
     ]
 
     def __init__(
@@ -138,6 +138,7 @@ class SpellbookCreationSystem(Cleanable):
             name: str | None,
             conduit_logger: Any | None,
             phase_scheduler_cls: type[PhaseScheduler],
+            validation_warnings: bool = False,
     ) -> None:
         """
         Purpose:
@@ -154,6 +155,11 @@ class SpellbookCreationSystem(Cleanable):
             conduit_logger: Optional conduit logger.
             phase_scheduler_cls:
                 Scheduler class used for structural and resolution phases.
+            validation_warnings:
+                When True, `conjure()` logs this book's Phase-4 validation
+                warnings once, grouped by code. Only the public
+                `Spellbook.conjure` passes True; every internal route keeps
+                the default False and logs nothing.
         Returns:
             None.
         Raises:
@@ -166,6 +172,7 @@ class SpellbookCreationSystem(Cleanable):
         self._name: str | None = name
         self._conduit_logger = conduit_logger
         self._phase_scheduler_cls: type[PhaseScheduler] = phase_scheduler_cls
+        self._validation_warnings: bool = validation_warnings
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
@@ -198,6 +205,7 @@ class SpellbookCreationSystem(Cleanable):
             del self._name
             del self._conduit_logger
             del self._phase_scheduler_cls
+            del self._validation_warnings
 
     def conjure(self) -> Conduit:
         """
@@ -219,15 +227,20 @@ class SpellbookCreationSystem(Cleanable):
         spellbook = self._spellbook
 
         phase_scheduler_cls = self._phase_scheduler_cls
-        SpellbookCreationSystem._prepare_spellbook_for_conjure(
-            spellbook=spellbook,
-            phase_scheduler_cls=phase_scheduler_cls,
-        )
-        # Classify cache posture before plan phases so a full hit can skip the
-        # phase-8-to-11 compile and load the runtime lanes from cache instead.
         resolved_conduit_name = (
             self._name or SpellbookCreationSystem._DEFAULT_ROOT_CONDUIT_NAME
         )
+        # The conduit name reaches the structural preparation so the structural
+        # tier of the conduit bundle can be classified (and replayed on a full
+        # hit) before the structural phases would run.
+        SpellbookCreationSystem._prepare_spellbook_for_conjure(
+            spellbook=spellbook,
+            phase_scheduler_cls=phase_scheduler_cls,
+            validation_warnings=self._validation_warnings,
+            conduit_name=resolved_conduit_name,
+        )
+        # Classify cache posture before plan phases so a full hit can skip the
+        # phase-8-to-11 compile and load the runtime lanes from cache instead.
         cache_state = SpellbookCreationSystem._build_conjure_cache_state(
             spellbook=spellbook,
             dynamic=self._dynamic,
@@ -291,16 +304,33 @@ class SpellbookCreationSystem(Cleanable):
             *,
             spellbook: Spellbook,
             phase_scheduler_cls: type[PhaseScheduler],
+            validation_warnings: bool = False,
+            conduit_name: str | None = None,
     ) -> None:
         """
         Purpose:
             Prepare Spellbook state required before conduit construction.
         Contract:
             - Freezes and binds configuration when not already locked.
-            - Executes structural phases before conduit construction.
+            - Classifies the structural tier of the conduit bundle (when a
+              `conduit_name` is given, caching is enabled and no warning report
+              was requested) and, on a full structural hit, replays the phase
+              3-4 results for every owned spell instead of running the
+              structural phases; on any other classification executes the
+              structural phases exactly as before.
+            - When `validation_warnings` is True, reports the Phase-4 validation
+              warnings once, right after the structural phases, while their
+              results still exist (they are released after resolution). The
+              default False reports nothing; internal conjure routes (such as
+              the existing-conduit route used by upgrade_to_normal) rely on it.
+              The report needs live phase-4 results, so it forces the live run.
         Args:
             spellbook: Owning Spellbook instance.
             phase_scheduler_cls: Scheduler class used for phase execution.
+            validation_warnings: Opt-in for the grouped warning report.
+            conduit_name: Resolved conduit name whose bundle holds the
+                structural tier; None keeps today's unconditional structural run
+                (the existing-conduit route passes none).
         Returns:
             None.
         Raises:
@@ -310,10 +340,178 @@ class SpellbookCreationSystem(Cleanable):
             spellbook._validate_and_freeze_configuration()
             spellbook._bind_aetheric_frame_configuration_to_aether()
             spellbook._bind_configuration_to_aether()
-        SpellbookCreationSystem.run_structural_phases(
+        structural_state = SpellbookCreationSystem._build_structural_cache_state(
             spellbook=spellbook,
-            phase_scheduler_cls=phase_scheduler_cls,
+            conduit_name=conduit_name,
+            validation_warnings=validation_warnings,
         )
+        hydrated = False
+        if structural_state["structural_path"] == "full_hit":
+            hydrated = SpellbookCreationSystem._hydrate_structural_tier_for_conjure(
+                spellbook=spellbook,
+                structural_state=structural_state,
+            )
+        if not hydrated:
+            SpellbookCreationSystem.run_structural_phases(
+                spellbook=spellbook,
+                phase_scheduler_cls=phase_scheduler_cls,
+            )
+        if validation_warnings:
+            SpellbookCreationSystem._report_validation_warnings(spellbook=spellbook)
+
+    @staticmethod
+    def _build_structural_cache_state(
+            *,
+            spellbook: Spellbook,
+            conduit_name: str | None,
+            validation_warnings: bool,
+    ) -> dict[str, Any]:
+        """
+        Purpose:
+            Classify the owned spells against the structural tier of the
+            conduit bundle before the structural phases would run.
+        Contract:
+            - `disabled` (nothing read) when no conduit name is given, when the
+              warning report was requested (it needs live phase-4 results) or
+              when system caching is disabled; otherwise the Spellbook-owned
+              cache utility is resolved (the same memoized instance the executor
+              classification uses later) and `StructuralSnapshot.classify`
+              decides per spell.
+            - Reads only; the tier is refreshed at conjure end by the capture.
+        Args:
+            spellbook: Owning Spellbook instance.
+            conduit_name: Resolved conduit name, or None.
+            validation_warnings: True when the grouped warning report was requested.
+        Returns:
+            Dict[str, Any]: `StructuralSnapshot.classify` summary
+                (`structural_path`, `world_stamp`, `hits`, `misses`).
+        """
+        if (
+                conduit_name is None
+                or validation_warnings
+                or not spellbook._system_caching_enabled_in_aether()
+        ):
+            return StructuralSnapshot.classify(spellbook, None)
+        caching_system = spellbook._get_or_create_caching_system(
+            conduit_name=conduit_name,
+        )
+        return StructuralSnapshot.classify(spellbook, caching_system)
+
+    @staticmethod
+    def _hydrate_structural_tier_for_conjure(
+            *,
+            spellbook: Spellbook,
+            structural_state: dict[str, Any],
+    ) -> bool:
+        """
+        Purpose:
+            Replay the phase 3-4 results of a full structural hit.
+        Contract:
+            - Delegates to `StructuralSnapshot.hydrate_full_hit`, which performs
+              the durable writes phases 3-4 would have made through the same
+              registry helpers; no scheduler runs and no phase artifact exists
+              afterwards (the state every cold conjure leaves behind after its
+              post-resolution reset).
+            - Best-effort (documented): a failure mid-replay is logged and False
+              is returned so the caller runs the structural phases live, which
+              rewrite every replayed value (phase 3 rewrites its registry
+              writes; phase 4 rewrites the verdict). Nothing raises into conjure
+              from the replay itself.
+        Args:
+            spellbook: Owning Spellbook instance.
+            structural_state: `StructuralSnapshot.classify` summary with
+                `structural_path == "full_hit"`.
+        Returns:
+            bool: True when the replay completed; False when the caller must
+                run the structural phases.
+        """
+        try:
+            StructuralSnapshot.hydrate_full_hit(
+                spellbook,
+                structural_state["hits"],
+            )
+        except Exception as exc:
+            if spellbook._logger is not None:
+                spellbook._logger.error(
+                    f"Structural hydrate failed; running the structural phases live: {exc}",
+                    "_hydrate_structural_tier_for_conjure",
+                    exc_info=True,
+                )
+            return False
+        return True
+
+    @staticmethod
+    def _report_validation_warnings(*, spellbook: Spellbook) -> None:
+        """
+        Purpose:
+            Show a beginner what Phase 4 flagged without failing conjure. Warnings
+            never stop conjure; an unresolved input, for example, first surfaces
+            as an UnresolvedInputError at meld unless the caller reads this report.
+        Contract:
+            - Reads the warning-severity issues Phase 4 stored on this book's
+              owned spells, in book order and then issue order; errors are not
+              reported here (they already fail conjure).
+            - Groups them by issue code, codes in first-seen order, and emits ONE
+              WARNING event: a header "Conjure validation warnings (N):" and one
+              line per code, "  CODE (n): entry; entry".
+            - Emits nothing when there are no warnings.
+            - Reporting only; never changes validity, phase results or conjure.
+        Args:
+            spellbook: Owning Spellbook whose structural phases just ran.
+        Returns:
+            None.
+        """
+        grouped: dict[str, list[str]] = {}
+        total = 0
+        for spell in spellbook._spells.values():
+            result = spell.validation_result_phase4
+            if result is None:
+                continue
+            for issue in result.warnings:
+                grouped.setdefault(issue.code, []).append(
+                    SpellbookCreationSystem._render_validation_warning_entry(
+                        spell_name=spell.spell_name,
+                        code=issue.code,
+                        details=issue.details,
+                    )
+                )
+                total += 1
+        if not grouped:
+            return
+        lines = [f"Conjure validation warnings ({total}):"]
+        for code, entries in grouped.items():
+            lines.append(f"  {code} ({len(entries)}): {'; '.join(entries)}")
+        spellbook._logger.warning("\n".join(lines), "_report_validation_warnings")
+
+    @staticmethod
+    def _render_validation_warning_entry(
+            *,
+            spell_name: str,
+            code: str,
+            details: Mapping[str, Any],
+    ) -> str:
+        """
+        Purpose:
+            Render one Phase-4 warning as a short entry for the grouped report.
+        Contract:
+            - UNRESOLVED_INPUT renders `Spell.param -> ExpectedType`, the same
+              names UnresolvedInputError uses at meld.
+            - Any other issue carrying `details["parameter_name"]` renders
+              `Spell.param`; an issue without one renders the spell name.
+            - Pure; reads only the arguments.
+        Args:
+            spell_name: Name of the spell the issue belongs to.
+            code: The issue's machine-readable code.
+            details: The issue's structured details.
+        Returns:
+            str: The entry text.
+        """
+        parameter_name = details.get("parameter_name")
+        if parameter_name is None:
+            return spell_name
+        if code == "UNRESOLVED_INPUT":
+            return f"{spell_name}.{parameter_name} -> {details['expected_type']}"
+        return f"{spell_name}.{parameter_name}"
 
     @staticmethod
     def _prepare_resolution_for_conjure(
@@ -366,6 +564,9 @@ class SpellbookCreationSystem(Cleanable):
             - Raises `SpellbookValidationError` naming the spells the ERROR
               diagnostics attribute the failure to; graph-level errors that
               carry no spell_id fall back to every scoped spell.
+            - Hands the conduit diagnostics to the error, which states their
+              reasons; the phase artifacts that used to carry them are already
+              cleaned when this gate runs (2026-09-26).
         Args:
             spellbook: Owning Spellbook instance.
             conduit_id: Conduit id whose resolution verdict is enforced.
@@ -406,7 +607,10 @@ class SpellbookCreationSystem(Cleanable):
             for spell_id in dict.fromkeys(offender_ids)
             if spell_id in spell_id_pool
         ]
-        raise SpellbookValidationError(offending)
+        raise SpellbookValidationError(
+            offending,
+            system_diagnostics=resolution_state.list_diagnostics(),
+        )
 
     @staticmethod
     def _build_conjure_cache_state(
@@ -586,199 +790,25 @@ class SpellbookCreationSystem(Cleanable):
             - Manifest-first family packages publish a lazy context with
               ZERO conjure-time hydration; the first meld hydrates once and
               swaps the hot doors into the published context.
-            - When the payload already carries live executors, it publishes
-              directly through `CreationContext.load_cached(...)`.
-            - When the payload carries a legacy phase-11 cache package, it
-              delegates to the cache-load seam that rebuilds executors after
-              phases 1-7.
+            - Every codegen family publishes a manifest package; the legacy
+              non-manifest codec and executor payloads are retired
+              (2026-09-26). Any other payload raises RuntimeError, which the
+              caller treats as a cache miss, so the spell compiles normally.
         """
         from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.manifest_creation_cache import (
             is_manifest_package,
             load_creation_context_lazy,
         )
 
-        if is_manifest_package(spell_payload):
-            load_creation_context_lazy(
-                spell,
-                dict(spell_payload),
-                publish=True,
+        if not is_manifest_package(spell_payload):
+            raise RuntimeError(
+                "Cached spell payload is not a manifest package "
+                f"(spell_id={spell.spell_id}); the spell compiles normally."
             )
-            return
-        creation_context_factory = spell._creation_context_factory
-        if creation_context_factory is None:
-            raise RuntimeError("Spell has no CreationContextFactory.")
-        creation_gate, creation_gate_index_id = (
-            creation_context_factory._resolve_runtime_gate_for_spell(spell)
-        )
-        if not isinstance(spell_payload, Mapping):
-            from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
-                load_creation_context,
-            )
-
-            _ = creation_gate
-            _ = creation_gate_index_id
-            load_creation_context(
-                spell,
-                spell_payload,
-                publish=True,
-            )
-            return
-        no_overrides_executor = spell_payload.get("no_overrides_executor")
-        if isinstance(no_overrides_executor, CodeType):
-            no_overrides_executor, overrides_executor = (
-                SpellbookCreationSystem._rebuild_cached_creation_context_executors(
-                    spell=spell,
-                    spell_payload=spell_payload,
-                )
-            )
-            CreationContext.load_cached(
-                spell=spell,
-                dynamic_environment=spell._dynamic_environment,
-                creation_gate=creation_gate,
-                creation_gate_index_id=creation_gate_index_id,
-                no_overrides_executor=no_overrides_executor,
-                overrides_executor=overrides_executor,
-                publish=True,
-            )
-            return
-        from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
-            load_creation_context,
-        )
-
-        _ = creation_gate
-        _ = creation_gate_index_id
-        load_creation_context(
+        load_creation_context_lazy(
             spell,
             dict(spell_payload),
             publish=True,
-        )
-
-    @staticmethod
-    def _rebuild_cached_creation_context_executors(
-            *,
-            spell: Any,
-            spell_payload: Mapping[str, Any],
-    ) -> tuple[Callable[..., Any], Callable[..., Any]]:
-        """
-        Rebuild the final cached CreationContext executors from cached artifacts.
-        """
-        no_overrides_code_object = spell_payload["no_overrides_executor"]
-        overrides_code_object = spell_payload["overrides_executor"]
-        if spell_payload.get("existing_creation"):
-            no_overrides_executor = SpellbookCreationSystem._build_function_from_code_object(
-                code_object=no_overrides_code_object,
-                freevar_values={
-                    "spell": spell,
-                    "_spell": spell,
-                    "spell_id": spell.spell_id,
-                    "_spell_id": spell.spell_id,
-                },
-            )
-            overrides_executor = SpellbookCreationSystem._build_function_from_code_object(
-                code_object=overrides_code_object,
-                freevar_values={
-                    "spell": spell,
-                    "_spell": spell,
-                    "spell_id": spell.spell_id,
-                    "_spell_id": spell.spell_id,
-                    "MeldExecutionError": _load_meld_execution_error_type(),
-                    "_MeldExecutionError": _load_meld_execution_error_type(),
-                    "existing_override_message": _EXISTING_OVERRIDE_MESSAGE,
-                    "_existing_override_message": _EXISTING_OVERRIDE_MESSAGE,
-                },
-            )
-            return no_overrides_executor, overrides_executor
-
-        from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
-            _build_inner_no_overrides_executor,
-        )
-
-        base_no_overrides_executor = _build_inner_no_overrides_executor(
-            spell,
-            dict(spell_payload),
-        )
-        overrides_payload = spell_payload.get("overrides")
-        if overrides_payload is None:
-            def execute_with_overrides(
-                    caller_creations: Any,
-                    overrides: dict[str, Any] | None,
-                    caller_creations_lock_held: bool = False,
-            ) -> Any:
-                _ = caller_creations
-                _ = overrides
-                _ = caller_creations_lock_held
-                raise RuntimeError(
-                    "Cached spell has no override lane "
-                    f"(spell_id={spell.spell_id})."
-                )
-        else:
-            # Zero override work at cache load. The override runtime is built
-            # only on the first override-meld of this spell, never during load.
-            _override_runtime_cell: list = [None]
-
-            def execute_with_overrides(
-                    caller_creations: Any,
-                    overrides: dict[str, Any] | None,
-                    caller_creations_lock_held: bool = False,
-            ) -> Any:
-                override_runtime = _override_runtime_cell[0]
-                if override_runtime is None:
-                    from melder.aether.spellbook.spell_compiler.codegen_creation_system.codegen_creation.spell_codegen_creation_cache import (
-                        _build_inner_overrides_runtime,
-                    )
-                    override_runtime = _build_inner_overrides_runtime(
-                        spell=spell,
-                        overrides_payload=overrides_payload,
-                        base_no_overrides_executor=base_no_overrides_executor,
-                    )
-                    _override_runtime_cell[0] = override_runtime
-                return override_runtime(
-                    caller_creations,
-                    overrides,
-                    caller_creations_lock_held,
-                )
-
-        no_overrides_executor = SpellbookCreationSystem._build_function_from_code_object(
-            code_object=no_overrides_code_object,
-            freevar_values={
-                "_no_overrides_executor": base_no_overrides_executor,
-                "_spell": spell,
-                "_spell_id": spell.spell_id,
-            },
-        )
-        overrides_executor = SpellbookCreationSystem._build_function_from_code_object(
-            code_object=overrides_code_object,
-            freevar_values={
-                "_MeldExecutionError": _load_meld_execution_error_type(),
-                "_execute_with_overrides": execute_with_overrides,
-                "_existing_override_message": _EXISTING_OVERRIDE_MESSAGE,
-                "_spell": spell,
-                "_spell_id": spell.spell_id,
-            },
-        )
-        return no_overrides_executor, overrides_executor
-
-    @staticmethod
-    def _build_function_from_code_object(
-            *,
-            code_object: Any,
-            freevar_values: Mapping[str, Any],
-    ) -> Callable[..., Any]:
-        """
-        Rebuild one cached executor function from its code object and closure.
-        """
-        if not isinstance(code_object, CodeType):
-            raise RuntimeError("Cached executor artifact is not a CodeType.")
-        closure = tuple(
-            _make_cell(freevar_values[freevar_name])
-            for freevar_name in code_object.co_freevars
-        )
-        return FunctionType(
-            code_object,
-            {"__builtins__": __builtins__},
-            code_object.co_name,
-            None,
-            closure,
         )
 
     @staticmethod
@@ -1004,6 +1034,11 @@ class SpellbookCreationSystem(Cleanable):
                 spellbook=spellbook,
                 cache_state=cache_state,
             )
+        if cache_state is not None:
+            SpellbookCreationSystem._capture_structural_payloads_at_conjure_end(
+                spellbook=spellbook,
+                cache_state=cache_state,
+            )
         SpellbookCreationSystem._emit_conduit_cache_file_at_conjure_end(
             spellbook=spellbook,
         )
@@ -1063,7 +1098,7 @@ class SpellbookCreationSystem(Cleanable):
             cache_state: dict[str, Any],
     ) -> None:
         """
-        Stage cache payloads for spells the conduit cache is missing.
+        Rebuild the conduit cache bundle from this conjure's compile.
 
         Purpose:
             Make conjure the staging boundary for every constructed spell so a
@@ -1073,23 +1108,36 @@ class SpellbookCreationSystem(Cleanable):
             them permanently missing from the bundle and locks the conduit
             cache into the mixed path, recompiling phases 8-11 on every
             conjure.
+            Re-staging EVERY live spell, not only the missing ones, keeps the
+            bundle one consistent world: a consumer's cached manifest names its
+            providers' spell ids, so when a provider's id changes, a consumer
+            payload kept from the previous world would make the next full hit
+            fail at hydration ("generalized manifest references unknown
+            spell_id"). Stale ids are dropped for the same reason and so the
+            bundle cannot grow without bound (2026-09-26, generation 12).
 
         Contract:
             - Runs only on non-full-hit conjures, after phases 8-11 have built
               the compiler artifact for every constructed spell; staging is a
               metadata read for manifest-first families.
-            - Delegates to `Spellbook._emit_spell_cache`, which dedupes against
-              already-staged payloads and flags the conjure-end file emit
-              boundary on success.
-            - Payload eligibility is enforced upstream: `missing_spell_ids`
-              derives from the live set built by `_build_conjure_cache_state`,
-              which already excludes existing-creation spells.
-            - Best-effort per spell: a staging miss leaves that spell on the
-              compile path for the next conjure without failing this one.
+            - Removes every payload in the bundle, then stages every live
+              payload-eligible spell in sorted id order through
+              `Spellbook._emit_spell_cache` (unchanged: it skips spells with
+              caching disabled, refuses non-replayable plans and flags the
+              conjure-end file emit on success).
+            - Flags the conjure-end emit when anything was removed, so a pruned
+              bundle is persisted even if nothing re-staged.
+            - Payload eligibility is enforced upstream: `live_spell_ids`
+              derives from `_build_conjure_cache_state`, which already excludes
+              existing-creation and non-resolvable spells.
+            - Best-effort per spell: a staging miss leaves that spell out of
+              the bundle, so it compiles on the next conjure instead of
+              hydrating a plan from another world.
+            - No-op when caching is disabled (no cache utility in the state).
 
         Args:
             spellbook:
-                Owning Spellbook whose missing spell payloads should stage.
+                Owning Spellbook whose bundle should be rebuilt.
             cache_state:
                 Conjure cache-state summary built by
                 `_build_conjure_cache_state`.
@@ -1097,8 +1145,73 @@ class SpellbookCreationSystem(Cleanable):
         Returns:
             None.
         """
-        for spell_id in cache_state["missing_spell_ids"]:
+        caching_system = cache_state["caching_system"]
+        if caching_system is None:
+            return
+        # The cached-id view is live and this loop removes from the store it
+        # views, so iterate over a detached copy (required for correctness).
+        removed_any = False
+        for cached_spell_id in tuple(caching_system.cached_spell_ids):
+            if caching_system.remove_spell_payload(cached_spell_id):
+                removed_any = True
+        for spell_id in sorted(cache_state["live_spell_ids"]):
             spellbook._emit_spell_cache(spellbook._spell_id_pool[spell_id])
+        if removed_any:
+            spellbook._cache_emit_required = True
+
+    @staticmethod
+    def _capture_structural_payloads_at_conjure_end(
+            *,
+            spellbook: Spellbook,
+            cache_state: dict[str, Any],
+    ) -> None:
+        """
+        Store the structural snapshot rows of every owned spell in the bundle.
+
+        Purpose:
+            The structural phases (1-4) ran live for every owned spell on this
+            conjure, so their phase 3-4 results are current: capture them as
+            value rows beside the executor payloads so a later conjure can
+            replay them (the hydrate half of the structural snapshot).
+
+        Contract:
+            - Runs on EVERY cache path (full hit, mixed, full miss) - unlike the
+              executor staging, which a full hit skips - because phases 1-4
+              are not skipped by the executor tier.
+            - Delegates to `StructuralSnapshot.capture_at_conjure_end`, which
+              is best-effort per spell; flags the conjure-end emit only when
+              the store's bytes changed.
+            - No-op when caching is disabled (no cache utility in the state).
+            - Never propagates a capture failure into the conjure path.
+
+        Args:
+            spellbook:
+                Owning Spellbook whose spells are snapshotted.
+            cache_state:
+                Conjure cache-state summary built by
+                `_build_conjure_cache_state`.
+
+        Returns:
+            None.
+        """
+        caching_system = cache_state["caching_system"]
+        if caching_system is None:
+            return
+        try:
+            changed = StructuralSnapshot.capture_at_conjure_end(
+                spellbook,
+                caching_system,
+            )
+        except Exception as exc:
+            if spellbook._logger is not None:
+                spellbook._logger.error(
+                    f"Failed to capture structural payloads at conjure end: {exc}",
+                    "_capture_structural_payloads_at_conjure_end",
+                    exc_info=True,
+                )
+            return
+        if changed:
+            spellbook._cache_emit_required = True
 
     @staticmethod
     def _emit_conduit_cache_file_at_conjure_end(
@@ -1594,8 +1707,15 @@ class SpellbookCreationSystem(Cleanable):
             # callers marked the spell resolution-complete with no phase-11
             # creation built, and meld then failed deep in the context
             # builder with an opaque RuntimeError instead of the validation
-            # contract callers rely on.
-            raise SpellbookValidationError([target_spell])
+            # contract callers rely on. The conduit diagnostics carry the
+            # reasons (the phase artifacts were just cleaned), so hand them over.
+            resolution_state = spellbook._spell_system_states.get_conduit_resolution_state(conduit_id)
+            raise SpellbookValidationError(
+                [target_spell],
+                system_diagnostics=(
+                    resolution_state.list_diagnostics() if resolution_state is not None else None
+                ),
+            )
 
         scoped_spell_ids, scoped_root_ids = SpellbookCreationSystem._collect_target_resolution_scope(
             target_spell=target_spell,
@@ -2360,9 +2480,9 @@ class SpellbookCreationSystem(Cleanable):
                 SystemDiagnostic(
                     code="visibility_gap_dependency_filtered",
                     message=(
-                        f"Local resolution referenced dependency "
-                        f"'{missing_dependency_id}', but it is not visible "
-                        "to this Spellbook."
+                        f"Resolving this spell needs spell id {missing_dependency_id[:12]}, "
+                        "which is not visible to this Spellbook. Bind it in this "
+                        "Spellbook, or give this conduit access to it."
                     ),
                     severity=SystemDiagnosticSeverity.ERROR,
                     spell_id=missing_dependency_id,
@@ -3248,28 +3368,3 @@ class SpellbookCreationSystem(Cleanable):
                 },
             )
         ]
-
-
-_EXISTING_OVERRIDE_MESSAGE = (
-    "Overrides were supplied for a spell instance that already exists. "
-    "Shared instances cannot be overridden after creation."
-)
-
-
-def _load_meld_execution_error_type() -> Any:
-    """Return the live MeldExecutionError type without a module-level import cycle."""
-    from melder.utilities.custom_exceptions.meld_execution_error import (
-        MeldExecutionError,
-    )
-    return MeldExecutionError
-
-
-def _make_cell(value: Any) -> Any:
-    """Build one closure cell for cached-function reconstruction."""
-    def inner() -> Any:
-        return value
-    return inner.__closure__[0]
-
-
-
-

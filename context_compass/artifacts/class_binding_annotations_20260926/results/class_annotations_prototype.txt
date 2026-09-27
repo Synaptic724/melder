@@ -1,0 +1,78 @@
+# prototype (VM copy: _build_class_profile catches NameError -> SignatureReflection.class_annotations(cls); other errors still {}), 3.14.7t: run 1
+{
+ "ResolvedFields": {
+  "id": "be5872ec4efed324",
+  "keys": [
+   "count",
+   "name"
+  ],
+  "values": {
+   "count": "<class 'int'>",
+   "name": "<class 'str'>"
+  }
+ },
+ "TypeCheckingField": {
+  "id": "1ff1ec93dc1d887e",
+  "keys": [
+   "amount",
+   "label"
+  ],
+  "values": {
+   "amount": "'Decimal'",
+   "label": "<class 'str'>"
+  }
+ },
+ "QuotedUnavailable": {
+  "id": "b6374ae9f7e23b5b",
+  "keys": [
+   "amount",
+   "label"
+  ],
+  "values": {
+   "amount": "'Decimal'",
+   "label": "<class 'str'>"
+  }
+ },
+ "NestedUnavailable": {
+  "id": "aa1fb409aa666f5a",
+  "keys": [
+   "amounts",
+   "count",
+   "total"
+  ],
+  "values": {
+   "amounts": "'list[Decimal]'",
+   "total": "'Optional[Decimal]'",
+   "count": "<class 'int'>"
+  }
+ },
+ "DataclassField": {
+  "id": "09e7e8d712c0ad96",
+  "keys": [
+   "amount",
+   "label"
+  ],
+  "values": {
+   "amount": "'Decimal'",
+   "label": "<class 'str'>"
+  }
+ },
+ "NoAnnotations": {
+  "id": "d471254ed25ef4c4",
+  "keys": [],
+  "values": {}
+ }
+}
+# run 2 (fresh process): identical to run 1: yes
+# PROBE_EXTRA_FIELD=1: TypeCheckingField id and keys change (extra: 'Decimal'):
+14c14
+<   "id": "1ff1ec93dc1d887e",
+---
+>   "id": "702c39b8cdd61c3a",
+16a17
+>    "extra",
+21c22,23
+<    "label": "<class 'str'>"
+---
+>    "label": "<class 'str'>",
+>    "extra": "'Decimal'"

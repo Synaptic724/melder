@@ -238,23 +238,24 @@ def test_binding_profile_future_annotations_resolve_builtin() -> None:
     assert profile.annotations["count"] is int
 
 
-def test_binding_profile_future_annotations_missing_names_clear_annotations() -> None:
+def test_binding_profile_future_annotations_missing_names_keep_source_text() -> None:
     """
     Purpose:
-        Validate unresolved names produce empty annotations instead of errors.
+        Validate unresolved names are kept as written instead of raising or clearing annotations.
     Contract:
-        Missing names cause annotations to fall back to an empty dict.
+        A missing name keeps its key with the annotation's source text; profile building still
+        succeeds and collects methods. Before 2026-09-26 every annotation of the class was dropped.
     Returns:
         None.
     Raises:
-        AssertionError: If missing names do not clear annotations.
+        AssertionError: If the missing name is not kept as its source text.
     """
     original = dict(getattr(_FutureProfileMissing, "__annotations__", {}))
     _FutureProfileMissing.__annotations__ = {"missing": "MissingType"}
     try:
         profile = _profile_for(_FutureProfileMissing)
 
-        assert profile.annotations == {}
+        assert profile.annotations == {"missing": "MissingType"}
         assert "ping" in profile.method_names
     finally:
         _FutureProfileMissing.__annotations__ = original

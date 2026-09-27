@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/ai_native_support_tools/protocol_crafter.py",
- "source_sha256": "28c91d9d6b897ce34d765fa486c882a6b7b9f34a73c826d2bdfa85d54b339b44",
+ "source_sha256": "2cdca61115df03ff05076af78318268e60bb781a13fcd776cb5543d0b9740166",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.ai_native_support_tools.protocol_crafter": {
@@ -26,7 +26,7 @@
    "label": "ProtocolCrafter",
    "kind": "class",
    "file": "src/melder/utilities/ai_native_support_tools/protocol_crafter.py",
-   "lineno": 21,
+   "lineno": 22,
    "bases": [
     "Cleanable"
    ],
@@ -47,7 +47,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c69023a5f41bfce73ec77bf34d1fb46c6882d041e69d96203696e3511d42f162",
+   "span_sha256": "4e25fb554a623021c5ca3943c3d32794f6746e4c106668d956e0d5bcc8b36b04",
    "role": "AI-native support utility for protocol generation and interface-file maintenance.",
    "responsibilities": [
     "generates runtime-checkable protocol code from reflected classes or concrete objects",
@@ -63,7 +63,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "c69023a5f41bfce73ec77bf34d1fb46c6882d041e69d96203696e3511d42f162"
+   "semantics_authored_against": "4e25fb554a623021c5ca3943c3d32794f6746e4c106668d956e0d5bcc8b36b04"
   }
  },
  "edges_out": [
@@ -144,6 +144,9 @@
  ],
  "published_aliases": [],
  "imports": {
+  "ForwardRef": "annotationlib.ForwardRef",
+  "Format": "annotationlib.Format",
+  "get_annotations": "annotationlib.get_annotations",
   "Callable": "collections.abc.Callable",
   "Sequence": "collections.abc.Sequence",
   "Path": "pathlib.Path",

@@ -1,6 +1,12 @@
-import hashlib
-import pickle
-from typing import Any, Dict, Optional, Sequence, Tuple
+import inspect
+from annotationlib import Format
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
+
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.aether.conduit.meld.contracts.spell_map import SpellMap
+from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
+    CodegenSignature,
+)
 
 
 class CodegenCreationSchemaHelpers:
@@ -16,6 +22,15 @@ class CodegenCreationSchemaHelpers:
         - Owns only phase-11 helper behavior used by codegen creation.
         - Does not own runtime state or lifecycle.
         - Returns only deterministic primitive/tuple structures.
+        - The serializer, hash and freeze helpers delegate to
+          `CodegenSignature` under `spell_compiler/shared_assets/`, the single
+          implementation also used by the phase-side `SharedCompilerExecutions`;
+          this subsystem still never imports the phase helper surface itself.
+        - Contract override payloads (2026-09-26): rows carry a scalar payload
+          value frozen as before and a value-only REFERENCE for every other value;
+          `resolve_contract_payload_row_values` reads the live value back from the
+          consumer's descriptor at hydration. The descriptor classes are imported
+          here only for that read (they import utilities only).
     """
 
     __slots__ = ()
@@ -26,12 +41,14 @@ class CodegenCreationSchemaHelpers:
         Serialize one signature part into deterministic bytes.
 
         Contract:
+            Delegates to `CodegenSignature.serialize_codegen_signature_part`.
             Type-dispatched with a stable one-byte tag per primitive
             (N/B/I/F/S/Y) so distinct types never collide on the same payload.
             Collections and unrecognized objects fall to pickle (protocol 5),
-            with a `repr()` fallback if pickling raises. Callers that need
-            canonical ordering across dict/set inputs must pre-freeze via
-            `freeze_phase11_schema_value`; this helper does not reorder.
+            with a `repr()` fallback if pickling raises; a top-level set or
+            frozenset is frozen (sorted) first. Callers that need canonical
+            ordering across NESTED dict/set inputs must still pre-freeze via
+            `freeze_phase11_schema_value`; this helper does not walk containers.
 
         Args:
             part:
@@ -40,40 +57,7 @@ class CodegenCreationSchemaHelpers:
         Returns:
             bytes: Deterministic encoding of `part`.
         """
-        part_type = type(part)
-        if (
-                part_type is dict
-                or part_type is tuple
-                or part_type is list
-                or part_type is set
-                or part_type is frozenset
-        ):
-            try:
-                encoded_part_from_collection: bytes = pickle.dumps(part, protocol=5)
-                return encoded_part_from_collection
-            except (pickle.PickleError, TypeError, AttributeError):
-                return repr(part).encode("utf-8")
-        if part is None:
-            return b"N"
-        if part_type is bool:
-            return b"B1" if part else b"B0"
-        if part_type is int:
-            return b"I" + str(part).encode("ascii")
-        if part_type is float:
-            return b"F" + repr(part).encode("ascii")
-        if part_type is str:
-            part_str: str = part
-            return b"S" + part_str.encode("utf-8")
-        if part_type is bytes:
-            part_bytes: bytes = part
-            return b"Y" + part_bytes
-        if part_type is bytearray:
-            return b"Y" + bytes(part)
-        try:
-            encoded_part_from_object: bytes = pickle.dumps(part, protocol=5)
-            return encoded_part_from_object
-        except (pickle.PickleError, TypeError, AttributeError):
-            return repr(part).encode("utf-8")
+        return CodegenSignature.serialize_codegen_signature_part(part)
 
     @staticmethod
     def hash_codegen_signature(*parts: Any) -> str:
@@ -81,10 +65,10 @@ class CodegenCreationSchemaHelpers:
         Build a deterministic SHA256 signature over ordered IR parts.
 
         Contract:
-            Each part is encoded via `serialize_codegen_signature_part` and
-            followed by a `|` separator byte, so ordering and grouping are
-            significant - two different partitions of the same values never
-            collide.
+            Delegates to `CodegenSignature.hash_codegen_signature`. Each part is
+            encoded via `serialize_codegen_signature_part` and followed by a `|`
+            separator byte, so ordering and grouping are significant - two
+            different partitions of the same values never collide.
 
         Args:
             *parts:
@@ -93,13 +77,7 @@ class CodegenCreationSchemaHelpers:
         Returns:
             str: Hex SHA256 digest over the encoded parts.
         """
-        digest = hashlib.sha256()
-        for part in parts:
-            digest.update(
-                CodegenCreationSchemaHelpers.serialize_codegen_signature_part(part)
-            )
-            digest.update(b"|")
-        return digest.hexdigest()
+        return CodegenSignature.hash_codegen_signature(*parts)
 
     @staticmethod
     def freeze_phase11_schema_value(value: Any) -> Any:
@@ -107,12 +85,15 @@ class CodegenCreationSchemaHelpers:
         Normalize an arbitrary value into a deterministic schema-safe form.
 
         Contract:
+            Delegates to `CodegenSignature.freeze_phase11_schema_value`.
             Primitives (None/bool/int/float/str) pass through unchanged. Dicts
             become sorted `(key, frozen-value)` tuples; lists and tuples become
-            order-preserving frozen tuples; sets become repr-sorted frozen
-            tuples. Anything else collapses to `repr(value)`. Recurses into
-            nested containers so the whole structure is order-canonical and
-            hashable.
+            order-preserving frozen tuples; sets and frozensets become
+            repr-sorted frozen tuples. Callables and instances whose `repr` would
+            carry a memory address become process-independent marker tuples;
+            anything else collapses to `repr(value)` exactly as before. Recurses
+            into nested containers so the whole structure is order-canonical
+            and hashable.
 
         Args:
             value:
@@ -121,34 +102,225 @@ class CodegenCreationSchemaHelpers:
         Returns:
             Any: A deterministic, hashable projection of `value`.
         """
-        if value is None or isinstance(value, (bool, int, float, str)):
-            return value
-        if isinstance(value, dict):
-            return tuple(
-                sorted(
-                    (
-                        key,
-                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item),
+        return CodegenSignature.freeze_phase11_schema_value(value)
+
+    @staticmethod
+    def is_replayable_contract_payload_value(value: Any) -> bool:
+        """
+        Return whether one contract payload value survives a phase-11 row unchanged.
+
+        Contract:
+            Delegates to `CodegenSignature.is_replayable_contract_payload_value`,
+            the one classifier every codegen family's row builder applies: `None`,
+            exact `bool`/`int`/`float`/`str`, and exact tuples of those are row
+            fixed points; everything else is written to a row only as its
+            reference. Pure; never raises.
+
+        Args:
+            value:
+                Raw payload value taken from `step.contract_payload`.
+
+        Returns:
+            bool: True when a row reproduces `value` exactly.
+        """
+        return CodegenSignature.is_replayable_contract_payload_value(value)
+
+    @staticmethod
+    def project_contract_payload_entry(
+            param_name: str,
+            value: Any,
+            payload_refs: Optional[Dict[str, Any]],
+    ) -> Any:
+        """
+        Project one contract payload entry into its row form: the value or its reference.
+
+        Contract:
+            Delegates to `CodegenSignature.project_contract_payload_entry`: a
+            replayable value is written as it is (byte-identical to the frozen
+            rows it replaces), any other value as the reference recorded by
+            phase 9; `"__args__"` projects a positional payload element by
+            element. Pure.
+
+        Raises:
+            RuntimeError: When a non-replayable value has no reference to stand in
+                for it (a step built without `contract_payload_refs`).
+        """
+        return CodegenSignature.project_contract_payload_entry(param_name, value, payload_refs)
+
+    @staticmethod
+    def resolve_contract_override_ref(
+            ref: Tuple[str, str, str, Union[str, int]],
+            spell_lookup: Dict[str, Any],
+            descriptor_cache: Dict[Tuple[str, str], Any],
+    ) -> Any:
+        """
+        Read the live value one contract override reference points at.
+
+        Purpose:
+            The hydration counterpart of `CodegenSignature.build_contract_override_ref`:
+            rows and manifests carry references, the executor binds the object the
+            consumer's descriptor holds right now, in this process (2026-09-26).
+
+        Contract:
+            - `spell_lookup` maps spell ids to live `Spell` objects and must contain
+              the consumer; the descriptor is read from the consumer's callable
+              surface (`inspect.signature(spell.spell)` in FORWARDREF format, the
+              same read phase 9 performs) and memoized in `descriptor_cache` under
+              `(consumer_spell_id, param_name)` for the duration of one hydration.
+            - The descriptor must be a `SpellContract` or `SpellMap` with a payload;
+              a `str` key selects a keyword entry of a dict payload; an `int` key
+              selects a positional entry of a list/tuple payload or of the
+              `__args__` entry of a dict payload.
+            - Returns the value by reference; nothing is copied or validated.
+
+        Raises:
+            RuntimeError: When the consumer is not in `spell_lookup`, the parameter
+                is absent or carries no descriptor default, the descriptor has no
+                payload, or the key is missing - each names the consumer and parameter.
+        """
+        _marker, consumer_spell_id, param_name, key = ref
+        cache_key = (consumer_spell_id, param_name)
+        descriptor = descriptor_cache.get(cache_key)
+        if descriptor is None:
+            consumer_spell = spell_lookup.get(consumer_spell_id)
+            if consumer_spell is None:
+                raise RuntimeError(
+                    "Contract override reference names consumer spell "
+                    f"{consumer_spell_id!r}, which is not in the hydration lookup."
+                )
+            signature = inspect.signature(
+                consumer_spell.spell,
+                annotation_format=Format.FORWARDREF,
+            )
+            parameter = signature.parameters.get(param_name)
+            if parameter is None or parameter.default is inspect.Parameter.empty:
+                raise RuntimeError(
+                    f"Contract override reference names parameter {param_name!r} of "
+                    f"consumer spell {consumer_spell_id!r}, which has no default."
+                )
+            descriptor = parameter.default
+            if not isinstance(descriptor, (SpellContract, SpellMap)):
+                raise RuntimeError(
+                    f"Contract override reference names parameter {param_name!r} of "
+                    f"consumer spell {consumer_spell_id!r}, whose default is not a "
+                    "SpellContract or SpellMap."
+                )
+            descriptor_cache[cache_key] = descriptor
+        payload = descriptor.override
+        if payload is None:
+            raise RuntimeError(
+                f"Contract override reference names parameter {param_name!r} of "
+                f"consumer spell {consumer_spell_id!r}, whose descriptor carries no payload."
+            )
+        if isinstance(payload, dict):
+            if isinstance(key, int):
+                positional = payload.get("__args__")
+                if not isinstance(positional, (list, tuple)) or key >= len(positional):
+                    raise RuntimeError(
+                        f"Contract override reference index {key} of parameter "
+                        f"{param_name!r} on consumer spell {consumer_spell_id!r} is out of range."
                     )
-                    for key, item in value.items()
+                return positional[key]
+            if key not in payload:
+                raise RuntimeError(
+                    f"Contract override reference key {key!r} of parameter "
+                    f"{param_name!r} on consumer spell {consumer_spell_id!r} is missing."
                 )
-            )
-        if isinstance(value, (list, tuple)):
-            return tuple(
-                CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item)
-                for item in value
-            )
-        if isinstance(value, set):
-            return tuple(
-                sorted(
-                    (
-                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(item)
-                        for item in value
-                    ),
-                    key=repr,
+            return payload[key]
+        if isinstance(payload, (list, tuple)) and isinstance(key, int) and key < len(payload):
+            return payload[key]
+        raise RuntimeError(
+            f"Contract override reference key {key!r} of parameter {param_name!r} on "
+            f"consumer spell {consumer_spell_id!r} does not match the descriptor payload shape."
+        )
+
+    @staticmethod
+    def resolve_contract_payload_row_values(
+            row: Dict[str, Any],
+            spell_lookup: Dict[str, Any],
+            descriptor_cache: Dict[Tuple[str, str], Any],
+    ) -> Tuple[Tuple[Tuple[str, Any], ...], Any]:
+        """
+        Return one row's contract payload items and positional override with references resolved.
+
+        Contract:
+            - `contract_payload_items` and `contract_positional_override` are read from
+              `row`; every reference (`CodegenSignature.is_contract_override_ref`) is
+              replaced by its live value through `resolve_contract_override_ref`, tuples
+              are walked element by element, and every other value passes through
+              untouched (scalar rows resolve to themselves, allocation aside).
+            - Pure over the row; the row itself is never mutated.
+
+        Args:
+            row: One phase-11 step row.
+            spell_lookup: Spell id -> live Spell map covering the plan's consumers.
+            descriptor_cache: Per-hydration memo shared across rows.
+
+        Returns:
+            Tuple of (payload items with values, positional override with values).
+        """
+        def _resolve(value: Any) -> Any:
+            if CodegenSignature.is_contract_override_ref(value):
+                return CodegenCreationSchemaHelpers.resolve_contract_override_ref(
+                    value, spell_lookup, descriptor_cache,
                 )
+            if type(value) is tuple:
+                return tuple(_resolve(item) for item in value)
+            return value
+
+        items = tuple(
+            (param_name, _resolve(value))
+            for param_name, value in row["contract_payload_items"]
+        )
+        return items, _resolve(row["contract_positional_override"])
+
+    @staticmethod
+    def contract_payload_refs_from_row(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Rebuild a step's `contract_payload_refs` map from the references a raw row carries.
+
+        Purpose:
+            A hydrated step adapter holds LIVE payload values after
+            `resolve_contract_payload_row_values`; if such an adapter is ever
+            projected back into a row, the references must still be at hand.
+            This reads them off the raw row, so the adapter mirrors a plan step
+            (`contract_payload` + `contract_payload_refs`) exactly.
+
+        Contract:
+            - Keyword entries whose row value is a reference map to that reference.
+            - The `__args__` entry (or the row's `contract_positional_override`)
+              maps to a tuple with the reference at each referenced index and
+              `None` where the element is a scalar, matching what
+              `project_contract_payload_entry` reads.
+            - Returns None when the row carries no reference at all.
+            - Pure; the row is not mutated.
+
+        Args:
+            row: One phase-11 step row as persisted or emitted.
+
+        Returns:
+            Optional[Dict[str, Any]]: The references map, or None.
+        """
+        refs: Dict[str, Any] = {}
+        positional_source = None
+        for param_name, value in row["contract_payload_items"]:
+            if param_name == "__args__":
+                positional_source = value
+                continue
+            if CodegenSignature.is_contract_override_ref(value):
+                refs[param_name] = value
+        if positional_source is None:
+            positional_source = row["contract_positional_override"]
+        if isinstance(positional_source, (list, tuple)):
+            positional_refs = tuple(
+                item if CodegenSignature.is_contract_override_ref(item) else None
+                for item in positional_source
             )
-        return repr(value)
+            if any(item is not None for item in positional_refs):
+                refs["__args__"] = positional_refs
+        if not refs:
+            return None
+        return refs
 
     @staticmethod
     def normalize_instance_key(
@@ -360,13 +532,15 @@ class CodegenCreationSchemaHelpers:
         Contract:
             Projects an immutable plan step into a plain dict of primitives and
             tuples (instance key, selected spell id, existence NAME, target
-            kind, dependency-resolution order, frozen contract payload, lock and
+            kind, dependency-resolution order, contract payload rows, lock and
             registration hints, disposal names). When `include_override_metadata`
             is False, every override-lane field (override_match_prefix and its
             length, override_keys, expects_overrides, contract_keys) is emitted
             empty/false, so the no-overrides lane's rows stay byte-identical even
-            when the step object physically carries override data. Payload
-            values are frozen via `freeze_phase11_schema_value` for determinism.
+            when the step object physically carries override data. A scalar payload
+            value is written as it is; any other payload value is emitted as its
+            reference (`project_contract_payload_entry`), so rows are deterministic
+            and replayable by construction (2026-09-26).
 
         Args:
             step:
@@ -387,11 +561,14 @@ class CodegenCreationSchemaHelpers:
         )
         contract_payload_items: Tuple[Any, ...] = ()
         if step.contract_payload:
+            payload_refs = step.contract_payload_refs
             contract_payload_items = tuple(
                 sorted(
                     (
                         param_name,
-                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(value),
+                        CodegenCreationSchemaHelpers.project_contract_payload_entry(
+                            param_name, value, payload_refs,
+                        ),
                     )
                     for param_name, value in step.contract_payload.items()
                 )
@@ -427,8 +604,8 @@ class CodegenCreationSchemaHelpers:
             "allow_list_aggregation": step.allow_list_aggregation,
             "uses_positional_override": step.uses_positional_override,
             "contract_positional_override": (
-                CodegenCreationSchemaHelpers.freeze_phase11_schema_value(
-                    step.contract_positional_override,
+                CodegenCreationSchemaHelpers.project_contract_payload_entry(
+                    "__args__", step.contract_positional_override, step.contract_payload_refs,
                 )
             ),
             "has_contract_payload": step.has_contract_payload,
@@ -452,8 +629,10 @@ class CodegenCreationSchemaHelpers:
             Returns a fixed-order tuple of the caching-relevant step facts:
             instance key, selected spell id, existence NAME, target kind,
             dependency-resolution order, sorted collection params, the
-            positional-override flag and frozen value, contract-payload presence
-            and frozen sorted items, and the lock-hint and must-register flags.
+            positional-override flag and projected value, contract-payload
+            presence and projected sorted items (a scalar entry as itself, any
+            other entry as its phase-9 reference, 2026-09-26), and the lock-hint
+            and must-register flags.
             Override-lane fields are intentionally excluded - this row is the
             no-overrides cache key, so it stays stable across override churn.
 
@@ -473,11 +652,14 @@ class CodegenCreationSchemaHelpers:
         )
         contract_payload_items: Tuple[Any, ...] = ()
         if step.contract_payload:
+            payload_refs = step.contract_payload_refs
             contract_payload_items = tuple(
                 sorted(
                     (
                         param_name,
-                        CodegenCreationSchemaHelpers.freeze_phase11_schema_value(value),
+                        CodegenCreationSchemaHelpers.project_contract_payload_entry(
+                            param_name, value, payload_refs,
+                        ),
                     )
                     for param_name, value in step.contract_payload.items()
                 )
@@ -490,8 +672,8 @@ class CodegenCreationSchemaHelpers:
             dependency_resolution_order,
             tuple(sorted(step.collection_param_names)),
             bool(step.uses_positional_override),
-            CodegenCreationSchemaHelpers.freeze_phase11_schema_value(
-                step.contract_positional_override
+            CodegenCreationSchemaHelpers.project_contract_payload_entry(
+                "__args__", step.contract_positional_override, step.contract_payload_refs,
             ),
             bool(step.has_contract_payload),
             contract_payload_items,

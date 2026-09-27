@@ -8,8 +8,6 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
 from melder.aether.spellbook.existence.existence import Existence
-from melder.aether.spellbook.spell_compiler.dag.dag_index import DagIndex, SocketRef
-from melder.aether.spellbook.spell_compiler.dag.socket_kind import SocketKind
 from melder.aether.spellbook.spell_compiler.validation.validation_system import SpellValidationSystem
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
@@ -138,7 +136,6 @@ def test_validation_system_resolves_contracted_dependency_without_dangling() -> 
         consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
         assert consumer_spell is not None
         consumer_spell.dependencies = [service_id]
-        consumer_spell.dependency_graph = object()
 
         result = system.validate_spell(
             spell=consumer_spell,
@@ -257,7 +254,6 @@ def test_validation_system_duplicate_spell_name_across_contracted() -> None:
 
         local_spell = _get_spell_by_version_id(borrower_book, borrower_id)
         assert local_spell is not None
-        local_spell.dependency_graph = object()
 
         result = system.validate_spell(
             spell=local_spell,
@@ -345,7 +341,6 @@ def test_validation_system_updates_after_contract_removal_and_readd() -> None:
         consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
         assert consumer_spell is not None
         consumer_spell.dependencies = [dependency_id]
-        consumer_spell.dependency_graph = object()
 
         result = system.validate_spell(
             spell=consumer_spell,
@@ -466,7 +461,6 @@ def test_validation_system_reports_dangling_after_sever_link() -> None:
         consumer_spell = _get_spell_by_version_id(borrower_book, consumer_id)
         assert consumer_spell is not None
         consumer_spell.dependencies = [dependency_id]
-        consumer_spell.dependency_graph = object()
 
         assert owner.sever_link(borrower) is True
 
@@ -555,7 +549,6 @@ def test_validation_system_detects_cross_boundary_cycle() -> None:
 
         owner_spell.dependencies = [borrower_id]
         borrower_spell.dependencies = [owner_id]
-        borrower_spell.dependency_graph = object()
 
         result = system.validate_spell(
             spell=borrower_spell,
@@ -674,7 +667,6 @@ def test_validation_system_duplicate_name_clears_after_unlink() -> None:
 
         local_spell = _get_spell_by_version_id(borrower_book, borrower_id)
         assert local_spell is not None
-        local_spell.dependency_graph = object()
 
         result = system.validate_spell(
             spell=local_spell,
@@ -1069,7 +1061,6 @@ def test_validation_system_reports_self_dependency_errors() -> None:
         assert spell is not None
 
         spell.dependencies = [spell_id]
-        spell.dependency_graph = object()
 
         result = system.validate_spell(
             spell=spell,
@@ -1170,7 +1161,6 @@ def test_validation_system_duplicate_spell_name_local_only() -> None:
 
         spell = _get_spell_by_version_id(spellbook, target_id)
         assert spell is not None
-        spell.dependency_graph = object()
 
         result = system.validate_spell(
             spell=spell,
@@ -1250,69 +1240,6 @@ def test_spell_validation_phase4_marks_broken_on_dangling_dependency() -> None:
         spellbook.cleanup()
 
 
-def test_spell_validation_phase4_warns_on_missing_dependency_graph_not_broken() -> None:
-    """
-    Purpose:
-        Validate missing dependency graph emits warnings without breaking spells.
-    Contract:
-        - MISSING_DEPENDENCY_GRAPH warning is present.
-        - The spell is not marked broken after Phase 4.
-        - validated remains Phase-6 gated until system validation runs.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If warnings are missing or the spell is marked broken.
-    """
-    spellbook = Spellbook()
-    config = spellbook.get_configuration()
-    config.set_property("phase_scheduler_workers_per_spellbook", 1)
-
-    class Leaf:
-        """
-        Purpose:
-            Provide a minimal leaf spell for dependency graph testing.
-        Contract:
-            - Declares no constructor parameters.
-        """
-
-        def __init__(self) -> None:
-            """
-            Purpose:
-                Initialize the leaf spell.
-            Contract:
-                No side effects beyond construction.
-            Returns:
-                None.
-            """
-            return None
-
-    try:
-        spell_id = spellbook.bind(
-            spell=Leaf,
-            existence=Existence.unique,
-            permissions="create",
-        )
-        spell = _get_spell_by_version_id(spellbook, spell_id)
-        assert spell is not None
-
-        compiler_test_helpers.run_phase_requirements(spell)
-        compiler_test_helpers.run_phase_symbolic_graph(spell)
-        compiler_test_helpers.run_phase_local_frame(spell)
-
-        spell.dependency_graph = None
-        compiler_test_helpers.run_phase_validation(spell)
-
-        result = spell.validation_result_phase4
-        assert result is not None
-        codes = {issue.code for issue in result.issues}
-        assert "MISSING_DEPENDENCY_GRAPH" in codes
-        assert result.has_errors is False
-        assert result.has_warnings is True
-        assert spell.is_broken is False
-    finally:
-        spellbook.cleanup()
-
-
 def test_validation_system_local_dependency_not_dangling() -> None:
     """
     Purpose:
@@ -1362,7 +1289,6 @@ def test_validation_system_local_dependency_not_dangling() -> None:
         consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert consumer_spell is not None
         consumer_spell.dependencies = [service_id]
-        consumer_spell.dependency_graph = object()
 
         result = system.validate_spell(
             spell=consumer_spell,
@@ -1701,94 +1627,6 @@ def test_spell_validation_phase6_detects_cycle_in_index_and_graph_mismatch() -> 
         spellbook.cleanup()
 
 
-def test_spell_validation_phase6_reports_socket_ref_index_mismatch() -> None:
-    """
-    Purpose:
-        Validate socket-ref sanity checks catch index mismatches.
-    Contract:
-        - socket_ref_missing_in_index is reported when the DagIndex is empty.
-        - socket_ref_missing_in_index_name is also reported for name buckets.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If socket-ref diagnostics are missing.
-    """
-    spellbook = Spellbook()
-    config = spellbook.get_configuration()
-    config.set_property("phase_scheduler_workers_per_spellbook", 1)
-
-    class Consumer:
-        """
-        Purpose:
-            Provide a spell with a dependency socket for blueprint tests.
-        Contract:
-            - Declares a BasicService dependency.
-        Args:
-            service: Injected BasicService dependency.
-        """
-
-        def __init__(self, service: BasicService) -> None:
-            """
-            Purpose:
-                Capture the injected BasicService dependency.
-            Contract:
-                Stores the dependency for completeness.
-            Args:
-                service: Injected BasicService dependency.
-            Returns:
-                None.
-            """
-            self.service = service
-
-    try:
-        service_id = spellbook.bind(
-            spell=BasicService,
-            existence=Existence.unique,
-            permissions="create",
-            spellframe="BasicService",
-        )
-        consumer_id = spellbook.bind(
-            spell=Consumer,
-            existence=Existence.unique,
-            permissions="create",
-        )
-
-        service_spell = _get_spell_by_version_id(spellbook, service_id)
-        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
-        assert service_spell is not None
-        assert consumer_spell is not None
-
-        compiler_test_helpers.run_phase_requirements(service_spell)
-        compiler_test_helpers.run_phase_symbolic_graph(service_spell)
-        compiler_test_helpers.run_phase_local_frame(service_spell)
-        compiler_test_helpers.run_phase_validation(service_spell)
-
-        compiler_test_helpers.run_phase_requirements(consumer_spell)
-        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
-        compiler_test_helpers.run_phase_local_frame(consumer_spell)
-        compiler_test_helpers.run_phase_validation(consumer_spell)
-        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
-
-        artifact = consumer_spell._compiler_artifact
-        blueprints = artifact._entire_dag_blueprint_phase5
-        assert blueprints is not None
-        root_blueprint = blueprints.get(consumer_id)
-        assert root_blueprint is not None
-        path_registry = root_blueprint.path_registry
-        root_blueprint._dag_index = DagIndex(path_registry=path_registry)
-        root_blueprint._dag_index.rebuild([])
-
-        compiler_test_helpers.run_phase_system_validation(consumer_spell, "cid")
-
-        result = consumer_spell.validation_result_phase6
-        assert result is not None
-        codes = {diag.code for diag in result.errors}
-        assert "socket_ref_missing_in_index" in codes
-        assert "socket_ref_missing_in_index_name" in codes
-    finally:
-        spellbook.cleanup()
-
-
 def test_spell_validation_phase6_reports_missing_index_node() -> None:
     """
     Purpose:
@@ -1957,184 +1795,5 @@ def test_spell_validation_phase6_reports_edge_mismatch_index() -> None:
         assert "root_not_viable" in codes
     finally:
         spellbook.cleanup()
-
-
-def test_spell_validation_phase6_reports_socket_ref_duplicate() -> None:
-    """
-    Purpose:
-        Validate system validation detects duplicate socket refs.
-    Contract:
-        - socket_ref_duplicate is reported when a socket ref is duplicated.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If diagnostics are missing.
-    """
-    spellbook = Spellbook()
-    config = spellbook.get_configuration()
-    config.set_property("phase_scheduler_workers_per_spellbook", 1)
-
-    class Consumer:
-        """
-        Purpose:
-            Provide a spell with a dependency socket for duplication tests.
-        Contract:
-            - Declares a BasicService dependency.
-        Args:
-            service: Injected BasicService dependency.
-        """
-
-        def __init__(self, service: BasicService) -> None:
-            """
-            Purpose:
-                Capture the injected BasicService dependency.
-            Contract:
-                Stores the dependency for completeness.
-            Args:
-                service: Injected BasicService dependency.
-            Returns:
-                None.
-            """
-            self.service = service
-
-    try:
-        service_id = spellbook.bind(
-            spell=BasicService,
-            existence=Existence.unique,
-            permissions="create",
-            spellframe="BasicService",
-        )
-        consumer_id = spellbook.bind(
-            spell=Consumer,
-            existence=Existence.unique,
-            permissions="create",
-        )
-
-        service_spell = _get_spell_by_version_id(spellbook, service_id)
-        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
-        assert service_spell is not None
-        assert consumer_spell is not None
-
-        compiler_test_helpers.run_phase_requirements(service_spell)
-        compiler_test_helpers.run_phase_symbolic_graph(service_spell)
-        compiler_test_helpers.run_phase_local_frame(service_spell)
-        compiler_test_helpers.run_phase_validation(service_spell)
-
-        compiler_test_helpers.run_phase_requirements(consumer_spell)
-        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
-        compiler_test_helpers.run_phase_local_frame(consumer_spell)
-        compiler_test_helpers.run_phase_validation(consumer_spell)
-        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
-
-        artifact = consumer_spell._compiler_artifact
-        blueprints = artifact._entire_dag_blueprint_phase5
-        assert blueprints is not None
-        root_blueprint = blueprints.get(consumer_id)
-        assert root_blueprint is not None
-        socket = root_blueprint.socket_refs[0]
-        root_blueprint.add_socket_ref(socket)
-
-        compiler_test_helpers.run_phase_system_validation(consumer_spell, "cid")
-
-        result = consumer_spell.validation_result_phase6
-        assert result is not None
-        codes = {diag.code for diag in result.errors}
-        assert "socket_ref_duplicate" in codes
-    finally:
-        spellbook.cleanup()
-
-
-def test_spell_validation_phase6_reports_orphan_dag_index_socket() -> None:
-    """
-    Purpose:
-        Validate system validation detects DagIndex sockets missing from socket_refs.
-    Contract:
-        - dag_index_orphan_socket is reported for index-only sockets.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If diagnostics are missing.
-    """
-    spellbook = Spellbook()
-    config = spellbook.get_configuration()
-    config.set_property("phase_scheduler_workers_per_spellbook", 1)
-
-    class Consumer:
-        """
-        Purpose:
-            Provide a spell with a dependency socket for DagIndex tests.
-        Contract:
-            - Declares a BasicService dependency.
-        Args:
-            service: Injected BasicService dependency.
-        """
-
-        def __init__(self, service: BasicService) -> None:
-            """
-            Purpose:
-                Capture the injected BasicService dependency.
-            Contract:
-                Stores the dependency for completeness.
-            Args:
-                service: Injected BasicService dependency.
-            Returns:
-                None.
-            """
-            self.service = service
-
-    try:
-        service_id = spellbook.bind(
-            spell=BasicService,
-            existence=Existence.unique,
-            permissions="create",
-            spellframe="BasicService",
-        )
-        consumer_id = spellbook.bind(
-            spell=Consumer,
-            existence=Existence.unique,
-            permissions="create",
-        )
-
-        service_spell = _get_spell_by_version_id(spellbook, service_id)
-        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
-        assert service_spell is not None
-        assert consumer_spell is not None
-
-        compiler_test_helpers.run_phase_requirements(service_spell)
-        compiler_test_helpers.run_phase_symbolic_graph(service_spell)
-        compiler_test_helpers.run_phase_local_frame(service_spell)
-        compiler_test_helpers.run_phase_validation(service_spell)
-
-        compiler_test_helpers.run_phase_requirements(consumer_spell)
-        compiler_test_helpers.run_phase_symbolic_graph(consumer_spell)
-        compiler_test_helpers.run_phase_local_frame(consumer_spell)
-        compiler_test_helpers.run_phase_validation(consumer_spell)
-        compiler_test_helpers.run_phase_root_blueprints(consumer_spell, "cid")
-
-        artifact = consumer_spell._compiler_artifact
-        blueprints = artifact._entire_dag_blueprint_phase5
-        assert blueprints is not None
-        root_blueprint = blueprints.get(consumer_id)
-        assert root_blueprint is not None
-        path_registry = root_blueprint.path_registry
-        orphan_path_id = path_registry.extend_path(path_registry.root_path_id, "orphan")
-        orphan = SocketRef(
-            node_id=consumer_id,
-            param_name="orphan",
-            param_path_id=orphan_path_id,
-            socket_kind=SocketKind.NORMAL,
-        )
-        root_blueprint.dag_index.add_socket(orphan)
-
-        compiler_test_helpers.run_phase_system_validation(consumer_spell, "cid")
-
-        result = consumer_spell.validation_result_phase6
-        assert result is not None
-        codes = {diag.code for diag in result.errors}
-        assert "dag_index_orphan_socket" in codes
-    finally:
-        spellbook.cleanup()
-
-
 
 

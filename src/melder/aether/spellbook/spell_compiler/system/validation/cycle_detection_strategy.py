@@ -6,6 +6,7 @@ from melder.aether.spellbook.spell_compiler.system.system_diagnostic import (
     SystemDiagnostic,
     SystemDiagnosticSeverity,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.aether.spellbook.spell_compiler.system.validation.strategy_base import (
     SpellSystemValidationStrategy,
 )
@@ -69,7 +70,8 @@ class CycleDetectionStrategy(SpellSystemValidationStrategy):
             phase4_results: Phase-4 results (unused by this strategy).
             broken_spell_ids: Broken spell ids (unused by this strategy).
             spell_system_states: SpellSystemStates registry (unused by this strategy).
-            spell_lookup: Mapping of visible spell version ids (unused by this strategy).
+            spell_lookup: Mapping of visible spell version ids, used to name the spells
+                left in or behind a cycle.
             diagnostics: Mutable list that receives diagnostics.
             cancel_event: Optional cancellation signal.
 
@@ -121,11 +123,21 @@ class CycleDetectionStrategy(SpellSystemValidationStrategy):
                     queue.append(child)
 
         if visited != len(indegree):
+            # Nodes Kahn's algorithm could not release sit in a cycle or behind one.
+            blocked_ids = sorted(node_id for node_id, degree in indegree.items() if degree > 0)
+            named = [SpellInputUtils.describe_spell_id(node_id, spell_lookup) for node_id in blocked_ids[:10]]
+            if len(blocked_ids) > 10:
+                named.append(f"and {len(blocked_ids) - 10} more")
             diagnostics.append(
                 SystemDiagnostic(
                     code="cycle_detected",
-                    message="Cycle detected in system dependency graph.",
+                    message=(
+                        "Cycle detected in the dependency graph. These spells are in a dependency "
+                        f"cycle or depend on one: {', '.join(named)}. Remove one constructor "
+                        "dependency in the cycle, or give that parameter a default."
+                    ),
                     severity=SystemDiagnosticSeverity.ERROR,
+                    details={"blocked_spell_ids": blocked_ids},
                 )
             )
 

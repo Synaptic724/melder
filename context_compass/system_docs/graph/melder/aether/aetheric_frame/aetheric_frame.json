@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/aetheric_frame.py",
- "source_sha256": "3c18ae150e0149a64d90f9b76175c59cb7d35994772d38c6c18d36e966b7f4b5",
+ "source_sha256": "22438de3c9ce7cb6526a51e8232296301f65d61134eaaa4f42cb3d3792e4ecb8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.aetheric_frame": {
@@ -59,7 +59,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0cbe83672ddbe9e72a957fad204b83284b7e2ad4a446c2d2538d47fc58d819d2",
+   "span_sha256": "f38876c6e40476f5d725135e2857a6b472b059a5ae58280ae3e56b842f534c4b",
    "role": "Per-frame runtime container.",
    "responsibilities": [
     "stores frame-local conduits and registries",

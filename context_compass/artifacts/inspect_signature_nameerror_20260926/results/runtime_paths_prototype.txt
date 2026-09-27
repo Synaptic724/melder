@@ -1,0 +1,12 @@
+--- dynamic=True
+S0 meld Car: OK -> 'Car'
+S1 bind Garage after conjure: OK -> 'e6b2c30aa9399fd33b52c6b5c9b392823263e8c45b169228cd4795078a9c04c6'
+S1 meld Garage: OK -> 'Garage'
+S1 meld Car again: OK -> 'Car'
+S2 lesser meld Garage: OK -> 'Garage'
+--- dynamic=False
+S0 meld Car: OK -> 'Car'
+S1 bind Garage after conjure: RAISED RuntimeError: [SPELLBOOK] Bind is disabled after conjure for the current frame posture. @ melder/aether/spellbook/spellbook.py:5268
+S1 meld Garage: RAISED KeyError: "[MELD] No spell found for frame='garage', binding='__default__'." @ melder/aether/conduit/meld/meld.py:1747
+S1 meld Car again: OK -> 'Car'
+S2 lesser meld Garage: RAISED KeyError: "[MELD] No spell found for frame='garage', binding='__default__'." @ melder/aether/conduit/meld/meld.py:1747

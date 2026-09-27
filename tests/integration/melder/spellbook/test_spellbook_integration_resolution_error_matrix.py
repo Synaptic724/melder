@@ -18,7 +18,7 @@ NOTE:
 from __future__ import annotations
 
 import json
-from typing import List, Protocol
+from typing import Any, List, Protocol
 
 import pytest
 
@@ -27,6 +27,7 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 
 
 @pytest.fixture(autouse=True)
@@ -121,7 +122,13 @@ class PlainValue:
         self.value = value
 
 
+class NeedsAnyMapping:
+    def __init__(self, meta: dict) -> None:
+        self.meta = meta
+
+
 NeedsPluginSet.__init__.__annotations__["plugins"] = set[IPlugin]
+NeedsAnyMapping.__init__.__annotations__["meta"] = dict[str, Any]
 
 
 def _make_spellbook() -> Spellbook:
@@ -341,14 +348,19 @@ def test_conjure_with_cycle_raises() -> None:
         spellbook.cleanup()
 
 
-def test_conjure_with_unresolvable_dependency_raises() -> None:
-    """A consumer depending on an unbound type must fail to conjure."""
+def test_unbound_dependency_conjures_and_fails_at_meld() -> None:
+    """A consumer depending on an unbound type conjures; melding it without the value raises UnresolvedInputError."""
     spellbook = _make_spellbook()
+    conduit = None
     try:
         spellbook.bind(spell=UsesUnbound, existence=Existence.unique, permissions="create")
-        with pytest.raises(Exception):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        with pytest.raises(UnresolvedInputError) as caught:
+            conduit.meld(spell=UsesUnbound)
+        assert caught.value.expected_type == "UnboundThing"
     finally:
+        if conduit is not None:
+            conduit.cleanup()
         spellbook.cleanup()
 
 
@@ -375,13 +387,28 @@ def test_conjure_with_duplicate_spell_name_raises() -> None:
         spellbook.cleanup()
 
 
-def test_conjure_with_unsupported_collection_shape_raises() -> None:
-    """A set[IPlugin] DI annotation (UNSUPPORTED_COLLECTION_SHAPE) must block conjure."""
+def test_conjure_with_set_collection_parameter_succeeds_and_meld_takes_override() -> None:
+    """A set[IPlugin] parameter is a caller input: conjure succeeds and meld passes the supplied set through."""
     spellbook = _make_spellbook()
     try:
         spellbook.bind(spell=NeedsPluginSet, existence=Existence.unique, permissions="create")
-        with pytest.raises(Exception):
-            spellbook.conjure(name="root")
+        conduit = spellbook.conjure(name="root")
+        plugins: set = set()
+        instance = conduit.meld(spell=NeedsPluginSet, override={"plugins": plugins})
+        assert instance.plugins is plugins
+    finally:
+        spellbook.cleanup()
+
+
+def test_conjure_with_dict_of_any_parameter_succeeds_and_meld_takes_override() -> None:
+    """dict[str, Any] is a caller input (Any is never injected): conjure succeeds and meld passes it through."""
+    spellbook = _make_spellbook()
+    try:
+        spellbook.bind(spell=NeedsAnyMapping, existence=Existence.many, permissions="create")
+        conduit = spellbook.conjure(name="root")
+        meta = {"key": 1}
+        instance = conduit.meld(spell=NeedsAnyMapping, override={"meta": meta})
+        assert instance.meta is meta
     finally:
         spellbook.cleanup()
 

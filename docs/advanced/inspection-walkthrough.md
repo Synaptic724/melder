@@ -1,3 +1,11 @@
+---
+myst:
+  html_meta:
+    description: >-
+      Inspect a selected Melder world: isolate frames, attach a Rift, navigate visible
+      conduits and spells, and diagnose missing information.
+---
+
 # Inspect an explicitly selected world
 
 Prerequisites: [world boundaries](worlds.md), [Nexus setup](nexus.md), and

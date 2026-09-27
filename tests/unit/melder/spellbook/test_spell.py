@@ -199,7 +199,6 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
             cleanup_calls.append("spell_index")
             super().cleanup()
 
-    dependency_graph = _Disposable()
     resolution_profile = _CleanableProfile()
     binding_profile = _CleanableProfile()
 
@@ -218,7 +217,6 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
     )
 
     # Attach disposable artifacts
-    spell.dependency_graph = dependency_graph
     general_profile = SpellGeneralProfile(
         binding_profile=binding_profile,
         resolution_profile=resolution_profile,
@@ -228,10 +226,10 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
 
     spell.cleanup()
 
-    assert dependency_graph.cleaned is True
     assert resolution_profile.cleaned is True
     assert binding_profile.cleaned is True
     assert not hasattr(spell, "profile")
+    assert not hasattr(spell, "dependency_graph")
     assert cleanup_calls == ["spell_index"]
 
     assert spell._cleaned is True
@@ -860,26 +858,19 @@ def test_emit_cache_file_returns_false_when_disabled():
     assert spell.emit_cache_file() is False
 
 
-def test_add_build_details_sets_dependencies_and_graph():
+def test_add_build_details_sets_dependencies_and_keeps_graph_tombstone():
+    """The retired `dependency_graph` stays None; only the dependency ids are attached."""
     spell = _make_spell()
     deps = ["a", "b", "c"]
-    dag = object()
-    spell._add_build_details(dag, deps)
-    assert spell.dependency_graph is dag
+    spell._add_build_details(deps)
     assert spell.dependencies == deps
+    assert spell.dependency_graph is None
 
 
-@pytest.mark.parametrize(
-    "dag,deps,error_msg",
-    [
-        (None, [], "Dependency graph cannot be None."),
-        ("graph", None, "Dependencies cannot be None."),
-    ],
-)
-def test_add_build_details_rejects_none_inputs(dag, deps, error_msg):
+def test_add_build_details_rejects_none_dependencies():
     spell = _make_spell()
-    with pytest.raises(ValueError, match=error_msg):
-        spell._add_build_details(dag, deps)
+    with pytest.raises(ValueError, match="Dependencies cannot be None."):
+        spell._add_build_details(None)
 
 
 @pytest.mark.parametrize(
@@ -984,7 +975,6 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
             cleanup_calls.append("spell_index")
             super().cleanup()
 
-    dependency_graph = _Disposable()
     resolution_profile = _CleanableProfile()
     binding_profile = _CleanableProfile()
     crafter = _Disposable()
@@ -1003,7 +993,6 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
         spellbook=_SpellbookStub(_RecordingStates()),
     )
 
-    spell.dependency_graph = dependency_graph
     compiler_artifact = spell._compiler_artifact
     general_profile = SpellGeneralProfile(
         binding_profile=binding_profile,
@@ -1013,8 +1002,8 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
 
     spell.cleanup()
 
-    assert dependency_graph.cleaned is True
     assert compiler_artifact.cleaned is True
+    assert not hasattr(spell, "dependency_graph")
     assert resolution_profile.cleaned is True
     assert binding_profile.cleaned is True
     assert not hasattr(spell, "profile")
@@ -1198,11 +1187,8 @@ def test_mutation_override_replaces_previous_payload():
 
 def test_add_build_details_overwrites_previous_values():
     spell = _make_spell()
-    first = object()
-    second = object()
-    spell._add_build_details(first, ["a"])
-    spell._add_build_details(second, ["b"])
-    assert spell.dependency_graph is second
+    spell._add_build_details(["a"])
+    spell._add_build_details(["b"])
     assert spell.dependencies == ["b"]
 
 
@@ -1237,8 +1223,7 @@ def test_clear_mutation_override_raises_outside_dynamic_mode():
 
 def test_cleanup_swallows_child_cleanup_errors():
     spell = _make_spell()
-    spell.dependency_graph = _Disposable(fail_on_cleanup=True)
-    spell.profile = _CleanableProfile()
+    spell.profile = _FailingCleanableProfile()
     spell.cleanup()
     assert spell._cleaned is True
     assert not hasattr(spell, "profile")
@@ -1388,6 +1373,38 @@ def test_configure_creation_context_factory_requires_gate_and_builds_factory() -
 
     assert spell._dynamic_environment is True
     assert spell._creation_context_factory is not None
+    assert spell._creation_gate is gate.get_spell_index_gate(spell.spell_index.id)
+    assert spell._creation_gate is not None
+
+
+def test_configure_creation_context_factory_leaves_gate_unset_in_automatic_mode() -> None:
+    """Automatic ownership has no spell-index gate, so meld doors keep the unticketed lane."""
+    spell = _make_spell()
+    spell._configure_creation_context_factory(
+        dynamic_environment=False,
+        creation_gate_controller=CreationGateController(),
+    )
+
+    assert spell._creation_gate is None
+    assert spell._creation_context_failure is None
+
+
+def test_cleanup_creation_context_factory_drops_borrowed_gate() -> None:
+    """Dropping the factory drops the borrowed gate reference with it; the gate stays usable."""
+    spell = _make_spell()
+    controller = CreationGateController()
+    spell._configure_creation_context_factory(
+        dynamic_environment=True,
+        creation_gate_controller=controller,
+    )
+    gate = spell._creation_gate
+
+    spell._cleanup_creation_context_factory()
+
+    assert spell._creation_gate is None
+    assert gate is controller.get_spell_index_gate(spell.spell_index.id)
+    gate.admit_ticket()
+    gate.unregister_ticket()
 
 
 def test_get_or_build_creation_context_uses_switch_fast_path_and_factory() -> None:

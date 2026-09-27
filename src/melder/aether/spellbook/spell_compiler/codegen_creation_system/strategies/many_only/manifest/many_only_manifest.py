@@ -1,11 +1,11 @@
 """
 Manifest builder for the many_only codegen-creation family.
 
-The manifest captures both runtime lanes as pure data: the no-overrides lane
-as the exact Codegen IR payload the many_only compiler's public
-`codegen_ir` entrypoint consumes (steps rows + unrolled transient schema),
-and the overrides lane as the row/targeting/signature inputs the many_only
-override runtime rebuilds from at first meld.
+The manifest captures the no-overrides runtime lane as pure data: the exact
+Codegen IR payload the many_only compiler's public `codegen_ir` entrypoint
+consumes (steps rows + unrolled transient schema). Override melds compile one
+plan per override key set from those same rows at the first override meld, so
+the manifest carries no override section (version 4, 2026-09-26).
 
 Contract:
     - Manifest values are primitives, tuples, and dicts only.
@@ -13,10 +13,10 @@ Contract:
       cache envelope exports it without family-specific wiring.
 
 Bridging note:
-    The unrolled-schema builder and the lane signature builders are bridged
-    from the many_only compilers/steps; they are pure functions of plan data.
-    Lift them into family-public seams when the legacy eager steps are
-    retired.
+    The unrolled-schema builder is bridged from the many_only compiler; it is a
+    pure function of plan data. The no-overrides executor signature is built
+    here (`build_many_only_executor_signature`), lifted from the retired eager
+    no-overrides step (R2, 2026-09-26).
 """
 
 from typing import Any, Dict, Tuple
@@ -34,14 +34,14 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.m
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_helpers import (
     ManyOnlyCodegenCreationHelpers,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_finalize_creation_context_step import (
-    ManyOnlyFinalizeCreationContextStep,
-)
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_no_overrides_codegen_creation_step import (
-    ManyOnlyNoOverridesCodegenCreationStep,
+from melder.aether.spellbook.spell_compiler.shared_assets.codegen_signature import (
+    CodegenSignature,
 )
 
-MANIFEST_VERSION = 3
+# Version 4: no override section; override melds compile from the no-overrides
+# rows (2026-09-26). Version-3 manifests fail validation and regenerate as cold
+# cache.
+MANIFEST_VERSION = 4
 FAMILY_ID = MANY_ONLY_FAMILY_ID
 
 
@@ -55,22 +55,12 @@ def build_many_only_manifest(
 
     Raises:
         RuntimeError:
-            When required lane plans or the targeting shape are missing.
+            When the no-overrides lane plan is missing.
     """
     no_overrides_plan = spell_codegen_plan.no_overrides_plan
     if no_overrides_plan is None:
         raise RuntimeError(
             "many_only manifest requires a no_overrides_plan."
-        )
-    overrides_plan = spell_codegen_plan.overrides_plan
-    if overrides_plan is None:
-        raise RuntimeError(
-            "many_only manifest requires an overrides_plan."
-        )
-    override_targeting_shape = spell_codegen_model.override_targeting_shape
-    if override_targeting_shape is None:
-        raise RuntimeError(
-            "many_only manifest requires override_targeting_shape."
         )
 
     steps = tuple(no_overrides_plan.steps)
@@ -84,18 +74,6 @@ def build_many_only_manifest(
     root_instance_key = no_overrides_plan.root_instance_key
     if root_instance_key is not None:
         root_instance_key = (root_instance_key[0], root_instance_key[1])
-
-    override_steps = tuple(overrides_plan.steps)
-    plan_rows = tuple(
-        ManyOnlyCodegenCreationHelpers.build_override_step_row(step)
-        for step in override_steps
-    )
-    plan_signature = (
-        ManyOnlyFinalizeCreationContextStep._build_override_plan_signature(
-            overrides_plan=overrides_plan,
-            plan_rows=plan_rows,
-        )
-    )
 
     return {
         "manifest_version": MANIFEST_VERSION,
@@ -112,30 +90,49 @@ def build_many_only_manifest(
             ),
             "steps_rows": steps_rows,
             "transient_schema": transient_schema,
-            "executor_signature": (
-                ManyOnlyNoOverridesCodegenCreationStep._build_executor_signature(
-                    no_overrides_plan=no_overrides_plan,
-                )
-            ),
-        },
-        "overrides": {
-            "lane_id": overrides_plan.lane_id,
-            "root_spell_id": overrides_plan.root_spell_id,
-            "step_spell_ids": tuple(
-                step.spell.spell_index.selected_spell_id
-                for step in override_steps
-            ),
-            "plan_rows": plan_rows,
-            "plan_signature": plan_signature,
-            "empty_shape_key": (plan_signature, (), -1),
-            "targets_by_spec": serialize_targets_by_spec(
-                override_targeting_shape.targets_by_spec,
-            ),
-            "specificity_by_spec": dict(
-                override_targeting_shape.specificity_by_spec
+            "executor_signature": build_many_only_executor_signature(
+                no_overrides_plan
             ),
         },
     }
+
+
+def build_many_only_executor_signature(no_overrides_plan: Any) -> str:
+    """
+    Build the deterministic signature of one many_only no-overrides lane.
+
+    Contract:
+        - A pure hash of plan data: the root spell id and instance key, one
+          signature row per step, the step call modes, the root step index and
+          the per-step disposal flags, in that order - the parts the retired
+          eager step hashed (lifted from
+          `ManyOnlyNoOverridesCodegenCreationStep._build_executor_signature`,
+          R2, 2026-09-26), so manifests keep their signature values.
+
+    Args:
+        no_overrides_plan:
+            The many_only no-overrides lane plan.
+
+    Returns:
+        str: The signature digest.
+    """
+    step_signature_rows = tuple(
+        ManyOnlyCodegenCreationHelpers.build_no_overrides_step_signature_row(
+            step
+        )
+        for step in no_overrides_plan.steps
+    )
+    root_instance_key = ManyOnlyCodegenCreationHelpers.normalize_instance_key(
+        no_overrides_plan.root_instance_key
+    )
+    return ManyOnlyCodegenCreationHelpers.hash_signature(
+        no_overrides_plan.root_spell_id,
+        root_instance_key,
+        step_signature_rows,
+        no_overrides_plan.step_call_modes,
+        no_overrides_plan.root_step_index,
+        no_overrides_plan.step_has_disposal_methods,
+    )
 
 
 def _build_many_only_no_overrides_row(step: Any) -> Dict[str, Any]:
@@ -151,14 +148,21 @@ def _build_many_only_no_overrides_row(step: Any) -> Dict[str, Any]:
           non-reusing steps (`use_spell_lock_hint` is False).
         - The shared generalized row builder is NOT usable here: it reads
           `step.existence`, which many_only steps do not expose.
+        - Contract payload entries are projected by
+          `CodegenSignature.project_contract_payload_entry`: a scalar as itself, any
+          other value as its phase-9 reference, resolved live at hydration
+          (2026-09-26).
     """
     contract_payload_items: Tuple[Any, ...] = ()
     if step.contract_payload:
+        payload_refs = step.contract_payload_refs
         contract_payload_items = tuple(
             sorted(
                 (
                     param_name,
-                    ManyOnlyCodegenCreationHelpers.freeze_value(value),
+                    CodegenSignature.project_contract_payload_entry(
+                        param_name, value, payload_refs,
+                    ),
                 )
                 for param_name, value in step.contract_payload.items()
             )
@@ -179,8 +183,8 @@ def _build_many_only_no_overrides_row(step: Any) -> Dict[str, Any]:
         "collection_param_names": tuple(sorted(step.collection_param_names)),
         "uses_positional_override": bool(step.uses_positional_override),
         "contract_positional_override": (
-            ManyOnlyCodegenCreationHelpers.freeze_value(
-                step.contract_positional_override
+            CodegenSignature.project_contract_payload_entry(
+                "__args__", step.contract_positional_override, step.contract_payload_refs,
             )
         ),
         "has_contract_payload": bool(step.has_contract_payload),
@@ -210,26 +214,6 @@ def _resolve_route_key_from_model(spell_codegen_model: Any) -> str:
     )
 
 
-def serialize_targets_by_spec(
-        targets_by_spec: Dict[str, Tuple[Any, ...]],
-) -> Dict[str, Tuple[Tuple[Any, ...], ...]]:
-    """
-    Serialize processor override-target rows to marshal-safe tuples.
-    """
-    return {
-        spec_key: tuple(
-            (
-                target_ref.node_id,
-                target_ref.param_path_id,
-                target_ref.param_name,
-                target_ref.socket_kind_value,
-            )
-            for target_ref in target_refs
-        )
-        for spec_key, target_refs in targets_by_spec.items()
-    }
-
-
 def validate_many_only_manifest(manifest: Any) -> Dict[str, Any]:
     """
     Validate one many_only manifest mapping and return it.
@@ -249,7 +233,6 @@ def validate_many_only_manifest(manifest: Any) -> Dict[str, Any]:
             "route_key",
             "root_spell_id",
             "no_overrides",
-            "overrides",
     ):
         if required_field not in manifest:
             raise RuntimeError(
@@ -272,8 +255,8 @@ __all__ = [
     "FAMILY_ID",
     "MANIFEST_METADATA_KEY",
     "MANIFEST_VERSION",
+    "build_many_only_executor_signature",
     "build_many_only_manifest",
     "coerce_manifest_sequences",
-    "serialize_targets_by_spec",
     "validate_many_only_manifest",
 ]

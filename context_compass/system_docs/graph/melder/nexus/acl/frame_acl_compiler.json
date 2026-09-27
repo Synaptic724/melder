@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/nexus/acl/frame_acl_compiler.py",
- "source_sha256": "ee53c83848761f6323a1ba48ba09f1e5ee6513adc2c06376d3e8a10365661825",
+ "source_sha256": "3a90d3180ef897cb029740ec97ab9d521c690af56a8a7cd758f18bbef6b69f50",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.nexus.acl.frame_acl_compiler": {
@@ -19,7 +19,7 @@
    "label": "FrameACLCompiler",
    "kind": "class",
    "file": "src/melder/nexus/acl/frame_acl_compiler.py",
-   "lineno": 17,
+   "lineno": 24,
    "bases": [
     "Cleanable"
    ],
@@ -33,7 +33,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "7fa54cf4367de47a89822cfdb8d6095e79f3fc0cbe63efe25ffb237518158cd9",
+   "span_sha256": "fb085c868694358ed45a20a90328759a859c071be23ff8401b77b598ca3ca648",
    "role": "Compiler from descriptor truth and typed ACL config into a consumer-facing access surface.",
    "responsibilities": [
     "compiles typed ACL configuration against descriptor truth",
@@ -48,7 +48,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "7fa54cf4367de47a89822cfdb8d6095e79f3fc0cbe63efe25ffb237518158cd9"
+   "semantics_authored_against": "fb085c868694358ed45a20a90328759a859c071be23ff8401b77b598ca3ca648"
   }
  },
  "edges_out": [
@@ -95,7 +95,10 @@
   "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
   "FrameACLCodegenProfile": "melder.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile.FrameACLCodegenProfile",
   "FrameACLCommandProfile": "melder.nexus.acl.configurations.profiles.command.frame_acl_command_profile.FrameACLCommandProfile",
-  "SpellRecord": "melder.nexus.frame_descriptor.spell_record.SpellRecord"
+  "SpellRecord": "melder.nexus.frame_descriptor.spell_record.SpellRecord",
+  "FrameACLProfileBuilder": "melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder.FrameACLProfileBuilder",
+  "FrameACLRuleSet": "melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset.FrameACLRuleSet",
+  "FrameACLViewProfile": "melder.nexus.acl.configurations.profiles.view.frame_acl_view_profile.FrameACLViewProfile"
  },
  "collapse_candidate": null,
  "edges_authored": [

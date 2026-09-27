@@ -17,6 +17,12 @@ from melder.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
 
+if TYPE_CHECKING:
+    from melder.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
+        FrameACLProfileBuilder,
+    )
+    from melder.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
+
 class FrameACLSetCompatibilityValidator(Cleanable):
     """
 
@@ -78,7 +84,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
     def __init__(
             self,
             frame_name: str,
-            profile_builder: IFrameACLProfileBuilder,
+            profile_builder: FrameACLProfileBuilder,
     ) -> None:
         """
         Initialize one frame-scoped ACL set compatibility validator.
@@ -107,7 +113,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
-        self._profile_builder: IFrameACLProfileBuilder = profile_builder
+        self._profile_builder: FrameACLProfileBuilder = profile_builder
         self._last_report: Optional[FrameACLSetCompatibilityReport] = None
 
     def cleanup(self) -> None:

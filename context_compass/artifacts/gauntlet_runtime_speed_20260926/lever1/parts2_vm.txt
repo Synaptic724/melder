@@ -1,0 +1,21 @@
+# melder_2 VM, 2026-09-26T21:08:15Z: probe_parts2.py 20000 on tree_0270, CPython 3.14.7t -X gil=0, one worker thread, stores populated; ns, timer overhead (~30 ns per pair) included.
+melder parts2 cycles=20000 (worker thread; p50 / p90 / 95% trimmed mean, ns)
+  FULL_create        p50=   802 p90=   895 mean=    805
+  FULL_enter         p50=   210 p90=   247 mean=    212
+  FULL_exit          p50=   342 p90=   402 mean=    345
+  FULL_cleanup       p50=   834 p90=   936 mean=    841
+  c_check_cleaned    p50=    64 p90=    75 mean=     65
+  c_pool_pop         p50=   113 p90=   135 mean=    116
+  c_state_sets       p50=   108 p90=   121 mean=    110
+  c_link_under_lock  p50=   512 p90=   591 mean=    514
+  s_acquire          p50=   100 p90=   121 mean=    103
+  s_push             p50=   130 p90=   158 mean=    131
+  s_pop_expected     p50=   140 p90=   160 mean=    140
+  s_reset_unlocked   p50=   104 p90=   130 mean=    107
+  s_release          p50=    88 p90=   112 mean=     91
+  k_lock_pair        p50=    91 p90=   109 mean=     93
+  k_spaces_for_pool  p50=   145 p90=   177 mean=    149
+  k_creations_reset  p50=   191 p90=   219 mean=    192
+  k_detach           p50=   260 p90=   308 mean=    262
+  k_state_hooks      p50=   102 p90=   126 mean=    104
+  k_pool_return      p50=   136 p90=   159 mean=    139

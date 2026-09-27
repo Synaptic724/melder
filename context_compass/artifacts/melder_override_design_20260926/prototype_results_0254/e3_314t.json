@@ -1,0 +1,2550 @@
+{
+ "many_shallow": [
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "B": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "b": {
+       "type": "B",
+       "id": 2,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "B": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "b": {
+       "type": "B",
+       "id": 2,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'a': 1}",
+   "current": {
+    "call": "{'a': 1}",
+    "counts": {
+     "A": 1,
+     "B": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 3,
+     "fields": {
+      "a": "<a>",
+      "b": {
+       "type": "B",
+       "id": 4,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'a': 1}",
+    "counts": {
+     "B": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 3,
+     "fields": {
+      "a": "<a>",
+      "b": {
+       "type": "B",
+       "id": 4,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'b': 1}",
+   "current": {
+    "call": "{'b': 1}",
+    "counts": {
+     "A": 1,
+     "B": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 5,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 6,
+       "fields": {}
+      },
+      "b": "<b>"
+     }
+    }
+   },
+   "v2": {
+    "call": "{'b': 1}",
+    "counts": {
+     "A": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 5,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 6,
+       "fields": {}
+      },
+      "b": "<b>"
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'a': 1, 'b': 1}",
+   "current": {
+    "call": "{'a': 1, 'b': 1}",
+    "counts": {
+     "A": 1,
+     "B": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 7,
+     "fields": {
+      "a": "<a>",
+      "b": "<b>"
+     }
+    }
+   },
+   "v2": {
+    "call": "{'a': 1, 'b': 1}",
+    "counts": {
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 7,
+     "fields": {
+      "a": "<a>",
+      "b": "<b>"
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "(1,)",
+   "current": {
+    "call": "(1,)",
+    "counts": {
+     "A": 1,
+     "B": 1
+    },
+    "error": "MeldExecutionError: [MELD] Execution failed for spell 'Root' (73d56d99951c49462f7e75a7f499fc586ddba193220f295b2c891d6f8ff5c341): Error invoking spell 'Root'. (inner: TypeError(\"Roo",
+    "cause": "TypeError: Root.__init__() got multiple values for argument 'a'"
+   },
+   "v2": {
+    "call": "(1,)",
+    "counts": {
+     "B": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 8,
+     "fields": {
+      "a": "<args[0]>",
+      "b": {
+       "type": "B",
+       "id": 9,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "same_result": false,
+   "same_error_type": false
+  },
+  {
+   "call": "(1, 2)",
+   "current": {
+    "call": "(1, 2)",
+    "counts": {
+     "A": 1,
+     "B": 1
+    },
+    "error": "MeldExecutionError: [MELD] Execution failed for spell 'Root' (73d56d99951c49462f7e75a7f499fc586ddba193220f295b2c891d6f8ff5c341): Error invoking spell 'Root'. (inner: TypeError(\"Roo",
+    "cause": "TypeError: Root.__init__() got multiple values for argument 'a'"
+   },
+   "v2": {
+    "call": "(1, 2)",
+    "counts": {
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 10,
+     "fields": {
+      "a": "<args[0]>",
+      "b": "<args[1]>"
+     }
+    }
+   },
+   "same_result": false,
+   "same_error_type": false
+  },
+  {
+   "call": "{'*a': 1}",
+   "current": {
+    "call": "{'*a': 1}",
+    "counts": {
+     "A": 1,
+     "B": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 8,
+     "fields": {
+      "a": "<*a>",
+      "b": {
+       "type": "B",
+       "id": 9,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'*a': 1}",
+    "counts": {
+     "B": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 11,
+     "fields": {
+      "a": "<*a>",
+      "b": {
+       "type": "B",
+       "id": 12,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "same_result": false,
+   "same_error_type": true
+  },
+  {
+   "call": "{'**a': 1}",
+   "current": {
+    "call": "{'**a': 1}",
+    "counts": {
+     "A": 1,
+     "B": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 10,
+     "fields": {
+      "a": "<**a>",
+      "b": {
+       "type": "B",
+       "id": 11,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'**a': 1}",
+    "counts": {
+     "B": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 13,
+     "fields": {
+      "a": "<**a>",
+      "b": {
+       "type": "B",
+       "id": 14,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "same_result": false,
+   "same_error_type": true
+  },
+  {
+   "call": "{'nosuch': 1}",
+   "current": {
+    "call": "{'nosuch': 1}",
+    "counts": {},
+    "error": "MeldExecutionError: [MELD] Execution failed for spell 'Root' (73d56d99951c49462f7e75a7f499fc586ddba193220f295b2c891d6f8ff5c341): Failed to apply overrides. (inner: RuntimeError(\"No",
+    "cause": "RuntimeError: No sockets found for override path 'nosuch'."
+   },
+   "v2": {
+    "call": "{'nosuch': 1}",
+    "counts": {},
+    "error": "MeldExecutionError: [MELD] Execution failed for spell 'Root' (73d56d99951c49462f7e75a7f499fc586ddba193220f295b2c891d6f8ff5c341): Failed to apply overrides. (inner: RuntimeError(\"No",
+    "cause": "RuntimeError: No sockets found for override path 'nosuch'."
+   },
+   "same_result": true,
+   "same_error_type": true
+  }
+ ],
+ "epic_five": [
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "B": 1,
+     "C": 1,
+     "Consumer": 1,
+     "D": 1,
+     "E": 1
+    },
+    "result": {
+     "type": "Consumer",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "b": {
+       "type": "B",
+       "id": 2,
+       "fields": {}
+      },
+      "c": {
+       "type": "C",
+       "id": 3,
+       "fields": {}
+      },
+      "d": {
+       "type": "D",
+       "id": 4,
+       "fields": {}
+      },
+      "e": {
+       "type": "E",
+       "id": 5,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "B": 1,
+     "C": 1,
+     "Consumer": 1,
+     "D": 1,
+     "E": 1
+    },
+    "result": {
+     "type": "Consumer",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "b": {
+       "type": "B",
+       "id": 2,
+       "fields": {}
+      },
+      "c": {
+       "type": "C",
+       "id": 3,
+       "fields": {}
+      },
+      "d": {
+       "type": "D",
+       "id": 4,
+       "fields": {}
+      },
+      "e": {
+       "type": "E",
+       "id": 5,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'a': 1, 'b': 1, 'c': 1}",
+   "current": {
+    "call": "{'a': 1, 'b': 1, 'c': 1}",
+    "counts": {
+     "A": 1,
+     "B": 1,
+     "C": 1,
+     "Consumer": 1,
+     "D": 1,
+     "E": 1
+    },
+    "result": {
+     "type": "Consumer",
+     "id": 6,
+     "fields": {
+      "a": "<a>",
+      "b": "<b>",
+      "c": "<c>",
+      "d": {
+       "type": "D",
+       "id": 7,
+       "fields": {}
+      },
+      "e": {
+       "type": "E",
+       "id": 8,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'a': 1, 'b': 1, 'c': 1}",
+    "counts": {
+     "Consumer": 1,
+     "D": 1,
+     "E": 1
+    },
+    "result": {
+     "type": "Consumer",
+     "id": 6,
+     "fields": {
+      "a": "<a>",
+      "b": "<b>",
+      "c": "<c>",
+      "d": {
+       "type": "D",
+       "id": 7,
+       "fields": {}
+      },
+      "e": {
+       "type": "E",
+       "id": 8,
+       "fields": {}
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  }
+ ],
+ "tree4": [
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "L": 8,
+     "N1": 2,
+     "N2": 4,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "left": {
+       "type": "N1",
+       "id": 1,
+       "fields": {
+        "left": {
+         "type": "N2",
+         "id": 2,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 3,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 4,
+           "fields": {}
+          }
+         }
+        },
+        "right": {
+         "type": "N2",
+         "id": 5,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 6,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 7,
+           "fields": {}
+          }
+         }
+        }
+       }
+      },
+      "right": {
+       "type": "N1",
+       "id": 8,
+       "fields": {
+        "left": {
+         "type": "N2",
+         "id": 9,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 10,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 11,
+           "fields": {}
+          }
+         }
+        },
+        "right": {
+         "type": "N2",
+         "id": 12,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 13,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 14,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "None",
+    "counts": {
+     "L": 8,
+     "N1": 2,
+     "N2": 4,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "left": {
+       "type": "N1",
+       "id": 1,
+       "fields": {
+        "left": {
+         "type": "N2",
+         "id": 2,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 3,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 4,
+           "fields": {}
+          }
+         }
+        },
+        "right": {
+         "type": "N2",
+         "id": 5,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 6,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 7,
+           "fields": {}
+          }
+         }
+        }
+       }
+      },
+      "right": {
+       "type": "N1",
+       "id": 8,
+       "fields": {
+        "left": {
+         "type": "N2",
+         "id": 9,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 10,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 11,
+           "fields": {}
+          }
+         }
+        },
+        "right": {
+         "type": "N2",
+         "id": 12,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 13,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 14,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'left': 1}",
+   "current": {
+    "call": "{'left': 1}",
+    "counts": {
+     "L": 8,
+     "N1": 2,
+     "N2": 4,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 15,
+     "fields": {
+      "left": "<left>",
+      "right": {
+       "type": "N1",
+       "id": 16,
+       "fields": {
+        "left": {
+         "type": "N2",
+         "id": 17,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 18,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 19,
+           "fields": {}
+          }
+         }
+        },
+        "right": {
+         "type": "N2",
+         "id": 20,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 21,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 22,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'left': 1}",
+    "counts": {
+     "L": 4,
+     "N1": 1,
+     "N2": 2,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 15,
+     "fields": {
+      "left": "<left>",
+      "right": {
+       "type": "N1",
+       "id": 16,
+       "fields": {
+        "left": {
+         "type": "N2",
+         "id": 17,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 18,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 19,
+           "fields": {}
+          }
+         }
+        },
+        "right": {
+         "type": "N2",
+         "id": 20,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 21,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 22,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'left': 1, 'right': 1}",
+   "current": {
+    "call": "{'left': 1, 'right': 1}",
+    "counts": {
+     "L": 8,
+     "N1": 2,
+     "N2": 4,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 23,
+     "fields": {
+      "left": "<left>",
+      "right": "<right>"
+     }
+    }
+   },
+   "v2": {
+    "call": "{'left': 1, 'right': 1}",
+    "counts": {
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 23,
+     "fields": {
+      "left": "<left>",
+      "right": "<right>"
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'left>left': 1}",
+   "current": {
+    "call": "{'left>left': 1}",
+    "counts": {
+     "L": 8,
+     "N1": 2,
+     "N2": 4,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 24,
+     "fields": {
+      "left": {
+       "type": "N1",
+       "id": 25,
+       "fields": {
+        "left": "<left>left>",
+        "right": {
+         "type": "N2",
+         "id": 26,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 27,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 28,
+           "fields": {}
+          }
+         }
+        }
+       }
+      },
+      "right": {
+       "type": "N1",
+       "id": 29,
+       "fields": {
+        "left": {
+         "type": "N2",
+         "id": 30,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 31,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 32,
+           "fields": {}
+          }
+         }
+        },
+        "right": {
+         "type": "N2",
+         "id": 33,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 34,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 35,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'left>left': 1}",
+    "counts": {
+     "L": 6,
+     "N1": 2,
+     "N2": 3,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 24,
+     "fields": {
+      "left": {
+       "type": "N1",
+       "id": 25,
+       "fields": {
+        "left": "<left>left>",
+        "right": {
+         "type": "N2",
+         "id": 26,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 27,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 28,
+           "fields": {}
+          }
+         }
+        }
+       }
+      },
+      "right": {
+       "type": "N1",
+       "id": 29,
+       "fields": {
+        "left": {
+         "type": "N2",
+         "id": 30,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 31,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 32,
+           "fields": {}
+          }
+         }
+        },
+        "right": {
+         "type": "N2",
+         "id": 33,
+         "fields": {
+          "left": {
+           "type": "L",
+           "id": 34,
+           "fields": {}
+          },
+          "right": {
+           "type": "L",
+           "id": 35,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'**left': 1}",
+   "current": {
+    "call": "{'**left': 1}",
+    "counts": {
+     "L": 8,
+     "N1": 2,
+     "N2": 4,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 36,
+     "fields": {
+      "left": "<**left>",
+      "right": {
+       "type": "N1",
+       "id": 37,
+       "fields": {
+        "left": "<**left>",
+        "right": {
+         "type": "N2",
+         "id": 38,
+         "fields": {
+          "left": "<**left>",
+          "right": {
+           "type": "L",
+           "id": 39,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'**left': 1}",
+    "counts": {
+     "L": 1,
+     "N1": 1,
+     "N2": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 36,
+     "fields": {
+      "left": "<**left>",
+      "right": {
+       "type": "N1",
+       "id": 37,
+       "fields": {
+        "left": "<**left>",
+        "right": {
+         "type": "N2",
+         "id": 38,
+         "fields": {
+          "left": "<**left>",
+          "right": {
+           "type": "L",
+           "id": 39,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  }
+ ],
+ "gen_mixed": [
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "S": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "s": {
+       "type": "S",
+       "id": 2,
+       "fields": {
+        "x": {
+         "type": "X",
+         "id": 3,
+         "fields": {}
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "S": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "s": {
+       "type": "S",
+       "id": 2,
+       "fields": {
+        "x": {
+         "type": "X",
+         "id": 3,
+         "fields": {}
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 4,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 5,
+       "fields": {}
+      },
+      "s": {
+       "type": "S",
+       "id": 2,
+       "fields": {
+        "x": {
+         "type": "X",
+         "id": 3,
+         "fields": {}
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 4,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 5,
+       "fields": {}
+      },
+      "s": {
+       "type": "S",
+       "id": 2,
+       "fields": {
+        "x": {
+         "type": "X",
+         "id": 3,
+         "fields": {}
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'s': 1}",
+   "current": {
+    "call": "{'s': 1}",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 6,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 7,
+       "fields": {}
+      },
+      "s": "<s>"
+     }
+    }
+   },
+   "v2": {
+    "call": "{'s': 1}",
+    "counts": {
+     "A": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 6,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 7,
+       "fields": {}
+      },
+      "s": "<s>"
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'a': 1}",
+   "current": {
+    "call": "{'a': 1}",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 8,
+     "fields": {
+      "a": "<a>",
+      "s": {
+       "type": "S",
+       "id": 2,
+       "fields": {
+        "x": {
+         "type": "X",
+         "id": 3,
+         "fields": {}
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'a': 1}",
+    "counts": {
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 8,
+     "fields": {
+      "a": "<a>",
+      "s": {
+       "type": "S",
+       "id": 2,
+       "fields": {
+        "x": {
+         "type": "X",
+         "id": 3,
+         "fields": {}
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'s>x': 1}",
+   "current": {
+    "call": "{'s>x': 1}",
+    "counts": {
+     "X": 1
+    },
+    "error": "MeldExecutionError: [MELD] Execution failed for spell 'S' (1994ee2d9eb79898f7f622f0ab2fcd9f6508f18e02741d7eb2fc83c5b3ec5af3) at node 1994ee2d9eb79898f7f622f0ab2fcd9f6508f18e02741d7",
+    "cause": null
+   },
+   "v2": {
+    "call": "{'s>x': 1}",
+    "counts": {
+     "A": 1
+    },
+    "error": "MeldExecutionError: [MELD] Execution failed for spell 'S' (1994ee2d9eb79898f7f622f0ab2fcd9f6508f18e02741d7eb2fc83c5b3ec5af3) at node 1994ee2d9eb79898f7f622f0ab2fcd9f6508f18e02741d7",
+    "cause": null
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'s>x': 1}",
+   "current": {
+    "call": "{'s>x': 1}",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "S": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "s": {
+       "type": "S",
+       "id": 2,
+       "fields": {
+        "x": "<s>x>"
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'s>x': 1}",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "S": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "s": {
+       "type": "S",
+       "id": 2,
+       "fields": {
+        "x": "<s>x>"
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 3,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 4,
+       "fields": {}
+      },
+      "s": {
+       "type": "S",
+       "id": 2,
+       "fields": {
+        "x": "object"
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 3,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 4,
+       "fields": {}
+      },
+      "s": {
+       "type": "S",
+       "id": 2,
+       "fields": {
+        "x": "object"
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'s': 1}",
+   "current": {
+    "call": "{'s': 1}",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "S": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "s": "<s>"
+     }
+    }
+   },
+   "v2": {
+    "call": "{'s': 1}",
+    "counts": {
+     "A": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "s": "<s>"
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 2,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 3,
+       "fields": {}
+      },
+      "s": {
+       "type": "S",
+       "id": 4,
+       "fields": {
+        "x": {
+         "type": "X",
+         "id": 5,
+         "fields": {}
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "None",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "S": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 2,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 3,
+       "fields": {}
+      },
+      "s": {
+       "type": "S",
+       "id": 4,
+       "fields": {
+        "x": {
+         "type": "X",
+         "id": 5,
+         "fields": {}
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  }
+ ],
+ "gen_diamond": [
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "L": 1,
+     "R": 1,
+     "Root": 1,
+     "S": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "l": {
+       "type": "L",
+       "id": 1,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      },
+      "r": {
+       "type": "R",
+       "id": 4,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "None",
+    "counts": {
+     "L": 1,
+     "R": 1,
+     "Root": 1,
+     "S": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "l": {
+       "type": "L",
+       "id": 1,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      },
+      "r": {
+       "type": "R",
+       "id": 4,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "L": 1,
+     "R": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 5,
+     "fields": {
+      "l": {
+       "type": "L",
+       "id": 6,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      },
+      "r": {
+       "type": "R",
+       "id": 7,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "None",
+    "counts": {
+     "L": 1,
+     "R": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 5,
+     "fields": {
+      "l": {
+       "type": "L",
+       "id": 6,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      },
+      "r": {
+       "type": "R",
+       "id": 7,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'l': 1}",
+   "current": {
+    "call": "{'l': 1}",
+    "counts": {
+     "L": 1,
+     "R": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 8,
+     "fields": {
+      "l": "<l>",
+      "r": {
+       "type": "R",
+       "id": 9,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'l': 1}",
+    "counts": {
+     "R": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 8,
+     "fields": {
+      "l": "<l>",
+      "r": {
+       "type": "R",
+       "id": 9,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'l>s': 1}",
+   "current": {
+    "call": "{'l>s': 1}",
+    "counts": {
+     "L": 1,
+     "R": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 10,
+     "fields": {
+      "l": {
+       "type": "L",
+       "id": 11,
+       "fields": {
+        "s": "<l>s>"
+       }
+      },
+      "r": {
+       "type": "R",
+       "id": 12,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'l>s': 1}",
+    "counts": {
+     "L": 1,
+     "R": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 10,
+     "fields": {
+      "l": {
+       "type": "L",
+       "id": 11,
+       "fields": {
+        "s": "<l>s>"
+       }
+      },
+      "r": {
+       "type": "R",
+       "id": 12,
+       "fields": {
+        "s": {
+         "type": "S",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'**s': 1}",
+   "current": {
+    "call": "{'**s': 1}",
+    "counts": {
+     "L": 1,
+     "R": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 13,
+     "fields": {
+      "l": {
+       "type": "L",
+       "id": 14,
+       "fields": {
+        "s": "<**s>"
+       }
+      },
+      "r": {
+       "type": "R",
+       "id": 15,
+       "fields": {
+        "s": "<**s>"
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'**s': 1}",
+    "counts": {
+     "L": 1,
+     "R": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 13,
+     "fields": {
+      "l": {
+       "type": "L",
+       "id": 14,
+       "fields": {
+        "s": "<**s>"
+       }
+      },
+      "r": {
+       "type": "R",
+       "id": 15,
+       "fields": {
+        "s": "<**s>"
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'*s': 1}",
+   "current": {
+    "call": "{'*s': 1}",
+    "counts": {},
+    "error": "MeldExecutionError: [MELD] Execution failed for spell 'Root' (6a4bed02beddf15cd1c03fac5ede00edae0ad941f2b611e17e601e955cd93fbf): Failed to apply overrides. (inner: RuntimeError(\"Un",
+    "cause": "RuntimeError: Unique override '*s' matched 2 sockets; expected exactly one."
+   },
+   "v2": {
+    "call": "{'*s': 1}",
+    "counts": {},
+    "error": "MeldExecutionError: [MELD] Execution failed for spell 'Root' (6a4bed02beddf15cd1c03fac5ede00edae0ad941f2b611e17e601e955cd93fbf): Failed to apply overrides. (inner: RuntimeError(\"Un",
+    "cause": "RuntimeError: Unique override '*s' matched 2 sockets; expected exactly one."
+   },
+   "same_result": true,
+   "same_error_type": true
+  }
+ ],
+ "p3_alias": [
+  {
+   "call": "{'p>d>x': 1}",
+   "current": {
+    "call": "{'p>d>x': 1}",
+    "counts": {
+     "D": 1,
+     "P": 1,
+     "Q": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "p": {
+       "type": "P",
+       "id": 1,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "<p>d>x>"
+         }
+        }
+       }
+      },
+      "q": {
+       "type": "Q",
+       "id": 3,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "<p>d>x>"
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'p>d>x': 1}",
+    "counts": {
+     "D": 1,
+     "P": 1,
+     "Q": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "p": {
+       "type": "P",
+       "id": 1,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "<p>d>x>"
+         }
+        }
+       }
+      },
+      "q": {
+       "type": "Q",
+       "id": 3,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "<p>d>x>"
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "Q": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 4,
+     "fields": {
+      "p": {
+       "type": "P",
+       "id": 1,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "object"
+         }
+        }
+       }
+      },
+      "q": {
+       "type": "Q",
+       "id": 5,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "object"
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "None",
+    "counts": {
+     "Q": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 4,
+     "fields": {
+      "p": {
+       "type": "P",
+       "id": 1,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "object"
+         }
+        }
+       }
+      },
+      "q": {
+       "type": "Q",
+       "id": 5,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "object"
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'q>d>x': 1}",
+   "current": {
+    "call": "{'q>d>x': 1}",
+    "counts": {
+     "D": 1,
+     "P": 1,
+     "Q": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "p": {
+       "type": "P",
+       "id": 1,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "<q>d>x>"
+         }
+        }
+       }
+      },
+      "q": {
+       "type": "Q",
+       "id": 3,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "<q>d>x>"
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'q>d>x': 1}",
+    "counts": {
+     "D": 1,
+     "P": 1,
+     "Q": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "p": {
+       "type": "P",
+       "id": 1,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "<q>d>x>"
+         }
+        }
+       }
+      },
+      "q": {
+       "type": "Q",
+       "id": 3,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "<q>d>x>"
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'p': 1, 'p>d>x': 1}",
+   "current": {
+    "call": "{'p': 1, 'p>d>x': 1}",
+    "counts": {
+     "D": 1,
+     "P": 1,
+     "Q": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "p": "<p>",
+      "q": {
+       "type": "Q",
+       "id": 1,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": "<p>d>x>"
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'p': 1, 'p>d>x': 1}",
+    "counts": {
+     "D": 1,
+     "Q": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "p": "<p>",
+      "q": {
+       "type": "Q",
+       "id": 1,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": false,
+   "same_error_type": true
+  },
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "D": 1,
+     "P": 1,
+     "Q": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "p": {
+       "type": "P",
+       "id": 1,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      },
+      "q": {
+       "type": "Q",
+       "id": 4,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "None",
+    "counts": {
+     "D": 1,
+     "P": 1,
+     "Q": 1,
+     "Root": 1,
+     "X": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "p": {
+       "type": "P",
+       "id": 1,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      },
+      "q": {
+       "type": "Q",
+       "id": 4,
+       "fields": {
+        "d": {
+         "type": "D",
+         "id": 2,
+         "fields": {
+          "x": {
+           "type": "X",
+           "id": 3,
+           "fields": {}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'p>d>x': 1}",
+   "current": {
+    "call": "{'p>d>x': 1}",
+    "counts": {
+     "X": 1
+    },
+    "error": "MeldExecutionError: [MELD] Execution failed for spell 'D' (6593162312de98acb8b5511121f84c62b2e0e3c7c3db467de4b3b53d0732c50d) at node 6593162312de98acb8b5511121f84c62b2e0e3c7c3db467",
+    "cause": null
+   },
+   "v2": {
+    "call": "{'p>d>x': 1}",
+    "counts": {},
+    "error": "MeldExecutionError: [MELD] Execution failed for spell 'D' (6593162312de98acb8b5511121f84c62b2e0e3c7c3db467de4b3b53d0732c50d) at node 6593162312de98acb8b5511121f84c62b2e0e3c7c3db467",
+    "cause": null
+   },
+   "same_result": true,
+   "same_error_type": true
+  }
+ ],
+ "unresolved": [
+  {
+   "call": "None",
+   "current": {
+    "call": "None",
+    "counts": {
+     "A": 1
+    },
+    "error": "UnresolvedInputError: [MELD] Execution failed for spell 'Task' (aa6cf10aeec2f1cb2476bc8a1ec483aa7eab3572227cd3c954d4b87cc3d3e790) at node aa6cf10aeec2f1cb2476bc8a1ec483aa7eab3572227c",
+    "cause": "TypeError: Task.__init__() missing 1 required positional argument: 'work'"
+   },
+   "v2": {
+    "call": "None",
+    "counts": {},
+    "error": "UnresolvedInputError: [MELD] Execution failed for spell 'Task' (aa6cf10aeec2f1cb2476bc8a1ec483aa7eab3572227cd3c954d4b87cc3d3e790) at node aa6cf10aeec2f1cb2476bc8a1ec483aa7eab3572227c",
+    "cause": "TypeError: unresolved input not supplied"
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'t>work': 1}",
+   "current": {
+    "call": "{'t>work': 1}",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "Task": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "t": {
+       "type": "Task",
+       "id": 2,
+       "fields": {
+        "work": "<t>work>"
+       }
+      }
+     }
+    }
+   },
+   "v2": {
+    "call": "{'t>work': 1}",
+    "counts": {
+     "A": 1,
+     "Root": 1,
+     "Task": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 0,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 1,
+       "fields": {}
+      },
+      "t": {
+       "type": "Task",
+       "id": 2,
+       "fields": {
+        "work": "<t>work>"
+       }
+      }
+     }
+    }
+   },
+   "same_result": true,
+   "same_error_type": true
+  },
+  {
+   "call": "{'t': 1}",
+   "current": {
+    "call": "{'t': 1}",
+    "counts": {
+     "A": 1
+    },
+    "error": "UnresolvedInputError: [MELD] Execution failed for spell 'Task' (aa6cf10aeec2f1cb2476bc8a1ec483aa7eab3572227cd3c954d4b87cc3d3e790) at node aa6cf10aeec2f1cb2476bc8a1ec483aa7eab3572227c",
+    "cause": "TypeError: Task.__init__() missing 1 required positional argument: 'work'"
+   },
+   "v2": {
+    "call": "{'t': 1}",
+    "counts": {
+     "A": 1,
+     "Root": 1
+    },
+    "result": {
+     "type": "Root",
+     "id": 3,
+     "fields": {
+      "a": {
+       "type": "A",
+       "id": 4,
+       "fields": {}
+      },
+      "t": "<t>"
+     }
+    }
+   },
+   "same_result": false,
+   "same_error_type": false
+  }
+ ]
+}

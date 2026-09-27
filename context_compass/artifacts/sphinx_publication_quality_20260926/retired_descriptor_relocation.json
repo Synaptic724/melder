@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "reason": "Flattened retired descriptors for Windows Git checkout; file bytes are unchanged.",
+  "path_basis": "Paths are relative to this retired_graph_descriptors directory.",
+  "retired_edges": "retired_edges.json",
+  "files": [
+    {
+      "original_path": "melder/aether/conduit/meld/overrides/spell_overrider.json",
+      "archived_file": "spell_overrider-b07ded62.json",
+      "sha256": "7b6604ba29c605ba1adbf3c67c92c895237ce38af2dc6098291a18f6bee19534"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/artifact_processor/data/spell_override_targeting_analysis.json",
+      "archived_file": "spell_override_targeting_analysis-577caa15.json",
+      "sha256": "b2e7fe23738fb2702073395fa641c33b288f810fea59c5fd054bc177dc4a7beb"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/artifact_processor/strategies/spell_override_targeting_processor_strategy.json",
+      "archived_file": "spell_override_targeting_processor_strategy-a21028b0.json",
+      "sha256": "18e67f0f3a1e154f3bf327e15cce245afe1743cbc9e0f3d22be0b44d2fe077b3"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_discovery_system/strategies/fallback_no_overrides_codegen_creation_discovery_strategy.json",
+      "archived_file": "fallback_no_overrides_codegen_creation_discovery_strategy-19e84f84.json",
+      "sha256": "e481c78b78aa98965ddaf12f3ce695923606aa1499430954fbfa733326207041"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation/spell_codegen_creation_cache.json",
+      "archived_file": "spell_codegen_creation_cache-f81fcbcd.json",
+      "sha256": "159b5d2712c582e1a6956edcd85d494cf6e822be54b23afc302c7e4ed3c9520b"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/fallback_no_overrides/fallback_no_overrides_codegen_creation_strategy.json",
+      "archived_file": "fallback_no_overrides_codegen_creation_strategy-31fc9a52.json",
+      "sha256": "66b803d1f7cf1787ca600375e7327d6b4d25786e2d3f4ff4aa7092f7aedaf6a7"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/artifacts/spell_override_targeting_codegen_creation.json",
+      "archived_file": "spell_override_targeting_codegen_creation-7d560832.json",
+      "sha256": "763237afa66df6f44465a6a6d6f61c2e07a39656f34c273b4c411c4bc5d9805e"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_manifest_overrides_runtime.json",
+      "archived_file": "generalized_manifest_overrides_runtime-df3f6591.json",
+      "sha256": "6d74e40cfbc86658a69477611ab7b76548aa4befbe6c3853fb1b70cb560c666e"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/compilers/generalized_overrides_codegen_creation_compiler.json",
+      "archived_file": "generalized_overrides_codegen_creation_compiler-c591f9d2.json",
+      "sha256": "5a4d109f82c52308cc0f95c9de25dd6c722c9fb9146eb960cbba684295487f16"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/generalized_codegen_creation_state.json",
+      "archived_file": "generalized_codegen_creation_state-73b93cb5.json",
+      "sha256": "9b0aff10d9e1db3b777c9f8272b71cf669b32cf3053df6556db697899edf3b69"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_finalize_creation_context_step.json",
+      "archived_file": "generalized_finalize_creation_context_step-c2905bcd.json",
+      "sha256": "5d30ee9828870bcedd05c014f335b97f460b6f215805ba0af90cc4fbafb9f3a8"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_no_overrides_codegen_creation_step.json",
+      "archived_file": "generalized_no_overrides_codegen_creation_step-db6549c4.json",
+      "sha256": "35ffcc0aa53ac18fbd3c97f63cfbabaabf66c1f541bd9d3032f961f407e1322f"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/steps/generalized_overrides_codegen_creation_step.json",
+      "archived_file": "generalized_overrides_codegen_creation_step-86299fda.json",
+      "sha256": "9f99690179db81dab1de1ec816712e1882cbfaec9fbf96aa25d2c14ab0a977f1"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/artifacts/spell_override_targeting_codegen_creation.json",
+      "archived_file": "spell_override_targeting_codegen_creation-581eb93e.json",
+      "sha256": "07939bb4c9ddfa4ebad533364531b60c706c2d4bf7c821e66f8e417fa3a95989"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/compilers/many_only_overrides_codegen_creation_compiler.json",
+      "archived_file": "many_only_overrides_codegen_creation_compiler-83aaaea7.json",
+      "sha256": "24ae01a1f04606df67b6d2cf55ef35f07bef87e1617789affde53d41a9182955"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_finalize_creation_context_step.json",
+      "archived_file": "many_only_finalize_creation_context_step-7189c27c.json",
+      "sha256": "60c532cb3a6d592a07b8dbdcc3b0564a1628e17275ebe789865a600947af3221"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_no_overrides_codegen_creation_step.json",
+      "archived_file": "many_only_no_overrides_codegen_creation_step-260db405.json",
+      "sha256": "b2c544b03ac2ecea7411b60468be83731753b05157b940acca366e1f3bcad330"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_overrides_codegen_creation_step.json",
+      "archived_file": "many_only_overrides_codegen_creation_step-5b5f07c7.json",
+      "sha256": "bc1e85809e4508a162f5c75cda255844ecc7ed534a7299c822541f33dfe96345"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/codegen_planner/strategies/spell_generalized_many_only_codegen_plan_strategy.json",
+      "archived_file": "spell_generalized_many_only_codegen_plan_strategy-aa11dbf4.json",
+      "sha256": "1c7666c87517d0635e779c1863f346ab34c3ad6c61e640f3290a34d8d309b042"
+    },
+    {
+      "original_path": "melder/aether/spellbook/spell_compiler/system/validation/socket_ref_sanity_strategy.json",
+      "archived_file": "socket_ref_sanity_strategy-9d68e005.json",
+      "sha256": "431d774add719b40b3a36925743153cee2e92eb4e3073c877931cb894b702289"
+    }
+  ]
+}

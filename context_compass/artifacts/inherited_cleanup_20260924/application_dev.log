@@ -1,0 +1,24 @@
+Interpreter: 3.14.7 free-threading build (main, Sep  1 2026, 14:18:33) [MSC v.1944 64 bit (AMD64)]
+Melder: 0.2.51 C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_area_build_conjures_named_definitions_without_domain_instances[registration-AgentPoolsBootstrap-agent_pools-expected_names4] _
+..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py:206: in test_area_build_conjures_named_definitions_without_domain_instances
+    assert spell.disposal_method_names == ["cleanup"], row["spell_name"]
+E   AssertionError: GeneralPerformancePolicy
+E   assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+_ test_area_build_conjures_named_definitions_without_domain_instances[registration-AgentsBootstrap-agents-expected_names5] _
+..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py:206: in test_area_build_conjures_named_definitions_without_domain_instances
+    assert spell.disposal_method_names == ["cleanup"], row["spell_name"]
+E   AssertionError: AsyncioThoughtStream
+E   assert [] == ['cleanup']
+E     
+E     Right contains one more item: 'cleanup'
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED ..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py::test_area_build_conjures_named_definitions_without_domain_instances[registration-AgentPoolsBootstrap-agent_pools-expected_names4]
+FAILED ..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py::test_area_build_conjures_named_definitions_without_domain_instances[registration-AgentsBootstrap-agents-expected_names5]
+2 failed in 0.24s

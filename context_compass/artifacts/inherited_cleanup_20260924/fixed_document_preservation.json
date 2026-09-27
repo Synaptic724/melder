@@ -1,0 +1,25 @@
+{
+  "src_architecture.md": {
+    "updated_sha256": "2db104adf119e4e300f904d2f2386095a3d64db78664533f5281875957c4f2f4",
+    "accounted_removed_lines": {
+      "end_line: 1226": 1,
+      "loc: 1226": 1,
+      "verified_at: 2026-09-22T18:41:58Z": 1
+    },
+    "unexpected_removed_lines": []
+  },
+  "src_components.md": {
+    "updated_sha256": "bbbb1404adba10bae76309619bd24b1cd4338693e16a218576c68e07259ba27f",
+    "accounted_removed_lines": {
+      "Ordered disposal contract (2026-09-05):": 1,
+      "- Bind matches the existing class profile once into one ordered list. Missing names disappear": 1,
+      "- Matching uses the class profile's own declared callable methods, not inherited-only methods,": 1,
+      "factory-returned objects, or prebuilt-instance methods.": 1,
+      "- EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`.": 1,
+      "end_line: 1226": 1,
+      "loc: 1226": 1,
+      "verified_at: 2026-09-22T18:41:58Z": 1
+    },
+    "unexpected_removed_lines": []
+  }
+}

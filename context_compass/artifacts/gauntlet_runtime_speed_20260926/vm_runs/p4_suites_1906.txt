@@ -1,0 +1,41 @@
+# P4 suites re-run, VM copy = device tree 19:06Z (0.2.66, melder_0 S2-S5 in) + apply_p4.py + new test; CPython 3.14.7t (-X gil=0 / gil=1) and 3.14.7 GIL build
+# copy_base = device tree 19:06Z unchanged
+p4_t_gil0 gil=0 tests/component/melder/aether :: rc=0 :: 1215 passed, 1 xfailed in 9.77s (10s)
+p4_t_gil0 gil=0 tests/unit/melder/spellbook :: rc=0 :: 2245 passed in 2.80s (3s)
+p4_t_gil0 gil=0 tests/component/melder/spellbook :: rc=0 :: 790 passed in 6.74s (7s)
+p4_t_gil0 gil=0 tests/integration/melder/conduit :: rc=0 :: 268 passed in 2.84s (3s)
+p4_t_gil0 gil=0 tests/integration/melder/multithreading :: rc=0 :: 42 passed in 3.21s (4s)
+p4_t_gil0 gil=0 tests/integration/melder/spellbook :: rc=0 :: 586 passed, 2 skipped, 2 xfailed, 2 xpassed in 4.82s (5s)
+p4_t_gil0 gil=0 tests/unit/melder/aether :: rc=0 :: 4146 passed in 13.55s (14s)
+p4_t_gil0 gil=0 tests/integration/melder/aether :: rc=0 :: 716 passed in 15.57s (16s)
+p4_t_gil0 gil=0 tests/unit/melder/utilities :: rc=0 :: 802 passed, 2 skipped, 7 xfailed in 7.05s (8s)
+p4_t_gil0 gil=0 tests/component/melder/utilities :: rc=0 :: 21 passed, 43 skipped in 1.09s (1s)
+p4_t_gil0 gil=0 tests/unit/melder/crystallizer :: rc=0 :: 565 passed in 1.89s (2s)
+p4_t_gil0 gil=0 tests/integration/melder/crystallizer :: rc=0 :: 258 passed, 3 xfailed in 52.43s (53s)
+p4_t_gil0 gil=0 tests/component/melder/crystallizer :: rc=0 :: 110 passed in 0.34s (0s)
+p4_t_gil0 gil=0 tests/unit/melder/mutation_research :: rc=0 :: 277 passed in 1.23s (2s)
+p4_t_gil0 gil=0 tests/integration/melder/mutation_research :: rc=0 :: 66 passed in 0.51s (0s)
+p4_t_gil0 gil=0 tests/component/melder/mutation_research :: rc=0 :: 40 passed in 0.26s (1s)
+p4_t_gil0 gil=0 tests/integration/melder/live_sim :: rc=0 :: 1 passed, 1 xfailed in 0.14s (0s)
+p4_t_gil0 gil=0 tests/unit/melder/test_*.py tests/unit/melder/build_assets :: rc=1 :: 3 failed, 257 passed, 1 skipped in 4.23s (5s)
+FAILED tests/unit/melder/test_package_version_metadata.py::test_generated_build_assets_are_stamped_for_the_live_version
+FAILED tests/unit/melder/build_assets/test_system_documents_builder.py::test_shipped_entries_carry_sections_and_a_digest
+FAILED tests/unit/melder/build_assets/test_system_documents_builder.py::test_unavailable_entry_matches_a_live_entry_key_for_key
+base_t_gil0 gil=0 tests/unit/melder/test_*.py tests/unit/melder/build_assets :: rc=1 :: 3 failed, 257 passed, 1 skipped in 4.81s (5s)
+FAILED tests/unit/melder/test_package_version_metadata.py::test_generated_build_assets_are_stamped_for_the_live_version
+FAILED tests/unit/melder/build_assets/test_system_documents_builder.py::test_shipped_entries_carry_sections_and_a_digest
+FAILED tests/unit/melder/build_assets/test_system_documents_builder.py::test_unavailable_entry_matches_a_live_entry_key_for_key
+p4_t_gil1 gil=1 tests/unit/melder/spellbook :: rc=0 :: 2245 passed, 1 warning in 1.58s (2s)
+p4_t_gil1 gil=1 tests/component/melder/spellbook :: rc=0 :: 790 passed, 1 warning in 5.71s (6s)
+p4_t_gil1 gil=1 tests/integration/melder/spellbook :: rc=0 :: 586 passed, 2 skipped, 2 xfailed, 2 xpassed, 1 warning in 3.88s (4s)
+p4_t_gil1 gil=1 tests/component/melder/aether :: rc=0 :: 1215 passed, 1 xfailed, 1 warning in 9.27s (9s)
+p4_t_gil1 gil=1 tests/integration/melder/conduit :: rc=0 :: 268 passed, 1 warning in 2.42s (3s)
+p4_t_gil1 gil=1 tests/integration/melder/multithreading :: rc=0 :: 42 passed, 1 warning in 3.14s (3s)
+p4_t_gil1 gil=1 tests/unit/melder/aether :: rc=0 :: 4146 passed, 1 warning in 11.57s (12s)
+p4_gilbuild gil=- tests/unit/melder/spellbook :: rc=0 :: 2245 passed, 1 warning in 1.47s (2s)
+p4_gilbuild gil=- tests/component/melder/spellbook :: rc=0 :: 790 passed, 1 warning in 4.84s (5s)
+p4_gilbuild gil=- tests/integration/melder/spellbook :: rc=0 :: 586 passed, 2 skipped, 2 xfailed, 2 xpassed, 1 warning in 2.81s (3s)
+p4_gilbuild gil=- tests/component/melder/aether :: rc=0 :: 1215 passed, 1 xfailed, 1 warning in 8.06s (8s)
+p4_gilbuild gil=- tests/integration/melder/conduit :: rc=0 :: 268 passed, 1 warning in 1.73s (2s)
+p4_gilbuild gil=- tests/integration/melder/multithreading :: rc=0 :: 42 passed, 1 warning in 2.36s (2s)
+p4_gilbuild gil=- tests/unit/melder/aether :: rc=0 :: 4146 passed, 1 warning in 10.91s (12s)

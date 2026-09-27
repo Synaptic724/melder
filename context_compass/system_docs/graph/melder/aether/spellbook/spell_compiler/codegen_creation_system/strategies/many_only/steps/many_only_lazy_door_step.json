@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/many_only/steps/many_only_lazy_door_step.py",
- "source_sha256": "96e3be50f7a69413993a355661669feec082e175f03d36fc5dbd023d2c88ced2",
+ "source_sha256": "50bf6e54b4074a87906cffdfc7cb4bb002e185293d40a17b4b37d64d9d9d56b6",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.steps.many_only_lazy_door_step": {
@@ -33,7 +33,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f083e0ec6f1137c3ff42cbb19bb8d811bcd404c2aba7fc37afc5aba97ae56f25",
+   "span_sha256": "6652e7d042168de1ffe97135b779c816d6d1167784654c376a2d0a5424d228e1",
    "role": "Lazy-door publication step for the many_only family.",
    "responsibilities": [
     "publishes cold many-only runtime doors without compile or exec work at phase 11",
@@ -43,7 +43,7 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "f083e0ec6f1137c3ff42cbb19bb8d811bcd404c2aba7fc37afc5aba97ae56f25"
+   "semantics_authored_against": "6652e7d042168de1ffe97135b779c816d6d1167784654c376a2d0a5424d228e1"
   }
  },
  "edges_out": [

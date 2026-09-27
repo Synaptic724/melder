@@ -8,9 +8,6 @@ from melder.aether.spellbook.spell_compiler.codegen_creation_system.spell_codege
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.generalized.generalized_codegen_creation_strategy import (
     GeneralizedCodegenCreationStrategy,
 )
-from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.fallback_no_overrides.fallback_no_overrides_codegen_creation_strategy import (
-    FallbackNoOverridesCodegenCreationStrategy,
-)
 from melder.aether.spellbook.spell_compiler.codegen_creation_system.strategies.many_only.many_only_codegen_creation_strategy import (
     ManyOnlyCodegenCreationStrategy,
 )
@@ -56,8 +53,9 @@ class SpellCodegenStrategyBuilder(Cleanable):
 
         Contract:
             - Generalized planner output now resolves to one family facade.
-            - The standalone generalized no-overrides strategy remains
-              registered as the fallback public creation strategy.
+            - There is no fallback strategy (retired 2026-09-26): plan
+              discovery always selects solo, many_only or generalized, and
+              each has its family here.
             - Older generalized step wrappers remain importable for
               compatibility, but are no longer discovery-selected public
               strategies here.
@@ -77,12 +75,6 @@ class SpellCodegenStrategyBuilder(Cleanable):
         self._strategies_by_name[
             generalized_codegen_creation_strategy.strategy_id
         ] = generalized_codegen_creation_strategy
-        generalized_no_overrides_codegen_creation_strategy = (
-            FallbackNoOverridesCodegenCreationStrategy()
-        )
-        self._strategies_by_name[
-            generalized_no_overrides_codegen_creation_strategy.strategy_id
-        ] = generalized_no_overrides_codegen_creation_strategy
 
     def get_strategy(
             self,

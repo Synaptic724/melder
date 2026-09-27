@@ -44,11 +44,13 @@ class SpellManyOnlyCodegenPlanStrategy(SpellCodegenPlanStrategy):
         Populate the many-only category plan using many-only-native builders.
 
         Contract:
-            Builds the no-overrides and overrides lane plans via
-            `ManyOnlyCodegenPlanBuilder` (the artifact argument is unused),
-            assigns them to `plan`, and stamps plan metadata (selected strategy
-            id, discovery reason, model section names). Mutates `plan` in place;
-            returns nothing.
+            Builds the no-overrides lane plan via `ManyOnlyCodegenPlanBuilder`
+            (the artifact argument is unused), assigns it to `plan`, and stamps
+            plan metadata (selected strategy id, discovery reason, model section
+            names). `plan.overrides_plan` stays None: override melds compile one
+            plan per override key set from the no-overrides step rows at the
+            first override meld (2026-09-26). Mutates `plan` in place; returns
+            nothing.
 
         Args:
             state:
@@ -56,7 +58,8 @@ class SpellManyOnlyCodegenPlanStrategy(SpellCodegenPlanStrategy):
             artifact:
                 Compiler artifact (unused by this strategy).
             plan:
-                Plan object populated in place with both lanes and metadata.
+                Plan object populated in place with the no-overrides lane and
+                metadata.
 
         Returns:
             None.
@@ -66,12 +69,7 @@ class SpellManyOnlyCodegenPlanStrategy(SpellCodegenPlanStrategy):
             state=state,
             plan_variant=ManyOnlyCodegenPlanVariant.NO_OVERRIDES,
         )
-        overrides_builder = ManyOnlyCodegenPlanBuilder(
-            state=state,
-            plan_variant=ManyOnlyCodegenPlanVariant.OVERRIDES,
-        )
         plan.no_overrides_plan = no_overrides_builder.build()
-        plan.overrides_plan = overrides_builder.build()
         plan.metadata["selected_strategy_id"] = self.strategy_id
         plan.metadata["discovery_reason"] = "many_only_visible_spell_set"
         plan.metadata["model_sections"] = state.section_names()

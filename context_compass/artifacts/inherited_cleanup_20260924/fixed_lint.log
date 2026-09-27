@@ -1,0 +1,834 @@
+I001 [*] Import block is un-sorted or un-formatted
+ --> src\melder\aether\spellbook\bind\bind.py:1:1
+  |
+1 | / import inspect
+2 | | import threading
+3 | | import hashlib
+4 | | from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Tuple, Union, ClassVar, TypeVar
+  | |____________________________________________________________________________________________________^
+5 |
+6 |   if TYPE_CHECKING:
+  |
+help: Organize imports
+   |
+1  + import hashlib
+2  | import inspect
+3  | import threading
+   - import hashlib
+   - from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Tuple, Union, ClassVar, TypeVar
+4  + from typing import (
+5  +     TYPE_CHECKING,
+6  +     Any,
+7  +     Callable,
+8  +     ClassVar,
+9  +     Optional,
+10 +     Sequence,
+11 +     Tuple,
+12 +     TypeVar,
+13 +     Union,
+14 + )
+15 |
+   |
+
+UP035 [*] Import from `collections.abc` instead: `Callable`, `Sequence`
+ --> src\melder\aether\spellbook\bind\bind.py:4:1
+  |
+2 | import threading
+3 | import hashlib
+4 | from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Tuple, Union, ClassVar, TypeVar
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 |
+6 | if TYPE_CHECKING:
+  |
+help: Import from `collections.abc`
+  |
+3 | import hashlib
+  - from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Tuple, Union, ClassVar, TypeVar
+4 + from typing import TYPE_CHECKING, Any, Optional, Tuple, Union, ClassVar, TypeVar
+5 + from collections.abc import Callable, Sequence
+6 |
+  |
+
+UP035 `typing.Tuple` is deprecated, use `tuple` instead
+ --> src\melder\aether\spellbook\bind\bind.py:4:1
+  |
+2 | import threading
+3 | import hashlib
+4 | from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Tuple, Union, ClassVar, TypeVar
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 |
+6 | if TYPE_CHECKING:
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src\melder\aether\spellbook\bind\bind.py:7:5
+   |
+ 6 |   if TYPE_CHECKING:
+ 7 | /     from melder.aether.spellbook.spellbook import Spellbook
+ 8 | |     from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
+ 9 | |         SpellBindingProfile,
+10 | |     )
+   | |_____^
+help: Organize imports
+   |
+6  | if TYPE_CHECKING:
+   -     from melder.aether.spellbook.spellbook import Spellbook
+7  |     from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
+8  |         SpellBindingProfile,
+9  |     )
+10 +     from melder.aether.spellbook.spellbook import Spellbook
+11 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src\melder\aether\spellbook\bind\bind.py:15:1
+   |
+14 |   # Melder Imports
+15 | / from melder.aether.spellbook.spell_types.spell_types import SpellType
+16 | | from melder.aether.spellbook.existence.existence import Existence
+17 | | from melder.utilities.general_base.cleanable import Cleanable
+18 | | from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+19 | | from melder.aether.spellbook.spell import Spell
+20 | | from melder._build_assets._bind_guard.bind_guard import INTERNAL_MANIFEST
+21 | | from melder.utilities.custom_exceptions.internal_registration_error import InternalRegistrationError
+22 | | from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
+   | |______________________________________________________________________________________^
+help: Organize imports
+   |
+14 | # Melder Imports
+   - from melder.aether.spellbook.spell_types.spell_types import SpellType
+   - from melder.aether.spellbook.existence.existence import Existence
+   - from melder.utilities.general_base.cleanable import Cleanable
+15 + from melder._build_assets._bind_guard.bind_guard import INTERNAL_MANIFEST
+16 | from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+17 + from melder.aether.spellbook.existence.existence import Existence
+18 | from melder.aether.spellbook.spell import Spell
+   - from melder._build_assets._bind_guard.bind_guard import INTERNAL_MANIFEST
+   - from melder.utilities.custom_exceptions.internal_registration_error import InternalRegistrationError
+19 + from melder.aether.spellbook.spell_types.spell_types import SpellType
+20 | from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
+   -
+21 + from melder.utilities.custom_exceptions.internal_registration_error import (
+22 +     InternalRegistrationError,
+23 + )
+24 + from melder.utilities.general_base.cleanable import Cleanable
+25 |
+   |
+
+UP006 [*] Use `tuple` instead of `Tuple` for type annotation
+  --> src\melder\aether\spellbook\bind\bind.py:33:46
+   |
+33 | def _internal_identity_of(candidate: Any) -> Tuple[str, str]:
+   |                                              ^^^^^
+34 |     """
+35 |     Resolve the `(module, qualname)` identity used for manifest lookup.
+   |
+help: Replace with `tuple`
+   |
+32 |
+   - def _internal_identity_of(candidate: Any) -> Tuple[str, str]:
+33 + def _internal_identity_of(candidate: Any) -> tuple[str, str]:
+34 |     """
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> src\melder\aether\spellbook\bind\bind.py:108:1
+    |
+106 |           )
+107 |
+108 | / from melder.aether.spellbook.bind.spell_index import SpellIndex
+109 | | from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import SpellExaminer
+110 | | from melder.utilities.helpers.id_builder import IDBuilder
+111 | | from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
+112 | |     SpellGeneralProfile,
+113 | | )
+114 | | from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
+115 | |     ClassBindingProfile,
+116 | |     CallableBindingProfile,
+117 | |     InstanceBindingProfile,
+118 | |     OtherBindingProfile,
+119 | | )
+    | |_^
+help: Organize imports
+    |
+108 | from melder.aether.spellbook.bind.spell_index import SpellIndex
+    - from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import SpellExaminer
+    - from melder.utilities.helpers.id_builder import IDBuilder
+    - from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
+    -     SpellGeneralProfile,
+    - )
+109 | from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.binding_profile import (
+110 +     CallableBindingProfile,
+111 |     ClassBindingProfile,
+    -     CallableBindingProfile,
+112 |     InstanceBindingProfile,
+113 |     OtherBindingProfile,
+114 | )
+    -
+115 + from melder.aether.spellbook.spell_compiler.spell_examiner.profiles.general_profile import (
+116 +     SpellGeneralProfile,
+117 + )
+118 + from melder.aether.spellbook.spell_compiler.spell_examiner.spell_examiner import (
+119 +     SpellExaminer,
+120 + )
+121 + from melder.utilities.helpers.id_builder import IDBuilder
+122 |
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:204:28
+    |
+202 |             spellbook: Spellbook,
+203 |             *,
+204 |             initial_hooks: Optional[BindLifecycleHooks] = None,
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+205 |     ) -> None:
+206 |         """
+    |
+help: Convert to `X | None`
+    |
+203 |             *,
+    -             initial_hooks: Optional[BindLifecycleHooks] = None,
+204 +             initial_hooks: BindLifecycleHooks | None = None,
+205 |     ) -> None:
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:269:18
+    |
+267 |             self,
+268 |             *,
+269 |             pre: Optional[Sequence[Callable[[Any], object]]] = None,
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+270 |             activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+271 |             post: Optional[Sequence[Callable[[Spell], object]]] = None,
+    |
+help: Convert to `X | None`
+    |
+268 |             *,
+    -             pre: Optional[Sequence[Callable[[Any], object]]] = None,
+269 +             pre: Sequence[Callable[[Any], object]] | None = None,
+270 |             activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:270:25
+    |
+268 |             *,
+269 |             pre: Optional[Sequence[Callable[[Any], object]]] = None,
+270 |             activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+271 |             post: Optional[Sequence[Callable[[Spell], object]]] = None,
+272 |     ) -> None:
+    |
+help: Convert to `X | None`
+    |
+269 |             pre: Optional[Sequence[Callable[[Any], object]]] = None,
+    -             activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+270 +             activation: Sequence[Callable[[Spell], object]] | None = None,
+271 |             post: Optional[Sequence[Callable[[Spell], object]]] = None,
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:271:19
+    |
+269 |             pre: Optional[Sequence[Callable[[Any], object]]] = None,
+270 |             activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+271 |             post: Optional[Sequence[Callable[[Spell], object]]] = None,
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+272 |     ) -> None:
+273 |         """
+    |
+help: Convert to `X | None`
+    |
+270 |             activation: Optional[Sequence[Callable[[Spell], object]]] = None,
+    -             post: Optional[Sequence[Callable[[Spell], object]]] = None,
+271 +             post: Sequence[Callable[[Spell], object]] | None = None,
+272 |     ) -> None:
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:459:27
+    |
+457 |             spell: Any = None,
+458 |             spellframe: Any = None,
+459 |             binding_name: Optional[str] = None,
+    |                           ^^^^^^^^^^^^^
+460 |             configured_disposal_method_names: Optional[Sequence[str]] = None,
+461 |             profile: str = "general",
+    |
+help: Convert to `X | None`
+    |
+458 |             spellframe: Any = None,
+    -             binding_name: Optional[str] = None,
+459 +             binding_name: str | None = None,
+460 |             configured_disposal_method_names: Optional[Sequence[str]] = None,
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:460:47
+    |
+458 |             spellframe: Any = None,
+459 |             binding_name: Optional[str] = None,
+460 |             configured_disposal_method_names: Optional[Sequence[str]] = None,
+    |                                               ^^^^^^^^^^^^^^^^^^^^^^^
+461 |             profile: str = "general",
+462 |             disposal_method_names: Optional[Sequence[str]] = None,
+    |
+help: Convert to `X | None`
+    |
+459 |             binding_name: Optional[str] = None,
+    -             configured_disposal_method_names: Optional[Sequence[str]] = None,
+460 +             configured_disposal_method_names: Sequence[str] | None = None,
+461 |             profile: str = "general",
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:462:36
+    |
+460 |             configured_disposal_method_names: Optional[Sequence[str]] = None,
+461 |             profile: str = "general",
+462 |             disposal_method_names: Optional[Sequence[str]] = None,
+    |                                    ^^^^^^^^^^^^^^^^^^^^^^^
+463 |             enforce_priority_disposal_methods: bool = False,
+464 |             resolvable: bool = True,
+    |
+help: Convert to `X | None`
+    |
+461 |             profile: str = "general",
+    -             disposal_method_names: Optional[Sequence[str]] = None,
+462 +             disposal_method_names: Sequence[str] | None = None,
+463 |             enforce_priority_disposal_methods: bool = False,
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:465:31
+    |
+463 |             enforce_priority_disposal_methods: bool = False,
+464 |             resolvable: bool = True,
+465 |             _lifecycle_hooks: Optional[BindLifecycleHooks] = None,
+    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+466 |             **kwargs: Any,
+467 |     ) -> Union[Spell, Any]:
+    |
+help: Convert to `X | None`
+    |
+464 |             resolvable: bool = True,
+    -             _lifecycle_hooks: Optional[BindLifecycleHooks] = None,
+465 +             _lifecycle_hooks: BindLifecycleHooks | None = None,
+466 |             **kwargs: Any,
+    |
+
+UP007 [*] Use `X | Y` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:467:10
+    |
+465 |             _lifecycle_hooks: Optional[BindLifecycleHooks] = None,
+466 |             **kwargs: Any,
+467 |     ) -> Union[Spell, Any]:
+    |          ^^^^^^^^^^^^^^^^^
+468 |         """
+469 |         Register a class, function, or existing object as a `Spell`.
+    |
+help: Convert to `X | Y`
+    |
+466 |             **kwargs: Any,
+    -     ) -> Union[Spell, Any]:
+467 +     ) -> Spell | Any:
+468 |         """
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:567:25
+    |
+565 |             self,
+566 |             spell: Any,
+567 |             spellframe: Optional[Any],
+    |                         ^^^^^^^^^^^^^
+568 |             binding_name: Optional[str],
+569 |             existence: Existence,
+    |
+help: Convert to `X | None`
+    |
+566 |             spell: Any,
+    -             spellframe: Optional[Any],
+567 +             spellframe: Any | None,
+568 |             binding_name: Optional[str],
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:568:27
+    |
+566 |             spell: Any,
+567 |             spellframe: Optional[Any],
+568 |             binding_name: Optional[str],
+    |                           ^^^^^^^^^^^^^
+569 |             existence: Existence,
+570 |             permissions: Permissions,
+    |
+help: Convert to `X | None`
+    |
+567 |             spellframe: Optional[Any],
+    -             binding_name: Optional[str],
+568 +             binding_name: str | None,
+569 |             existence: Existence,
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:572:47
+    |
+570 |             permissions: Permissions,
+571 |             aetheric_frame: str,
+572 |             configured_disposal_method_names: Optional[Sequence[str]] = None,
+    |                                               ^^^^^^^^^^^^^^^^^^^^^^^
+573 |             profile: str = "general",
+574 |             disposal_method_names: Optional[Sequence[str]] = None,
+    |
+help: Convert to `X | None`
+    |
+571 |             aetheric_frame: str,
+    -             configured_disposal_method_names: Optional[Sequence[str]] = None,
+572 +             configured_disposal_method_names: Sequence[str] | None = None,
+573 |             profile: str = "general",
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:574:36
+    |
+572 |             configured_disposal_method_names: Optional[Sequence[str]] = None,
+573 |             profile: str = "general",
+574 |             disposal_method_names: Optional[Sequence[str]] = None,
+    |                                    ^^^^^^^^^^^^^^^^^^^^^^^
+575 |             enforce_priority_disposal_methods: bool = False,
+576 |             resolvable: bool = True,
+    |
+help: Convert to `X | None`
+    |
+573 |             profile: str = "general",
+    -             disposal_method_names: Optional[Sequence[str]] = None,
+574 +             disposal_method_names: Sequence[str] | None = None,
+575 |             enforce_priority_disposal_methods: bool = False,
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:577:31
+    |
+575 |             enforce_priority_disposal_methods: bool = False,
+576 |             resolvable: bool = True,
+577 |             _lifecycle_hooks: Optional[BindLifecycleHooks] = None,
+    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+578 |             **kwargs: Any,
+579 |     ) -> Spell:
+    |
+help: Convert to `X | None`
+    |
+576 |             resolvable: bool = True,
+    -             _lifecycle_hooks: Optional[BindLifecycleHooks] = None,
+577 +             _lifecycle_hooks: BindLifecycleHooks | None = None,
+578 |             **kwargs: Any,
+    |
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> src\melder\aether\spellbook\bind\bind.py:736:13
+    |
+734 |               #   * For callable spells: allow binding (factory/handler semantics),
+735 |               #     but do not run structural checks (no meaningful attribute set).
+736 | /             if spellframe is not None and Bind._is_protocol_type(spellframe):
+737 | |                 if isinstance(binding_profile, ClassBindingProfile) or is_instance:
+    | |___________________________________________________________________________________^
+738 |                       ok, missing_members = Bind._structurally_implements_protocol(
+739 |                           spell, spellframe
+    |
+help: Combine `if` statements using `and`
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:841:25
+    |
+839 |             *,
+840 |             spellframe: Any = None,
+841 |             spell_name: Optional[str] = None,
+    |                         ^^^^^^^^^^^^^
+842 |             binding_name: Optional[str] = None,
+843 |             existence: Existence = Existence.unique,
+    |
+help: Convert to `X | None`
+    |
+840 |             spellframe: Any = None,
+    -             spell_name: Optional[str] = None,
+841 +             spell_name: str | None = None,
+842 |             binding_name: Optional[str] = None,
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:842:27
+    |
+840 |             spellframe: Any = None,
+841 |             spell_name: Optional[str] = None,
+842 |             binding_name: Optional[str] = None,
+    |                           ^^^^^^^^^^^^^
+843 |             existence: Existence = Existence.unique,
+844 |             disposal_method_names: Sequence[str] = (),
+    |
+help: Convert to `X | None`
+    |
+841 |             spell_name: Optional[str] = None,
+    -             binding_name: Optional[str] = None,
+842 +             binding_name: str | None = None,
+843 |             existence: Existence = Existence.unique,
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:894:25
+    |
+892 |             *,
+893 |             spellframe: Any = None,
+894 |             spell_name: Optional[str] = None,
+    |                         ^^^^^^^^^^^^^
+895 |             binding_name: Optional[str] = None,
+896 |             existence: Optional[Existence] = None,
+    |
+help: Convert to `X | None`
+    |
+893 |             spellframe: Any = None,
+    -             spell_name: Optional[str] = None,
+894 +             spell_name: str | None = None,
+895 |             binding_name: Optional[str] = None,
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:895:27
+    |
+893 |             spellframe: Any = None,
+894 |             spell_name: Optional[str] = None,
+895 |             binding_name: Optional[str] = None,
+    |                           ^^^^^^^^^^^^^
+896 |             existence: Optional[Existence] = None,
+897 |             disposal_method_names: Sequence[str] = (),
+    |
+help: Convert to `X | None`
+    |
+894 |             spell_name: Optional[str] = None,
+    -             binding_name: Optional[str] = None,
+895 +             binding_name: str | None = None,
+896 |             existence: Optional[Existence] = None,
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> src\melder\aether\spellbook\bind\bind.py:896:24
+    |
+894 |             spell_name: Optional[str] = None,
+895 |             binding_name: Optional[str] = None,
+896 |             existence: Optional[Existence] = None,
+    |                        ^^^^^^^^^^^^^^^^^^^
+897 |             disposal_method_names: Sequence[str] = (),
+898 |             resolvable: bool = True,
+    |
+help: Convert to `X | None`
+    |
+895 |             binding_name: Optional[str] = None,
+    -             existence: Optional[Existence] = None,
+896 +             existence: Existence | None = None,
+897 |             disposal_method_names: Sequence[str] = (),
+    |
+
+SIM114 [*] Combine `if` branches using logical `or` operator
+   --> src\melder\aether\spellbook\bind\bind.py:965:9
+    |
+963 |                   "extension" if profile.extension_module else "",
+964 |                   ]
+965 | /         elif isinstance(profile, InstanceBindingProfile):
+966 | |             parts += [
+967 | |                 profile.type_name,
+968 | |                 profile.module or "",
+969 | |                 (profile.repr_string or "").strip(),
+970 | |                 ]
+971 | |         elif isinstance(profile, OtherBindingProfile):
+972 | |             parts += [
+973 | |                 profile.type_name,
+974 | |                 profile.module or "",
+975 | |                 (profile.repr_string or "").strip(),
+976 | |                 ]
+    | |_________________^
+977 |           else:
+978 |               # Absolute fallback – should effectively never happen.
+    |
+help: Combine `if` branches
+    |
+964 |                 ]
+    -         elif isinstance(profile, InstanceBindingProfile):
+    -             parts += [
+    -                 profile.type_name,
+    -                 profile.module or "",
+    -                 (profile.repr_string or "").strip(),
+    -                 ]
+    -         elif isinstance(profile, OtherBindingProfile):
+965 +         elif isinstance(profile, InstanceBindingProfile) or isinstance(profile, OtherBindingProfile):
+966 |             parts += [
+    |
+
+UP045 [*] Use `X | None` for type annotations
+    --> src\melder\aether\spellbook\bind\bind.py:1019:27
+     |
+1017 |     def _validate_binding(
+1018 |             profile: SpellBindingProfile,
+1019 |             binding_name: Optional[str],
+     |                           ^^^^^^^^^^^^^
+1020 |             existence: Existence,
+1021 |     ) -> None:
+     |
+help: Convert to `X | None`
+     |
+1018 |             profile: SpellBindingProfile,
+     -             binding_name: Optional[str],
+1019 +             binding_name: str | None,
+1020 |             existence: Existence,
+     |
+
+TRY004 Prefer `TypeError` exception for invalid type
+    --> src\melder\aether\spellbook\bind\bind.py:1106:13
+     |
+1104 |           """
+1105 |           if not isinstance(existence, Existence):
+1106 | /             raise ValueError(
+1107 | |                 f"Invalid existence type: {existence}. Must be an instance of Existence."
+1108 | |             )
+     | |_____________^
+1109 |           return True
+     |
+
+UP045 [*] Use `X | None` for type annotations
+    --> src\melder\aether\spellbook\bind\bind.py:1114:19
+     |
+1112 |     def _determine_spell_type(
+1113 |             binding_profile: SpellBindingProfile,
+1114 |             name: Optional[str],
+     |                   ^^^^^^^^^^^^^
+1115 |             spellframe: Optional[Any],
+1116 |     ) -> SpellType:
+     |
+help: Convert to `X | None`
+     |
+1113 |             binding_profile: SpellBindingProfile,
+     -             name: Optional[str],
+1114 +             name: str | None,
+1115 |             spellframe: Optional[Any],
+     |
+
+UP045 [*] Use `X | None` for type annotations
+    --> src\melder\aether\spellbook\bind\bind.py:1115:25
+     |
+1113 |             binding_profile: SpellBindingProfile,
+1114 |             name: Optional[str],
+1115 |             spellframe: Optional[Any],
+     |                         ^^^^^^^^^^^^^
+1116 |     ) -> SpellType:
+1117 |         """
+     |
+help: Convert to `X | None`
+     |
+1114 |             name: Optional[str],
+     -             spellframe: Optional[Any],
+1115 +             spellframe: Any | None,
+1116 |     ) -> SpellType:
+     |
+
+SIM103 Return the condition `bool(getattr(obj, "__is_protocol__", False))` directly
+    --> src\melder\aether\spellbook\bind\bind.py:1206:9
+     |
+1204 |           if getattr(obj, "_is_protocol", False):
+1205 |               return True
+1206 | /         if getattr(obj, "__is_protocol__", False):
+1207 | |             return True
+1208 | |
+1209 | |         return False
+     | |____________________^
+1210 |
+1211 |       @staticmethod
+     |
+help: Replace with `return bool(getattr(obj, "__is_protocol__", False))`
+
+UP035 [*] Import from `collections.abc` instead: `Iterator`
+ --> tests\component\melder\spellbook\test_inherited_disposal_binding.py:3:1
+  |
+1 | """Inherited disposal contracts across binding, identity and real instance teardown."""
+2 |
+3 | from typing import Iterator
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+4 |
+5 | import pytest
+  |
+help: Import from `collections.abc`
+  |
+2 |
+  - from typing import Iterator
+3 + from collections.abc import Iterator
+4 |
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests\component\melder\spellbook\test_inherited_disposal_binding.py:3:1
+   |
+ 1 |   """Inherited disposal contracts across binding, identity and real instance teardown."""
+ 2 |
+ 3 | / from typing import Iterator
+ 4 | |
+ 5 | | import pytest
+ 6 | |
+ 7 | | from melder.aether.aether import Aether
+ 8 | | from melder.aether.conduit.conduit import Conduit
+ 9 | | from melder.aether.spellbook.bind.bind import Bind
+10 | | from melder.aether.spellbook.existence.existence import Existence
+11 | | from melder.aether.spellbook.spellbook import Spellbook
+12 | | from melder.nexus.nexus import Nexus
+13 | | from tests.component.melder.spellbook.test_ordered_disposal_binding import configured_book
+   | |__________________________________________________________________________________________^
+help: Organize imports
+   |
+12 | from melder.nexus.nexus import Nexus
+   - from tests.component.melder.spellbook.test_ordered_disposal_binding import configured_book
+13 + from tests.component.melder.spellbook.test_ordered_disposal_binding import (
+14 +     configured_book,
+15 + )
+16 |
+   |
+
+RET501 [*] Do not explicitly `return None` in function if it is the only possible return value
+  --> tests\component\melder\spellbook\test_inherited_disposal_binding.py:97:9
+   |
+95 |     def cleanup() -> None:
+96 |         """Accept a no-argument disposal call without constructing external resources."""
+97 |         return None
+   |         ^^^^^^^^^^^
+help: Remove explicit `return None`
+   |
+96 |         """Accept a no-argument disposal call without constructing external resources."""
+   -         return None
+97 +         return
+98 |
+   |
+
+RET501 [*] Do not explicitly `return None` in function if it is the only possible return value
+   --> tests\component\melder\spellbook\test_inherited_disposal_binding.py:230:9
+    |
+228 |     def unrelated_method(self: CleanupBase) -> None:
+229 |         """Supply an unrequested base method whose existence must not affect the child fingerprint."""
+230 |         return None
+    |         ^^^^^^^^^^^
+231 |
+232 |     monkeypatch.setattr(CleanupBase, "unrelated_operation", unrelated_method, raising=False)
+    |
+help: Remove explicit `return None`
+    |
+229 |         """Supply an unrequested base method whose existence must not affect the child fingerprint."""
+    -         return None
+230 +         return
+231 |
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests\component\melder\spellbook\test_ordered_disposal_binding.py:3:1
+   |
+ 1 |   """Producer contracts for ordered book/per-spell disposal metadata and bind identity."""
+ 2 |
+ 3 | / import json
+ 4 | | import os
+ 5 | | import subprocess
+ 6 | | import sys
+ 7 | | from contextlib import contextmanager
+ 8 | | from pathlib import Path
+ 9 | | from typing import Iterator, Optional
+10 | |
+11 | | import pytest
+12 | |
+13 | | from melder.aether.aether import Aether
+14 | | from melder.aether.conduit.conduit import Conduit
+15 | | from melder.aether.spellbook.bind.bind import Bind
+16 | | from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+17 | | from melder.aether.spellbook.spellbinder import SpellBinder
+18 | | from melder.aether.spellbook.spellbook import Spellbook
+19 | | from melder.nexus.nexus import Nexus
+   | |____________________________________^
+help: Organize imports
+   |
+15 | from melder.aether.spellbook.bind.bind import Bind
+   - from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+16 + from melder.aether.spellbook.configuration.spellbook_configuration import (
+17 +     SpellbookConfiguration,
+18 + )
+19 | from melder.aether.spellbook.spellbinder import SpellBinder
+   |
+
+UP035 [*] Import from `collections.abc` instead: `Iterator`
+  --> tests\component\melder\spellbook\test_ordered_disposal_binding.py:9:1
+   |
+ 7 | from contextlib import contextmanager
+ 8 | from pathlib import Path
+ 9 | from typing import Iterator, Optional
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 |
+11 | import pytest
+   |
+help: Import from `collections.abc`
+   |
+8  | from pathlib import Path
+   - from typing import Iterator, Optional
+9  + from typing import Optional
+10 + from collections.abc import Iterator
+11 |
+   |
+
+UP045 [*] Use `X | None` for type annotations
+  --> tests\component\melder\spellbook\test_ordered_disposal_binding.py:69:16
+   |
+67 | @contextmanager
+68 | def configured_book(
+69 |         names: Optional[list[str]],
+   |                ^^^^^^^^^^^^^^^^^^^
+70 |         priority: bool = False,
+71 |         *,
+   |
+help: Convert to `X | None`
+   |
+68 | def configured_book(
+   -         names: Optional[list[str]],
+69 +         names: list[str] | None,
+70 |         priority: bool = False,
+   |
+
+UP045 [*] Use `X | None` for type annotations
+   --> tests\component\melder\spellbook\test_ordered_disposal_binding.py:128:21
+    |
+126 | ])
+127 | def test_empty_and_missing_groups_preserve_matching_contract(
+128 |         book_names: Optional[list[str]],
+    |                     ^^^^^^^^^^^^^^^^^^^
+129 |         spell_names: Optional[list[str]],
+130 |         expected: list[str],
+    |
+help: Convert to `X | None`
+    |
+127 | def test_empty_and_missing_groups_preserve_matching_contract(
+    -         book_names: Optional[list[str]],
+128 +         book_names: list[str] | None,
+129 |         spell_names: Optional[list[str]],
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> tests\component\melder\spellbook\test_ordered_disposal_binding.py:129:22
+    |
+127 | def test_empty_and_missing_groups_preserve_matching_contract(
+128 |         book_names: Optional[list[str]],
+129 |         spell_names: Optional[list[str]],
+    |                      ^^^^^^^^^^^^^^^^^^^
+130 |         expected: list[str],
+131 | ) -> None:
+    |
+help: Convert to `X | None`
+    |
+128 |         book_names: Optional[list[str]],
+    -         spell_names: Optional[list[str]],
+129 +         spell_names: list[str] | None,
+130 |         expected: list[str],
+    |
+
+Found 42 errors.
+[*] 38 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).

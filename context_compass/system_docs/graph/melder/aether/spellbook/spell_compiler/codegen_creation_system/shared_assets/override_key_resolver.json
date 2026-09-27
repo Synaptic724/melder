@@ -1,0 +1,141 @@
+{
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py",
+ "source_sha256": "aed8d5d6bf781d69dee33a405f80188dc9f47a21b5d57a5e396be0c585408dc2",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver",
+   "label": "override_key_resolver",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Override key resolution over a site graph: grammar, ranks, cuts and conflicts.",
+   "responsibilities": [
+    "hosts OverrideKeyResolver and its OverrideKeyResolution result"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": ""
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolution": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolution",
+   "label": "OverrideKeyResolution",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py",
+   "lineno": 16,
+   "bases": [],
+   "markers": [],
+   "public_methods": [],
+   "shape": {
+    "method_count": 0,
+    "has_bases": false,
+    "trivial": true
+   },
+   "span_sha256": "2d0e842af6f807b6042952751004b5548d6fddb8adf44f625dee582ae101bb20",
+   "include": true,
+   "role": "What one override key set means for construction: winners, positional placements, conflicts and cut keys.",
+   "responsibilities": [
+    "maps each (site, parameter) to its winning key",
+    "maps root parameters to their __args__ index",
+    "lists equal-rank conflicts and keys left inactive by P1 cuts"
+   ],
+   "owns_state": [
+    "targets_by_key",
+    "winners",
+    "positional",
+    "conflicts",
+    "inactive_keys"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "2d0e842af6f807b6042952751004b5548d6fddb8adf44f625dee582ae101bb20"
+  },
+  "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolver": {
+   "id": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolver",
+   "label": "OverrideKeyResolver",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py",
+   "lineno": 96,
+   "bases": [],
+   "markers": [],
+   "public_methods": [
+    "resolve"
+   ],
+   "shape": {
+    "method_count": 6,
+    "has_bases": false,
+    "trivial": false
+   },
+   "span_sha256": "480cd5174df1da4db4c9e239ed895a52cb5b8a5309f54870c343f6b8b79f272c",
+   "include": true,
+   "role": "Pure resolver from an override key tuple to winning site parameters, with today's key grammar and errors.",
+   "responsibilities": [
+    "parses a, a>b>c, *n and **n keys and walks PATH keys along named parameters",
+    "ranks __args__ > PATH > UNIQUE > BROADCAST and records equal-rank conflicts",
+    "cuts rules below a supplied parameter to a fixpoint (P1)",
+    "raises today's messages for keys that match nothing or match ambiguously"
+   ],
+   "phases": [
+    "runtime"
+   ],
+   "semantics_authored_against": "480cd5174df1da4db4c9e239ed895a52cb5b8a5309f54870c343f6b8b79f272c"
+  }
+ },
+ "edges_out": [],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolver",
+   "to_label": "OverrideKeyResolution",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolver",
+   "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "ClassVar": "typing.ClassVar",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Set": "typing.Set",
+  "Tuple": "typing.Tuple",
+  "SiteTarget": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SiteTarget",
+  "TargetSpec": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpec",
+  "TargetSpecKind": "melder.aether.spellbook.spell_compiler.dag.target_spec.TargetSpecKind",
+  "SpellSiteGraphAnalysis": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis"
+ },
+ "collapse_candidate": null,
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolver",
+   "to": "melder.aether.spellbook.spell_compiler.artifact_processor.data.spell_site_graph_analysis.SpellSiteGraphAnalysis",
+   "relation": "borrows",
+   "why": "Reads param_index, path_counts and site parameter rows; writes nothing and reads no store, spell or supplied value.",
+   "cardinality": "many_to_one",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "borrowed"
+  },
+  {
+   "from": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolver",
+   "to": "melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.override_key_resolver.OverrideKeyResolution",
+   "relation": "creates",
+   "why": "resolve returns one value result per key set; the caller keeps it only while emitting the plan.",
+   "cardinality": "one_to_many",
+   "phase": [
+    "runtime"
+   ],
+   "strength": "hard"
+  }
+ ]
+}

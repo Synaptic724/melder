@@ -1,0 +1,55 @@
+diff --git a/docs/conf.py b/docs/conf.py
+index 3073a5b14..087a6df58 100644
+--- a/docs/conf.py
++++ b/docs/conf.py
+@@ -54,7 +54,7 @@ pygments_style = "default"
+ napoleon_google_docstring = True
+ napoleon_numpy_docstring = True
+ html_theme = "sphinx_rtd_theme"
+-html_title = "Melder — a runtime you can build on"
++html_title = "Melder"
+ html_short_title = "Melder"
+ html_static_path = ["_static"]
+ templates_path = ["_templates"]
+diff --git a/docs/index.md b/docs/index.md
+index c67f61809..2f73f9f3a 100644
+--- a/docs/index.md
++++ b/docs/index.md
+@@ -1,7 +1,18 @@
+-# A runtime you can build on
++---
++myst:
++  html_meta:
++    description: >-
++      Build live Python dependency graphs with constructor injection,
++      explicit object lifetimes, scoped cleanup, and runtime inspection.
++---
++
++(a-runtime-you-can-build-on)=
++# A dependency graph runtime for Python
++
++Melder wires ordinary Python classes, functions, and instances into a live
++dependency graph. Use dependency injection to connect services, choose when
++instances are shared or recreated, and define how resources are cleaned up.
+ 
+-Melder wires ordinary Python objects into a live dependency graph: services,
+-configuration, connections, and the objects your application works with.
+ Start with a small application. Grow into connected subsystems, isolated worlds,
+ and agent-operated infrastructure when you need them.
+ 
+@@ -43,6 +54,15 @@ Jump directly to a level, lesson, or reference.
+ :::
+ ::::
+ 
++## Find a guide
++
++- [Wire class dependencies](beginner/dependency-injection.md) with constructor injection.
++- [Choose when instances are shared or recreated](beginner/lifetimes.md).
++- [Define resource cleanup and ownership](beginner/cleanup.md).
++- [Override dependencies for a call](intermediate/overrides.md).
++- [Inspect an isolated application world](advanced/inspection-walkthrough.md).
++- [Give agents explicit access to a running world](expert/agent-rooms.md).
++
+ ## Choose your level
+ 
+ The four levels follow the same progression as the README. Read in order or

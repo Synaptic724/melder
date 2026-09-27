@@ -1,0 +1,6 @@
+{
+ "meld(tester) after cleanup is the stored tester": true,
+ "tester.testing1 is the same Python object": true,
+ "that object's close() was run by cleanup_spell": false,
+ "Melder still resolves Testing1": false
+}

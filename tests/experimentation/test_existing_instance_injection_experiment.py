@@ -11,6 +11,7 @@ import pytest
 
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.aether.spellbook.spellbook import Spellbook
+from melder.utilities.custom_exceptions.unresolved_input_error import UnresolvedInputError
 from tests.integration.melder.spellbook.test_existing_instance_planning import (
     CollectionValueConsumer,
     ExistingValue,
@@ -104,7 +105,11 @@ def test_characterize_existing_instance_injection(instance_book: Spellbook, mode
         report.update(outcome="same_instance", stage=stage)
     except (RuntimeError, TypeError) as error:
         message = str(error)
-        if "not a callable object" in message:
+        if isinstance(error, UnresolvedInputError):
+            # Since 2026-09-26 an unmatched type frame conjures as an unresolved
+            # input and surfaces at meld instead of refusing conjure.
+            failure = "no_matching_type_frame"
+        elif "not a callable object" in message:
             failure = "existing_instance_signature_inspection"
         elif "no DI candidate found" in message:
             failure = "no_matching_type_frame"

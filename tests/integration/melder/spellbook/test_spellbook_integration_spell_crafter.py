@@ -222,7 +222,7 @@ def test_spell_crafter_run_all_phases_builds_dependencies_and_state() -> None:
         artifact = _run_all_phases_via_compiler(root_spell, "cid")
 
         assert set(root_spell.dependencies) == {leaf_id}
-        assert root_spell.dependency_graph is not None
+        assert root_spell.dependency_graph is None  # retired tombstone (2026-09-26)
         assert artifact._requirements is None
         assert artifact._symbolic_graph is None
         assert artifact._resolution_frame is None
@@ -945,7 +945,7 @@ def test_spell_cleanup_after_run_all_phases_clears_phase_artifacts() -> None:
         assert artifact._validation_result_phase4 is None
         assert artifact._validation_result_phase6 is None
         assert set(root_spell.dependencies) == {leaf_id}
-        assert root_spell.dependency_graph is not None
+        assert root_spell.dependency_graph is None  # retired tombstone (2026-09-26)
 
         root_spell.cleanup()
 

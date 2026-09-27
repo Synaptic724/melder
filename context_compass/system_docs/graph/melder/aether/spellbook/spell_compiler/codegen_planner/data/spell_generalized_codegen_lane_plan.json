@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py",
- "source_sha256": "43872dd9fe5b6b18a2bd476e2da812792d2417515b6f2ce33b74e36676b8596c",
+ "source_sha256": "c702129a444d3481d34b5900026a5382d8d36198371da8d54bf564fa0d5192a5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.codegen_planner.data.spell_generalized_codegen_lane_plan": {
@@ -123,6 +123,7 @@
     "collection_param_names",
     "contract_keys",
     "contract_payload",
+    "contract_payload_refs",
     "contract_positional_override",
     "creations_target_kind",
     "dependency_keys",
@@ -149,11 +150,11 @@
     "uses_positional_override"
    ],
    "shape": {
-    "method_count": 28,
+    "method_count": 29,
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "0427416ce14a65bf5c0c80ab6a7ab4648dc51ddd88f814538059966383e4b740",
+   "span_sha256": "983910b9ca9feff2609256413d1c35432ecb0886f29cfc483fc2b2035ef5cdbb",
    "role": "Reusable generalized planner step object for one execution occurrence.",
    "responsibilities": [
     "stores generalized spell, occurrence, dependency, override, and contract payload metadata for one step",
@@ -200,7 +201,7 @@
    "label": "SpellGeneralizedCodegenLanePlan",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py",
-   "lineno": 442,
+   "lineno": 458,
    "bases": [
     "Cleanable"
    ],
@@ -260,7 +261,7 @@
    "label": "SpellGeneralizedCodegenPlanBuilder",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py",
-   "lineno": 1055,
+   "lineno": 1071,
    "bases": [],
    "markers": [],
    "public_methods": [
@@ -272,7 +273,7 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "630f4c86e0930de4d4e34263e4ad108b724ae9580877295080d9790efb610556",
+   "span_sha256": "c96dd7e34528aba7a76515cad9e9c142f6f997a62ff20f10f0ad664660330aef",
    "role": "Base generalized lane-plan builder from SpellCodegenModel.",
    "responsibilities": [
     "builds generalized lane-plan steps from graph, order, instance, injection, and runtime model sections",
@@ -293,7 +294,7 @@
    "label": "SpellSoloCodegenPlanBuilder",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py",
-   "lineno": 1931,
+   "lineno": 1949,
    "bases": [
     "SpellGeneralizedCodegenPlanBuilder"
    ],
@@ -322,7 +323,7 @@
    "label": "SpellManyOnlyCodegenPlanBuilder",
    "kind": "class",
    "file": "src/melder/aether/spellbook/spell_compiler/codegen_planner/data/spell_generalized_codegen_lane_plan.py",
-   "lineno": 1967,
+   "lineno": 1985,
    "bases": [
     "SpellGeneralizedCodegenPlanBuilder"
    ],

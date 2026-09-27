@@ -1,0 +1,152 @@
+Python: 3.14.7 free-threading build (main, Sep  1 2026, 14:18:33) [MSC v.1944 64 bit (AMD64)]
+Melder: 0.2.52 C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py
+.FFFFF                                                                   [100%]
+================================== FAILURES ===================================
+_ test_task_override_accepts_required_package_without_a_provider[initial-generation] _
+..\priv_commandops\tests\component\spectrum\test_manual_package_overrides.py:128: in test_task_override_accepts_required_package_without_a_provider
+    manual_input_book.conjure(dynamic=True, name="manual-inputs")
+src\melder\aether\spellbook\spellbook.py:6623: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6966: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:222: in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:313: in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1380: in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'work_callable' on spell 'Task' (annotation=<class 'melder.utilities.helpers.package.Package'>).
+__ test_task_override_accepts_required_package_without_a_provider[late-bind] __
+..\priv_commandops\tests\component\spectrum\test_manual_package_overrides.py:123: in test_task_override_accepts_required_package_without_a_provider
+    manual_input_book.bind(
+src\melder\aether\spellbook\spellbook.py:5278: in bind
+    with self.transaction(
+..\..\AppData\Roaming\uv\python\cpython-3.14+freethreaded-windows-x86_64-none\Lib\contextlib.py:148: in __exit__
+    next(self.gen)
+src\melder\aether\spellbook\spellbook.py:4538: in transaction
+    self.end_transaction(transaction_type, success=True)
+src\melder\aether\spellbook\spellbook.py:4426: in end_transaction
+    mediator.end_transaction_for_identity(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:744: in end_transaction_for_identity
+    return self.end_transaction_by_request_id(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:889: in end_transaction_by_request_id
+    self._finalize_root_session(session)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\transaction_manager\transaction_mediator.py:1073: in _finalize_root_session
+    self._orchestrator.commit_request(
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\orchestrator\orchestrator.py:504: in commit_request
+    commit_validator(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:584: in _dispatch_commit_validator
+    structural(staged)
+src\melder\aether\aetheric_frame\dev_ops\change_control_manager\change_control_manager.py:835: in _default_structural_validator
+    spellbook._run_post_conjure_structural_phases(pending)
+src\melder\aether\spellbook\spellbook.py:7105: in _run_post_conjure_structural_phases
+    SpellbookCreationSystem.run_post_conjure_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1432: in run_post_conjure_structural_phases
+    compiler_system.run_structural_phases(
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:813: in run_structural_phases
+    self.run_phase_local_frame(
+src\melder\aether\spellbook\spell_compiler\spell_compiler_system.py:203: in run_phase_local_frame
+    self._spell_compiler.run_phase_local_frame(
+src\melder\aether\spellbook\spell_compiler\spell_compiler.py:255: in run_phase_local_frame
+    self._phase_3.run(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:997: in run
+    dag_with_dependencies = self._build_local_frame_dag(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:854: in _build_local_frame_dag
+    resolved = self._resolve_single_by_annotation(
+src\melder\aether\spellbook\spell_compiler\phases\compiler_phase_3.py:493: in _resolve_single_by_annotation
+    raise RuntimeError(
+E   RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'work_callable' on spell 'Task' (annotation=<class 'melder.utilities.helpers.package.Package'>).
+_ test_area_build_conjures_named_definitions_without_domain_instances[root-generation-CommandCenterBootstrap-command_center-expected_names2] _
+..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py:209: in test_area_build_conjures_named_definitions_without_domain_instances
+    assert recipe.build() is None
+           ^^^^^^^^^^^^^^
+..\priv_commandops\src\command_ops\command_center\spectrum\bootstraps\commandops_bootstrap.py:146: in build
+    self._context.spellbook.conjure(dynamic=True, name=self._context.root_name)
+src\melder\aether\spellbook\spellbook.py:6623: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6966: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:222: in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:313: in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1380: in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'conduit' on spell 'CommandCenter' (annotation='Conduit').
+_ test_area_build_conjures_named_definitions_without_domain_instances[root-generation-AgentPoolsBootstrap-agent_pools-expected_names4] _
+..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py:209: in test_area_build_conjures_named_definitions_without_domain_instances
+    assert recipe.build() is None
+           ^^^^^^^^^^^^^^
+..\priv_commandops\src\command_ops\command_center\spectrum\bootstraps\commandops_bootstrap.py:146: in build
+    self._context.spellbook.conjure(dynamic=True, name=self._context.root_name)
+src\melder\aether\spellbook\spellbook.py:6623: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6966: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:222: in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:313: in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1380: in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'work_callable' on spell 'Task' (annotation=<class 'melder.utilities.helpers.package.Package'>).
+_ test_area_build_conjures_named_definitions_without_domain_instances[root-generation-AgentsBootstrap-agents-expected_names5] _
+..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py:209: in test_area_build_conjures_named_definitions_without_domain_instances
+    assert recipe.build() is None
+           ^^^^^^^^^^^^^^
+..\priv_commandops\src\command_ops\command_center\spectrum\bootstraps\commandops_bootstrap.py:146: in build
+    self._context.spellbook.conjure(dynamic=True, name=self._context.root_name)
+src\melder\aether\spellbook\spellbook.py:6623: in conjure
+    return self._conjure_within_transaction_window(
+src\melder\aether\spellbook\spellbook.py:6966: in _conjure_within_transaction_window
+    return spellbook_creation_system.conjure()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\aether\spellbook\spellbook_creation_system.py:222: in conjure
+    SpellbookCreationSystem._prepare_spellbook_for_conjure(
+src\melder\aether\spellbook\spellbook_creation_system.py:313: in _prepare_spellbook_for_conjure
+    SpellbookCreationSystem.run_structural_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1380: in run_structural_phases
+    results = SpellbookCreationSystem._run_scheduler_with_phases(
+src\melder\aether\spellbook\spellbook_creation_system.py:1887: in _run_scheduler_with_phases
+    return scheduler.run_all_phases()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:964: in run_all_phases
+    units = self._run_single_phase(name, factory)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\melder\utilities\synchronization\phase_scheduler.py:867: in _run_single_phase
+    raise PhaseExecutionError(phase_name, errors)
+E   melder.utilities.custom_exceptions.phase_execution_error.PhaseExecutionError: Phase 'local_frame' encountered 1 error(s). Resolution pipeline aborted. Errors: RuntimeError: SpellCrafter Phase 3: no DI candidate found for parameter 'entry' on spell 'StackContext' (annotation=<class 'melder.utilities.helpers.package.Package'>).
+=========================== short test summary info ===========================
+FAILED ..\priv_commandops\tests\component\spectrum\test_manual_package_overrides.py::test_task_override_accepts_required_package_without_a_provider[initial-generation]
+FAILED ..\priv_commandops\tests\component\spectrum\test_manual_package_overrides.py::test_task_override_accepts_required_package_without_a_provider[late-bind]
+FAILED ..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py::test_area_build_conjures_named_definitions_without_domain_instances[root-generation-CommandCenterBootstrap-command_center-expected_names2]
+FAILED ..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py::test_area_build_conjures_named_definitions_without_domain_instances[root-generation-AgentPoolsBootstrap-agent_pools-expected_names4]
+FAILED ..\priv_commandops\tests\component\spectrum\test_area_bootstraps.py::test_area_build_conjures_named_definitions_without_domain_instances[root-generation-AgentsBootstrap-agents-expected_names5]
+5 failed, 1 passed in 2.87s

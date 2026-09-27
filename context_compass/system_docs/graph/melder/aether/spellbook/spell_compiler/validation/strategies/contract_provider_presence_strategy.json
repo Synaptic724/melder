@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py",
- "source_sha256": "cf7cc759abe13b9b8938926f3c1c6d511bf474efc5d14feb194e82d1144ba76e",
+ "source_sha256": "de31ea1c63b3ededc4fee50aa80e0bf2243235030963bb23dfc4c7d3a94fa697",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy": {
@@ -19,7 +19,7 @@
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "7b721f937e2293344bd80043a32b43e951f01d93fd8650417bc59b357cb32aa1"
+   "semantics_authored_against": ""
   },
   "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy": {
    "id": "melder.aether.spellbook.spell_compiler.validation.strategies.contract_provider_presence_strategy.ContractProviderPresenceStrategy",
@@ -39,19 +39,20 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0d7363403a972d7b670a658eeb1dae628a0a5ff20618c7811c701197cad7af2a",
+   "span_sha256": "af0184293afedde95fb64dd66fd544818cdb5e428f27a2024ee72bbde900fa9f",
    "include": true,
    "role": "Explains at Phase 4 why a contracted spell cannot resolve, rather than letting it fail later without a reason.",
    "responsibilities": [
     "error on malformed contract descriptors and on more than one provider matching a contract key",
     "warn on missing SpellContract providers in dynamic mode but error on contract sockets in automatic system state",
     "read the Spellbook's contracted-spell maps and the frame system_state",
-    "caches provider IDs and capability together, rejects a selected False provider and skips False-root provider obligations"
+    "caches provider IDs and capability together, rejects a selected False provider and skips False-root provider obligations",
+    "each error says what to change; an ambiguity error states how many providers match the contract"
    ],
    "phases": [
     "compile"
    ],
-   "semantics_authored_against": "d9c4d3d37c130b13b058d3c946b34ea240c83d3f500f6a0e1105282a96405a2f"
+   "semantics_authored_against": "af0184293afedde95fb64dd66fd544818cdb5e428f27a2024ee72bbde900fa9f"
   }
  },
  "edges_out": [
