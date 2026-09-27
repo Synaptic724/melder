@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 25e05422fc495181282798beea55e220185212f8ed5331a8d237bbc37d73cb5c
+SOURCE FINGERPRINT: 62430d85f60b4e629e2b0d8c69d035e6de6b406bdec33157c4c4724ba8826ee1
 FILE COUNT: 375
 
 ================================================================================
@@ -65138,7 +65138,7 @@ END FILE: docs/handbook.toml
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/index.md
-CONTENT SHA256: 074c2201a08ca3c3461e70ef9b749ab132215a846e606d636635a28950785f41
+CONTENT SHA256: 5a4245eaa1a3eb4f7f6bde94d5b07831d691bf3f6e1939bd43e587a6e950146e
 SOURCE ENCODING: utf-8
 ================================================================================
 ---
@@ -65149,7 +65149,9 @@ myst:
       instance lifetimes, cleanup, isolated worlds, and agent-operated infrastructure.
 ---
 
-# A runtime you can build on
+(a-runtime-you-can-build-on)=
+
+# A dependency graph runtime for Python
 
 Melder wires ordinary Python objects into a live dependency graph: services,
 configuration, connections, and the objects your application works with.
@@ -69701,7 +69703,7 @@ END FILE: docs/tools/site_model.py
 ================================================================================
 ================================================================================
 BEGIN FILE: pyproject.toml
-CONTENT SHA256: de7c77db321d42a8956257e849606b08210436adb2f387e4aa24a55b5a262232
+CONTENT SHA256: f2faaecd49500f1a9b73ec8f70e368b8917fd16af5a9e687f3b5fb69fe3158c4
 SOURCE ENCODING: utf-8
 ================================================================================
 [build-system]
@@ -69795,13 +69797,13 @@ LinkedIn = "https://www.linkedin.com/in/mark-geleta-4b59b752/"
 test = [
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
-    "coverage>=7.15.0",
+    "coverage==7.16.1",
     # Parse workflow structure in CI contract tests; not a runtime dependency.
     "PyYAML>=6.0.3",
 ]
 
 lint = [
-    "ruff>=0.15.15",
+    "ruff==0.16.9",
 ]
 # Opt-in: parallel test execution (`pytest -n auto`).
 parallel = [
@@ -69833,6 +69835,7 @@ dev = [
     { include-group = "test" },
     { include-group = "lint" },
     { include-group = "build" },
+    "build==1.6.1",
 ]
 
 [tool.uv]
@@ -70430,10 +70433,10 @@ END FILE: release_docs/0.2.50.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: f0c12608e2bcf20695b88cf073b82975606c871e94a9a46eb5f84c76b3358441
+CONTENT SHA256: f9f4960cbdb865f03a17d87d0bb81d0c630d745ac9128bc61e03e47733e6a068
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.77
+# Melder 0.2.78
 
 **Unreleased**
 
@@ -70994,13 +70997,15 @@ stay valid.
 
 ## Packaging and documentation
 
+- The documentation homepage now says "A dependency graph runtime for Python". Its previous heading
+  link remains valid; the existing guide cards, navigation and page layout are preserved.
 - Documentation builds check titles, descriptions, canonical URLs and sitemap destinations, with
   intentional preview indexing handled separately. The late-binding example now has a distinct title
   from its guide while preserving its old heading link. Read the Docs continues to serve the existing
   generated `robots.txt` and sitemap.
 - Documentation page titles use the short Melder suffix. Selected guides and examples now carry
   page-specific search descriptions through their existing source files and manifests. The cleanup
-  guide links directly to the website's configuration chapter; the visible homepage and guides remain.
+  guide links directly to the website's configuration chapter; the existing guides remain.
 - The Sphinx API inventory now includes `UnresolvedInputError`, so documentation builds no longer
   refuse the newly exported public error. Windows checkout also succeeds after shortening the retired
   graph-descriptor archive paths; the archived contents and original-path mapping are preserved.
@@ -71031,7 +71036,7 @@ stay valid.
   what each group of tests protects, and the rule that a test fixture resetting Melder's singletons must boot
   a fresh `Aether` afterwards. The registration-guard test and the system-document view tests no longer
   depend on the order the suite runs them in.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.77.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.78.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

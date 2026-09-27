@@ -6,7 +6,9 @@ myst:
       instance lifetimes, cleanup, isolated worlds, and agent-operated infrastructure.
 ---
 
-# A runtime you can build on
+(a-runtime-you-can-build-on)=
+
+# A dependency graph runtime for Python
 
 Melder wires ordinary Python objects into a live dependency graph: services,
 configuration, connections, and the objects your application works with.

@@ -91,6 +91,7 @@ Disposition values
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/completed/2026-09-27_replace_homepage_slogan_task.md | artifacts/sphinx_homepage_heading_20260927/ | retain_as_reference | Heading, retained-anchor, build and final asset evidence. | 2026-09-27T01:29:33Z |
 | tickets/tasks/completed/2026-09-26_review_melder_seo_starter_task.md | artifacts/melder_seo_review_20260926/ | retain_as_reference | Starter review and direct site evidence retained; withdrawn homepage drafts remain historical only. | 2026-09-27T00:30:31Z |
 | tickets/epics/completed/2026-09-26_sphinx_publication_quality_epic.md | artifacts/sphinx_publication_quality_20260926/ | retain_as_reference | Verified build/SEO results, crawler evidence and byte-preserving path mapping retained. | 2026-09-27T00:30:31Z |
 | tickets/epics/completed/2026-09-26_sphinx_publication_quality_epic.md | system_docs/patches/completed/sphinx_seo_2026_09_26/ | promote_to_documentation | Promoted to docs/maintaining.md; all four patch contracts archived at owner turn-in. | 2026-09-27T00:30:31Z |

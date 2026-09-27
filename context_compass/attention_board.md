@@ -101,6 +101,7 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| sphinx_homepage_heading | done | seo_0 | tickets/tasks/completed/2026-09-27_replace_homepage_slogan_task.md | Descriptive Python runtime heading; prior fragment preserved; 301-page build/site/SEO checks pass. Next: none. | 2026-09-27T01:29:33Z |
 | melder_seo_starter_review | done | seo_0 | tickets/tasks/completed/2026-09-26_review_melder_seo_starter_task.md | Inspected the starter and live Sphinx site; corrected the plan and retained the existing homepage. Next: none. | 2026-09-27T00:30:31Z |
 | sphinx_build_blockers | done | seo_0 | tickets/tasks/completed/2026-09-26_repair_docs_build_blockers_task.md | Fixed UnresolvedInputError selection and shortened 20 archive paths with byte-preserving Windows checkout verification. Next: none. | 2026-09-27T00:30:31Z |
 | sphinx_metadata_links | done | seo_0 | tickets/tasks/completed/2026-09-26_apply_sphinx_metadata_and_links_task.md | Added nine descriptions, a short title suffix and the local configuration link while preserving existing content. Next: none. | 2026-09-27T00:30:31Z |
@@ -112,12 +113,12 @@ Message alert rules
 | gauntlet_spellspace_build_locks | done | melder_2 | tickets/tasks/completed/2026-09-26_spellspace_build_locks_task.md | Spellspace confinement does not cover foreign-thread melds; the nested take was the safe win (own task); a lock-free path needs a thread rule; owner turn-in. | 2026-09-26T23:01:16Z |
 | gauntlet_p4_spellspace_warm_lane | done | melder_2 | tickets/tasks/completed/2026-09-26_spellspace_meld_warm_id_lane_task.md | SpellSpace.meld warm id lane (0.2.68): about -17% per cached space meld; SpellSpace window at parity in the owner's runs; owner turn-in. | 2026-09-26T23:01:16Z |
 | gauntlet_p1_positional_args | done | melder_2 | tickets/tasks/completed/2026-09-26_emit_positional_constructor_args_task.md | Positional constructor args applied (16:16Z); superseded on the normal path by the site-plan lowering (P5 keeps the rule); owner turn-in. | 2026-09-26T23:01:16Z |
-| gauntlet_tail_spikes | done | melder_2 | tickets/tasks/completed/2026-09-26_attribute_gauntlet_tail_spikes_task.md | Tail spikes attributed: turn-0 first use, no GC in the loop; confirmed on Windows; owner turn-in. | 2026-09-26T23:01:16Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
 <!-- BEGIN USER-DEFINED: notes -->
 ### Active Attention Details
+
 - gauntlet_runtime_speed: SWITCH_TRIGGER is the owner's pick among the open levers, or the owner's
   answer on the SpellSpace scope RISK; P1, P4, the tail, build locks and nested slot guard are turned in. The lever-1 lifecycle is closed as measured (21:15Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md.
