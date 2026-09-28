@@ -26,6 +26,9 @@ class SpellSpaceMeld(Meld):
         - Leaves shared lookup, validation, and compiler logic on abstract
           `Meld`.
         - Routes `unique_per_spell_space` work into spellspace-local storage.
+        - Tracks disposal-bearing `many` in spellspace-local storage too (the
+          innermost scope); `purge` and the live-creation probe read `many`
+          only there.
         - Routes conduit-owned or broader-lived existences through owner
           conduit or spell-owned shared storage as appropriate.
 
@@ -40,8 +43,11 @@ class SpellSpaceMeld(Meld):
         epoch-guarded fast-door registry.
 
     Lifecycle / Cleanup:
-        Bound to one `SpellSpace`; it becomes unusable when that spellspace is
-        reset or cleaned. Its stores are torn down by the base.
+        Bound to one `SpellSpace` for that object's whole life: it stays with
+        the space across pool leases and is cleaned when the space is
+        permanently destroyed. A space released to its pool refuses `meld` and
+        `purge` before this door is reached. Its stores are torn down by the
+        base.
 
     Registration:
         MELDER KERNEL - guarded. Constructed by the owning `SpellSpace`; never
@@ -63,10 +69,10 @@ class SpellSpaceMeld(Meld):
         the conduit and has to outlive the request that happened to construct
         it. Routing every existence through one store would collapse that
         distinction and turn conduit-lived services into per-request garbage.
-        Scope is enforced upstream too: `SpellSpace` may only meld while it is
-        the ACTIVE spellspace for its conduit, and `reset()` clears
-        spellspace-scoped instances and bumps the version rather than reusing
-        stale ones.
+        Scope is enforced upstream too: every exit of a `SpellSpace` clears its
+        spellspace-scoped instances before the space goes back to its pool, and
+        a released space refuses `meld` and `purge`, so a stale handle cannot
+        build into an idle shell that the next request would be served.
 
     AGENT_ACCESS: internal
 
@@ -296,8 +302,11 @@ class SpellSpaceMeld(Meld):
               creations registry owned by this request object.
             - Refuses non-resolvable registrations before overrides, validation, hooks or execution.
               Only admitted immutable True versions can populate the success-only warm door.
-            - Routes `unique_per_conduit` and `many` through the injected
-              owner-conduit creations registry.
+            - Routes `unique_per_conduit` through the injected owner-conduit
+              creations registry. A `many` object with disposal methods is
+              tracked in this spellspace's scope store (the innermost active
+              scope) and disposed at the scope's exit; one without disposal
+              methods is not stored.
             - Routes broader-lived existences through spell-owned shared
               `owner_creations`.
             - Does not depend on the conduit's active spellspace stack once the
@@ -323,6 +332,14 @@ class SpellSpaceMeld(Meld):
               (2026-09-26); that door returns the same slot, so results are
               identical. Override payloads on an existing object still reach
               the override door and its refusal.
+            - Name and class melds mint the second registry (2026-09-27): a
+              successful meld of the shape `meld(None, spell_name="Name")`
+              or `meld(Cls)` (no spellframe, no binding_name; classes only,
+              never instances or callables) stores the same entry under
+              `_fast_input_doors["Name"]` or `_fast_input_doors[Cls]` on
+              the same two success arms. This door never reads that
+              registry; the public front doors do, with this lane's guards,
+              and fall back here on any miss.
 
         Raises:
             MeldExecutionError:
@@ -345,6 +362,7 @@ class SpellSpaceMeld(Meld):
         # 1) Resolve the spell object from the Spellbook / SpellIndex.
         target_spell: Optional[Spell] = None
         fast_door_key: Optional[str] = None
+        fast_input_key: Optional[Union[str, type]] = None
         if isinstance(spell, str):
             if spell_override is None:
                 # Fast meld door: success-only memoized warm lane for id-string
@@ -451,6 +469,15 @@ class SpellSpaceMeld(Meld):
             if target_spell is None:
                 target_spell = self._resolve_spell_by_id(spell)
         else:
+            # Name/class registry key (2026-09-27): the two user shapes the
+            # public front doors serve warm. Only str names and classes
+            # (an instance would be keyed per object and kept alive).
+            if spellframe is None and binding_name is None:
+                if spell is None:
+                    if type(spell_name) is str:
+                        fast_input_key = spell_name
+                elif spell_name is None and isinstance(spell, type):
+                    fast_input_key = spell
             input_resolution_cache = self._input_resolution_cache
             cache_key = (spell_name, spell, spellframe, binding_name)
             try:
@@ -559,6 +586,16 @@ class SpellSpaceMeld(Meld):
                         # the object, so a stale entry never keeps it alive.
                         target_spell.user_created_object is not None,
                     )
+                elif fast_input_key is not None:
+                    # Name/class shape (2026-09-27): the same entry, keyed by
+                    # the name or class the caller passed, for the public
+                    # front doors' warm lane. Same posture, same rebuild rule.
+                    self._fast_input_doors[fast_input_key] = (
+                        target_spell,
+                        creation_context,
+                        door_epoch_at_entry,
+                        target_spell.user_created_object is not None,
+                    )
             else:
                 instance = creation_context._overrides_executor(
                     self,
@@ -576,6 +613,14 @@ class SpellSpaceMeld(Meld):
                         # Existing-object flag (2026-09-26): warm hits of a
                         # flagged entry return the bound object. A bool, not
                         # the object, so a stale entry never keeps it alive.
+                        target_spell.user_created_object is not None,
+                    )
+                elif fast_input_key is not None and target_spell._mutation_override is None:
+                    # Name/class shape (2026-09-27): same rule, second registry.
+                    self._fast_input_doors[fast_input_key] = (
+                        target_spell,
+                        creation_context,
+                        door_epoch_at_entry,
                         target_spell.user_created_object is not None,
                     )
             # Hot path: inline the staged-cache flag check; the emit helper is
@@ -856,10 +901,18 @@ class SpellSpaceMeld(Meld):
             current runtime storage state without creating anything.
 
         Contract:
-            - `unique_per_spell_space` reads from spellspace-local storage.
-            - `unique_per_conduit` and `many` read from owner-conduit storage.
-            - broader shared existences read from spell-owned
-              `owner_creations`.
+            - `unique_per_spell_space` and `many` read from spellspace-local
+              storage. A disposal-bearing `many` melded through this door is
+              registered in the space's store (the innermost scope), the only
+              store `purge` retires it from; a `many` without disposal methods
+              is never tracked and reports 0. Before the 2026-09-28 fix `many`
+              was read from the owner conduit's store, so what the space held
+              was missed and a `many` melded through the conduit was counted.
+            - `unique_per_conduit` reads from owner-conduit storage.
+            - `unique` reads the Spell owner's `owner_creations`;
+              `unique_per_conduit_lineage` the owner conduit's lineage-root
+              store; `unique_per_conduit_cluster` the elected leader's store,
+              and is not live while no leader is elected.
             - Reports both `query_conduit_id` and `active_spellspace_id` so the
               caller can distinguish request-local versus broader scope state.
 
@@ -894,7 +947,10 @@ class SpellSpaceMeld(Meld):
         existence = spell.existence
         spell_id = spell.spell_id
         if existence is Existence.many:
-            creation_bucket = self._conduit_creations.get_creation(spell_id)
+            # Disposal-bearing `many` melded through this door lives in the
+            # space's store (every emitter picks the innermost scope), and
+            # `purge` retires it from there only, so the probe reads it there.
+            creation_bucket = self._spellspace_creations.get_creation(spell_id)
             creation_count = (
                 len(creation_bucket)
                 if isinstance(creation_bucket, list)
@@ -906,9 +962,9 @@ class SpellSpaceMeld(Meld):
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
                 "query_conduit_id": query_conduit_id,
-                "storage_scope_kind": "owner_conduit_many",
+                "storage_scope_kind": "spellspace_many",
                 "storage_owner_conduit_id": self._owner_conduit_id,
-                "active_spellspace_id": None,
+                "active_spellspace_id": self._spellspace_id,
                 "creation_count": creation_count,
             }
 

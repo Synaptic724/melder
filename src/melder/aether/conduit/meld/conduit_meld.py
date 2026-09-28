@@ -21,9 +21,11 @@ class ConduitMeld(Meld):
     Contract:
         - Uses one conduit-owned `ConduitCreations` store for caller-local
           `unique_per_conduit` and `many` storage.
-        - Uses spell-owned shared owner-creations for broad-lived existences
-          such as `unique`, `unique_per_conduit_cluster`, and
-          `unique_per_conduit_lineage`.
+        - Uses the shared store each broad-lived existence names: the Spell
+          owner's `owner_creations` for `unique`, the lineage-root store
+          (`_root_creations`) for `unique_per_conduit_lineage`, and the elected
+          leader's store (`_cluster_creations.resolved_store()`) for
+          `unique_per_conduit_cluster`.
         - Rejects `requires_spellspace_request` spells because the conduit door
           is not allowed to fabricate request-local spellspace scope.
         - Never owns spellspace-local `Creations`; that boundary belongs to
@@ -60,13 +62,16 @@ class ConduitMeld(Meld):
         is precisely what must not happen, because the caller would receive an
         instance whose lifetime silently disagrees with its declared
         `Existence`. Refusing keeps the scoping model honest: a spellspace-scoped
-        instance is reachable only through `SpellSpace`, which enforces that it
-        is the ACTIVE spellspace for the conduit before melding at all.
-        The store split it does own is the ordinary case: caller-local
+        instance is reachable only through a leased `SpellSpace`, which refuses
+        to meld once it is released to its pool. (Corrected 2026-09-28: this said
+        the space checks that it is the ACTIVE spellspace; there is no such
+        check.) The store split it does own is the ordinary case: caller-local
         existences (`unique_per_conduit`, `many`) use the conduit's own store,
-        while broader-lived ones (`unique`, `unique_per_conduit_cluster`,
-        `unique_per_conduit_lineage`) resolve against shared owner storage so
-        peers in a cluster or lineage genuinely observe the same instance.
+        while broader-lived ones resolve against shared storage - the Spell
+        owner's store for `unique`, the lineage root's for
+        `unique_per_conduit_lineage`, the elected leader's for
+        `unique_per_conduit_cluster` - so peers in a cluster or lineage
+        genuinely observe the same instance.
 
     AGENT_ACCESS: internal
 
@@ -316,8 +321,10 @@ class ConduitMeld(Meld):
               Only admitted immutable True versions can populate the success-only warm door.
             - Routes `unique_per_conduit` and `many` through the caller
               conduit's `ConduitCreations`.
-            - Routes broader-lived existences through spell-owned shared
-              `owner_creations`.
+            - Routes broader-lived existences through their shared stores:
+              the Spell owner's `owner_creations` for `unique`, the lineage
+              root for `unique_per_conduit_lineage`, the elected leader for
+              `unique_per_conduit_cluster`.
             - Reuses the shared validation, resolution, and hook machinery
               provided by `Meld`.
             - Warm id-string melds may take the guarded fast meld door: after
@@ -342,6 +349,14 @@ class ConduitMeld(Meld):
               (2026-09-26); that door returns the same slot, so results are
               identical. Override payloads on an existing object still reach
               the override door and its refusal.
+            - Name and class melds mint the second registry (2026-09-27): a
+              successful meld of the shape `meld(None, spell_name="Name")`
+              or `meld(Cls)` (no spellframe, no binding_name; classes only,
+              never instances or callables) stores the same entry under
+              `_fast_input_doors["Name"]` or `_fast_input_doors[Cls]` on
+              the same two success arms. This door never reads that
+              registry; the public front doors do, with this lane's guards,
+              and fall back here on any miss.
 
         Returns:
             Optional[Any]:
@@ -369,6 +384,7 @@ class ConduitMeld(Meld):
         # 1) Resolve the spell object from the Spellbook / SpellIndex.
         target_spell: Optional[Spell] = None
         fast_door_key: Optional[str] = None
+        fast_input_key: Optional[Union[str, type]] = None
         if isinstance(spell, str):
             if spell_override is None:
                 # Fast meld door: success-only memoized warm lane for id-string
@@ -478,6 +494,15 @@ class ConduitMeld(Meld):
             if target_spell is None:
                 target_spell = self._resolve_spell_by_id(spell)
         else:
+            # Name/class registry key (2026-09-27): the two user shapes the
+            # public front doors serve warm. Only str names and classes
+            # (an instance would be keyed per object and kept alive).
+            if spellframe is None and binding_name is None:
+                if spell is None:
+                    if type(spell_name) is str:
+                        fast_input_key = spell_name
+                elif spell_name is None and isinstance(spell, type):
+                    fast_input_key = spell
             input_resolution_cache = self._input_resolution_cache
             cache_key = (spell_name, spell, spellframe, binding_name)
             try:
@@ -597,6 +622,16 @@ class ConduitMeld(Meld):
                         # the object, so a stale entry never keeps it alive.
                         target_spell.user_created_object is not None,
                     )
+                elif fast_input_key is not None:
+                    # Name/class shape (2026-09-27): the same entry, keyed by
+                    # the name or class the caller passed, for the public
+                    # front doors' warm lane. Same posture, same rebuild rule.
+                    self._fast_input_doors[fast_input_key] = (
+                        target_spell,
+                        creation_context,
+                        door_epoch_at_entry,
+                        target_spell.user_created_object is not None,
+                    )
             else:
                 instance = creation_context._overrides_executor(
                     self,
@@ -614,6 +649,14 @@ class ConduitMeld(Meld):
                         # Existing-object flag (2026-09-26): warm hits of a
                         # flagged entry return the bound object. A bool, not
                         # the object, so a stale entry never keeps it alive.
+                        target_spell.user_created_object is not None,
+                    )
+                elif fast_input_key is not None and target_spell._mutation_override is None:
+                    # Name/class shape (2026-09-27): same rule, second registry.
+                    self._fast_input_doors[fast_input_key] = (
+                        target_spell,
+                        creation_context,
+                        door_epoch_at_entry,
                         target_spell.user_created_object is not None,
                     )
             # Hot path: inline the staged-cache flag check; the emit helper is
@@ -692,8 +735,10 @@ class ConduitMeld(Meld):
             - Supports only lifecycles that can resolve to one deterministic
               existing object.
             - Rejects spellspace-request lineages on the conduit-facing door.
-            - Reads caller-local conduit storage for `unique_per_conduit` and
-              shared owner-creations for broader-lived existences.
+            - Reads caller-local conduit storage for `unique_per_conduit`, the
+              Spell owner's `owner_creations` for `unique`, the lineage root for
+              `unique_per_conduit_lineage` and the elected leader for
+              `unique_per_conduit_cluster` (not live while none is elected).
 
         Args:
             spell_name:
@@ -846,9 +891,9 @@ class ConduitMeld(Meld):
             - Reuses the same spell-resolution helpers used by the meld path.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
-            - Reports the query conduit context explicitly so callers know the
-              result is scoped to the current conduit and, where relevant, its
-              active spellspace or shared owner-creation path.
+            - Reports the query conduit context explicitly so callers know
+              whether the answer came from this conduit's store or a shared
+              store; `active_spellspace_id` is always None on this door.
             - Rejects spellspace-request lineages on the conduit-facing door
               instead of pretending conduit-local storage can answer them.
 
@@ -933,9 +978,12 @@ class ConduitMeld(Meld):
 
         Contract:
             - `many` and `unique_per_conduit` read from caller-local conduit
-              storage.
-            - broad-lived existences read from spell-owned shared
-              `owner_creations`.
+              storage; a `many` without disposal methods is never tracked and
+              reports 0.
+            - `unique` reads the Spell owner's `owner_creations`;
+              `unique_per_conduit_lineage` the lineage-root store;
+              `unique_per_conduit_cluster` the elected leader's store, and is
+              not live while no leader is elected.
             - spellspace-request spells never reach this helper because the
               conduit-facing door rejects them earlier.
         """

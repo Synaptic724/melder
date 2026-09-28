@@ -191,8 +191,11 @@ class Cleanable(ABC):
         Contract:
             - Does not rely on the owner's own `__enter__` / `__exit__`.
             - Calls `owner.cleanup()` at most once.
-            - Drops the strong owner reference after exit.
-            - Never suppresses exceptions raised by the caller's block.
+            - Drops the strong owner reference before that call, so nothing is
+              leaked even when cleanup raises.
+            - Never suppresses exceptions raised by the caller's block, and lets an
+              exception raised by `owner.cleanup()` propagate: with a failing block
+              it rises with the block's exception as its context.
         """
         __slots__ = ("_owner", "_cleaned", "_lock")
 
@@ -256,9 +259,12 @@ class Cleanable(ABC):
             Exit the cleanup helper context and trigger owner cleanup once.
 
             Contract:
-                - Calls `owner.cleanup()` AT MOST ONCE across repeated exits,
-                  swallowing any exception it raises (best-effort teardown),
-                  then drops the strong owner reference so nothing leaks.
+                - Drops the strong owner reference first, then calls
+                  `owner.cleanup()` AT MOST ONCE across repeated exits.
+                - An exception raised by `owner.cleanup()` propagates (changed
+                  0.2.8203; it used to be swallowed). When the block raised too,
+                  it rises with the block's exception as its `__context__`,
+                  Python's rule for an error raised in `__exit__`.
                 - Never suppresses exceptions from the caller's `with` block.
                 - Releases the context lock in a `finally`.
 
@@ -273,21 +279,20 @@ class Cleanable(ABC):
             Returns:
                 Literal[False]:
                     Always False so caller exceptions are never suppressed.
+
+            Raises:
+                Exception: Whatever `owner.cleanup()` raised.
             """
-            # Guarantee cleanup only once.
+            # Guarantee cleanup only once; drop the reference first so nothing is
+            # leaked when cleanup raises.
             try:
                 owner = self._owner
+                self._owner = None
                 if owner is not None and not self._cleaned:
                     self._cleaned = True
-                    try:
-                        owner.cleanup()
-                    except Exception:
-                        pass
+                    owner.cleanup()
 
-                # Explicitly drop the reference so nothing is leaked.
-                self._owner = None
-
-                # Do NOT suppress user exceptions.
+                # Do NOT suppress user exceptions; a cleanup error propagates.
                 return False
             finally:
                 self._lock.release()
@@ -300,8 +305,10 @@ class Cleanable(ABC):
         Contract:
             - Does not rely on the owner's own `__aenter__` / `__aexit__`.
             - Awaits `owner.async_cleanup()` at most once.
-            - Drops the strong owner reference after exit.
-            - Never suppresses exceptions raised by the caller's block.
+            - Drops the strong owner reference before that await, so nothing is
+              leaked even when async cleanup raises.
+            - Never suppresses exceptions raised by the caller's block, and lets an
+              exception raised by `owner.async_cleanup()` propagate.
 
         Note:
             Defined at class scope, not inside `async_using_cleanup()`. A class
@@ -358,9 +365,11 @@ class Cleanable(ABC):
             Exit the async cleanup helper context and await owner cleanup once.
 
             Contract:
-                - Awaits `owner.async_cleanup()` AT MOST ONCE across repeated
-                  exits, swallowing any exception it raises (best-effort
-                  teardown), then drops the strong owner reference.
+                - Drops the strong owner reference first, then awaits
+                  `owner.async_cleanup()` AT MOST ONCE across repeated exits.
+                - An exception raised by `owner.async_cleanup()` propagates
+                  (changed 0.2.8203; it used to be swallowed), chained to the
+                  block's exception when the block raised too.
                 - Never suppresses exceptions from the caller's `async with`
                   block.
                 - Releases the context lock in a `finally`.
@@ -368,20 +377,18 @@ class Cleanable(ABC):
             Returns:
                 Literal[False]:
                     Always False so caller exceptions are never suppressed.
+
+            Raises:
+                Exception: Whatever `owner.async_cleanup()` raised.
             """
             try:
                 owner = self._owner
+                self._owner = None
                 if owner is not None and not self._cleaned:
                     self._cleaned = True
-                    try:
-                        await owner.async_cleanup()
-                    except Exception:
-                        pass
+                    await owner.async_cleanup()
 
-                # Explicitly drop the reference so nothing is leaked.
-                self._owner = None
-
-                # Do NOT suppress user exceptions.
+                # Do NOT suppress user exceptions; a cleanup error propagates.
                 return False
             finally:
                 self._lock.release()
@@ -395,6 +402,8 @@ class Cleanable(ABC):
         - Independent of any context-manager behavior implemented by the owner.
         - Intended for callers that want deterministic cleanup without relying
           on the object's own `__enter__` / `__exit__`.
+        - Cleanup runs at most once on exit and its errors propagate; the block's
+          own exception is never suppressed.
 
         Returns:
             Cleanable._CleanupContext:

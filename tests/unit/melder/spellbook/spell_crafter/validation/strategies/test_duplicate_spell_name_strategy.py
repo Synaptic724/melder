@@ -222,7 +222,7 @@ def test_init_sets_name_and_description() -> None:
     """
     strategy = DuplicateSpellNameStrategy()
     assert strategy.name == "duplicate_spell_name"
-    assert "spell_name" in strategy.description
+    assert "lookup" in strategy.description
 
 
 def test_validate_without_spellbook_is_noop() -> None:
@@ -341,9 +341,9 @@ def test_validate_single_match_is_noop() -> None:
 def test_validate_duplicates_emit_issue_with_collisions() -> None:
     """
     Purpose:
-        Verify duplicates produce a detailed error issue.
+        Verify equal normalized addresses produce a detailed error issue.
     Contract:
-        Issue includes collision metadata for each matching spell.
+        Issue includes original metadata and the shared address for every collider.
     Returns:
         None.
     Raises:
@@ -357,15 +357,15 @@ def test_validate_duplicates_emit_issue_with_collisions() -> None:
     spell_a = _SpellStub(
         spell_id="a",
         spell_name="Root",
-        spellframe="frame-a",
-        binding_name="bind-a",
+        spellframe="ROOT",
+        binding_name="__DEFAULT__",
     )
     spell_a.spell_index = index_a
     spell_b = _SpellStub(
         spell_id="b",
         spell_name="Root",
-        spellframe="frame-b",
-        binding_name="bind-b",
+        spellframe="root",
+        binding_name="__default__",
     )
     spell_b.spell_index = index_b
     spellbook = _SpellbookStub([spell, spell_a, spell_b])
@@ -378,16 +378,17 @@ def test_validate_duplicates_emit_issue_with_collisions() -> None:
     assert issue.severity == "error"
     assert issue.code == "DUPLICATE_SPELL_NAME"
     assert issue.details["spell_name"] == "Root"
+    assert issue.details["lookup_key"] == ("root", "__default__")
     assert issue.details["collision_count"] == 3
     collisions = issue.details["collisions"]
     assert len(collisions) == 3
     by_spell_id = {entry["spell_id"]: entry for entry in collisions}
     assert by_spell_id["a"]["spell_index_id"] == "idx-a"
-    assert by_spell_id["a"]["spellframe"] == "frame-a"
-    assert by_spell_id["a"]["binding_name"] == "bind-a"
+    assert by_spell_id["a"]["spellframe"] == "ROOT"
+    assert by_spell_id["a"]["binding_name"] == "__DEFAULT__"
     assert by_spell_id["b"]["spell_index_id"] == "idx-b"
-    assert by_spell_id["b"]["spellframe"] == "frame-b"
-    assert by_spell_id["b"]["binding_name"] == "bind-b"
+    assert by_spell_id["b"]["spellframe"] == "root"
+    assert by_spell_id["b"]["binding_name"] == "__default__"
 
 
 def test_validate_handles_index_current_errors() -> None:
@@ -455,3 +456,98 @@ def test_validate_cancellation_preempts() -> None:
 
     assert issues == []
     assert cancel_event.throw_calls == 1
+
+
+@pytest.mark.parametrize("use_pass_cache", [False, True])
+@pytest.mark.parametrize(
+    "first_frame,first_binding,second_frame,second_binding",
+    [
+        ("users", None, "orders", None),
+        ("repos", "first", "repos", "second"),
+        ("users", "first", "orders", "second"),
+        (None, None, None, "secondary"),
+    ],
+)
+def test_validate_same_name_at_distinct_addresses_is_valid(
+    use_pass_cache: bool,
+    first_frame: Optional[str],
+    first_binding: Optional[str],
+    second_frame: Optional[str],
+    second_binding: Optional[str],
+) -> None:
+    """Qualified same-name entries remain valid with fresh and pass-cached validation.
+
+    Validate both entries through one strategy so a cached first result cannot
+    accidentally collapse the second address into the first.
+    """
+    first = _SpellStub(
+        spell_id="first", spell_name="Repo", spellframe=first_frame, binding_name=first_binding,
+    )
+    second = _SpellStub(
+        spell_id="second", spell_name="Repo", spellframe=second_frame, binding_name=second_binding,
+    )
+    book = _SpellbookStub([first, second])
+    strategy = DuplicateSpellNameStrategy()
+    pass_cache = {} if use_pass_cache else None
+    try:
+        for target in (first, second):
+            context = _make_context(spell=target, spellbook=book)
+            context.validation_pass_cache = pass_cache
+            try:
+                strategy.validate(context)
+                assert context.issues == []
+            finally:
+                context.cleanup()
+    finally:
+        strategy.cleanup()
+
+
+@pytest.mark.parametrize("use_pass_cache", [False, True])
+@pytest.mark.parametrize(
+    "first_frame,first_binding,second_frame,second_binding,expected_key",
+    [
+        (None, None, "REPO", "__DEFAULT__", ("repo", "__default__")),
+        ("API", "READ", "api", "read", ("api", "read")),
+    ],
+)
+def test_validate_different_names_at_same_normalized_address_error(
+    use_pass_cache: bool,
+    first_frame: Optional[str],
+    first_binding: Optional[str],
+    second_frame: str,
+    second_binding: str,
+    expected_key: tuple[str, str],
+) -> None:
+    """Display names never hide a shared normalized address in a visible pool.
+
+    Such a pool violates ordinary bind admission; isolated strategy inputs prove
+    the diagnostic still protects the real invariant, including default aliases.
+    """
+    first = _SpellStub(
+        spell_id="first", spell_name="Repo", spellframe=first_frame, binding_name=first_binding,
+    )
+    second = _SpellStub(
+        spell_id="second", spell_name="Other", spellframe=second_frame, binding_name=second_binding,
+    )
+    book = _SpellbookStub([first, second])
+    strategy = DuplicateSpellNameStrategy()
+    pass_cache = {} if use_pass_cache else None
+    try:
+        for target in (first, second):
+            context = _make_context(spell=target, spellbook=book)
+            context.validation_pass_cache = pass_cache
+            try:
+                strategy.validate(context)
+                assert len(context.issues) == 1
+                issue = context.issues[0]
+                assert issue.code == "DUPLICATE_SPELL_NAME"
+                assert issue.severity == "error"
+                assert issue.details["lookup_key"] == expected_key
+                assert issue.details["collision_count"] == 2
+                assert {entry["spell_id"] for entry in issue.details["collisions"]} == {"first", "second"}
+                assert expected_key[0] in issue.message
+                assert expected_key[1] in issue.message
+            finally:
+                context.cleanup()
+    finally:
+        strategy.cleanup()

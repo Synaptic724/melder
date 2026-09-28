@@ -106,17 +106,17 @@ def test_conduit_public_api_name_setter_blocks_rename() -> None:
         conduit.cleanup()
 
 
-def test_conduit_public_api_context_manager_allows_meld() -> None:
+def test_conduit_public_api_context_manager_disposes_the_root_at_exit() -> None:
     """
     Purpose:
-        Validate the Conduit context manager does not block meld.
+        Validate `with conduit:` as a dispose scope on a root conduit (0.2.8203).
     Contract:
-        - Meld works inside the context manager.
-        - Meld works after the context exits.
+        - Meld works inside the block.
+        - The block exit tears the root down; it is cleaned afterwards.
     Returns:
         None.
     Raises:
-        AssertionError: If meld fails inside or outside the context.
+        AssertionError: If meld fails inside the block or the root survives it.
     """
     spellbook = Spellbook()
     config = spellbook.get_configuration()
@@ -133,7 +133,7 @@ def test_conduit_public_api_context_manager_allows_meld() -> None:
         with conduit as ctx:
             instance = ctx.meld(spell_id=spell_id)
             assert isinstance(instance, BasicService)
-        assert isinstance(conduit.meld(spell_id=spell_id), BasicService)
+        assert conduit.cleaned is True
     finally:
         conduit.cleanup()
 

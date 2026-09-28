@@ -256,11 +256,17 @@ class ConduitWard(Cleanable):
 
         Behaviour:
           - Best-effort sever all peer contracts (uses `_remove_contract`, which updates Spellbook maps).
-          - Cleanup all lesser conduits and clear lineage references.
+          - Permanently clean all lesser conduits and clear lineage references. Every child is
+            torn down even when one raises; a child's disposal failures (the ExceptionGroup its
+            teardown raises after finishing) are collected, other child errors are logged.
           - Null internal state and mark cleaned. Logger metadata is nulled last.
+          - Raises the collected disposal failures last, after this ward is fully cleaned.
 
         Returns:
             None
+
+        Raises:
+            ExceptionGroup: One or more lesser conduits were torn down with disposal failures.
         """
         if self._cleaned:
             return
@@ -271,8 +277,9 @@ class ConduitWard(Cleanable):
             # Best-effort sever peer contracts (updates Spellbook links)
             self._clean_up_links()
 
-            # Clean up lesser conduits
-            self._clean_up_lesser_conduits_links()
+            # Clean up lesser conduits; their disposal failures are raised once
+            # this ward has finished its own teardown.
+            child_failures = self._clean_up_lesser_conduits_links()
 
             # Clear lineage/contract state
             self._lesser_conduits.clear()
@@ -297,29 +304,42 @@ class ConduitWard(Cleanable):
             del self._conduit_cloud
             del self._dynamic
             
-            # Null logger metadata last (outside lock)
+            # Null logger metadata last (still inside the ward lock)
             if  hasattr(self._logger, "cleanup"):
                 self._logger.cleanup()
             del self._logger
+            if child_failures:
+                raise ExceptionGroup(
+                    "Lesser conduits torn down with disposal failures.", child_failures
+                )
 
 
-    def _clean_up_lesser_conduits_links(self) -> None:
+    def _clean_up_lesser_conduits_links(self) -> List[Exception]:
         """
         Internal
 
         Recursively clean up and detach all lesser conduits (children).
 
-        Best-effort: errors from child cleanup are logged and do not stop siblings.
+        Contract:
+            - Attempts every child: an error from one child's cleanup does not stop its
+              siblings.
+            - A child's disposal failures - the ExceptionGroup its permanent teardown
+              raises after finishing - are collected and returned so the owner raises
+              them last.
+            - Any other child error is logged, as before, and not returned.
 
         Returns:
-            None
+            List[Exception]: Collected disposal failure groups; empty when none failed.
         """
+        failures: List[Exception] = []
         if not self._lesser_conduits:
-            return
+            return failures
 
         for lesser_conduit in list(self._lesser_conduits.values()):
             try:
                 lesser_conduit.permanent_cleanup()
+            except ExceptionGroup as disposal_failures:
+                failures.append(disposal_failures)
             except Exception as e:
                 self._logger.error(
                     f"cleanup lesser link failed: {e}",
@@ -328,6 +348,7 @@ class ConduitWard(Cleanable):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
         self._lesser_conduits.clear()
+        return failures
 
     def _clean_up_links(self) -> None:
         """
@@ -392,6 +413,10 @@ class ConduitWard(Cleanable):
             - Keeps the root conduit reference intact for later reuse.
             - Failed descendants remain owned; raises before detaching this ward
               so an ancestor cannot enter the pool while a child is still live.
+            - A descendant that finished its pool return but raised its disposal
+              failures does not block the detach; those failures are logged here.
+              A conduit's own pool return cleans its children first and raises
+              them instead, so this path normally finds no children.
 
         Raises:
             ExceptionGroup: One or more descendant cleanup operations failed.
@@ -423,43 +448,77 @@ class ConduitWard(Cleanable):
             self._parent_conduit = None
             self._lesser_conduits.clear()
 
-    def _cleanup_children_for_pool(self) -> None:
-        """Soft-clean current descendants while retaining every failed child for retry.
+    def _cleanup_children_for_pool(self, collect_finished: bool = False) -> Optional[List[Exception]]:
+        """Soft-clean current descendants; keep every child that could not finish for retry.
 
         Contract:
-            Used by ordinary recursive detach and named record retirement. Snapshot
-            membership under the ward lock because successful child cleanup removes
-            its own entry; call children outside that lock. Attempt every sibling,
-            then raise grouped failures before the caller can detach/reuse its scope.
-            The ordinary no-children detach path does not enter this helper.
+            Used by a lesser's pool return (first, before its SpellSpaces and its own
+            store), by ordinary recursive detach and by named record retirement.
+            Snapshot membership under the ward lock because a child that finishes its
+            pool return removes its own entry; call children outside that lock and
+            attempt every sibling.
+            A child whose cleanup raised but which is no longer attached finished its
+            pool return (a lesser raises its disposal failures after it re-pools): its
+            error is returned when `collect_finished` is True and logged otherwise.
+            A child still attached could not finish: it keeps its parent link, and once
+            every sibling was tried one ExceptionGroup of the unfinished and finished
+            failures is raised before the caller can detach or reuse its scope.
+            The ordinary no-children path returns at once without allocating.
+        Args:
+            collect_finished: Return finished children's failures to the caller instead
+                of logging them.
         Returns:
-            None when descendant cleanup completes.
+            Optional[List[Exception]]: Finished children's failures when
+            `collect_finished` is True and a finished child raised; otherwise None.
         Raises:
-            ExceptionGroup: One or more children failed; their parent links remain.
+            ExceptionGroup: One or more children could not finish; their parent links remain.
         """
         with self._lock:
             if not self._lesser_conduits:
-                return
+                return None
             children = list(self._lesser_conduits.values())
-        failures: list[Exception] = []
+        retained: List[Exception] = []
+        finished: List[Exception] = []
         for lesser_conduit in children:
             try:
                 lesser_conduit.cleanup()
             except Exception as error:
-                failures.append(error)
+                # A child that finished its pool return removed its own entry (under
+                # its own lock) before raising its disposal failures.
+                with self._lock:
+                    still_attached = lesser_conduit._id in self._lesser_conduits
+                if not still_attached:
+                    finished.append(error)
+                    continue
+                retained.append(error)
                 self._logger.error(
                     f"pool descendant cleanup failed: {error}",
                     method_name="_cleanup_children_for_pool", exc_info=True,
                     owner_id=self._id, owner_display=self._display_name,
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
-        if failures:
-            raise ExceptionGroup("Cannot pool a conduit while descendant cleanup is incomplete.", failures)
+        if retained:
+            raise ExceptionGroup(
+                "Cannot pool a conduit while descendant cleanup is incomplete.",
+                [*retained, *finished],
+            )
         with self._lock:
             # Normally each child removed itself. Retire any completed snapshot
             # entries still present, without discarding newly attached identities.
             for lesser_conduit in children:
                 self._lesser_conduits.pop(lesser_conduit._id, None)
+        if not finished:
+            return None
+        if collect_finished:
+            return finished
+        for error in finished:
+            self._logger.error(
+                f"pool descendant returned with disposal failures: {error}",
+                method_name="_cleanup_children_for_pool", exc_info=error,
+                owner_id=self._id, owner_display=self._display_name,
+                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
+        return None
     #endregion Cleanup
 
     #region Context Manager

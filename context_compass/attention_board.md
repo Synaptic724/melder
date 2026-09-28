@@ -74,6 +74,13 @@ Message alert rules
 
 ## Message Alerts
 <!-- BEGIN USER-DEFINED: alerts -->
+- NEW MESSAGE for fable_0 (from workflows_0, 2026-09-28T09:43:41Z)
+- NEW MESSAGE for melder_1 (from workflows_0, 2026-09-28T09:43:41Z)
+- NEW MESSAGE for melder_2 (from workflows_0, 2026-09-28T09:43:41Z)
+- NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T09:43:41Z)
+- NEW MESSAGE for melder_1 (from workflows_0, 2026-09-28T08:24:12Z)
+- NEW MESSAGE for melder_2 (from workflows_0, 2026-09-28T08:24:12Z)
+- NEW MESSAGE for muse_0 (from workflows_0, 2026-09-28T08:24:12Z)
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T19:15:40Z)
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T20:47:28Z)
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-26T21:36:14Z)
@@ -84,6 +91,29 @@ Message alert rules
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T11:40:40Z)
 - NEW MESSAGE for melder_1 (from melder_0, 2026-09-27T13:25:25Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T13:25:25Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T20:29:26Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T21:49:53Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T21:49:53Z)
+- NEW MESSAGE for melder_1 (from fable_0, 2026-09-27T22:06:50Z)
+- NEW MESSAGE for melder_2 (from fable_0, 2026-09-27T22:06:50Z)
+- NEW MESSAGE for muse_0 (from fable_0, 2026-09-27T22:06:50Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-27T23:08:51Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-27T23:08:51Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:15:29Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:15:29Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:24:01Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:24:01Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:24:01Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T00:37:34Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T00:37:34Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:00:46Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T01:00:46Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:10:20Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T01:10:20Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T01:11:37Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T01:11:37Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-28T08:40:12Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-28T08:40:12Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
@@ -91,8 +121,6 @@ Message alert rules
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
-| creations_disposal_failures | review | handoff | claude | melder_0 | none | Owner reviews and accepts; the SpellSpace follow-up moved to scope_exit_cleanup. | Every declared disposal method runs and every failure is reported together; tests, docs, notch. | New tests red on 0.2.79 and green after; suites green; owner accepts. | tickets/tasks/2026-09-27_aggregate_creations_disposal_method_failures_task.md | 2026-09-27T13:54:57Z | REQUIRED |
-| scope_exit_cleanup | review | handoff | claude | melder_0 | none | Owner discusses `with` as dispose and enter_lesser_conduit (STRATEGY_DISCUSSION note), then approves a build. | Evidence-backed map of where scope exit and pool return dispose objects and where they break the contract, with a proposed fix. | Owner reviews the findings and approves or redirects a fix lane. | tickets/tasks/2026-09-27_investigate_scope_exit_and_pool_return_cleanup_task.md | 2026-09-27T14:20:34Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
@@ -101,18 +129,18 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
-| release_0_2_82 | done | fable_0 | tickets/tasks/completed/2026-09-27_organize_release_0_2_82_and_rebuild_assets_task.md | 0.2.82 release note written fresh in next_version_release.md; 0.2.77.md restored to its cut; IR epic closed; assets and bundles rebuilt as the owner-ordered final step. | 2026-09-27T18:44:17Z |
-| comptime_ir_phase_pipeline | done | fable_0 | tickets/epics/completed/2026-08-03_comptime_ir_phase_pipeline_epic.md | Closed by owner directive: survey (M1), plan, T1 and I-1 (structural snapshot) delivered; the six IR-port stories retired unopened. | 2026-09-27T18:40:36Z |
-| readme_roadmap | done | seo_0 | tickets/tasks/completed/2026-09-27_embed_readme_roadmap_task.md | Roadmap after the introduction, quick/full-size/detail links; browser and docs model verified. Next: none. | 2026-09-27T14:28:08Z |
-| aether_conduit_lookup_api | done | melder_0 | tickets/epics/completed/2026-09-27_aether_conduit_lookup_api_epic.md | Epic, 11 stories and the implementation task turned in at 0.2.79: *_root_* renames, NAMED/LIVE Aether lookups, ConduitCloud.list_conduits; assets and LLM bundles rebuilt; whole tree green on 3.14t. Next: none. | 2026-09-27T13:03:47Z |
-| conduit_name_lookup_lessers | done | melder_0 | tickets/tasks/completed/2026-09-27_trace_get_conduit_by_name_named_lesser_lookup_task.md | Cause and repro of the root-only name lookup (MF7); the fix shipped under the epic. Next: none. | 2026-09-27T13:03:47Z |
-| creations_disposal_all_methods | done | melder_0 | tickets/tasks/completed/2026-08-07_creations_disposal_all_methods_task.md | Regression file green on 3.14t (GIL 0/1) and the GIL build, agent-run; per-method error aggregation left open. Next: none. | 2026-09-27T13:03:47Z |
-| structural_snapshot_story | done | fable_0 | tickets/stories/completed/2026-09-26_structural_snapshot_story.md | I-1 shipped (generation 15; a warm conjure over an unchanged book skips phases 1-4); tasks 1-6 accepted on owner-run suites; measurement pass waived at turn-in. | 2026-09-27T12:38:12Z |
-| gauntlet_dishka_scope_parity | done | fable_0 | tickets/tasks/completed/2026-09-27_dishka_scope_placement_and_parity_phase_task.md | Switchable dishka mapping, 54-assertion parity phase, environment line and the audit fixes landed; sweep waived; the default app mapping stands. | 2026-09-27T12:38:12Z |
-| gauntlet_fairness_review | done | fable_0 | tickets/tasks/completed/2026-09-27_persistent_gauntlet_fairness_review_task.md | Harness symmetric; per-cycle work identical by constructor counts; disclosure fixes landed via the dishka/parity task. | 2026-09-27T12:38:12Z |
-| ux_aix_harness_red_remediation | done | examples_0 | tickets/epics/completed/2026-08-01_ux_aix_harness_red_remediation_epic.md | Epic and its four parked child tasks closed by owner directive (2026-09-27); four findings implemented per the corrected handoff; harness pass not recorded. | 2026-09-27T10:47:06Z |
-| ux_aix_expert_experience | done | examples_0 | tickets/epics/completed/2026-07-19_ux_aix_expert_experience_epic.md | Closed by owner directive (2026-09-27); lessons 01-32 and 42 probe rows authored; no agent-run green. | 2026-09-27T10:47:06Z |
-| ux_aix_advanced_experience | done | examples_0 | tickets/epics/completed/2026-07-19_ux_aix_advanced_experience_epic.md | Closed by owner directive (2026-09-27); arcs A-E authored (18 lessons, 64 probe rows); last signal 61/64. | 2026-09-27T10:47:06Z |
+| document_publication_race | done | workflows_0 | tickets/tasks/completed/2026-09-28_fix_system_document_lazy_publication_race_task.md | Ready marker after key map; 8 red regressions fixed, 128 tests and 200 contention runs pass; notched 0.2.8207; asset/LLM checks OK. Next: none. | 2026-09-28T09:50:15Z |
+| owner_assets_rebuild | done | workflows_0 | tickets/tasks/completed/2026-09-28_rebuild_assets_after_owner_changes_task.md | Package assets rebuilt; all asset and LLM bundle checks OK. Next: none. | 2026-09-28T09:01:49Z |
+| melder_wheel | done | workflows_0 | tickets/tasks/completed/2026-09-28_build_melder_wheel_task.md | Built wheel and installed Melder 0.2.8206 in priv_commandops/.venv314; archive and isolated import verified. Next: none. | 2026-09-28T08:54:31Z |
+| probe_portability_followups | done | melder_0 | tickets/tasks/completed/2026-09-28_finish_probe_and_doc_portability_followups_task.md | ConduitMeld docstrings name each lifetime's store; src_architecture/src_components name no tooling path (both checks 0); ConduitMeld node accepted; notched 0.2.8205; waived rebuild covered by 0.2.8206 (asset/LLM checks OK). Next: none. | 2026-09-28T08:39:36Z |
+| qualified_spell_name_collisions | done | workflows_0 | tickets/tasks/completed/2026-09-28_investigate_qualified_spell_name_collisions_task.md | Canonical-address validation; 35 red checks to 147 passing, 2 pre-existing XPASS; docs/release promoted, notched 0.2.8206; asset and LLM checks OK. Next: none. | 2026-09-28T08:31:05Z |
+| spellspace_probe_many | done | melder_0 | tickets/tasks/completed/2026-09-28_count_space_held_many_in_spellspace_live_creation_probe_task.md | SpellSpace door's live-creation probe reads `many` from the space's own store ("spellspace_many", space id); 3 tests red then green; off the meld path; notched 0.2.8204, docs/graph/assets/bundles current. Next: none. | 2026-09-28T01:00:27Z |
+| scope_exit_dispose | done | melder_0 | tickets/tasks/completed/2026-09-27_make_with_dispose_scopes_and_finish_pool_returns_task.md | `with conduit:` disposes (Breaking), enter_lesser_conduit, finish-then-raise exits, children-first pool return, idempotent soft cleanup, SpellSpace lease flag; no hot-path cost; notched 0.2.8203, docs/graph/assets/bundles current. Next: none. | 2026-09-28T00:20:59Z |
+| scope_exit_cleanup | done | melder_0 | tickets/tasks/completed/2026-09-27_investigate_scope_exit_and_pool_return_cleanup_task.md | Scope-exit and pool-return path map with probes (P1-P10); every gap fixed in scope_exit_dispose (0.2.8203). Next: none. | 2026-09-28T00:20:59Z |
+| pgo_strategy_exploration | done | fable_0 | tickets/stories/completed/2026-09-27_pgo_strategy_exploration_story.md | PGO proper ~6 ns per creation on Melder shapes; the door fold landed (0.2.8201); executor-hold dropped; opt-in specializer -14% wide8 / +20% chain8 measured. Next: the probe-selected styles story under the epic. | 2026-09-27T22:34:08Z |
+| hold_executor_in_entry | done | fable_0 | tickets/tasks/completed/2026-09-27_hold_executor_in_warm_entry_task.md | Dropped on evidence: executor slots are self-replacing (specializer swaps after the mint); ~10-20 ns not worth a kernel contract. No source, no notch. | 2026-09-27T22:26:33Z |
+| meld_entry_cache | done | fable_0 | tickets/tasks/completed/2026-09-27_meld_entry_cache_by_name_and_class_task.md | Name/class-keyed warm meld entries (Meld._fast_input_doors) landed with 20 tests, docs promoted, notched 0.2.8201 (tree then read 0.2.8202, writer unknown), assets rebuilt; VM -23..-47% per warm meld by name. | 2026-09-27T22:20:17Z |
+| creations_disposal_failures | done | melder_0 | tickets/tasks/completed/2026-09-27_aggregate_creations_disposal_method_failures_task.md | Every declared disposal method runs and each failure is reported, chained from its cause; notched 0.2.80, shipped in 0.2.82. Next: none. | 2026-09-27T21:32:08Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -123,10 +151,6 @@ Message alert rules
 - gauntlet_runtime_speed: SWITCH_TRIGGER is the owner's pick among the open levers, or the owner's
   answer on the SpellSpace scope RISK; P1, P4, the tail, build locks and nested slot guard are turned in. The lever-1 lifecycle is closed as measured (21:15Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md.
-- creations_disposal_failures: SWITCH_TRIGGER is the new tests green on the fix plus owner acceptance.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-27_aggregate_creations_disposal_method_failures_task.md.
-- scope_exit_cleanup: SWITCH_TRIGGER is the owner's decision on the findings and proposed fix.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-27_investigate_scope_exit_and_pool_return_cleanup_task.md.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.
@@ -151,8 +175,10 @@ Message alert rules
 ### Device VM Python (melder_0, 2026-09-27)
 - Bare `python3` in the device VM is the system CPython 3.10 and cannot be repointed (read-only PATH dirs, no
   sudo). Load a 3.14 venv in every device command (for melder_0: `. ~/.melder_env`); the repository floor is 3.14.
-### Versioning (owner, 2026-09-26)
-- Owner: "each change we make is a notch of 0.01 so its fine". Each change gets its own patch notch of
-  `src/melder/__version__.py` (0.2.58 -> 0.2.59); lanes notching one after another is expected, not a conflict.
-  The release-note header follows `__version__`.
+### Versioning and releases (owner, 2026-09-27)
+- Superseded the 2026-09-26 "0.01 per change" note: the rule is now 0.0001 per honest change to `src/`
+  (not per ticket), written as four decimal digits in the third segment (`0.2.82` -> `0.2.8201`), releases at
+  `xx00`. The full
+  rule set, the running release note and the rebuild-last order live in
+  `special_instructions/agent_contribution_guide.md`, which onboarding sweeps in.
 <!-- END USER-DEFINED: notes -->

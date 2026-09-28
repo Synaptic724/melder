@@ -1,4 +1,5 @@
 ﻿import logging
+from typing import List
 from unittest.mock import MagicMock
 
 import pytest
@@ -457,27 +458,44 @@ def test_enter_spellspace_raises_on_stack_corruption(
             conduit_lesser._spellspace_stack.set([])
 
 
-def test_context_manager_acquires_and_releases_lock(conduit_lesser: Conduit) -> None:
+def test_context_manager_returns_self_and_cleans_up_at_exit(
+    conduit_lesser: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
-    Verify Conduit context manager acquires and releases the lock.
+    Verify `with conduit:` is a dispose scope (0.2.8203; it used to hold the lock).
 
     Contract:
-        - __enter__ acquires the lock.
-        - __exit__ releases the lock.
-        - The context returns the same Conduit instance.
+        - __enter__ returns the same Conduit instance and takes no lock.
+        - __exit__ calls cleanup() once per block, also when the block raises,
+          and never suppresses the block's exception.
 
     Args:
         conduit_lesser (Conduit): Lesser conduit instance.
+        monkeypatch (pytest.MonkeyPatch): Replaces cleanup with a recorder.
 
     Raises:
-        AssertionError: If acquire/release behavior is incorrect.
+        AssertionError: If enter/exit behavior is incorrect.
     """
     lock = _LockProbe()
     conduit_lesser._lock = lock
+    cleaned: List[Conduit] = []
+
+    def record_cleanup(self: Conduit) -> None:
+        """Record the cleanup call instead of tearing the fixture down."""
+        cleaned.append(self)
+
+    monkeypatch.setattr(Conduit, "cleanup", record_cleanup)
     with conduit_lesser as ctx:
         assert ctx is conduit_lesser
-    assert lock.acquire_calls == 1
-    assert lock.release_calls == 1
+        assert cleaned == []
+    assert cleaned == [conduit_lesser]
+    with pytest.raises(ValueError, match="block failed"):
+        with conduit_lesser:
+            raise ValueError("block failed")
+    assert cleaned == [conduit_lesser, conduit_lesser]
+    assert lock.acquire_calls == 0
+    assert lock.release_calls == 0
 
 
 def test_provider_used_when_logger_missing(
@@ -585,7 +603,8 @@ def test_cleanup_is_idempotent_for_lesser_conduit(conduit_lesser: Conduit) -> No
     Verify soft cleanup is idempotent for a lesser conduit.
 
     Contract:
-        - Multiple cleanup calls do not raise.
+        - Multiple cleanup calls do not raise; the second finds the lesser
+          pooled and does nothing.
         - cleaned flag remains unset because the lesser is prepared for pooling.
 
     Args:
@@ -597,6 +616,8 @@ def test_cleanup_is_idempotent_for_lesser_conduit(conduit_lesser: Conduit) -> No
     conduit_lesser._nexus = MagicMock()
     conduit_lesser._nexus_publish_enabled = True
     conduit_lesser._conduit_ward = MagicMock()
+    # Production contract: a lesser without children has an empty child map.
+    conduit_lesser._conduit_ward._lesser_conduits = {}
     conduit_lesser._meld = MagicMock()
     conduit_lesser._creations = MagicMock()
     conduit_lesser.cleanup()

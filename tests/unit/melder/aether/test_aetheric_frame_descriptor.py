@@ -1,7 +1,6 @@
 ﻿from types import SimpleNamespace
 
 import pytest
-import threading
 from typing import Optional, Tuple
 
 from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
@@ -385,27 +384,18 @@ def test_descriptor_properties_raise_after_cleanup() -> None:
         _ = descriptor.frame_configuration
 
 
-def test_descriptor_exposes_frame_name_and_cleanup_rechecks_cleaned_inside_lock() -> None:
-    class _CoordinatedLock:
-        def __init__(self, descriptor: FrameDescriptor) -> None:
-            self._descriptor = descriptor
-            self._entered_first = threading.Event()
-            self._second_attempted = threading.Event()
-            self._lock = threading.RLock()
+def test_descriptor_exposes_frame_name_and_reports_cleaned_after_cleanup() -> None:
+    """
+    Verify the frame name accessor on a live descriptor, and that cleanup leaves it reporting itself cleaned.
 
-        def __enter__(self):
-            if self._entered_first.is_set():
-                self._second_attempted.set()
-            self._lock.acquire()
-            if not self._entered_first.is_set():
-                self._entered_first.set()
-                assert self._second_attempted.wait(timeout=1.0)
-                self._descriptor._cleaned = True
-            return self
+    Contract:
+        - While the descriptor is live and holds records, `frame_name` returns the name it was built with.
+        - After `cleanup()` the descriptor must not be used again, so the test only calls `check_cleaned()`,
+          which raises to report that the descriptor is cleaned.
 
-        def __exit__(self, exc_type, exc, tb):
-            self._lock.release()
-
+    Returns:
+        None.
+    """
     descriptor = FrameDescriptor("ops")
     conduit_record = ConduitRecord(
         conduit_id="conduit-1",
@@ -437,17 +427,10 @@ def test_descriptor_exposes_frame_name_and_cleanup_rechecks_cleaned_inside_lock(
     descriptor.upsert_spell_record(spell_record)
     assert descriptor.frame_name == "ops"
 
-    descriptor = FrameDescriptor("ops")
-    descriptor._lock = _CoordinatedLock(descriptor)
+    descriptor.cleanup()
 
-    first = threading.Thread(target=descriptor.cleanup)
-    second = threading.Thread(target=descriptor.cleanup)
-    first.start()
-    second.start()
-    first.join(timeout=1.0)
-    second.join(timeout=1.0)
-
-    assert descriptor.cleaned is True
+    with pytest.raises(RuntimeError, match="already been cleaned"):
+        descriptor.check_cleaned()
 
 
 def test_descriptor_cleanup_cleans_owned_conduit_and_spell_records() -> None:

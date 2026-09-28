@@ -429,8 +429,8 @@ class FailingDisposal:
         raise RuntimeError("disposal failed")
 
 
-def test_disposal_failure_leaves_name_until_pool_reset_completes(root: Conduit) -> None:
-    """Failed store disposal does not falsely advertise a completed scope retirement."""
+def test_disposal_failure_still_retires_the_name_and_pools_the_scope(root: Conduit) -> None:
+    """A failed store disposal finishes the named return - name retired, shell pooled - then raises (0.2.8201)."""
     with root.transaction("bind"):
         spell_id = root.bind(spell=FailingDisposal, existence=Existence.many, disposal_method_names=["cleanup"])
     child = root.create_lesser_conduit(name="disposal")
@@ -438,13 +438,14 @@ def test_disposal_failure_leaves_name_until_pool_reset_completes(root: Conduit) 
     with pytest.raises(ExceptionGroup):
         child.cleanup()
     assert instance.calls == 1
-    assert root.get_conduit_cloud().get_conduit("disposal") is child
-    assert child._conduit_state is ConduitState.lesser
-    # Existing Creations semantics detach failed-disposal entries before raising.
-    child.cleanup()
-    assert instance.calls == 1
     assert child.name is None
     assert not root.get_conduit_cloud().has_conduit_name("disposal")
+    assert child._conduit_state is ConduitState.pooled_lesser
+    # Creations detached the failed entry before its method ran, and a second
+    # cleanup of the pooled shell does nothing.
+    child.cleanup()
+    assert instance.calls == 1
+    assert root.create_lesser_conduit() is child
 
 
 def test_unnamed_return_does_not_acquire_the_cloud_lock(root: Conduit) -> None:

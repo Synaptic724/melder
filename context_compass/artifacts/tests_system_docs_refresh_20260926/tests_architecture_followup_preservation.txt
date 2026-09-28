@@ -1,6 +1,0 @@
-baseline lines with fewer copies after: 5 copies lost: 5
-1->0 |  `## Indexing` and the recipe in `tests_components_instructions.md`.
-1->0 |  `.gitignore` covers `*.melc` and the `tests/tests/...` form, so the caches never
-1->0 |  parses and points nowhere. Existence must be checked explicitly; see
-1->0 |  reach a commit, but they survive between runs; newer tests use `tmp_path`.
-1->0 | - TREE ARTIFACTS: cache tests write inside the repository - nine `CachingSystem`
