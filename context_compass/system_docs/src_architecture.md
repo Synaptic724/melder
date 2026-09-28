@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-27
+- Updated: 2026-09-28
 
 ## Scope and Intent
 This document describes the Melder core architecture at the C4 level for
@@ -33,19 +33,27 @@ Out of scope:
 ## Indexing
 
 This document is AUTHORED. Nothing generates its prose. Its only generated
-companion is `src_architecture_index.md`, rebuilt in the SAME pass as any edit:
+companion is its index, `src_architecture_index`, rebuilt in the SAME pass as
+any edit. The index lists every section's line range and name, plus a staleness
+proof of this document (`line_count`, `line_ending`, `content_sha256`). Consume
+it by slicing a named section rather than reading this document whole, and
+recompute the staleness proof before trusting any range.
 
-```bash
-python tools/system_documents/index_document.py \
-    --doc system_docs/src_architecture.md
-```
+Format rules the index depends on, and which this document obeys:
+- exactly one H1 (the document title)
+- the navigable unit is H2 `## <Concern>`, at consistent depth
+- section names unique and stable - index rows are selected BY NAME
+- NO container headings: every H2 here is a selectable concern, so there is no
+  wrapper heading to select by mistake
 
-Consume it by slicing rather than reading this document whole:
+An index records `line_count`, `content_sha256`, and `line_ending`. Insert one
+line near the top and every range below it is wrong while the index still parses
+and still returns content - the WRONG content, confidently. On mismatch: STOP,
+regenerate, never eyeball an offset.
 
-```bash
-python tools/system_documents/index_document.py \
-    --doc system_docs/src_architecture.md --slice "<section name>"
-```
+The commands that rebuild, slice and check the index belong to the documentation
+tooling, which does not ship with this document (corrected 2026-09-28: this
+section used to paste those commands and cite the tooling's own specification).
 
 ### Verifying the `path:line` citations in this document
 
@@ -91,27 +99,6 @@ still contain none of what it is cited for, which is how two of the seven
 survived. For any citation you are relying on, open it and confirm the symbol is
 actually there - and when you cite a function, cite its `def` line, because a
 range that merely brushes past a definition reads as verified without being it.
-
-Verify before trusting any range:
-
-```bash
-python tools/system_documents/index_document.py \
-    --doc system_docs/src_architecture.md --check
-```
-
-Format rules the index depends on, and which this document obeys:
-- exactly one H1 (the document title)
-- the navigable unit is H2 `## <Concern>`, at consistent depth
-- section names unique and stable - index rows are selected BY NAME
-- NO container headings: every H2 here is a selectable concern, so there is no
-  wrapper heading to select by mistake
-
-An index records `line_count`, `content_sha256`, and `line_ending`. Insert one
-line near the top and every range below it is wrong while the index still parses
-and still returns content - the WRONG content, confidently. On mismatch: STOP,
-regenerate, never eyeball an offset.
-
-Spec: `agent_onboarding/default/engineer/skills/system_document_build.md`
 
 ## DO NOT ASSUME / Unknowns Gate
 Rule: No Unverified Claims.
@@ -435,14 +422,19 @@ External interfaces are Python APIs:
   same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3680`, which states the
   opposite correctly. The code settles it.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5075, 5147 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5165, 5220 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:5243, 5291 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:5280, 5352 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5370, 5425 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:5448, 5496 (`remove_from_spell_index`; starts it)
   - src/melder/aether/spellbook/spellbook.py:3835 (`_add_to_spell_index` entry)
   - src/melder/aether/spellbook/spellbook.py:3868 (`_apply_add_to_index` seam)
 - `Spellbook.conjure(...)` for building a root Conduit.
 - `Conduit.meld(...)` for resolving instances.
 - `Conduit.create_lesser_conduit(...)` for child scopes.
+- `Conduit.enter_lesser_conduit(...)` (0.2.8203) for a child scope used as a `with` block. `with` on any
+  Conduit is a dispose scope: at block exit a lesser returns to its root's pool and a root is torn down, and
+  disposal failures are raised after that. Spellbook, Aether, AethericFrame, ConduitWard and SpellIndex keep
+  `with` as a lock. `Cleanable.using_cleanup()` and `async_using_cleanup()` (every Cleanable) let cleanup
+  errors propagate.
 - `Aether.get_conduit_by_name(...)` (named roots and active named lessers) and
   `Aether.get_conduit_by_id(...)` (any live conduit) for frame-scoped discovery; root-only discovery is
   the `*_root_*` family (`get_root_conduit_by_name`, `get_root_conduit_by_id`, `list_root_conduit_ids`,
@@ -698,7 +690,10 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3695-3833.
    - Execute codegen-creation-backed runtime lanes and return the resolved instance.
    - many_only and generalized roots run one site-plan runtime: normal melds its normal plan, override melds
      the plan compiled for their key set, which builds only what the payload does not supply (2026-09-26).
-     Warm automatic id melds, override payloads and existing objects included, use the fast meld door.
+     Warm automatic melds by id, by registered name and by class, override payloads and existing objects
+     included, use the fast meld door: two success-only door registries, one keyed by spell id and one by
+     the name string or class object the caller passed, read by `Conduit.meld` and `SpellSpace.meld`
+     with one guard ladder (2026-09-27).
    - Dynamic spells: the door takes the spell-index CreationGate ticket BEFORE it reads the context and
      holds it until the executor returns, calling the executor slots itself (2026-09-26).
 4. Creations registration/reuse occurs inside compiled execution per Existence. Each slotted
@@ -729,9 +724,13 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3695-3833.
 3. Wires root-lineage pointers (`_root_conduit_id`, `_meld._resolution_conduit_id`) and root-conduit ward reference.
 4. Fires activation, then attaches to the immediate parent. The named branch publishes Cloud,
    structural recording and Nexus metadata under its existing child lock, before post-created.
-5. On named return, complete disposal/descendants, retire records and named discovery, clear the name
-   and detach, restore temporary hooks, then publish the ready shell idle. Anonymous leaf return
-   checks the name once and performs no Cloud/recorder/Nexus work.
+5. Pool return (`cleanup()`, or the exit of a `with` block over the lesser) disposes descendants first,
+   then the lesser's SpellSpaces, then its own store. A named scope then retires records and named
+   discovery and clears its name; an anonymous leaf checks the name once and performs no
+   Cloud/recorder/Nexus work. Both detach, restore temporary hooks and publish the ready shell idle.
+   Disposal failures do not stop the return: they are raised as one ExceptionGroup once the shell is
+   back in its pool (0.2.8203). A descendant still attached after failing, or a failed named
+   retirement, keeps the lesser attached for retry. A second soft cleanup of a pooled shell does nothing.
 
 ### Sequence: Upgrade Lesser to Normal
 1. `Conduit.upgrade_to_normal(name, configuration=None, hooks=None)` validates an attached,
@@ -807,9 +806,15 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3695-3833.
    transfer, index destroy) is the live invalidation path.
 
 ### Sequence: SpellSpace Usage
-1. `conduit.enter_spellspace()` creates and activates SpellSpace.
-2. `SpellSpace.meld(...)` enforces active scope and delegates to Conduit.
-3. `SpellSpace.reset()` clears spellspace-scoped instances and bumps version.
+1. `conduit.enter_spellspace()` takes a pooled space, clears its released flag and pushes it on the
+   calling thread's stack; `create_spellspace()` takes one for manual use and registers it with the conduit.
+2. `SpellSpace.meld(...)` and `purge(...)` refuse a released space with SpellSpaceScopeError, then run
+   through the space's own SpellSpaceMeld door. There is no active-scope check, no `reset()` and no version
+   (corrected 2026-09-27; this sequence used to name all three).
+3. The block exit pops the space (LIFO-checked), disposes its own store, restores temporary hooks and
+   releases it to the pool, which sets the released flag; manual `cleanup()` does the same and unregisters
+   it. A disposal failure is raised after the release (0.2.8203). A space released or destroyed inside its
+   own block only leaves the stack at exit, and a second cleanup of a released space does nothing.
 
 ### Sequence: Cleanup
 `Cleanable` defines the idempotent cleanup contract every one of these
@@ -818,8 +823,10 @@ what it owns while it can still report a failure, and only then loses the abilit
 to report. Re-absorbed 2026-08-02 from the patch lane and extended from three
 types to seven; each `cleanup()` was verified present on the class named.
 
-1. `Conduit.cleanup()` fires hooks, tears down Meld, ConduitWard and Creations,
-   clears hooks, logger last.
+1. `Conduit.cleanup()` on a root, and `permanent_cleanup()` on a lesser, fire hooks and tear down
+   Meld, ConduitWard (the lesser lineage), SpellSpaces and Creations, clear hooks, logger last, and
+   then raise the collected disposal failures as one ExceptionGroup (0.2.8203; before, they were only
+   logged). On a lesser, `cleanup()` is the pool return of the Create Lesser Conduit sequence.
 2. `Spellbook.cleanup()` cleans spells and SpellIndex keys, then configuration
    and validators, nulls references, logger last.
 3. `Aether.cleanup()` cleans frames, resets singleton state, cleans logger.
@@ -830,10 +837,11 @@ types to seven; each `cleanup()` was verified present on the class named.
    owned `RiftGate`, and engaged `FrameLinkContract` objects, then clears
    Rift-local metadata, logger last.
 7. `Creations.cleanup()` calls each Spell's established methods in list order and may raise
-   `ExceptionGroup` - it is the one teardown here that AGGREGATES failures
-   rather than stopping at the first, so a single bad object cannot strand the
-   rest of the scope. Since 0.2.80 that holds per method too: every declared method
-   runs even after one fails, and each failure is chained from what the method raised.
+   `ExceptionGroup` - it AGGREGATES failures rather than stopping at the first, so a
+   single bad object cannot strand the rest of the scope. Since 0.2.80 that holds per
+   method too: every declared method runs even after one fails, and each failure is
+   chained from what the method raised. Since 0.2.8203 the Conduit, ConduitWard and
+   SpellSpace teardowns above it finish the same way and raise its groups last.
 
 ## Runtime Type Names (Concrete, No Interface Layer)
 Re-absorbed 2026-08-02 from the patch lane; every class below was verified to
@@ -853,7 +861,7 @@ check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
 THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
 conduit-shaped object that is not a `Conduit` subclass is rejected outright.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5024-5026 (the check and the raise -
+  - src/melder/aether/conduit/conduit.py:5229-5231 (the check and the raise -
     cited as :4342-4344 in the patch lane, which was off by one)
   - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
   - src/melder/nexus/rift/rift_space/event_system/rift_event.py
@@ -874,6 +882,31 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Qualified spell identity (2026-09-28): Phase 4 checks the normalized `(frame_key, binding_key)` that
+  registration and Meld use. Same-named classes at distinct frames or bindings can coexist, including
+  discoverable and contracted registrations. Case/default normalization and frame-wide address ownership
+  remain enforced; no global uniqueness of display names or class-identity lookup change is introduced.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py:DuplicateSpellNameStrategy.validate`.
+- Scope exits finish, then raise (2026-09-27, 0.2.8203): `with conduit:` disposes - `Conduit.__enter__`
+  returns the conduit and takes no lock, `__exit__` calls `cleanup()` - so a lesser returns to its root's
+  pool and a root is torn down; Spellbook, Aether, AethericFrame, ConduitWard and SpellIndex keep `with` as a
+  lock. Every scope exit (SpellSpace managed exit and manual cleanup, lesser pool return, permanent teardown)
+  runs all its steps when a disposal method raises, then raises the collected failures as one
+  ExceptionGroup. That is safe because Creations swaps a store empty before any disposal method runs, so a
+  failed method leaves nothing behind to retry. A lesser's pool return disposes descendants, then
+  SpellSpaces, then its own store - the order permanent teardown already used; a descendant still attached
+  after failing, or a failed named retirement, keeps the lesser attached and out of the pool for retry. Soft
+  cleanup of a pooled lesser or a released SpellSpace is a no-op, so no scope is pooled twice and two
+  acquisitions never share one object. A SpellSpace carries one lease flag: pool release sets it,
+  acquisition clears it, and a released space refuses meld and purge. The flag's two writes per cycle are
+  paid back on the same path (inline managed exit and stack push, one idle-deque read, no SpellSpace sweep
+  call when none is open), so a scope cycle costs no more than before on 3.14t and the GIL build (measured
+  2026-09-27). A pooled lesser handle is not checked on `Conduit.meld`, the hottest door: using a scope
+  after cleanup stays a caller contract violation there.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.__exit__`, `Conduit._prepare_for_pool`,
+  `Conduit._permanent_cleanup`, `src/melder/aether/conduit/spell_space/spell_space.py:SpellSpace.__exit__`,
+  `SpellSpace.cleanup`, `src/melder/aether/conduit/spell_space/spell_space_pool.py:SpellSpacePool.release`
+  and `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._cleanup_children_for_pool`.
 - Disposal failures (2026-09-27, 0.2.80): Creations runs every declared disposal method of every object, in
   declared order, even after one raises. Each failing method is one `RuntimeError` in the `ExceptionGroup` that
   cleanup, clear_all and purge raise, chained from the exception the method raised; a refused late publication
@@ -1206,10 +1239,12 @@ each entry in `src_components.md`; this list is the set that crosses components.
   - Settlement mutates the RETAINED frame-owned posture object in place
     (`with_system_state(dynamic)`) and rebinds the SAME object. It must never
     mint a parallel posture object: when `bind_frame_configuration` is handed a
-    DIFFERENT object while the existing posture is unfrozen, it copies TWELVE
+    DIFFERENT object while the existing posture is unfrozen, it copies FOURTEEN
     attempted values onto the canonical posture - system_state, ai_native,
-    rift_enabled, shared_framewide_spellbook_configuration, all six `disable_*`
-    flags, and max_transaction_wait_time_in_seconds - and then calls
+    rift_enabled, shared_framewide_spellbook_configuration, the two caching
+    settings, all seven `disable_*` flags, and
+    max_transaction_wait_time_in_seconds (recounted 2026-09-27; this said twelve,
+    with six disable flags) - and then calls
     `cleanup()` on the object it was handed. A fresh posture's default-`False`
     disable flags would therefore bulldoze every flag staged before conjure,
     and the donor object would be destroyed. Binding the SAME object skips that
@@ -1228,14 +1263,19 @@ each entry in `src_components.md`; this list is the set that crosses components.
   - src/melder/aether/spellbook/spellbook.py:6637
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
-  - src/melder/aether/aetheric_frame/aetheric_frame.py:645-694
-    (`bind_frame_configuration` unfrozen branch: the twelve-value copy plus
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:691-752
+    (`bind_frame_configuration` unfrozen branch: the fourteen-value copy plus
     `frame_configuration.cleanup()` on the donor, then freeze with
     `origin_frame_name`)
   - src/melder/aether/spellbook/spellbook_creation_system.py:1253-1292
     (`SpellbookCreationSystem.check_system_state`: missing-posture refusal and
     the non-dynamic default-policy-only rule)
-- SpellSpace can only meld when it is the active spellspace for a Conduit.
+- A SpellSpace melds and purges only while leased: a space released to its pool refuses both with
+  SpellSpaceScopeError, and a destroyed one raises the cleaned RuntimeError. There is no active-scope
+  check - a leased space melds whether or not it is the top of its thread's stack (corrected 2026-09-27:
+  this line claimed an active-spellspace rule the source never had).
+  EVIDENCE: `src/melder/aether/conduit/spell_space/spell_space.py:SpellSpace.meld` and
+  `SpellSpace._refuse_released`.
 - FOUR OPERATIONS ARE GATED ON DYNAMIC POSTURE AS A SET, not individually:
   linking, severing, ownership transfer, and lesser-to-normal upgrade. They
   share one rationale - an `automatic` world promises ONE SELF-CONTAINED GRAPH
@@ -1290,7 +1330,8 @@ each entry in `src_components.md`; this list is the set that crosses components.
   "not found" while its frame's Cloud returned it.
   EVIDENCE: `src/melder/aether/aether.py:Aether._resolve_lookup_frame` and `Aether.get_conduit_by_name`.
 - Named collision/acquisition failures preserve other directory owners. Soft retirement failures
-  retain ownership for retry and never publish idle; failed descendants prevent ancestor return.
+  retain ownership for retry and never publish idle; a descendant that could not finish its own return
+  prevents ancestor return (one that finished but raised disposal failures does not, 0.2.8203).
   Hard teardown logs frame-summary publication failure and continues disposal. Cloud/Nexus reads
   are not one atomic snapshot, and ordinary references do not remain valid through owner cleanup.
   EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._prepare_named_for_pool`,
@@ -1331,7 +1372,13 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._enforce_conduit_resolution_valid`.
 - Meld raises SpellbookValidationError when spell validity is invalid/gated/disabled.
 - ChangeControl blocks roots marked dirty for the active conduit (`is_root_dirty(conduit_id, root_id)`).
-- SpellSpaceScopeError if a non-active SpellSpace is used for meld.
+- SpellSpaceScopeError when a SpellSpace released to its pool is used for meld or purge (0.2.8203), and
+  when a managed exit is not the top of the calling thread's stack ("stack corruption"). A space released
+  or destroyed inside its own block leaves the stack without error. Before 0.2.8203 a kept handle melded
+  into the idle shell and the next lease was served what it built, and a lesser cleaned inside its own
+  managed SpellSpace made that block's exit raise "stack corruption".
+  EVIDENCE: `src/melder/aether/conduit/spell_space/spell_space.py:SpellSpace._refuse_released` and
+  `src/melder/aether/conduit/spell_space/spell_space_thread_state.py:SpellSpaceThreadState.pop_expected`.
 - `Nexus.create_rift(...)` fails when the Rift configuration is invalid, but it
   no longer requires an initial target frame.
 - `Rift.create_frame_link(...)` rejects target frames that do not satisfy the AR
@@ -1349,9 +1396,22 @@ each entry in `src_components.md`; this list is the set that crosses components.
   manager/descriptor/ACL cleanup through the normal Aether frame detach path.
 - `SpellExaminer.create_profile(...)` raises `ValueError` when the requested
   profile name is not registered.
-- Cleanup errors are logged; Creations may raise ExceptionGroup. Since 0.2.80 it holds one error per failing
-  disposal method, each chained from what that method raised; before, an object's first failure ended its
-  disposal and the original exception was dropped.
+- Disposal failures are raised, not logged (0.2.8203): a scope exit or teardown finishes - the scope is
+  pooled or destroyed - and then raises one ExceptionGroup of the Creations groups it collected ("Lesser
+  conduit returned to its pool with disposal failures.", "Conduit torn down with disposal failures.",
+  "Lesser conduits torn down with disposal failures."); a SpellSpace exit raises its store's group. When the
+  `with` block raised too, the group rises with the block's exception as its `__context__`. Other teardown
+  errors (gate unregistration, record retirement, Nexus publication, Spellbook and pool cleanup) stay
+  logged, and frame teardown logs a failing conduit and keeps going. Each Creations group holds one error
+  per failing disposal method, chained from what that method raised (0.2.80); before 0.2.80 an object's
+  first failure ended its disposal and the original exception was dropped, and before 0.2.8203 conduit
+  paths only logged these groups.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._permanent_cleanup`,
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard.cleanup` and
+  `src/melder/aether/aetheric_frame/aetheric_frame.py:AethericFrame._cleanup_data_structures`.
+- `with conduit:` no longer holds the conduit lock (Breaking, 0.2.8203): code that used it as a lock now
+  disposes the scope at block exit. `Cleanable.using_cleanup()` and `async_using_cleanup()` let cleanup
+  errors propagate (0.2.8203; they used to be swallowed).
 - The four posture-gated operations all raise `RuntimeError` in automatic mode -
   linking, severing, `upgrade_to_normal`, and ownership transfer. They are
   listed separately below because they are separate call sites, but a reader
@@ -1550,6 +1610,13 @@ shortfall honesty, R-A covenant) are unchanged.
 
 
 ## C1 Code Map (Core Only)
+
+- path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py`
+  start_line: 1
+  end_line: 166
+  loc: 166
+  verified_at: 2026-09-28T08:22:09Z
+  note: Phase-4 lookup-address uniqueness across the visible spell pool.
 
 Ranges are MEASURED, never estimated: `start_line`/`end_line` are the file's own
 extent and `loc` is its line count, read from disk at `verified_at`. Every path
@@ -1889,9 +1956,9 @@ Aether and frames:
   note: expanded from the directory entry `src/melder/mutation_research/research_set/`
 - path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
   start_line: 1
-  end_line: 1136
-  loc: 1136
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 1145
+  loc: 1145
+  verified_at: 2026-09-27T23:41:28Z
   note: per-frame state and control plane.
 
 Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
@@ -2278,9 +2345,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 6897
-  loc: 6897
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 7102
+  loc: 7102
+  verified_at: 2026-09-27T23:41:28Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
   start_line: 1
@@ -2290,9 +2357,9 @@ Conduit runtime:
   note: conduit state enum.
 - path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
   start_line: 1
-  end_line: 3813
-  loc: 3813
-  verified_at: 2026-09-27T11:46:59Z
+  end_line: 3872
+  loc: 3872
+  verified_at: 2026-09-27T23:41:28Z
   note: contracts and lineage.
 - path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
   start_line: 1
@@ -2353,10 +2420,22 @@ Resolution and creations:
   note: conduit/root specialization seam over the generic creations store.
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
-  end_line: 650
-  loc: 650
-  verified_at: 2026-09-26T20:10:34Z
-  note: spellspace scoping.
+  end_line: 792
+  loc: 792
+  verified_at: 2026-09-27T23:41:28Z
+  note: spellspace scoping; lease flag and finished exits.
+- path: `src/melder/aether/conduit/spell_space/spell_space_pool.py`
+  start_line: 1
+  end_line: 301
+  loc: 301
+  verified_at: 2026-09-27T23:41:28Z
+  note: spellspace pool; release sets and acquisition clears the lease flag.
+- path: `src/melder/aether/conduit/spell_space/spell_space_thread_state.py`
+  start_line: 1
+  end_line: 328
+  loc: 328
+  verified_at: 2026-09-27T23:41:28Z
+  note: per-thread managed spellspace stack.
 
 Control plane:
 
@@ -2420,9 +2499,9 @@ Utilities:
 
 - path: `src/melder/utilities/general_base/cleanable.py`
   start_line: 1
-  end_line: 420
-  loc: 420
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 429
+  loc: 429
+  verified_at: 2026-09-27T23:41:28Z
   note: cleanup contract.
 - path: `src/melder/utilities/synchronization/phase_scheduler.py`
   start_line: 1
@@ -2612,6 +2691,31 @@ flowchart LR
   F -->|root lookups| M[Root maps: roots]
   F -->|get_conduit_by_name| C[ConduitCloud: named roots and named lessers]
   F -->|get_conduit_by_id| W[Root map, then ward lineages: any live conduit]
+```
+
+### Scope Exit and Pool Return
+```text
+with lesser: / lesser.cleanup():
+  descendants -> SpellSpaces -> own store -> retire name | detach -> hooks -> pool -> raise failures
+with conduit.enter_spellspace() as space:
+  pop (LIFO) -> dispose space store -> reset hooks -> release (released=True) -> raise failures
+  released space: meld / purge -> SpellSpaceScopeError; the next acquisition clears the flag
+with root: / root.cleanup():
+  ward (lesser lineage) -> SpellSpaces -> stores -> hooks -> logger -> raise failures
+```
+
+```mermaid
+flowchart LR
+  X[with block exit or cleanup] --> K{Scope}
+  K -->|lesser| D[Descendants return first]
+  D --> S[SpellSpaces, then own store]
+  S --> P[Retire or detach, reset hooks, back to pool]
+  K -->|root| T[Permanent teardown, logger last]
+  K -->|SpellSpace| R[Dispose store, reset hooks, release sets the flag]
+  P --> E[Raise the collected disposal failures]
+  T --> E
+  R --> E
+  R -.->|kept handle| F[meld or purge refused]
 ```
 
 ### ASCII Context Diagram (C4)
@@ -2822,6 +2926,13 @@ without rewriting the original record or existing live IDs.
 - `src/melder/aether/conduit/conduit.py`
 - `src/melder/aether/conduit/conduit_cluster.py`
 - `src/melder/aether/conduit/creations/creations.py`
+- `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
+- `src/melder/aether/conduit/spell_space/spell_space.py`
+- `src/melder/aether/conduit/spell_space/spell_space_pool.py`
+- `src/melder/aether/conduit/spell_space/spell_space_thread_state.py`
+- `src/melder/aether/conduit/meld/spellspace_meld.py`
+- `src/melder/utilities/general_base/cleanable.py`
+- `src/melder/utilities/custom_exceptions/spell_space_scope_error.py`
 - `src/melder/aether/conduit/meld/meld.py`
 - `src/melder/aether/conduit/meld/creation_context/creation_context.py`
 - `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py`
@@ -2844,6 +2955,28 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-28 qualified same-name registrations: conjure accepts repeated class names at distinct canonical
+addresses. Phase 4 uses the registration/Meld key normalizer and retains DUPLICATE_SPELL_NAME for actual
+address collisions. Address ownership, discovery capability and class-object lookup are unchanged.
+
+2026-09-28 portability: `## Indexing` no longer pastes the index tool's commands or cites the tooling's
+specification, and the handoff lines below name the recomposition patch lane by its id instead of a path
+into the tooling, so the packaged copy names nothing its reader cannot resolve. The 2026-09-27 "still
+open" item below is closed.
+
+2026-09-27 scope exits (0.2.8203): `with conduit:` disposes the scope instead of holding the conduit lock, and
+`Conduit.enter_lesser_conduit()` makes a lesser for such a block. Every scope exit - SpellSpace managed exit
+and manual cleanup, lesser pool return, permanent teardown - finishes when a disposal method fails and then
+raises the failures as one ExceptionGroup; a lesser's pool return disposes its descendants first; a second
+soft cleanup does nothing; a released SpellSpace refuses meld and purge; `using_cleanup()` lets cleanup
+errors propagate. The boundary list, the lesser, SpellSpace and cleanup sequences, the operational
+invariants (the stale active-spellspace line corrected), the failure modes, a diagram and the code map carry
+it; the component map carries the per-method contracts. Still open: this document's `## Indexing` section
+names maintenance tool paths, which a reader outside the repository cannot resolve (pre-existing).
+
+2026-09-27 meld entry cache by name and class: the meld sequence names the second door registry that
+serves `meld("Name")` and `meld(spell=Cls)` warm; the component map carries the mechanics.
 
 2026-09-27 disposal failures (0.2.80): one failing disposal method no longer stops an object's teardown;
 every declared method runs and every failure reaches the caller chained from its original exception. The
@@ -2989,7 +3122,7 @@ existing ACLs; crystal capture, active/staged replay and graft retain the per-ve
 major 2 rejects old readers safely. Existing eager branch construction and version rules are unchanged.
 
 WHAT CHANGED (2026-08-01): this document was RECOMPOSED to the Required Section
-Contract in `src_architecture_instructions.md`. It now carries exactly the 17
+Contract of its authoring instructions. It now carries exactly the 17
 contract sections, in contract order, and nothing else.
 
 - `## Indexing` was ADDED; it did not exist.
@@ -3001,8 +3134,8 @@ contract sections, in contract order, and nothing else.
   real modules rather than given a plausible range.
 - `## Table of Contents` was REMOVED. The generated index replaces it; a
   hand-maintained contents list is a second addressing surface that drifts.
-- 34 non-contract H2 sections were MOVED, NOT DELETED, to
-  `system_docs/patches/active/system_doc_recompose_2026_08_01/component_material_for_migration.md`.
+- 34 non-contract H2 sections were MOVED, NOT DELETED, to the migration file
+  (`component_material_for_migration.md`) of patch lane `system_doc_recompose_2026_08_01`.
   They are component-level deep dives - per-subsystem Responsibilities sections,
   the glossary, pipeline narratives, and four promoted-patch blocks - which the
   instructions name as an anti-pattern in THIS document. Four of them had
@@ -3010,7 +3143,7 @@ contract sections, in contract order, and nothing else.
   fragments; they were unwrapped on the way out.
 
 WHAT CHANGED (2026-08-02): CONFORMED to the revised
-`src_architecture_instructions.md`. One defect class was found here, and it was
+authoring instructions. One defect class was found here, and it was
 invisible to every structural check in the Quality Gate.
 
 - ALL 134 C1 RANGES WERE OFF BY ONE and are now REMEASURED. The previous pass
@@ -3061,8 +3194,8 @@ holds is in NEITHER canonical document. That is a real coverage gap; it is
 deliberate, bounded, and recorded here rather than left to be discovered.
 
 The graph pass follows. `src_graph.json` and `readable_src_graph.json` are the
-RETIRED artifacts; the replacement is `src_graph.md` + `src_graph_index.md` per
-`agent_onboarding/default/engineer/skills/src_graph_generation.md`.
+RETIRED artifacts; the replacement is `src_graph.md` + `src_graph_index.md`, built
+by the graph generation tooling.
 
 
 ### Carried forward from the previous revision (2026-07-25)

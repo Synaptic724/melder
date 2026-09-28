@@ -1,0 +1,3 @@
+python 3.14.7 gil_enabled=False runs=200
+real (inner recheck kept): {'test passed': 200}; cleanup calls: {'tore down': 200, "AttributeError: 'melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor' object has no attribute '_lock'": 196, 'returned at the inner recheck': 4}
+mutant (inner recheck removed): {'test passed': 200}; cleanup calls: {'tore down': 200, "AttributeError: 'melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor' object has no attribute '_lock'": 198, "AttributeError: 'melder.nexus.frame_descriptor.frame_descriptor.FrameDescriptor' object has no attribute '_frame_overview'": 2}

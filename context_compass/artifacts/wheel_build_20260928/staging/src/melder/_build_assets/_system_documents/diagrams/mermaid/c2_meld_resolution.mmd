@@ -1,0 +1,58 @@
+flowchart LR
+    accTitle: Melder C2 meld resolution
+    accDescr: A caller enters through Conduit meld. The conduit admits the request through its CreationGate, Meld resolves a Spell, lineage and dirty-root gates may lazily rerun structural and resolution phases, CreationContext executes the compiled creation lane, and Existence selects owner, conduit, or SpellSpace lifetime storage before the instance returns.
+
+    caller["Caller"]
+
+    subgraph conduit_scope["Conduit.meld execution path"]
+        direction LR
+        conduit["Conduit front door<br/>CreationGate ticket + hooks"]
+        resolver["Target resolver<br/>id or normalized key"]
+        gates{"Runtime gates<br/>lineage valid?<br/>root clean?"}
+        context["CreationContext<br/>compiled execution lane"]
+        lifetime{"Existence router"}
+
+        states["SpellSystemStates<br/>lineage + conduit validity"]
+        change["ChangeControlManager<br/>dirty roots"]
+        structural["Structural phases 1–4"]
+        resolution["Resolution phases 5–11"]
+
+        owner["Owner Creations<br/>unique · lineage · cluster"]
+        local["ConduitCreations<br/>per-conduit · many"]
+        request["SpellSpace Creations<br/>request-local"]
+        failure["Typed refusal<br/>validation · dirty root · scope"]
+        result["Resolved instance<br/>post-resolve hook"]
+
+        conduit -->|"resolve request"| resolver
+        resolver -->|"resolved Spell"| gates
+        states -.-> gates
+        change -.-> gates
+        gates -->|"valid + clean"| context
+        gates -.->|"unknown / gated"| structural
+        structural --> resolution
+        resolution -.->|"re-check"| gates
+        gates -.->|"invalid / dirty"| failure
+        context -->|"execute"| lifetime
+        lifetime -->|"shared owner"| owner
+        lifetime -->|"caller scope"| local
+        lifetime -->|"active request"| request
+        owner --> result
+        local --> result
+        request --> result
+    end
+
+    caller -->|"meld(target, overrides)"| conduit
+    result -->|"scoped object"| caller
+
+    classDef caller fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:2px
+    classDef execution fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef governance fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    classDef definition fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef storage fill:#fff0e8,stroke:#a4552a,color:#4a2411,stroke-width:2px
+    classDef failure fill:#fff1f2,stroke:#b23b4a,color:#511820,stroke-width:2px
+    class caller caller
+    class conduit,resolver,context,result execution
+    class gates,states,change governance
+    class structural,resolution definition
+    class owner,local,request storage
+    class failure failure

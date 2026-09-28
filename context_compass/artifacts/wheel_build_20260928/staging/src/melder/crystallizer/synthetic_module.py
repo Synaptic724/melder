@@ -1,0 +1,1625 @@
+import hashlib
+import importlib
+import importlib.abc
+import importlib.util
+import linecache
+import sys
+import threading
+from importlib.machinery import ModuleSpec
+from types import ModuleType
+from typing import Any, Dict, List, Mapping, Optional, Sequence
+
+
+
+class _SyntheticModuleImportLoader(importlib.abc.Loader):
+    """
+    Loader bridge from importlib into the `SyntheticModule` registry.
+
+    Purpose:
+        Let normal importlib machinery create and execute registered synthetic
+        modules without forcing callers to manually juggle `sys.modules`,
+        `ModuleSpec`, or package-shell setup themselves.
+
+    Contract:
+        The loader never allocates a second world object. Specs resolve back to
+        the exact `SyntheticModule` held by the class registry, and execution
+        delegates to that object's retained source.
+
+    Threading:
+        Registry lookup is serialized by `SyntheticModule._registry_lock`;
+        source execution follows the target module's instance-lock contract.
+
+    Lifecycle / Cleanup:
+        One process-wide loader is created lazily by `SyntheticModule`. It owns
+        no module and has no independent cleanup surface.
+
+    Registration:
+        MELDER KERNEL - guarded (internal manifest). Private importlib plumbing
+        `SyntheticModule` creates lazily; never user-held or bound. access=internal.
+
+    Subsystem Context:
+        The importlib create/exec bridge for `SyntheticModule` in the crystallizer subsystem.
+        `SyntheticModule` is the live in-memory embodiment of crystallized source; this loader
+        lets normal importlib machinery instantiate and execute a REGISTERED synthetic module -
+        returning the exact registry object, never a second one - so restored or synthesized
+        code enters `sys.modules` through the standard path.
+
+    System Context:
+        Crystallizer layer of the boot order (position 2, after Aether|AetherUtilitySystem). It
+        exists so the restore/synthesis lanes can rebuild user-file spells as importable modules
+        without callers hand-managing `sys.modules` / `ModuleSpec`; it allocates no world object
+        and owns no module, keeping module identity single-sourced in the `SyntheticModule`
+        registry.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Loader bridge from importlib into the `SyntheticModule` registry.
+        Melder kernel machinery: read it to understand the runtime, do not drive it directly.
+    """
+
+    def create_module(self, spec: ModuleSpec) -> ModuleType:
+        """
+        Return the registered synthetic module object for one spec.
+
+        Purpose:
+            Hand importlib the already-registered world object rather than
+            allocating a second disconnected module instance.
+
+        Args:
+            spec:
+                Importlib spec for one registered synthetic module.
+
+        Returns:
+            ModuleType:
+                The registered synthetic module object.
+
+        Raises:
+            ImportError:
+                If the spec name is not registered.
+        """
+        module = SyntheticModule.create_module_for_spec(spec)
+        if module is None:
+            raise ImportError(
+                "No registered synthetic module exists for '{0}'.".format(
+                    spec.name,
+                )
+            )
+        return module
+
+    def exec_module(self, module: ModuleType) -> None:
+        """
+        Execute one registered synthetic module into its live namespace.
+
+        Purpose:
+            Delegate execution back to the registered synthetic module so the
+            same world object owns publication, parent binding, and executed
+            state.
+
+        Args:
+            module:
+                Module object supplied by importlib.
+
+        Returns:
+            None.
+
+        Raises:
+            ImportError:
+                If the supplied module is not a registered synthetic module.
+        """
+        if not isinstance(module, SyntheticModule):
+            raise ImportError(
+                "Synthetic loader can only execute SyntheticModule objects."
+            )
+        SyntheticModule.exec_registered_module(module.__name__)
+
+    def get_source(self, fullname: str) -> str:
+        """
+        Return the retained source text for one registered synthetic module.
+
+        Purpose:
+            Complete the importlib InspectLoader contract (M1 introspection
+            fix, FIX B): when linecache stat-fails on the synthetic
+            `__file__`, it falls back to this hook, which makes
+            `inspect.getsource`, tracebacks, and `pdb` work on synthetic
+            classes exactly as they do for zipimport modules.
+
+        Contract:
+            - Read-only: returns the module's LIVE `source_text` (the same
+              text `execute_source()` runs), never a stale copy.
+            - Registry lookup happens under the class registry lock.
+
+        Args:
+            fullname:
+                Registered synthetic module name.
+
+        Returns:
+            str: The module's retained source text.
+
+        Raises:
+            ImportError:
+                If `fullname` is not a registered synthetic module.
+        """
+        with SyntheticModule._registry_lock:
+            module = SyntheticModule._registered_modules_by_name.get(fullname)
+        if module is None:
+            raise ImportError(
+                "No registered synthetic module exists for '{0}'.".format(
+                    fullname,
+                )
+            )
+        return module.source_text
+
+
+class _SyntheticModuleMetaPathFinder(importlib.abc.MetaPathFinder):
+    """
+    Finder exposing registered synthetic modules to importlib.
+
+    Purpose:
+        Allow normal `import ...` / `importlib.import_module(...)` flows to
+        discover crystallizer-owned synthetic modules through the registry.
+
+    Contract:
+        Returns a spec only for a currently registered name. Returning None
+        delegates resolution to later meta-path finders without changing any
+        synthetic state.
+
+    Threading:
+        Discovery is registry-lock protected through `build_registered_spec()`.
+
+    Lifecycle / Cleanup:
+        The singleton finder may be installed or removed repeatedly. Removing
+        it does not unregister, unpublish, execute, or clean a module.
+
+    Registration:
+        MELDER KERNEL - guarded (internal manifest). A private singleton finder
+        installed on `sys.meta_path`; internal plumbing, never user-held or bound.
+        access=internal.
+
+    Subsystem Context:
+        The importlib DISCOVERY half of the `SyntheticModule` import bridge (paired with
+        `_SyntheticModuleImportLoader`, the create/exec half). Sitting on `sys.meta_path`, it
+        returns a spec only for a currently-registered synthetic name and returns None
+        otherwise, delegating to later finders without touching synthetic state.
+
+    System Context:
+        Crystallizer layer of the boot order (position 2, after Aether|AetherUtilitySystem). It
+        is what lets ordinary `import ...` flows resolve crystallizer-owned synthetic modules
+        during restore/synthesis; being install/remove-idempotent (removal never unregisters,
+        unpublishes, executes, or cleans a module) keeps import visibility separate from module
+        lifecycle.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Finder exposing registered synthetic modules to importlib. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
+    """
+
+    def find_spec(
+            self,
+            fullname: str,
+            path: object = None,
+            target: object = None,
+    ) -> Optional[ModuleSpec]:
+        """
+        Return a spec when the requested module is registered synthetically.
+
+        Args:
+            fullname:
+                Fully qualified module name being imported.
+            path:
+                Parent package search path from importlib. It is accepted for
+                protocol compatibility but not used directly because lookup is
+                registry-driven.
+            target:
+                Optional importlib reload target. It is accepted for protocol
+                compatibility but not used directly.
+
+        Returns:
+            Optional[ModuleSpec]:
+                Registered synthetic module spec, or None when the name is not
+                owned by the synthetic registry.
+        """
+        return SyntheticModule.build_registered_spec(fullname)
+
+
+class SyntheticModule(ModuleType):
+    """
+    Live in-memory module embodiment for crystallized source.
+
+    Purpose:
+        `SyntheticModule` is the world-first runtime embodiment of one managed
+        software unit. It owns:
+        - module identity
+        - source text and source hash
+        - dependency metadata
+        - package-shell semantics when needed
+        - importlib-capable activation mechanics
+
+    Contract:
+        - the module name is the canonical runtime identity while the module is
+          live in this process
+        - source and dependency metadata are owned directly by the module object
+        - publication into `sys.modules` is explicit, reversible, and available
+          through both manual and importlib-driven paths
+        - importlib support is registry-backed and cycle-aware because modules
+          are published before execution
+        - cleanup mirrors the repo `Cleanable` contract even though this class
+          cannot inherit `Cleanable` directly because `ModuleType` has a
+          conflicting instance layout
+        - cleanup is deterministic, unregisters the module from the synthetic
+          import registry, unpublishes it, detaches parent bindings, and then
+          drops owned metadata
+        - registration, import-hook installation, publication, and source
+          execution are four distinct states; none should be inferred from
+          another. `materialize()` is the convenience path that composes them.
+        - parent package shells are separate synthetic modules registered and
+          materialized parents-first for dotted names.
+
+    Threading:
+        Each module's `RLock` guards its metadata, namespace mutation,
+        publication flag, and execution. A class-level `RLock` independently
+        guards the registry, registration order, shared loader/finder, and
+        meta-path hook changes. User source executes while the instance lock is
+        held and may invoke normal import machinery.
+
+    Lifecycle / Cleanup:
+        Construction is inert: unregistered, unpublished, and unexecuted.
+        Registration enables discovery; publication exposes the exact object in
+        `sys.modules`; execution populates its namespace. Unpublish and
+        unregister are reversible visibility changes. Cleanup is terminal for
+        one module but does not remove the global hook or clean other registry
+        members; `clear_import_registry()` owns that broader reset.
+
+    Why this exists:
+        The experiments proved that world-first module behavior depends on more
+        than storing source text on a `ModuleType`. We need one runtime object
+        that can:
+        - exist as a real importable module
+        - participate in package graphs
+        - survive importlib-style circular activation semantics
+        - reload cleanly at explicit boundaries
+        - still expose the crystallizer-owned metadata that ties the live
+          module back to durable truth
+
+    Registration:
+        MELDER KERNEL - guarded. Created by the crystallizer's loader chain and
+        registered in its own synthetic import registry; never user-constructed
+        or bound.
+
+    Subsystem Context:
+        The runtime embodiment of crystallized source - the object a synthetic
+        custody payload rebuilds into. `SyntheticCustodyStrategy` captures a
+        module that has no file (its source IS the record) into a value payload;
+        at restore that payload reconstructs one of these, which registers itself
+        with the class-level import registry (finder + loader) so normal `import`
+        / `importlib` flows resolve it. It owns module identity, source
+        text/hash, dependency metadata, package-shell semantics, and
+        importlib-capable activation.
+
+    System Context:
+        This class is the M3 loader-chain payoff: it is what lets a world MADE OF
+        generated modules survive a boot, because the four states - registration,
+        import-hook install, publication, and source execution - are kept distinct
+        and importlib-cycle-aware (a module is published BEFORE execution so
+        circular imports see the partially-initialized object exactly as
+        importlib-managed modules do). It cannot inherit `Cleanable` because
+        `ModuleType`'s instance layout conflicts, so it mirrors the Cleanable
+        contract by hand. Carrying crystallizer-owned metadata on the live module
+        is the thread that ties an executing module back to the durable record it
+        was rebuilt from - the reason a synthetic world is reproducible rather
+        than merely re-runnable.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Live in-memory module embodiment for crystallized source. Melder
+        kernel machinery: read it to understand the runtime, do not drive it directly.
+    """
+
+    _registry_lock = threading.RLock()
+    _registered_modules_by_name: Dict[str, "SyntheticModule"] = {}
+    _load_order: List[str] = []
+    _import_loader: Optional[_SyntheticModuleImportLoader] = None
+    _meta_path_finder: Optional[_SyntheticModuleMetaPathFinder] = None
+
+    def __init__(
+            self,
+            module_name: str,
+            spell_crystal_id: str,
+            source_text: str,
+            source_sha256: str,
+            binding_signature: str,
+            export_names: Optional[Sequence[str]] = None,
+            internal_dependency_names: Optional[Sequence[str]] = None,
+            external_dependency_names: Optional[Sequence[str]] = None,
+            physical_file_path: Optional[str] = None,
+            materialized_directory_path: Optional[str] = None,
+            module_docstring: Optional[str] = None,
+            parent_name: Optional[str] = None,
+            is_package: bool = False,
+    ) -> None:
+        """
+        Initialize one live synthetic module object.
+
+        Purpose:
+            Build one in-memory managed module that can later be:
+            - manually published
+            - importlib-loaded
+            - reloaded
+            - unloaded cleanly
+
+        Contract:
+            Copies caller-provided name sequences and initializes importlib
+            identity metadata without registering, publishing, or executing the
+            module. `source_sha256` is recorded as supplied; construction does
+            not recompute or verify it against `source_text`.
+
+        Args:
+            module_name:
+                Canonical runtime/import name for the module. This is the live
+                world identity while the module is registered.
+            spell_crystal_id:
+                Crystal identity that produced or owns this module source. This
+                is the bridge back to durable world truth.
+            source_text:
+                Current source text for the module. This is what later
+                `execute_source()` and reload flows run.
+            source_sha256:
+                SHA256 fingerprint of the current source text. It should match
+                the current `source_text`, not some older persisted revision.
+            binding_signature:
+                Spell-facing binding-signature string associated with this
+                module's primary bound surface. This is loader/bind metadata,
+                not importlib metadata.
+            export_names:
+                Optional export/public-surface names already known from crystal
+                analysis.
+            internal_dependency_names:
+                Optional internal managed dependency names that belong to the
+                same synthetic or crystallized world.
+            external_dependency_names:
+                Optional external/environment dependency names outside the
+                managed synthetic world.
+            physical_file_path:
+                Optional physical file path backing the module when the live
+                module is a projection of file-backed truth.
+            materialized_directory_path:
+                Optional directory where the module has been materialized as a
+                file-backed projection.
+            module_docstring:
+                Optional module docstring exposed through `__doc__` on the live
+                module object.
+            parent_name:
+                Optional explicit parent package name. This matters for dotted
+                module graphs and package attachment.
+            is_package:
+                True when the module should behave like a package shell rather
+                than a leaf module.
+
+        Raises:
+            ValueError:
+                If required identity or source values are empty.
+
+        Returns:
+            None.
+        """
+        if not module_name:
+            raise ValueError("module_name must not be empty.")
+        if not spell_crystal_id:
+            raise ValueError("spell_crystal_id must not be empty.")
+        if not source_text:
+            raise ValueError("source_text must not be empty.")
+        if not source_sha256:
+            raise ValueError("source_sha256 must not be empty.")
+        if not binding_signature:
+            raise ValueError("binding_signature must not be empty.")
+
+        ModuleType.__init__(self, module_name, module_docstring)
+
+        self._lock: threading.RLock = threading.RLock()
+        self._cleaned: bool = False
+        self._spell_crystal_id: str = spell_crystal_id
+        self._source_text: str = source_text
+        self._source_sha256: str = source_sha256
+        self._binding_signature: str = binding_signature
+        self._export_names: List[str] = (
+            list(export_names) if export_names is not None else []
+        )
+        self._internal_dependency_names: List[str] = (
+            list(internal_dependency_names)
+            if internal_dependency_names is not None
+            else []
+        )
+        self._external_dependency_names: List[str] = (
+            list(external_dependency_names)
+            if external_dependency_names is not None
+            else []
+        )
+        self._physical_file_path: Optional[str] = physical_file_path
+        self._materialized_directory_path: Optional[str] = materialized_directory_path
+        self._published_in_sys_modules: bool = False
+        self._parent_name: Optional[str] = (
+            parent_name if parent_name is not None else module_name.rpartition(".")[0] or None
+        )
+        self._is_package: bool = is_package
+        self._executed_source: bool = False
+
+        # FIX B (M1, patch persistence_loop_m1_m5_residue_2026_07_12): a
+        # non-angle-bracket, never-stat-resolvable file identity. linecache's
+        # angle-bracket guard used to short-circuit on "<synthetic:...>"
+        # BEFORE consulting the loader; the scheme-style form stat-fails on
+        # every OS (":" is illegal in Windows path segments) and falls back
+        # to `__loader__.get_source`, so inspect/traceback/pdb see source.
+        self.__file__ = "synthetic://{0}.py".format(module_name)
+        self.__package__ = module_name if is_package else (self._parent_name or "")
+        if is_package:
+            self.__path__ = [self.__file__]
+        self.__loader__ = None
+        self.__spec__ = None
+
+    def cleanup(self) -> None:
+        """
+        Unregister, unpublish, and clear owned metadata.
+
+        Contract:
+            - Idempotent and terminal.
+            - Removes this exact object from the synthetic registry and from
+              `sys.modules`; a different object published under the same name
+              is preserved.
+            - Detaches only a parent attribute that still points to this object.
+            - Drops linecache source, non-dunder runtime namespace values,
+              importlib metadata, owned analysis/source fields, and the lock.
+            - Does not remove the process-wide finder or clean automatically
+              created parent shells and sibling modules.
+
+        Returns:
+            None.
+
+        Threading:
+            Serialized by the instance lock; registry removal additionally uses
+            the class registry lock. Callers must not begin new module work
+            after cleanup starts.
+
+        Lifecycle / Cleanup:
+            Use `unpublish_from_sys_modules()` or
+            `unregister_from_import_registry()` for reversible visibility
+            changes. Cleanup is permanent object teardown.
+        """
+        if self._cleaned:
+            return
+
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self.unregister_from_import_registry()
+            self._detach_from_parent_package()
+            published_module = sys.modules.get(self.__name__)
+            if published_module is self:
+                del sys.modules[self.__name__]
+            # R12 (M1): hard teardown clears the cached source lines too.
+            linecache.cache.pop(self.__file__, None)
+
+            removable_names = [
+                name
+                for name in self.__dict__.keys()
+                if not (name.startswith("__") and name.endswith("__"))
+                and not name.startswith("_")
+            ]
+            for name in removable_names:
+                del self.__dict__[name]
+            self._published_in_sys_modules = False
+            self._is_package = False
+            self._executed_source = False
+            if hasattr(self, "__path__"):
+                delattr(self, "__path__")
+            del self._spell_crystal_id
+            del self._source_text
+            del self._source_sha256
+            del self._binding_signature
+            del self._export_names
+            del self._internal_dependency_names
+            del self._external_dependency_names
+            del self._physical_file_path
+            del self._materialized_directory_path
+            del self._parent_name
+            del self.__loader__
+            del self.__spec__
+            del self._lock
+
+    @property
+    def cleaned(self) -> bool:
+        """
+        Return whether the module has already been cleaned.
+
+        Returns:
+            bool:
+                True when cleanup has completed.
+        """
+        return self._cleaned
+
+    @property
+    def is_cleaned(self) -> bool:
+        """
+        Return the cleaned-state alias used elsewhere in the runtime.
+
+        Returns:
+            bool:
+                Current cleaned-state flag.
+        """
+        return self._cleaned
+
+    def check_cleaned(self) -> None:
+        """
+        Raise when the module has already been cleaned.
+
+        Raises:
+            RuntimeError:
+                If the module has already been cleaned.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            raise RuntimeError("SyntheticModule has already been cleaned.")
+
+    @property
+    def spell_crystal_id(self) -> str:
+        """
+        Return the crystal identity backing this live module.
+
+        Returns:
+            str:
+                Stable `SpellCrystal` id associated with this module.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._spell_crystal_id
+
+    @property
+    def source_text(self) -> str:
+        """
+        Return the current source text attached to this module.
+
+        Returns:
+            str:
+                Current module source text.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._source_text
+
+    @property
+    def source_sha256(self) -> str:
+        """
+        Return the SHA256 fingerprint of the current module source.
+
+        Returns:
+            str:
+                SHA256 fingerprint of `source_text`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._source_sha256
+
+    @property
+    def binding_signature(self) -> str:
+        """
+        Return the binding-signature string attached to this module.
+
+        Returns:
+            str:
+                Binding-signature string associated with the module.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._binding_signature
+
+    @property
+    def export_names(self) -> List[str]:
+        """
+        Return the current export/public-surface names.
+
+        Returns:
+            List[str]:
+                Copy of the module export names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._export_names)
+
+    @property
+    def internal_dependency_names(self) -> List[str]:
+        """
+        Return the internal managed dependency names for this module.
+
+        Returns:
+            List[str]:
+                Copy of internal dependency names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._internal_dependency_names)
+
+    @property
+    def external_dependency_names(self) -> List[str]:
+        """
+        Return the external/environment dependency names for this module.
+
+        Returns:
+            List[str]:
+                Copy of external dependency names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._external_dependency_names)
+
+    @property
+    def physical_file_path(self) -> Optional[str]:
+        """
+        Return the physical file path backing the module, if any.
+
+        Returns:
+            Optional[str]:
+                Physical file path, if one exists.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._physical_file_path
+
+    @property
+    def materialized_directory_path(self) -> Optional[str]:
+        """
+        Return the materialized directory path, if any.
+
+        Returns:
+            Optional[str]:
+                Materialized directory path, if one exists.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._materialized_directory_path
+
+    @property
+    def published_in_sys_modules(self) -> bool:
+        """
+        Return whether the module is currently published in `sys.modules`.
+
+        Returns:
+            bool:
+                True when this exact module object is currently registered in
+                `sys.modules` under its canonical name.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._published_in_sys_modules
+
+    @property
+    def parent_name(self) -> Optional[str]:
+        """
+        Return the parent package name, if any.
+
+        Returns:
+            Optional[str]:
+                Parent package name for this module.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._parent_name
+
+    @property
+    def is_package(self) -> bool:
+        """
+        Return whether this module should behave as a package shell.
+
+        Returns:
+            bool:
+                True when the module is package-shaped.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._is_package
+
+    @property
+    def executed_source(self) -> bool:
+        """
+        Return whether the module source has been executed at least once.
+
+        Returns:
+            bool:
+                True after one successful source execution.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._executed_source
+
+    def update_source_text(self, source_text: str, source_sha256: str) -> None:
+        """
+        Replace the module source text and fingerprint.
+
+        Purpose:
+            Swap the live module's source truth before a later explicit
+            execution or reload boundary.
+
+        Args:
+            source_text:
+                Replacement source text.
+            source_sha256:
+                SHA256 fingerprint for the replacement source text.
+
+        Raises:
+            ValueError:
+                If either value is empty.
+            RuntimeError:
+                If the module has already been cleaned.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if not source_text:
+                raise ValueError("source_text must not be empty.")
+            if not source_sha256:
+                raise ValueError("source_sha256 must not be empty.")
+
+            self._source_text = source_text
+            self._source_sha256 = source_sha256
+            self._executed_source = False
+
+    def update_analysis(
+            self,
+            export_names: Optional[Sequence[str]] = None,
+            internal_dependency_names: Optional[Sequence[str]] = None,
+            external_dependency_names: Optional[Sequence[str]] = None,
+    ) -> None:
+        """
+        Replace the derived export and dependency metadata for this module.
+
+        Purpose:
+            Refresh the analysis-side manifest fields after a crystal-analysis
+            pass without rebuilding the live module object itself.
+
+        Args:
+            export_names:
+                Replacement export/public-surface names, if provided.
+            internal_dependency_names:
+                Replacement internal dependency names, if provided.
+            external_dependency_names:
+                Replacement external dependency names, if provided.
+
+        Raises:
+            RuntimeError:
+                If the module has already been cleaned.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if export_names is not None:
+                self._export_names = list(export_names)
+            if internal_dependency_names is not None:
+                self._internal_dependency_names = list(internal_dependency_names)
+            if external_dependency_names is not None:
+                self._external_dependency_names = list(external_dependency_names)
+
+    def set_materialization_location(
+            self,
+            physical_file_path: Optional[str],
+            materialized_directory_path: Optional[str],
+    ) -> None:
+        """
+        Update filesystem materialization metadata for this module.
+
+        Purpose:
+            Record where this live module came from or where it has been
+            projected back out into the filesystem.
+
+        Args:
+            physical_file_path:
+                Physical module file path, if any.
+            materialized_directory_path:
+                Directory path where the module has been materialized, if any.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._physical_file_path = physical_file_path
+            self._materialized_directory_path = materialized_directory_path
+
+    def merge_namespace(self, namespace_values: Mapping[str, Any]) -> None:
+        """
+        Merge runtime namespace values into the live module namespace.
+
+        Purpose:
+            Inject additional runtime values into the live module object without
+            re-running source execution.
+
+        Args:
+            namespace_values:
+                Mapping of names to values that should be inserted into the
+                module namespace.
+
+        Raises:
+            RuntimeError:
+                If the module has already been cleaned.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.__dict__.update(namespace_values)
+
+    def _attach_to_parent_package(self) -> None:
+        """
+        Attach this module to its parent package object when available.
+
+        Purpose:
+            Keep parent package attribute exposure aligned with normal import
+            semantics for dotted module names.
+
+        Returns:
+            None.
+        """
+        if not self._parent_name:
+            return
+        parent_module = sys.modules.get(self._parent_name)
+        if parent_module is None:
+            return
+        setattr(parent_module, self.__name__.rsplit(".", 1)[-1], self)
+
+    def _detach_from_parent_package(self) -> None:
+        """
+        Remove this module from its parent package object when attached.
+
+        Purpose:
+            Undo parent-package attribute publication during unpublish or
+            cleanup so the synthetic world tears down cleanly.
+
+        Returns:
+            None.
+        """
+        if not self._parent_name:
+            return
+        parent_module = sys.modules.get(self._parent_name)
+        if parent_module is None:
+            return
+        child_name = self.__name__.rsplit(".", 1)[-1]
+        if hasattr(parent_module, child_name):
+            try:
+                if getattr(parent_module, child_name) is self:
+                    delattr(parent_module, child_name)
+            except AttributeError:
+                pass
+
+    def execute_source(self) -> None:
+        """
+        Execute the current module source into the live module namespace.
+
+        Purpose:
+            This is the core world-activation step. The module is assumed to be
+            published already so circular imports can see the partially
+            initialized object the same way importlib-managed modules do.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the module has already been cleaned.
+
+        Notes:
+            This method assumes the module is already published in
+            `sys.modules` when circular-import-safe behavior is required.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._attach_to_parent_package()
+            exec(self._source_text, self.__dict__, self.__dict__)
+            self._executed_source = True
+            # R12 (M1): a re-exec may carry NEW source text; drop any cached
+            # lines so introspection re-resolves the live source, never v1.
+            linecache.cache.pop(self.__file__, None)
+
+    def publish_to_sys_modules(self) -> None:
+        """
+        Publish this module object into `sys.modules` under its canonical name.
+
+        Purpose:
+            Make this exact live world object visible to import machinery and
+            sibling modules by canonical name.
+
+        Raises:
+            RuntimeError:
+                If the module has already been cleaned.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            sys.modules[self.__name__] = self
+            self._published_in_sys_modules = True
+            self._attach_to_parent_package()
+
+    def unpublish_from_sys_modules(self) -> None:
+        """
+        Remove this module from `sys.modules` if this exact object is published.
+
+        Purpose:
+            Withdraw this live module from import visibility without destroying
+            the object itself.
+
+        Raises:
+            RuntimeError:
+                If the module has already been cleaned.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            published_module = sys.modules.get(self.__name__)
+            if published_module is self:
+                del sys.modules[self.__name__]
+            self._detach_from_parent_package()
+            self._published_in_sys_modules = False
+            # R12 (M1): an unpublished module must stop serving cached source
+            # lines; the next introspection re-resolves through get_source.
+            linecache.cache.pop(self.__file__, None)
+
+    def register_in_import_registry(
+            self,
+            auto_parent_package_shells: bool = True,
+    ) -> None:
+        """
+        Register this module in the synthetic import registry.
+
+        Purpose:
+            Make the module discoverable through the class-level
+            importlib-backed finder/loader path.
+
+        Contract:
+            Registration does not publish or execute this module. Re-registering
+            the same object is idempotent for load-order bookkeeping; registering
+            another object under the same name replaces the registry entry.
+            Optional parent shells are registered recursively but remain
+            unmaterialized until an activation path needs them.
+
+        Args:
+            auto_parent_package_shells:
+                When True, register missing parent package shells for dotted
+                module names.
+
+        Returns:
+            None.
+
+        Notes:
+            Registration is what makes a module discoverable through the
+            synthetic finder/loader path. It is not the same thing as
+            publication or source execution.
+        """
+        self.check_cleaned()
+        with self.__class__._registry_lock:
+            if auto_parent_package_shells:
+                self.__class__._ensure_registered_parent_package_shells(
+                    self.__name__,
+                    self._spell_crystal_id,
+                )
+            self.__class__._registered_modules_by_name[self.__name__] = self
+            if self.__name__ not in self.__class__._load_order:
+                self.__class__._load_order.append(self.__name__)
+
+    def unregister_from_import_registry(self) -> None:
+        """
+        Remove this module from the synthetic import registry.
+
+        Purpose:
+            Stop importlib-driven discovery of this module without requiring an
+            immediate object destruction.
+
+        Contract:
+            Removes the entry only when it still points to this exact object and
+            removes every matching load-order row. Publication, namespace state,
+            and the global import hook are unchanged.
+
+        Returns:
+            None.
+        """
+        with self.__class__._registry_lock:
+            registered_module = self.__class__._registered_modules_by_name.get(
+                self.__name__
+            )
+            if registered_module is self:
+                del self.__class__._registered_modules_by_name[self.__name__]
+            self.__class__._load_order = [
+                module_name
+                for module_name in self.__class__._load_order
+                if module_name != self.__name__
+            ]
+
+    def materialize(
+            self,
+            auto_parent_package_shells: bool = True,
+            install_import_hook: bool = False,
+    ) -> "SyntheticModule":
+        """
+        Register, publish, and execute this module as live world state.
+
+        Purpose:
+            Provide one direct first-load path without forcing the caller to
+            juggle registry, publication, and execution manually.
+
+        Contract:
+            Performs register -> optional hook install -> parent-shell
+            materialization -> publication -> execution -> importlib metadata.
+            Publication precedes execution so circular imports can observe the
+            same partially initialized module object. An execution exception
+            propagates and does not automatically roll back prior visibility
+            steps; the owner must unpublish or clean during failure handling.
+
+        Args:
+            auto_parent_package_shells:
+                When True, register missing parent package shells for dotted
+                module names.
+            install_import_hook:
+                When True, ensure the synthetic finder/loader is installed so
+                downstream imports can resolve through importlib.
+
+        Returns:
+            SyntheticModule:
+                This live module object.
+
+        Notes:
+            This is the simplest full activation path:
+            register -> optional hook install -> parent shell materialization
+            -> publish -> execute -> attach importlib metadata.
+        """
+        self.check_cleaned()
+        self.register_in_import_registry(
+            auto_parent_package_shells=auto_parent_package_shells
+        )
+        if install_import_hook:
+            self.__class__.install_import_hook()
+        self.__class__._materialize_registered_parent_package_shells(self.__name__)
+        self.publish_to_sys_modules()
+        self.execute_source()
+        self.__class__._attach_importlib_metadata(self)
+        return self
+
+    def reload_via_importlib(
+            self,
+            install_import_hook: bool = True,
+    ) -> "SyntheticModule":
+        """
+        Reload this registered module through importlib.
+
+        Purpose:
+            Use the standard reload boundary once the module is already known to
+            the synthetic finder/loader.
+
+        Args:
+            install_import_hook:
+                When True, ensure the synthetic finder is installed before
+                reload.
+
+        Returns:
+            SyntheticModule:
+                The reloaded live module object.
+
+        Notes:
+            Reload is an explicit refresh boundary, not a first-load
+            substitute. The module must already be registered and published
+            coherently for this to be meaningful.
+        """
+        self.check_cleaned()
+        self.register_in_import_registry(auto_parent_package_shells=True)
+        if install_import_hook:
+            self.__class__.install_import_hook()
+        if sys.modules.get(self.__name__) is not self:
+            self.publish_to_sys_modules()
+        self.__class__._attach_importlib_metadata(self)
+        reloaded_module = importlib.reload(self)
+        if not isinstance(reloaded_module, SyntheticModule):
+            raise RuntimeError(
+                "Synthetic module reload returned a non-synthetic module for "
+                "'{0}'.".format(self.__name__)
+            )
+        return reloaded_module
+
+    @classmethod
+    def _hash_source_text(cls, source_text: str) -> str:
+        """
+        Return the SHA256 fingerprint for one source string.
+
+        Args:
+            source_text:
+                Source text to fingerprint.
+
+        Returns:
+            str:
+                SHA256 hex digest.
+        """
+        return hashlib.sha256(source_text.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def create_package_shell(
+            cls,
+            module_name: str,
+            spell_crystal_id: str,
+            module_docstring: Optional[str] = None,
+    ) -> "SyntheticModule":
+        """
+        Create one minimal synthetic package shell module.
+
+        Args:
+            module_name:
+                Package module name to create.
+            spell_crystal_id:
+                Crystal identity used for the shell.
+            module_docstring:
+                Optional package docstring.
+
+        Returns:
+            SyntheticModule:
+                New package-shell module object.
+
+        Notes:
+            Package shells are first-class because dotted module graphs and
+            circular imports depend on them being materialized honestly.
+        """
+        source_text = "PACKAGE_NAME = '{0}'\n".format(module_name)
+        return cls(
+            module_name=module_name,
+            spell_crystal_id=spell_crystal_id,
+            source_text=source_text,
+            source_sha256=cls._hash_source_text(source_text),
+            binding_signature="package-shell::{0}".format(module_name),
+            module_docstring=module_docstring,
+            is_package=True,
+        )
+
+    @classmethod
+    def _ensure_registered_parent_package_shells(
+            cls,
+            module_name: str,
+            spell_crystal_id: str,
+    ) -> None:
+        """
+        Ensure dotted parent packages exist in the registry or live world.
+
+        Args:
+            module_name:
+                Fully qualified child module name.
+            spell_crystal_id:
+                Crystal identity used when synthesizing missing package shells.
+
+        Returns:
+            None.
+
+        Notes:
+            This only registers missing parent shells. It does not materialize
+            them into `sys.modules` yet.
+        """
+        parent_name = module_name.rpartition(".")[0]
+        if not parent_name:
+            return
+        cls._ensure_registered_parent_package_shells(parent_name, spell_crystal_id)
+        if (
+                parent_name in cls._registered_modules_by_name
+                or parent_name in sys.modules
+        ):
+            return
+        package_shell = cls.create_package_shell(
+            module_name=parent_name,
+            spell_crystal_id="{0}::{1}".format(spell_crystal_id, parent_name),
+        )
+        package_shell.register_in_import_registry(auto_parent_package_shells=False)
+
+    @classmethod
+    def _materialize_registered_parent_package_shells(
+            cls,
+            module_name: str,
+    ) -> None:
+        """
+        Materialize any registered ancestor package shells for one module.
+
+        Purpose:
+            Satisfy importlib and reload expectations for dotted modules by
+            ensuring ancestor package shells are actually live before child
+            execution.
+
+        Args:
+            module_name:
+                Child module name whose parent package chain should be made
+                live before child execution.
+
+        Returns:
+            None.
+        """
+        parent_name = module_name.rpartition(".")[0]
+        if not parent_name:
+            return
+
+        cls._materialize_registered_parent_package_shells(parent_name)
+        with cls._registry_lock:
+            parent_module = cls._registered_modules_by_name.get(parent_name)
+        if parent_module is None:
+            return
+        if sys.modules.get(parent_name) is parent_module and parent_module.executed_source:
+            return
+        parent_module.publish_to_sys_modules()
+        parent_module.execute_source()
+        cls._attach_importlib_metadata(parent_module)
+
+    @classmethod
+    def _get_import_loader(cls) -> _SyntheticModuleImportLoader:
+        """
+        Return the singleton importlib loader for synthetic modules.
+
+        Purpose:
+            Preserve one stable loader identity for all synthetic-module specs
+            and reload flows in this interpreter.
+
+        Returns:
+            _SyntheticModuleImportLoader:
+                Shared loader object.
+        """
+        with cls._registry_lock:
+            if cls._import_loader is None:
+                cls._import_loader = _SyntheticModuleImportLoader()
+            return cls._import_loader
+
+    @classmethod
+    def _get_meta_path_finder(cls) -> _SyntheticModuleMetaPathFinder:
+        """
+        Return the singleton meta-path finder for synthetic modules.
+
+        Purpose:
+            Preserve one stable finder identity for synthetic-module discovery
+            in this interpreter.
+
+        Returns:
+            _SyntheticModuleMetaPathFinder:
+                Shared finder object.
+        """
+        with cls._registry_lock:
+            if cls._meta_path_finder is None:
+                cls._meta_path_finder = _SyntheticModuleMetaPathFinder()
+            return cls._meta_path_finder
+
+    @classmethod
+    def install_import_hook(cls) -> None:
+        """
+        Install the synthetic finder at the front of `sys.meta_path`.
+
+        Purpose:
+            Make registered synthetic modules discoverable through normal import
+            machinery.
+
+        Contract:
+            Process-global and idempotent. The one shared finder is inserted at
+            the front of `sys.meta_path`, giving registered synthetic names the
+            first opportunity to resolve while unknown names fall through.
+
+        Returns:
+            None.
+        """
+        finder = cls._get_meta_path_finder()
+        with cls._registry_lock:
+            if finder in sys.meta_path:
+                return
+            sys.meta_path.insert(0, finder)
+
+    @classmethod
+    def remove_import_hook(cls) -> None:
+        """
+        Remove the synthetic finder from `sys.meta_path`.
+
+        Purpose:
+            Stop synthetic-module discovery through importlib without deleting
+            the registered/live modules themselves.
+
+        Contract:
+            Process-global and idempotent. Removes every occurrence of this
+            class's shared finder while preserving all other meta-path entries,
+            registry members, `sys.modules` publications, and namespaces.
+
+        Returns:
+            None.
+        """
+        with cls._registry_lock:
+            finder = cls._meta_path_finder
+            if finder is None:
+                return
+            sys.meta_path = [entry for entry in sys.meta_path if entry is not finder]
+
+    @classmethod
+    def build_registered_spec(
+            cls,
+            module_name: str,
+    ) -> Optional[ModuleSpec]:
+        """
+        Build a `ModuleSpec` for one registered synthetic module.
+
+        Args:
+            module_name:
+                Registered synthetic module name.
+
+        Returns:
+            Optional[ModuleSpec]:
+                Importlib spec when the module is registered, otherwise None.
+
+        Notes:
+            The spec is built from the registered live module, not from a
+            second detached record object.
+        """
+        with cls._registry_lock:
+            module = cls._registered_modules_by_name.get(module_name)
+        if module is None:
+            return None
+
+        spec = importlib.util.spec_from_loader(
+            module_name,
+            cls._get_import_loader(),
+            is_package=module.is_package,
+        )
+        if spec is None:
+            return None
+        module_file = module.__file__
+        if module_file is None:
+            raise RuntimeError(
+                "Registered synthetic module '{0}' is missing __file__.".format(
+                    module_name,
+                )
+            )
+        spec.origin = module_file
+        if module.is_package:
+            spec.submodule_search_locations = [module_file]
+        return spec
+
+    @classmethod
+    def _attach_importlib_metadata(cls, module: "SyntheticModule") -> None:
+        """
+        Attach the current loader/spec metadata to one registered module.
+
+        Purpose:
+            Keep the live module object aligned with importlib expectations so
+            `import_module(...)` and `reload(...)` can treat it like a normal
+            managed module.
+
+        Args:
+            module:
+                Registered synthetic module.
+
+        Returns:
+            None.
+        """
+        spec = cls.build_registered_spec(module.__name__)
+        module.__loader__ = cls._get_import_loader()
+        module.__spec__ = spec
+        module_file = module.__file__
+        if module_file is None:
+            raise RuntimeError(
+                "Synthetic module '{0}' is missing __file__ metadata.".format(
+                    module.__name__,
+                )
+            )
+        if module.is_package:
+            module.__package__ = module.__name__
+            module.__path__ = [module_file]
+        else:
+            module.__package__ = module.parent_name or ""
+
+    @classmethod
+    def create_module_for_spec(
+            cls,
+            spec: ModuleSpec,
+    ) -> Optional["SyntheticModule"]:
+        """
+        Return the registered module object for one importlib spec.
+
+        Args:
+            spec:
+                Importlib spec created for one registered synthetic module.
+
+        Returns:
+            Optional[SyntheticModule]:
+                Registered module object, or None when absent.
+
+        Notes:
+            This returns the existing live module object rather than allocating
+            a second module for the same identity.
+        """
+        with cls._registry_lock:
+            module = cls._registered_modules_by_name.get(spec.name)
+        if module is None:
+            return None
+        cls._attach_importlib_metadata(module)
+        if sys.modules.get(spec.name) is not module:
+            module.publish_to_sys_modules()
+        return module
+
+    @classmethod
+    def exec_registered_module(cls, module_name: str) -> None:
+        """
+        Execute one registered synthetic module by name.
+
+        Purpose:
+            Bridge importlib loader execution back onto the registered world
+            object that owns the source text and execution state.
+
+        Args:
+            module_name:
+                Registered synthetic module name.
+
+        Returns:
+            None.
+
+        Raises:
+            ImportError:
+                If the requested module is not registered.
+        """
+        with cls._registry_lock:
+            module = cls._registered_modules_by_name.get(module_name)
+        if module is None:
+            raise ImportError(
+                "No registered synthetic module exists for '{0}'.".format(
+                    module_name,
+                )
+            )
+        module.execute_source()
+
+    @classmethod
+    def import_registered_module(
+            cls,
+            module_name: str,
+            install_import_hook: bool = True,
+    ) -> ModuleType:
+        """
+        Import one registered synthetic module through importlib.
+
+        Args:
+            module_name:
+                Registered synthetic module name.
+            install_import_hook:
+                When True, ensure the synthetic finder is installed first.
+
+        Returns:
+            ModuleType:
+                Imported module object.
+
+        Notes:
+            This is the preferred importlib-style activation path once the
+            module graph is already registered.
+        """
+        if install_import_hook:
+            cls.install_import_hook()
+        return importlib.import_module(module_name)
+
+    @classmethod
+    def loaded_module_names(cls) -> List[str]:
+        """
+        Return the registered synthetic module names in load order.
+
+        Purpose:
+            Expose one deterministic view of synthetic-module registration
+            order for diagnostics, tests, and bench visibility.
+
+        Returns:
+            List[str]:
+                Registered module names in the order they were first
+                registered.
+        """
+        with cls._registry_lock:
+            return list(cls._load_order)
+
+    @classmethod
+    def clear_import_registry(cls) -> None:
+        """
+        Clear the synthetic import registry and installed hook state.
+
+        Purpose:
+            Reset the synthetic import system for isolated tests or runtime
+            teardown without keeping stale finder state around.
+
+        Contract:
+            Removes the shared finder, atomically detaches the complete registry
+            and registration-order list, then unpublishes the detached modules
+            in reverse registration order. Module objects are not cleaned, so
+            owners may still inspect, re-register, or explicitly clean them.
+            Auto-created parent shells follow the same rule.
+
+        Returns:
+            None.
+        """
+        cls.remove_import_hook()
+        with cls._registry_lock:
+            registered_modules = list(cls._registered_modules_by_name.values())
+            cls._registered_modules_by_name = {}
+            cls._load_order = []
+        for module in reversed(registered_modules):
+            if not module.cleaned:
+                module.unpublish_from_sys_modules()
+
+    @classmethod
+    def has_live_synthetic_dependents(cls, module_name: str) -> bool:
+        """
+        Report whether any OTHER live published module depends on one name.
+
+        Purpose:
+            The R11 reverse-edge check: before a park unseeds a synthetic
+            module, callers ask whether the registry holds a different,
+            non-cleaned, currently PUBLISHED module whose declared internal
+            dependencies name the target - if so, the target must stay
+            resident so dependent deferred imports keep resolving.
+
+        Contract:
+            - Registry scan under the class registry lock; read-only.
+            - Only PUBLISHED dependents count: an unpublished/parked
+              dependent no longer holds the import surface open.
+
+        Args:
+            module_name:
+                Canonical module name being considered for unseed.
+
+        Returns:
+            bool: True when at least one live published dependent exists.
+        """
+        with cls._registry_lock:
+            registered = list(cls._registered_modules_by_name.values())
+        for candidate in registered:
+            if candidate.cleaned or candidate.__name__ == module_name:
+                continue
+            if not candidate._published_in_sys_modules:
+                continue
+            if module_name in candidate._internal_dependency_names:
+                return True
+        return False
+
+    def describe(self) -> Dict[str, Any]:
+        """
+        Return a snapshot of the live synthetic module state.
+
+        Purpose:
+            Provide one detached, inspection-friendly snapshot of the live
+            module world state, including package posture, executed state, and
+            publication state, without exposing the internal mutable fields
+            themselves.
+
+        Contract:
+            Returns fresh dependency/export lists and scalar metadata under the
+            instance lock. Runtime namespace values, registry state, parent
+            objects, loader/spec objects, and the synchronization lock are not
+            exposed. The retained source text is intentionally included.
+
+        Returns:
+            Dict[str, Any]:
+                Dictionary snapshot of the module metadata, package posture,
+                execution state, and publication state.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return {
+                "module_name": self.__name__,
+                "spell_crystal_id": self._spell_crystal_id,
+                "source_text": self._source_text,
+                "source_sha256": self._source_sha256,
+                "binding_signature": self._binding_signature,
+                "export_names": list(self._export_names),
+                "internal_dependency_names": list(self._internal_dependency_names),
+                "external_dependency_names": list(self._external_dependency_names),
+                "physical_file_path": self._physical_file_path,
+                "materialized_directory_path": self._materialized_directory_path,
+                "published_in_sys_modules": self._published_in_sys_modules,
+                "parent_name": self._parent_name,
+                "is_package": self._is_package,
+                "executed_source": self._executed_source,
+            }
+

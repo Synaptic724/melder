@@ -1,0 +1,90 @@
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, ClassVar
+
+
+from melder.aether.spellbook.spell_compiler.artifact_processor.spell_codegen_model import (
+    SpellCodegenModel,
+)
+from melder.aether.spellbook.spell_compiler.codegen_planner.spell_codegen_plan import (
+    SpellCodegenPlan,
+)
+
+if TYPE_CHECKING:
+    from melder.aether.spellbook.spell_compiler.spell_compiler_artifact import (
+        SpellCompilerArtifact,
+    )
+
+
+class SpellCodegenPlanStrategy(ABC):
+    """
+    One codegen-plan shaping strategy contract.
+
+    Purpose:
+        Define the seam where future planner strategies will transform assessed
+        processor state into the final planner-owned codegen plan output.
+
+    Contract:
+        - Strategies operate after artifact processing has completed.
+        - Strategies mutate `SpellCodegenPlan` in place.
+        - Concrete strategies are intentionally absent from this scaffold slice.
+
+    Ownership:
+        - Strategy instances are planner helper objects only.
+        - They do not own spell/runtime/compiler artifacts.
+    """
+
+    __slots__ = ()
+
+    @property
+    @abstractmethod
+    def strategy_id(self) -> str:
+        """
+        Return the stable identifier for this plan strategy.
+
+        Purpose:
+            Provide one deterministic provenance label for plan-shaping
+            diagnostics and later benchmark comparison.
+
+        Contract:
+            - Identifier must be stable for a given concrete strategy.
+
+        Returns:
+            str:
+                Stable strategy id used in plan provenance.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def apply(
+            self,
+            state: SpellCodegenModel,
+            artifact: "SpellCompilerArtifact",
+            plan: SpellCodegenPlan,
+    ) -> None:
+        """
+        Apply this strategy to the current planner-owned codegen plan.
+
+        Purpose:
+            Let one concrete plan strategy refine the current planner-owned
+            codegen plan after artifact processing has completed.
+
+        Contract:
+            - Reads from the assessed processor state.
+            - May read compatibility-oracle truth from the compiler artifact
+              during migration.
+            - Mutates only the supplied planner-owned codegen plan.
+            - Must not mutate borrowed compiler/runtime artifacts directly.
+
+        Args:
+            state:
+                Assessed codegen model.
+            artifact:
+                Compiler artifact supplying any temporary migration-oracle
+                truth that this strategy still needs.
+            plan:
+                Current planner-owned codegen plan.
+
+        Returns:
+            None.
+        """
+        raise NotImplementedError

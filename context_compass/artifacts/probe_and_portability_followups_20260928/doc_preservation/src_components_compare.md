@@ -1,0 +1,56 @@
+## lost: 31 lines
+- 1 x `    --doc system_docs/src_components.md`
+- 1 x `    --doc system_docs/src_components.md --check`
+- 1 x `    --doc system_docs/src_components.md --slice "<section name>"`
+- 1 x `  `system_docs/patches/active/system_doc_recompose_2026_08_01/component_material_for_migration.md``
+- 1 x `  `system_docs/patches/active/system_doc_recompose_2026_08_01/component_material_for_migration.md`,`
+- 1 x `  and code-description patches are inputs to this document while a lane is open.`
+- 1 x `  end_line: 1039`
+- 1 x `  guaranteed miss, not a near miss. They were MOVED, NOT DELETED, to`
+- 1 x `  loc: 1039`
+- 1 x `  produces one-line index fragments. All of it went to`
+- 1 x `  verified_at: 2026-09-26T20:10:34Z`
+- 1 x `- `system_docs/patches/active/` - active patch lanes; component`
+- 1 x `Consume it by slicing, never by reading this document whole:`
+- 1 x `HOW TO READ THIS CATALOG. `src_components_instructions.md` defines a twelve-field`
+- 1 x `RANGES - which the inventory does not carry - were moved verbatim to`
+- 1 x `Spec: `agent_onboarding/default/engineer/skills/system_document_build.md``
+- 1 x `Verify before trusting any range:`
+- 3 x `````
+- 3 x ````bash`
+- 1 x ``src_components_instructions.md`. Four defect classes closed.`
+- 1 x ``system_docs/patches/active/system_doc_recompose_2026_08_01/component_material_for_migration.md``
+- 1 x `companion is `src_components_index.md`, rebuilt in the SAME pass as any edit:`
+- 1 x `contract for C3 component entries and says NOTHING about C2 entries, so the shape`
+- 3 x `python tools/system_documents/index_document.py \`
+- 1 x `the Required Section Contract in `src_components_instructions.md`. The component`
+
+## added: 28 lines
+- 1 x `  (`component_material_for_migration.md`) of patch lane `system_doc_recompose_2026_08_01``
+- 1 x `  (`component_material_for_migration.md`) of patch lane `system_doc_recompose_2026_08_01`,`
+- 1 x `  component and code-description patches are inputs to this document while a lane is open.`
+- 1 x `  end_line: 1087`
+- 1 x `  guaranteed miss, not a near miss. They were MOVED, NOT DELETED, to the migration file`
+- 1 x `  loc: 1087`
+- 1 x `  produces one-line index fragments. All of it went to the migration file`
+- 1 x `  verified_at: 2026-09-28T01:12:44Z`
+- 1 x `- the documentation tooling's open patch lanes (they do not ship with this document) -`
+- 1 x `2026-09-28 portability and ConduitMeld docstrings (0.2.8205): `## Indexing` no longer pastes the index`
+- 1 x `HOW TO READ THIS CATALOG. The authoring instructions define a twelve-field`
+- 1 x `RANGES - which the inventory does not carry - were moved verbatim to the migration`
+- 1 x `The commands that rebuild, slice and check the index belong to the documentation`
+- 1 x `authoring instructions. Four defect classes closed.`
+- 1 x `companion is its index, `src_components_index`, rebuilt in the SAME pass as any`
+- 1 x `contract for C3 component entries and say NOTHING about C2 entries, so the shape`
+- 1 x `each lifetime uses, matching "Live-creation probe scope"; conduit_meld.py remeasured (1087).`
+- 1 x `edit. The index lists every section's line range and name, plus a staleness`
+- 1 x `file (`component_material_for_migration.md`) of patch lane `system_doc_recompose_2026_08_01``
+- 1 x `it by slicing, never by reading this document whole, and recompute the`
+- 1 x `lines name the recomposition patch lane by its id and the authoring instructions by role, not by path,`
+- 1 x `proof of this document (`line_count`, `line_ending`, `content_sha256`). Consume`
+- 1 x `section used to paste those commands and cite the tooling's own specification).`
+- 1 x `so the packaged copy names nothing its reader cannot resolve. ConduitMeld's docstrings now name the store`
+- 1 x `staleness proof before trusting any range.`
+- 1 x `the Required Section Contract of its authoring instructions. The component`
+- 1 x `tool's commands or cites the tooling's specification; the C1 note, the companion list and the handoff`
+- 1 x `tooling, which does not ship with this document (corrected 2026-09-28: this`

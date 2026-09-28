@@ -1,0 +1,6 @@
+python 3.14.7 gil_enabled=False
+late_waiter: passed in 0.50s
+jitter x300: {'passed': 300}
+mutant, hardened test: AssertionError:  in 0.00s
+mutant, original test: passed in 0.00s (thread errors raised meanwhile: ['AttributeError'])
+real cleanup restored, hardened test: passed in 0.00s

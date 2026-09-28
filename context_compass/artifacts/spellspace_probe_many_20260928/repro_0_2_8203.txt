@@ -1,0 +1,5 @@
+# melder 0.2.8203, 3.14t, 2026-09-28T00:31:01Z
+space bucket: list 1
+space probe: {'is_live': False, 'spell_id': 'e2051d53f11b91fc102f3b0aef6f4ed88ad5e52955fa45613ce4bf8aa14f7195', 'spell_name': 'Disp', 'existence': 'many', 'query_conduit_id': '01M3JPRAJ8WKH9EBDEJWZ13Q9Z', 'storage_scope_kind': 'owner_conduit_many', 'storage_owner_conduit_id': '01M3JPRAJ8WKH9EBDEJWZ13Q9Z', 'active_spellspace_id': None, 'creation_count': 0}
+conduit probe: {'is_live': False, 'spell_id': 'e2051d53f11b91fc102f3b0aef6f4ed88ad5e52955fa45613ce4bf8aa14f7195', 'spell_name': 'Disp', 'existence': 'many', 'query_conduit_id': '01M3JPRAJ8WKH9EBDEJWZ13Q9Z', 'storage_scope_kind': 'caller_conduit_many', 'storage_owner_conduit_id': '01M3JPRAJ8WKH9EBDEJWZ13Q9Z', 'active_spellspace_id': None, 'creation_count': 0}
+after exit cleanup_calls: 1

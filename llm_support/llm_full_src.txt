@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 755a2cecb066529e715364b1acf2f55368634a93fb540849f1e2582ab827ffa0
+SOURCE FINGERPRINT: 356b7496724b915a06c49ecd1d0aea4d2f5e824a8b9dcb78d40be805076c28a8
 FILE COUNT: 576
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: c2d8419b6350ebf63b8665fd7f65b5aadda988abb1d5cdd9abd8bf09d694d45e
+CONTENT SHA256: 7adc69369376219fca5422c57b286ba0b76080e8eb7a4202d7c79e27b3affc1f
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.82"
+__version__ = "0.2.8206"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -8030,7 +8030,7 @@ END FILE: src/melder/aether/aether_utility_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/aetheric_frame.py
-CONTENT SHA256: 5f62ac6e05db381480a24646e670f26c6a713ec82d0cd34b6bf2d212936ce14e
+CONTENT SHA256: 931a037d461fe15b019e14cd38160b3e9ddb64e53465a7a51128a31144619d18
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -8311,7 +8311,9 @@ class AethericFrame(Cleanable):
         Clean up all frame-owned registries and child services.
 
         Contract:
-        - Cleans child conduits before clearing conduit registries.
+        - Cleans child conduits before clearing conduit registries. A conduit whose
+          teardown raises (disposal failures are raised only after its teardown
+          finishes) is logged through the Aether logger and the frame keeps going.
         - Cleans the frame-owned dev-ops registry after child objects and
           after `DevOpsManager` drops its borrowed reference.
         - Clears spell and version registries owned by the frame.
@@ -8327,9 +8329,16 @@ class AethericFrame(Cleanable):
                 try:
                     conduit.permanent_cleanup()
                 except Exception:
-                    # DevOps surfaces can record incidents if you want;
-                    # frame cleanup never dies on conduit cleanup.
-                    pass
+                    # Frame cleanup never dies on conduit cleanup: log the failure
+                    # and keep going (DevOps surfaces can record incidents from the
+                    # log). A conduit raises its disposal failures only after its
+                    # own teardown finished.
+                    if self._aether._logger is not None:
+                        self._aether._logger.error(
+                            "Error cleaning conduit during frame teardown",
+                            "_cleanup_data_structures",
+                            exc_info=True,
+                        )
             self._conduits.clear()
 
         if self._conduit_ids_by_name is not None:
@@ -42486,7 +42495,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: 9db2aa7be082eafec1d152fe16b449e38f0210ab91a6a0c1946025f0c9e4eaaa
+CONTENT SHA256: 2b26074cf6837f3d6fddede777fd48525faba3c6c81da7a90aa9810c9961b596
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -42505,7 +42514,9 @@ from typing import (
     Dict,
     Generator,
     ClassVar,
+    List,
     Set,
+    Type,
 )
 # Melder Imports
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -43064,6 +43075,8 @@ class Conduit(Cleanable):
             - Permanent cleanup is idempotent after `_cleaned` flips. A successful
               soft lesser return ends its current use; callers must reacquire it
               through create_lesser_conduit before starting another use.
+            - Soft cleanup of a lesser already in its pool (`pooled_lesser`) does
+              nothing, so a second cleanup never pools the shell twice.
             - Permanent teardown fires `on_conduit_cleanup_start` and
               `on_conduit_cleanup_complete`. Soft return preserves the shell.
             - Dispatches to the lesser- or normal-conduit cleanup path based on the
@@ -43073,14 +43086,21 @@ class Conduit(Cleanable):
             - This is local conduit teardown only; it does not clean Aether or the
               owning frame itself.
             - Soft cleanup does not publish idle until descendants and named record/
-              directory retirement finish. Failed cleanup remains owned for retry;
+              directory retirement finish. A descendant that cannot finish its own
+              return, or a failed retirement, keeps this scope owned for retry;
               already completed disposal work is not rolled back.
+            - A failing disposal method stops neither path: the lesser still returns
+              to its pool and a permanent teardown still finishes, and then every
+              disposal failure is raised as one ExceptionGroup (since 0.2.8203;
+              permanent teardown used to only log them).
 
         Returns:
             None.
 
         Raises:
-            ExceptionGroup: Creation disposal or descendant soft cleanup failed.
+            ExceptionGroup: A disposal method failed (raised after the pool return or
+                the teardown finished), or a descendant could not finish its own pool
+                return (this scope stays attached for retry).
             Exception: Named record/directory retirement failed before pool return.
 
         """
@@ -43100,38 +43120,89 @@ class Conduit(Cleanable):
 
         Contract:
             - Normal conduits do not enter the lesser pool and still hard-clean.
+            - A lesser already in its pool (`pooled_lesser`) returns at once, so a
+              second soft cleanup never pools the shell twice.
             - Lesser conduits transition to `pooled_lesser` locally before they
               are returned to the root-owned pool.
             - Anonymous pool return stays local and does not refresh dev-ops or
               Nexus. Named return first retires its published scope metadata.
-            - Dispose Spaces and creations before clearing local lifecycle hooks
-              and restoring temporary Meld hooks. The ordinary path checks one
-              bool; only a modified Meld acquires its existing mutation lock.
+            - Disposes descendants first, then Spaces, then its own creations (the
+              permanent teardown order), before clearing local lifecycle hooks and
+              restoring temporary Meld hooks. The ordinary path checks one bool;
+              only a modified Meld acquires its existing mutation lock.
+            - Finishes the return when a disposal method fails: every child, Space
+              and store is emptied before any of its methods run, so their failures
+              are collected, the scope is pooled, and then one ExceptionGroup of
+              them is raised. The no-failure path allocates nothing for this.
             - Named scopes unregister and clear their label before idle publication.
               Unnamed return performs only the direct name check: no directory
               call, lock, allocation or scan is introduced on that branch.
-            - Failed descendant cleanup or named record retirement keeps this
-              scope attached and out of the pool so its owner can retry cleanup.
+            - A descendant that cannot finish its own return, or a failed named
+              record retirement or detach, keeps this scope attached and out of the
+              pool so its owner can retry cleanup; failures collected before it are
+              raised together with that error.
 
         Returns:
             None. The caller holds the conduit lock through idle publication.
+
+        Raises:
+            ExceptionGroup: Disposal failures, after this scope is back in its pool;
+                or an unfinished descendant or a retirement failure together with the
+                disposal failures collected before it (this scope stays attached).
+            Exception: Named record retirement or detach failed and nothing else did.
         """
-        if self._conduit_state is ConduitState.normal:
-            self._permanent_cleanup()
+        # Hot path (one call per scope cycle). Read the state once: only a lesser
+        # is returned, so the common case pays one comparison, as before.
+        state = self._conduit_state
+        if state is not ConduitState.lesser:
+            if state is ConduitState.normal:
+                self._permanent_cleanup()
+            # pooled_lesser: already back in its pool, nothing to do.
             return
-        self._cleanup_spellspaces_for_pool()
-        self._creations.reset_for_pool()
-        if self._name is not None:
-            self._prepare_named_for_pool()
-        else:
-            self._conduit_ward._detach_for_pool()
-        self._conduit_state = ConduitState.pooled_lesser
-        self._conduit_ward._conduit_type = ConduitState.pooled_lesser
+        # One read each of the ward and the pooled state serves every use below:
+        # on the free-threaded build an attribute or enum-member load of a shared
+        # object costs about 5-14 ns (measured 2026-09-27, scope_exit_dispose lane).
+        ward = self._conduit_ward
+        pooled = ConduitState.pooled_lesser
+        failures: Optional[List[Exception]] = None
+        # The caller holds this conduit's lock, which every new child link also
+        # takes, so this unlocked read cannot miss a racing attachment.
+        if ward._lesser_conduits:
+            failures = ward._cleanup_children_for_pool(collect_finished=True)
+        space_failures = self._cleanup_spellspaces_for_pool()
+        if space_failures is not None:
+            if failures is None:
+                failures = space_failures
+            else:
+                failures.extend(space_failures)
+        try:
+            self._creations.reset_for_pool()
+        except ExceptionGroup as store_failures:
+            if failures is None:
+                failures = [store_failures]
+            else:
+                failures.append(store_failures)
+        try:
+            if self._name is not None:
+                self._prepare_named_for_pool()
+            else:
+                ward._detach_for_pool()
+        except Exception as retirement_failure:
+            if failures is None:
+                raise
+            raise ExceptionGroup(
+                "Lesser conduit could not finish its pool return and stays attached for retry.",
+                [*failures, retirement_failure],
+            ) from None
+        self._conduit_state = pooled
+        ward._conduit_type = pooled
         if self._local_conduit_hooks is not None:
             self._local_conduit_hooks.clear()
         if self._meld._meld_hooks_modified:
             self._meld._reset_pooled_meld_hooks()
         self._conduit_pool.return_lesser_conduit(self)
+        if failures is not None:
+            raise ExceptionGroup("Lesser conduit returned to its pool with disposal failures.", failures)
 
     def _prepare_named_for_pool(self) -> None:
         """Retire a named scope only after descendants finish, retaining ownership on failure.
@@ -43160,7 +43231,7 @@ class Conduit(Cleanable):
         self._name = None
         self._conduit_ward._detach_for_pool()
 
-    def _cleanup_spellspaces_for_pool(self) -> None:
+    def _cleanup_spellspaces_for_pool(self) -> Optional[List[Exception]]:
         """
         Internal
 
@@ -43171,29 +43242,46 @@ class Conduit(Cleanable):
               assigned exactly once in `__init__` and only deleted during
               permanent teardown, so this path drains it directly without a
               defensive type probe.
+            - Every space is cleaned even when one raises. A space finishes its
+              own pool return before raising (its store is emptied first), so each
+              error is collected, not logged, for the caller to raise once this
+              conduit's return is complete.
+            - The list is allocated only when a space failed.
+            - Returns None at once when this thread has no open managed Space
+              and no manual Space is registered (the common case), without the
+              drain call.
+
+        Returns:
+            Optional[List[Exception]]: The spaces' cleanup errors, or None.
         """
         # Hot path: runs once per pooled lesser cleanup (one per scope cycle).
+        # Nothing to sweep in the common case: return before the drain call.
+        # Reads the owned thread state's per-thread stack directly (saves a
+        # call per cycle, measured 2026-09-27); keep in step with
+        # SpellSpaceThreadState.drain.
+        if not self._spellspace_registry and not self._spellspace_stack._local.spellspace_stack:
+            return None
         # The stack holder type is an owned lifecycle invariant; drain directly.
+        failures: Optional[List[Exception]] = None
         active_spellspaces = self._spellspace_stack.drain()
         for spellspace in active_spellspaces:
             try:
                 spellspace.cleanup()
-            except Exception:
-                self._logger.error(
-                    "Error cleaning spellspace for pool",
-                    "_cleanup_spellspaces_for_pool",
-                    exc_info=True,
-                )
+            except Exception as error:
+                if failures is None:
+                    failures = [error]
+                else:
+                    failures.append(error)
 
         while self._spellspace_registry:
             try:
                 self._spellspace_registry.pop().cleanup()
-            except Exception:
-                self._logger.error(
-                    "Error cleaning spellspace for pool",
-                    "_cleanup_spellspaces_for_pool",
-                    exc_info=True,
-                )
+            except Exception as error:
+                if failures is None:
+                    failures = [error]
+                else:
+                    failures.append(error)
+        return failures
 
     def permanent_cleanup(self) -> None:
         """
@@ -43210,12 +43298,24 @@ class Conduit(Cleanable):
         self._permanent_cleanup_requested = True
         self.cleanup()
 
-    def _permanent_cleanup(self):
+    def _permanent_cleanup(self) -> None:
         """
         Internal
 
         Cleans up all resources associated with the Conduit, including
         deregistering from Aether and Spellbook, and removing all references.
+
+        Contract:
+            - Every teardown step runs when a disposal method fails: the ward's
+              lesser lineage, the SpellSpaces, the stores and (normal) the cluster
+              facade each finish before their disposal failures are collected;
+              other step errors stay logged.
+            - Hooks fire, hook maps are deleted and the logger goes last; then the
+              collected disposal failures are raised as one ExceptionGroup.
+
+        Raises:
+            ExceptionGroup: One or more owned objects failed a disposal method.
+            RuntimeError: The conduit state is unknown.
         """
         if self._conduit_hooks or self._local_conduit_hooks:
             self._fire_conduit_hooks("on_conduit_cleanup_start", self)
@@ -43224,9 +43324,9 @@ class Conduit(Cleanable):
                     ConduitState.lesser,
                     ConduitState.pooled_lesser,
             ):
-                self._cleanup_lesser_conduit()
+                disposal_failures = self._cleanup_lesser_conduit()
             elif self._conduit_state == ConduitState.normal:
-                self._cleanup_normal_conduit()
+                disposal_failures = self._cleanup_normal_conduit()
             else:
                 self._logger.error("Unknown Conduit state during cleanup", "cleanup")
                 raise RuntimeError("Conduit state is unknown during cleanup")
@@ -43249,9 +43349,9 @@ class Conduit(Cleanable):
                     ConduitState.lesser,
                     ConduitState.pooled_lesser,
             ):
-                self._cleanup_lesser_conduit()
+                disposal_failures = self._cleanup_lesser_conduit()
             elif self._conduit_state == ConduitState.normal:
-                self._cleanup_normal_conduit()
+                disposal_failures = self._cleanup_normal_conduit()
             else:
                 self._logger.error("Unknown Conduit state during cleanup", "cleanup")
                 raise RuntimeError("Conduit state is unknown during cleanup")
@@ -43267,8 +43367,10 @@ class Conduit(Cleanable):
             except Exception:
                 pass
             del self._logger
+        if disposal_failures:
+            raise ExceptionGroup("Conduit torn down with disposal failures.", disposal_failures)
 
-    def _cleanup_lesser_conduit(self) -> None:
+    def _cleanup_lesser_conduit(self) -> List[Exception]:
         """
         Internal
 
@@ -43278,9 +43380,13 @@ class Conduit(Cleanable):
             Remove named discovery before deleting frame/ward references. Unnamed
             shells skip directory work. The shared Book and root maps remain owned
             by the lineage root; local children and stores follow existing teardown.
+            The ward (lesser lineage), the SpellSpaces and the own store raise their
+            disposal failures only after finishing; those groups are collected and
+            returned, other step errors stay logged.
         Returns:
-            None.
+            List[Exception]: Collected disposal failure groups; empty when none failed.
         """
+        failures: List[Exception] = []
         if self._name is not None:
             try:
                 self._emit_conduit_retirement()
@@ -43318,14 +43424,18 @@ class Conduit(Cleanable):
         try:
             if self._conduit_ward is not None:
                 self._conduit_ward.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
         except Exception:
             self._logger.error("Error cleaning conduit ward", "_cleanup_lesser_conduit", exc_info=True)
 
-        self._cleanup_spellspaces()
+        failures.extend(self._cleanup_spellspaces())
 
         try:
             if self._creations is not None:
                 self._creations.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
         except Exception:
             self._logger.error("Error cleaning creations", "_cleanup_lesser_conduit", exc_info=True)
 
@@ -43349,14 +43459,25 @@ class Conduit(Cleanable):
         del self._configuration
         del self._root_conduit_id
         del self._nexus
+        return failures
 
 
-    def _cleanup_normal_conduit(self) -> None:
+    def _cleanup_normal_conduit(self) -> List[Exception]:
         """
         Internal
 
         Cleans up a normal Conduit.
+
+        Contract:
+            The cluster facade, the ward (lesser lineage), the SpellSpaces and the
+            own store raise their disposal failures only after finishing; those
+            groups are collected and returned, other step errors stay logged, and
+            every later step still runs.
+
+        Returns:
+            List[Exception]: Collected disposal failure groups; empty when none failed.
         """
+        failures: List[Exception] = []
         self._remove_conduit_record_from_nexus()
         # 1) Meld runtime (stop new object creation paths)
         if self._creation_gate_controller is not None:
@@ -43373,6 +43494,8 @@ class Conduit(Cleanable):
         try:
             if self._cluster_creations is not None:
                 self._cluster_creations.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
         except Exception:
             self._logger.error(
                 "Error cleaning cluster facade", "_cleanup_normal_conduit", exc_info=True
@@ -43387,16 +43510,20 @@ class Conduit(Cleanable):
         try:
             if self._conduit_ward is not None:
                 self._conduit_ward.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
         except Exception:
             self._logger.error("Error cleaning conduit ward", "_cleanup_normal_conduit", exc_info=True)
 
         # 2.5) Spellspaces (ensure stack is flushed)
-        self._cleanup_spellspaces()
+        failures.extend(self._cleanup_spellspaces())
 
         # 3) Creations
         try:
             if self._creations is not None:
                 self._creations.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
         except Exception:
             self._logger.error("Error cleaning creations", "_cleanup_normal_conduit", exc_info=True)
 
@@ -43474,6 +43601,7 @@ class Conduit(Cleanable):
         del self._crystallizer
         del self._mutation_research
         del self._nexus
+        return failures
 
     def _publish_conduit_record_to_nexus(self, *, pooled: bool = False) -> None:
         """
@@ -43562,14 +43690,24 @@ class Conduit(Cleanable):
 
         self._nexus._remove_conduit_record(self._id, self._aetheric_frame_name)
 
-    def _cleanup_spellspaces(self) -> None:
+    def _cleanup_spellspaces(self) -> List[Exception]:
         """
         Internal
 
         Best-effort cleanup of any spellspaces still on the stack.
+
+        Contract:
+            - Permanently cleans the calling thread's managed spaces and every
+              registry-tracked space, then the spellspace pool.
+            - A space's disposal failures - the ExceptionGroup its permanent cleanup
+              raises after finishing - are collected and returned; other errors are
+              logged, as before.
+
+        Returns:
+            List[Exception]: Collected disposal failure groups; empty when none failed.
         """
         if self._spellspace_stack is None:
-            return
+            return []
         try:
             stack_holder = self._spellspace_stack
             if isinstance(stack_holder, SpellSpaceThreadState):
@@ -43583,14 +43721,17 @@ class Conduit(Cleanable):
                 "_cleanup_spellspaces",
                 exc_info=True,
             )
-            return
+            return []
         registry = list(self._spellspace_registry) if self._spellspace_registry is not None else []
         spellspaces = list(dict.fromkeys([*stack, *registry]))
         if self._spellspace_registry is not None:
             self._spellspace_registry.clear()
+        failures: List[Exception] = []
         for spellspace in spellspaces:
             try:
                 spellspace.permanent_cleanup()
+            except ExceptionGroup as disposal_failures:
+                failures.append(disposal_failures)
             except Exception:
                 self._logger.error(
                     "Error cleaning spellspace",
@@ -43606,6 +43747,7 @@ class Conduit(Cleanable):
                     "_cleanup_spellspaces",
                     exc_info=True,
                 )
+        return failures
 
 
     #endregion Cleanup and Disposal
@@ -43721,7 +43863,10 @@ class Conduit(Cleanable):
                 On scope exit, if stack integrity is violated.
         """
         space = self._spellspace_pool.acquire_untracked()
-        self._spellspace_stack.push(space)
+        # Hot path (one entry per managed scope): the owned thread state's push,
+        # inlined to save a call per scope (measured 2026-09-27); keep in step
+        # with SpellSpaceThreadState.push.
+        self._spellspace_stack._local.spellspace_stack.append(space)
         return space
 
     def prewarm_spellspaces(self, count: int) -> int:
@@ -44049,62 +44194,70 @@ class Conduit(Cleanable):
 
 
     #region Context Management
-    def __enter__(self) -> "Conduit":
+    def __enter__(self) -> Conduit:
         """
         Public API
 
-        Enter the conduit lock context and return `self`.
+        Enter a dispose scope over this conduit and return `self`.
 
         Purpose:
-            Allow internal or advanced coordinated operations to hold the conduit lock
-            across a controlled block without exposing `_lock` directly.
+            Make `with conduit:` behave like a .NET `using` block: the conduit is
+            released when the block ends. Pair it with `enter_lesser_conduit()` for a
+            request-scoped lesser.
 
         Contract:
-            - Acquires the conduit lock and returns `self`, so `with conduit:` groups
-              several operations under one lock rather than exposing `_lock`.
-            - The lock is REENTRANT, so nested `with` blocks are legal and each level
-              must exit.
-            - Performs no cleaned-state check of its own; callers must be operating
-              on a live conduit.
+            - Returns `self` and does nothing else: no lock is taken and no state
+              changes (changed 0.2.8203; `with conduit:` used to hold the conduit
+              lock for the block).
+            - Performs no cleaned-state check; entering a cleaned conduit is a caller
+              contract violation, like any other use after cleanup.
 
         Returns:
             Conduit:
-                This conduit instance while the lock is held.
+                This conduit, for use inside the block.
 
         """
-        self._lock.acquire()
         return self
 
     def __exit__(
             self,
-            exc_type: type[BaseException] | None,
-            exc_value: BaseException | None,
-            traceback: TracebackType | None,
+            exc_type: Optional[Type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
     ) -> None:
         """
         Public API
 
-        Exit the conduit lock context.
+        End the dispose scope: clean this conduit up.
 
         Contract:
-            - Releases unconditionally, including when the block raised. Exception
-              arguments are accepted and IGNORED, so no exception is suppressed.
-            - Exactly one release per `__enter__`; the lock is reentrant.
+            - Calls `cleanup()` at every block exit, including when the block raised:
+              a lesser disposes its descendants, SpellSpaces and own creations and
+              returns to its pool; a normal (root) conduit is torn down permanently.
+            - Never suppresses the block's exception (returns None).
+            - Disposal failures are raised after the cleanup finished, as one
+              ExceptionGroup; when the block raised too, that group rises with the
+              block's exception as its `__context__` (Python's rule for an error
+              raised in `__exit__`).
+            - A lesser already returned inside the block (an explicit `cleanup()`)
+              is not pooled twice while the shell is idle. If another caller
+              acquired the shell in between, this exit reaches that new lease, so a
+              scope must not be released inside its own block.
 
         Threading:
-            Releases the conduit lock acquired by `__enter__`.
-
-        Lifecycle / Cleanup:
-            Performs no cleaned-state check - it is purely the unlock half.
+            Takes the conduit lock only inside `cleanup()`.
 
         Raises:
-            RuntimeError: If called without a matching `__enter__` on this thread.
+            ExceptionGroup: Disposal failures, after the scope was cleaned up.
+            Exception: A named lesser's record retirement failed; the lesser stays
+                attached for a retry.
 
         Returns:
             None.
 
         """
-        self._lock.release()
+        self.cleanup()
+        return None
 
     #endregion Context Management
     #region Logger
@@ -45210,6 +45363,53 @@ class Conduit(Cleanable):
                 new_conduit._publish_conduit_record_to_nexus()
 
         return new_conduit
+
+    def enter_lesser_conduit(
+            self,
+            logger: Optional[Any] = None,
+            *,
+            name: Optional[str] = None,
+    ) -> Conduit:
+        """
+        Public API
+
+        Create a lesser conduit for use as a `with` block scope.
+
+        Usage:
+            with conduit.enter_lesser_conduit() as lesser:
+                service = lesser.meld(spell_id=service_id)
+            # the block exit ran lesser.cleanup(): its objects are disposed and
+            # the shell is back in the root's pool
+
+        Contract:
+            - Returns exactly what `create_lesser_conduit(logger, name=name)` returns:
+              a live lesser attached to this conduit, named when `name` is given.
+            - `with` calls `cleanup()` at block exit, even when the block raised: the
+              lesser disposes its descendants, SpellSpaces and own creations and
+              returns to its pool. Disposal failures are raised after the return as
+              one ExceptionGroup, carrying the block's exception as `__context__`
+              when the block raised too.
+            - Plain: nothing is pushed on a per-thread stack and no implicit current
+              scope is tracked, so the call costs what `create_lesser_conduit` costs
+              and blocks nest freely.
+            - Called without `with`, the caller calls `cleanup()` itself, exactly as
+              for `create_lesser_conduit`.
+
+        Args:
+            logger:
+                Optional logger, passed to `create_lesser_conduit` unchanged.
+            name:
+                Optional exact name for this use of the child scope.
+
+        Returns:
+            Conduit: The new lesser conduit, to use as the `with` target.
+
+        Raises:
+            RuntimeError: If this conduit or the named child is cleaned during acquisition.
+            ValueError: Name is empty or already owned/reserved in this frame.
+            TypeError: A supplied name is not a string.
+        """
+        return self.create_lesser_conduit(logger, name=name)
 
     def _link_new_lesser_under_lock(
             self, new_conduit: Conduit, *, name: Optional[str] = None,
@@ -46962,6 +47162,13 @@ class Conduit(Cleanable):
               the door's, and any miss continues in the door's id lane. A plain
               id meld of an existing-object spell returns its bound object there
               without calling the existing-creation door.
+            - On an automatic conduit a meld by registered name (`meld("Name")`)
+              or by class (`meld(spell=Cls)`) with no `spellframe` or
+              `binding_name` is served the same way from the door's name/class
+              registry (2026-09-27), with the same guards and arms; the entry is
+              minted by the door after one successful meld of that shape, so
+              results, errors and lifetimes are the door's. A miss, an unhashable
+              `spell`, an instance or a callable as `spell` continue in the door.
             - GATING IS MODE-DEPENDENT: in dynamic mode entry runs through the
               creation gate and is ticketed; in automatic mode the gate is BYPASSED
               entirely for a minimal hot path. The same call therefore has different
@@ -47019,21 +47226,27 @@ class Conduit(Cleanable):
             self.check_cleaned()
 
         meld_component = self._meld
-        # Warm automatic id lane (2026-09-26): the dominant call - an id meld on an automatic
-        # conduit - reads the meld door's fast-door entry here, saving the door frame and keyword
-        # marshaling on a hit (solo meld 209 -> 111 ns on 3.14t). The guard ladder and both arms
-        # mirror `ConduitMeld.meld` exactly (`Meld._fast_meld_doors` lists every reader); only
-        # guard reads sit inside the AttributeError try, so a constructor's own AttributeError is
-        # never swallowed. A miss continues in the door's positional id lane; every other call
-        # shape keeps the path below.
-        if (
-            type(spell_id) is str
-            and spell is None
-            and spellframe is None
-            and binding_name is None
-            and not self.__dynamic_environment__
-        ):
-            fast_entry = meld_component._fast_meld_doors.get(spell_id)
+        # Warm automatic lanes (id lane 2026-09-26, name/class lane 2026-09-27): on an automatic
+        # conduit a meld by id, by registered name or by class reads the meld door's success-only
+        # entry here - ids from `_fast_meld_doors`, names and classes from `_fast_input_doors` -
+        # saving the door frame, the name/class -> id lookup and keyword marshaling on a hit (id:
+        # solo meld 209 -> 111 ns; name: 453 -> ~200 ns prototyped, both on 3.14t). The guard
+        # ladder and both arms mirror `ConduitMeld.meld` exactly (`Meld._fast_meld_doors` lists
+        # every reader); only guard reads sit inside the AttributeError try, so a constructor's
+        # own AttributeError is never swallowed. An id miss continues in the door's positional id
+        # lane; a name/class miss and every other call shape keep the path below, and the door
+        # mints the name/class entry on success.
+        if spellframe is None and binding_name is None and not self.__dynamic_environment__:
+            fast_entry = None
+            if spell is None:
+                if type(spell_id) is str:
+                    fast_entry = meld_component._fast_meld_doors.get(spell_id)
+            elif spell_id is None:
+                try:
+                    fast_entry = meld_component._fast_input_doors.get(spell)
+                except TypeError:
+                    # Unhashable `spell` (never minted): the door resolves it uncached.
+                    fast_entry = None
             if fast_entry is not None:
                 (
                     door_spell,
@@ -47071,9 +47284,10 @@ class Conduit(Cleanable):
                     if spellbook._cache_emit_required:
                         spellbook._emit_cache_file_if_required()
                     return instance
-            if override is None:
-                return meld_component.meld(spell_id)
-            return meld_component.meld(spell_id, spell_override=override)
+            if spell is None and type(spell_id) is str:
+                if override is None:
+                    return meld_component.meld(spell_id)
+                return meld_component.meld(spell_id, spell_override=override)
 
         if spell is not None and spell_id is not None:
             raise ValueError("meld accepts either `spell` or `spell_id`, not both.")
@@ -51014,7 +51228,7 @@ END FILE: src/melder/aether/conduit/conduit_state/conduit_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit_ward/conduit_ward.py
-CONTENT SHA256: da8fb5b02095610c2aadf813cacfc1ade083383b7758627a078c4000e1c0318b
+CONTENT SHA256: b816e400b7e2af0626407475ff7254cef3054c84cb80a2e4b09fc0b6f65d37a0
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -51275,11 +51489,17 @@ class ConduitWard(Cleanable):
 
         Behaviour:
           - Best-effort sever all peer contracts (uses `_remove_contract`, which updates Spellbook maps).
-          - Cleanup all lesser conduits and clear lineage references.
+          - Permanently clean all lesser conduits and clear lineage references. Every child is
+            torn down even when one raises; a child's disposal failures (the ExceptionGroup its
+            teardown raises after finishing) are collected, other child errors are logged.
           - Null internal state and mark cleaned. Logger metadata is nulled last.
+          - Raises the collected disposal failures last, after this ward is fully cleaned.
 
         Returns:
             None
+
+        Raises:
+            ExceptionGroup: One or more lesser conduits were torn down with disposal failures.
         """
         if self._cleaned:
             return
@@ -51290,8 +51510,9 @@ class ConduitWard(Cleanable):
             # Best-effort sever peer contracts (updates Spellbook links)
             self._clean_up_links()
 
-            # Clean up lesser conduits
-            self._clean_up_lesser_conduits_links()
+            # Clean up lesser conduits; their disposal failures are raised once
+            # this ward has finished its own teardown.
+            child_failures = self._clean_up_lesser_conduits_links()
 
             # Clear lineage/contract state
             self._lesser_conduits.clear()
@@ -51316,29 +51537,42 @@ class ConduitWard(Cleanable):
             del self._conduit_cloud
             del self._dynamic
             
-            # Null logger metadata last (outside lock)
+            # Null logger metadata last (still inside the ward lock)
             if  hasattr(self._logger, "cleanup"):
                 self._logger.cleanup()
             del self._logger
+            if child_failures:
+                raise ExceptionGroup(
+                    "Lesser conduits torn down with disposal failures.", child_failures
+                )
 
 
-    def _clean_up_lesser_conduits_links(self) -> None:
+    def _clean_up_lesser_conduits_links(self) -> List[Exception]:
         """
         Internal
 
         Recursively clean up and detach all lesser conduits (children).
 
-        Best-effort: errors from child cleanup are logged and do not stop siblings.
+        Contract:
+            - Attempts every child: an error from one child's cleanup does not stop its
+              siblings.
+            - A child's disposal failures - the ExceptionGroup its permanent teardown
+              raises after finishing - are collected and returned so the owner raises
+              them last.
+            - Any other child error is logged, as before, and not returned.
 
         Returns:
-            None
+            List[Exception]: Collected disposal failure groups; empty when none failed.
         """
+        failures: List[Exception] = []
         if not self._lesser_conduits:
-            return
+            return failures
 
         for lesser_conduit in list(self._lesser_conduits.values()):
             try:
                 lesser_conduit.permanent_cleanup()
+            except ExceptionGroup as disposal_failures:
+                failures.append(disposal_failures)
             except Exception as e:
                 self._logger.error(
                     f"cleanup lesser link failed: {e}",
@@ -51347,6 +51581,7 @@ class ConduitWard(Cleanable):
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
         self._lesser_conduits.clear()
+        return failures
 
     def _clean_up_links(self) -> None:
         """
@@ -51411,6 +51646,10 @@ class ConduitWard(Cleanable):
             - Keeps the root conduit reference intact for later reuse.
             - Failed descendants remain owned; raises before detaching this ward
               so an ancestor cannot enter the pool while a child is still live.
+            - A descendant that finished its pool return but raised its disposal
+              failures does not block the detach; those failures are logged here.
+              A conduit's own pool return cleans its children first and raises
+              them instead, so this path normally finds no children.
 
         Raises:
             ExceptionGroup: One or more descendant cleanup operations failed.
@@ -51442,43 +51681,77 @@ class ConduitWard(Cleanable):
             self._parent_conduit = None
             self._lesser_conduits.clear()
 
-    def _cleanup_children_for_pool(self) -> None:
-        """Soft-clean current descendants while retaining every failed child for retry.
+    def _cleanup_children_for_pool(self, collect_finished: bool = False) -> Optional[List[Exception]]:
+        """Soft-clean current descendants; keep every child that could not finish for retry.
 
         Contract:
-            Used by ordinary recursive detach and named record retirement. Snapshot
-            membership under the ward lock because successful child cleanup removes
-            its own entry; call children outside that lock. Attempt every sibling,
-            then raise grouped failures before the caller can detach/reuse its scope.
-            The ordinary no-children detach path does not enter this helper.
+            Used by a lesser's pool return (first, before its SpellSpaces and its own
+            store), by ordinary recursive detach and by named record retirement.
+            Snapshot membership under the ward lock because a child that finishes its
+            pool return removes its own entry; call children outside that lock and
+            attempt every sibling.
+            A child whose cleanup raised but which is no longer attached finished its
+            pool return (a lesser raises its disposal failures after it re-pools): its
+            error is returned when `collect_finished` is True and logged otherwise.
+            A child still attached could not finish: it keeps its parent link, and once
+            every sibling was tried one ExceptionGroup of the unfinished and finished
+            failures is raised before the caller can detach or reuse its scope.
+            The ordinary no-children path returns at once without allocating.
+        Args:
+            collect_finished: Return finished children's failures to the caller instead
+                of logging them.
         Returns:
-            None when descendant cleanup completes.
+            Optional[List[Exception]]: Finished children's failures when
+            `collect_finished` is True and a finished child raised; otherwise None.
         Raises:
-            ExceptionGroup: One or more children failed; their parent links remain.
+            ExceptionGroup: One or more children could not finish; their parent links remain.
         """
         with self._lock:
             if not self._lesser_conduits:
-                return
+                return None
             children = list(self._lesser_conduits.values())
-        failures: list[Exception] = []
+        retained: List[Exception] = []
+        finished: List[Exception] = []
         for lesser_conduit in children:
             try:
                 lesser_conduit.cleanup()
             except Exception as error:
-                failures.append(error)
+                # A child that finished its pool return removed its own entry (under
+                # its own lock) before raising its disposal failures.
+                with self._lock:
+                    still_attached = lesser_conduit._id in self._lesser_conduits
+                if not still_attached:
+                    finished.append(error)
+                    continue
+                retained.append(error)
                 self._logger.error(
                     f"pool descendant cleanup failed: {error}",
                     method_name="_cleanup_children_for_pool", exc_info=True,
                     owner_id=self._id, owner_display=self._display_name,
                     mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                 )
-        if failures:
-            raise ExceptionGroup("Cannot pool a conduit while descendant cleanup is incomplete.", failures)
+        if retained:
+            raise ExceptionGroup(
+                "Cannot pool a conduit while descendant cleanup is incomplete.",
+                [*retained, *finished],
+            )
         with self._lock:
             # Normally each child removed itself. Retire any completed snapshot
             # entries still present, without discarding newly attached identities.
             for lesser_conduit in children:
                 self._lesser_conduits.pop(lesser_conduit._id, None)
+        if not finished:
+            return None
+        if collect_finished:
+            return finished
+        for error in finished:
+            self._logger.error(
+                f"pool descendant returned with disposal failures: {error}",
+                method_name="_cleanup_children_for_pool", exc_info=error,
+                owner_id=self._id, owner_display=self._display_name,
+                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
+        return None
     #endregion Cleanup
 
     #region Context Manager
@@ -59734,7 +60007,7 @@ END FILE: src/melder/aether/conduit/creations/creations.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/conduit_meld.py
-CONTENT SHA256: f64d7f0fe190f34b324ca8dce389d1906ee2a6f547674c61496e29648866b809
+CONTENT SHA256: b3e31ee8fdc75c7fbbd55e229bfe585e7177d4523901b1d0386598c926d62ae2
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar, Union
@@ -59760,9 +60033,11 @@ class ConduitMeld(Meld):
     Contract:
         - Uses one conduit-owned `ConduitCreations` store for caller-local
           `unique_per_conduit` and `many` storage.
-        - Uses spell-owned shared owner-creations for broad-lived existences
-          such as `unique`, `unique_per_conduit_cluster`, and
-          `unique_per_conduit_lineage`.
+        - Uses the shared store each broad-lived existence names: the Spell
+          owner's `owner_creations` for `unique`, the lineage-root store
+          (`_root_creations`) for `unique_per_conduit_lineage`, and the elected
+          leader's store (`_cluster_creations.resolved_store()`) for
+          `unique_per_conduit_cluster`.
         - Rejects `requires_spellspace_request` spells because the conduit door
           is not allowed to fabricate request-local spellspace scope.
         - Never owns spellspace-local `Creations`; that boundary belongs to
@@ -59799,13 +60074,16 @@ class ConduitMeld(Meld):
         is precisely what must not happen, because the caller would receive an
         instance whose lifetime silently disagrees with its declared
         `Existence`. Refusing keeps the scoping model honest: a spellspace-scoped
-        instance is reachable only through `SpellSpace`, which enforces that it
-        is the ACTIVE spellspace for the conduit before melding at all.
-        The store split it does own is the ordinary case: caller-local
+        instance is reachable only through a leased `SpellSpace`, which refuses
+        to meld once it is released to its pool. (Corrected 2026-09-28: this said
+        the space checks that it is the ACTIVE spellspace; there is no such
+        check.) The store split it does own is the ordinary case: caller-local
         existences (`unique_per_conduit`, `many`) use the conduit's own store,
-        while broader-lived ones (`unique`, `unique_per_conduit_cluster`,
-        `unique_per_conduit_lineage`) resolve against shared owner storage so
-        peers in a cluster or lineage genuinely observe the same instance.
+        while broader-lived ones resolve against shared storage - the Spell
+        owner's store for `unique`, the lineage root's for
+        `unique_per_conduit_lineage`, the elected leader's for
+        `unique_per_conduit_cluster` - so peers in a cluster or lineage
+        genuinely observe the same instance.
 
     AGENT_ACCESS: internal
 
@@ -60055,8 +60333,10 @@ class ConduitMeld(Meld):
               Only admitted immutable True versions can populate the success-only warm door.
             - Routes `unique_per_conduit` and `many` through the caller
               conduit's `ConduitCreations`.
-            - Routes broader-lived existences through spell-owned shared
-              `owner_creations`.
+            - Routes broader-lived existences through their shared stores:
+              the Spell owner's `owner_creations` for `unique`, the lineage
+              root for `unique_per_conduit_lineage`, the elected leader for
+              `unique_per_conduit_cluster`.
             - Reuses the shared validation, resolution, and hook machinery
               provided by `Meld`.
             - Warm id-string melds may take the guarded fast meld door: after
@@ -60081,6 +60361,14 @@ class ConduitMeld(Meld):
               (2026-09-26); that door returns the same slot, so results are
               identical. Override payloads on an existing object still reach
               the override door and its refusal.
+            - Name and class melds mint the second registry (2026-09-27): a
+              successful meld of the shape `meld(None, spell_name="Name")`
+              or `meld(Cls)` (no spellframe, no binding_name; classes only,
+              never instances or callables) stores the same entry under
+              `_fast_input_doors["Name"]` or `_fast_input_doors[Cls]` on
+              the same two success arms. This door never reads that
+              registry; the public front doors do, with this lane's guards,
+              and fall back here on any miss.
 
         Returns:
             Optional[Any]:
@@ -60108,6 +60396,7 @@ class ConduitMeld(Meld):
         # 1) Resolve the spell object from the Spellbook / SpellIndex.
         target_spell: Optional[Spell] = None
         fast_door_key: Optional[str] = None
+        fast_input_key: Optional[Union[str, type]] = None
         if isinstance(spell, str):
             if spell_override is None:
                 # Fast meld door: success-only memoized warm lane for id-string
@@ -60217,6 +60506,15 @@ class ConduitMeld(Meld):
             if target_spell is None:
                 target_spell = self._resolve_spell_by_id(spell)
         else:
+            # Name/class registry key (2026-09-27): the two user shapes the
+            # public front doors serve warm. Only str names and classes
+            # (an instance would be keyed per object and kept alive).
+            if spellframe is None and binding_name is None:
+                if spell is None:
+                    if type(spell_name) is str:
+                        fast_input_key = spell_name
+                elif spell_name is None and isinstance(spell, type):
+                    fast_input_key = spell
             input_resolution_cache = self._input_resolution_cache
             cache_key = (spell_name, spell, spellframe, binding_name)
             try:
@@ -60336,6 +60634,16 @@ class ConduitMeld(Meld):
                         # the object, so a stale entry never keeps it alive.
                         target_spell.user_created_object is not None,
                     )
+                elif fast_input_key is not None:
+                    # Name/class shape (2026-09-27): the same entry, keyed by
+                    # the name or class the caller passed, for the public
+                    # front doors' warm lane. Same posture, same rebuild rule.
+                    self._fast_input_doors[fast_input_key] = (
+                        target_spell,
+                        creation_context,
+                        door_epoch_at_entry,
+                        target_spell.user_created_object is not None,
+                    )
             else:
                 instance = creation_context._overrides_executor(
                     self,
@@ -60353,6 +60661,14 @@ class ConduitMeld(Meld):
                         # Existing-object flag (2026-09-26): warm hits of a
                         # flagged entry return the bound object. A bool, not
                         # the object, so a stale entry never keeps it alive.
+                        target_spell.user_created_object is not None,
+                    )
+                elif fast_input_key is not None and target_spell._mutation_override is None:
+                    # Name/class shape (2026-09-27): same rule, second registry.
+                    self._fast_input_doors[fast_input_key] = (
+                        target_spell,
+                        creation_context,
+                        door_epoch_at_entry,
                         target_spell.user_created_object is not None,
                     )
             # Hot path: inline the staged-cache flag check; the emit helper is
@@ -60431,8 +60747,10 @@ class ConduitMeld(Meld):
             - Supports only lifecycles that can resolve to one deterministic
               existing object.
             - Rejects spellspace-request lineages on the conduit-facing door.
-            - Reads caller-local conduit storage for `unique_per_conduit` and
-              shared owner-creations for broader-lived existences.
+            - Reads caller-local conduit storage for `unique_per_conduit`, the
+              Spell owner's `owner_creations` for `unique`, the lineage root for
+              `unique_per_conduit_lineage` and the elected leader for
+              `unique_per_conduit_cluster` (not live while none is elected).
 
         Args:
             spell_name:
@@ -60585,9 +60903,9 @@ class ConduitMeld(Meld):
             - Reuses the same spell-resolution helpers used by the meld path.
             - Inspects current live runtime storage only.
             - Never creates, registers, or mutates runtime objects.
-            - Reports the query conduit context explicitly so callers know the
-              result is scoped to the current conduit and, where relevant, its
-              active spellspace or shared owner-creation path.
+            - Reports the query conduit context explicitly so callers know
+              whether the answer came from this conduit's store or a shared
+              store; `active_spellspace_id` is always None on this door.
             - Rejects spellspace-request lineages on the conduit-facing door
               instead of pretending conduit-local storage can answer them.
 
@@ -60672,9 +60990,12 @@ class ConduitMeld(Meld):
 
         Contract:
             - `many` and `unique_per_conduit` read from caller-local conduit
-              storage.
-            - broad-lived existences read from spell-owned shared
-              `owner_creations`.
+              storage; a `many` without disposal methods is never tracked and
+              reports 0.
+            - `unique` reads the Spell owner's `owner_creations`;
+              `unique_per_conduit_lineage` the lineage-root store;
+              `unique_per_conduit_cluster` the elected leader's store, and is
+              not live while no leader is elected.
             - spellspace-request spells never reach this helper because the
               conduit-facing door rejects them earlier.
         """
@@ -62678,7 +62999,7 @@ END FILE: src/melder/aether/conduit/meld/creation_context/creation_context_rebui
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/meld.py
-CONTENT SHA256: 36b37ff6ac42be6caf3d2f9983607412af28a9dfa6f20f045f7fe1e09ca9456c
+CONTENT SHA256: bde11e6e82e6b0c672514a8cf3a9f050fdbc29ef01a82e99bfb2e1ec7f523be2
 SOURCE ENCODING: utf-8
 ================================================================================
 from abc import ABC, abstractmethod
@@ -62783,6 +63104,29 @@ class Meld(Cleanable, ABC):
       full-lane meld (no-override or override branch, never for a spell
       holding a mutation override), so the keyspace is the bound-spell
       registry, not caller input. The registry is deleted in `cleanup()`.
+    - own the second success-only registry, `_fast_input_doors`
+      (2026-09-27): the same entry tuples keyed by what a user passes as
+      `spell` - a registered-name string or a class object - so the
+      public front doors serve `meld("Name")` and `meld(spell=Cls)`
+      in one lookup instead of the door frame plus the name/class -> id
+      lookup. The two concrete doors mint it on the same two success
+      arms as the id registry (a str `spell` mints the id registry, a
+      name or class shape mints this one; never both) and never read
+      it: a front-door miss means the entry is absent or stale, so the
+      door goes straight to its full lane, which re-mints. Only
+      `Conduit.meld` and `SpellSpace.meld` read it, with the id lane's
+      ladder and arms. Keys are restricted to `str` names and classes
+      (`isinstance(spell, type)`): `SpellInputUtils.normalize_spell_name`
+      keys an instance by its class name, so an instance key would be
+      unbounded and would keep the instance alive; instances and
+      callables keep the door path. Names live apart from the id
+      registry so a registered name that equals another spell's id can
+      never serve the id lane. A key comes to resolve to a different
+      spell only after its holder was parked by notch (epoch bump,
+      context cleared) or cleaned by removal (slots deleted, so the
+      guard read raises AttributeError and misses); the frame's
+      `LookupContainer.claim` refuses a second active spell per
+      signature. Deleted in `cleanup()`, cleared by the upgrade route.
 
     High-level activation flow:
     1. Resolve the target spell from the requested identity inputs.
@@ -62857,6 +63201,7 @@ class Meld(Cleanable, ABC):
         "_meld_hooks_modified",
         "_spell_compiler_system",
         "_fast_meld_doors",
+        "_fast_input_doors",
         # Canonical creation-store surface (both concrete doors inherit these).
         "_conduit_creations",
         "_root_creations",
@@ -62986,6 +63331,15 @@ class Meld(Cleanable, ABC):
             str,
             Tuple[Spell, CreationContext, int, bool],
         ] = {}
+        # Name/class registry (2026-09-27): the same entries keyed by the
+        # registered-name string or class object a user passes as `spell`.
+        # Minted by the concrete doors on their success arms, read by the
+        # public front doors only. Plain dict for the same reasons; keys
+        # are restricted to str names and classes (see the class docstring).
+        self._fast_input_doors: Dict[
+            Union[str, type],
+            Tuple[Spell, CreationContext, int, bool],
+        ] = {}
 
         # Canonical creation-store surface. `_conduit_creations` is the owning
         # conduit's store (`unique_per_conduit` / `many`); `_root_creations` is
@@ -63051,6 +63405,7 @@ class Meld(Cleanable, ABC):
             # Fast-door entries hold spell/context/executor/creations refs;
             # dropping the dict here is the owner-driven release point.
             del self._fast_meld_doors
+            del self._fast_input_doors
             if self._spell_compiler_system is not None:
                 self._spell_compiler_system.cleanup()
             del self._spell_compiler_system
@@ -64695,7 +65050,7 @@ END FILE: src/melder/aether/conduit/meld/meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/spellspace_meld.py
-CONTENT SHA256: 66090371a239dbc249c0bdc6f42bffc319b700809960ffed2b113fa5af51eac3
+CONTENT SHA256: c758d29b0d3e264ccea2c837ac837fe9b6612ff79dc666adc08e610a82ef718a
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Optional, Dict, Any, Callable, ClassVar, Union
@@ -64726,6 +65081,9 @@ class SpellSpaceMeld(Meld):
         - Leaves shared lookup, validation, and compiler logic on abstract
           `Meld`.
         - Routes `unique_per_spell_space` work into spellspace-local storage.
+        - Tracks disposal-bearing `many` in spellspace-local storage too (the
+          innermost scope); `purge` and the live-creation probe read `many`
+          only there.
         - Routes conduit-owned or broader-lived existences through owner
           conduit or spell-owned shared storage as appropriate.
 
@@ -64740,8 +65098,11 @@ class SpellSpaceMeld(Meld):
         epoch-guarded fast-door registry.
 
     Lifecycle / Cleanup:
-        Bound to one `SpellSpace`; it becomes unusable when that spellspace is
-        reset or cleaned. Its stores are torn down by the base.
+        Bound to one `SpellSpace` for that object's whole life: it stays with
+        the space across pool leases and is cleaned when the space is
+        permanently destroyed. A space released to its pool refuses `meld` and
+        `purge` before this door is reached. Its stores are torn down by the
+        base.
 
     Registration:
         MELDER KERNEL - guarded. Constructed by the owning `SpellSpace`; never
@@ -64763,10 +65124,10 @@ class SpellSpaceMeld(Meld):
         the conduit and has to outlive the request that happened to construct
         it. Routing every existence through one store would collapse that
         distinction and turn conduit-lived services into per-request garbage.
-        Scope is enforced upstream too: `SpellSpace` may only meld while it is
-        the ACTIVE spellspace for its conduit, and `reset()` clears
-        spellspace-scoped instances and bumps the version rather than reusing
-        stale ones.
+        Scope is enforced upstream too: every exit of a `SpellSpace` clears its
+        spellspace-scoped instances before the space goes back to its pool, and
+        a released space refuses `meld` and `purge`, so a stale handle cannot
+        build into an idle shell that the next request would be served.
 
     AGENT_ACCESS: internal
 
@@ -64996,8 +65357,11 @@ class SpellSpaceMeld(Meld):
               creations registry owned by this request object.
             - Refuses non-resolvable registrations before overrides, validation, hooks or execution.
               Only admitted immutable True versions can populate the success-only warm door.
-            - Routes `unique_per_conduit` and `many` through the injected
-              owner-conduit creations registry.
+            - Routes `unique_per_conduit` through the injected owner-conduit
+              creations registry. A `many` object with disposal methods is
+              tracked in this spellspace's scope store (the innermost active
+              scope) and disposed at the scope's exit; one without disposal
+              methods is not stored.
             - Routes broader-lived existences through spell-owned shared
               `owner_creations`.
             - Does not depend on the conduit's active spellspace stack once the
@@ -65023,6 +65387,14 @@ class SpellSpaceMeld(Meld):
               (2026-09-26); that door returns the same slot, so results are
               identical. Override payloads on an existing object still reach
               the override door and its refusal.
+            - Name and class melds mint the second registry (2026-09-27): a
+              successful meld of the shape `meld(None, spell_name="Name")`
+              or `meld(Cls)` (no spellframe, no binding_name; classes only,
+              never instances or callables) stores the same entry under
+              `_fast_input_doors["Name"]` or `_fast_input_doors[Cls]` on
+              the same two success arms. This door never reads that
+              registry; the public front doors do, with this lane's guards,
+              and fall back here on any miss.
 
         Raises:
             MeldExecutionError:
@@ -65045,6 +65417,7 @@ class SpellSpaceMeld(Meld):
         # 1) Resolve the spell object from the Spellbook / SpellIndex.
         target_spell: Optional[Spell] = None
         fast_door_key: Optional[str] = None
+        fast_input_key: Optional[Union[str, type]] = None
         if isinstance(spell, str):
             if spell_override is None:
                 # Fast meld door: success-only memoized warm lane for id-string
@@ -65151,6 +65524,15 @@ class SpellSpaceMeld(Meld):
             if target_spell is None:
                 target_spell = self._resolve_spell_by_id(spell)
         else:
+            # Name/class registry key (2026-09-27): the two user shapes the
+            # public front doors serve warm. Only str names and classes
+            # (an instance would be keyed per object and kept alive).
+            if spellframe is None and binding_name is None:
+                if spell is None:
+                    if type(spell_name) is str:
+                        fast_input_key = spell_name
+                elif spell_name is None and isinstance(spell, type):
+                    fast_input_key = spell
             input_resolution_cache = self._input_resolution_cache
             cache_key = (spell_name, spell, spellframe, binding_name)
             try:
@@ -65259,6 +65641,16 @@ class SpellSpaceMeld(Meld):
                         # the object, so a stale entry never keeps it alive.
                         target_spell.user_created_object is not None,
                     )
+                elif fast_input_key is not None:
+                    # Name/class shape (2026-09-27): the same entry, keyed by
+                    # the name or class the caller passed, for the public
+                    # front doors' warm lane. Same posture, same rebuild rule.
+                    self._fast_input_doors[fast_input_key] = (
+                        target_spell,
+                        creation_context,
+                        door_epoch_at_entry,
+                        target_spell.user_created_object is not None,
+                    )
             else:
                 instance = creation_context._overrides_executor(
                     self,
@@ -65276,6 +65668,14 @@ class SpellSpaceMeld(Meld):
                         # Existing-object flag (2026-09-26): warm hits of a
                         # flagged entry return the bound object. A bool, not
                         # the object, so a stale entry never keeps it alive.
+                        target_spell.user_created_object is not None,
+                    )
+                elif fast_input_key is not None and target_spell._mutation_override is None:
+                    # Name/class shape (2026-09-27): same rule, second registry.
+                    self._fast_input_doors[fast_input_key] = (
+                        target_spell,
+                        creation_context,
+                        door_epoch_at_entry,
                         target_spell.user_created_object is not None,
                     )
             # Hot path: inline the staged-cache flag check; the emit helper is
@@ -65556,10 +65956,18 @@ class SpellSpaceMeld(Meld):
             current runtime storage state without creating anything.
 
         Contract:
-            - `unique_per_spell_space` reads from spellspace-local storage.
-            - `unique_per_conduit` and `many` read from owner-conduit storage.
-            - broader shared existences read from spell-owned
-              `owner_creations`.
+            - `unique_per_spell_space` and `many` read from spellspace-local
+              storage. A disposal-bearing `many` melded through this door is
+              registered in the space's store (the innermost scope), the only
+              store `purge` retires it from; a `many` without disposal methods
+              is never tracked and reports 0. Before the 2026-09-28 fix `many`
+              was read from the owner conduit's store, so what the space held
+              was missed and a `many` melded through the conduit was counted.
+            - `unique_per_conduit` reads from owner-conduit storage.
+            - `unique` reads the Spell owner's `owner_creations`;
+              `unique_per_conduit_lineage` the owner conduit's lineage-root
+              store; `unique_per_conduit_cluster` the elected leader's store,
+              and is not live while no leader is elected.
             - Reports both `query_conduit_id` and `active_spellspace_id` so the
               caller can distinguish request-local versus broader scope state.
 
@@ -65594,7 +66002,10 @@ class SpellSpaceMeld(Meld):
         existence = spell.existence
         spell_id = spell.spell_id
         if existence is Existence.many:
-            creation_bucket = self._conduit_creations.get_creation(spell_id)
+            # Disposal-bearing `many` melded through this door lives in the
+            # space's store (every emitter picks the innermost scope), and
+            # `purge` retires it from there only, so the probe reads it there.
+            creation_bucket = self._spellspace_creations.get_creation(spell_id)
             creation_count = (
                 len(creation_bucket)
                 if isinstance(creation_bucket, list)
@@ -65606,9 +66017,9 @@ class SpellSpaceMeld(Meld):
                 "spell_name": spell.spell_name,
                 "existence": existence.name,
                 "query_conduit_id": query_conduit_id,
-                "storage_scope_kind": "owner_conduit_many",
+                "storage_scope_kind": "spellspace_many",
                 "storage_owner_conduit_id": self._owner_conduit_id,
-                "active_spellspace_id": None,
+                "active_spellspace_id": self._spellspace_id,
                 "creation_count": creation_count,
             }
 
@@ -65692,17 +66103,18 @@ END FILE: src/melder/aether/conduit/meld/spellspace_meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/spell_space/spell_space.py
-CONTENT SHA256: 07db6157e7fcd1f74c83e90056f89295ca71cfed34e27086a5483fa5091b68ec
+CONTENT SHA256: c714a69b659613d6e8158f0caea7b2b39ab289f8f6eea6c1d13e279e621753c8
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
 from types import TracebackType
-from typing import TYPE_CHECKING, Optional, Type, Union, ClassVar
+from typing import TYPE_CHECKING, NoReturn, Optional, Type, Union, ClassVar
 
 from melder.aether.conduit.creations.creations import Creations
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.conduit.meld.spellspace_meld import SpellSpaceMeld
+from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 if TYPE_CHECKING:
     from melder.aether.conduit.creations.conduit_creations import (
         ConduitCreations,
@@ -65746,6 +66158,13 @@ class SpellSpace(Cleanable):
           contract violation (the trusted-private-caller posture documented
           on `SpellSpacePool.release`); LIFO validation in `pop_expected`
           fails fast on the common misuse shapes.
+        - Carries one lease flag, `_released`: the pool sets it on release and
+          clears it on acquisition, and a released space refuses `meld` and
+          `purge` with SpellSpaceScopeError. After permanent cleanup it stays
+          True as a documented tombstone.
+        - Every exit finishes its pool return (or destroy) when a disposal
+          method fails - the store is emptied before any method runs - and then
+          raises the disposal ExceptionGroup.
 
     Threading:
         - Uses an internal `RLock` for cleanup/reset idempotence.
@@ -65777,9 +66196,10 @@ class SpellSpace(Cleanable):
     System Context:
         This is how the DGR gives a caller an EXPLICIT, nestable resolution
         window without leaking conduit-wide state into it: instances resolved as
-        `unique_per_spell_space` live and die with the space, and `reset()` clears
-        them and bumps a version so a recycled space cannot serve stale
-        instances. Making the space its own context manager (trivial `__enter__`,
+        `unique_per_spell_space` live and die with the space - every exit clears
+        them before the space goes back to its pool, and a released space
+        refuses `meld`, so a recycled shell cannot serve an object built through
+        a stale handle. Making the space its own context manager (trivial `__enter__`,
         LIFO-validated `__exit__` recycle) and confining the managed lane to one
         thread is what lets the pool hand spaces back and forth without per-cycle
         wrapper objects or cross-thread synchronization.
@@ -65788,8 +66208,8 @@ class SpellSpace(Cleanable):
 
     AGENT_PURPOSE:
         access: public. Explicit request scope for Existence.unique_per_spell_space. Enter via
-        conduit.enter_spellspace(); meld only while it is the ACTIVE spellspace; reset() clears
-        spellspace-scoped instances and bumps the version.
+        conduit.enter_spellspace(); the block exit clears spellspace-scoped instances and returns
+        the space to its pool; a released space refuses meld and purge.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -65804,6 +66224,7 @@ class SpellSpace(Cleanable):
         "_spellspace_pool",
         "_spellspace_stack_state",
         "_permanent_cleanup_requested",
+        "_released",
     ]
 
     def __init__(
@@ -65843,10 +66264,11 @@ class SpellSpace(Cleanable):
 
 
         Contract:
-            - Builds a POOLED, REUSABLE scope object. Its identity is versioned rather
-              than object-based precisely so the pool can recycle it: a handle held
-              across a recycle boundary fails its active-scope check instead of
-              silently attaching to a different request.
+            - Builds a POOLED, REUSABLE scope object. It starts leased (`_released`
+              False); the pool sets the flag on release and clears it on
+              acquisition, and a released space refuses `meld` and `purge`, so a
+              handle held across a recycle boundary fails loudly instead of
+              melding into an idle shell.
             - Constructs its own `Creations` store keyed to this space, so
               spellspace-scoped instances are isolated from conduit-scoped ones.
 
@@ -65858,8 +66280,8 @@ class SpellSpace(Cleanable):
             Creates the lock guarding later scope operations.
 
         Lifecycle / Cleanup:
-            Reset returns it to the pool and bumps its version; permanent cleanup is
-            what actually destroys it.
+            Recycling clears its store and returns it to the pool; permanent cleanup
+            is what actually destroys it.
 
         Returns:
             None.
@@ -65906,6 +66328,7 @@ class SpellSpace(Cleanable):
             spellspace_stack_state
         )
         self._permanent_cleanup_requested: bool = False
+        self._released: bool = False
 
     def __enter__(self) -> "SpellSpace":
         """
@@ -65942,7 +66365,17 @@ class SpellSpace(Cleanable):
               unwind innermost-first).
             - Recycles through the managed pooled fast lane, which clears
               spellspace-local creations before pool return so scope teardown
-              stays deterministic and owner-driven.
+              stays deterministic and owner-driven. The return finishes even
+              when a disposal method fails; the disposal ExceptionGroup then
+              propagates, with the block's exception as its context when the
+              block raised.
+            - A space already released or destroyed inside the block (an
+              explicit `cleanup()`, or its conduit's pool return or teardown)
+              only leaves the stack and returns: its store was already
+              disposed.
+            - The common lane of `recycle_from_managed_context` (untracked, no
+              permanent teardown requested) runs inline here, saving a call per
+              scope; every other lane goes through that method.
             - Runs on exceptions too, exactly like the former wrapper.
             - After exit this object belongs to the pool again; re-entering
               it without a fresh `enter_spellspace()` acquisition is a caller
@@ -65952,12 +66385,30 @@ class SpellSpace(Cleanable):
             SpellSpaceScopeError:
                 If this space is not the calling thread's active top-of-stack
                 scope.
+            ExceptionGroup:
+                Disposal failures, raised after the space is back in its pool.
 
         Returns:
             None.
         """
+        if self._released:
+            self._leave_after_early_release()
+            return None
         self._spellspace_stack_state.pop_expected(self)
-        self.recycle_from_managed_context()
+        # Hot path (one exit per managed scope): the common lane of
+        # `recycle_from_managed_context`, inlined to save a call frame and a
+        # second read of the lease flag. Keep the two in step.
+        if self._permanent_cleanup_requested or self._registry_tracked:
+            self.cleanup()
+            return None
+        try:
+            self._creations.reset_for_pool_unlocked()
+        finally:
+            # Finish the return even when a disposal method failed: the store
+            # was swapped empty before any method ran, so the shell is clean.
+            if self._meld._meld_hooks_modified:
+                self._meld._reset_pooled_meld_hooks()
+            self._spellspace_pool.release(self)
         return None
 
     def cleanup(self) -> None:
@@ -65966,9 +66417,16 @@ class SpellSpace(Cleanable):
 
         Contract:
             - Normal cleanup returns this spellspace to the conduit-local pool
-              after reusable cleanup.
+              after reusable cleanup. A space that is already released is left
+              as it is, so a second cleanup never pools it twice.
             - `permanent_cleanup()` forces the destructive lane even when a
               pool is attached.
+            - Either lane finishes when a disposal method fails (the store is
+              emptied before any method runs), then the disposal ExceptionGroup
+              propagates.
+
+        Raises:
+            ExceptionGroup: Disposal failures, after the space is pooled or destroyed.
 
         Returns:
             None.
@@ -65981,8 +66439,12 @@ class SpellSpace(Cleanable):
             if self._permanent_cleanup_requested:
                 self._cleanup_for_destroy()
                 return
-            self._cleanup_for_pool_reuse()
-        self._spellspace_pool.release(self)
+            if self._released:
+                return
+            try:
+                self._cleanup_for_pool_reuse()
+            finally:
+                self._spellspace_pool.release(self)
 
     def permanent_cleanup(self) -> None:
         """
@@ -66011,13 +66473,17 @@ class SpellSpace(Cleanable):
 
         Contract:
             - Valid only for live managed spellspaces acquired through the
-              untracked pool path.
+              untracked pool path; a space that is already released (or
+              destroyed) returns at once.
             - Falls back to the generic cleanup entrypoint when permanent
               teardown was requested or the spellspace is registry-tracked.
             - Clears spellspace-local creations before returning this
               spellspace to the pool.
             - Keeps collaborator references intact for later reuse, restoring
               temporary hooks after disposal and before idle publication.
+            - Finishes the hook reset and pool release when a disposal method
+              fails (the store was swapped empty first), then the disposal
+              ExceptionGroup propagates.
 
         Threading / Concurrency:
             - This lane runs without the spellspace `RLock` because managed
@@ -66040,10 +66506,13 @@ class SpellSpace(Cleanable):
               matching the trusted-private-caller posture documented on
               `SpellSpacePool.release(...)`.
 
+        Raises:
+            ExceptionGroup: Disposal failures, after the space is back in its pool.
+
         Returns:
             None.
         """
-        if self._cleaned:
+        if self._released:
             return
         if self._permanent_cleanup_requested or self._registry_tracked:
             self.cleanup()
@@ -66054,10 +66523,14 @@ class SpellSpace(Cleanable):
         # the confinement-guaranteed managed exit; the explicit
         # spellspace-local clear still happens before pool return so scope
         # teardown stays deterministic and owner-driven.
-        self._creations.reset_for_pool_unlocked()
-        if self._meld._meld_hooks_modified:
-            self._meld._reset_pooled_meld_hooks()
-        self._spellspace_pool.release(self)
+        try:
+            self._creations.reset_for_pool_unlocked()
+        finally:
+            # Finish the return even when a disposal method failed: the store
+            # was swapped empty before any method ran, so the shell is clean.
+            if self._meld._meld_hooks_modified:
+                self._meld._reset_pooled_meld_hooks()
+            self._spellspace_pool.release(self)
         
     def _cleanup_for_pool_reuse(self) -> None:
         """
@@ -66071,14 +66544,18 @@ class SpellSpace(Cleanable):
               discarding the spellspace when it is currently present.
             - Keeps collaborator references intact for later reuse.
             - Restores temporary Meld hooks after disposal, before idle publication.
+            - Finishes the registry discard and hook reset when a disposal method
+              fails; the disposal ExceptionGroup then propagates.
         """
-        self._creations.reset_for_pool()
-        if self._registry_tracked or self in self._spellspace_registry:
-            self._spellspace_registry.discard(self)
-            self._registry_tracked = False
-        self._permanent_cleanup_requested = False
-        if self._meld._meld_hooks_modified:
-            self._meld._reset_pooled_meld_hooks()
+        try:
+            self._creations.reset_for_pool()
+        finally:
+            if self._registry_tracked or self in self._spellspace_registry:
+                self._spellspace_registry.discard(self)
+                self._registry_tracked = False
+            self._permanent_cleanup_requested = False
+            if self._meld._meld_hooks_modified:
+                self._meld._reset_pooled_meld_hooks()
 
     def _cleanup_for_destroy(self) -> None:
         """
@@ -66091,21 +66568,77 @@ class SpellSpace(Cleanable):
               discarding the spellspace when it is currently present.
             - Deletes the pool reference as part of final teardown.
             - Cleans the owned Meld before dropping it, releasing both hook references.
+            - Every step runs when a disposal method fails; the disposal
+              ExceptionGroup then propagates.
+            - `_released` is set and kept as a documented tombstone (True), so a
+              later `meld`, `purge` or block exit reads it instead of hitting a
+              deleted attribute; `_id` and `_lock` are kept as before.
+            - Removes this space from the top of the destroying thread's
+              spellspace stack when it is there (destroyed inside its own
+              managed block), before the thread-state reference is deleted, so
+              later scopes on that thread keep a consistent stack.
         """
-        self._creations.cleanup()
-        self._meld.cleanup()
-        if self._registry_tracked or self in self._spellspace_registry:
-            self._spellspace_registry.discard(self)
-        self._cleaned = True
-        del self._registry_tracked
-        del self._spellspace_registry
-        del self._owner_conduit_id
-        del self._meld
-        del self._creations
-        del self._owner_conduit_creations
-        del self._spellspace_pool
-        del self._spellspace_stack_state
-        del self._permanent_cleanup_requested
+        self._released = True
+        try:
+            self._creations.cleanup()
+        finally:
+            self._meld.cleanup()
+            if self._registry_tracked or self in self._spellspace_registry:
+                self._spellspace_registry.discard(self)
+            self._spellspace_stack_state.discard_expected(self)
+            self._cleaned = True
+            del self._registry_tracked
+            del self._spellspace_registry
+            del self._owner_conduit_id
+            del self._meld
+            del self._creations
+            del self._owner_conduit_creations
+            del self._spellspace_pool
+            del self._spellspace_stack_state
+            del self._permanent_cleanup_requested
+
+    def _leave_after_early_release(self) -> None:
+        """
+        Internal
+
+        End a managed block whose space was released or destroyed inside it.
+
+        Contract:
+            - A destroyed space already left the stack top in
+              `_cleanup_for_destroy`; there is nothing to do.
+            - A released space drops itself from the top of the calling thread's
+              stack when it is still there (an explicit cleanup inside the
+              block); its conduit's pool return has already drained the stack
+              otherwise. Nothing is disposed again and nothing is pooled twice.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._spellspace_stack_state.discard_expected(self)
+
+    def _refuse_released(self) -> NoReturn:
+        """
+        Internal
+
+        Refuse use of a space that is not leased.
+
+        Contract:
+            - A destroyed space raises the standard cleaned RuntimeError.
+            - A space released to its pool raises SpellSpaceScopeError naming the
+              space and how to get a live one.
+
+        Raises:
+            RuntimeError: If this space was permanently cleaned.
+            SpellSpaceScopeError: If this space was released to its pool.
+        """
+        self.check_cleaned()
+        raise SpellSpaceScopeError(
+            f"SpellSpace {self._id} was released to its pool and cannot meld or purge. "
+            "Use a space only inside its `with conduit.enter_spellspace()` block, or before "
+            "cleanup() for a create_spellspace() space; acquire a new one to continue."
+        )
 
     @property
     def id(self) -> str:
@@ -66179,7 +66712,15 @@ class SpellSpace(Cleanable):
               existing object). A hit returns without entering the door; a miss
               or any failed guard continues in the door, so results, errors and
               the cache-emit check are identical to calling the door.
+            - Warm name/class lane (2026-09-27): a `meld("Name")` or
+              `meld(spell=Cls)` with no `spellframe` or `binding_name` reads the
+              door's name/class registry with the same guards and arms; the
+              door mints that entry after one successful meld of the shape, so
+              a hit and the door agree. An unhashable `spell`, an instance or a
+              callable as `spell` are misses and continue in the door.
             - Propagates runtime failures from the meld pipeline unchanged.
+            - A space released to its pool raises SpellSpaceScopeError before any
+              lookup; a permanently cleaned one raises RuntimeError.
 
         Returns:
             object: The resolved runtime object returned by the shared meld runtime.
@@ -66192,20 +66733,28 @@ class SpellSpace(Cleanable):
             override:
                 Optional positional or keyword override payload.
         """
-        # Warm id lane (2026-09-26): the dominant scoped call - `spell_id=...` alone - reads the
-        # spellspace door's fast-door entry here, saving the door frame and its keyword marshaling on
-        # a hit. The guard ladder and both arms mirror `SpellSpaceMeld.meld` and `Conduit.meld`
-        # exactly (`Meld._fast_meld_doors` lists every reader); only guard reads sit inside the
-        # AttributeError try, so an executor's own AttributeError is never swallowed. A miss continues
-        # in the door's positional id lane; every other call shape keeps the path below.
-        if (
-            type(spell_id) is str
-            and spell is None
-            and spellframe is None
-            and binding_name is None
-        ):
+        if self._released:
+            self._refuse_released()
+        # Warm lanes (id 2026-09-26, name/class 2026-09-27): the scoped calls `spell_id=...` alone,
+        # `meld("Name")` and `meld(spell=Cls)` read the spellspace door's success-only entry here
+        # (ids from `_fast_meld_doors`, names and classes from `_fast_input_doors`), saving the door
+        # frame, the name/class -> id lookup and keyword marshaling on a hit. The guard ladder and
+        # both arms mirror `SpellSpaceMeld.meld` and `Conduit.meld` exactly (`Meld._fast_meld_doors`
+        # lists every reader); only guard reads sit inside the AttributeError try, so an executor's
+        # own AttributeError is never swallowed. An id miss continues in the door's positional id
+        # lane; a name/class miss and every other call shape keep the path below.
+        if spellframe is None and binding_name is None:
             meld_door = self._meld
-            fast_entry = meld_door._fast_meld_doors.get(spell_id)
+            fast_entry = None
+            if spell is None:
+                if type(spell_id) is str:
+                    fast_entry = meld_door._fast_meld_doors.get(spell_id)
+            elif spell_id is None:
+                try:
+                    fast_entry = meld_door._fast_input_doors.get(spell)
+                except TypeError:
+                    # Unhashable `spell` (never minted): the door resolves it uncached.
+                    fast_entry = None
             if fast_entry is not None:
                 (
                     door_spell,
@@ -66242,9 +66791,10 @@ class SpellSpace(Cleanable):
                     if spellbook._cache_emit_required:
                         spellbook._emit_cache_file_if_required()
                     return instance
-            if override is None:
-                return meld_door.meld(spell_id)
-            return meld_door.meld(spell_id, spell_override=override)
+            if spell is None and type(spell_id) is str:
+                if override is None:
+                    return meld_door.meld(spell_id)
+                return meld_door.meld(spell_id, spell_override=override)
         if spell is not None and spell_id is not None:
             raise ValueError("meld accepts either `spell` or `spell_id`, not both.")
 
@@ -66314,6 +66864,8 @@ class SpellSpace(Cleanable):
                 If normal meld discovery cannot find the binding.
             RuntimeError:
                 If permanently cleaned or the target has a broader lifetime.
+            SpellSpaceScopeError:
+                If this space was released to its pool.
             TypeError:
                 If purge_all is not a bool.
             ExceptionGroup:
@@ -66323,9 +66875,10 @@ class SpellSpace(Cleanable):
             Creations uses this space's store lock and releases it before
             disposal. Direct manual use needs no active managed stack entry.
             Managed thread confinement and pool ownership rules remain unchanged;
-            a returned/recycled space must not be used through an old reference.
+            a returned/recycled space refuses purge until it is acquired again.
         """
-        self.check_cleaned()
+        if self._released:
+            self._refuse_released()
         if spell is not None and spell_id is not None:
             raise ValueError("purge accepts either `spell` or `spell_id`, not both.")
         internal_spell = spell
@@ -66350,7 +66903,7 @@ END FILE: src/melder/aether/conduit/spell_space/spell_space.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/spell_space/spell_space_pool.py
-CONTENT SHA256: 97cc1037d6a752e619b806fc160fce809be29a7dd336974b1c6746663d4d0fad
+CONTENT SHA256: f89544df732e687b7af8d0e300bd788f1e8b939445830f2ccdb069d83b5a4c44
 SOURCE ENCODING: utf-8
 ================================================================================
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
@@ -66387,9 +66940,9 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
 
     Lifecycle / Cleanup:
         Owned by one conduit and torn down with it. Recycling a spellspace is
-        NOT destruction - `reset()` clears spellspace-scoped instances and bumps
-        the version, while the permanent cleanup lane is what actually destroys
-        one.
+        NOT destruction - the scope's own store is cleared and the space is
+        released back here, while the permanent cleanup lane is what actually
+        destroys one.
 
     Registration:
         MELDER KERNEL - guarded. Constructed by the owning conduit; users reach
@@ -66402,14 +66955,15 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         would otherwise be paid on every scope entry.
 
     System Context:
-        Pooling a scope object is only safe because scope identity is VERSIONED
-        rather than object-identity based. A recycled spellspace bumps its
-        version on reset, so any stale handle held across the recycle boundary
-        fails its active-scope check instead of silently melding into a reused
-        shell that now belongs to a different request. Without that versioning
-        this pool would be a correctness hazard rather than an optimization -
-        which is the same reasoning that makes `pooled_lesser` a distinct
-        `ConduitState` rather than just an idle `lesser`.
+        Pooling a scope object is only safe because a pooled space knows it is
+        not leased: `release()` sets its released flag, every acquisition clears
+        it, and a released space refuses `meld` and `purge` with
+        SpellSpaceScopeError. A handle kept across the recycle boundary therefore
+        fails loudly instead of melding into an idle shell that the next request
+        would be served. Using a handle after its space was leased again to
+        another caller remains a caller contract violation. The same reasoning
+        makes `pooled_lesser` a distinct `ConduitState` rather than just an idle
+        `lesser`.
 
     AGENT_ACCESS: internal
 
@@ -66509,6 +67063,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Reactivate one spellspace before use.
 
         Contract:
+            Clears the space's released flag: the lease starts here.
             Manual-path reactivation hook: when `track_registry` is True, marks
             the spellspace registry-tracked and adds it to the shared registry;
             when False, leaves it untracked (the managed enter path tracks on
@@ -66530,6 +67085,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Returns:
             SpellSpace: The same, reactivated spellspace.
         """
+        obj._released = False
         if self._conduit_meld._meld_hooks_modified:
             obj._meld._inherit_meld_hooks(self._conduit_meld)
         if track_registry:
@@ -66555,11 +67111,14 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
               state under an outer Python lock.
             - A reused Space adopts temporary owner hooks only when the owner's
               divergence bool is set. Construction handles the fresh path.
+            - Clears a reused space's released flag: the lease starts here. A new
+              space starts unreleased.
         """
         try:
             space = self._idle.pop()
         except IndexError:
             return self.create_object(*args, **kwargs)
+        space._released = False
         if self._conduit_meld._meld_hooks_modified:
             space._meld._inherit_meld_hooks(self._conduit_meld)
         return space
@@ -66622,8 +67181,11 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
 
         Contract:
             - Uses a conduit-local fixed-capacity fast path.
+            - Marks the space released first; it refuses `meld` and `purge` until
+              its next acquisition.
             - Assumes trusted private callers do not double-return the same
-              spellspace shell.
+              spellspace shell; SpellSpace cleanup and recycle return early for a
+              space that is already released.
             - Appends the returned spellspace first.
             - Retains returned spellspaces while idle capacity remains at or
               below the current target.
@@ -66633,11 +67195,15 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Returns:
             None.
         """
-        self._idle.append(obj)
-        if len(self._idle) <= self._target_idle:
+        obj._released = True
+        # Hot path (one release per managed scope): one read of the idle deque
+        # serves the append, the capacity check and the overflow eviction.
+        idle = self._idle
+        idle.append(obj)
+        if len(idle) <= self._target_idle:
             return
         try:
-            overflow_space = self._idle.popleft()
+            overflow_space = idle.popleft()
         except IndexError:
             return
         self.destroy_object(overflow_space)
@@ -66646,7 +67212,7 @@ END FILE: src/melder/aether/conduit/spell_space/spell_space_pool.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/spell_space/spell_space_thread_state.py
-CONTENT SHA256: fb15935e75c564c33bf48b2a790dc01e9379c6cf6970a314990983f8d3d5b55c
+CONTENT SHA256: 6656492205886a8d9fda19095baf37f7175c7bcb2172dd5cf4b97c579766af7e
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -66897,6 +67463,32 @@ class SpellSpaceThreadState(Cleanable):
                 "SpellSpace stack corruption detected while exiting."
             )
         return stack.pop()
+
+    def discard_expected(self, expected: Any) -> bool:
+        """
+        Remove `expected` from the top of the current thread's stack if it is there.
+
+        Purpose:
+            Let a managed spellspace that was already released inside its own
+            `with` block (an explicit cleanup, or its conduit's pool return)
+            leave that block without a stack error.
+
+        Contract:
+            - Pops only when `expected` is the top entry; otherwise changes
+              nothing. Never raises.
+
+        Args:
+            expected:
+                Spellspace object whose block is ending.
+
+        Returns:
+            bool: True when the entry was removed.
+        """
+        stack = self._local.spellspace_stack
+        if stack and stack[-1] is expected:
+            stack.pop()
+            return True
+        return False
 
     def clear_current_thread(self) -> None:
         """
@@ -121884,10 +122476,10 @@ END FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/dangl
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py
-CONTENT SHA256: 04e6c930f6d7a0a17cfea0dea77f75bf11db64e911f8052f2804ef370460e8f4
+CONTENT SHA256: a7afc43c3cc7ff8c5252fc890f26d57d71e65d51832cb838b7e49bc09e731738
 SOURCE ENCODING: utf-8
 ================================================================================
-from typing import TYPE_CHECKING, Dict, List, Any, Optional
+from typing import TYPE_CHECKING, Dict, List, Any, Optional, Tuple
 
 
 
@@ -121895,26 +122487,29 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
 
 class DuplicateSpellNameStrategy(SpellValidationStrategy):
     """
-    Detect spells that share the same ``spell_name`` within the visible Spellbook
+    Detect spells that claim the same lookup address within the visible Spellbook
     (local + contracted).
 
-    Now that `meld(...)` can resolve by ``spell_name`` / simple string, having
-    multiple visible spells with the same name makes name-based resolution
-    ambiguous and unsafe.
+    Registration and Meld identify a spell by its normalized ``(frame_key,
+    binding_key)``. An explicit spellframe replaces the display name in that
+    address; distinct frames or bindings therefore disambiguate same-named spells.
 
-    This strategy treats such overlaps as **errors** and instructs the user to
-    disambiguate via spellframe and/or binding_name.
+    Equal addresses are errors regardless of display name or resolution
+    capability. Ordinary binding admission already prevents them; this strategy
+    checks the same invariant over the visible validation pool.
 
     Contract:
     - Uses the visible spellbook spell pool as the source of truth.
-    - Treats duplicate visible `spell_name` values as a hard ambiguity for
-      name-based resolution.
+    - Uses SpellInputUtils so case and default bindings match runtime lookup.
+    - Permits shared display names when their canonical addresses differ.
+    - Preserves the ``DUPLICATE_SPELL_NAME`` code for actual address collisions.
     - Emits validation issues only; it does not rename or partition spells.
 
     Registration:
@@ -121925,16 +122520,15 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
         `_spell_id_pool` the dangling/circular strategies read.
 
     System Context:
-        Phase 4 (validation) of the conjure pipeline. It guards the name-based meld
-        entry mode (`meld(spell_name=...)`) against ambiguity.
+        Phase 4 (validation) of the conjure pipeline. It checks the same address
+        identity used by binding admission and name/frame-based Meld resolution.
 
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: internal. Phase-4 strategy: collects visible spells sharing a spell_name
-        (pass-cached) and emits DUPLICATE_SPELL_NAME (error) when more than one collide, since
-        meld(spell_name=...) would be ambiguous. Advises disambiguating via
-        spellframe/binding_name.
+        access: internal. Phase-4 strategy: collects visible spells by normalized lookup
+        address (pass-cached) and emits DUPLICATE_SPELL_NAME for a shared address. Same-named
+        spells at distinct addresses are valid. Advises changing the frame or binding.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -121950,21 +122544,24 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
         super().__init__(
             name="duplicate_spell_name",
             description=(
-                "Detects multiple visible spells that share the same spell_name, "
-                "which would make name-based resolution via meld(spell_name=...) "
-                "ambiguous."
+                "Detects multiple visible spells that share a normalized lookup "
+                "address (frame_key, binding_key)."
             ),
         )
 
     def validate(self, context: SpellValidationContext) -> None:
         """
-        Detect ambiguous visible spell-name collisions.
+        Detect visible collisions at the canonical frame/binding address.
 
         Contract:
         - Stops early if the validation context has been cancelled.
         - Uses the spellbook's visible spell pool to collect collisions.
+        - Normalizes addresses with the same helper as registration and Meld.
         - Emits one `DUPLICATE_SPELL_NAME` issue when more than one visible
-          spell shares the same name.
+          spell claims the target address, including discoverable definitions.
+        - Reuses a completed collision map only within the supplied validation
+          pass; without a cache, each invocation examines a fresh pool copy.
+        - Does not mutate registrations or their resolution capability.
         """
         self.check_cleaned()
 
@@ -121984,37 +122581,49 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
             # Nothing to check if this spell has no name.
             return
 
-        # Pass-scoped memo: the name->collisions map derives only from
+        lookup_key = SpellInputUtils.make_spell_key_from_parts(
+            spellframe=spell.spellframe,
+            spell_name=spell_name,
+            binding_name=spell.binding_name,
+        )
+
+        # Pass-scoped memo: the address->collisions map derives only from
         # bind-transactional pool truth, so one build serves every spell in
         # the validation pass (mirrors the binding-graph memo). Without a
         # pass cache (deferred single-spell paths) the map is built fresh,
-        # matching the previous per-spell scan byte-for-byte.
+        # with the same address semantics as the shared-pass path.
         pass_cache = context.validation_pass_cache
-        name_collisions: Optional[Dict[str, List[Dict[str, Any]]]] = None
+        address_collisions: Optional[Dict[Tuple[str, str], List[Dict[str, Any]]]] = None
         if pass_cache is not None:
-            name_collisions = pass_cache.get("duplicate_name_collisions")
-        if name_collisions is None:
-            name_collisions = {}
+            address_collisions = pass_cache.get("duplicate_lookup_collisions")
+        if address_collisions is None:
+            address_collisions = {}
             # A copy: concurrent binds change the live pool under the Spellbook lock, not held here.
             for spell_id, other_spell in spellbook._spell_id_pool.copy().items():
                 other_name = other_spell.spell_name
                 if not other_name:
                     continue
+                other_key = SpellInputUtils.make_spell_key_from_parts(
+                    spellframe=other_spell.spellframe,
+                    spell_name=other_name,
+                    binding_name=other_spell.binding_name,
+                )
                 index = other_spell.spell_index
-                name_collisions.setdefault(other_name, []).append(
+                address_collisions.setdefault(other_key, []).append(
                     {
                         "spell_index_id": index.id,
                         "spell_id": spell_id,
+                        "spell_name": other_name,
                         "spellframe": other_spell.spellframe,
                         "binding_name": other_spell.binding_name,
                     }
                 )
             if pass_cache is not None:
-                pass_cache["duplicate_name_collisions"] = name_collisions
+                pass_cache["duplicate_lookup_collisions"] = address_collisions
 
-        collisions = name_collisions.get(spell_name, [])
+        collisions = address_collisions.get(lookup_key, [])
 
-        # If this spell is the only one with that name, we're fine.
+        # If this spell is the only one at that address, we're fine.
         if len(collisions) <= 1:
             return
 
@@ -122023,14 +122632,14 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
                 severity="error",
                 code="DUPLICATE_SPELL_NAME",
                 message=(
-                    f"Multiple visible spells share the name {spell_name!r}. "
-                    "Name-based resolution via meld(spell_name=...) would be "
-                    "ambiguous. Disambiguate by using a spellframe (Protocol/"
-                    "string frame key) and/or a binding_name so that each "
-                    "resolution path is uniquely identifiable."
+                    "Multiple visible spells share the lookup address "
+                    f"frame={lookup_key[0]!r}, binding={lookup_key[1]!r}. "
+                    "Use a distinct spellframe or binding_name so that each "
+                    "registration has a unique normalized address."
                 ),
                 details={
                     "spell_name": spell_name,
+                    "lookup_key": lookup_key,
                     "collision_count": len(collisions),
                     "collisions": collisions,
                 },
@@ -124550,7 +125159,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: 00b4e7cd4597b760ad1e60b33940d3138b1096457d070c22b7743c09d3512b17
+CONTENT SHA256: 629ea9a2e07902eb8e4c90097f8602f018cc4e7ab82991b72113dcb03c0a0eb8
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -131396,6 +132005,7 @@ class Spellbook(Cleanable):
                                 runtime._cluster_creations = conduit._cluster_creations
                                 runtime._input_resolution_cache.clear()
                                 runtime._fast_meld_doors.clear()
+                                runtime._fast_input_doors.clear()
                                 runtime._bind_meld_hook_baseline(conduit._meld_hooks)
                             conduit._ensure_transaction_identity_registered()
                             conduit._refresh_devops_identity_state()
@@ -259345,7 +259955,7 @@ END FILE: src/melder/utilities/general_base/abstract_elastic_pool.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/utilities/general_base/cleanable.py
-CONTENT SHA256: 4ddc570beeea06a47035e288c83737d330bce90a67f5729211caae6742a885f5
+CONTENT SHA256: 54ae00aa806a2691aa19c4b23cecaa5190386e9af891c0ed231ce88fd63002f2
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -259541,8 +260151,11 @@ class Cleanable(ABC):
         Contract:
             - Does not rely on the owner's own `__enter__` / `__exit__`.
             - Calls `owner.cleanup()` at most once.
-            - Drops the strong owner reference after exit.
-            - Never suppresses exceptions raised by the caller's block.
+            - Drops the strong owner reference before that call, so nothing is
+              leaked even when cleanup raises.
+            - Never suppresses exceptions raised by the caller's block, and lets an
+              exception raised by `owner.cleanup()` propagate: with a failing block
+              it rises with the block's exception as its context.
         """
         __slots__ = ("_owner", "_cleaned", "_lock")
 
@@ -259606,9 +260219,12 @@ class Cleanable(ABC):
             Exit the cleanup helper context and trigger owner cleanup once.
 
             Contract:
-                - Calls `owner.cleanup()` AT MOST ONCE across repeated exits,
-                  swallowing any exception it raises (best-effort teardown),
-                  then drops the strong owner reference so nothing leaks.
+                - Drops the strong owner reference first, then calls
+                  `owner.cleanup()` AT MOST ONCE across repeated exits.
+                - An exception raised by `owner.cleanup()` propagates (changed
+                  0.2.8203; it used to be swallowed). When the block raised too,
+                  it rises with the block's exception as its `__context__`,
+                  Python's rule for an error raised in `__exit__`.
                 - Never suppresses exceptions from the caller's `with` block.
                 - Releases the context lock in a `finally`.
 
@@ -259623,21 +260239,20 @@ class Cleanable(ABC):
             Returns:
                 Literal[False]:
                     Always False so caller exceptions are never suppressed.
+
+            Raises:
+                Exception: Whatever `owner.cleanup()` raised.
             """
-            # Guarantee cleanup only once.
+            # Guarantee cleanup only once; drop the reference first so nothing is
+            # leaked when cleanup raises.
             try:
                 owner = self._owner
+                self._owner = None
                 if owner is not None and not self._cleaned:
                     self._cleaned = True
-                    try:
-                        owner.cleanup()
-                    except Exception:
-                        pass
+                    owner.cleanup()
 
-                # Explicitly drop the reference so nothing is leaked.
-                self._owner = None
-
-                # Do NOT suppress user exceptions.
+                # Do NOT suppress user exceptions; a cleanup error propagates.
                 return False
             finally:
                 self._lock.release()
@@ -259650,8 +260265,10 @@ class Cleanable(ABC):
         Contract:
             - Does not rely on the owner's own `__aenter__` / `__aexit__`.
             - Awaits `owner.async_cleanup()` at most once.
-            - Drops the strong owner reference after exit.
-            - Never suppresses exceptions raised by the caller's block.
+            - Drops the strong owner reference before that await, so nothing is
+              leaked even when async cleanup raises.
+            - Never suppresses exceptions raised by the caller's block, and lets an
+              exception raised by `owner.async_cleanup()` propagate.
 
         Note:
             Defined at class scope, not inside `async_using_cleanup()`. A class
@@ -259708,9 +260325,11 @@ class Cleanable(ABC):
             Exit the async cleanup helper context and await owner cleanup once.
 
             Contract:
-                - Awaits `owner.async_cleanup()` AT MOST ONCE across repeated
-                  exits, swallowing any exception it raises (best-effort
-                  teardown), then drops the strong owner reference.
+                - Drops the strong owner reference first, then awaits
+                  `owner.async_cleanup()` AT MOST ONCE across repeated exits.
+                - An exception raised by `owner.async_cleanup()` propagates
+                  (changed 0.2.8203; it used to be swallowed), chained to the
+                  block's exception when the block raised too.
                 - Never suppresses exceptions from the caller's `async with`
                   block.
                 - Releases the context lock in a `finally`.
@@ -259718,20 +260337,18 @@ class Cleanable(ABC):
             Returns:
                 Literal[False]:
                     Always False so caller exceptions are never suppressed.
+
+            Raises:
+                Exception: Whatever `owner.async_cleanup()` raised.
             """
             try:
                 owner = self._owner
+                self._owner = None
                 if owner is not None and not self._cleaned:
                     self._cleaned = True
-                    try:
-                        await owner.async_cleanup()
-                    except Exception:
-                        pass
+                    await owner.async_cleanup()
 
-                # Explicitly drop the reference so nothing is leaked.
-                self._owner = None
-
-                # Do NOT suppress user exceptions.
+                # Do NOT suppress user exceptions; a cleanup error propagates.
                 return False
             finally:
                 self._lock.release()
@@ -259745,6 +260362,8 @@ class Cleanable(ABC):
         - Independent of any context-manager behavior implemented by the owner.
         - Intended for callers that want deterministic cleanup without relying
           on the object's own `__enter__` / `__exit__`.
+        - Cleanup runs at most once on exit and its errors propagate; the block's
+          own exception is never suppressed.
 
         Returns:
             Cleanable._CleanupContext:

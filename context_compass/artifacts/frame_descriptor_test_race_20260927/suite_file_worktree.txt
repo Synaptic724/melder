@@ -1,0 +1,9 @@
+== 3.14.7t PYTHON_GIL=0
+...........                                                              [100%]
+11 passed in 0.13s
+== 3.14.7t PYTHON_GIL=1
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+11 passed, 1 warning in 0.13s
+== 3.14.7 GIL build
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+11 passed, 1 warning in 0.13s

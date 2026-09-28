@@ -1,0 +1,37 @@
+## lost: 22 lines
+- 1 x `    --doc system_docs/src_architecture.md`
+- 1 x `    --doc system_docs/src_architecture.md --check`
+- 1 x `    --doc system_docs/src_architecture.md --slice "<section name>"`
+- 1 x `  `system_docs/patches/active/system_doc_recompose_2026_08_01/component_material_for_migration.md`.`
+- 1 x `- 34 non-contract H2 sections were MOVED, NOT DELETED, to`
+- 1 x `Consume it by slicing rather than reading this document whole:`
+- 1 x `Contract in `src_architecture_instructions.md`. It now carries exactly the 17`
+- 1 x `RETIRED artifacts; the replacement is `src_graph.md` + `src_graph_index.md` per`
+- 1 x `Spec: `agent_onboarding/default/engineer/skills/system_document_build.md``
+- 1 x `Verify before trusting any range:`
+- 3 x `````
+- 3 x ````bash`
+- 1 x ``agent_onboarding/default/engineer/skills/src_graph_generation.md`.`
+- 1 x ``src_architecture_instructions.md`. One defect class was found here, and it was`
+- 1 x `companion is `src_architecture_index.md`, rebuilt in the SAME pass as any edit:`
+- 3 x `python tools/system_documents/index_document.py \`
+
+## added: 18 lines
+- 1 x `  (`component_material_for_migration.md`) of patch lane `system_doc_recompose_2026_08_01`.`
+- 1 x `- 34 non-contract H2 sections were MOVED, NOT DELETED, to the migration file`
+- 1 x `2026-09-28 portability: `## Indexing` no longer pastes the index tool's commands or cites the tooling's`
+- 1 x `Contract of its authoring instructions. It now carries exactly the 17`
+- 1 x `RETIRED artifacts; the replacement is `src_graph.md` + `src_graph_index.md`, built`
+- 1 x `The commands that rebuild, slice and check the index belong to the documentation`
+- 1 x `any edit. The index lists every section's line range and name, plus a staleness`
+- 1 x `authoring instructions. One defect class was found here, and it was`
+- 1 x `by the graph generation tooling.`
+- 1 x `companion is its index, `src_architecture_index`, rebuilt in the SAME pass as`
+- 1 x `into the tooling, so the packaged copy names nothing its reader cannot resolve. The 2026-09-27 "still`
+- 1 x `it by slicing a named section rather than reading this document whole, and`
+- 1 x `open" item below is closed.`
+- 1 x `proof of this document (`line_count`, `line_ending`, `content_sha256`). Consume`
+- 1 x `recompute the staleness proof before trusting any range.`
+- 1 x `section used to paste those commands and cite the tooling's own specification).`
+- 1 x `specification, and the handoff lines below name the recomposition patch lane by its id instead of a path`
+- 1 x `tooling, which does not ship with this document (corrected 2026-09-28: this`

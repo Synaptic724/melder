@@ -1,0 +1,659 @@
+import weakref
+import threading
+from typing import Any, Callable, Generic, Iterator, Optional, TypeVar, Union, ClassVar
+from contextlib import contextmanager
+
+
+# Command Ops imports
+from melder.utilities.helpers.ulid_factory import new_ulid
+from melder.utilities.general_base.sync import Sync
+
+T = TypeVar("T")
+R = TypeVar("R")
+
+_OnCollect = Callable[["SyncWeakRef[T]"], None]
+
+
+class SyncWeakRef(Sync, Generic[T]):
+    """
+
+    Subsystem Context:
+        Lives in `utilities/synchronization/` rather than with the weak
+        containers, and the placement is the point: `WeakRefNode` is a passive
+        ELEMENT whose owning container synchronizes it, while this is a
+        self-synchronizing standalone CELL with compare-and-swap. Same weak
+        semantics, opposite responsibility for locking. It is the one member of
+        the `Sync` mix-in family, so it also inherits the deterministic
+        two-wrapper lock ordering that prevents deadlock between cells.
+
+    System Context:
+        Substrate-level, outside the DGR boot order. It suits the "one slot that
+        several threads may swap, without keeping the referent alive" shape -
+        where the weak containers answer "many things I do not own", this
+        answers "one thing I do not own, safely replaceable".
+
+    SyncWeakRef(target)
+    ===================
+
+    A thread-safe, non-owning weak reference wrapper with
+    phantom-style notification and optional auto-cleanup.
+
+    Core behaviour:
+    --------------
+    - Non-owning:
+        * Uses `weakref.ref(target)` internally.
+        * Does NOT keep the target alive.
+    - Thread-safe wrapper:
+        * Synchronizes access to the weak reference itself.
+        * Does NOT make the target object thread-safe.
+    - Lifetime inspection:
+        * `is_alive()` -> bool
+        * `try_get()` -> Optional[T]
+        * `get()` -> T or raises ReferenceError
+    - Update operations:
+        * `set(obj)` -> replace the target reference
+        * `cas(expected, new)` -> compare-and-swap by identity
+        * `swap(new)` -> swap and return the previous target (if alive)
+
+    Phantom-style features:
+    -----------------------
+    - Optional GC callback:
+        * `on_collect`: Callable[[SyncWeakRef[T]], None]
+        * Invoked when the target is about to be finalized.
+        * Called exactly once per different lifetime.
+    - Phantom flag:
+        * `has_fired` property indicates whether the GC callback fired.
+    - Optional auto-cleanup:
+        * `auto_cleanup=True`:
+            - When the referent is collected, `cleanup()` is invoked
+              on this SyncWeakRef instance.
+            - After that, any use of the wrapper raises RuntimeError.
+
+    Cleanable contract:
+    -------------------
+    - `cleanup()`:
+        * Clears the weak reference and callback.
+        * Marks the wrapper as cleaned.
+        * Best-effort cleans the internal lock if it supports cleanup().
+        * Idempotent and safe under concurrent calls.
+
+    IMPORTANT:
+    ----------
+    SyncWeakRef does NOT provide thread safety for the target object.
+    The target MUST be internally thread-safe if accessed concurrently.
+    This class only synchronizes the weak-reference wrapper and its
+    phantom/cleanup behaviour.
+
+    AGENT_ACCESS: internal
+
+    AGENT_PURPOSE:
+        access: internal. Thread-safe non-owning weak-ref cell with CAS/swap and phantom
+        on-collect (get/try_get/is_alive, cas/swap/locked). Melder-owned runtime machinery, not
+        part of the exported surface; it synchronizes the CELL, not the referent, and is guarded
+        so it cannot be bound as a spell.
+    """
+
+    __slots__ = [
+            "_cleaned",
+            "_weak",
+            "_lock",
+            "_id",
+            "_on_collect",
+            "_auto_cleanup",
+            "_phantom_fired",
+    ]
+
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
+    def __init__(
+            self,
+            target: T,
+            on_collect: Optional[_OnCollect] = None,
+            auto_cleanup: bool = False,
+    ):
+        """
+        Initialize a SyncWeakRef.
+
+        Contract:
+            - NON-OWNING: creates the weakref immediately and never keeps the
+              target alive; registers the internal phantom callback at once.
+            - Owns its own `RLock`; this is a self-synchronizing cell, unlike
+              `WeakRefNode` which relies on its container's lock.
+
+        Parameters:
+        -----------
+        target:
+            The object is weakly referenced. Must be weak-referenceable.
+        on_collect:
+            Optional callback is invoked when the referent is about to be
+            finalized. Signature: (ref: SyncWeakRef[T]) -> None.
+        auto_cleanup:
+            If True, `cleanup()` is automatically invoked when the
+            referent is collected. This effectively prunes the wrapper
+            once the target dies.
+
+        Returns:
+            None.
+        """
+        self._cleaned: bool = False
+        self._id = new_ulid()
+        self._on_collect: Optional[_OnCollect] = on_collect
+        self._auto_cleanup: bool = auto_cleanup
+        self._phantom_fired: bool = False
+
+        # Create weak reference immediately (no ownership) and register
+        # an internal callback for phantom-style notification.
+        self._weak: weakref.ref[T] = weakref.ref(target, self._weakref_callback)
+        self._lock: threading.RLock = threading.RLock()
+
+    @property
+    def cleaned(self) -> bool:
+        """
+        Return whether this wrapper has already been cleaned.
+
+        Contract:
+            - MONOTONIC latch: only ever moves False -> True; once True it
+              stays True for the wrapper's life. Read without the lock.
+
+        Returns:
+            bool:
+                True when cleanup has completed.
+        """
+        return self._cleaned
+
+    @property
+    def is_cleaned(self) -> bool:
+        """
+        Alias for `cleaned`.
+
+        Contract:
+            - Exact alias: reads the same `_cleaned` flag with the same
+              monotonic semantics. Both spellings exist for call-site parity.
+
+        Returns:
+            bool:
+                Current cleaned-state flag.
+        """
+        return self._cleaned
+
+
+    # ------------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------------
+    def cleanup(self) -> None:
+        """
+        Clean up this wrapper (NOT the target).
+
+        After cleanup:
+        - Wrapper is marked cleaned.
+        - Underlying weak reference and callback are removed.
+        - All operations raise RuntimeError via check_cleaned().
+
+        Contract:
+            - Idempotent and double-checked under the lock (check `_cleaned`,
+              acquire, re-check), so concurrent teardown is safe.
+            - Del posture: deletes the weakref and callback inside the lock,
+              then deletes the lock itself last.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+
+            # Drop weakref and callback.
+            del self._weak
+            del self._on_collect
+
+        del self._lock
+
+
+    # ------------------------------------------------------------------
+    # Weakref callback (phantom signal)
+    # ------------------------------------------------------------------
+    def _weakref_callback(self, _wr: weakref.ref[T]) -> None:
+        """
+        Internal weakener callback.
+
+        This is invoked by Python's GC machinery when the referent is
+        about to be finalized. It:
+        - Marks phantom state (`_phantom_fired = True`).
+        - Invokes the user callback, if any.
+        - Optionally triggers auto-cleanup.
+
+        NOTE:
+        -----
+        - This callback must be best-effort and low-risk.
+        - It does NOT acquire the object's main lock to avoid deadlocks.
+        - It tolerates the wrapper already being cleaned.
+        """
+        # If already cleaned, nothing to do.
+        if self._cleaned:
+            return
+
+        # Mark phantom-firing state.
+        self._phantom_fired = True
+
+        # Snapshot callback and auto-cleanup flag to minimize race windows.
+        cb = self._on_collect
+        auto = self._auto_cleanup
+
+        # Invoke user callback (if any).
+        if cb is not None:
+            try:
+                cb(self)
+            except Exception:
+                # Swallow exceptions to avoid interfering with GC.
+                pass
+
+        # Optionally, clean up the wrapper itself.
+        if auto:
+            try:
+                self.cleanup()
+            except Exception:
+                # Best-effort: ignore failures from cleanup in this path.
+                pass
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    @classmethod
+    def _coerce(cls, val: T) -> T:
+        """
+        Return the normalized scalar form expected by this wrapper type.
+
+        Contract:
+        - Base `SyncWeakRef` performs no coercion and returns the value
+          unchanged.
+        - Subclasses may override this when they need stricter normalization.
+        """
+        return val
+
+    def _unwrap_other(self, other: Any) -> object:
+        """
+        Normalize `other` for comparison against this wrapper's referent.
+
+        Contract:
+        - If `other` is another sync wrapper, returns its current value through
+          `get()`.
+        - Otherwise returns the raw value unchanged.
+        """
+        if Sync._is_sync(other):
+            other_value: object = other.get()
+            return other_value
+        return other
+
+    def check_cleaned(self) -> None:
+        """
+        Raise when the wrapper has already been cleaned.
+
+        Contract:
+        - Overrides the base guard to provide a `SyncWeakRef`-specific error
+          message.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            raise RuntimeError("SyncWeakRef has been cleaned and cannot be used.")
+
+    # ------------------------------------------------------------------
+    # Phantom / callback API
+    # ------------------------------------------------------------------
+    @property
+    def has_fired(self) -> bool:
+        """
+        Return whether the GC/phantom callback has fired.
+
+        Contract:
+            - LATCHES True when the internal weakref callback fires (the
+              referent was collected) and is NEVER reset - even a later
+              `set()`/`cas()`/`swap()` to a fresh referent leaves it True.
+              Read without the lock.
+
+        Returns:
+            bool:
+                True once the phantom callback has fired for this wrapper.
+        """
+        return self._phantom_fired
+
+    def register_on_collect(self, callback: Optional[_OnCollect]) -> None:
+        """
+        Register or replace the on-collect callback.
+
+        Parameters:
+        -----------
+        callback:
+            A callable of the form (ref: SyncWeakRef[T]) -> None, or None
+            to clear an existing callback.
+
+        Raises:
+        -------
+        RuntimeError:
+            If this SyncWeakRef has already been cleaned.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            self._on_collect = callback
+
+    def enable_auto_cleanup(self) -> None:
+        """
+        Enable auto-cleanup behaviour.
+
+        When the referent is collected, this SyncWeakRef will call
+        `cleanup()` automatically (in the weakener callback).
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            self._auto_cleanup = True
+
+    def disable_auto_cleanup(self) -> None:
+        """
+        Disable wrapper auto-cleanup when the referent is collected.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            self._auto_cleanup = False
+
+    # ------------------------------------------------------------------
+    # Core API
+    # ------------------------------------------------------------------
+    def is_alive(self) -> bool:
+        """
+        Return whether the current weak-reference target is still alive.
+
+        Returns:
+            bool: True when the referent can still be resolved.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            if self._weak is None:
+                return False
+            return self._weak() is not None
+
+    def try_get(self) -> Optional[T]:
+        """
+        Return the referenced object when it is still alive.
+
+        Returns:
+            Optional[T]: Live referent when available; otherwise None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            if self._weak is None:
+                return None
+            return self._weak()
+
+    def get(self) -> T:
+        """
+        Get the referenced object.
+
+        Raises:
+            ReferenceError: if the weakener is dead.
+            RuntimeError:   if this SyncWeakRef has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+
+            if self._weak is None:
+                raise ReferenceError("Weak reference has been cleared.")
+
+            obj = self._weak()
+            if obj is None:
+                raise ReferenceError("Referenced object is no longer alive.")
+            return obj
+
+    @property
+    def snapshot(self) -> T:
+        """
+        Return the current live referent using the strict `get()` contract.
+
+        Returns:
+            T:
+                The current live referent.
+
+        Raises:
+            ReferenceError:
+                If the referent is no longer alive.
+            RuntimeError:
+                If this wrapper has already been cleaned.
+        """
+        return self.get()
+
+    # ------------------------------------------------------------------
+    # CAS / swap
+    # ------------------------------------------------------------------
+    def set(self, obj: T) -> None:
+        """
+        Forcefully update the weak reference target.
+
+        This replaces the underlying weakener with a new one pointing
+        at the given object.
+
+        Args:
+            obj: New referent to track weakly.
+
+        Raises:
+            RuntimeError:
+                If the wrapper has already been cleaned.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            self._weak = weakref.ref(obj, self._weakref_callback)
+
+    def cas(self, expected: T, new: T) -> bool:
+        """
+        Compare-and-set on the referenced live object identity.
+
+        Semantics:
+        ----------
+        - Loads the current target via `try_get()`.
+        - If it is exactly `expected` (by identity), replaces the weak
+          reference with a new one pointing at `new`.
+        - Returns True on success, False otherwise.
+
+        Args:
+            expected:
+                Identity the current live referent must match (by `is`).
+            new:
+                Referent to install weakly when the match succeeds.
+
+        Returns:
+            bool: True when the expected live referent matched and the swap was
+            applied; otherwise False.
+
+        Raises:
+            RuntimeError:
+                If the wrapper has already been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            current = self.try_get()
+            if current is expected:
+                self._weak = weakref.ref(new, self._weakref_callback)
+                return True
+            return False
+
+    def swap(self, new: T) -> Optional[T]:
+        """
+        Replace the target and return the previous live value (if any).
+
+        Contract:
+            - Atomic under the wrapper lock: reads the old live referent, then
+              installs `new`. Does NOT reset `has_fired`.
+
+        Args:
+            new:
+                New referent to track weakly.
+
+        Returns:
+        --------
+        Optional[T]:
+            The previously referenced object if it was still alive,
+            otherwise None.
+
+        Raises:
+            RuntimeError:
+                If the wrapper has already been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            old = self.try_get()
+            self._weak = weakref.ref(new, self._weakref_callback)
+            return old
+
+    # ------------------------------------------------------------------
+    # Transform (read-only)
+    # ------------------------------------------------------------------
+    def transform(self, fn: Callable[[T], R]) -> R:
+        """
+        Apply a read-only transform to the referenced object.
+
+        Raises:
+            ReferenceError: if object is dead.
+            RuntimeError:   if this SyncWeakRef has been cleaned.
+
+        Returns:
+            R: Result returned by `fn(obj)` for the live referent.
+        """
+        obj = self.get()
+        return fn(obj)
+
+    def map(self, fn: Callable[[T], R]) -> R:
+        """
+        Apply `fn` to the current live referent.
+
+        Contract:
+            - Preserves the historical alias semantics of `map = transform`.
+            - Uses the same strict live-reference contract as `transform()`.
+
+        Args:
+            fn:
+                Callable applied to the live referent.
+
+        Returns:
+            R:
+                Value returned by `fn`.
+
+        Raises:
+            ReferenceError:
+                If the referent is no longer alive.
+            RuntimeError:
+                If this wrapper has already been cleaned.
+        """
+        return self.transform(fn)
+
+    # ------------------------------------------------------------------
+    # locked() context
+    # ------------------------------------------------------------------
+    @contextmanager
+    def locked(self) -> Iterator[T]:
+        """
+        Lock the wrapper, then yield the referenced object (if alive).
+
+        Example:
+        --------
+        >>> with ref.locked() as obj:
+        ... obj.do_something()
+
+        Yields:
+            T: Live referent while the wrapper lock is held.
+
+        Raises:
+            ReferenceError:
+                If the referent is no longer alive when the block is entered.
+            RuntimeError:
+                If the wrapper has already been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            obj = self.get()
+            yield obj
+
+    # ------------------------------------------------------------------
+    # Dunder & repr
+    # ------------------------------------------------------------------
+    def __repr__(self) -> str:
+        """
+        Return a debug-oriented representation of the wrapper liveness state.
+
+        Contract:
+            - Reads `try_get()` for liveness (takes the lock); a cleaned
+              wrapper reports `SyncWeakRef(cleaned)` without touching the
+              referent. Debug/telemetry only.
+
+        Returns:
+            str:
+                Representation showing liveness state, id, and phantom status.
+        """
+        if self._cleaned:
+            return "SyncWeakRef(cleaned)"
+
+        alive = self.try_get() is not None
+        state = "alive" if alive else "dead"
+        phantom = ", phantom_fired=True" if self._phantom_fired else ""
+        return f"SyncWeakRef({state} id={self._id}{phantom})"
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Equality comparison is based on the underlying referent (if alive).
+
+        - If `other` is Sync-compatible, compare `self.try_get()` to `other.try_get()`.
+        - Otherwise, compare `self.try_get()` directly to `other`.
+
+        Returns:
+            bool: Equality result derived from the currently resolved referent.
+        """
+        if Sync._is_sync(other):
+            other_value: object = other.get()
+            return bool(self.try_get() == other_value)
+        other_value = other
+        return bool(self.try_get() == other_value)
+
+    def __hash__(self) -> int:
+        """
+        Hash the contained object if possible; fall back to id(self) or id(obj).
+
+        If the referent is dead:
+            - Returns id(self) to keep the wrapper usable in sets/dicts.
+        If the referent is alive but unhashable:
+            - Falls back to id(obj).
+
+        Returns:
+            int: Hash of the live referent when possible, otherwise an id-based
+            fallback.
+        """
+        obj = self.try_get()
+        if obj is None:
+            return id(self)
+        try:
+            return hash(obj)
+        except TypeError:
+            return id(obj)

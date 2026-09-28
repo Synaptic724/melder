@@ -1,11 +1,10 @@
 """
 Fault suite for the two validation bugs found in the compiler read-through.
 
-Fault A - DuplicateSpellNameStrategy is over-strict:
-    It keys collisions on the bare `spell_name` and ignores spellframe /
-    binding_name, so fully disambiguated same-name spells still error. This
-    contradicts ticket A6 (ambiguity keyed by (frame_key, bind_key)) and the
-    strategy's own remediation message.
+Fault A regression - DuplicateSpellNameStrategy compares lookup addresses:
+    The former bare-name check rejected fully qualified same-name spells.
+    These regressions require distinct spellframes or bindings to pass,
+    matching the canonical (frame_key, bind_key) identity from ticket A6.
 
 Fault B - AnnotationShapeGuardStrategy ignores `di_shape`:
     It validates the raw annotation without consulting the Phase-1 classification,
@@ -14,8 +13,8 @@ Fault B - AnnotationShapeGuardStrategy ignores `di_shape`:
 
 Convention:
     - `*_control_*` tests assert *correct current* behavior and should PASS today.
-    - `*_fault_*` tests assert the *intended fixed* behavior and are marked xfail
-      (strict=False) so they document the target and flip to XPASS once fixed.
+    - Fault A tests are ordinary regressions. Remaining xfail markers belong
+      to the separate Fault B history and are not changed by the address fix.
 
 NOTE:
     Run on Python 3.14t (melder relies on 3.14 deferred annotations).
@@ -93,10 +92,10 @@ def _codes4(spell) -> set:
 
 
 # =========================================================================== #
-# Fault A - duplicate-name guard ignores frame/binding disambiguation
+# Fault A regressions - duplicate-name guard honors frame/binding disambiguation
 # =========================================================================== #
-def test_fault_a_control_bare_duplicate_names_error() -> None:
-    """CONTROL (should pass): two same-name spells with no discriminator error."""
+def test_fault_a_default_and_secondary_bindings_are_distinct() -> None:
+    """A default binding and a secondary binding are distinct despite equal names."""
     spellbook = _make_spellbook()
 
     class ContainerA:
@@ -114,12 +113,11 @@ def test_fault_a_control_bare_duplicate_names_error() -> None:
         target_id = spellbook.bind(spell=ContainerB.Repo, existence=Existence.unique, permissions="create", binding_name="secondary")
         spell = _get_spell(spellbook, target_id)
         _phases_1_4(spell)
-        assert "DUPLICATE_SPELL_NAME" in _codes4(spell)
+        assert "DUPLICATE_SPELL_NAME" not in _codes4(spell)
     finally:
         spellbook.cleanup()
 
 
-@pytest.mark.xfail(reason="Fault A: guard ignores distinct spellframes", strict=False)
 def test_fault_a_distinct_spellframes_should_not_error() -> None:
     """FAULT: same name under different Protocol/string frames should NOT be ambiguous."""
     spellbook = _make_spellbook()
@@ -144,7 +142,6 @@ def test_fault_a_distinct_spellframes_should_not_error() -> None:
         spellbook.cleanup()
 
 
-@pytest.mark.xfail(reason="Fault A: remediation (distinct binding_name) does not clear the error", strict=False)
 def test_fault_a_distinct_binding_names_should_clear_error() -> None:
     """FAULT: following the diagnostic's own advice (distinct binding_name) should clear it."""
     spellbook = _make_spellbook()

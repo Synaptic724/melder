@@ -1,0 +1,14 @@
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt_new/src/melder/__init__.py:190: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+old=wt new=wt_new blocks=10 gil=True (3.14.7)
+  lesser_create_cleanup    old=  815.2 ns  new=  825.0 ns  delta=  +9.8 ns (+1.2%)  old_range=805.1-858.1  new_range=811.8-1039.6  samples=20
+  space_enter_exit         old=  269.1 ns  new=  270.9 ns  delta=  +1.7 ns (+0.6%)  old_range=253.7-292.3  new_range=261.4-295.9  samples=20
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt_new/src/melder/__init__.py:190: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+old=wt new=wt_new blocks=10 gil=True (3.14.7)
+  lesser_create_cleanup    old=  848.8 ns  new=  850.2 ns  delta=  +1.5 ns (+0.2%)  old_range=836.4-877.3  new_range=834.9-881.4  samples=20
+  space_enter_exit         old=  265.3 ns  new=  264.3 ns  delta=  -0.9 ns (-0.4%)  old_range=259.1-329.1  new_range=256.6-293.1  samples=20

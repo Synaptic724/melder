@@ -1,0 +1,8 @@
+{
+  "document": "context_compass\\system_docs\\tests_components.md",
+  "removed_lines": {
+    "- Updated: 2026-09-27": 1
+  },
+  "added_line_count": 23,
+  "accounting": "Updated metadata date from 2026-09-27 to 2026-09-28; all other baseline content retained."
+}

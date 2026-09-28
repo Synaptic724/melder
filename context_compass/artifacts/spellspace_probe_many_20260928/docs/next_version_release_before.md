@@ -1,0 +1,77 @@
+# Melder 0.2.8203
+
+**Unreleased**
+
+## Melds by name or class take the warm lane
+
+`conduit.meld("Service")` and `conduit.meld(spell=Service)` now reach the compiled builder in one lookup once
+the spell has been built once through that call - the warm lane that `meld(spell_id=...)` already had.
+`SpellSpace.meld` does the same for scoped melds. The meld door keeps a second success-only registry keyed
+by the name string or the class object a caller passes, validated per call by the same guards as the id
+entry (door epoch, creation-context identity, live hook and validation flags), so a warm hit returns exactly
+what the full lane would.
+
+Nothing changes in what you call or what comes back: the same object for a stored lifetime, a fresh one per
+call for `Existence.many`, the same errors, the same override and existing-object behaviour. Melds that pass
+`spellframe` or `binding_name`, an instance or a callable as `spell`, dynamic worlds, hooks, and list, tuple
+or empty override payloads keep their current path.
+
+Directional numbers on a 2-core VM (Python 3.14t, free-threaded): a warm meld by name of a dependency-free
+class 453 -> 269 ns, with one singleton dependency 537 -> 350 ns, at width 4 888 -> 687 ns, a stored singleton
+melded directly 333 -> 177 ns; melds by name, by class and by id now cost the same.
+
+## `with` releases a Conduit, and every scope exit finishes its cleanup
+
+**Breaking change:** `with conduit:` no longer holds the conduit's lock for the block. A Conduit is now a
+dispose scope, like a .NET `using` block: when the block ends, a lesser conduit disposes the objects it holds
+and goes back to its root's pool, and a root conduit is torn down. Code that used `with conduit:` as a lock
+needs a lock of its own; code that cleaned the conduit up by hand after the block can drop that call.
+`Spellbook`, `Aether`, `AethericFrame`, `ConduitWard` and `SpellIndex` keep `with` as a lock.
+
+`Conduit.enter_lesser_conduit(logger=None, *, name=None)` makes a lesser for such a block; it returns exactly
+what `create_lesser_conduit` returns:
+
+```python
+with root.enter_lesser_conduit() as request:
+    handler = request.meld(Handler)
+# the request's objects are disposed and the lesser is back in root's pool
+```
+
+**Breaking change:** a failing disposal method no longer stops cleanup half way, and its failure is no longer
+only logged. A SpellSpace block exit, a SpellSpace `cleanup()`, a lesser's return to its pool and a root's
+teardown now finish every step - the scope still goes back to its pool, or is fully torn down - and then raise
+all the disposal failures together as one `ExceptionGroup`. Before, a failure could leave a SpellSpace or a
+lesser out of its pool, and a conduit's teardown only logged these failures. If your disposal methods can
+fail, catch `ExceptionGroup` (or use `except*`) around cleanup. When the `with` block itself raised, its
+exception is kept and the cleanup group rises with it as `__context__`. `using_cleanup()` and
+`async_using_cleanup()`, available on every Cleanable, now let a cleanup error propagate instead of
+swallowing it.
+
+Also fixed:
+
+- A lesser's return disposes its child lessers first, then its SpellSpaces, then its own objects - the order a
+  root's teardown already used.
+- Calling `cleanup()` twice on a lesser or a SpellSpace no longer puts it in its pool twice, where two later
+  acquisitions could receive the same object.
+- A SpellSpace back in its pool refuses `meld` and `purge` with `SpellSpaceScopeError`, so a handle kept after
+  its block can no longer build objects into the idle space that the next request would be served.
+- A lesser cleaned up inside one of its own `enter_spellspace()` blocks no longer makes that block's exit
+  raise "stack corruption".
+
+What stays the same: the disposal order inside a scope (newest first, each object's methods in declared
+order), which objects each scope owns, purge, and build locks. Frame teardown still cleans every conduit when
+one fails; it now logs that failure instead of dropping it silently.
+
+Directional numbers on a 2-core VM (Python 3.14t, free-threaded), same process, against 0.2.8202: a managed
+SpellSpace enter and exit 9-19 ns faster, a lesser create and cleanup 7-20 ns faster, a warm `SpellSpace.meld`
+2-5 ns faster; the GIL build measured no slower.
+
+## Packaging and documentation
+
+- The packaged system documents (`melder.__components__`, `melder.__architecture__`) are regenerated: the Meld
+  Resolution Runtime entry describes the name/class registry, its mint rule, its readers and its invalidation,
+  and the meld sequence names both door registries.
+- The packaged system documents also describe `with` as a dispose scope, `enter_lesser_conduit`, the finished
+  scope exits and the SpellSpace lease; their stale SpellSpace claims (an active-scope check, `reset()`, a
+  version) are corrected.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8203.

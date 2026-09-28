@@ -1,0 +1,18 @@
+Python 3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ]
+# micro A/B (ABBA x4), ns per operation, median of 5 timed loops each, GIL off
+tree=wt gil=False space_enter_exit=339.1 space_warm_meld=210.1 lesser_create_cleanup=1757.2 lesser_warm_meld(control)=207.8
+tree=wt_new gil=False space_enter_exit=357.7 space_warm_meld=208.1 lesser_create_cleanup=1430.7 lesser_warm_meld(control)=211.2
+tree=wt_new gil=False space_enter_exit=351.1 space_warm_meld=211.0 lesser_create_cleanup=1433.1 lesser_warm_meld(control)=212.9
+tree=wt gil=False space_enter_exit=340.1 space_warm_meld=209.7 lesser_create_cleanup=1369.0 lesser_warm_meld(control)=213.7
+tree=wt gil=False space_enter_exit=339.5 space_warm_meld=209.9 lesser_create_cleanup=1382.4 lesser_warm_meld(control)=212.0
+tree=wt_new gil=False space_enter_exit=352.7 space_warm_meld=210.1 lesser_create_cleanup=1425.4 lesser_warm_meld(control)=238.1
+tree=wt_new gil=False space_enter_exit=353.9 space_warm_meld=218.1 lesser_create_cleanup=1426.2 lesser_warm_meld(control)=214.0
+tree=wt gil=False space_enter_exit=334.5 space_warm_meld=214.8 lesser_create_cleanup=1375.6 lesser_warm_meld(control)=211.0
+tree=wt gil=False space_enter_exit=343.4 space_warm_meld=210.8 lesser_create_cleanup=1371.6 lesser_warm_meld(control)=214.1
+tree=wt_new gil=False space_enter_exit=352.5 space_warm_meld=210.8 lesser_create_cleanup=1429.4 lesser_warm_meld(control)=498.5
+tree=wt_new gil=False space_enter_exit=348.4 space_warm_meld=210.3 lesser_create_cleanup=1426.7 lesser_warm_meld(control)=213.5
+tree=wt gil=False space_enter_exit=344.8 space_warm_meld=210.9 lesser_create_cleanup=1372.0 lesser_warm_meld(control)=213.9
+tree=wt gil=False space_enter_exit=340.8 space_warm_meld=210.1 lesser_create_cleanup=1420.5 lesser_warm_meld(control)=221.5
+tree=wt_new gil=False space_enter_exit=360.3 space_warm_meld=211.1 lesser_create_cleanup=1435.1 lesser_warm_meld(control)=218.3
+tree=wt_new gil=False space_enter_exit=354.5 space_warm_meld=209.9 lesser_create_cleanup=1427.7 lesser_warm_meld(control)=213.9
+tree=wt gil=False space_enter_exit=333.6 space_warm_meld=209.4 lesser_create_cleanup=1374.8 lesser_warm_meld(control)=212.6

@@ -1,0 +1,6 @@
+old=wt new=wt_new blocks=10 gil=True (3.14.7)
+  lesser_create_cleanup    old=  825.7 ns  new=  800.5 ns  delta= -25.2 ns (-3.1%)  old_range=815.4-878.0  new_range=783.0-864.2  samples=20
+  space_enter_exit         old=  258.0 ns  new=  251.0 ns  delta=  -7.1 ns (-2.7%)  old_range=249.2-321.1  new_range=243.8-269.6  samples=20
+old=wt new=wt_new blocks=10 gil=True (3.14.7)
+  lesser_create_cleanup    old=  818.4 ns  new=  797.2 ns  delta= -21.3 ns (-2.6%)  old_range=798.7-846.9  new_range=778.2-861.3  samples=20
+  space_enter_exit         old=  261.3 ns  new=  244.8 ns  delta= -16.5 ns (-6.3%)  old_range=252.1-383.5  new_range=236.8-253.8  samples=20

@@ -1,0 +1,10 @@
+# final offsets: inline managed recycle lane in SpellSpace.__exit__, one idle read in SpellSpacePool.release, inline push in Conduit.enter_spellspace, empty-sweep return in Conduit._cleanup_spellspaces_for_pool
+old=wt new=wt_new blocks=12 gil=False (3.14.7)
+  lesser_create_cleanup    old= 1365.2 ns  new= 1340.9 ns  delta= -24.3 ns (-1.8%)  old_range=1329.0-1493.9  new_range=1315.2-1570.1  samples=24
+  space_enter_exit         old=  333.2 ns  new=  327.8 ns  delta=  -5.4 ns (-1.6%)  old_range=321.5-412.1  new_range=315.6-570.6  samples=24
+old=wt new=wt_new blocks=12 gil=False (3.14.7)
+  lesser_create_cleanup    old= 1374.2 ns  new= 1353.9 ns  delta= -20.3 ns (-1.5%)  old_range=1324.3-1604.3  new_range=1320.3-1448.2  samples=24
+  space_enter_exit         old=  338.8 ns  new=  331.3 ns  delta=  -7.5 ns (-2.2%)  old_range=320.5-381.7  new_range=319.0-375.3  samples=24
+old=wt new=wt_new blocks=12 gil=False (3.14.7)
+  lesser_create_cleanup    old= 1356.3 ns  new= 1347.1 ns  delta=  -9.1 ns (-0.7%)  old_range=1325.0-2278.6  new_range=1313.3-1824.5  samples=24
+  space_enter_exit         old=  327.9 ns  new=  324.0 ns  delta=  -3.9 ns (-1.2%)  old_range=320.7-533.6  new_range=316.5-355.4  samples=24

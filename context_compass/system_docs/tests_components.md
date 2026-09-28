@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-09-27
+- Updated: 2026-09-28
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -962,6 +962,9 @@ Protects:
 - the door-held root (0.2.73): the normal plan of a `unique_per_conduit` or
   spellspace root does not take the slot guard its route door already holds;
   every other site and plan keeps its guard (`test_site_plan_door_held_root.py`)
+- canonical address collisions (2026-09-28): same-name entries at distinct addresses remain valid;
+  case/default aliases and different display names at one address still collide, with identical
+  results through fresh and pass-cached validation (`test_duplicate_spell_name_strategy.py`).
 Key Files (C1):
 - `tests/unit/melder/spellbook/spell_compiler/test_spell_compiler_system.py`
 - `tests/unit/melder/spellbook/spell_compiler/test_spell_compiler.py`
@@ -974,6 +977,7 @@ Key Files (C1):
 - `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py` (key-set plans, 2026-09-26)
 - `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`
 - `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py`
+- `tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_duplicate_spell_name_strategy.py`
 
 ### Subcomponent: Package Root Unit Cluster
 Parent Component: Unit Test Suite
@@ -1037,6 +1041,8 @@ Protects:
   (`test_spellbook_validation_error.py`)
 - `SignatureReflection` output for `TYPE_CHECKING`-only names; creation-cache
   persistence round trips; exact line accounting in the agent text reader
+- the Cleanable cleanup contexts (0.2.8203): `using_cleanup()` and `async_using_cleanup()` clean up at
+  most once and let the cleanup error propagate, chained to the block's error
 Key Files (C1):
 - `tests/unit/melder/utilities/synchronization/test_creation_gate.py`
 - `tests/unit/melder/utilities/synchronization/test_creation_gate_controller.py`
@@ -1047,6 +1053,7 @@ Key Files (C1):
 - `tests/unit/melder/utilities/test_caching_system.py`
 - `tests/unit/melder/utilities/ai_native_support_tools/test_agent_text_reader.py`
 - `tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool_multithreaded.py`
+- `tests/unit/melder/utilities/general_base/test_cleanable_cleanup_contexts.py`
 
 ### Subcomponent: Repository Tooling Unit Cluster
 Parent Component: Unit Test Suite
@@ -1086,10 +1093,16 @@ Protects:
 - the descriptor manager keeping frame, conduit and spell records coherent; one ACL
   container per descriptor creation flow, cleaned on frame detach even without
   managed-frame state; the extended viewer surface matrix
+- scope exits (0.2.8203): `with conduit:` disposes (a lesser pooled with its objects disposed, a root torn
+  down, the block's error kept), `enter_lesser_conduit`, children-first pool return, finish-then-raise on
+  every exit, idempotent soft cleanup (two cleanups, one pool entry), and the SpellSpace lease flag (a kept
+  handle refuses meld and purge; a space released or destroyed inside its own block exits cleanly)
 Key Files (C1):
 - `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
 - `tests/component/melder/aether/test_frame_acl_component.py`
 - `tests/component/melder/aether/test_nexus_viewer_extended_surface_component_matrix.py`
+- `tests/component/melder/aether/conduit/test_conduit_component_scope_exit_dispose.py`
+- `tests/component/melder/aether/conduit/test_spellspace_component_lease_release.py`
 
 ### Subcomponent: Crystallizer Component Cluster
 Parent Component: Component Test Suite
@@ -1233,6 +1246,10 @@ Protects:
   cleanup; scan-bind order and refusals (re-exports, duplicates, rescans); meld by
   id, name, class, Protocol or string spellframe, forward-reference type hints and
   collection DI; read-only public mappings; compiler phases followed by a meld
+- qualified same-named classes (2026-09-28): real conjure and repeated meld by id/address return the
+  exact registered types in automatic and dynamic frames. Discoverable twins permit conjure but
+  retain direct-meld refusal; genuine case-normalized address conflicts still fail at bind.
+  Contracted validation tests verify independent owner/borrower bindings and validity after unlink.
 Key Files (C1):
 - `tests/integration/melder/spellbook/test_spellbook_integration_core.py`
 - `tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py`
@@ -1240,6 +1257,8 @@ Key Files (C1):
 - `tests/integration/melder/spellbook/test_spellbook_integration_public_api.py`
 - `tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py`
 - `tests/integration/melder/spellbook/test_spell_compiler_system_integration.py`
+- `tests/integration/melder/spellbook/test_spellbook_qualified_same_name_regressions.py`
+- `tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py`
 
 ### Subcomponent: Conduit Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1255,7 +1274,8 @@ Protects:
   automatic-mode refusal of dynamic APIs
 - teardown: idempotent cleanup that blocks meld, and dependents disposed before
   their dependencies; a failing disposal method no longer skips the object's later methods
-  (0.2.80)
+  (0.2.80); conduit cleanup and a SpellSpace exit finish and then raise the failures as one
+  ExceptionGroup (0.2.8203)
 - door-held first builds (0.2.73): concurrent first melds of one root, on one
   conduit or in one shared SpellSpace, construct it and its dependency once
 Key Files (C1):
@@ -1400,8 +1420,15 @@ Key Files (C1):
    - tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py:148-235
 
 ## C1 Code Map (Core)
+- path: `tests/integration/melder/spellbook/test_spellbook_qualified_same_name_regressions.py`
+  start_line: 1
+  end_line: 131
+  loc: 131
+  verified_at: 2026-09-28T01:11:03Z
+  note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
+
 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
-above - 183 paths - and nothing else. Change a component's key files and this set
+above - 186 paths - and nothing else. Change a component's key files and this set
 follows; if the two ever disagree, this section is wrong, not the catalog.
 
 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
@@ -1883,6 +1910,16 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 188
   loc: 188
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/component/melder/aether/conduit/test_conduit_component_scope_exit_dispose.py`
+  start_line: 1
+  end_line: 394
+  loc: 394
+  verified_at: 2026-09-27T23:41:28Z
+- path: `tests/component/melder/aether/conduit/test_spellspace_component_lease_release.py`
+  start_line: 1
+  end_line: 317
+  loc: 317
+  verified_at: 2026-09-27T23:41:28Z
 - path: `tests/component/melder/crystallizer/test_spell_crystal_component.py`
   start_line: 1
   end_line: 135
@@ -2174,6 +2211,11 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 243
   loc: 243
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/unit/melder/utilities/general_base/test_cleanable_cleanup_contexts.py`
+  start_line: 1
+  end_line: 114
+  loc: 114
+  verified_at: 2026-09-27T23:41:28Z
 - path: `tests/unit/github_workflows/test_ci_policy.py`
   start_line: 1
   end_line: 511
@@ -2291,9 +2333,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_disposal_failures.py`
   start_line: 1
-  end_line: 120
-  loc: 120
-  verified_at: 2026-09-27T13:27:50Z
+  end_line: 142
+  loc: 142
+  verified_at: 2026-09-27T23:41:28Z
 - path: `tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py`
   start_line: 1
   end_line: 154
@@ -2403,6 +2445,8 @@ graph TD
 ```
 
 ## Information Sources
+- `tests/integration/melder/spellbook/test_spellbook_qualified_same_name_regressions.py`
+- `tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_duplicate_spell_name_strategy.py`
 - `pyproject.toml`
 - `tests/conftest.py`
 - `.github/scripts/run_runtime_tests.py`
@@ -2459,6 +2503,19 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-09-28 qualified-name validation: strategy unit tests compare canonical addresses, including
+case/default normalization and pass caching. Public integration regressions verify exact classes after
+conjure in both postures, discovery-only twins and genuine address refusal. Contracted tests now require
+distinct addresses to remain valid before and after unlink. The two Fault-A xfails are regular regressions.
+
+2026-09-27 scope exits (0.2.8203): `test_conduit_component_scope_exit_dispose.py` and
+`test_spellspace_component_lease_release.py` joined the Aether Component Cluster (`with conduit:` as a
+dispose scope, finish-then-raise exits, children-first pool return, idempotent soft cleanup, the SpellSpace
+lease flag), and `test_cleanable_cleanup_contexts.py` the Utilities Unit Cluster (cleanup contexts let errors
+propagate). `test_conduit_integration_disposal_failures.py` now expects conduit cleanup to raise its disposal
+failures after finishing (remeasured, 142 lines); the rewritten lock and root `with` tests sit in files this
+map keeps below cluster level (`test_conduit_lifecycle.py`, `test_conduit_integration_public_api.py`).
 
 2026-09-27 disposal failures (0.2.80): `test_conduit_integration_disposal_failures.py` joined the Conduit
 Integration Cluster (real conduit cleanup and managed SpellSpace exit run every disposal method after one

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/conduit_meld.py",
- "source_sha256": "edd6e30c2ec4010a3fb6a460e3978f45dc89710563c8cc55c1abd91fd9430331",
+ "source_sha256": "657bb3db1ca40e08ab5c5d9831fc3325fb51f742412d3f393fe0fc6d98acecff",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.conduit_meld": {
@@ -44,16 +44,17 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "4d8c7ec3255c162c38a88df2fbee88b719683a255c46b9bf70777c13a49bf357",
+   "span_sha256": "b48dbc227cf44ed7a6b951de288e1f38c05211dc7d08c93eb9927e2e9d8330d1",
    "role": "Conduit-facing meld front door.",
    "responsibilities": [
     "routes conduit-local unique_per_conduit and many storage through ConduitCreations",
     "rejects spellspace-request spells on the conduit entry path",
-    "provides reuse-only and live-creation status probes over conduit-scoped storage",
+    "provides reuse-only and live-creation status probes over the store each lifetime uses through this door: the conduit store for many and unique_per_conduit, the Spell owner's store for unique, the lineage root for unique_per_conduit_lineage and the elected leader for unique_per_conduit_cluster",
     "authorizes conduit-local, spell-owner, lineage-root and cluster-leader purge before delegating single or all retirement to Creations",
     "refuses immutable non-resolvable registrations before normal resolution and reuse-only access",
     "admits a dynamic spell through its spell-index gate before reading the context (both lanes, via Meld._execute_admitted); automatic spells keep the unticketed lane and fast-door memo",
-    "serves warm automatic id melds from the fast-door entry: plain melds (an existing object's bound object directly) and non-empty dict override payloads through the live override executor slot"
+    "serves warm automatic id melds from the fast-door entry: plain melds (an existing object's bound object directly) and non-empty dict override payloads through the live override executor slot",
+    "mints the name/class warm entries (Meld._fast_input_doors) on the same success arms as the id entry for meld('Name') and meld(Cls) shapes; it never reads them - the public front doors do"
    ],
    "owns_state": [],
    "phases": [
@@ -61,7 +62,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "4d8c7ec3255c162c38a88df2fbee88b719683a255c46b9bf70777c13a49bf357"
+   "semantics_authored_against": "b48dbc227cf44ed7a6b951de288e1f38c05211dc7d08c93eb9927e2e9d8330d1"
   }
  },
  "edges_out": [

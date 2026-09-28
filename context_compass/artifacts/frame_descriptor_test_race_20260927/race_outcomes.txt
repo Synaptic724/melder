@@ -1,0 +1,3 @@
+python 3.14.7 gil_enabled=False runs=20000 outcomes={'returned+returned': 19999, 'AttributeError+returned': 1}
+python 3.14.7 gil_enabled=True runs=20000 outcomes={'returned+returned': 20000}
+python 3.14.7 gil_enabled=True runs=20000 outcomes={'returned+returned': 20000}

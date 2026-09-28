@@ -1,0 +1,134 @@
+Python 3.14.7 free-threading build (main, Sep  1 2026, 14:17:47) [Clang 22.1.3 ]
+# per-step A/B after the cost offsets (ABBA x3), request lane, 4000 cycles per run after 800 warm-up cycles, worker thread, GIL off
+tree=wt mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=8,060 ns
+  lesser_create          median=    794 ns  ( 9.9%)  mean=    860
+  lesser_meld_1st        median=  1,299 ns  (16.1%)  mean=  1,419
+  lesser_meld_2nd        median=    307 ns  ( 3.8%)  mean=    325
+  space_enter            median=    229 ns  ( 2.8%)  mean=    249
+  space_meld_marker_1st  median=    594 ns  ( 7.4%)  mean=    631
+  space_meld_marker_2nd  median=    286 ns  ( 3.5%)  mean=    292
+  space_meld_outer       median=    287 ns  ( 3.6%)  mean=    297
+  root_meld(variant)     median=  2,326 ns  (28.9%)  mean=  2,487
+  space_exit             median=    821 ns  (10.2%)  mean=    901
+  lesser_cleanup         median=  1,117 ns  (13.9%)  mean=  1,249
+tree=wt_new mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=8,050 ns
+  lesser_create          median=    825 ns  (10.2%)  mean=    884
+  lesser_meld_1st        median=  1,240 ns  (15.4%)  mean=  1,302
+  lesser_meld_2nd        median=    309 ns  ( 3.8%)  mean=    339
+  space_enter            median=    221 ns  ( 2.7%)  mean=    236
+  space_meld_marker_1st  median=    610 ns  ( 7.6%)  mean=    643
+  space_meld_marker_2nd  median=    304 ns  ( 3.8%)  mean=    311
+  space_meld_outer       median=    308 ns  ( 3.8%)  mean=    324
+  root_meld(variant)     median=  2,352 ns  (29.2%)  mean=  2,507
+  space_exit             median=    804 ns  (10.0%)  mean=    856
+  lesser_cleanup         median=  1,077 ns  (13.4%)  mean=  1,214
+tree=wt_new mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=8,062 ns
+  lesser_create          median=    839 ns  (10.4%)  mean=    913
+  lesser_meld_1st        median=  1,257 ns  (15.6%)  mean=  1,351
+  lesser_meld_2nd        median=    312 ns  ( 3.9%)  mean=    337
+  space_enter            median=    224 ns  ( 2.8%)  mean=    241
+  space_meld_marker_1st  median=    595 ns  ( 7.4%)  mean=    644
+  space_meld_marker_2nd  median=    290 ns  ( 3.6%)  mean=    308
+  space_meld_outer       median=    297 ns  ( 3.7%)  mean=    330
+  root_meld(variant)     median=  2,355 ns  (29.2%)  mean=  2,583
+  space_exit             median=    806 ns  (10.0%)  mean=    870
+  lesser_cleanup         median=  1,087 ns  (13.5%)  mean=  1,239
+tree=wt mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=8,014 ns
+  lesser_create          median=    795 ns  ( 9.9%)  mean=    866
+  lesser_meld_1st        median=  1,262 ns  (15.7%)  mean=  1,334
+  lesser_meld_2nd        median=    314 ns  ( 3.9%)  mean=    341
+  space_enter            median=    230 ns  ( 2.9%)  mean=    257
+  space_meld_marker_1st  median=    593 ns  ( 7.4%)  mean=    625
+  space_meld_marker_2nd  median=    282 ns  ( 3.5%)  mean=    294
+  space_meld_outer       median=    289 ns  ( 3.6%)  mean=    298
+  root_meld(variant)     median=  2,330 ns  (29.1%)  mean=  2,503
+  space_exit             median=    807 ns  (10.1%)  mean=    858
+  lesser_cleanup         median=  1,112 ns  (13.9%)  mean=  1,250
+tree=wt mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=8,122 ns
+  lesser_create          median=    800 ns  ( 9.9%)  mean=    848
+  lesser_meld_1st        median=  1,246 ns  (15.3%)  mean=  1,284
+  lesser_meld_2nd        median=    313 ns  ( 3.9%)  mean=    324
+  space_enter            median=    230 ns  ( 2.8%)  mean=    242
+  space_meld_marker_1st  median=    602 ns  ( 7.4%)  mean=    619
+  space_meld_marker_2nd  median=    284 ns  ( 3.5%)  mean=    297
+  space_meld_outer       median=    289 ns  ( 3.6%)  mean=    296
+  root_meld(variant)     median=  2,426 ns  (29.9%)  mean=  2,562
+  space_exit             median=    818 ns  (10.1%)  mean=    876
+  lesser_cleanup         median=  1,113 ns  (13.7%)  mean=  1,223
+tree=wt_new mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=8,036 ns
+  lesser_create          median=    830 ns  (10.3%)  mean=    923
+  lesser_meld_1st        median=  1,272 ns  (15.8%)  mean=  1,333
+  lesser_meld_2nd        median=    311 ns  ( 3.9%)  mean=    333
+  space_enter            median=    221 ns  ( 2.7%)  mean=    240
+  space_meld_marker_1st  median=    593 ns  ( 7.4%)  mean=    620
+  space_meld_marker_2nd  median=    288 ns  ( 3.6%)  mean=    328
+  space_meld_outer       median=    294 ns  ( 3.7%)  mean=    313
+  root_meld(variant)     median=  2,332 ns  (29.0%)  mean=  2,682
+  space_exit             median=    806 ns  (10.0%)  mean=    855
+  lesser_cleanup         median=  1,089 ns  (13.6%)  mean=  1,223
+tree=wt_new mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=8,074 ns
+  lesser_create          median=    823 ns  (10.2%)  mean=    933
+  lesser_meld_1st        median=  1,264 ns  (15.7%)  mean=  1,346
+  lesser_meld_2nd        median=    312 ns  ( 3.9%)  mean=    324
+  space_enter            median=    222 ns  ( 2.7%)  mean=    246
+  space_meld_marker_1st  median=    605 ns  ( 7.5%)  mean=    652
+  space_meld_marker_2nd  median=    281 ns  ( 3.5%)  mean=    296
+  space_meld_outer       median=    292 ns  ( 3.6%)  mean=    311
+  root_meld(variant)     median=  2,365 ns  (29.3%)  mean=  2,601
+  space_exit             median=    817 ns  (10.1%)  mean=    873
+  lesser_cleanup         median=  1,093 ns  (13.5%)  mean=  1,254
+tree=wt mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=7,968 ns
+  lesser_create          median=    793 ns  (10.0%)  mean=    837
+  lesser_meld_1st        median=  1,248 ns  (15.7%)  mean=  1,287
+  lesser_meld_2nd        median=    311 ns  ( 3.9%)  mean=    319
+  space_enter            median=    230 ns  ( 2.9%)  mean=    240
+  space_meld_marker_1st  median=    592 ns  ( 7.4%)  mean=    613
+  space_meld_marker_2nd  median=    279 ns  ( 3.5%)  mean=    290
+  space_meld_outer       median=    288 ns  ( 3.6%)  mean=    311
+  root_meld(variant)     median=  2,313 ns  (29.0%)  mean=  2,428
+  space_exit             median=    809 ns  (10.2%)  mean=    836
+  lesser_cleanup         median=  1,105 ns  (13.9%)  mean=  1,194
+tree=wt mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=8,071 ns
+  lesser_create          median=    789 ns  ( 9.8%)  mean=    835
+  lesser_meld_1st        median=  1,272 ns  (15.8%)  mean=  1,316
+  lesser_meld_2nd        median=    311 ns  ( 3.9%)  mean=    322
+  space_enter            median=    229 ns  ( 2.8%)  mean=    241
+  space_meld_marker_1st  median=    599 ns  ( 7.4%)  mean=    620
+  space_meld_marker_2nd  median=    287 ns  ( 3.6%)  mean=    291
+  space_meld_outer       median=    290 ns  ( 3.6%)  mean=    296
+  root_meld(variant)     median=  2,364 ns  (29.3%)  mean=  2,505
+  space_exit             median=    820 ns  (10.2%)  mean=    862
+  lesser_cleanup         median=  1,110 ns  (13.8%)  mean=  1,252
+tree=wt_new mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=7,942 ns
+  lesser_create          median=    818 ns  (10.3%)  mean=    867
+  lesser_meld_1st        median=  1,253 ns  (15.8%)  mean=  1,284
+  lesser_meld_2nd        median=    316 ns  ( 4.0%)  mean=    327
+  space_enter            median=    219 ns  ( 2.8%)  mean=    229
+  space_meld_marker_1st  median=    590 ns  ( 7.4%)  mean=    606
+  space_meld_marker_2nd  median=    281 ns  ( 3.5%)  mean=    288
+  space_meld_outer       median=    291 ns  ( 3.7%)  mean=    303
+  root_meld(variant)     median=  2,310 ns  (29.1%)  mean=  2,432
+  space_exit             median=    798 ns  (10.0%)  mean=    823
+  lesser_cleanup         median=  1,067 ns  (13.4%)  mean=  1,156
+tree=wt_new mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=7,944 ns
+  lesser_create          median=    804 ns  (10.1%)  mean=    914
+  lesser_meld_1st        median=  1,223 ns  (15.4%)  mean=  1,309
+  lesser_meld_2nd        median=    307 ns  ( 3.9%)  mean=    322
+  space_enter            median=    221 ns  ( 2.8%)  mean=    240
+  space_meld_marker_1st  median=    600 ns  ( 7.6%)  mean=    664
+  space_meld_marker_2nd  median=    277 ns  ( 3.5%)  mean=    283
+  space_meld_outer       median=    292 ns  ( 3.7%)  mean=    300
+  root_meld(variant)     median=  2,347 ns  (29.5%)  mean=  2,502
+  space_exit             median=    792 ns  (10.0%)  mean=    846
+  lesser_cleanup         median=  1,080 ns  (13.6%)  mean=  1,347
+tree=wt mode=exit_protocol lane=request cycles=4000 gil=False sum_of_step_medians=8,057 ns
+  lesser_create          median=    810 ns  (10.1%)  mean=    907
+  lesser_meld_1st        median=  1,300 ns  (16.1%)  mean=  1,396
+  lesser_meld_2nd        median=    307 ns  ( 3.8%)  mean=    317
+  space_enter            median=    230 ns  ( 2.9%)  mean=    247
+  space_meld_marker_1st  median=    590 ns  ( 7.3%)  mean=    624
+  space_meld_marker_2nd  median=    280 ns  ( 3.5%)  mean=    291
+  space_meld_outer       median=    288 ns  ( 3.6%)  mean=    298
+  root_meld(variant)     median=  2,322 ns  (28.8%)  mean=  2,486
+  space_exit             median=    811 ns  (10.1%)  mean=    864
+  lesser_cleanup         median=  1,119 ns  (13.9%)  mean=  1,302

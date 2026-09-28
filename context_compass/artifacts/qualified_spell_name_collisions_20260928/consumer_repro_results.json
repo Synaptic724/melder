@@ -1,0 +1,154 @@
+{
+ "melder": "0.2.8204",
+ "python": "3.14.7",
+ "gil_enabled": false,
+ "distinct_spellframes": {
+  "binds": [
+   {
+    "class": "ModuleA.Repo",
+    "spellframe": "users",
+    "binding_name": null,
+    "resolvable": true,
+    "bind": "ok"
+   },
+   {
+    "class": "ModuleB.Repo",
+    "spellframe": "orders",
+    "binding_name": null,
+    "resolvable": true,
+    "bind": "ok"
+   }
+  ],
+  "conjure": "SpellbookValidationError: Spellbook validation failed. Broken spells: Repo, Repo.\nRepo (frame 'users'):\n  - Multiple visible spells share the name 'Repo'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable. [DUPLICATE_SPELL_NAME]\nRepo (frame 'orders'):\n  - Multiple visible spells share the name 'Repo'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each re",
+  "melds": []
+ },
+ "distinct_binding_names": {
+  "binds": [
+   {
+    "class": "ModuleA.Repo",
+    "spellframe": "repos",
+    "binding_name": "a_repo",
+    "resolvable": true,
+    "bind": "ok"
+   },
+   {
+    "class": "ModuleB.Repo",
+    "spellframe": "repos",
+    "binding_name": "b_repo",
+    "resolvable": true,
+    "bind": "ok"
+   }
+  ],
+  "conjure": "SpellbookValidationError: Spellbook validation failed. Broken spells: Repo, Repo.\nRepo (frame 'repos'):\n  - Multiple visible spells share the name 'Repo'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable. [DUPLICATE_SPELL_NAME]\nRepo (frame 'repos'):\n  - Multiple visible spells share the name 'Repo'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each res",
+  "melds": []
+ },
+ "distinct_spellframes_and_binding_names": {
+  "binds": [
+   {
+    "class": "ModuleA.Repo",
+    "spellframe": "users",
+    "binding_name": "one",
+    "resolvable": true,
+    "bind": "ok"
+   },
+   {
+    "class": "ModuleB.Repo",
+    "spellframe": "orders",
+    "binding_name": "two",
+    "resolvable": true,
+    "bind": "ok"
+   }
+  ],
+  "conjure": "SpellbookValidationError: Spellbook validation failed. Broken spells: Repo, Repo.\nRepo (frame 'users'):\n  - Multiple visible spells share the name 'Repo'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable. [DUPLICATE_SPELL_NAME]\nRepo (frame 'orders'):\n  - Multiple visible spells share the name 'Repo'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each re",
+  "melds": []
+ },
+ "discoverable_twin": {
+  "binds": [
+   {
+    "class": "ModuleA.Repo",
+    "spellframe": "users",
+    "binding_name": null,
+    "resolvable": true,
+    "bind": "ok"
+   },
+   {
+    "class": "ModuleB.Repo",
+    "spellframe": "orders",
+    "binding_name": null,
+    "resolvable": false,
+    "bind": "ok"
+   }
+  ],
+  "conjure": "SpellbookValidationError: Spellbook validation failed. Broken spells: Repo, Repo.\nRepo (frame 'users'):\n  - Multiple visible spells share the name 'Repo'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each resolution path is uniquely identifiable. [DUPLICATE_SPELL_NAME]\nRepo (frame 'orders'):\n  - Multiple visible spells share the name 'Repo'. Name-based resolution via meld(spell_name=...) would be ambiguous. Disambiguate by using a spellframe (Protocol/string frame key) and/or a binding_name so that each re",
+  "melds": []
+ },
+ "control_different_names": {
+  "binds": [
+   {
+    "class": "ModuleA.Repo",
+    "spellframe": "users",
+    "binding_name": null,
+    "resolvable": true,
+    "bind": "ok"
+   },
+   {
+    "class": "Other",
+    "spellframe": "orders",
+    "binding_name": null,
+    "resolvable": true,
+    "bind": "ok"
+   }
+  ],
+  "conjure": "ok",
+  "melds": [
+   {
+    "address": [
+     "users",
+     null
+    ],
+    "origin": "a"
+   },
+   {
+    "address": [
+     "orders",
+     null
+    ],
+    "origin": "other"
+   }
+  ]
+ },
+ "control_same_signature": {
+  "binds": [
+   {
+    "class": "ModuleA.Repo",
+    "spellframe": "repos",
+    "binding_name": "repo",
+    "resolvable": true,
+    "bind": "ok"
+   },
+   {
+    "class": "ModuleB.Repo",
+    "spellframe": "repos",
+    "binding_name": "repo",
+    "resolvable": true,
+    "bind": "RuntimeError: Binding signature already active in this frame: frame_key='repos', binding_name='repo' is held by spell_id='71f402e40d521d7c31338f62408ff5518f3e1b8267308463fac5269947521f9c'. There is one active spell per signature per frame; use a distinct spellframe or binding_name, or notch the existing index instead of binding a second spell onto it."
+   }
+  ],
+  "conjure": "ok",
+  "melds": [
+   {
+    "address": [
+     "repos",
+     "repo"
+    ],
+    "origin": "a"
+   }
+  ]
+ },
+ "class_meld_resolves_by_name": {
+  "meld(spell=ModuleB.Repo)": {
+   "returned_class": "ModuleA.Repo",
+   "origin": "a"
+  }
+ }
+}

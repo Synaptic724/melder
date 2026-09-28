@@ -1,0 +1,20 @@
+{
+  "src_architecture": {
+    "removed_lines": {
+      "- Updated: 2026-09-27": 1
+    },
+    "added_line_count": 15
+  },
+  "src_components": {
+    "removed_lines": {
+      "- Updated: 2026-09-27": 1,
+      "- Implementation: Phase 4 `DuplicateSpellNameStrategy` scans local + contracted": 1,
+      "spells by `spell_name` and raises `DUPLICATE_SPELL_NAME` errors to prevent": 1,
+      "name-based resolution ambiguity.": 1,
+      "- Resolution frame presence and duplicate spell name detection.": 1,
+      "Detect spells that share the same ``spell_name`` within the visible Spellbook (local + contra...": 1
+    },
+    "added_line_count": 27
+  },
+  "accounting": "Metadata dates and five stale bare-name-validation lines replaced; peer Indexing/portability text retained. All other baseline lines survive."
+}

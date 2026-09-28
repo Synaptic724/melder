@@ -1,0 +1,64 @@
+flowchart TB
+    accTitle: Melder C3 runtime components
+    accDescr: Aether owns the process-wide runtime and AethericFrame world boundaries. Spellbook and SpellCompiler define the graph, Conduit and Meld activate scoped objects through Creations, Frame DevOps governs validity, Nexus and Rift mediate access, and Crystallizer plus MutationResearch provide continuity and evolution.
+
+    aether["Aether<br/>process owner"]
+
+    subgraph frame["AethericFrame · owned object world"]
+        direction TB
+        subgraph core["Definition and execution"]
+            direction LR
+            spellbook["Spellbook<br/>bindings + graph authority"]
+            conduit["Conduit<br/>runtime scope"]
+            devops["Frame DevOps<br/>validity + change control"]
+            compiler["SpellCompiler<br/>phases 1–11"]
+            meld["Meld<br/>lookup + execution gates"]
+            creations["Creations + SpellSpace<br/>lifetime stores"]
+        end
+
+        spellbook -->|"conjures"| conduit
+        spellbook -->|"compiles through"| compiler
+        conduit -->|"delegates resolution"| meld
+        meld -->|"reuse or construct"| creations
+        devops -.->|"admits structural change"| spellbook
+        devops -.->|"gates stale resolution"| meld
+    end
+
+    subgraph access["Mediated access plane"]
+        direction TB
+        nexus["Nexus<br/>AR policy root"]
+        rift["Rift<br/>live connection"]
+        space["RiftSpace<br/>viewer + workstation + commands"]
+        nexus -->|"creates + governs"| rift
+        rift -->|"owns one"| space
+    end
+
+    subgraph continuity["Continuity and evolution"]
+        direction TB
+        crystallizer["Crystallizer<br/>record + restore"]
+        research["MutationResearch<br/>governed evolution"]
+        store[("Persistence<br/>(optional)")]
+        research -.->|"records state"| crystallizer
+        crystallizer -.->|"stores checkpoints"| store
+    end
+
+    aether -->|"owns"| frame
+    aether -->|"hosts"| nexus
+    aether -->|"hosts"| crystallizer
+    aether -->|"hosts"| research
+    space -.->|"projects + acts through"| frame
+    frame -.->|"emits structural twins"| crystallizer
+    research -.->|"studies + stages change"| frame
+
+    classDef owner fill:#fff3d6,stroke:#9a6700,color:#3d2900,stroke-width:3px
+    classDef definition fill:#e8f0ff,stroke:#315a99,color:#10213d,stroke-width:2px
+    classDef execution fill:#eaf7ef,stroke:#3f7a56,color:#153824,stroke-width:2px
+    classDef governance fill:#f4eaff,stroke:#7552a3,color:#35214f,stroke-width:2px
+    classDef access fill:#e7f7fa,stroke:#287a88,color:#123b43,stroke-width:2px
+    classDef continuity fill:#fff0e8,stroke:#a4552a,color:#4a2411,stroke-width:2px
+    class aether owner
+    class spellbook,compiler definition
+    class conduit,meld,creations execution
+    class devops governance
+    class nexus,rift,space access
+    class crystallizer,research,store continuity

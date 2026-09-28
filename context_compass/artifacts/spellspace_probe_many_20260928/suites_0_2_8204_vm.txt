@@ -1,0 +1,10 @@
+# melder_0 VM 2026-09-28T00:42:52Z: 0.2.8204 (probe fix) on wt2_new (src and tests equal to the device, rsync -c); assets still 0.2.8203 (package/asset tests run after the rebuild).
+c1_component_gil0 :: 2230 passed, 23 skipped, 1 xfailed in 17.92s
+c2_integration_gil0 :: 1954 passed, 2 skipped, 6 xfailed, 2 xpassed in 79.69s (0:01:19)
+c3_unit_aether_gil0 :: 4114 passed in 12.87s
+c4_unit_spellbook_gil0 :: 2194 passed in 2.70s
+c5_unit_rest_gil0 :: 1917 passed, 6 skipped, 7 xfailed in 19.18s
+conduit_gil1 :: 2442 passed, 1 warning in 15.88s
+conduit_gilbuild :: 2442 passed, 1 warning in 13.33s
+c1 tests/component; c2 tests/integration; c3 tests/unit/melder/aether; c4 tests/unit/melder/spellbook; c5 tests/unit/melder/{crystallizer,mutation_research,utilities} tests/unit/architecture_and_design tests/experimentation (tests/unit/github_workflows not collectable here: no PyYAML in the VM env).
+conduit_* = tests/unit/melder/aether/conduit tests/component/melder/aether/conduit tests/integration/melder/conduit tests/unit/melder/utilities/general_base + probe consumers (test_nexus, test_static_command_system_direct, test_static_frame_viewer, spellbook default_precedence, deferred_annotations); gil1 = 3.14t PYTHON_GIL=1, gilbuild = 3.14.7 GIL build.

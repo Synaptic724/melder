@@ -10,11 +10,11 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | f3aee9364c46e7046076e12cc26bd0b25a4e65a5d8c75d8be1b708966144c312 |
-| bundle_sha256 | e7d5abdb8ef2e84fc628adc33c90fc67377529ce956c09abaab3fc2bb5fc4e13 |
-| bundle_line_count | 72625 |
+| source_fingerprint | 99a5d734c1540aa5929e8f3ea774e65060193499b57fa82aff52a2ce10fd88e7 |
+| bundle_sha256 | b0f9ecab943ce87f195f36f8ea08657b06c683a8490cb0f04e39d1eb3c06b791 |
+| bundle_line_count | 72748 |
 | bundle_line_ending | lf |
-| files | 378 |
+| files | 379 |
 
 ## Files
 
@@ -307,7 +307,7 @@ Line numbers are 1-based and inclusive.
 | 55273-55933 | 55278-55930 | 22263 | utf-8 | abd84c14e6aff146eb58a904b94ae0be74a366f17c4ebb7f43cb058c8fa4e835 | benchmarks/testing_other_di/test_multithreading_di.py |
 | 55934-56747 | 55939-56744 | 24461 | utf-8 | c1cce89c9e01e56399999f381c9ce80cf3bfaa3afafdb6009c519080c45c84fe | benchmarks/testing_other_di/test_overrides_all.py |
 | 56748-57769 | 56753-57766 | 40853 | utf-8 | d3827be60c768eef6c53ed706f0a2b91f91b27fa5e109db272daa8f010722ddf | benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py |
-| 57770-60011 | 57775-60008 | 91560 | utf-8 | 93d3a3020d2d3be36df0e158c81df092861bbf5180069ac1f9ec8c7845e2a09b | benchmarks/testing_other_di/test_real_world_gauntlet.py |
+| 57770-60011 | 57775-60008 | 91559 | utf-8 | 99510c109cde32b12ff357bdbfc316fdd5d56dcc8ee64be71100b7c21e59e9c6 | benchmarks/testing_other_di/test_real_world_gauntlet.py |
 | 60012-60083 | 60017-60080 | 2072 | utf-8 | 9fa0217039115330bdc6ccb77ca6c5505996ae4b869698751da4c1f6b9da0c91 | benchmarks/testing_other_di/test_real_world_gauntlet_cprofile.py |
 | 60084-62147 | 60089-62144 | 65601 | utf-8 | e854922e9ea33a80df7c6eeb9e0a33662f7c21a218507aceaff68a11f349c52d | benchmarks/testing_other_di/test_shallow_all.py |
 | 62148-62627 | 62153-62624 | 14692 | utf-8 | fd9bd411f3e4693742030feb2360f6a277a9a309847f2ea9ab6f5b67e0cf723f | benchmarks/testing_other_di/test_shallow_all_diagnostics.py |
@@ -393,8 +393,9 @@ Line numbers are 1-based and inclusive.
 | 70375-70587 | 70380-70584 | 13066 | utf-8 | 1865e61282295b272c2e2d43d7cd255ff50688f5d38852e97ad9eacdde0409ae | release_docs/0.2.43.md |
 | 70588-70850 | 70593-70847 | 12983 | utf-8 | 3dd5db190054a458525c1fbc39b655a168375a36efbaa689d7d7e687c2dd8125 | release_docs/0.2.50.md |
 | 70851-71459 | 70856-71456 | 41553 | utf-8 | f9f4960cbdb865f03a17d87d0bb81d0c630d745ac9128bc61e03e47733e6a068 | release_docs/0.2.77.md |
-| 71460-71542 | 71465-71539 | 4947 | utf-8 | 18956953a24a740fcba9c3b4e02a43941d8106b8ee2c74d16bac07d5875d7abe | release_docs/next_version_release.md |
-| 71543-71611 | 71548-71608 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
-| 71612-71638 | 71617-71635 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
-| 71639-72139 | 71644-72136 | 26171 | utf-8 | c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23 | roadmap/melder-roadmap-expanded.md |
-| 72140-72625 | 72145-72622 | 22675 | utf-8 | 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f | roadmap/melder-roadmap-source-notes.md |
+| 71460-71542 | 71465-71539 | 4947 | utf-8 | 18956953a24a740fcba9c3b4e02a43941d8106b8ee2c74d16bac07d5875d7abe | release_docs/0.2.82.md |
+| 71543-71665 | 71548-71662 | 7497 | utf-8 | e093314b6395d59215920fec944012e5463adebf138d81c14a8203682c4f5ec2 | release_docs/next_version_release.md |
+| 71666-71734 | 71671-71731 | 2442 | utf-8 | 45f6cd2e3085d0fb0116dd67ce8d3ac1dfe2f4a32007841ef5e571baa874f7f0 | requirements.txt |
+| 71735-71761 | 71740-71758 | 1035 | utf-8 | f2d8050c4a7c4e4ee7cd5067e7d71636969e0387f7a8dd6b7e9c3fbbc1d5cc52 | roadmap.md |
+| 71762-72262 | 71767-72259 | 26171 | utf-8 | c88d2075a3fdea71e193bb3a1082ce0fba894e11d2259b283940453c0cc7ed23 | roadmap/melder-roadmap-expanded.md |
+| 72263-72748 | 72268-72745 | 22675 | utf-8 | 83f37b9881d1f47c25415e94e5b018b5c130677d8adc59e587456ca1d104e32f | roadmap/melder-roadmap-source-notes.md |

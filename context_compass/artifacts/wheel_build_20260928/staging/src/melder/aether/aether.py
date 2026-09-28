@@ -1,0 +1,2690 @@
+import logging
+import time
+from contextlib import contextmanager
+from threading import RLock
+from types import TracebackType
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
+
+from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.aether_configuration_builder import AetherConfigurationBuilder
+
+# Melder Imports
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame.aetheric_frame_configuration import (
+    AethericFrameConfiguration,
+)
+from melder.aether.aetheric_mediator.identity import Identity
+from melder.aether.aetheric_mediator.mediator import Mediator as AethericMediator
+from melder.aether.aetheric_mediator.transaction_type import TransactionType
+from melder.aether.spellbook.bind.spell_index import SpellIndex
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.mutation_research.mutation_research import MutationResearch
+from melder.nexus.nexus import Nexus
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.init_helpers import InitHelpers
+from melder.utilities.helpers.ulid_factory import new_ulid
+from melder.utilities.interfaces.ichannellogger import IChannelLogger
+from melder.utilities.synchronization.load_gate import LoadGate
+
+if TYPE_CHECKING:
+    from melder.aether.aetheric_frame.conduit_cloud import ConduitCloud
+    from melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager import (
+        ChangeControlManager,
+    )
+    from melder.aether.aetheric_frame.dev_ops.dev_ops_manager import DevOpsManager
+    from melder.aether.aetheric_frame.dev_ops.incident_manager.incident_manager import (
+        IncidentManager,
+    )
+    from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states import (
+        SpellSystemStates,
+    )
+    from melder.aether.conduit.conduit import Conduit
+    from melder.aether.spellbook.configuration.spellbook_configuration import (
+        SpellbookConfiguration,
+    )
+
+
+class Aether(Cleanable):
+    """
+    The global singleton root that owns all `AethericFrame` instances.
+
+    `Aether` is the top-level runtime host for Melder. It owns the named frame
+    registry, the always-present default frame, and the frame-level services
+    that other runtime objects resolve through when they need configuration,
+    conduit, cluster, spell, or DevOps state.
+
+    Contract:
+        - Enforces singleton construction through `__new__`.
+        - Owns the lifecycle of registered `AethericFrame` instances.
+        - Owns the default frame and ensures it exists while the singleton is live.
+        - Hosts singleton-level subsystems such as Nexus, Crystallizer, and the
+          utility system.
+        - Hosts the singleton MutationResearch root above frame-local runtime
+          state.
+        - Owns one optional Aether root configuration that applies policy into
+          the hosted utility system.
+        - Becomes reinitializable only after `cleanup()` fully resets singleton state.
+
+    Threading / Concurrency:
+    - Uses the class-level `_lock` to serialize singleton construction and reset.
+    - Uses the instance `_lock` to guard cleanup and frame-registry mutation.
+
+    Lifecycle / Cleanup:
+    - Cleans registered frames before dropping singleton-level references.
+    - Resets `_instance` and `_initialized` so tests or later runtime flows can
+      create a fresh singleton after teardown.
+
+    Registration:
+        MELDER KERNEL - guarded. `Aether()` returns the process singleton;
+        users construct it (that IS the norm), but it is never bound as a spell.
+
+    Subsystem Context:
+        Layer 1 - the substrate everything else hangs from. It owns the named
+        frame registry and hosts the singleton subsystems: `AetherUtilitySystem`,
+        `Crystallizer`, `Nexus`, the `MutationResearch` root, and the
+        `LoadGate`. All three subsystem roots are constructed EAGERLY in
+        `__init__`, in that order - Crystallizer leads because the other two
+        read it out of this host as they build.
+
+    System Context:
+        Under V3 Horizon LAZY FRAMES, `import melder` and the first `Aether()`
+        create ZERO frames - the eager default-frame construction is gone. The
+        first `Spellbook` births the frame it names via `_ensure_frame`
+        (get-or-create is the intended semantic), and a collapsed configuration
+        falls back to a lazily created "default".
+        The boot ORDER is load-bearing: Aether|AetherUtilitySystem ->
+        Crystallizer -> MutationResearch -> Nexus -> AethericFrame -> Spellbook
+        -> Conduit|Ward. The `LoadGate` is constructed BEFORE any frame can
+        exist, which is precisely why a mid-load-born frame still inherits gate
+        coverage - a crystallizer load acquires exclusive system authority and
+        every new-root transaction waits at `wait_for_passage`.
+        Hosting Nexus, Crystallizer, and MutationResearch PRIVATELY rather than
+        exposing them on the public surface is what keeps the substrate hidden:
+        `Nexus` is the public AR root, and reaching AR or mutation control
+        through `Aether` is deliberately not a supported path.
+
+    AGENT_ACCESS: public
+
+    AGENT_PURPOSE:
+        access: public. The global singleton root. `Aether()` returns the process-wide instance
+        and boots the hidden substrate (utility system, Crystallizer, Nexus, LoadGate). Creates
+        ZERO frames - the first Spellbook births the frame it names. Use
+        create_configuration()/configure()/activate() for root logger policy, attach_logger(...)
+        to install one directly.
+    """
+    _instance: ClassVar[Aether | None] = None
+    _lock: ClassVar[RLock] = RLock()
+    _initialized: ClassVar[bool] = False
+
+    def __new__(cls, *args: object, **kwargs: object) -> Aether:
+        """
+        Return the one process-wide `Aether` singleton instance.
+
+        Contract:
+            - Uses the class-level lock to serialize singleton construction.
+            - Creates the singleton lazily on first access.
+            - Returns the existing live instance on later calls until cleanup
+              resets singleton state.
+        """
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self) -> None:
+        """
+        Initialize the Aether singleton and its hosted subsystem roots.
+
+        Purpose:
+            Create the root `Aether` host and construct the hosted
+            singleton-level subsystems (Crystallizer, utility system, LoadGate,
+            and the private `Nexus` root). Frames are lazy by design: no
+            `AethericFrame` is constructed at boot - the first Spellbook births
+            the frame it names.
+
+        Contract:
+            - Initialization is once-only: the `_initialized` check and the
+              whole construction body run under the class-level `_lock`, so
+              exactly one thread builds the subsystem graph and every
+              concurrent first caller blocks until that build completes, then
+              returns the fully initialized singleton (BUG-002 regression
+              contract, 2026-07-17 audit).
+            - Initializes the hosted Nexus singleton eagerly as an object, but
+              leaves it unconfigured and disabled until a user explicitly
+              engages it.
+            - Starts with a null SafeLogger wrapper and no attached raw logger.
+            - Does not try to attach a real logger during boot.
+            - Does not preinstall a Nexus configuration during normal boot.
+            - On construction failure, singleton bookkeeping (`_instance`,
+              `_initialized`) is reset under the held lock so a later
+              `Aether()` can boot cleanly.
+
+        Threading / Concurrency:
+            - The post-boot fast path reads `_initialized` without the lock;
+              the pre-boot path re-checks it under `Aether._lock` before
+              constructing (double-checked initialization).
+            - Lock nesting is one-way `Aether._lock` -> `Nexus._lock` via the
+              hosted `Nexus(aether=self)` construction; no subsystem
+              constructed here re-enters `Aether()`.
+
+        Returns:
+            None.
+        """
+        if Aether._initialized:
+            return
+        with Aether._lock:
+            if Aether._initialized:
+                return
+            try:
+                super().__init__()
+                self._id: str = new_ulid()
+                self._crystallizer: Crystallizer = Crystallizer(aether=self)
+                self._configuration: AetherConfiguration | None = None
+                # The regime, as a PLAIN BOOL on the hot path. Sealed once by
+                # `_collapse_configuration_on_first_frame` and never read from
+                # the configuration again - bind and conjure test it on every
+                # call and must not pay for a property read to do it.
+                self._process_wide_unique_spell_ids: bool = True
+                self._configured: bool = False
+                self._activated: bool = False
+                self._logger = InitHelpers.resolve_safe_logger(None)
+                self._aetheric_frames: dict[str, AethericFrame] = {}
+                self._default_frame: AethericFrame | None = None
+                self._aether_utility_system: AetherUtilitySystem = AetherUtilitySystem()
+                # Crystallizer is constructed FIRST so it can be unfolded into
+                # every frame/spellbook/conduit and into MutationResearch as the
+                # passive emission sink (they hold a non-owning reference; Aether
+                # owns and cleans it).
+                # NOTE (2026-07-11): the eager `AethericFrame(self, "default")`
+                # construction that lived here was REMOVED - frames are lazy by
+                # design (owner ruling). The first Spellbook births the frame it
+                # names; a collapsed configuration falls back to "default" via
+                # `_ensure_default_frame`. `import melder` creates ZERO frames.
+                # LoadGate is constructed here - BEFORE any frame can exist - so
+                # every frame-local TransactionMediator born later (including
+                # frames born mid-load) inherits gate coverage unconditionally.
+                self._load_gate: LoadGate = LoadGate()
+                # AethericMediator, owner constraint 3: Aether HOLDS the plane
+                # and constructs it IMMEDIATELY, first, right after Aether
+                # itself is built - before any frame, subsystem or spellbook can
+                # exist. That ordering is the whole point of the plane: it is
+                # the admission authority that outranks the frame-local ones,
+                # and an authority that appeared after the things it governs
+                # could never admit their creation.
+                #
+                # Constraint 4 is the one-way rule and it is intact here: THIS
+                # import goes Aether -> plane. The plane imports nothing from
+                # `melder.aether` outside its own package, which is what keeps
+                # it constructible before Aether's world exists and testable in
+                # isolation. Do not add a back-reference.
+                self._aetheric_mediator: AethericMediator = AethericMediator()
+                # MutationResearch is constructed EAGERLY here, alongside
+                # Crystallizer and Nexus (owner ruling 2026-08-03). All three
+                # hosted roots are built by Aether, in one place, in a fixed
+                # order - and Crystallizer leads because MutationResearch and
+                # Nexus both read it out of this host as they construct.
+                #
+                # It used to be lazy, deferred purely to keep its import chain
+                # and root build off the cold `import melder` path. That saved
+                # a few milliseconds and cost a real invariant: the root's
+                # existence depended on someone having touched it, so
+                # `MutationResearch()` was a lookup for callers who were lucky
+                # with ordering and a ValueError for everyone else. Eager
+                # construction makes "Aether builds first" true for all three,
+                # which is what makes the bare constructors safe lookups.
+                self._mutation_research: MutationResearch = MutationResearch(
+                    aether=self,
+                )
+                self._nexus: Nexus = Nexus(aether=self)
+                # BUG-002 (2026-07-17 audit): the once-only latch flips while
+                # the class lock is still held so the unlocked fast path above
+                # can only observe a fully constructed singleton.
+                Aether._initialized = True
+            except Exception:
+                # Already under Aether._lock: reset bookkeeping so a later
+                # Aether() call can construct a fresh singleton cleanly.
+                if Aether._instance is self:
+                    Aether._instance = None
+                Aether._initialized = False
+                raise
+
+    def cleanup(self) -> None:
+        """
+        Cleanup the entire Aether singleton and all owned frame/subsystem state.
+
+        Purpose:
+            Tear down the global runtime host, including every owned frame and
+            singleton-level subsystem, so a later clean bootstrap starts from a
+            truly empty root.
+
+        Contract:
+            - Idempotent.
+            - Cleans owned frames before dropping singleton-level references.
+            - Cleans the hosted Nexus singleton and utility system when they exist.
+            - Resets singleton bootstrap state in a `finally`, so `Aether()`
+              can construct a fresh root even when a child cleanup fails: the
+              child error is logged and re-raised, but this cleaned instance
+              is never republished as the singleton (BUG-149 regression
+              contract, 2026-07-17 audit). A failed child keeps its own
+              singleton/lifecycle state; only this root's constructibility
+              is recovered here.
+            - Logger cleanup is performed after frame and subsystem teardown.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            try:
+                self._cleaned = True
+                # Gate first: cleanup opens it and wakes any parked waiters so
+                # teardown never deadlocks behind threads waiting for passage.
+                if self._load_gate is not None:
+                    self._load_gate.cleanup()
+                # Plane next, and for the same reason the gate goes first:
+                # `ClaimTable.cleanup` wakes every thread parked in
+                # `wait_for_change` before dropping state, so tearing it down
+                # early releases waiters rather than stranding them behind a
+                # world that is already going away.
+                if self._aetheric_mediator is not None:
+                    self._aetheric_mediator.cleanup()
+                if self._aetheric_frames is not None:
+                    self.cleanup_aetheric_frames() # This will clean each individual frame
+                    self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
+                if self._crystallizer is not None:
+                    self._crystallizer.cleanup()
+                self._mutation_research.cleanup()
+                if self._configuration is not None:
+                    self._configuration.cleanup()
+                self._configured = False
+                self._activated = False
+                if self._nexus is not None:
+                    self._nexus.cleanup()
+                if self._aether_utility_system is not None:
+                    self._aether_utility_system.cleanup()
+
+                del self._aether_utility_system
+                del self._aetheric_frames
+                del self._crystallizer
+                del self._mutation_research
+                del self._configuration
+                del self._nexus
+                del self._default_frame
+                del self._load_gate
+                del self._aetheric_mediator
+            except Exception as e:
+                self._logger.error(f"Error cleaning up Aether: {e}", "cleanup", exc_info=True)
+                raise
+            finally:
+                # BUG-149 (2026-07-17 audit): reset singleton bookkeeping even
+                # when a child cleanup fails. This instance is already marked
+                # cleaned and must never be republished by `Aether()`; without
+                # this finally, one child teardown error left the cleaned husk
+                # installed as the singleton for the rest of the process. The
+                # failed child keeps its own singleton/lifecycle state - what
+                # recovers here is this root's constructibility.
+                Aether._instance = None
+                Aether._initialized = False
+
+        if self._logger is not None:
+            if hasattr(self._logger, 'cleanup'):
+                self._logger.cleanup()
+        del self._logger
+
+    @classmethod
+    def _reset_singleton_for_tests(cls) -> None:
+        """
+        Reset the Aether singleton for test isolation.
+
+        Purpose:
+            Provide a deterministic way for tests to discard any existing
+            singleton instance and force re-initialization on next use.
+
+        Contract:
+            - If an instance exists, cleanup() is invoked to release resources.
+            - _instance and _initialized are cleared so Aether() creates a fresh instance.
+            - This method does not create a new instance.
+
+        Returns:
+            None.
+
+        Raises:
+            Exception: Propagates any exception raised by cleanup(), except
+                the AttributeError of an uninitialized husk - an instance
+                `__new__` published before a failing `__init__`, which has
+                no state to release.
+
+        Threading:
+            Acquires the class-level lock to serialize singleton resets.
+
+        Lifecycle:
+            Triggers normal cleanup semantics on the current instance, including
+            frame cleanup and logger teardown.
+        """
+        with cls._lock:
+            instance = cls._instance
+            if instance is None:
+                cls._initialized = False
+                return
+            try:
+                instance.cleanup()
+            except AttributeError:
+                # Husk: `__new__` published it, `__init__` never ran, so
+                # `cleanup()` raises reading its own `_cleaned` guard.
+                # Nothing live to release - just clear the bookkeeping.
+                pass
+            finally:
+                cls._instance = None
+                cls._initialized = False
+
+    def _ensure_default_frame(self) -> AethericFrame:
+        """
+        Ensure the "default" frame exists, lazily creating it on first use.
+
+        Contract:
+            - Returns the live default frame when the pointer is set.
+            - Lazily creates "default" through `_ensure_frame` when the
+              pointer is None (never-created boot state and an
+              individually-cleaned default frame both RECREATE; owner ruling
+              2026-07-11 - frames are lazy, and the collapsed-configuration
+              fallback must just work, matching named-frame semantics).
+            - `check_cleaned` inside `_ensure_frame` still refuses on a
+              cleaned or partially torn-down singleton, preserving the
+              protective intent of the old raise-instead-of-recreate guard.
+        """
+        frame = self._default_frame
+        if frame is None:
+            frame = self._ensure_frame("default")
+        return frame
+
+    def _detach_cleaned_frame(
+            self,
+            frame_name: str,
+            frame: AethericFrame,
+    ) -> None:
+        """
+        Internal
+
+        Remove one already-cleaned frame from the Aether registry.
+
+        Contract:
+            - Used by `AethericFrame.cleanup()` after frame-owned teardown has
+              already completed.
+            - Removes the frame from the Aether registry only when the
+              registered object matches the cleaned frame instance.
+            - Clears the default-frame pointer when the removed frame was the
+              default.
+            - Notifies `Nexus` before the registry entry is removed so any
+              manager-owned frame state, descriptor cache state, and ACL state
+              can be detached consistently.
+
+        Args:
+            frame_name:
+                Name of the cleaned frame.
+            frame:
+                Cleaned frame instance requesting detachment.
+
+        Returns:
+            None.
+        """
+        if not frame_name:
+            return
+
+        with self._lock:
+            if self._aetheric_frames is None:
+                return
+
+            registered_frame = self._aetheric_frames.get(frame_name)
+            if registered_frame is None or registered_frame is not frame:
+                return
+
+            if self._nexus is not None:
+                try:
+                    self._nexus.check_for_aetheric_frame(frame_name)
+                except Exception as e:
+                    self._logger.error(
+                        f"Error detaching Nexus frame state for '{frame_name}': {e}",
+                        "_detach_cleaned_frame",
+                        exc_info=True,
+                    )
+
+            self._aetheric_frames.pop(frame_name, None)
+            if self._default_frame is frame:
+                self._default_frame = None
+
+            self._logger.info(
+                f"Frame '{frame_name}' removed from Aether "
+                f"(default_cleared={self._default_frame is None})",
+                "_detach_cleaned_frame",
+            )
+
+    def cleanup_aetheric_frames(self) -> None:
+        """
+        Cleanup every frame currently owned by the singleton.
+
+        Contract:
+            - Iterates over a snapshot of the frame registry.
+            - Attempts every frame cleanup even if one frame raises.
+            - Logs cleanup failures instead of stopping the full singleton
+              teardown on the first frame error.
+
+        Returns:
+            None.
+        """
+        if self._aetheric_frames is None:
+            return
+        for frame_name, frame in list(self._aetheric_frames.items()):
+            try:
+                frame.cleanup()
+            except Exception as e:
+                self._logger.error(
+                    f"Error cleaning frame '{frame_name}': {e}",
+                    "cleanup_aetheric_frames",
+                    exc_info=True,
+                )
+
+    # region Configuration
+
+    #region Context Manager
+    def __enter__(self) -> Aether:
+        """
+        Enter the Aether lock context and return `self`.
+
+        Contract:
+            - Acquires the singleton instance lock.
+            - Returns the live singleton while the lock is held.
+
+        Returns:
+            Aether:
+                This singleton instance while the lock is held.
+        """
+        self._lock.acquire()
+        return self
+
+    def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
+    ) -> None:
+        """
+        Exit the Aether lock context.
+
+        Contract:
+            - Releases the singleton instance lock acquired by `__enter__`.
+
+        Returns:
+            None.
+        """
+        self._lock.release()
+
+    #endregion Context Manager
+
+    #region Rift Hosting
+
+    #endregion Rift Hosting
+
+
+    @property
+    def logger(self) -> IChannelLogger | logging.Logger | None:
+        """
+        Return the raw logger currently wrapped by the internal `SafeLogger`.
+
+        Contract:
+            - Exposes the underlying logger object for diagnostics or
+              replacement.
+            - Returns `None` when the wrapper currently holds the null logger.
+
+        Returns:
+            The raw logger object, or None if no logger is set.
+        """
+        return self._logger._logger # Accesses the raw logger inside SafeLogger
+
+    @logger.setter
+    def logger(self, value: IChannelLogger | logging.Logger | None) -> None:
+        """
+        Replace the attached logger through the explicit attach path.
+
+        Contract:
+            - Delegates to `attach_logger(...)`.
+
+        Args:
+            value: The IChannelLogger, Logger, Handler, or None to use.
+
+        Returns:
+            None.
+        """
+        self.attach_logger(value)
+
+    def attach_logger(
+            self,
+            logger: IChannelLogger | logging.Logger | None,
+    ) -> None:
+        """
+        Attach one real logger after Aether boot.
+
+        Purpose:
+            Aether is created too early in runtime boot for a real logger to be
+            attached reliably in `__init__`. This method is the explicit
+            post-boot logger-attachment seam.
+
+        Contract:
+            - Aether starts with a null `SafeLogger` wrapper and no attached
+              raw logger.
+            - Passing a real logger attaches it through the `SafeLogger`
+              facade.
+            - Passing None resets Aether back to the null logger wrapper.
+            - Successful replacement RETIRES the displaced owned wrapper
+              (best-effort cleanup; BUG-278, 2026-07-17 audit) so a
+              cleanup-capable sink can never be orphaned by re-attachment.
+            - Same-sink re-attachment never tears the sink down: the
+              displaced wrapper is retired only when the underlying raw
+              sinks differ (sink-identity aliasing law, mirrors BUG-279).
+
+        Args:
+            logger:
+                Real logger object to attach, or None to detach back to the
+                null logger wrapper.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        previous_logger = self._logger
+        next_logger = InitHelpers.resolve_safe_logger(logger)
+        if (
+                previous_logger is not next_logger
+                and previous_logger._logger is not next_logger._logger
+        ):
+            try:
+                # BUG-278 (2026-07-17 audit): retire the displaced owned
+                # wrapper on replacement; best-effort - attachment must never
+                # fail because old-handle cleanup raised.
+                previous_logger.cleanup()
+            except Exception:
+                pass
+        self._logger = next_logger
+
+    def enable_logging(
+            self,
+            logger: IChannelLogger | logging.Logger | None = None,
+    ) -> None:
+        """
+        Enable Aether's own logger after boot.
+
+        Purpose:
+            Attach one explicit logger when provided, otherwise try the current
+            automatic channel logger path through `AetherUtilitySystem`.
+
+        Contract:
+            - Passing an explicit logger always uses the direct safe-logger
+              attachment path and does not require Aether root configuration.
+            - Calling this method without an explicit logger requires:
+              - an installed and activated `AetherConfiguration`
+              - automatic channel logger activation enabled in that config
+              - at least one automatic provider path registered on the hosted
+                utility system (channel resolver or default logger)
+            - The automatic path fails fast when that setup is incomplete
+              instead of silently leaving Aether on the null logger path.
+            - The automatic result is validated BEFORE publication (BUG-278,
+              2026-07-17 audit): a resolution that yields no logger raises
+              while the previously attached working logger stays installed
+              and untouched.
+            - A successful automatic attach retires the displaced owned
+              wrapper unless it shares the same underlying raw sink.
+
+        Args:
+            logger:
+                Optional explicit logger override.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the automatic logger path is requested before Aether root
+                configuration has been activated, if automatic channel logger
+                activation is disabled, if no automatic logger provider has
+                been registered into the utility system, or if automatic
+                resolution returns no logger (the existing logger is
+                preserved in that case).
+        """
+        self.check_cleaned()
+        if logger is not None:
+            self.attach_logger(logger)
+            return
+        if not self._activated or self._configuration is None:
+            raise RuntimeError(
+                "AetherConfiguration must be activated before automatic "
+                "Aether logging can be enabled."
+            )
+        if not self._configuration.channel_logger_activation_enabled:
+            raise RuntimeError(
+                "Automatic channel logger activation is disabled in "
+                "AetherConfiguration."
+            )
+        if not self._aether_utility_system.is_channel_logger_activation_enabled():
+            raise RuntimeError(
+                "AetherUtilitySystem automatic channel logger activation is "
+                "disabled."
+            )
+        if (
+                not self._aether_utility_system.has_channel_logger_resolver()
+                and not self._aether_utility_system.has_default_logger()
+        ):
+            raise RuntimeError(
+                "AetherUtilitySystem has no automatic logger provider "
+                "configured."
+            )
+        next_logger = InitHelpers.resolve_channel_logger(
+            self,
+            groups=["aether", "lifecycle"],
+            system_groups=["aether"],
+            props={"component": "aether"},
+            channels="system",
+        )
+        if next_logger._logger is None:
+            # BUG-278 (2026-07-17 audit): validate BEFORE publication - a
+            # failed automatic resolution must preserve the existing working
+            # logger instead of destroying it with a null wrapper.
+            raise RuntimeError(
+                "Automatic Aether logger resolution returned no logger."
+            )
+        previous_logger = self._logger
+        if (
+                previous_logger is not next_logger
+                and previous_logger._logger is not next_logger._logger
+        ):
+            try:
+                # Retire the displaced owned wrapper on successful automatic
+                # replacement; best-effort by the same law as attach_logger.
+                previous_logger.cleanup()
+            except Exception:
+                pass
+        self._logger = next_logger
+
+    @property
+    def configuration(self) -> AetherConfiguration | None:
+        """
+        Return the installed Aether root configuration, if any.
+
+        Contract:
+            - Returns the INSTALLED configuration by reference, not a copy. None means
+              nothing has been installed yet.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
+        Returns:
+            Optional[AetherConfiguration]: Installed root config.
+        """
+        self.check_cleaned()
+        return self._configuration
+
+    @property
+    def configured(self) -> bool:
+        """
+        Return whether an Aether root configuration is installed.
+
+        Contract:
+            - Reports that a configuration has been INSTALLED, which is weaker than
+              being usable: `configure()` accepts a configuration that has not been
+              activated, so `configured` can be True while `activate()` would still
+              refuse.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
+        Returns:
+            bool: True when a config is installed.
+        """
+        self.check_cleaned()
+        return self._configured
+
+    @property
+    def aetheric_mediator(self) -> AethericMediator:
+        """
+        Return the Aether-owned admission plane.
+
+        Purpose:
+            Give subsystems the one handle they need to open a top-level
+            transaction, without any of them constructing a plane of their own.
+
+        Contract:
+            - EAGER, like every other hosted root. The plane is constructed
+              with Aether (owner constraint 3) because it must exist before
+              anything it governs; a lazy accessor would let a frame be born
+              before the authority that admits frame-level work.
+            - Returns the OWNED instance by reference. Aether cleans it; callers
+              use it and never clean it.
+            - ONE-WAY: subsystems reach the plane through here. The plane holds
+              no reference back to Aether and must never acquire one.
+
+        Threading:
+            Unsynchronized read; a snapshot only. The plane owns its own
+            locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. Cleaned by `Aether.cleanup` right
+            after the LoadGate, so parked claim-table waiters are woken early.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
+        Returns:
+            AethericMediator: The Aether-owned admission plane.
+        """
+        self.check_cleaned()
+        return self._aetheric_mediator
+
+    @property
+    def mutation_research(self) -> MutationResearch:
+        """
+        Return the Aether-owned MutationResearch root.
+
+        Contract:
+            - EAGER, as of the owner ruling 2026-08-03. The root is built in
+              `__init__` alongside Crystallizer and Nexus, so this returns a
+              stored reference and never constructs. It was a lazy resolver
+              until that ruling.
+            - Returns the process-wide singleton, not an Aether-private instance.
+            - A CLEANED root raises rather than being rebuilt; cleanup is final.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
+        Returns:
+            MutationResearch: Hosted mutation-research singleton.
+        """
+        self.check_cleaned()
+        return self._get_mutation_research()
+
+    @property
+    def crystallizer(self) -> Crystallizer:
+        """
+        Return the Aether-owned crystallizer root.
+
+        Purpose:
+            Close the third of four hosted-subsystem accessors. Aether already
+            CONSTRUCTS, OWNS and CLEANS this root - it simply had no public way
+            to hand back the handle it was holding, so callers reached it by
+            calling `Crystallizer()` and relying on singleton re-entry. That
+            works, but it reads like construction and is not: a bare
+            `Crystallizer()` returns THIS instance, and would raise
+            `ValueError` if Aether had not already built it.
+
+        Contract:
+            - EAGER, like `aetheric_mediator` and unlike `mutation_research`.
+              The root is constructed with Aether (`__init__`) because it is
+              unfolded into every frame, spellbook and conduit, and into
+              MutationResearch as the passive emission sink.
+            - Returns the OWNED instance by reference. Aether cleans it;
+              callers use it and never clean it.
+            - Returns the PROCESS-WIDE singleton, not an Aether-private
+              instance - it is the same object `Crystallizer()` returns.
+            - Reports the root as it stands. This is an existence read, not a
+              liveness one: a returned crystallizer may be unconfigured and
+              inactive, and `activated` is the separate bit that answers that.
+
+        Threading:
+            Unsynchronized read; a snapshot only. The root owns its own
+            locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. Cleaned by `Aether.cleanup`.
+
+        Raises:
+            RuntimeError: If the Aether has been cleaned.
+
+        Returns:
+            Crystallizer: The Aether-owned crystallizer root.
+        """
+        self.check_cleaned()
+        return self._crystallizer
+
+    @property
+    def nexus(self) -> Nexus:
+        """
+        Return the Aether-owned Rift-domain root.
+
+        Purpose:
+            The fourth hosted-subsystem accessor, and the same story as
+            `crystallizer`: Aether constructs `Nexus(aether=self)` in
+            `__init__`, owns it and cleans it, but exposed no public handle.
+            A bare `Nexus()` reaches this instance through singleton re-entry
+            and refuses with `ValueError` on a genuine first construction
+            without a host, so the constructor was never the real door.
+
+        Contract:
+            - EAGER. Constructed with Aether, before any Rift can exist.
+            - Returns the OWNED instance by reference. Aether cleans it;
+              callers use it and never clean it.
+            - Returns the PROCESS-WIDE singleton - the same object `Nexus()`
+              returns.
+            - Existence, not liveness. The returned Nexus may be unconfigured
+              and disabled; `enable()` is what makes it live, and Nexus is the
+              one subsystem that seals its own configuration when you call it.
+
+        Threading:
+            Unsynchronized read; a snapshot only. The root owns its own
+            locking.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`. Cleaned by `Aether.cleanup`.
+
+        Raises:
+            RuntimeError: If the Aether has been cleaned.
+
+        Returns:
+            Nexus: The Aether-owned Rift-domain root.
+        """
+        self.check_cleaned()
+        return self._nexus
+
+    @property
+    def activated(self) -> bool:
+        """
+        Return whether the Aether root configuration has been applied.
+
+        Contract:
+            - Reports that Aether itself is live. It implies the installed
+              configuration was activated first, because `activate()` refuses
+              otherwise.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
+        Returns:
+            bool: True when root config has been activated.
+        """
+        self.check_cleaned()
+        return self._activated
+
+    def create_configuration(self) -> AetherConfiguration:
+        """
+        Create a fresh Aether root configuration object.
+
+        Contract:
+            - FACTORY ONLY: returns a FRESH, unattached `AetherConfiguration` and does
+              NOT install it. Installation is `configure(...)`, and activation of the
+              configuration is a further separate step.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
+        Returns:
+            AetherConfiguration: New mutable config object.
+        """
+        self.check_cleaned()
+        return AetherConfiguration()
+
+    def create_configuration_builder(self) -> AetherConfigurationBuilder:
+        """
+        Create a fresh fluent builder for Aether root configuration assembly.
+
+        Purpose:
+            Mirror the repo's configuration-builder workflow at the Aether root
+            so callers do not need to import the builder directly just to
+            assemble the first logger-policy slice.
+
+        Returns:
+            AetherConfigurationBuilder:
+                New one-shot builder instance.
+        """
+        self.check_cleaned()
+        return AetherConfigurationBuilder()
+
+    def configure(self, configuration: AetherConfiguration) -> None:
+        """
+        Install one root configuration on Aether.
+
+        Args:
+            configuration:
+                Root configuration object to install.
+
+        Contract:
+            - INSTALLS ONLY - it does not validate, freeze or activate the
+              configuration, and it accepts one that is still mutable. Passing an
+              unactivated configuration succeeds here and fails later at `activate()`.
+            - Type-checked: a non-`AetherConfiguration` raises `TypeError`.
+            - Replaces any previously installed configuration outright.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the object has been cleaned.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not isinstance(configuration, AetherConfiguration):
+            raise TypeError("configuration must be an AetherConfiguration instance.")
+        self._configuration = configuration
+        self._configured = True
+
+    def activate(
+            self,
+            configuration: AetherConfiguration | None = None,
+    ) -> None:
+        """
+        Activate the installed Aether root configuration.
+
+        Args:
+            configuration:
+                Optional configuration to install before activation.
+
+        Contract:
+            - ORDERING RULE: THE CONFIGURATION MUST BE ACTIVATED BEFORE AETHER CAN BE.
+              Activating Aether with a merely-frozen configuration raises
+              `RuntimeError`, so `configuration.activate()` comes first.
+            - Passing a configuration here is a convenience that calls `configure()`
+              first; omitting it uses whatever is already installed.
+            - Refuses when nothing is configured, so the two failure modes are
+              distinct: "not configured" and "configuration not activated".
+
+        Threading:
+            State transition applied under the Aether lock.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Aether is not configured, or the installed
+                configuration has not been activated.
+            TypeError: If a supplied configuration is not an `AetherConfiguration`.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if configuration is not None:
+            self.configure(configuration)
+        if not self._configured or self._configuration is None:
+            raise RuntimeError("Aether is not configured.")
+        if not self._configuration.activated:
+            raise RuntimeError(
+                "AetherConfiguration must be activated before activating Aether."
+            )
+        self._configuration.validate()
+        self._apply_configuration_to_utility_system()
+        self._activated = True
+
+    def _apply_configuration_to_utility_system(self) -> None:
+        """
+        Apply the installed root configuration into the hosted utility system.
+
+        Returns:
+            None.
+        """
+        utility_system = self._aether_utility_system
+        configuration = self._configuration
+        if configuration is None:
+            raise RuntimeError("Aether is not configured.")
+        utility_system.set_channel_logger_activation_enabled(
+            configuration.channel_logger_activation_enabled
+        )
+        utility_system.clear_channel_logger_resolver()
+        utility_system.clear_default_logger()
+        if configuration.channel_logger_resolver is not None:
+            utility_system.register_channel_logger_resolver(
+                configuration.channel_logger_resolver
+            )
+        if configuration.default_logger is not None:
+            utility_system.register_default_logger(configuration.default_logger)
+
+    def _ensure_frame(self, aetheric_frame_name: str = "default") -> AethericFrame:
+        """
+        Internal
+
+        Ensure an AethericFrame exists for the given name, creating it if missing.
+
+        Purpose:
+            Provide a single, thread-safe creation path for named frames so
+            Spellbooks can initialize against a new frame without raising.
+
+        Contract:
+            - Returns the existing frame when it already exists.
+            - Creates and registers a new frame when absent.
+            - Does not mutate the default frame pointer unless the name is "default".
+
+        Args:
+            aetheric_frame_name: The frame name to ensure exists.
+
+        Returns:
+            AethericFrame: The existing or newly created frame.
+
+        Raises:
+            RuntimeError: If the Aether is cleaned or its frame registry is unavailable.
+            ValueError: If the frame name is invalid for frame construction.
+
+        Threading:
+            Acquires the Aether lock to serialize frame creation.
+
+        Lifecycle:
+            The created frame is owned by Aether and will be cleaned by Aether.cleanup().
+        """
+        self.check_cleaned()
+        if not isinstance(aetheric_frame_name, str):
+            raise TypeError("aetheric_frame_name must be a string.")
+
+        if self._aetheric_frames is None:
+            raise RuntimeError("Aether frame registry is unavailable.")
+
+        # PLANE ADMISSION. This is the founding case of
+        # EPIC-2026-07-31-aetheric-mediator-subsystem: frame creation could not
+        # be admitted by anything that existed, because the only admission
+        # authority was the frame-local `TransactionMediator` and that object is
+        # owned BY the frame being created. The plane outranks frames, so it can.
+        #
+        # What this buys concretely: a checkpoint load holds `world` EXCLUSIVE
+        # for its whole replay. Before this, a `Spellbook` constructed on another
+        # thread reached here and birthed a frame straight through that replay.
+        # Now it waits.
+        #
+        # RE-ENTRANCY IS THE HAZARD, NOT CONTENTION, and it is why this is
+        # conditional rather than unconditional. `_ensure_frame` is reached from
+        # six call sites across four subsystems, and some of them are ALREADY
+        # inside a plane transaction - the crystallizer restore engine calls it
+        # mid-replay while its own load holds `world`. Opening a second root here
+        # would request `frame:<name>` and block on a claim its own caller holds
+        # and will never release while blocked. That is a self-deadlock, not a
+        # refusal. When a session is already open on this thread the outer
+        # transaction has, by construction, already claimed what this work
+        # touches.
+        if not self._frame_creation_is_already_admitted():
+            with self._frame_creation_transaction(aetheric_frame_name):
+                return self._ensure_frame_locked(aetheric_frame_name)
+        return self._ensure_frame_locked(aetheric_frame_name)
+
+    def _ensure_frame_locked(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> AethericFrame:
+        """
+        Internal
+
+        Create or return the named frame under the Aether lock.
+
+        Contract:
+            - The registry mutation half of `_ensure_frame`, split out so plane
+              admission can wrap it without duplicating the body.
+            - Unchanged behaviour: the check, the regime seal, and the insert all
+              happen under ONE acquisition of the Aether lock, so two threads
+              racing for the same name still produce one frame.
+
+        Args:
+            aetheric_frame_name: The frame name to ensure exists.
+
+        Returns:
+            AethericFrame: The existing or newly created frame.
+
+        Raises:
+            RuntimeError: If the frame registry is unavailable.
+        """
+        with self._lock:
+            if self._aetheric_frames is None:
+                raise RuntimeError("Aether frame registry is unavailable.")
+            # Seal the regime before any frame can exist under it. Frames are
+            # lazy, so this is the first moment the process is guaranteed to
+            # have one - and the last moment a change is still safe.
+            self._collapse_configuration_on_first_frame()
+
+            frame = self._aetheric_frames.get(aetheric_frame_name)
+            if frame is not None:
+                # Lazy frames: the default pointer is set on CREATE, so a
+                # pointer that drifted from a live registry entry (e.g.
+                # manually cleared) heals on the next ensure instead of
+                # leaving default-frame verbs pointerless.
+                if (
+                    aetheric_frame_name == "default"
+                    and self._default_frame is not frame
+                ):
+                    self._default_frame = frame
+                return frame
+
+            frame = AethericFrame(self, aetheric_frame_name)
+            self._aetheric_frames[aetheric_frame_name] = frame
+            if aetheric_frame_name == "default":
+                self._default_frame = frame
+
+            return frame
+
+    def _frame_creation_is_already_admitted(self) -> bool:
+        """
+        Internal
+
+        Report whether this thread is already inside a plane transaction.
+
+        Contract:
+            - True when the calling thread holds ANY open plane session, in
+              which case frame creation is already covered by that outer
+              transaction and must NOT open a nested root - see `_ensure_frame`
+              for the self-deadlock this prevents.
+            - True ALSO when the plane is absent or cleaned. That is deliberate
+              and is the safe direction: frame creation predates the plane in
+              this method's own history, and refusing to create a frame because
+              the admission layer is unavailable would turn a coordination
+              improvement into a hard dependency. Teardown is the concrete case
+              - `Aether.cleanup` cleans the plane before frames, so any frame
+              work during teardown finds a cleaned plane and must still work.
+
+        Returns:
+            bool: True when no plane transaction should be opened here.
+        """
+        mediator = getattr(self, "_aetheric_mediator", None)
+        if mediator is None or mediator.cleaned:
+            return True
+        return mediator.has_any_active_session()
+
+    @contextmanager
+    def _frame_creation_transaction(self, aetheric_frame_name: str):
+        """
+        Internal
+
+        Hold a `FRAME_CREATE` claim for the length of one frame creation.
+
+        Contract:
+            - Claims `world` INTENT plus `frame:<name>` EXCLUSIVE through the
+              plane, so a whole-world operation cannot run while a frame is
+              being born and two threads racing for the SAME frame serialise.
+              Different frames still proceed in parallel.
+            - Commits on success, fails on exception, and RE-RAISES either way -
+              the plane records the outcome, it does not swallow the error.
+            - The identity is Aether's own. Frame creation is Aether's act
+              regardless of which subsystem asked for it, and attributing it to
+              the caller would require this seam to know callers it cannot see.
+
+        Args:
+            aetheric_frame_name: The frame being created.
+
+        Yields:
+            None.
+        """
+        mediator = self._aetheric_mediator
+        identity = Identity(
+            kind="aether",
+            identity_id=self._id,
+            label="aether:frame_create",
+        )
+        session = mediator.begin(
+            transaction_type=TransactionType.FRAME_CREATE,
+            submitter=identity,
+            metadata={"frame_name": aetheric_frame_name},
+        )
+        try:
+            yield
+        except BaseException as error:
+            session.leave()
+            mediator.fail(session, reason=str(error) or type(error).__name__)
+            raise
+        else:
+            session.leave()
+            mediator.commit(session)
+        finally:
+            identity.cleanup()
+
+    def _create_frame(self, aetheric_frame_name: str = "default") -> AethericFrame:
+        """
+        Internal
+
+        Create a new AethericFrame for the given name and fail if it already
+        exists.
+
+        Purpose:
+            Provide a strict frame-creation path for callers that are
+            authoring a brand-new frame and must not silently recover an
+            existing frame shell.
+
+        Contract:
+            - Raises when the requested frame already exists.
+            - Creates and registers a new frame when absent.
+            - Does not mutate the default frame pointer unless the name is
+              `"default"`.
+
+        Args:
+            aetheric_frame_name:
+                The frame name to create.
+
+        Returns:
+            AethericFrame: Newly created frame.
+
+        Raises:
+            TypeError: If the frame name is not a string.
+            RuntimeError: If the Aether is cleaned or the frame registry is
+                unavailable.
+            ValueError: If the frame already exists.
+
+        Threading:
+            Acquires the Aether lock to serialize frame creation.
+
+        Lifecycle:
+            The created frame is owned by Aether and will be cleaned by
+            `Aether.cleanup()`.
+        """
+        self.check_cleaned()
+        if not isinstance(aetheric_frame_name, str):
+            raise TypeError("aetheric_frame_name must be a string.")
+
+        if self._aetheric_frames is None:
+            raise RuntimeError("Aether frame registry is unavailable.")
+
+        with self._lock:
+            if self._aetheric_frames is None:
+                raise RuntimeError("Aether frame registry is unavailable.")
+            if aetheric_frame_name in self._aetheric_frames:
+                raise ValueError(
+                    f"AethericFrame '{aetheric_frame_name}' already exists."
+                )
+            frame = AethericFrame(self, aetheric_frame_name)
+            self._aetheric_frames[aetheric_frame_name] = frame
+            if aetheric_frame_name == "default":
+                self._default_frame = frame
+            return frame
+
+    def acquire_load_authority(
+            self,
+            label: str,
+            drain_timeout: float = 30.0,
+    ) -> None:
+        """
+        Public API
+
+        Grant the calling thread exclusive load authority over the system.
+
+        Purpose:
+            Entry verb for crystallizer loads: claim the singleton LoadGate,
+            then DRAIN - wait for every in-flight transaction session across
+            all live frames to finish - so replay begins against a quiescent
+            registry. New root transactions from other threads park at the
+            gate; the loading thread's own per-verb transactions pass free.
+
+        Contract:
+            - Claims the gate FIRST (barring new roots), then polls every
+              live frame's TransactionMediator active-session count to zero.
+            - Frames are re-snapshotted each poll slice: frames born mid-
+              drain (e.g. by a Spellbook on another thread) are counted.
+            - On drain timeout the gate is RELEASED before raising - a failed
+              acquisition never leaves the system barred.
+
+        Args:
+            label:
+                Load descriptor surfaced to blocked callers (typically the
+                crystal source label).
+            drain_timeout:
+                Maximum seconds to wait for in-flight sessions to drain.
+
+        Raises:
+            RuntimeError:
+                If another load already holds the gate, or the drain does not
+                complete before "drain_timeout".
+            ValueError:
+                If label is falsy.
+
+        Threading:
+            Drain polling runs WITHOUT the Aether lock held; each slice takes
+            a registry snapshot under the lock and releases it before
+            sleeping.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if self._load_gate is None:
+            raise RuntimeError("Aether LoadGate is unavailable.")
+        self._load_gate.acquire(label)
+        try:
+            deadline = time.monotonic() + drain_timeout
+            while True:
+                active = 0
+                with self._lock:
+                    frames = (
+                        list(self._aetheric_frames.values())
+                        if self._aetheric_frames is not None
+                        else []
+                    )
+                for frame in frames:
+                    # transaction_mediator is an accessor METHOD on the
+                    # CCM (not a property) - it must be called.
+                    mediator = (
+                        frame.dev_ops_manager
+                        .change_control_manager
+                        .transaction_mediator()
+                    )
+                    active += mediator.describe()["active_session_count"]
+                if active == 0:
+                    return
+                if time.monotonic() >= deadline:
+                    raise RuntimeError(
+                        f"Load '{label}' timed out draining {active} "
+                        "in-flight transaction session(s)."
+                    )
+                time.sleep(0.05)
+        except Exception:
+            self._load_gate.release()
+            raise
+
+    def release_load_authority(self) -> None:
+        """
+        Public API
+
+        Release load authority and wake every parked root-transaction start.
+
+        Purpose:
+            Exit verb for crystallizer loads; pairs with
+            `acquire_load_authority` (callers wrap the load span in
+            try/finally).
+
+        Contract:
+            - Delegates to `LoadGate.release`: only the holder thread may
+              release, and all condition waiters are notified.
+
+        Raises:
+            RuntimeError:
+                If the gate is not held, or held by a different thread.
+
+        Returns:
+            None.
+        """
+        if self._load_gate is None:
+            raise RuntimeError("Aether LoadGate is unavailable.")
+        self._load_gate.release()
+
+    def enroll_load_worker(self, thread_ident: int) -> None:
+        """
+        Public API
+
+        Enroll one worker thread into the current load-authority span.
+
+        Purpose:
+            Parallel restore admission (parallel_restore_ulid_identity S3):
+            the loading thread names its scheduler pool threads so restore
+            units pass the LoadGate for the span while every foreign thread
+            keeps parking exactly as before.
+
+        Contract:
+            - Delegates to `LoadGate.enroll_worker`: HOLDER-ONLY, active-
+              span-only, idempotent set semantics; the cohort never
+              survives the span (release/cleanup clear it).
+
+        Args:
+            thread_ident:
+                The worker thread's identity (`threading.Thread.ident`).
+                Positive int; bools refuse.
+
+        Raises:
+            RuntimeError:
+                If the LoadGate is unavailable or cleaned, no load span is
+                active, or the caller is not the span holder.
+            ValueError:
+                If thread_ident is not a positive int.
+
+        Returns:
+            None.
+        """
+        if self._load_gate is None:
+            raise RuntimeError("Aether LoadGate is unavailable.")
+        self._load_gate.enroll_worker(thread_ident)
+
+    def withdraw_load_worker(self, thread_ident: int) -> None:
+        """
+        Public API
+
+        Withdraw one worker thread from the current load-authority span.
+
+        Purpose:
+            Pairs with `enroll_load_worker` so the span owner can retire a
+            worker mid-span; loaders withdraw their pool in `finally`.
+
+        Contract:
+            - Delegates to `LoadGate.withdraw_worker`: HOLDER-ONLY, active-
+              span-only, idempotent discard; a withdrawn thread parks at
+              its next passage check.
+
+        Args:
+            thread_ident:
+                The worker thread identity to remove. Positive int; bools
+                refuse.
+
+        Raises:
+            RuntimeError:
+                If the LoadGate is unavailable or cleaned, no load span is
+                active, or the caller is not the span holder.
+            ValueError:
+                If thread_ident is not a positive int.
+
+        Returns:
+            None.
+        """
+        if self._load_gate is None:
+            raise RuntimeError("Aether LoadGate is unavailable.")
+        self._load_gate.withdraw_worker(thread_ident)
+
+
+    def _bind_configuration(
+            self,
+            configuration: SpellbookConfiguration,
+            aetheric_frame_name: str = "default",
+    ) -> None:
+        """
+        Bind the shared Spellbook configuration object to one frame.
+
+        Purpose:
+            Preserve the richer configuration object alongside the narrower
+            frame-level AR posture object.
+
+        Contract:
+            - Binds the first shared rich configuration published for the
+              frame.
+            - Leaves an existing shared rich configuration in place instead of
+              overwriting it during later concurrent binds.
+            - Does not validate or merge posture fields here; frame posture is
+              owned separately by `AethericFrame`.
+
+        Args:
+            configuration: The configuration object to bind.
+            aetheric_frame_name: The name of the frame.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+
+        with self._lock:
+            if aetheric_frame_name != "default":
+                try:
+                    frame = self._aetheric_frames[aetheric_frame_name]
+                except KeyError:
+                    self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_bind_configuration", exc_info=True)
+                    raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+                if frame._configuration is None:
+                    frame._configuration = configuration
+            else:
+                frame = self._ensure_default_frame()
+                if frame._configuration is None:
+                    frame._configuration = configuration
+
+
+    def _get_configuration(self, aetheric_frame_name: str = "default") -> SpellbookConfiguration | None:
+        """
+        Return the shared Spellbook configuration object bound to one frame.
+
+        Args:
+            aetheric_frame_name: The name of the frame.
+
+        Returns:
+            The configuration object, or None if not set.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+        if aetheric_frame_name != "default":
+            try:
+                cfg = self._aetheric_frames[aetheric_frame_name]._configuration
+            except KeyError:
+                self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_configuration", exc_info=True)
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._ensure_default_frame()
+            cfg = frame._configuration
+
+        return cfg
+
+    def _get_aetheric_frame_configuration(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> AethericFrameConfiguration | None:
+        """
+        Return the narrow frame-level AR posture object for one frame.
+
+        Args:
+            aetheric_frame_name:
+                Target frame name.
+
+        Returns:
+            Optional[AethericFrameConfiguration]: Bound frame posture or None.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_get_aetheric_frame_configuration",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist."
+                )
+        else:
+            frame = self._ensure_default_frame()
+
+        return frame.frame_configuration
+
+    # endregion Configuration
+    # region Conduit Management
+
+    def _get_existing_frame(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> AethericFrame:
+        """
+        Return one existing frame without creating new custom frames.
+
+        Args:
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            AethericFrame: Existing frame handle.
+
+        Raises:
+            ValueError: If the specified custom frame does not exist.
+        """
+        self.check_cleaned()
+        if aetheric_frame_name != "default":
+            try:
+                return self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_get_existing_frame",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist."
+                )
+        return self._ensure_default_frame()
+
+    def _resolve_lookup_frame(
+            self,
+            aetheric_frame_name: str,
+            method_name: str,
+    ) -> AethericFrame:
+        """
+        Validate a conduit lookup's frame argument and return the existing frame it names.
+
+        Purpose:
+            One frame resolver shared by the ten conduit lookups, so a wrong frame argument fails the same
+            way on every one of them.
+
+        Contract:
+            - `aetheric_frame_name` must be a `str`. Anything else (None, an int, a tuple) raises TypeError
+              naming the calling lookup and the received type, before any registry is read. Before this
+              resolver existed, None surfaced as "Aetheric frame 'None' does not exist." and an unhashable
+              value as a bare dict error.
+            - Resolution is `_get_existing_frame`: "default" always resolves (it is created lazily when
+              absent); a custom frame must already exist.
+            - Creates no custom frame and takes no conduit lock.
+
+        Args:
+            aetheric_frame_name:
+                Frame name received by the public lookup.
+            method_name:
+                Name of the public lookup, used in the TypeError message and its log line.
+
+        Returns:
+            AethericFrame: The existing frame.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If a custom frame with that name does not exist.
+            RuntimeError: If Aether has been cleaned.
+        """
+        if not isinstance(aetheric_frame_name, str):
+            message = (
+                f"{method_name}: aetheric_frame_name must be a frame name string such as 'default'; "
+                f"got {type(aetheric_frame_name).__name__}."
+            )
+            self._logger.error(message, "_resolve_lookup_frame")
+            raise TypeError(message)
+        return self._get_existing_frame(aetheric_frame_name)
+
+    def list_root_conduit_ids(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> tuple[str, ...]:
+        """
+        Return the ids of the ROOT conduits registered in one frame.
+
+        Contract:
+            - Covers normal root conduits only (the frame's root registry). Lesser scopes, named or
+              anonymous, are never listed; `get_conduit_by_id` reaches any live conduit by id and the
+              frame's `ConduitCloud` lists its named scopes.
+            - Returns a TUPLE SNAPSHOT; it goes stale as roots are conjured or cleaned.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            Reads the frame's root registry without taking a lock; a point-in-time answer.
+
+        Args:
+            aetheric_frame_name:
+                Name of the target frame; a string, "default" when omitted.
+
+        Returns:
+            Tuple[str, ...]: Snapshot of root conduit ids.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "list_root_conduit_ids")
+        return tuple(frame._conduits.keys())
+
+    def list_root_conduit_names(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> tuple[str, ...]:
+        """
+        Return the names of the ROOT conduits registered in one frame.
+
+        Contract:
+            - Covers normal root conduits only. Named lesser scopes are not roots and are never listed;
+              the frame's `ConduitCloud.list_conduit_names()` lists every named scope, roots included.
+            - Returns a TUPLE SNAPSHOT; it goes stale as roots are conjured or cleaned.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            Reads the frame's root name registry without taking a lock; a point-in-time answer.
+
+        Args:
+            aetheric_frame_name:
+                Name of the target frame; a string, "default" when omitted.
+
+        Returns:
+            Tuple[str, ...]: Snapshot of root conduit names.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "list_root_conduit_names")
+        return tuple(frame._conduit_ids_by_name.keys())
+
+    def count_root_conduits(self, aetheric_frame_name: str = "default") -> int:
+        """
+        Return the number of ROOT conduits registered in one frame.
+
+        Contract:
+            - Counts normal root conduits only; lesser scopes are never counted.
+            - Reads the size of the frame's root registry directly; it builds no id list.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            Reads the frame's root registry without taking a lock; a point-in-time count.
+
+        Args:
+            aetheric_frame_name:
+                Name of the target frame; a string, "default" when omitted.
+
+        Returns:
+            int: Number of registered root conduits.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "count_root_conduits")
+        return len(frame._conduits)
+
+    def has_root_conduit_id(
+            self,
+            conduit_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> bool:
+        """
+        Return whether a ROOT conduit with this id is registered in one frame.
+
+        Contract:
+            - Answers over normal root conduits only, so False also covers "this is a live lesser scope's
+              id"; `get_conduit_by_id` resolves any live conduit.
+            - One membership test on the frame's root registry.
+            - Scoped to one frame, so False can mean "exists, but in a different frame".
+
+        Threading:
+            Reads the frame's root registry without taking a lock; a point-in-time answer.
+
+        Args:
+            conduit_id:
+                Root conduit id to check.
+            aetheric_frame_name:
+                Name of the target frame; a string, "default" when omitted.
+
+        Returns:
+            bool: True when a root conduit with this id is registered in the frame.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "has_root_conduit_id")
+        return conduit_id in frame._conduits
+
+    def has_root_conduit_name(
+            self,
+            name: str,
+            aetheric_frame_name: str = "default",
+    ) -> bool:
+        """
+        Return whether a ROOT conduit with this name is registered in one frame.
+
+        Contract:
+            - Answers over normal root conduits only, so False also covers "this names a live lesser
+              scope"; `ConduitCloud.has_conduit_name` answers over every named scope.
+            - One membership test on the frame's root name registry.
+            - Scoped to one frame, so False can mean "exists, but in a different frame".
+
+        Threading:
+            Reads the frame's root name registry without taking a lock; a point-in-time answer.
+
+        Args:
+            name:
+                Root conduit name to check.
+            aetheric_frame_name:
+                Name of the target frame; a string, "default" when omitted.
+
+        Returns:
+            bool: True when a root conduit with this name is registered in the frame.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "has_root_conduit_name")
+        return name in frame._conduit_ids_by_name
+
+    def find_root_conduit_id_by_name(
+            self,
+            name: str,
+            aetheric_frame_name: str = "default",
+    ) -> Optional[str]:
+        """
+        Return the id of the ROOT conduit registered under a name in one frame, if any.
+
+        Contract:
+            - Answers over normal root conduits only; a named lesser scope's name returns None
+              (`ConduitCloud.find_conduit_id_by_name` answers over every named scope).
+            - Returns None instead of raising when no root has the name.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            One read of the frame's root name registry without taking a lock.
+
+        Args:
+            name:
+                Root conduit name to resolve.
+            aetheric_frame_name:
+                Name of the target frame; a string, "default" when omitted.
+
+        Returns:
+            Optional[str]: The root conduit id, or None when no root has this name.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the specified custom frame does not exist.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "find_root_conduit_id_by_name")
+        return frame._conduit_ids_by_name.get(name)
+
+    def get_root_conduit_by_name(
+            self,
+            name: str,
+            aetheric_frame_name: str = "default",
+    ) -> Conduit:
+        """
+        Return the ROOT conduit registered under a name in one frame.
+
+        Contract:
+            - Resolves normal root conduits only. A named lesser scope is not a root and raises here;
+              `get_conduit_by_name` resolves any named conduit, roots included, to the same object for a
+              root.
+            - Returns a borrowed reference; grants no lease.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            Reads the frame's root registries without taking a lock.
+
+        Args:
+            name:
+                Root conduit name to resolve.
+            aetheric_frame_name:
+                Name of the target frame; a string, "default" when omitted.
+
+        Returns:
+            Conduit: The matching root conduit.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the custom frame does not exist, or no root conduit in the frame has this name
+                (the message names the frame).
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        return self._get_root_conduit_by_name(name, aetheric_frame_name)
+
+    def get_root_conduit_by_id(
+            self,
+            conduit_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> Conduit:
+        """
+        Return the ROOT conduit with an id in one frame.
+
+        Contract:
+            - Resolves normal root conduits only. A lesser scope's id raises here; `get_conduit_by_id`
+              resolves any live conduit, roots included, to the same object for a root.
+            - Returns a borrowed reference; grants no lease.
+            - Scoped to one frame: "default" resolves lazily, a custom frame must exist.
+
+        Threading:
+            One read of the frame's root registry without taking a lock.
+
+        Args:
+            conduit_id:
+                Root conduit id to resolve.
+            aetheric_frame_name:
+                Name of the target frame; a string, "default" when omitted.
+
+        Returns:
+            Conduit: The matching root conduit.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the custom frame does not exist, or no root conduit in the frame has this id
+                (the message names the frame).
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        return self._get_root_conduit_by_id(conduit_id, aetheric_frame_name)
+
+    def get_conduit_by_name(
+            self,
+            name: str,
+            aetheric_frame_name: str = "default",
+    ) -> Conduit:
+        """
+        Return the conduit registered under a name in one frame: a named root or an active named lesser.
+
+        Purpose:
+            Frame-wide discovery by name from the runtime root, so a named scope - a root, or a lesser
+            created with `create_lesser_conduit(name=...)` at any depth - resolves without holding its
+            parent.
+
+        Contract:
+            - Answers over the frame's NAMED directory, the one its `ConduitCloud` owns: every named normal
+              root and every active named lesser. The result is the same object as
+              `get_conduit_cloud(aetheric_frame_name).get_conduit_by_name(name)`.
+            - Names are unique within a frame, not across frames, so the lookup is frame-scoped. The frame
+              is optional and defaults to "default"; a scope in another frame is found only by naming that
+              frame.
+            - A named lesser returned to its pool retires its name first, so it does not resolve; neither
+              do anonymous lessers (`get_conduit_by_id` resolves those) nor cleaned scopes.
+            - Returns a borrowed reference and grants no lease: the scope's owner may return or clean it at
+              any time, after which the reference must not be used.
+            - Root-only resolution is `get_root_conduit_by_name`.
+
+        Threading:
+            One read of the Cloud's directory under the Cloud's leaf lock; invokes no callbacks.
+
+        Args:
+            name:
+                Exact name of the scope.
+            aetheric_frame_name:
+                Name of the frame to search; a string, "default" when omitted.
+
+        Returns:
+            Conduit: The named conduit.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the custom frame does not exist, or no named scope in the frame has this name
+                (the message names the frame).
+            RuntimeError: If Aether or the frame's Cloud has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "get_conduit_by_name")
+        try:
+            return frame._conduit_cloud.get_conduit_by_name(name)
+        except ValueError:
+            message = (
+                f"Conduit with name '{name}' not found in frame '{aetheric_frame_name}'. Only named roots and "
+                "active named lesser scopes resolve; pass aetheric_frame_name if the scope lives in another "
+                "frame."
+            )
+            self._logger.error(message, "get_conduit_by_name")
+            raise ValueError(message) from None
+
+    def get_conduit_by_id(
+            self,
+            conduit_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> Conduit:
+        """
+        Return any live conduit in one frame by id: a root, or a named or anonymous lesser at any depth.
+
+        Purpose:
+            Lead an id taken from a record, a log line or a descriptor back to the live scope from the
+            runtime root, whether or not that scope has a name.
+
+        Contract:
+            - Answers over LIVE conduits: the frame's root registry first, then every root's attached
+              lesser lineage, depth-first through each `ConduitWard`. Anonymous lessers resolve here; the
+              frame's `ConduitCloud` holds named scopes only and does not see them.
+            - Reads snapshots, never live registries: a scope attached or returned while the lookup runs
+              may or may not be found, and the lookup never fails because of it.
+            - A lesser returned to its pool is detached from its parent and a cleaned scope leaves its
+              registry, so neither resolves.
+            - Returns a borrowed reference and grants no lease.
+            - Frame-scoped; the frame is optional and defaults to "default". Root-only resolution is
+              `get_root_conduit_by_id`.
+            - Cost grows with the number of live scopes in the frame: a discovery call, not a hot path.
+
+        Threading:
+            Takes no lock and invokes no callbacks.
+
+        Args:
+            conduit_id:
+                Id of the conduit.
+            aetheric_frame_name:
+                Name of the frame to search; a string, "default" when omitted.
+
+        Returns:
+            Conduit: The live conduit with this id.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the custom frame does not exist, or no live conduit in the frame has this id
+                (the message names the frame).
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "get_conduit_by_id")
+        conduit = self._find_live_conduit(frame, conduit_id)
+        if conduit is None:
+            message = (
+                f"Conduit with id '{conduit_id}' not found in frame '{aetheric_frame_name}'. Ids resolve for "
+                "live roots and their attached lesser scopes; a scope returned to its pool or cleaned up no "
+                "longer resolves."
+            )
+            self._logger.error(message, "get_conduit_by_id")
+            raise ValueError(message)
+        return conduit
+
+    @staticmethod
+    def _find_live_conduit(frame: AethericFrame, conduit_id: str) -> Optional[Conduit]:
+        """
+        Search one frame's live conduits for an id: the root registry, then each root's lesser lineage.
+
+        Contract:
+            - Takes one `dict.copy()` snapshot of the frame's root registry (atomic on the free-threaded
+              build) and never iterates the live dict, which conjure and cleanup write on other threads.
+            - A root id is answered from the snapshot. Otherwise each root's `ConduitWard` searches its
+              attached lineage through `ConduitWard._get_lesser_conduit`, which snapshots every level.
+            - Skips a root whose `_conduit_ward` was deleted by hard teardown after the snapshot, and a
+              root whose ward is None.
+            - Read-only; takes no lock.
+
+        Args:
+            frame:
+                The resolved frame to search.
+            conduit_id:
+                Id of the conduit.
+
+        Returns:
+            Optional[Conduit]: The live conduit, or None when no root or attached lesser has this id.
+        """
+        roots = frame._conduits.copy()
+        root = roots.get(conduit_id)
+        if root is not None:
+            return root
+        for candidate in roots.values():
+            try:
+                conduit_ward = candidate._conduit_ward
+            except AttributeError:
+                # Hard teardown deleted this root's ward after the snapshot; its lineage went with it.
+                continue
+            if conduit_ward is None:
+                continue
+            lesser = conduit_ward._get_lesser_conduit(conduit_id)
+            if lesser is not None:
+                return lesser
+        return None
+
+    def get_conduit_cloud(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> ConduitCloud:
+        """
+        Return the frame-local conduit and cluster service for one frame.
+
+        Purpose:
+            Expose the frame-owned `ConduitCloud` through Aether so callers can
+            start from the top-level runtime host and move into the frame-local
+            conduit and cluster service surface explicitly.
+
+        Args:
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            ConduitCloud: The frame-local conduit cloud for the requested frame.
+
+        Raises:
+            ValueError: If the requested frame does not exist.
+        """
+        self.check_cleaned()
+        frame = self._get_existing_frame(aetheric_frame_name)
+        return frame._conduit_cloud
+
+    def _get_root_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> Conduit:
+        """
+        Find a root conduit within one frame by its registered name.
+
+        Contract:
+            - Reads the frame's root name registry, then its root registry; a name registered to an id that
+              has already left the root registry counts as missing.
+            - Root-only: named lesser scopes are not in these registries. The not-found message points the
+              caller at `get_conduit_by_name`.
+            - Frame resolution is shared with the public lookups (`_resolve_lookup_frame`), so a non-string
+              frame raises TypeError naming `get_root_conduit_by_name`.
+
+        Args:
+            name (str):
+                Name of the root conduit.
+            aetheric_frame_name (str):
+                Name of the frame to search.
+
+        Returns:
+            Conduit:
+                The matching root conduit.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the frame does not exist or no root conduit has this name in it.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "get_root_conduit_by_name")
+        conduit_id = frame._conduit_ids_by_name.get(name)
+        if conduit_id is not None:
+            conduit = frame._conduits.get(conduit_id)
+            if conduit is not None:
+                return conduit
+
+        message = (
+            f"Root conduit with name '{name}' not found in frame '{aetheric_frame_name}'. Named lesser scopes "
+            "are not roots; use get_conduit_by_name to find any named conduit."
+        )
+        self._logger.error(message, "_get_root_conduit_by_name")
+        raise ValueError(message)
+
+    def _get_root_conduit_by_id(self, conduit_id: str, aetheric_frame_name: str = "default") -> Conduit:
+        """
+        Find a root conduit within one frame by its id.
+
+        Contract:
+            - One read of the frame's root registry.
+            - Root-only: lesser scopes are not in it. The not-found message points the caller at
+              `get_conduit_by_id`. Spell ownership resolves here (`_get_conduit_by_spell_id`) because
+              only roots own spells.
+            - Frame resolution is shared with the public lookups (`_resolve_lookup_frame`), so a non-string
+              frame raises TypeError naming `get_root_conduit_by_id`.
+
+        Args:
+            conduit_id (str):
+                Id of the root conduit.
+            aetheric_frame_name (str):
+                Name of the frame to search.
+
+        Returns:
+            Conduit:
+                The matching root conduit.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If the frame does not exist or no root conduit has this id in it.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        frame = self._resolve_lookup_frame(aetheric_frame_name, "get_root_conduit_by_id")
+        conduit = frame._conduits.get(conduit_id)
+        if conduit is not None:
+            return conduit
+
+        message = (
+            f"Root conduit with id '{conduit_id}' not found in frame '{aetheric_frame_name}'. Lesser scopes "
+            "are not roots; use get_conduit_by_id to find any live conduit."
+        )
+        self._logger.error(message, "_get_root_conduit_by_id")
+        raise ValueError(message)
+
+    def _get_conduit_by_spell_id(self, spell_id: str, aetheric_frame_name: str = "default") -> Conduit:
+        """
+        Finds the conduit that owns a specific spell ID within a frame.
+
+        Args:
+            spell_id (str): The spell ID (SHA256 hash) to search for.
+            aetheric_frame_name (str): The name of the frame.
+
+        Returns:
+            Conduit: The conduit that owns the spell.
+
+        Raises:
+            ValueError: If the frame does not exist or the spell ID is not found.
+        """
+        self.check_cleaned()
+        # Select frame
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_get_conduit_by_spell_id",
+                    exc_info=True
+                )
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._ensure_default_frame()
+
+        # Locked lookup so a concurrent conjure cannot mutate the registry mid-scan.
+        conduit_id = frame.find_conduit_id_for_spell(spell_id)
+        # Owners are roots: a lesser scope owns only the lifecycle of what it creates.
+        if conduit_id is not None:
+            return self._get_root_conduit_by_id(conduit_id, aetheric_frame_name)
+
+        self._logger.error(
+            f"Spell version {spell_id} not found in any conduit.",
+            "_get_conduit_by_spell_id", exc_info=True
+        )
+        raise ValueError(f"Spell version {spell_id} not found in any conduit.")
+
+    # endregion Conduit Management
+
+    # region Spell Management
+
+    def _check_for_spell(self, spell_id: str, aetheric_frame_name: str = "default") -> SpellIndex | None:
+        """
+        Checks if a SHA256 spell_id exists in ANY SpellIndex within a frame,
+        using the frame's _selected_spell_registry cache (maintained per-conduit as
+        conduits register and unregister their lineages).
+
+        Args:
+            spell_id (str): The SHA256 spell ID to check.
+            aetheric_frame_name (str): The name of the frame.
+
+        Returns:
+            SpellIndex | None: The SpellIndex containing the spell ID, or None if not found.
+        """
+        self.check_cleaned()
+        # Pick frame
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_check_for_spell",
+                    exc_info=True
+                )
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._ensure_default_frame()
+
+        # Fast O(1-ish) lookup via cached selected_spell_registry
+        found = frame.has_spell(spell_id)
+        if found is True:
+            return frame.find_index_for_spell(spell_id)
+
+        # PROCESS-WIDE SWEEP. The named frame does not hold it; under the
+        # process-wide regime another frame still might, because spell_id is a
+        # SHA256 over the bind-time fingerprint and does NOT include the frame -
+        # the same target bound with the same parameters mints the same id
+        # everywhere. Owner ruling 2026-08-02: one spell_id means one spell,
+        # process-wide, so every consumer of this lookup - the bind guard AND
+        # `Spellbook.inspect_spell` - answers at process scope.
+        #
+        # GATED ON FRAME COUNT, which is what makes it cheap. A single-frame
+        # process does no cross-frame work at all: the frame just checked IS the
+        # process. The sweep engages only once a second frame exists, and frames
+        # are tenant-grained so there are few. It runs at REGISTRATION and on
+        # inspection, never at meld, so it is off the resolution hot path.
+        #
+        # Explicit loop, not `any(...)`: both return on the first hit, but a
+        # generator expression short-circuits while a list comprehension
+        # silently does not, and that difference is one pair of brackets.
+        if not self._process_wide_unique_spell_ids:
+            return None
+        if len(self._aetheric_frames) <= 1:
+            return None
+
+        for other_name, other_frame in self._aetheric_frames.items():
+            if other_name == aetheric_frame_name:
+                continue
+            if other_frame.has_spell(spell_id):
+                return other_frame.find_index_for_spell(spell_id)
+
+        return None
+
+    def _collapse_configuration_on_first_frame(self) -> None:
+        """
+        Internal
+
+        Seal the Aether configuration at the moment the first frame is born.
+
+        Purpose:
+            Give the regime a fixed value for the life of the process. Frames are
+            LAZY - `import melder` creates ZERO frames, and the first Spellbook
+            births the frame it names - so nothing forces `configure()` to happen
+            before a frame exists. Without this, a configuration installed later
+            would change the answer under frames already registered under the old
+            rule, and the process would hold ids allocated by two different
+            regimes with nothing able to say which applies.
+
+        Contract:
+            - Runs INSIDE the caller's `_lock` hold, so the check and the install
+              are one atomic act against concurrent first-frame creation.
+            - NO-OP once a configuration exists: an explicitly configured Aether
+              keeps exactly what the caller installed. This only fills the gap
+              left by never configuring at all.
+            - Installs `AetherConfiguration().with_defaults()` and FREEZES it, so
+              the regime cannot be changed afterwards by any path.
+            - Never raises. A failure to collapse must not stop a frame being
+              born; `_process_wide_unique_spell_ids` is already initialised to
+              the same default in `__init__`, so the behaviour is identical
+              either way - the seal and the freeze are what this adds.
+
+        Returns:
+            None.
+        """
+        if self._aetheric_frames:
+            # Not the first frame - the regime was sealed when the world began
+            # and re-reading it now is exactly the drift this method prevents.
+            return
+        if self._configuration is None:
+            try:
+                from melder.aether.aether_configuration import AetherConfiguration
+
+                self._configuration = AetherConfiguration().with_defaults()
+            except Exception as e:
+                if self._logger is not None:
+                    self._logger.error(
+                        f"Failed to build the default Aether configuration: {e}",
+                        "_collapse_configuration_on_first_frame",
+                        exc_info=True,
+                    )
+                return
+        try:
+            self._process_wide_unique_spell_ids = bool(
+                self._configuration.process_wide_unique_spell_ids
+            )
+            self._configuration.freeze()
+        except Exception as e:
+            if self._logger is not None:
+                self._logger.error(
+                    f"Failed to collapse Aether configuration at first frame: {e}",
+                    "_collapse_configuration_on_first_frame",
+                    exc_info=True,
+                )
+
+    def _add_spells_to_aether(self, conduit_id: str, spell_set: set[SpellIndex],
+                              aetheric_frame_name: str = "default", spell_ids: set[str] | None = None) -> None:
+        """
+        Registers a set of SpellIndex objects for a conduit and refreshes version registry.
+
+        Args:
+            conduit_id (str): The id of the owning conduit.
+            spell_set (Set[SpellIndex]): The set of SpellIndex objects to register.
+            aetheric_frame_name (str): The name of the frame.
+        """
+        self.check_cleaned()
+
+        # Validate spell_set contents
+        for item in spell_set:
+            if not isinstance(item, SpellIndex):
+                raise TypeError("spell_set must contain only SpellIndex instances")
+
+        # Pick frame
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._ensure_default_frame()
+
+        # Frame-owned + lock-serialized: duplicate check, write, and version
+        # refresh happen atomically under frame._lock (no direct dict poking).
+        frame.register_conduit_spells(conduit_id, spell_set, spell_ids)
+
+    def _remove_spells_from_aether(self, conduit_id: str, spell_set: set[SpellIndex],
+                                   aetheric_frame_name: str = "default") -> None:
+        """
+        Unregisters a set of SpellIndex objects for a conduit and refreshes version registry.
+
+        Args:
+            conduit_id (str): The id of the owning conduit.
+            spell_set (Set[SpellIndex]): The set of SpellIndex objects to unregister.
+            aetheric_frame_name (str): The name of the frame.
+        """
+        self.check_cleaned()
+
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._ensure_default_frame()
+
+        # Frame-owned + lock-serialized: removal + version refresh atomically.
+        frame.unregister_conduit_spells(conduit_id, spell_set)
+
+
+    def _register_single_spell_index(self, conduit_id: str, spell_index: SpellIndex,
+                                     aetheric_frame_name: str = "default") -> None:
+        """
+        Registers a single SpellIndex under a conduit and refreshes version registry.
+
+        Args:
+            conduit_id (str): The id of the owning conduit.
+            spell_index (SpellIndex): The SpellIndex to register.
+            aetheric_frame_name (str): The name of the frame.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+
+        # Pick frame registry
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._ensure_default_frame()
+
+        # Frame-owned + lock-serialized: ensure-set, add, version refresh atomically.
+        frame.register_spell_index(conduit_id, spell_index)
+
+    def _remove_single_spell_index(
+            self,
+            conduit_id: str,
+            spell_index: SpellIndex,
+            aetheric_frame_name: str = "default",
+    ) -> None:
+        """
+        Removes a SpellIndex and refreshes version registry so SHA256 ancestry collapses correctly.
+
+        Args:
+            conduit_id (str): The id of the owning conduit.
+            spell_index (SpellIndex): The SpellIndex to remove.
+            aetheric_frame_name (str): The name of the frame.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+
+        # Pick frame
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._ensure_default_frame()
+
+        # Frame-owned + lock-serialized: removal + version refresh atomically.
+        frame.unregister_spell_index(conduit_id, spell_index)
+
+    def _get_all_spell_ids(self, aetheric_frame_name: str = "default") -> set[str]:
+        """
+        Return a flat set of all spell version ids known for one frame.
+
+        Contract:
+            - Reads from the frame-owned cached version registry, maintained
+              per-conduit on registration.
+
+        Args:
+            aetheric_frame_name (str):
+                Name of the target frame.
+
+        Returns:
+            set[str]:
+                All cached spell version ids for the frame.
+        """
+        self.check_cleaned()
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_get_all_spell_ids",
+                    exc_info=True
+                )
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._ensure_default_frame()
+
+        spell_ids = frame.spells_in_index()
+
+        # Same scope rule as `_check_for_spell`, deliberately mirrored: if the
+        # single-id test and the whole-set read ever disagree about scope, bind
+        # and conjure enforce different rules and a collision slips between them.
+        if not self._process_wide_unique_spell_ids:
+            return spell_ids
+        if len(self._aetheric_frames) <= 1:
+            return spell_ids
+
+        combined = set(spell_ids)
+        for other_name, other_frame in self._aetheric_frames.items():
+            if other_name == aetheric_frame_name:
+                continue
+            combined |= other_frame.spells_in_index()
+        return combined
+
+    # endregion Spell Management
+
+    #region Mutation Research
+
+    def _get_mutation_research(self) -> MutationResearch:
+        """
+        Return the Aether-owned MutationResearch root.
+
+        Internal use only.
+
+        Contract:
+            - Returns the root CONSTRUCTED IN `__init__`. All three hosted
+              roots are eager as of the owner ruling 2026-08-03, so this is a
+              plain read; the double-checked lazy build it used to perform is
+              gone along with the deferred import.
+            - A cleaned root RAISES. It is not rebuilt here. Aether owns the
+              root's lifetime, so a root that outlived its Aether is a torn
+              world, and handing back a fresh one would let a caller believe
+              custody continued across a teardown it did not.
+            - TESTS THAT TEAR DOWN A ROOT MUST RESET AETHER TOO. Resetting the
+              root's singleton alone leaves this slot pointing at the corpse.
+              `Aether._reset_singleton_for_tests()` is the one door for that;
+              re-provisioning here to paper over a half-reset world would put
+              a test concern inside the runtime.
+
+        Threading:
+            Unsynchronized read. The root is assigned before the singleton
+            latch flips, so no caller can observe the slot unset.
+
+        Returns:
+            MutationResearch: The hosted mutation-research singleton.
+
+        Raises:
+            RuntimeError: If the Aether or the root has been cleaned.
+        """
+        self.check_cleaned()
+        research = self._mutation_research
+        if research.cleaned:
+            raise RuntimeError("MutationResearch has been cleaned or is unavailable.")
+        return research
+
+    #endregion Mutation Research
+    #region DevOps Management
+    def _get_devops_manager(self, aetheric_frame_name: str = "default") -> DevOpsManager:
+        """
+        Retrieves the DevOpsManager associated with a specific Aetheric Frame.
+
+        Internal use only.
+
+        Args:
+            aetheric_frame_name (str): The name of the frame whose DevOpsManager
+                object should be retrieved. Defaults to "default".
+
+        Returns:
+            DevOpsManager: The DevOpsManager instance for the target frame.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+            RuntimeError: If the Aether or target frame has been cleaned.
+        """
+        self.check_cleaned()
+        # Select frame
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_get_devops_manager",
+                    exc_info=True
+                )
+                raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
+        else:
+            frame = self._ensure_default_frame()
+
+        # Validate frame
+        if frame is None or frame._cleaned:
+            raise RuntimeError(
+                f"The AethericFrame '{aetheric_frame_name}' has been cleaned or is unavailable."
+            )
+
+        return frame._dev_ops_manager
+
+
+    def _get_spell_system_states(self, aetheric_frame_name: str = "default") -> SpellSystemStates:
+        """
+        Retrieves the global SpellSystemStates manager.
+
+        Returns:
+            SpellSystemStates: The SpellSystemStates instance.
+        """
+        self.check_cleaned()
+        return self._get_devops_manager(aetheric_frame_name).spell_system_states
+
+    def _get_incident_manager(self, aetheric_frame_name: str = "default") -> IncidentManager:
+        """
+        Retrieves the IncidentManager from the DevOpsManager of a specific frame.
+
+        Returns:
+            IncidentManager: The IncidentManager instance.
+        """
+        self.check_cleaned()
+        return self._get_devops_manager(aetheric_frame_name).incident_manager
+
+    def _get_change_control_manager(self, aetheric_frame_name: str = "default") -> ChangeControlManager:
+        """
+        Retrieves the ChangeControlManager from the DevOpsManager of a specific frame.
+
+        Returns:
+            ChangeControlManager: The ChangeControlManager instance.
+        """
+        self.check_cleaned()
+        return self._get_devops_manager(aetheric_frame_name).change_control_manager
+
+    def _revalidate_dirty_roots(
+            self,
+            conduit_id: str,
+            aetheric_frame_name: str = "default",
+            cancel_event: Any = None,
+    ) -> None:
+        """
+        Trigger revalidation of dirty roots for one conduit through DevOps.
+
+        Contract:
+            - Requires a non-empty conduit id.
+            - Resolves the frame-specific DevOps manager first.
+            - Delegates the actual revalidation to that manager.
+
+        Args:
+            conduit_id (str):
+                Target conduit id.
+            aetheric_frame_name (str):
+                Name of the target frame.
+            cancel_event:
+                Optional cancellation signal passed through to DevOps.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
+        devops = self._get_devops_manager(aetheric_frame_name)
+        devops.revalidate_dirty_roots(conduit_id, cancel_event=cancel_event)
+
+    #endregion DevOps Management

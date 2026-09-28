@@ -1,0 +1,3226 @@
+# Src Architecture (C4)
+
+## Metadata
+- Doc ID: ARCH-SRC-2026-01-17
+- Status: in_progress
+- Owner:
+- Created: 2026-01-17
+- Updated: 2026-09-27
+
+## Scope and Intent
+This document describes the Melder core architecture at the C4 level for
+`src/melder`. It focuses on system boundaries, runtime entrypoints,
+boot/configuration sequencing, and execution lifecycle for dependency
+resolution and cleanup. It is intended to stand on its own after context
+compaction.
+Melder is framed here as a Dependency Graph Runtime (DGR) with DI-style
+binding and resolution as a subset capability.
+
+In scope (core runtime):
+- Spellbook binding and conjure pipeline.
+- Aether global singleton and per-frame state.
+- Conduit runtime (normal and lesser), contracts, and policies.
+- SpellCompiler phases and validation pipeline.
+- Meld resolution runtime and Creations lifecycle manager.
+- Control-plane state (SpellSystemStates, change control, incidents).
+- Logging and cleanup contracts.
+
+Out of scope:
+- Tests and examples.
+- JSON sidecar metadata files (`__*.json`).
+- External docs beyond the codebase.
+
+## Indexing
+
+This document is AUTHORED. Nothing generates its prose. Its only generated
+companion is `src_architecture_index.md`, rebuilt in the SAME pass as any edit:
+
+```bash
+python tools/system_documents/index_document.py \
+    --doc system_docs/src_architecture.md
+```
+
+Consume it by slicing rather than reading this document whole:
+
+```bash
+python tools/system_documents/index_document.py \
+    --doc system_docs/src_architecture.md --slice "<section name>"
+```
+
+### Verifying the `path:line` citations in this document
+
+The index tool checks this document's own structure. It CANNOT check the
+`path:line` citations in `EVIDENCE:` blocks, and those rot silently: the file
+keeps existing, the citation keeps parsing, and it quietly points at the wrong
+code. On 2026-08-02 an audit of the 81 citations across the two source documents
+found SEVEN wrong - five pointing into `spell_compiler.py` at lines 1966-3787 of
+a 693-line file (it had been decomposed into subpackages and the ranges were
+never remapped), and two that were in bounds but landed nowhere near the symbol
+they were cited for. Nothing had reported any of it.
+
+Run this after any pass that touches source or citations:
+
+```bash
+python - <<'EOF'
+import pathlib, re
+CITE = re.compile(r"`?([a-z][A-Za-z0-9_/.]*\.py):(\d+)(?:\s*-\s*(\d+))?`?")
+# Cited source paths are relative to the SOURCE-TREE root, which is not
+# necessarily the directory you run this from. Walk up until `src/` appears, so
+# the check works from the documentation root or the repository root.
+here = pathlib.Path.cwd().resolve()
+root = next((p for p in (here, *here.parents) if (p / "src").is_dir()), here)
+docs = next(p for p in (pathlib.Path("system_docs"), pathlib.Path("."))
+            if list(p.glob("src_*.md")))
+for doc in docs.glob("src_*.md"):
+    if doc.name.endswith("_index.md"):
+        continue
+    for i, line in enumerate(doc.read_text(encoding="utf-8").split("\n"), 1):
+        for m in CITE.finditer(line):
+            f = root / m.group(1)
+            if not f.exists():
+                print("MISSING", doc.name, i, m.group(0)); continue
+            n = len(f.read_bytes().decode("utf-8", "replace").splitlines())
+            s = int(m.group(2)); e = int(m.group(3) or m.group(2))
+            if s < 1 or e > n or s > e:
+                print("OUT OF BOUNDS", doc.name, i, m.group(0), "file has", n)
+EOF
+```
+
+In-bounds is necessary, not sufficient. A range can sit inside the file and
+still contain none of what it is cited for, which is how two of the seven
+survived. For any citation you are relying on, open it and confirm the symbol is
+actually there - and when you cite a function, cite its `def` line, because a
+range that merely brushes past a definition reads as verified without being it.
+
+Verify before trusting any range:
+
+```bash
+python tools/system_documents/index_document.py \
+    --doc system_docs/src_architecture.md --check
+```
+
+Format rules the index depends on, and which this document obeys:
+- exactly one H1 (the document title)
+- the navigable unit is H2 `## <Concern>`, at consistent depth
+- section names unique and stable - index rows are selected BY NAME
+- NO container headings: every H2 here is a selectable concern, so there is no
+  wrapper heading to select by mistake
+
+An index records `line_count`, `content_sha256`, and `line_ending`. Insert one
+line near the top and every range below it is wrong while the index still parses
+and still returns content - the WRONG content, confidently. On mismatch: STOP,
+regenerate, never eyeball an offset.
+
+Spec: `agent_onboarding/default/engineer/skills/system_document_build.md`
+
+## DO NOT ASSUME / Unknowns Gate
+Rule: No Unverified Claims.
+Any statement that is not directly supported by evidence must be treated as UNKNOWN.
+
+Evidence means at least one of:
+- A specific source file reference (preferred: file + symbol/method/class name).
+- A citation to an explicit, already-verified artifact (e.g., a prior approved doc section).
+
+If not evidenced => UNKNOWN.
+
+UNKNOWN items must be explicitly labeled UNKNOWN (or added to the Unknowns section).
+UNKNOWN items must be investigated by reading the relevant source(s).
+If investigation cannot be completed (missing source access, ambiguity, or time),
+the item must remain UNKNOWN and must not be promoted to fact.
+
+No reasonable assumptions.
+Do not infer behavior from naming, patterns, conventions, or typical frameworks.
+Only the code/docs count.
+
+When unsure:
+- Mark it UNKNOWN.
+- Identify the most likely evidence target (file + symbol).
+- Investigate, then update the doc (or leave it UNKNOWN).
+
+## Unknowns
+This section is a living list of claims currently not backed by evidence.
+Each item must include:
+- What is unknown.
+- Why it matters (impact).
+- Where to investigate (file(s) + symbol(s)).
+- Current status (uninvestigated / investigating / blocked).
+
+- PERMANENTLY REMOVED. These do not exist in `src/melder` and their absence is
+  intentional, so do not treat a failed search for them as a gap:
+  `meld/contracts/mutation_contract.py` (`MutationContract`,
+  `MUTATION_CONTRACT_DISABLED`); the `structure_profiles` subsystem; the
+  `spell_examiner` AI-profile files (live profiles are `binding_profile.py`,
+  `general_profile.py`, `detailed_profile.py`, and
+  `spell_compiler/profiles/resolution_profile.py`); `rift_event_configuration.py`;
+  `phase12_*_executor.py`; `MeldGate` / `MeldGateController` (superseded by
+  `utilities/synchronization/creation_gate.py` and `creation_gate_controller.py`);
+  `SpellCrafter` (renamed `SpellCompiler`); `Configuration` (renamed
+  `SpellbookConfiguration`).
+  The 2026-06-12 path/rename sweep that produced this list is COMPLETE. Its
+  step-by-step narration was removed as settled history; git carries it.
+  WHAT THE RE-VERIFICATION STAMP ACTUALLY COVERS - READ THIS BEFORE TRUSTING IT.
+  This block previously read "re-verified 2026-07-25: every source path cited in
+  this document resolves on disk and no renamed symbol survives as a live claim."
+  The second half of that was NOT TRUE, and an audit on 2026-08-02 disproved it:
+  five renamed or invented symbols were still being cited as live
+  (`add_spell_into_spellindex` and `remove_spell_from_spellindex`, which are not
+  Spellbook methods and never were; `_get_conjure_hook_map`;
+  `_initialize_conduit_hooks`; `Meld._resolve_spell_for_live_creation_probe`),
+  and nine `path:line` citations pointed at the wrong code, five of them into a
+  693-line file at lines 1966-3787.
+  A path sweep and a symbol sweep are DIFFERENT CHECKS. A path resolves whenever
+  the file exists, which stays true through every rename INSIDE that file, so a
+  green path sweep says nothing about whether the symbols are real. Both are now
+  re-verified as of 2026-08-02 - paths via the graph join, symbols against an
+  index of every `class` and `def` in `src/`, citations via the recipe under
+  `## Indexing`. Do not widen a future stamp beyond what was actually run.
+
+- UNKNOWN: Producer call sites for advanced state flags
+  `SpellState.contract_violation`, `SpellState.mutation_candidate`,
+  `SpellState.mutation_quarantined`, and `SpellState.mutation_failed` are not
+  verified in runtime code.
+  Why it matters: These flags/reasons exist in DevOps state enums and are used
+  for diagnostics/governance, but missing producers make state semantics
+  ambiguous during incidents and mutation rollout.
+  Clarification: SpellContract behavior is no longer unknown. Its
+  contract-unvalidated paths are evidenced in
+  `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`,
+  `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`,
+  `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`,
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`,
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py`, and
+  `src/melder/aether/conduit/meld/meld.py`.
+  Where to investigate:
+  `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`,
+  `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`.
+  SYNC NOTE (2026-07-11): the May MR skeleton (`research/**`, `promote_spell_version`,
+  mutation node hooks) was deleted in the ResearchSet rebuild; producers for these
+  flags now belong to the future MR runtime-seam slice (select/staged/promoted acts),
+  not to any existing code path.
+  Current status: blocked (producers await the MR runtime-seam slice; follow-up
+  stories: `STORY-2026-02-13-spellstate-advanced-flag-producers`,
+  `STORY-2026-02-13-mutation-research-runtime-wiring`).
+
+## System Context (C4)
+Melder is a Dependency Graph Runtime embedded into user systems. User code
+binds classes/functions/instances into a Spellbook, then conjures Conduits to
+resolve instances via Meld. DI-style binding and resolution are a subset of
+the runtime behavior. The live system now also includes:
+- a hidden substrate/utility layer (`Aether`, `AetherUtilitySystem`,
+  `AethericFrame`)
+- a public AR runtime surface (`Nexus`, `Rift`, `RiftSpace`)
+- tooling/introspection layers centered on SpellExaminer profile builders
+
+Dependencies include:
+- Python runtime (warns if < 3.14 or if GIL is enabled; 3.14+ is the supported floor).
+- `ulid` for unique identifiers.
+- Logging via `InitHelpers` + `AetherUtilitySystem` + `SafeLogger`
+  (channel resolver first, stdlib fallback second).
+
+## Glossary and Core Terms
+- Aether: Global singleton that owns AethericFrames and global registries.
+- AethericFrame: Per-frame container for conduits, registries, and dev-ops state.
+- Dependency Graph Runtime (DGR): Runtime that builds and executes dependency
+  graphs at resolution time, supports late binding via contracts/links, and
+  enforces runtime validation gates before activation.
+- Spellbook: User-facing binding and conjure surface for the DGR.
+- Spell: Bound object metadata (spellframe, spell_id, existence, permissions).
+- SpellIndex: Stable index (ULID) that categorizes and targets spells and holds
+  the active selected spell. Version history is owned by MutationResearch.
+- Conduit: Runtime scope and activation host for resolving spells via Meld.
+- ConduitWard: Relationship manager for contracts, policies, and lineage links.
+- Creations: Instance registry for a conduit; enforces existence semantics.
+- SpellSpace: Scoped handle for unique_per_spell_space instances.
+- SpellCompiler: Per-spell pipeline for requirements, graph, frame, validation.
+- SpellSystemStates: Per-frame control plane for lineage topology and validity.
+- ChangeControlManager: DevOps tracker for dirty roots and pending changes.
+- AetherUtilitySystem: Process-wide utility host for shared providers,
+  currently logger resolver/fallback registration.
+- Nexus: Public singleton AR root over hidden Aether substrate state.
+- FrameDescriptorManager: Nexus-owned manager for frame-scoped descriptors,
+  passive publication, and Nexus-managed frame-record ownership.
+- FrameACLManager: Nexus-owned manager for frame-local ACL containers,
+  profile registries, and frame-level ACL change fan-out.
+- NexusFrameBuilder: fluent authored-frame builder created by
+  `NexusFrameManager.begin(...)` to stage one Nexus-managed frame
+  configuration before rooted creation.
+- FrameACLBuilder: frame-local mutable ACL authoring surface that owns one
+  active view/command/codegen draft session for a `FrameACLContainer`.
+- Rift: Live AR runtime object that attaches to Nexus-managed frames and
+  userland target frames.
+- RiftSpace: Room/workspace object owned by a Rift.
+- FrameLinkContract: Rift-local frame selection contract storing the selected
+  view, command, and codegen ACL family names per frame.
+- FrameViewer: Rift-backed public viewer host that reads current view
+  projections on demand and requires explicit `frame_name` for frame-local
+  operations.
+- ViewMultiFrame / ViewFrame / ViewConduit / ViewSpell: on-demand viewer helper
+  surfaces above the current Rift projection state.
+- Workstation: Room-local strong/weak binding canvas for saved objects,
+  attributes, methods, and one active target.
+- CommandSystem: Room-local mediated command layer above the
+  viewer/workstation split, specialized by room mode.
+- CodegenSystem: room-owned internal codegen engine that builds transaction
+  contexts, validates code, builds namespaces, compiles/executes code, and
+  publishes codegen lifecycle events for one `CodegenRiftSpace`.
+- StaticFrameViewer: Static-room viewer overlay that filters spell-facing
+  query/projection paths down to already-live spell surfaces.
+- SpellExaminer profile layer: registry-backed `general` and `detailed`
+  examination profiles used for richer inspection over raw candidates and live
+  spells.
+- Aetheric Mediator Plane: Aether-held top-level transaction plane under
+  `aether/aetheric_mediator/`; frame creation submits through it today.
+  Serializes above-frame structural work by scope. Imports
+  `melder.utilities` only, never `melder.aether`.
+- Mediator: the aetheric plane's root - admission, per-identity sessions,
+  strategy dispatch, outcome policy, and reporting in one object.
+- ClaimTable: atomic all-or-nothing, mode-aware scope-claim table. A LEAF -
+  it never calls another plane component, which is what makes the plane's
+  lock order provably one-way.
+- ClaimMode: `x` exclusive / `s` shared / `ix` intent. DevOps' vocabulary
+  verbatim. `ix` is the hierarchical parent marker: hold `ix` on the parent
+  and `x` on the child, and disjoint children proceed in parallel while a
+  whole-parent `x` still excludes every one of them.
+- ScopeKey / ScopePrefix: canonical builders and the closed namespace
+  vocabulary (`world`, `frame:<name>`, `subsystem:<name>`) for plane scope
+  keys. The hierarchy is expressed by MODE, not by key shape.
+- OutcomePolicy: per-transaction failure posture - `UNWIND` (run inverses and
+  raise) or `LEAVE_BROKEN` (run nothing, record a residue ledger for a
+  repairing agent).
+- Policies: Conduit link/visibility rules used in dynamic mode.
+- Permissions: Spell access levels across conduits (read/create/block).
+- SpellMap: Declarative DI placeholder for explicit spell/frame/binding targets.
+- SpellContract: Late-bound contract socket for dynamic linking across conduits.
+- Mutation override overlay: `Spell.apply_mutation_override(...)` /
+  `clear_mutation_override()`, emitting the `mutation_contract_set` /
+  `mutation_contract_cleared` change reasons.
+- ParameterDIShape: Phase 1 classification of how a parameter should resolve.
+- Unresolved input: a single typed constructor parameter that no registered spell provides. It compiles as
+  an UNRESOLVED_INPUT socket; the constructing meld supplies it by override, and `UnresolvedInputError`
+  names it when a construction would go without it (2026-09-26).
+- Key-set plan: the code one override key set compiles to in a `SitePlanOverrideRuntime`; it builds only what
+  the payload does not supply. The empty key set is the normal plan of the many_only and generalized
+  families (2026-09-26).
+
+RE-ABSORBED 2026-08-02. This section was moved to the patch lane during the
+2026-08-01 recomposition on the reading that the Required Section Contract was a
+whitelist. It is not - the instructions state it is a MINIMUM IN A FIXED RELATIVE
+ORDER, and other sections are permitted and common. All 42 terms below were
+verified against `src/` on re-absorption: every one resolves to a real class.
+The 17 contract sections remain present and in contract order around it.
+
+## System Boundary and External Interfaces
+External interfaces are Python APIs:
+- package-root hardcopy document objects:
+  `__architecture__`, `__components__`, `__graph_network__`, and
+  `__graph_details__`
+- `Aether.create_configuration()`,
+  `Aether.create_configuration_builder()`, `Aether.configure(...)`, and
+  `Aether.activate(...)` for root logger-policy installation
+- `Aether.attach_logger(...)` and `Aether.enable_logging(...)` for explicit
+  post-boot root logger attachment or config-backed automatic logger enablement
+- `Crystallizer.create_configuration()`, `configure(...)`, `activate(...)`,
+  `deactivate()`, and `create_spell_crystal(...)` for crystallizer policy and
+  spell-world manifest construction; profile/checkpoint facades
+  (`create_profile`, `set_active_profile`, `describe_profile`,
+  `list_profile_names`, `clear_profile`, `delete_profile`,
+  `create_checkpoint`, `describe_checkpoint`, `checkpoint_replay_data`,
+  `list_checkpoint_ids`, `load_checkpoint`, `flush_checkpoint`,
+  `reload_cached_checkpoint`, `list_cached_checkpoint_ids`,
+  `get_spell_crystal`) as the ONLY public
+  surface over the buried persistence record; emit sink verbs (`emit`,
+  `emit_spell_crystal`, `emit_spell_activity`, `emit_spell_removed`,
+  `emit_spellbook_removed`, `emit_spell_index_removed`,
+  `emit_contract_removed`, `emit_conduit_removed`, `emit_frame_removed`, `emit_nexus_state`,
+  `emit_mutation_research_state`) are pushed by structural units at their
+  own confirmation/teardown points and are NO-OPs while the crystallizer is
+  inactive; `create_spell_index_crystal` / `create_contract_crystal` are
+  the builder companions the seams emit through
+- `Aether.mutation_research` as the access path to the hosted mutation root,
+  plus `MutationResearch.create_configuration()`,
+  `create_configuration_builder()`, `configure(...)`, `activate(...)`,
+  `research_set(...)`, `create_research_set(...)`,
+  `list_research_set_names()`, `describe_research_composition()`,
+  `load_recorded_composition(...)`, `record_world_entry(...)`,
+  `record_promotion(...)`, `residency_view(...)` (the query-time
+  active/parked/stored join), `set_active_campaign(...)` /
+  `clear_active_campaign()` / `active_campaign` (ambient stamp carried by
+  every runtime auto-record), `diff_research(...)`,
+  `create_diff_engine()`, and the foresight reads (2026-07-11 agent QoL
+  kit): `source_view(...)` (recorded-first module text, live-disk fallback
+  w/ drift marker), `impact_view(...)` (blast radius joined with research
+  residency), `module_graph_view(...)` (walkable module world),
+  `source_drift_view()` (full drift report), the crystal-well reads
+  (2026-07-11 units-and-scales ruling): `module_view(...)` (the one-call
+  module dossier: text labeled synthetic/user/live_disk, fingerprint,
+  path, deps both ways, exports, drift), `part_view(...)` (one named
+  top-level part's text/span/carrying module), `parts_view(...)` (the
+  class-code inventory: every top-level part per module with full text)
+  and `part_diff(...)`
+  (unified part-text diff between versions over RECORDED material only,
+  carrying its module-grain radius; diff material drinks BOTH recorded
+  carriers - synthetic and user-retained - and never the live disk;
+  whole-version diffs offer the grain CHOICE via three registered
+  strategies: source/structural/parts),
+  `preview_candidate(...)`
+  (read-only candidate mock: AST analysis + would-be diff via
+  `DiffEngine.diff_materials` + would-be radius; nothing executes, binds,
+  or records), `synthesize_candidate(...)` (surgical composition through
+  the owned `StructuralSynthesizer`: donor parts splice into the base root
+  module + full preview; salvaged May lane), and the staged-ancestry mint
+  seam (`stage_ancestry`/`clear_staged_ancestry`/`staged_ancestry`,
+  campaign-pattern: the next fresh world entry mints the multi-parent
+  node one-shot), and the composition reads (GroupedResearchNode ruling
+  2026-07-11: `group_view` roster + behind drift, `group_diff_research`
+  through the MIRRORED GroupDiffEngine ["members" strategy:
+  lane-evidenced version_moved pairing], `group_impact_view` union
+  member radii + internal/outbound split + CLOSURE + adjacency,
+  `group_footprint_view` physical shadow + shared-module coupling,
+  `group_drift_view` custody drift narrowed to the footprint,
+  `group_history_view` the area's journal story, `compositions_of` the
+  reverse lift [surfaced as `pinned_by_compositions` on spell
+  residency]; `residency_view` is kind-aware - compositions answer
+  "informational" with no custody/frame probes; POLYMORPHIC VERBS
+  [2026-07-12]: the spell-grain reads themselves dispatch on node kind -
+  source/parts/module_graph/module fan out per member, part_view
+  roster-searches naming the carrying member, impact_view on a
+  composition answers the group radius, diff_research routes two
+  compositions through the members engine, code-grain verbs refuse
+  compositions teach-grade; the emitted MutationResearchCrystal derives
+  EXPLICIT DB-storable node rows for both families at construction, and
+  MutationResearchConfiguration.activate() CARRIES the recorded
+  composition forward - the docking-loop law); the returned `ResearchSet` carries the
+  agent verb surface (`register_spell`, `register_group`/
+  `recompose_group` [compositions = GroupedResearchNode, its OWN node
+  type, purely informational, content-addressed over pinned members; a
+  lane of group nodes is a subsystem's timeline], `create_lane` [typed via
+  `LaneType` development/experiment/production/test; join gate armed by
+  configuration `lane_type_enforcement`], `attach`/`detach`,
+  `join`, `archive`, `walk`/`history`/`heads`, `campaign_view`,
+  `snapshot_network`/`restore_network`); the spellbook's bind,
+  bind_inactive, and notch confirmation points auto-record
+  world-entry/staged/promoted events while the root is active. The USER
+  surface is the Rift rooms (2026-07-11): codegen rooms carry the full
+  34-command `research_*` family (14 record/organization/campaign incl.
+  the research_recent cold-landing read + 9
+  foresight incl. the crystal-well module/part reads and the codegen-only
+  `research_preview` + 3 synthesis + 8 composition),
+  capability rooms the twenty-one reads (seven record + eight foresight +
+  six composition), both
+  ADVERTISED via `list_supported_command_methods`, and
+  `ViewSpell.describe_spell_research(...)` / `describe_spell_source(...)`
+  annotate any visible spell with its research residency and recorded
+  module source. The old `Conduit.get_mutation_research()` door is
+  DELETED; as of 2026-07-12 (patch
+  mutation_research_accessor_doors_2026_07_12) Spellbook and Conduit
+  instead bind the world root at init and expose it through borrowed
+  read-only `mutation_research` properties (frames still carry no
+  mutation dimension)
+- `Spellbook.bind(...)` and `SpellBinder` fluent binding helpers.
+- `Spellbook.scan(...)` and `Scan.scan_module(...)` for deferred module
+  registration through `scan_bind` metadata
+- `Conduit.notch_spell(...)`, `Conduit.add_to_spell_index(...)`, and
+  `Conduit.remove_from_spell_index(...)` for transaction-backed SpellIndex
+  member switching, move-in, and move-out flows. THE CONDUIT ADMITS THE
+  TRANSACTION through the frame-local DevOps `TransactionMediator` (not the
+  aetheric plane) - it calls `mediator.start_transaction(...)` ITSELF and calls into
+  Spellbook inside the held window. Spellbook exposes no public verb here.
+  THE CHAIN HAS THREE LAYERS, NOT TWO, and the middle one is easy to miss:
+  `Conduit.<verb>` (public; opens and closes the transaction) ->
+  `Spellbook._<verb>` (internal entry, called inside the window) ->
+  `Spellbook._apply_<verb>` (the seam that mutates index membership).
+  CORRECTED 2026-08-02: this document previously said the Conduit "delegates to
+  the owning Spellbook, WHICH ADMITS the change-control transaction". It does
+  not. That wording was inherited from the Conduit docstrings, which say the
+  same thing and are also wrong - see `src/melder/aether/spellbook/spellbook.py:3680`, which states the
+  opposite correctly. The code settles it.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:5075, 5147 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:5165, 5220 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:5243, 5291 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:3835 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:3868 (`_apply_add_to_index` seam)
+- `Spellbook.conjure(...)` for building a root Conduit.
+- `Conduit.meld(...)` for resolving instances.
+- `Conduit.create_lesser_conduit(...)` for child scopes.
+- `Conduit.enter_lesser_conduit(...)` (0.2.8203) for a child scope used as a `with` block. `with` on any
+  Conduit is a dispose scope: at block exit a lesser returns to its root's pool and a root is torn down, and
+  disposal failures are raised after that. Spellbook, Aether, AethericFrame, ConduitWard and SpellIndex keep
+  `with` as a lock. `Cleanable.using_cleanup()` and `async_using_cleanup()` (every Cleanable) let cleanup
+  errors propagate.
+- `Aether.get_conduit_by_name(...)` (named roots and active named lessers) and
+  `Aether.get_conduit_by_id(...)` (any live conduit) for frame-scoped discovery; root-only discovery is
+  the `*_root_*` family (`get_root_conduit_by_name`, `get_root_conduit_by_id`, `list_root_conduit_ids`,
+  ...), and `ConduitCloud.list_conduits()` lists one frame's named scopes (0.2.79).
+- `Conduit.link(...)` / `Conduit.sever_link(...)` for dynamic linking.
+- `SpellbookConfiguration` properties and hooks.
+- `Nexus.configure(...)`, `Nexus.activate(...)`, `Nexus.create_rift(...)`,
+  and `Nexus.create_rift_configuration(...)` for AR bootstrap.
+- `Rift.get_nexus_frame(...)`, `Rift.create_nexus_frame(...)`, and the
+  singular `Rift.space` / viewer helpers for live AR work.
+  - Nexus-facing create/get paths both return rooted conduits, not frame
+    objects.
+  - `create_nexus_frame(...)` is strict-create and raises if the frame already
+    exists.
+  - `get_nexus_frame(...)` is the recovery path for existing managed frames.
+- `SpellExaminer.create_profile(target, profile="general"|"detailed", ...)`
+  for reflective profile generation.
+- `ProtocolCrafter.craft_protocol_code(...)`,
+  `craft_protocol_module_code_from_source_file(...)`, and
+  `write_protocol_module_from_source_file(...)` for protocol generation and
+  bounded interface-file maintenance.
+
+External IO:
+- Logging provider registration through `AetherUtilitySystem` and
+  `SafeLogger`.
+- `ProtocolCrafter` reads Python source files and can write generated protocol
+  modules or append/remove bounded protocol blocks in interface files.
+- User-provided callables bound as spells.
+
+## Architecture Summary (C4)
+Melder runtime flow is layered:
+1) Global substrate (`Aether`) owns frames, conduit registries, and hidden
+   process-wide support objects.
+2) Utility and logging resolution (`AetherUtilitySystem`, `InitHelpers`,
+   `SafeLogger`) provide system-wide logger/provider indirection.
+3) Spellbooks bind spells, run structural/resolution phases, and conjure
+   Conduits.
+4) Conduits resolve spells via Meld and manage object lifecycles via
+   Creations.
+5) Public AR state (`Nexus`, `Rift`, `RiftSpace`) mediates live access into
+   the Melder-owned object world.
+6) Tooling/introspection layers centered on `SpellExaminer` build reflective
+   profile views over live runtime truth.
+7) Package-root hardcopy document and helper exports expose agent-facing
+   `StaticSystemDocument` objects plus root configuration/protocol tooling
+   without entering the runtime graph itself.
+
+Spell registration uses Bind to reflect objects into SpellIndex + Spell.
+SpellCompiler and PhaseScheduler run phases before Conduit creation.
+ConduitWard and contracts govern cross-conduit sharing.
+SpellSystemStates and ChangeControl track structural/resolution validity and dirty roots
+used by Meld to gate execution and trigger revalidation.
+SpellIndex member mutation is transaction-backed at the public CONDUIT surface
+(not the Spellbook surface - the Conduit opens and closes the transaction) and
+the member-store work is IMPLEMENTED behind the `_apply_notch`,
+`_apply_add_to_index`, and `_apply_remove_from_index` seams, which execute
+inside the held transaction window. Notch is currently OWNER-SIDE ONLY:
+contracted borrowers are not fanned out, so a notch on a shared index does not
+yet update borrowers' contracted maps.
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:3695-3833.
+
+## Entrypoints and Runtime Guardrails
+- `melder/__init__.py` warns on Python < 3.14 and on GIL-enabled builds
+  via `_detect_nogil_mode()`.
+- Registration of Melder internals as spells is blocked by `assert_allowed(candidate,
+  context="bind")`, a module-level function in `bind.py`. There is NO guard class, no
+  singleton, and no import-time guard construction; the check is a plain function over
+  an imported frozenset. Instances resolve through `type(candidate)`, so binding an
+  instance of an internal class is refused exactly like binding the class.
+- Lookup is EXACT MATCH and does NOT walk the MRO. A user subclass of an internal
+  class carries its own module and qualname, is absent from the manifest, and binds
+  normally. This is an owner-accepted behavior change (2026-07-24): the retired
+  `__melder_internal__` sentinel was read with `getattr` and therefore inherited, so
+  tagging any user-extensible base silently made user subclasses unbindable.
+- `INTERNAL_MANIFEST` is a `frozenset` of `(module, qualname)` pairs imported from the
+  hand-written loader `melder._build_assets._bind_guard.bind_guard`, which re-exports it
+  alongside `MANIFEST_VERSION`, `BUILT_FOR_VERSION` and `MANIFEST_ENTRY_COUNT` (582 at
+  the current build). The TRUTH is the COMMITTED manifest
+  `_bind_guard/manifest/bind_guard_manifest.py`; the loader hydrates it through a `.melc`
+  under `__melder_cache__/__bind_guard__/` that is an ACCELERATOR and never the source.
+  The manifest module is imported lazily on cache miss only, so a warm process never
+  parses it. `_builder.py` is build-time only and is regenerated explicitly with
+  `python src/melder/_build_assets/_build_asset_runner.py`.
+- Guarding and exporting are ORTHOGONAL: the guard restricts REGISTRATION, never USE.
+  Exported, user-constructible surfaces such as the custom exceptions, `SafeGuard`, and
+  `ProtocolCrafter` remain importable and usable while being unbindable.
+- The only live enforcement call site is
+  `src/melder/aether/spellbook/bind/bind.py:404` -
+  `assert_allowed(spell, context="bind")`, a direct call to the
+  module-level function. Identity resolution is factored into the pure helper
+  `_internal_identity_of(candidate)` in the same module.
+- Enforcement is ONE module-level function; there is no guard object or proxy.
+- THE TEST SEAM IS FAIL-LOUD. `test_bind.py` patches `bind.assert_allowed` directly at
+  seven sites, and every one of those `monkeypatch.setattr` calls uses
+  `raising=True`, so if the enforcement seam is ever renamed or moved again, the tests
+  fail immediately instead of silently creating an attribute nothing reads. That matters
+  because `test_bind.py` neutralizes the guard for its whole file via an autouse
+  fixture; a silently-dead patch would let the real 582-entry manifest begin refusing
+  binds mid-suite with no signal pointing back at the fixture. Preserve `raising=True`
+  if these sites are ever touched.
+- The guard is entirely absent from the package root: `melder/__init__.py` neither
+  imports nor instantiates any guard, and exports no guard symbol.
+- The first `Aether()` boot eagerly constructs hidden singleton support
+  objects, including `AetherUtilitySystem`, `Crystallizer`, and `Nexus`.
+
+## Boot and Configuration Sequence
+1) First `Aether()` boot:
+   - Constructs the hosted singleton-level roots under `Aether._lock`, in
+     this fixed order: `Crystallizer`, `AetherUtilitySystem`, `LoadGate`, the
+     aetheric `Mediator` plane, `MutationResearch`, then `Nexus`. Crystallizer
+     leads because MutationResearch and Nexus read it out of the host as they
+     construct. All six are EAGER. MutationResearch was lazy once and was made
+     eager by owner ruling (2026-08-03): a bare `MutationResearch()` before
+     its first touch raised instead of returning the hosted root. No
+     `AethericFrame` is constructed at boot.
+     EVIDENCE: src/melder/aether/aether.py:174-250
+   - Starts with a null `SafeLogger` wrapper and no attached raw logger.
+   - Requires a later explicit `attach_logger(...)` call to attach a real
+     logger.
+   - A live root-owned `AetherConfiguration` /
+     `AetherConfigurationBuilder` lifecycle already exists through
+     `Aether.create_configuration*()`, `configure(...)`, and `activate(...)`;
+     it can enable automatic channel logger activation in the utility system,
+     but that path is disabled by default.
+2) User constructs a `Spellbook` or explicitly engages `Nexus`.
+3) `Spellbook.__init__`:
+   - Ensures the Aether frame exists (`Aether._ensure_frame`).
+   - Initializes `SpellbookConfiguration`:
+      - If Aether already has a frame-owned shared `SpellbookConfiguration`,
+        adopts it.
+      - If a config is provided and does not match frame, raises.
+      - Otherwise creates a fresh `SpellbookConfiguration` and loads defaults.
+   - Initializes logging through `InitHelpers` and
+     `AetherUtilitySystem` (provider-backed channel logger first,
+     explicit logger override or stdlib fallback second).
+   - Initializes spell registries and SpellValidationSystem.
+   - Pulls SpellSystemStates from the frame.
+   - Captures configuration Bind seeds into its own immutable callback registry. Runtime add/clear
+     replaces that Book's registry only. Publishes its DevOps identity after initialization succeeds.
+4) `Spellbook.conjure(...)`:
+   - Opens a `ChangeTransactionType.CONJURE` transaction on the spellbook
+     identity, then resolves the EFFECTIVE conjure mode via
+     `_settle_or_inherit_conjure_mode(dynamic)` as it enters the transaction
+     window (settle-then-inherit law, 2026-07-20): settle an unfrozen world
+     when `dynamic=True` was asked, otherwise inherit the settled world's mode.
+     A missing posture returns the caller's flag unchanged and defers to the
+     honest refusal in `SpellbookCreationSystem.check_system_state`. The
+     EFFECTIVE mode is then threaded down the whole chain - creation system,
+     blueprint dynamic/automatic mode where the conduit's state is born, the
+     conjure dynamic hint, the crystallizer config-discipline guard, and cloud
+     registration. The transaction is ended in a `finally`.
+   - Validates and freezes `SpellbookConfiguration`.
+   - Binds `SpellbookConfiguration` into Aether for the frame.
+   - Derives and binds `AethericFrameConfiguration` for narrow frame posture.
+   - Classifies the structural tier of the conduit bundle; a full hit replays the phase 3-4 rows,
+     otherwise runs phases 1-4 (requirements, symbolic graph, local frame, validation).
+   - Runs foundational conduit phases 5-7 (root blueprints, system validation, change control).
+   - Runs conduit plan phases 8-11 (occurrence, injection, patch maps, execution plan) when foundational phases report no resolution errors.
+   - Constructs a normal Conduit and registers it in Aether.
+   - Fires pre/activated/post hooks and wires ownership into spells.
+5) `Nexus` AR path (when engaged):
+   - `Nexus.configure(...)` installs frozen process-wide AR policy.
+   - `Nexus.activate()` opens Rift creation.
+   - `Nexus.create_rift_configuration()` builds a Rift config whose primary
+     room posture is chosen through `space_type`.
+   - `Nexus.create_rift(...)` creates a bare `Rift`, programs one primary room
+     from `space_type`, and registers the live Rift without requiring an
+     initial target frame.
+   - `Rift.create_nexus_frame(...)` / `Nexus.create_nexus_frame_for_rift(...)`
+     now use the normal public Spellbook API:
+     - build the Spellbook-facing `SpellbookConfiguration`
+     - construct a `Spellbook`
+     - call `spellbook.conjure(name=<root_conduit_name>, dynamic=True)`
+     - publish descriptor/ACL state from the rooted result
+     - return the rooted conduit rather than the frame object
+     - raise if the target Nexus-managed frame already exists
+   - `Rift.create_frame_link(frame_name)` is the separate attachment step: it
+     validates generic target-frame policy through `Nexus`, requires descriptor
+     truth, delegates Nexus-managed frame authorization back through `Nexus`
+     when the target frame is Nexus-managed, ensures the frame-name ACL contract
+     exists, mutates the frame contract, and refreshes the owned-space viewer.
+
+## Data Flows and Sequences
+### Sequence: Import to Ready
+1. `import melder`:
+   - Runtime warnings for Python version and GIL mode.
+   - `Aether()` boot runs eagerly from the package root.
+   - No guard object is constructed at import. `INTERNAL_MANIFEST` is imported as a
+     committed build asset the first time `bind.py` is imported.
+
+### Sequence: Spellbook Initialization
+1. `Spellbook.__init__`:
+   - `Aether._ensure_frame(aetheric_frame)`.
+   - `_initialize_configuration` (adopt or create `SpellbookConfiguration`).
+   - `_initialize_logging` (SafeLogger and optional factory).
+   - Initialize registries, validators, and SpellSystemStates.
+
+### Sequence: Bind Spell
+1. `Spellbook.bind(...)`:
+   - Enum conversion for permissions and existence.
+   - Retains one immutable Bind callback set inside the existing admitted transaction.
+   - Bind pre callbacks inspect the original reference before reflection; rejection is by exception.
+   - `Bind._bind_logic` produces SpellIndex and Spell.
+   - Protocol admission checks class and actual existing-object targets before a Spell is published.
+   - Disposal candidates resolve once into a Spell-owned ordered list before fingerprinting.
+     Book names own overlaps; priority places their block first or last (default).
+   - Bind activation receives the actual new Spell before profile completion and publication.
+   - Spellbook registers spell maps and SpellSystemStates lineage.
+   - If Conduit exists, stamps ownership and registers existing objects.
+   - Captured post callbacks receive the registered Spell after normal publication, before outer commit.
+     Inactive binding follows the same stages and supplies the final parked Spell to post.
+
+### Sequence: Conjure Conduit
+1. `Spellbook.conjure(...)`:
+   - Validate/freeze `SpellbookConfiguration`, bind to Aether.
+   - Classify the structural tier of the conduit bundle BEFORE the structural run (2026-09-26): when every
+     owned spell's captured rows carry the live key, the live world stamp and a replayable verdict, replay
+     the phase 3-4 registry writes and skip phases 1-4; otherwise (miss, partial, caching off, the
+     existing-conduit route, `validation_warnings=True`, or a logged replay failure) run structural
+     phases 1-4 for every spell as before.
+   - Only for `conjure(validation_warnings=True)`: log one WARNING event listing the Phase-4
+     validation warnings grouped by code (unresolved inputs included), before the Phase 1-4 artifacts
+     are released. The default logs nothing; internal conjure routes never pass True (2026-09-26).
+   - Classify the creation cache BEFORE the conduit phases: the live set of
+     resolvable, non-existing-creation spell ids is compared with the cached
+     ids, giving `disabled`, `full_hit`, `mixed` or `full_miss`.
+   - Run conduit foundational phases 5-7.
+   - Run conduit plan phases 8-11 only when foundational resolution has no
+     errors AND the cache path is not `full_hit`. A full hit passes
+     `force_skip_plan_phases=True`, loads both-lane creation contexts from
+     the cache, and does not re-enforce the resolution verdict (it was
+     enforced when the bundle was built). No cache path skips phases 1-7.
+     EVIDENCE:
+     - src/melder/aether/spellbook/spellbook_creation_system.py:242-260
+     - src/melder/aether/spellbook/spellbook_creation_system.py:517-544
+     - src/melder/aether/spellbook/spellbook_creation_system.py:616-723
+   - Live 8-11 mapping:
+     - phase 8 analyzer
+     - phase 9 processor
+     - phase 10 planner
+     - phase 11 codegen creation
+   - Construct Conduit and register it with Aether.
+   - Fire conjure hooks and wire Conduit into spells.
+
+### Sequence: Meld Resolution
+1. `Conduit.meld(...)`:
+   - In dynamic mode, enforce CreationGate checks/ticketing; delegate to `Meld.meld(...)`.
+2. `Meld.meld(...)`:
+   - Resolve spell by id or (spellframe, binding).
+   - Enforce structural/resolution validity gates and choose reuse vs instantiate.
+3. `CreationContext` compiled execution:
+   - Select no-hooks/hooks and no-overrides/overrides lanes.
+   - Execute codegen-creation-backed runtime lanes and return the resolved instance.
+   - many_only and generalized roots run one site-plan runtime: normal melds its normal plan, override melds
+     the plan compiled for their key set, which builds only what the payload does not supply (2026-09-26).
+     Warm automatic melds by id, by registered name and by class, override payloads and existing objects
+     included, use the fast meld door: two success-only door registries, one keyed by spell id and one by
+     the name string or class object the caller passed, read by `Conduit.meld` and `SpellSpace.meld`
+     with one guard ladder (2026-09-27).
+   - Dynamic spells: the door takes the spell-index CreationGate ticket BEFORE it reads the context and
+     holds it until the executor returns, calling the executor slots itself (2026-09-26).
+4. Creations registration/reuse occurs inside compiled execution per Existence. Each slotted
+   lifetime is built once under its slot's build lock (store `slot_guard`, or Spell lock for
+   unique); the store lock is only taken as a leaf around publication (2026-09-25).
+   The door takes that lock once: for a per-conduit or SpellSpace root, the normal site plan it calls
+   does not take the root's lock again (0.2.73).
+5. A meld that would construct a spell without one of its unresolved inputs raises `UnresolvedInputError`
+   naming the consumer, parameter, expected type and override keys, before anything under it is built
+   (2026-09-26).
+
+### Sequence: Meld-Time Validation Gate
+1. `Meld._ensure_lineage_resolvable(...)` checks SpellSystemState validity.
+2. If validity is UNKNOWN/GATED:
+   - Acquire `spell._lock` and run `spell.run_structural_phases()`.
+   - Raise SpellbookValidationError if validity stays invalid/gated.
+3. If per-conduit resolution validity is UNKNOWN/GATED:
+   - Run `spell._spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)`.
+   - Raise SpellbookValidationError if validity stays invalid/gated.
+4. Under dynamic ownership every rerun above (and the deferred 8-11 run) first enters the spell's rebuild
+   window: freeze and drain the spell-index gate, then take `spell._lock`, run the phases, publish the
+   rebuilt context when its plan is present, reopen the gate (2026-09-26).
+
+### Sequence: Create Lesser Conduit
+1. Parent Conduit fires pre-create hook.
+2. Acquires a pooled shell or constructs a lesser with the shared Book/configuration.
+   An optional exact name is assigned for this use before activation; idle shells remain unnamed.
+3. Wires root-lineage pointers (`_root_conduit_id`, `_meld._resolution_conduit_id`) and root-conduit ward reference.
+4. Fires activation, then attaches to the immediate parent. The named branch publishes Cloud,
+   structural recording and Nexus metadata under its existing child lock, before post-created.
+5. Pool return (`cleanup()`, or the exit of a `with` block over the lesser) disposes descendants first,
+   then the lesser's SpellSpaces, then its own store. A named scope then retires records and named
+   discovery and clears its name; an anonymous leaf checks the name once and performs no
+   Cloud/recorder/Nexus work. Both detach, restore temporary hooks and publish the ready shell idle.
+   Disposal failures do not stop the return: they are raised as one ExceptionGroup once the shell is
+   back in its pool (0.2.8203). A descendant still attached after failing, or a failed named
+   retirement, keeps the lesser attached for retry. A second soft cleanup of a pooled shell does nothing.
+
+### Sequence: Upgrade Lesser to Normal
+1. `Conduit.upgrade_to_normal(name, configuration=None, hooks=None)` validates an attached,
+   childless dynamic lesser, the requested root name and hook payload, then drains its creation gate.
+2. Constructs an empty new Spellbook through ordinary local/default/frame-wide configuration selection.
+3. Prepares the same Conduit as an independent normal root with its own pool/cluster facade, retaining
+   its ID and creation stores. Ward conversion removes both directions of the old parent relationship.
+4. Calls the separate `Spellbook._conjure_existing_conduit` route with that prepared target. The Book
+   runs normal configuration/compilation under the preserved ID, replaces Meld/Space lookup aliases
+   and hooks, and clears old input/fast-door caches. Definitions and old verdicts do not transfer.
+5. Registers the root, restores its original gate admission and runs normal activation/publication.
+   Explicit `hooks` are local additions after activation. Pre-attachment failure restores the lesser.
+6. The caller quiesces lineage changes, concurrent scope acquisition and foreign-thread managed
+   Spaces. Current-thread managed, registered manual and idle pooled Spaces are rebound in place.
+
+### Sequence: Link and Sever Conduits
+1. `Conduit.link(target_conduit)`:
+   - Requires dynamic mode and valid target.
+   - Delegates to `ConduitWard._link` to establish contract.
+   - Fires `on_conduit_post_link` hook on success.
+2. `Conduit.sever_link(target_conduit)`:
+   - Requires dynamic mode.
+   - Delegates to `ConduitWard._sever_link` to remove contract.
+   - Fires `on_conduit_post_unlink` hook on success.
+
+### Sequence: Transfer Spell Ownership
+1. `Conduit.transfer_spell_ownership(...)` validates dynamic mode.
+2. `TransferOfOwnership.preflight()` captures borrowers, deps, creations.
+3. `TransferOfOwnership.execute()`:
+   - Marks lineage disabled (transfer_in_progress) and flips registries under lock.
+   - Moves or tears down creations.
+   - Unshares or repoints contracts/clusters.
+   - Optionally transfers or dirties dependencies.
+   - Marks lineage dirty/gated for revalidation.
+
+### Sequence: SpellIndex Mutation Entry
+1. Caller targets one live SpellIndex member through `Conduit.notch_spell(...)`,
+   `Conduit.add_to_spell_index(...)`, or `Conduit.remove_from_spell_index(...)`.
+   The entry point is the Conduit; it delegates to its owning Spellbook.
+2. Spellbook derives the binding key plus source/target SpellIndex metadata
+   and starts the corresponding transaction family:
+   `notch`, `add_to_index`, or `remove_from_index`.
+3. The resolved transaction strategy seals the owning spellbook/conduit
+   surfaces and the targeted binding key for the duration of the mutation.
+4. Inside the held transaction window the Conduit calls the Spellbook's
+   internal entry - `_notch_spell(...)`, `_add_to_spell_index(...)` or
+   `_remove_from_spell_index(...)` - which in turn delegates the member-store
+   work to `_apply_notch(...)`, `_apply_add_to_index(...)` or
+   `_apply_remove_from_index(...)`. THE ENTRY AND THE SEAM ARE DIFFERENT
+   METHODS; the entry is what the Conduit calls, the seam is what mutates.
+5. The seams execute the member-store work inside that held window:
+   - notch parks the outgoing active member, promotes the incoming parked
+     member, repoints the index pointer and the framewide binding signature,
+     and re-registers the index gated + dirty for lazy meld-time recompile;
+   - add/remove are membership-only moves that leave the spell owned and
+     inactive with its id-keyed state untouched; add destroys an emptied source
+     index, remove mints a fresh inactive index instead of destroying anything.
+6. KNOWN LIMITATION: notch fan-out to contracted borrowers is not implemented,
+   so borrowers of a SHARED index keep stale contracted maps until the
+   cross-conduit slice lands.
+   EVIDENCE:
+   - src/melder/aether/spellbook/spellbook.py:3695-3833
+   - src/melder/aether/spellbook/spellbook.py:3868-3962
+   - src/melder/aether/spellbook/spellbook.py:4043-4128
+
+### Sequence: Change-Control Revalidation
+1. `ChangeControlManager.revalidate_dirty_roots(conduit_id, ...)`:
+   - Copies dirty roots for the conduit and calls the registered revalidator outside the lock.
+   - On success, clears dirty sets and resets monitor state for that conduit.
+2. `Meld._gated_validation_required(...)` checks `is_root_dirty(conduit_id, root_id)` and raises `MeldExecutionError` for dirty roots.
+3. Survey note (2026-09-26): no shipped path marks roots dirty through `notify_spell_changed`, so this loop is
+   mechanically live but unreached; the registry-side gating in `SpellSystemStates` (bind, notch, contract,
+   transfer, index destroy) is the live invalidation path.
+
+### Sequence: SpellSpace Usage
+1. `conduit.enter_spellspace()` takes a pooled space, clears its released flag and pushes it on the
+   calling thread's stack; `create_spellspace()` takes one for manual use and registers it with the conduit.
+2. `SpellSpace.meld(...)` and `purge(...)` refuse a released space with SpellSpaceScopeError, then run
+   through the space's own SpellSpaceMeld door. There is no active-scope check, no `reset()` and no version
+   (corrected 2026-09-27; this sequence used to name all three).
+3. The block exit pops the space (LIFO-checked), disposes its own store, restores temporary hooks and
+   releases it to the pool, which sets the released flag; manual `cleanup()` does the same and unregisters
+   it. A disposal failure is raised after the release (0.2.8203). A space released or destroyed inside its
+   own block only leaves the stack at exit, and a second cleanup of a released space does nothing.
+
+### Sequence: Cleanup
+`Cleanable` defines the idempotent cleanup contract every one of these
+implements. THE RECURRING SHAPE IS THAT THE LOGGER GOES LAST - a type tears down
+what it owns while it can still report a failure, and only then loses the ability
+to report. Re-absorbed 2026-08-02 from the patch lane and extended from three
+types to seven; each `cleanup()` was verified present on the class named.
+
+1. `Conduit.cleanup()` on a root, and `permanent_cleanup()` on a lesser, fire hooks and tear down
+   Meld, ConduitWard (the lesser lineage), SpellSpaces and Creations, clear hooks, logger last, and
+   then raise the collected disposal failures as one ExceptionGroup (0.2.8203; before, they were only
+   logged). On a lesser, `cleanup()` is the pool return of the Create Lesser Conduit sequence.
+2. `Spellbook.cleanup()` cleans spells and SpellIndex keys, then configuration
+   and validators, nulls references, logger last.
+3. `Aether.cleanup()` cleans frames, resets singleton state, cleans logger.
+4. `AetherUtilitySystem.cleanup()` clears the channel-resolver and
+   default-logger providers and resets singleton state for tests.
+5. `Nexus.cleanup()` cleans registered Rifts, Nexus frame records, logger state.
+6. `Rift.cleanup()` cleans the one owned space, the owned config snapshot, the
+   owned `RiftGate`, and engaged `FrameLinkContract` objects, then clears
+   Rift-local metadata, logger last.
+7. `Creations.cleanup()` calls each Spell's established methods in list order and may raise
+   `ExceptionGroup` - it AGGREGATES failures rather than stopping at the first, so a
+   single bad object cannot strand the rest of the scope. Since 0.2.80 that holds per
+   method too: every declared method runs even after one fails, and each failure is
+   chained from what the method raised. Since 0.2.8203 the Conduit, ConduitWard and
+   SpellSpace teardowns above it finish the same way and raise its groups last.
+
+## Runtime Type Names (Concrete, No Interface Layer)
+Re-absorbed 2026-08-02 from the patch lane; every class below was verified to
+exist in `src/` and the enforcement citation was re-measured on the way in.
+
+The runtime uses CONCRETE types on these surfaces. There is no `I*` interface
+layer for them, so type against the concrete classes:
+- `RiftEvent` - room-local event record
+- `RiftMemory` - room-local memory record
+- `CodegenValidationResult` - codegen validation verdict
+- `CodegenExecutionResult` - codegen execution outcome
+- `CodegenTransactionContext` - per-call codegen transaction context
+- `Conduit` - conduit; link targets and rooted-creation returns
+
+`Conduit.link(...)` performs a CONCRETE `isinstance(target_conduit, Conduit)`
+check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
+THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
+conduit-shaped object that is not a `Conduit` subclass is rejected outright.
+  EVIDENCE:
+  - src/melder/aether/conduit/conduit.py:5024-5026 (the check and the raise -
+    cited as :4342-4344 in the patch lane, which was off by one)
+  - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
+  - src/melder/nexus/rift/rift_space/event_system/rift_event.py
+  - src/melder/nexus/rift/rift_space/memory_system/rift_memory.py
+  - src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py
+  - src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py
+  - src/melder/nexus/rift/codegen_system/codegen_transaction_context.py
+
+## Extension Points
+Re-absorbed 2026-08-02 from the patch lane; every named seam verified present.
+These are the ARCHITECTURE-LEVEL seams. Per-component extension points live in
+each entry in `src_components.md`; this list is the set that crosses components.
+- `SpellbookConfiguration` hooks for Conduit lifecycle and the Meld pipeline.
+- Logger provider registration through `AetherUtilitySystem` and the hosted
+  `InitHelpers` resolution path.
+- Spellbook binding hooks (pre / activation / post).
+- Dynamic Conduit policies and `ConduitCluster` auto-sharing.
+- Validation strategies registered in `SpellValidationSystem`.
+
+## Operational Invariants
+- Scope exits finish, then raise (2026-09-27, 0.2.8203): `with conduit:` disposes - `Conduit.__enter__`
+  returns the conduit and takes no lock, `__exit__` calls `cleanup()` - so a lesser returns to its root's
+  pool and a root is torn down; Spellbook, Aether, AethericFrame, ConduitWard and SpellIndex keep `with` as a
+  lock. Every scope exit (SpellSpace managed exit and manual cleanup, lesser pool return, permanent teardown)
+  runs all its steps when a disposal method raises, then raises the collected failures as one
+  ExceptionGroup. That is safe because Creations swaps a store empty before any disposal method runs, so a
+  failed method leaves nothing behind to retry. A lesser's pool return disposes descendants, then
+  SpellSpaces, then its own store - the order permanent teardown already used; a descendant still attached
+  after failing, or a failed named retirement, keeps the lesser attached and out of the pool for retry. Soft
+  cleanup of a pooled lesser or a released SpellSpace is a no-op, so no scope is pooled twice and two
+  acquisitions never share one object. A SpellSpace carries one lease flag: pool release sets it,
+  acquisition clears it, and a released space refuses meld and purge. The flag's two writes per cycle are
+  paid back on the same path (inline managed exit and stack push, one idle-deque read, no SpellSpace sweep
+  call when none is open), so a scope cycle costs no more than before on 3.14t and the GIL build (measured
+  2026-09-27). A pooled lesser handle is not checked on `Conduit.meld`, the hottest door: using a scope
+  after cleanup stays a caller contract violation there.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.__exit__`, `Conduit._prepare_for_pool`,
+  `Conduit._permanent_cleanup`, `src/melder/aether/conduit/spell_space/spell_space.py:SpellSpace.__exit__`,
+  `SpellSpace.cleanup`, `src/melder/aether/conduit/spell_space/spell_space_pool.py:SpellSpacePool.release`
+  and `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._cleanup_children_for_pool`.
+- Disposal failures (2026-09-27, 0.2.80): Creations runs every declared disposal method of every object, in
+  declared order, even after one raises. Each failing method is one `RuntimeError` in the `ExceptionGroup` that
+  cleanup, clear_all and purge raise, chained from the exception the method raised; a refused late publication
+  chains its errors the same way. The error text never trusts the object's `__str__`, so one failing object
+  cannot strand the rest of a scope. Disposal order and which objects are disposed are unchanged.
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations._attempt_cleanup` and
+  `Creations._describe_for_disposal_error`.
+- Compiler pool reads (2026-09-26): a compiler pass never iterates the live `Spellbook._spell_id_pool`; it
+  iterates a copy taken in one call (Phases 3, 4, 5, 6 frame-wide and the Phase-8 walk). Pool writers hold the
+  Spellbook lock and passes run without it at meld time, so a concurrent bind used to abort revalidation. Phase 5
+  sees only ids with a registered SpellSystemState, which leaves a half-registered bind to its own
+  revalidation. No lock was added.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:CompilerPhase5`.
+- Override key-set plans and the site-plan runtime (2026-09-26): each hydrated root of the many_only and
+  generalized families owns one `SitePlanOverrideRuntime`. Its normal plan (the empty key set) is the family's
+  inner no-overrides executor; an override meld runs the plan compiled for its payload's key tuple, which
+  builds only the sites the unsupplied parameters demand, so a supplied dependency and everything only it needs
+  is never constructed. Plans are compiled once per key set under the runtime's compile lock and read lock-free
+  after. A shared site is read lock-free where it is placed and built in an out-of-line miss that builds its
+  children first and then takes its slot guard, so a plan never holds one build lock across another site's
+  constructor and a stored shared site's children are not rebuilt. Operands depend on the key set only; supplied
+  values are never inspected beyond the equal-rank conflict guard. Operands go positionally only where the
+  receiving code binds that position to that name. Key errors keep their texts and are not cached.
+  The normal plan's per-conduit or SpellSpace root is built under its door's guard instead (Door-held first
+  builds, 0.2.73).
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:SitePlanOverrideRuntime`
+  and `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission`.
+- Shared context rebuild windows (2026-09-26): a dynamic spell's CreationContext and phase-11 plan are shared
+  by every conduit that melds it, and a conduit-local rebuild (structural 1-4, resolution 5-11, deferred
+  8-11) replaces them. Each such rebuild runs inside a CreationContextRebuild window that freezes and drains
+  the spell-index gate BEFORE the phases touch the plan or context, and publishes the rebuilt context before
+  reopening; a dynamic meld holds one index ticket from before its context read until its executor returns.
+  So no meld builds from the gap between Phase 5 clearing the plan and Phase 11 republishing it, and none
+  uses a context that is cleaned under it. The window is entered before `spell._lock` because an
+  `Existence.unique` build holds the spell lock while its meld holds a ticket. Revalidation itself, the warm
+  read and automatic-mode doors are unchanged; the ticket pair moved, it was not added. Resets outside
+  windows (ownership restamp, notch, teardown, transfer) do not drain. A failed context build releases its
+  pending claim and records its cause, so waiting callers raise instead of hanging.
+  EVIDENCE: `src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py:CreationContextRebuild`,
+  `src/melder/aether/conduit/meld/meld.py:Meld._rebuild_window`, `Meld._execute_admitted` and
+  `src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:CreationContextFactory.get_or_build_for_spell`.
+- Deterministic codegen signatures and live contract override operands (2026-09-26): the compiler's
+  signature serializer, hasher and freezer are one stdlib-only leaf (`CodegenSignature`) that both the
+  phase-side and phase-11 facades delegate to; the freeze rule renders callables and default-`repr`
+  instances as address-free tuples and leaves every other value's bytes unchanged, so the creation cache's
+  executor signatures agree across interpreter processes without a generation bump. Persisted phase-11 rows
+  are a hash surface: a `SpellContract`/`SpellMap` `override` value (renamed from `spell_override`; any
+  object is allowed) is written as itself only when it is a scalar, otherwise as a value-only reference to
+  the consumer's descriptor that the no-overrides hydration resolves to the live object at meld. Phase 8
+  hashes the pool-invariant rows once per pass. Override melds read the same resolved rows through the
+  key-set plans (2026-09-26).
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/shared_assets/codegen_signature.py:CodegenSignature`
+  and `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/codegen_creation_schema_helpers.py:CodegenCreationSchemaHelpers.resolve_contract_override_ref`.
+- Phase 1 decides injection (2026-09-26): only a single class-like annotation or `list[T]` is injected; a
+  set, frozenset, dict or tuple parameter, and `typing.Any`, never are. Phase-4 validation judges only what
+  Phase 1 decided and never breaks a spell over a caller input: such parameters are REQUIRED_HOLE warnings
+  (for containers of user classes the message names list-only collection injection) and the caller supplies
+  them through meld overrides.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/validation/strategies/annotation_shape_guard_strategy.py:AnnotationShapeGuardStrategy`
+  and `src/melder/aether/spellbook/spell_compiler/validation/strategies/required_holes_strategy.py:RequiredHolesStrategy`.
+- Structural snapshot (2026-09-26): the conduit cache bundle (generation 15) carries, beside every executor
+  payload, a value-only record of the spell's phase 3-4 results (dependencies, topology sockets, verdict)
+  keyed by the spell id plus the (module, qualname) of the types its sockets match on, stamped with the
+  book's pool ids, posture and borrowed ids, and marked replayable only when no pool object or spellframe
+  overrides `__eq__`. A later conjure whose owned spells ALL hit replays those results through the same
+  registry helpers phases 3-4 use and skips phases 1-4; every other case runs the phases unchanged, and the
+  capture at conjure end refreshes the record from durable state without rewriting an unchanged file. Every
+  invalidation event writes through the registry, so bind, notch, removal, contract grant and transfer
+  behave identically after a replay; rows carry no index ULID, so a crystallizer restore still hits.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/structural_snapshot/structural_snapshot.py:StructuralSnapshot`
+  and `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._prepare_spellbook_for_conjure`.
+- Process-stable spell ids and complete cache bundles (2026-09-26): bind fingerprint inputs contain no
+  memory address - repr, parameter-default, signature and init_signature text are hashed address-free and
+  untruncated - so every spell, callables and default-repr instances included, keeps one id across
+  processes; display reprs are unchanged. A non-full-hit conjure rebuilds the conduit cache bundle from its
+  own compile and drops non-live ids (generation 12), so a full hit never hydrates a plan naming a spell id
+  outside the live pool.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind.sha256_profile` and
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._stage_spell_payloads_at_conjure_end`.
+- Annotation reflection (2026-09-26): Melder reads user and library annotations without evaluating
+  names that are unbound at runtime (a `TYPE_CHECKING`-only import; Python 3.14 evaluates annotations
+  when they are read). Code that needs only parameters or defaults reads signatures in
+  `annotationlib.Format.FORWARDREF`; code that renders them goes through `SignatureReflection`, which
+  matches the VALUE-format text whenever every name resolves and otherwise shows the unavailable name as
+  source text, never a ForwardRef owner or a memory address. Bind fingerprints hash that text, so a class
+  annotated with a `TYPE_CHECKING`-only type keeps one spell id across processes. The class binding
+  profile reads class-level annotations the same way, so a field typed with such a name counts in the
+  fingerprint (affected classes changed id once when this landed). Every annotation in `src/melder`
+  evaluates once its `TYPE_CHECKING` imports are bound, enforced by a unit guard.
+  EVIDENCE: `src/melder/utilities/helpers/signature_reflection.py:SignatureReflection`,
+  `src/melder/aether/spellbook/spell_compiler/spell_examiner/strategies/binding_profile_strategy.py:BindingProfileStrategy._read_class_annotations`
+  and `tests/unit/melder/test_annotation_integrity.py`.
+- Creation build locks (2026-09-25): build-once exclusion is per SLOT (a spell id whose Existence
+  promises one object in a store). unique_per_conduit, unique_per_spell_space, lineage and cluster
+  slots use the target store's slot guard; unique uses its Spell lock (its one slot is the owner
+  store); many has none. Doors and plan steps hold the build lock across recheck, construction and
+  publication. The store lock is a LEAF around dict work only - never held while taking another lock
+  or running user code. Build locks follow the acyclic dependency graph consumer-first, so resolution
+  cannot form a wait cycle; the former store-held builds deadlocked against unique builders and purge.
+  Purge takes the same build lock before the store lock. Cache generation 10 rejects executors emitted
+  with the previous locking. Warm meld paths take no lock, unchanged.
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.slot_guard`,
+  `Creations.add_creation`, `Creations.purge` and
+  `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/creation_runtime_door_compiler.py:_build_no_overrides_lines`.
+- Door-held first builds (2026-09-26, 0.2.73): a CreationContext door holds its root's build lock from its
+  recheck until the executor returns. For a unique_per_conduit or unique_per_spell_space root the normal
+  site plan it calls takes no guard of its own for the root: the plan reads the root's store from the Meld
+  attribute the door read (`_conduit_creations` or `_spellspace_creations`, each assigned once per Meld),
+  so the guard is the door's, and a second take only re-entered it. The root still rechecks after its
+  children are built, so a same-thread nested meld that published it meanwhile is returned. Other roots
+  keep their guard because the plan cannot prove it names the door's lock: lineage stores are repointed
+  at link and upgrade, cluster stores are re-resolved per call, and unique doors hold the Spell lock.
+  Child sites, override key-set plans and a runtime built without a door route keep their guards too.
+  Build-once, purge waiting for an in-flight build, the cleaned-store refusal, lock order and the hook
+  lanes' created flag are unchanged; a first build takes each build lock once.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py:SitePlanEmission._emit_miss`,
+  `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py:SitePlanOverrideRuntime._compile_normal_plan`
+  and `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py:_build_site_plan_runtime`.
+- Creation-cache release compatibility (2026-09-24): generation 9 stores the canonical Melder
+  release in each conduit .melc envelope. Admission requires exact release, format-generation and
+  Python cache-tag agreement. A missing, malformed or different release produces the existing cold
+  cache before individual payloads are exposed. Normal conjure rebuilds and emits the fresh envelope;
+  subsequent matching runs can reuse it. Old generation-8 readers reject generation 9 on downgrade.
+  The stored release survives normalization and emission. No version check enters ordinary meld,
+  and Crystallizer RecordVersion and durable records are unaffected.
+  EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem` and
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._build_conjure_cache_state`.
+- Named lesser scopes (2026-09-23): create_lesser_conduit(logger=None, *, name=None) names only the
+  current use. Exact nonempty names are frame-wide unique across roots and active lessers, in both
+  automatic and dynamic mode. Cloud owns a named directory separate from frame-owned normal-root
+  maps; naming does not create a Book, grant root operations or change Existence-based stores.
+  Promotion reserves its destination, exchanges aliases for the same ID at normal-root registration
+  and preserves the original lesser on pre-attachment rollback. Borrowed discovery grants no lease.
+  EVIDENCE: `src/melder/aether/aetheric_frame/conduit_cloud.py:ConduitCloud`,
+  `src/melder/aether/conduit/conduit.py:Conduit._link_new_lesser_under_lock`,
+  `Conduit._prepare_named_for_pool` and `Conduit.upgrade_to_normal`.
+- Conduit lookup coverage (2026-09-27, 0.2.79): Aether's lookups name what they cover. The `*_root_*` family
+  reads the frame's root maps only; `get_conduit_by_name` reads the frame Cloud's named directory, so a live
+  named lesser resolves by name at any depth and returns the same object as the Cloud; `get_conduit_by_id`
+  reads the root map, then every root ward's lineage, so anonymous lessers resolve by id. Scopes returned to
+  their pool or cleaned do not resolve. Lookups are frame-scoped (`aetheric_frame_name: str = "default"`, a
+  non-string raises TypeError), grant no lease and read snapshots (`dict.copy()` of the root map and of each
+  ward's child map), because links and pool returns write a ward's child map under two different locks.
+  Ownership stays root-only: spell-owner resolution and the transfer impact sweep use the root lookups.
+  EVIDENCE: `src/melder/aether/aether.py:Aether.get_conduit_by_name`, `Aether.get_conduit_by_id`,
+  `Aether._find_live_conduit` and
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._get_lesser_conduit`.
+- Dynamic named recording stores detached ancestor values inside each surviving named twin.
+  Conduit-only tombstones retire scopes without removing their shared Book; sealed history is
+  immutable. Both replay drivers use the common per-Book root/parent-first reconstruction with fresh
+  IDs and no saved application objects. Schema major 3 fences root-only readers. Live restore requires
+  caller quiescence of ordinary scope cycles. Public frame setup and normal conjure still emit the
+  owning Book and settled frame twins even when rich configuration was already locked.
+  EVIDENCE: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py:ConduitHierarchy`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._replay_one_book`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._conjure_logic`.
+- Nexus named lifecycle replaces existing payloads and clears names/parents into pooled records
+  before idle publication. Same-ID named reuse keeps compiled membership; new/deleted IDs retain
+  explicit Rift refresh. Capability/codegen getters resolve the published authorized ID and reject
+  changed live names. Anonymous cycles remain local, and no in-command Rift refresh is introduced.
+  EVIDENCE: `src/melder/nexus/frame_descriptor_manager.py:FrameDescriptorManager._publish_conduit_record`,
+  `src/melder/nexus/rift/command_system/command_system.py:CommandSystem._get_conduit_by_name_locked`.
+- Pooled hook ownership (2026-09-22): normal roots own stable Conduit/Meld baseline dictionaries
+  copied from configuration, including empty dictionaries. Explicit shared updates publish only
+  through normal roots and preserve dictionary identity; inheritors see new contents without a tree
+  walk. Local lifecycle event lists shadow shared events; local Meld maps are isolated copies.
+  Other normal roots and frozen configuration remain independent. Callback objects are borrowed.
+- Pool return completes creation disposal before clearing local lifecycle hooks, restoring temporary
+  Meld references and publishing the scope as idle. Both manual and managed SpellSpaces, including
+  prewarmed shells, follow this ordering. A Space marks a borrowed owner-local map as temporary even
+  without registering callbacks itself. Acquisition selects the immediate owner's current local map
+  when its modified flag is set; baseline-only acquisition needs no map copy or reset lock.
+- Hook setters/register methods validate full batches and use existing writer locks. Ordinary Meld
+  execution adds no new flag check, lock, version poll or hierarchy scan. Return paths check a bool
+  and lock only for restoration; diagnostic hooks_modified reads use the existing locks. Active Spaces
+  retain their selected source when an owner switches local/shared maps until their next acquisition.
+  Shared updates keep existing per-event visibility, not a whole-operation snapshot guarantee.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._initialize_hook_baselines`,
+  `Conduit._prepare_for_pool`, `Conduit.prewarm_spellspaces`,
+  `src/melder/aether/conduit/meld/meld.py:Meld._reset_pooled_meld_hooks` and
+  `src/melder/aether/conduit/spell_space/spell_space_pool.py:SpellSpacePool.prepare_object`.
+- Bind lifecycle hooks (2026-09-22): Book and normal-Conduit add_bind_hooks append ordered
+  pre/activation/post callback sequences; clear_bind_hooks removes all stages for future binds.
+  Bind owns immutable callback tuples seeded once from the selected configuration. Runtime updates
+  remain Book-local after configuration freeze; an in-flight bind retains its captured stages.
+  Callbacks run outside Bind's construction lock, within existing transaction admission. Return
+  values are ignored. Post is registration completion, not an outer-transaction commit callback.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind.capture_hooks` and
+  `src/melder/aether/spellbook/spellbook.py:Spellbook.add_bind_hooks`.
+- Pre receives the supplied reference; activation/post receive the actual Spell. Native identity
+  remains established before activation and no automatic rehashing or published-state mutation
+  framework is introduced. Existing application-object creation hooks still execute during Meld.
+  Book teardown explicitly cleans Bind and releases callback references without disposing callbacks.
+  Recording carries bind:pre/bind:activation/bind:post presence in complete Book twins; full restore
+  reports missing callback code and live graft uses receiving-Book hooks. No callback serialization.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._emit_bind_hook_presence` and
+  `src/melder/aether/spellbook/configuration/spellbook_configuration.py:SpellbookConfiguration.freeze`.
+- Graduation configuration and hook ownership (2026-09-22): every graduated root owns a new empty
+  Book. Omitted local configuration means fresh defaults. With frame-wide sharing enabled, the Book
+  adopts the canonical frozen frame configuration and rejects a different supplied object. Sharing
+  policy does not share Book registries, definitions or cleanup. Individual Books never retire the
+  canonical shared configuration; the frame owns it. The setting is frame-local, not process-wide.
+- Old Book-specific configured hooks, runtime Bind changes and lesser/Space Conduit/Meld overlays
+  are discarded during successful graduation. Selected configuration defaults may deliberately seed
+  callbacks again. Bind captures immutable seed tuples once and owns later add/clear independently.
+  Conduit/Meld events use configured defaults with exact Book event-list precedence; local runtime
+  mutation APIs preserve configuration-owned lists. Callback objects are borrowed, never cloned or
+  serialized. Configuration setters freeze; runtime hook APIs remain the mutation surface.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.upgrade_to_normal`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._conjure_existing_conduit`,
+  `src/melder/aether/spellbook/configuration/spellbook_configuration.py:SpellbookConfiguration`.
+- Scoped creation purge (2026-09-21): Conduit and SpellSpace expose instance shortcuts and normal
+  Meld selectors. Shared discovery inspects an instance's class before existing lookup; concrete
+  ConduitMeld/SpellSpaceMeld doors enforce scope authority. Creations alone owns
+  retirement locks, paired live/disposal-map removal and existing disposal helpers. Space purge
+  stays local. Conduit many/per-conduit removal stays local; unique, lineage and cluster require
+  the spell owner, lineage root and elected leader respectively. Unique retirement takes the
+  Spell lock before the store lock; the other slotted modes take the store's slot guard before
+  it (2026-09-25); many takes only the store lock. Disposal occurs
+  after detachment and lock release. Definitions, contexts and scope objects remain usable.
+  purge_all=True removes all retained target entries; False requires the supplied instance and
+  removes only its entry. An absent entry returns zero. No reverse discovery index or qualifier
+  recovery is added. Purge changes no existing meld hot path or compiler-cache policy.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._resolve_purge_spell`,
+  `src/melder/aether/conduit/meld/conduit_meld.py:ConduitMeld.purge`,
+  `src/melder/aether/conduit/meld/spellspace_meld.py:SpellSpaceMeld.purge`,
+  `src/melder/aether/conduit/creations/creations.py:Creations.purge`.
+- Native registration capability (S2 foundation, 2026-09-19): bind/bind_inactive default to
+  resolvable=True and retain the bool on each Spell version, independently of active/parked state.
+  True preserves the existing v4-binding fingerprint; False uses a separate hash domain. Application
+  Protocol definitions may be registered only with False; other admission and lifetime rules remain.
+  Compiler consumers separate required supplied inputs from executable dependencies. Direct runtime
+  resolution and reuse refuse False before validation or execution. Ordinary supplied inputs use
+  existing override execution and Python constructor errors, including cached lanes; no new preflight.
+  Nexus publishes capability and typed references, and Crystallizer preserves the bool on replay.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind` and
+  `src/melder/aether/spellbook/spell.py:Spell.resolvable`.
+- Non-resolvable definitions keep descriptive local topology but are excluded from Phase-5 executable
+  snapshots and Phase8-11 planning. OVERRIDE_REQUIRED sockets retain selected reference IDs and actual
+  signature position/kind; those IDs never expand the constructor DAG. Both planner variants retain
+  the required-input values. Defaulted parameters keep PLAIN semantics and ordinary Python values.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3`.
+- Nexus binds capability and selected dependency/reference/direct-base links into the existing
+  binding-payload section. ViewSpell/FrameViewer relationship navigation filters both endpoints
+  through current ACL visibility. Late Phase3 compilation republishes through the existing book sink;
+  external changes still require the normal Rift projection refresh. Source/history remains in MR.
+  EVIDENCE: `src/melder/nexus/frame_descriptor_manager.py:FrameDescriptorManager._build_published_relationships`
+  and `src/melder/nexus/rift/frame_viewer/view_spell.py:ViewSpell.describe_spell_relationships`.
+- SpellCrystal records the native capability. Active/staged restore and fresh/merge graft forward
+  it through normal bind verbs; absent legacy fields default to True. Record schema major 2 prevents
+  older readers from silently discarding False. Graph links rebuild from restored bindings and selections.
+  EVIDENCE: `src/melder/crystallizer/crystals/spell_crystal.py:SpellCrystal.describe`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._bind_one_active`,
+  `src/melder/crystallizer/crystal_loader_system/graft_runner.py:GraftRunner._bind_selected`,
+  `src/melder/crystallizer/persistence/record_version.py:RecordVersion`.
+- Selector-sensitive required inputs reuse the existing frame-key watcher. A successful structural
+  rerun gates the prior conduit-local resolution verdict, so the existing Phase5-11 rebuild replaces
+  stale executors after provider selection changes. No alternate cache lifecycle is introduced.
+  EVIDENCE: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates._extract_collection_frame_keys`
+  and `src/melder/aether/conduit/meld/meld.py:Meld._ensure_lineage_resolvable`.
+- Unresolved inputs (2026-09-26): only Phase 3 creates an UNRESOLVED_INPUT socket, and only for a
+  SINGLE_BY_ANNOTATION parameter of a resolvable spell with no matching registration at all; ambiguity
+  still fails. The socket adds no DAG edge, dependency id or construction step and keeps its frame key for
+  the existing watcher. The parameter is omitted unless the call supplies it, by identity, with None
+  counting as supplied. A later matching bind re-resolves it into a NORMAL edge. The named error is decided
+  before constructing the object that owns the socket (key-set plans and the solo call target, 2026-09-26);
+  a stored object never demands the
+  input, including a consumer stored before its provider's spell was cleaned up (owner decision). Conjure
+  never refuses these parameters. Cache generation 11 retires executors emitted before this wiring.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py:CompilerPhase3._build_local_frame_dag`
+  and `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError.for_unsupplied`.
+- Phase-5 dependency visibility is broader than canonical artifact publication. Conduit-wide
+  resolution publishes to the book's owned Spells; local resolution publishes only to its target.
+  Borrowed and unselected dependency Spells retain their executable artifacts and creation contexts.
+  The complete visible graph remains available for validation and consumer compilation.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py:CompilerPhase5`.
+- Ordinary Python parameter defaults suppress inferred DI: the constructor retains its chosen
+  value even when a matching provider is registered. Phase 1 classifies these parameters as PLAIN.
+  Explicit SpellMap/SpellContract defaults retain their descriptor semantics; annotations without
+  defaults retain existing DI inference. The compiled-cache semantic version advances to 8 so the
+  existing mismatch check automatically rejects plans using the former precedence.
+  EVIDENCE: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/spell_requirements_finder.py:SpellRequirementsFinder._classify_parameter`.
+  EVIDENCE: `src/melder/utilities/caching_system/caching_system.py:CachingSystem.CACHE_VERSION_HISTORY`.
+- Aether is a process singleton enforced in `__new__` under a double-checked
+  class-level guard on `_instance`, so concurrent first construction on a
+  free-threaded interpreter yields one object rather than a race. Teardown is
+  the mirror image and is IDENTITY-CHECKED, not unconditional: the singleton
+  bookkeeping is only cleared when `Aether._instance is self`, so cleaning a
+  stale instance cannot unseat the live one. Construction failure rolls the
+  bookkeeping back for the same reason. The explicit reset exists so a test can
+  get a fresh world; it is the only supported way to do so.
+  EVIDENCE:
+  - src/melder/aether/aether.py:100 (`_instance` class slot)
+  - src/melder/aether/aether.py:114-118 (double-checked construction)
+  - src/melder/aether/aether.py:201 (identity-checked teardown)
+- A Spellbook conjures ONE root Conduit for its lifetime, tracked by the
+  `_conjured` flag rather than by a lock, and read again at the Conduit
+  ownership checks. The flag is deleted in `cleanup` along with the other
+  slots, which is why a cleaned Spellbook cannot be re-conjured rather than
+  merely refusing to be: the state that would answer the question is gone.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:267 (`_conjured` initialised)
+  - src/melder/aether/spellbook/spellbook.py:665 (ownership check reads it)
+  - src/melder/aether/spellbook/spellbook.py:723 (deleted on cleanup)
+- `SpellbookConfiguration` must be frozen before Conduit creation.
+- Disposal order is established at bind: both groups contribute and book order owns shared
+  names. `enforce_priority_disposal_methods=False` puts the book block last; True puts it first.
+  Runtime carriers retain the established list; persisted crystals retain ordered values.
+  No post-bind mutation protocol or disposal-time configuration matching is introduced.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic`.
+- Existing-object spells must use `Existence.unique` for Creations registration.
+- A supplied object declared under a Protocol must pass Bind's direct-public-member presence/callability
+  check, as class providers do. The check inspects the actual value, preserving instance-only members
+  and rejecting non-callable shadows. Successful injection returns the supplied reference without
+  construction. Inherited Protocol declarations, annotation-only fields and signatures remain unchecked.
+  EVIDENCE: `src/melder/aether/spellbook/bind/bind.py:Bind._bind_logic` and `Bind._structurally_implements_protocol`.
+- SpellIndex identity (ULID) is immutable; the active selected spell it targets
+  can change. Versions are owned by MutationResearch.
+- `dynamic=False` conjure only allows `Policies.default`.
+- SETTLE-THEN-INHERIT: THE CONDUIT INHERITS THE WORLD'S MODE. Conjure does not
+  police the `dynamic` flag against the frame posture.
+  - UNSETTLED world (frame posture still the unfrozen birth default):
+    `conjure(dynamic=True)` SETTLES the world dynamic through the canonical
+    `bind_frame_configuration` lifecycle, where the first bind freezes.
+  - SETTLED world (posture frozen/explicit): every conjure INHERITS the world's
+    mode and the flag is ignored. Dynamic-only operations (link, sever,
+    transfer, upgrade, clusters) then fail at their OWN gates with their own
+    errors, on purpose - that is where the constraint properly lives.
+  - Settlement mutates the RETAINED frame-owned posture object in place
+    (`with_system_state(dynamic)`) and rebinds the SAME object. It must never
+    mint a parallel posture object: when `bind_frame_configuration` is handed a
+    DIFFERENT object while the existing posture is unfrozen, it copies TWELVE
+    attempted values onto the canonical posture - system_state, ai_native,
+    rift_enabled, shared_framewide_spellbook_configuration, all six `disable_*`
+    flags, and max_transaction_wait_time_in_seconds - and then calls
+    `cleanup()` on the object it was handed. A fresh posture's default-`False`
+    disable flags would therefore bulldoze every flag staged before conjure,
+    and the donor object would be destroyed. Binding the SAME object skips that
+    copy block entirely and goes straight to `freeze(..., origin_frame_name)`.
+  - The gate is `SpellbookCreationSystem.check_system_state(spellbook, policy,
+    dynamic)` - a STATIC method on the creation system, not on `Spellbook`. It
+    still refuses when the frame posture is missing (RuntimeError naming policy
+    and dynamic), and it still enforces that a NON-dynamic effective mode
+    admits only `Policies.default`. Only the flag-vs-posture mismatch throw is
+    gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
+    resolved from the posture, which makes a mismatch structurally impossible.
+  EVIDENCE:
+  - src/melder/aether/spellbook/spellbook.py:6502-6542
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6529-6541,
+    effective-mode return :6542)
+  - src/melder/aether/spellbook/spellbook.py:6637
+    (`conjure` resolves the effective mode as it enters the transaction window,
+    passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
+  - src/melder/aether/aetheric_frame/aetheric_frame.py:645-694
+    (`bind_frame_configuration` unfrozen branch: the twelve-value copy plus
+    `frame_configuration.cleanup()` on the donor, then freeze with
+    `origin_frame_name`)
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1253-1292
+    (`SpellbookCreationSystem.check_system_state`: missing-posture refusal and
+    the non-dynamic default-policy-only rule)
+- A SpellSpace melds and purges only while leased: a space released to its pool refuses both with
+  SpellSpaceScopeError, and a destroyed one raises the cleaned RuntimeError. There is no active-scope
+  check - a leased space melds whether or not it is the top of its thread's stack (corrected 2026-09-27:
+  this line claimed an active-spellspace rule the source never had).
+  EVIDENCE: `src/melder/aether/conduit/spell_space/spell_space.py:SpellSpace.meld` and
+  `SpellSpace._refuse_released`.
+- FOUR OPERATIONS ARE GATED ON DYNAMIC POSTURE AS A SET, not individually:
+  linking, severing, ownership transfer, and lesser-to-normal upgrade. They
+  share one rationale - an `automatic` world promises ONE SELF-CONTAINED GRAPH
+  FIXED AT CONJURE, and each of these four rewires the graph after that point.
+  Reading them as four unrelated rules invites "fixing" one in isolation, which
+  breaks the promise the posture makes.
+  THE FRAME IS THE ENFORCEMENT POINT, NOT THE SPELLBOOK. This is the ordering
+  consequence that explains the boot sequence: frames are created BEFORE books
+  precisely because the frame owns the dynamic gate that conjure's
+  `check_system_state` reads. It is also why a restore must posture a frame
+  before rebuilding its books, and why the crystallizer warns when a book's
+  frame twin is missing from a bundle - without the frame there is nothing to
+  ask.
+  EVIDENCE:
+  - src/melder/aether/spellbook/configuration/system_state.py:32-49
+  - src/melder/aether/spellbook/spellbook_creation_system.py:1253-1292
+- Method/lambda spells must use `Existence.unique`, because a method or lambda
+  has no stable identity to share: two resolutions of a non-unique existence
+  would have to return the same object, and there is no object to return until
+  it is bound to an instance.
+- Bare Rift creation does not require an initial target frame.
+- Rift target attachment requires descriptor truth before the frame is accepted
+  into the Rift frame contract.
+- Static target attachment requires target-frame configuration with
+  `rift_enabled=True`.
+- Dynamic target attachment additionally requires `ai_native_enabled=True` and
+  `system_state=dynamic`.
+- `RiftSpaceType.capability` is a real broad-manual room posture now; it is
+  no longer placeholder-only.
+- `RiftSpace.event_system` is the room-local `RiftEvent` publication surface,
+  not the same thing as a Rift-level event orchestrator.
+
+## Failure Modes and Error Paths
+- A context build that raises records its cause on the spell and releases its pending claim; a meld that
+  waited on it raises RuntimeError chained from that cause. A rebuild window that cannot drain within 30 s
+  raises RuntimeError from the rebuilding meld and leaves the gate open. A constructor that melds its own
+  spell through a conduit that must rebuild it drains itself and hits that timeout (2026-09-26).
+  EVIDENCE: `src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:CreationContextFactory.get_or_build_for_spell`
+  and `src/melder/utilities/synchronization/creation_gate.py:CreationGate.close_and_drain`.
+- Reading Melder's own API with the default `inspect.signature` (VALUE format) or `typing.get_type_hints`
+  raises NameError for any annotation naming a type imported only under `TYPE_CHECKING` (817 of 7,689
+  callables, measured 2026-09-26). This follows from the typing policy and is not a defect to patch per
+  call site: read with `inspect.signature(obj, annotation_format=annotationlib.Format.FORWARDREF)`;
+  `help()`/pydoc work unchanged. Melder's own readers no longer raise on such annotations in user code.
+- A build that publishes into a Creations store cleaned during that build is refused with
+  RuntimeError after its disposal methods run (2026-09-25). A reusable clear does not wait for
+  in-flight builds; such a build publishes into the fresh store. Quiesce melds before cleanup.
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations._refuse_publish_into_cleaned_store`.
+- A conduit lookup given a non-string frame raises TypeError naming the lookup; a not-found lookup raises
+  ValueError naming the searched frame, and a missing custom frame keeps "Aetheric frame 'F' does not exist."
+  (0.2.79). Before 0.2.79 `Aether.get_conduit_by_name` answered over roots only, so a live named lesser raised
+  "not found" while its frame's Cloud returned it.
+  EVIDENCE: `src/melder/aether/aether.py:Aether._resolve_lookup_frame` and `Aether.get_conduit_by_name`.
+- Named collision/acquisition failures preserve other directory owners. Soft retirement failures
+  retain ownership for retry and never publish idle; a descendant that could not finish its own return
+  prevents ancestor return (one that finished but raised disposal failures does not, 0.2.8203).
+  Hard teardown logs frame-summary publication failure and continues disposal. Cloud/Nexus reads
+  are not one atomic snapshot, and ordinary references do not remain valid through owner cleanup.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._prepare_named_for_pool`,
+  `Conduit._cleanup_lesser_conduit` and
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard._cleanup_children_for_pool`.
+- Bind callbacks raise HookExecutionError carrying pre_bind, bind_activation or post_bind plus
+  callback identity and the original cause. Pre refusal creates no Spell. Activation failure and
+  native collisions retire only the unpublished allocation/index. Post failures retain already
+  published state and do not promise rollback of application effects. Lessers cannot edit the
+  borrowed Book's hooks through Conduit facades. EVIDENCE:
+  `src/melder/aether/spellbook/bind/bind.py:Bind._cleanup_unpublished_spell`,
+  `src/melder/aether/conduit/conduit.py:Conduit.add_bind_hooks`.
+- Direct meld and reuse-only resolution of a non-resolvable registration raise MeldExecutionError
+  with its selected name/id and caller-supply guidance. Observational lookup remains available.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._raise_non_resolvable_registration`.
+- A meld that would construct a spell without one of its unresolved inputs raises `UnresolvedInputError`, a
+  `MeldExecutionError` exported at the package root, before anything under that spell is built and with no
+  `__cause__` (2026-09-26; until then it was raised from the binding TypeError). It names the consumer,
+  parameter, expected type and override keys, and lists every missing input. A TypeError from a constructor
+  body with every unresolved input supplied keeps the existing error. Since 2026-09-26 conjure no longer raises for a
+  typed parameter with no provider; two or more providers still fail Phase 3.
+  EVIDENCE: `src/melder/utilities/custom_exceptions/unresolved_input_error.py:UnresolvedInputError`.
+- An override key that names no socket, a UNIQUE key that matches more than one, or equal-rank keys with
+  different values raise `MeldExecutionError("Failed to apply overrides.")` chained from the key error; a key
+  that targets a stored shared instance raises "already exists". Texts are unchanged by the 2026-09-26
+  key-set plans; a failed key set is not cached.
+- Duplicate binding keys or spell id collisions raise RuntimeError.
+- Conjure raises SpellbookValidationError when broken spells exist. Since 2026-09-26 the message names each
+  broken spell and lists only its errors, each with what to change; the conduit verdict's reasons (scope
+  ordering, visibility, cycles) are included, errors that belong to no spell appear as whole-graph errors,
+  warnings are only counted, and Melder's own consistency codes are marked [internal] to report. Before, a
+  conduit-verdict refusal printed "(none recorded)" and every message carried 64-character spell ids. A
+  constructor that takes its own class is refused the same way (SELF_DEPENDENCY, naming the parameter); before,
+  conjure aborted with PhaseExecutionError "DagNode cannot depend on itself". A spell that only needs a cycle is
+  named as its consumer ("cannot be built: it needs 'Y' ... 'X' itself is not part of that cycle"), not as a
+  member.
+  EVIDENCE: `src/melder/utilities/custom_exceptions/spellbook_validation_error.py:SpellbookValidationError` and
+  `src/melder/aether/spellbook/spellbook_creation_system.py:SpellbookCreationSystem._enforce_conduit_resolution_valid`.
+- Meld raises SpellbookValidationError when spell validity is invalid/gated/disabled.
+- ChangeControl blocks roots marked dirty for the active conduit (`is_root_dirty(conduit_id, root_id)`).
+- SpellSpaceScopeError when a SpellSpace released to its pool is used for meld or purge (0.2.8203), and
+  when a managed exit is not the top of the calling thread's stack ("stack corruption"). A space released
+  or destroyed inside its own block leaves the stack without error. Before 0.2.8203 a kept handle melded
+  into the idle shell and the next lease was served what it built, and a lesser cleaned inside its own
+  managed SpellSpace made that block's exit raise "stack corruption".
+  EVIDENCE: `src/melder/aether/conduit/spell_space/spell_space.py:SpellSpace._refuse_released` and
+  `src/melder/aether/conduit/spell_space/spell_space_thread_state.py:SpellSpaceThreadState.pop_expected`.
+- `Nexus.create_rift(...)` fails when the Rift configuration is invalid, but it
+  no longer requires an initial target frame.
+- `Rift.create_frame_link(...)` rejects target frames that do not satisfy the AR
+  eligibility policy for the Rift's chosen room type.
+- `Rift.create_frame_link(...)` also fails when descriptor truth does not yet exist
+  for the requested frame.
+- `Rift.create_frame_link(...)` also fails when a Nexus-managed target frame is
+  not accessible to the requesting Rift under the active Nexus frame topology.
+- `Rift.get_nexus_frame(...)` raises when a requested managed frame is
+  unavailable under the current Nexus frame mode.
+- `Rift.create_nexus_frame(...)` raises when the requested managed frame
+  already exists or creation is not valid under the current Nexus frame mode.
+- Cleaning the returned root conduit for a Nexus-managed frame should collapse
+  the frame when it was the last conduit, which then triggers Nexus-side
+  manager/descriptor/ACL cleanup through the normal Aether frame detach path.
+- `SpellExaminer.create_profile(...)` raises `ValueError` when the requested
+  profile name is not registered.
+- Disposal failures are raised, not logged (0.2.8203): a scope exit or teardown finishes - the scope is
+  pooled or destroyed - and then raises one ExceptionGroup of the Creations groups it collected ("Lesser
+  conduit returned to its pool with disposal failures.", "Conduit torn down with disposal failures.",
+  "Lesser conduits torn down with disposal failures."); a SpellSpace exit raises its store's group. When the
+  `with` block raised too, the group rises with the block's exception as its `__context__`. Other teardown
+  errors (gate unregistration, record retirement, Nexus publication, Spellbook and pool cleanup) stay
+  logged, and frame teardown logs a failing conduit and keeps going. Each Creations group holds one error
+  per failing disposal method, chained from what that method raised (0.2.80); before 0.2.80 an object's
+  first failure ended its disposal and the original exception was dropped, and before 0.2.8203 conduit
+  paths only logged these groups.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._permanent_cleanup`,
+  `src/melder/aether/conduit/conduit_ward/conduit_ward.py:ConduitWard.cleanup` and
+  `src/melder/aether/aetheric_frame/aetheric_frame.py:AethericFrame._cleanup_data_structures`.
+- `with conduit:` no longer holds the conduit lock (Breaking, 0.2.8203): code that used it as a lock now
+  disposes the scope at block exit. `Cleanable.using_cleanup()` and `async_using_cleanup()` let cleanup
+  errors propagate (0.2.8203; they used to be swallowed).
+- The four posture-gated operations all raise `RuntimeError` in automatic mode -
+  linking, severing, `upgrade_to_normal`, and ownership transfer. They are
+  listed separately below because they are separate call sites, but a reader
+  diagnosing one should check the world's posture before checking the operation:
+  a single posture setting explains all four at once, and it is the common
+  cause.
+- SpellMap defaults that resolve to zero or multiple candidates raise RuntimeError.
+- SpellContract requires at least `spell` or `spellframe` (ValueError).
+- Ownership transfer raises RuntimeError when dynamic mode is disabled (same
+  posture gate as linking, severing and upgrade).
+
+## Promoted Patch Decisions (re-absorbed 2026-08-02)
+
+The four sections below were promoted out of COMPLETED patch lanes between
+2026-07-07 and 2026-07-12, then moved to the recomposition patch lane on
+2026-08-01 under the reading that the Required Section Contract was a whitelist.
+It is not - it is a minimum in a fixed relative order - so they are back.
+
+They are owner-ruled architecture decisions, not narrative, which is why they
+belong in the canonical document rather than in a lane nobody reads. VERIFIED
+BEFORE RE-ABSORPTION, not restored on faith: all 16 classes they name exist in
+`src/` (`PersistenceSystem`, `AssetManagementSystem`, `CrystalLoaderSystem`,
+`LoadAdmission`, `RestoreEngine`, `ImpactEngine`, `CrystallizerBootstrap`,
+`RecordVersion`, `LoadGate`, `UserSourceIntegrityStrategy` among them), 10 of
+the 11 verbs they name are real `def`s, and THE TWO APPARENT MISSES CONFIRM THE
+TEXT RATHER THAN CONTRADICT IT - `BootMediator` is absent exactly because the
+topology section records it was renamed to `LoadAdmission` on 2026-07-11, and
+`refuse_on_blockers` is a keyword parameter on `RestoreEngine`, not a method,
+which is what that section calls it. At that verification, RecordVersion was "1.0.0"; it advanced
+to "2.0.0" for non-resolvable policy and "3.0.0" for named lesser topology. The cache folder remains.
+
+### Persistence & Restore Architecture (promoted from patch restore_engine_2026_07_07 + successor lanes, 2026-07-07)
+
+
+#### Canonical configuration/boot order (owner-ruled)
+Aether|AetherUtilitySystem -> Crystallizer -> MutationResearch -> Nexus ->
+AethericFrame -> Spellbook -> Conduit|Ward. The restore engine's stage
+machine mirrors this order exactly; frames posture BEFORE books because
+frames own the dynamic gate that conjure's check_system_state reads.
+
+#### EMIT model invariants
+- The crystallizer is a passive sink: structural units push twins at their
+  configuration lock-in and pivotal runtime points; the sink never reaches
+  into emitters. Bind owns structural emission; the ONLY sanctioned
+  catch-up is the aether root at crystallizer activation (a single root
+  emission, never a world walk), because the aether hosts its own recorder
+  and legally precedes it.
+- R-A covenant: crystallizer-off worlds stay byte-identical; recording
+  changes no runtime behavior.
+- Every snapshot is self-describing: the recorder's policy twin rides
+  every sealed window.
+- Records carry plain values only; callables appear as presence flags
+  (logger resolvers, DB handlers) and reload as code-participation
+  reports.
+
+#### Restore invariants
+- Checkpoint-shaped replay through PUBLIC verbs only - never raw map
+  merges; the engine is a driver, not a surface.
+- Never-rehydrate-ULIDs: fresh structural identities always; recorded ids live only
+  in the report's translation map. Spell SHA256 ids remain stable when bind signatures agree.
+  A changed receiving policy can change the new SHA; restore maps that result before
+  replaying anchors, selections, and contract grants.
+- All-or-nothing: any stage failure tears down every built unit in
+  reverse order and re-raises with the cause chained.
+- Re-emission is intended: the rebuilt world re-records itself into the
+  fresh active profile as it comes up.
+- Honesty ledger: everything unreplayable is a named shortfall (never
+  silent) - hook callables, non-hydratable/synthetic bind targets
+  (loader-chain M3 pending), cluster leader election, index
+  subscriptions, MutationResearch.
+
+#### Durability layering
+Ledger (in-process, FIFO at max_persistence_crystals) -> local cache
+(profile folders under __crystallizer_cache__, FIFO file cap at the same
+limit) -> user DB via ExternalPersistenceManager callables (unbounded,
+explicitly the user's opt-in and operational responsibility). Boot lane:
+CrystallizerBootstrap composes activation, manager attach, cache reload,
+remote pull with local re-store, chain-verification gating, and
+newest-checkpoint restore into one fluent, single-use chain.
+
+
+### Persistence Subsystem Topology (promoted from patch crystallizer_decomposition_2026_07_09, 2026-07-10)
+
+
+The 2026-07-09/10 decomposition replaced the persistence god object with
+the V3 subsystem model (canonical anchor:
+artifacts/2026-07-09_crystallizer_philosophy_v3.md). Owner-run 614/614
+across the crystallizer test tree validates it.
+
+Crystallizer (thin facade, byte-compatible public surface)
+├── persistence/PersistenceSystem      THE RECORD - profiles, journal,
+│     checkpoint minting/retention, chain verify, feedstock
+│     (cached_item_forms, detach_profile_chain), the insert sink.
+│     In-process truth ONLY; calls nobody; constructs no engines.
+├── asset_management/AssetManagementSystem   BYTES AT REST - owns
+│     CrystallizerCache + ExternalPersistenceManager; flush =
+│     seal-then-ship (cache write, FIFO retention at the record's live
+│     cap, lenient upload leg - one feedstock pull, both legs);
+│     reloads feed the record's sink; formation files live here.
+└── crystal_loader_system/CrystalLoaderSystem   THE UNFOLD - owns
+      LoadAdmission (LoadPlan -> gated engine -> scope adjudication;
+      renamed from BootMediator 2026-07-11),
+      RestoreEngine (refuse_on_blockers at the fold->preflight seam:
+      blockers refuse BEFORE any replay, teach-grade), bootstrap_loader
+      (thinned; old preflight-gate knob absorbed as a no-op), and
+      durable last-load state (describe_last_load).
+
+Shared surfaces: crystallizer/crystals/ is the package-level twin
+vocabulary (carrier law: crystals carry results, never analyzers);
+crystallizer/crystal_analysis/ is the shared analyzer service (custody
+strategies with physical SHA256 fingerprints, fact strategies incl.
+export_surface + topological load order, the relocated preflight set) -
+consumed by SpellCrystal at bind and by the loader's admission, and
+re-runnable over RETAINED payloads (the MutationResearch seam).
+
+Laws: EDGE (acyclic - the record calls nobody; borrowers clean before
+the record), LOCK (one-way facade -> subsystem -> record -> profile),
+VERDICT (blockers refuse standard, warnings proceed + report; conduit/
+frame-scoped loads adjudicate expected frame-posture warnings into the
+additive "admission" view without rewriting raw findings). All prior
+restore invariants (all-or-nothing, never-rehydrate-ULIDs, re-emission,
+shortfall honesty, R-A covenant) are unchanged.
+
+
+### V3 Horizon Architecture (promoted 2026-07-12 from six patch dirs; owner-run full-tree green)
+
+
+- LAZY FRAMES + LOADGATE (Aether substrate): `import melder` builds ZERO
+  frames - the first Spellbook births the frame it names; collapsed
+  config falls back to a lazily created "default". One Aether-hosted
+  LoadGate (constructed before any frame CAN exist, so mid-load-born
+  frames inherit coverage) grants a crystallizer load exclusive
+  system authority: acquire+drain at load start, mediator
+  wait_for_passage at every NEW-ROOT transaction start (the loading
+  thread passes free; joins never gate), release in finally. The gate
+  reaches mediators via an additive ctor kwarg threaded frame ->
+  DevOpsManager -> CCM -> TransactionMediator. Recorded frame postures
+  now PROPAGATE their transaction wait bound into the live mediator at
+  bind (the disable_* gates were already live-reads).
+- LOAD SCOPES MATURE: formations COMPOSE into live worlds - detached-
+  window retargeting (copy-on-write; single-frame law), host preflight
+  in LoadAdmission (registry reads only; collisions are blockers that
+  refuse pre-engine or downgrade to "skipped_existing"), engine skip
+  lanes (unnamed conjure fallback; cluster reuse). Restore units:
+  world, frame slice, conduit slice.
+- PHYSICAL CUSTODY (opt-in): user-source TEXT rides the SpellCrystal
+  beside the M3 synthetic sources; absent files rebuild through the
+  synthetic module lane (live files always win; drift/tamper are
+  preflight rows). Fresh pods rebuild user-file spells from the record
+  alone.
+- IMPACT VIEW: ImpactEngine turns the custody manifests into blast-
+  radius answers (transitive reverse-import closure; source-drift
+  report) behind one read seam (describe_spell_crystals) and one facade
+  (analyze_impact). Read-only by law.
+- EXTERNAL MESH: ONE generic callable quartet (store/fetch/list/delete,
+  kind-partitioned) carries ANY mesh unit to the user's DB - legacy
+  checkpoint handlers bridge to it; formations ship at save; an opt-in
+  emission tap streams every recorded twin (payload captured BEFORE
+  record - the thread-safety law - shipped after); melder-driven remote
+  retention is opt-in via the delete lane. Callables-first stands: the
+  record stores presence flags, never code.
+- RECORD VERSIONING: RecordVersion "3.0.0" stamps every durable
+  artifact (cached items, formation records, tap envelopes); readers
+  gate on the MAJOR (newer refuses with the upgrade instruction;
+  pre-versioning reads as 0.0.0 into the tolerance lanes). The twin
+  describe() dict IS the interface: classes in, lossless JSON across
+  the boundary.
+- MR = BUILD STAGE: checkpointed worlds unfold WITH their research
+  (reload verb -> hosted root -> folded-truth activation -> wholesale
+  composition rebuild; disabled/cleaned/pre-Phase-B lanes honest;
+  world-scope-only with expected_for_scope adjudication on formation
+  loads).
+
+
+### Three-Lane Tail (promoted 2026-07-11; owner-directed finish of the public_cloud_seams, source_drift_preflight, and spell_index_graft lanes)
+
+
+- PUBLIC CLOUD SEAMS: cross-package cloud access is public-verb-only.
+  AethericFrame.conduit_cloud (property) + ConduitCloud.has_cluster_name
+  retire the two documented private seams; every crystallizer reader
+  repointed; zero behavior change (same objects, same answers).
+- SOURCE DRIFT PREFLIGHT (10th default row): every load re-hashes EVERY
+  bind-time module fingerprint against disk, retention-agnostic - a
+  restore ANNOUNCES working-tree divergence from the sealed world before
+  building anything (drift/absent = warnings, never refusal);
+  UserSourceIntegrityStrategy narrows to retained-text tamper only.
+- SPELL-INDEX GRAFT: restore grain below the conduit slice - ONE index
+  (members + custody + selection, parked members included) captured as
+  a versioned dict and re-integrated into any LIVE conjured book through
+  normal verbs only (bind creates the fresh index; bind_inactive parks;
+  resident members refuse or skip - existing indexes are NEVER mutated).
+  Retained-text worlds rebuild through the shared user_world_rebuild
+  lane the engine also delegates to. Grafts are user-verb activity: no
+  LoadGate, emissions re-record freely.
+
+
+
+## C1 Code Map (Core Only)
+
+Ranges are MEASURED, never estimated: `start_line`/`end_line` are the file's own
+extent and `loc` is its line count, read from disk at `verified_at`. Every path
+below resolved on that pass.
+
+One previous entry - `src/melder/mutation_research/research_set/` - was a
+DIRECTORY, which cannot carry a line range. It was EXPANDED into its 8 real
+modules rather than given a plausible number, per the contract's rule that an
+unverified range stays UNKNOWN instead of being invented.
+
+`note` is descriptive text carried forward from the previous revision. The five
+contract fields are the contract; the note is additional.
+
+
+Package root:
+
+- path: `src/melder/__init__.py`
+  start_line: 1
+  end_line: 271
+  loc: 271
+  verified_at: 2026-09-26T08:22:34Z
+  note: runtime warnings, version metadata.
+- path: `src/melder/_build_assets/_bind_guard/bind_guard.py`
+  start_line: 1
+  end_line: 96
+  loc: 96
+  verified_at: 2026-08-02T13:00:45Z
+  note: hand-written loader publishing `INTERNAL_MANIFEST`; hydrates the
+    committed manifest via an accelerator cache.
+- path: `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
+  start_line: 1
+  end_line: 667
+  loc: 667
+  verified_at: 2026-09-26T20:10:34Z
+  note: GENERATED DURABLE BUILD ASSET holding `ENTRIES`; committed, do not
+    edit by hand.
+- path: `src/melder/_build_assets/_bind_guard/_builder.py`
+  start_line: 1
+  end_line: 387
+  loc: 387
+  verified_at: 2026-09-26T20:10:34Z
+  note: package scanner and asset writer; build-time only, never imported at
+    runtime.
+- path: `src/melder/_build_assets/_build_asset_runner.py`
+  start_line: 1
+  end_line: 399
+  loc: 399
+  verified_at: 2026-08-02T13:00:45Z
+  note: explicit regeneration entrypoint.
+- path: `src/melder/system_document.py`
+  start_line: 1
+  end_line: 403
+  loc: 403
+  verified_at: 2026-09-26T20:10:34Z
+  note: immutable hardcopy system-document carrier used by package-root
+    agent-facing docs.
+- path: `src/melder/__architecture__.py`
+  start_line: 1
+  end_line: 45
+  loc: 45
+  verified_at: 2026-08-02T16:30:22Z
+  note: packaged architecture hardcopy export.
+- path: `src/melder/__components__.py`
+  start_line: 1
+  end_line: 42
+  loc: 42
+  verified_at: 2026-08-02T16:30:22Z
+  note: packaged components hardcopy export.
+- path: `src/melder/__graph_network__.py`
+  start_line: 1
+  end_line: 56
+  loc: 56
+  verified_at: 2026-08-02T16:30:22Z
+  note: packaged graph-network hardcopy export.
+- path: `src/melder/__graph_details__.py`
+  start_line: 1
+  end_line: 49
+  loc: 49
+  verified_at: 2026-08-02T16:30:22Z
+  note: packaged graph-details hardcopy export.
+
+Spellbook and binding:
+
+- path: `src/melder/aether/spellbook/spellbook.py`
+  start_line: 1
+  end_line: 7222
+  loc: 7222
+  verified_at: 2026-09-26T20:10:34Z
+  note: Spellbook core and conjure pipeline.
+- path: `src/melder/aether/spellbook/spellbinder.py`
+  start_line: 1
+  end_line: 870
+  loc: 870
+  verified_at: 2026-08-02T13:00:45Z
+  note: fluent binding adapter.
+- path: `src/melder/aether/spellbook/bind/bind.py`
+  start_line: 1
+  end_line: 1316
+  loc: 1316
+  verified_at: 2026-09-26T20:10:34Z
+  note: binding pipeline.
+- path: `src/melder/aether/spellbook/bind/scan.py`
+  start_line: 1
+  end_line: 373
+  loc: 373
+  verified_at: 2026-08-02T13:00:45Z
+  note: deferred module scan and `scan_bind` metadata replay.
+- path: `src/melder/aether/spellbook/bind/spell_index.py`
+  start_line: 1
+  end_line: 507
+  loc: 507
+  verified_at: 2026-08-02T13:00:45Z
+  note: stable index that categorizes/targets spells and holds the active
+    selected spell.
+- path: `src/melder/aether/spellbook/spell.py`
+  start_line: 1
+  end_line: 1717
+  loc: 1717
+  verified_at: 2026-09-26T20:10:34Z
+  note: spell metadata and hooks.
+- path: `src/melder/aether/spellbook/existence/existence.py`
+  start_line: 1
+  end_line: 138
+  loc: 138
+  verified_at: 2026-08-02T13:00:45Z
+  note: existence modes.
+- path: `src/melder/aether/spellbook/spell_types/spell_types.py`
+  start_line: 1
+  end_line: 101
+  loc: 101
+  verified_at: 2026-08-02T13:00:45Z
+  note: spell type classification.
+
+Configuration and hooks:
+
+- path: `src/melder/aether/aether_configuration.py`
+  start_line: 1
+  end_line: 885
+  loc: 885
+  verified_at: 2026-09-26T20:10:34Z
+  note: root logger-policy configuration for Aether.
+- path: `src/melder/aether/aether_configuration_builder.py`
+  start_line: 1
+  end_line: 286
+  loc: 286
+  verified_at: 2026-09-26T20:10:34Z
+  note: fluent builder for Aether root configuration.
+- path: `src/melder/crystallizer/configuration/crystallizer_configuration.py`
+  start_line: 1
+  end_line: 1063
+  loc: 1063
+  verified_at: 2026-08-02T13:00:45Z
+  note: crystallizer root configuration surface.
+- path: `src/melder/crystallizer/configuration/crystallizer_configuration_builder.py`
+  start_line: 1
+  end_line: 275
+  loc: 275
+  verified_at: 2026-08-02T13:00:45Z
+  note: standalone builder for crystallizer root policy assembly.
+- path: `src/melder/mutation_research/mutation_configuration.py`
+  start_line: 1
+  end_line: 659
+  loc: 659
+  verified_at: 2026-08-02T13:00:45Z
+  note: mutation-research root configuration surface.
+- path: `src/melder/mutation_research/mutation_configuration_builder.py`
+  start_line: 1
+  end_line: 335
+  loc: 335
+  verified_at: 2026-08-02T13:00:45Z
+  note: fluent builder for mutation-research root configuration.
+- path: `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
+  start_line: 1
+  end_line: 1427
+  loc: 1427
+  verified_at: 2026-09-22T18:41:58Z
+  note: properties, hooks, freeze.
+- path: `src/melder/aether/spellbook/configuration/system_state.py`
+  start_line: 1
+  end_line: 54
+  loc: 54
+  verified_at: 2026-08-02T13:00:45Z
+  note: automatic vs dynamic.
+
+SpellCompiler and validation:
+
+- path: `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_5.py`
+  start_line: 1
+  end_line: 729
+  loc: 729
+  verified_at: 2026-09-26T21:40:00Z
+  note: visible dependency blueprints with publication restricted to the current compilation targets.
+- path: `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
+  start_line: 1
+  end_line: 693
+  loc: 693
+  verified_at: 2026-08-02T13:00:45Z
+  note: per-spell phase artifacts.
+- path: `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
+  start_line: 1
+  end_line: 350
+  loc: 350
+  verified_at: 2026-08-02T13:00:45Z
+  note: phase 4 validation.
+- path: `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py`
+  start_line: 1
+  end_line: 268
+  loc: 268
+  verified_at: 2026-08-02T13:00:45Z
+  note: phase 6 validation.
+- path: `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py`
+  start_line: 1
+  end_line: 70
+  loc: 70
+  verified_at: 2026-08-02T13:00:45Z
+  note: DI shape classification.
+- path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
+  start_line: 1
+  end_line: 1501
+  loc: 1501
+  verified_at: 2026-09-26T22:18:53Z
+  note: key-set plan lowering: site graph from steps, placement, emission, call shape.
+- path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
+  start_line: 1
+  end_line: 405
+  loc: 405
+  verified_at: 2026-09-26T22:18:53Z
+  note: per-root site-plan runtime: normal plan and one plan per override key set.
+- path: `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py`
+  start_line: 1
+  end_line: 334
+  loc: 334
+  verified_at: 2026-09-26T20:10:34Z
+  note: override key grammar, ranks, P1 cuts and conflicts over a site graph.
+
+Aether and frames:
+
+- path: `src/melder/aether/aether.py`
+  start_line: 1
+  end_line: 2690
+  loc: 2690
+  verified_at: 2026-09-27T11:46:59Z
+  note: global singleton and frame registry.
+- path: `src/melder/aether/aether_utility_system.py`
+  start_line: 1
+  end_line: 460
+  loc: 460
+  verified_at: 2026-09-26T20:10:34Z
+  note: process-wide utility/logging provider host.
+- path: `src/melder/crystallizer/crystallizer.py`
+  start_line: 1
+  end_line: 3009
+  loc: 3009
+  verified_at: 2026-09-23T11:33:20Z
+  note: hosted crystallizer root owned by Aether (owns three same-rank
+    children since the 2026-07-10 decomposition: the record, the asset system,
+    and the loader - see "Persistence Subsystem Topology" below).
+- path: `src/melder/crystallizer/crystals/spell_crystal.py`
+  start_line: 1
+  end_line: 1170
+  loc: 1170
+  verified_at: 2026-09-19T23:13:57Z
+  note: bind-signature CARRIER for one spell version; delegates module-world
+    analysis to crystal_analysis and carries the result (moved + slimmed,
+    2026-07-10).
+- path: `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
+  start_line: 1
+  end_line: 264
+  loc: 264
+  verified_at: 2026-09-23T11:33:20Z
+- path: `src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py`
+  start_line: 1
+  end_line: 44
+  loc: 44
+  verified_at: 2026-09-23T11:33:20Z
+- path: `src/melder/crystallizer/synthetic_module.py`
+  start_line: 1
+  end_line: 1625
+  loc: 1625
+  verified_at: 2026-08-02T13:00:45Z
+  note: live in-memory module embodiment for crystallized code.
+- path: `src/melder/mutation_research/mutation_research.py`
+  start_line: 1
+  end_line: 3990
+  loc: 3990
+  verified_at: 2026-09-26T20:10:34Z
+  note: hosted mutation-research root owned by Aether (ResearchSet registry +
+    composition emission; the old conduit/frame facades are GONE, 2026-07-11).
+  (directory description carried forward) the formal research record: ResearchSet facade, ResearchLane, ResearchNode, TransitionEntry, ResearchJournal, ResidenceRegistry, NetworkVersioner. NOTE: this text described the DIRECTORY entry `src/melder/mutation_research/research_set/`, which was expanded into the eight modules below because a directory cannot carry a line range.
+- path: `src/melder/mutation_research/research_set/grouped_research_node.py`
+  start_line: 1
+  end_line: 488
+  loc: 488
+  verified_at: 2026-08-02T13:00:45Z
+  note: expanded from the directory entry `src/melder/mutation_research/research_set/`
+- path: `src/melder/mutation_research/research_set/network_versioner.py`
+  start_line: 1
+  end_line: 458
+  loc: 458
+  verified_at: 2026-08-02T13:00:45Z
+  note: expanded from the directory entry `src/melder/mutation_research/research_set/`
+- path: `src/melder/mutation_research/research_set/research_journal.py`
+  start_line: 1
+  end_line: 430
+  loc: 430
+  verified_at: 2026-08-02T13:00:45Z
+  note: expanded from the directory entry `src/melder/mutation_research/research_set/`
+- path: `src/melder/mutation_research/research_set/research_lane.py`
+  start_line: 1
+  end_line: 988
+  loc: 988
+  verified_at: 2026-08-02T13:00:45Z
+  note: expanded from the directory entry `src/melder/mutation_research/research_set/`
+- path: `src/melder/mutation_research/research_set/research_node.py`
+  start_line: 1
+  end_line: 412
+  loc: 412
+  verified_at: 2026-08-02T13:00:45Z
+  note: expanded from the directory entry `src/melder/mutation_research/research_set/`
+- path: `src/melder/mutation_research/research_set/research_set.py`
+  start_line: 1
+  end_line: 2645
+  loc: 2645
+  verified_at: 2026-08-02T13:00:45Z
+  note: expanded from the directory entry `src/melder/mutation_research/research_set/`
+- path: `src/melder/mutation_research/research_set/residence_registry.py`
+  start_line: 1
+  end_line: 407
+  loc: 407
+  verified_at: 2026-08-02T13:00:45Z
+  note: expanded from the directory entry `src/melder/mutation_research/research_set/`
+- path: `src/melder/mutation_research/research_set/transition_entry.py`
+  start_line: 1
+  end_line: 551
+  loc: 551
+  verified_at: 2026-08-02T13:00:45Z
+  note: expanded from the directory entry `src/melder/mutation_research/research_set/`
+- path: `src/melder/aether/aetheric_frame/aetheric_frame.py`
+  start_line: 1
+  end_line: 1145
+  loc: 1145
+  verified_at: 2026-09-27T23:41:28Z
+  note: per-frame state and control plane.
+
+Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
+
+- path: `src/melder/aether/aetheric_mediator/mediator.py`
+  start_line: 1
+  end_line: 1217
+  loc: 1217
+  verified_at: 2026-09-26T20:10:34Z
+  note: plane root; constructed, owned, and cleaned by Aether and live for
+    frame creation.
+- path: `src/melder/aether/aetheric_mediator/claim_table.py`
+  start_line: 1
+  end_line: 714
+  loc: 714
+  verified_at: 2026-08-02T13:00:45Z
+  note: atomic mode-aware scope-claim table (leaf).
+- path: `src/melder/aether/aetheric_mediator/admission_orchestrator.py`
+  start_line: 1
+  end_line: 329
+  loc: 329
+  verified_at: 2026-08-02T13:00:45Z
+  note: serialized admission decision point.
+- path: `src/melder/aether/aetheric_mediator/transaction_session.py`
+  start_line: 1
+  end_line: 1035
+  loc: 1035
+  verified_at: 2026-09-26T20:10:34Z
+  note: live transaction span, joins, inverses, outcome policy.
+- path: `src/melder/aether/aetheric_mediator/information_registry.py`
+  start_line: 1
+  end_line: 1057
+  loc: 1057
+  verified_at: 2026-09-26T20:10:34Z
+  note: fact baselines plus live activity indexes.
+- path: `src/melder/aether/aetheric_mediator/strategy_builder.py`
+  start_line: 1
+  end_line: 310
+  loc: 310
+  verified_at: 2026-09-26T20:10:34Z
+  note: transaction type to strategy class registry.
+- path: `src/melder/aether/aetheric_mediator/transaction_strategy.py`
+  start_line: 1
+  end_line: 212
+  loc: 212
+  verified_at: 2026-09-26T20:10:34Z
+  note: the per-family dispatch ABC; owns scope proportionality.
+- path: `src/melder/aether/aetheric_mediator/identity.py`
+  start_line: 1
+  end_line: 333
+  loc: 333
+  verified_at: 2026-08-02T13:00:45Z
+  note: claimant identity; caller-owned, borrowed by the plane.
+- path: `src/melder/aether/aetheric_mediator/claim_mode.py`
+  start_line: 1
+  end_line: 174
+  loc: 174
+  verified_at: 2026-08-02T13:00:45Z
+  note: claim vocabulary and the static compatibility matrix.
+- path: `src/melder/aether/aetheric_mediator/scope_keys.py`
+  start_line: 1
+  end_line: 171
+  loc: 171
+  verified_at: 2026-08-02T13:00:45Z
+  note: canonical scope-key builders over the `ScopePrefix` vocabulary.
+- path: `src/melder/aether/aetheric_mediator/transaction_type.py`
+  start_line: 1
+  end_line: 94
+  loc: 94
+  verified_at: 2026-09-26T20:10:34Z
+  note: closed transaction vocabulary (PROVISIONAL membership).
+- path: `src/melder/aether/aetheric_mediator/transaction_request.py`
+  start_line: 1
+  end_line: 576
+  loc: 576
+  verified_at: 2026-08-02T13:00:45Z
+  note: frozen pre-admission record plus the value-only metadata guard.
+- path: `src/melder/aether/aetheric_mediator/staged_transaction.py`
+  start_line: 1
+  end_line: 334
+  loc: 334
+  verified_at: 2026-08-02T13:00:45Z
+  note: post-admission record consumed by commit hooks and reporting.
+- path: `src/melder/aether/aetheric_mediator/admission_result.py`
+  start_line: 1
+  end_line: 311
+  loc: 311
+  verified_at: 2026-08-02T13:00:45Z
+  note: admission verdict; evidence, never a bare bool.
+- path: `src/melder/nexus/nexus.py`
+  start_line: 1
+  end_line: 3565
+  loc: 3565
+  verified_at: 2026-09-23T11:33:20Z
+  note: public AR singleton root.
+- path: `src/melder/nexus/frame_descriptor_manager.py`
+  start_line: 1
+  end_line: 871
+  loc: 871
+  verified_at: 2026-09-23T12:28:41Z
+  note: frame-scoped descriptor and canonical-record owner.
+- path: `src/melder/nexus/frame_acl_manager.py`
+  start_line: 1
+  end_line: 814
+  loc: 814
+  verified_at: 2026-08-02T13:00:45Z
+  note: frame-local ACL container and profile manager.
+- path: `src/melder/nexus/nexus_frame_manager.py`
+  start_line: 1
+  end_line: 1185
+  loc: 1185
+  verified_at: 2026-08-02T13:00:45Z
+  note: Nexus-managed frame registry and topology owner.
+- path: `src/melder/nexus/nexus_frame_builder.py`
+  start_line: 1
+  end_line: 268
+  loc: 268
+  verified_at: 2026-08-02T13:00:45Z
+  note: fluent authored-frame builder for Nexus-managed frames.
+- path: `src/melder/nexus/rift/rift.py`
+  start_line: 1
+  end_line: 1151
+  loc: 1151
+  verified_at: 2026-08-02T13:00:45Z
+  note: live Rift runtime object.
+- path: `src/melder/nexus/rift/frame_link/frame_link_contract.py`
+  start_line: 1
+  end_line: 238
+  loc: 238
+  verified_at: 2026-08-02T13:00:45Z
+  note: per-frame ACL selection contract for one Rift/frame pair.
+- path: `src/melder/nexus/rift/frame_link/frame_link.py`
+  start_line: 1
+  end_line: 231
+  loc: 231
+  verified_at: 2026-08-02T13:00:45Z
+  note: Rift-local frame-link wrapper over the contract surface.
+- path: `src/melder/nexus/rift/rift_gate/rift_gate.py`
+  start_line: 1
+  end_line: 411
+  loc: 411
+  verified_at: 2026-08-02T13:00:45Z
+  note: per-Rift admission/drain gate.
+- path: `src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py`
+  start_line: 1
+  end_line: 333
+  loc: 333
+  verified_at: 2026-08-02T13:00:45Z
+  note: Nexus-owned coordinator for per-Rift gates.
+- path: `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
+  start_line: 1
+  end_line: 6673
+  loc: 6673
+  verified_at: 2026-09-19T23:13:57Z
+  note: Rift-backed public viewer host.
+- path: `src/melder/nexus/rift/frame_viewer/view_multiframe.py`
+  start_line: 1
+  end_line: 3134
+  loc: 3134
+  verified_at: 2026-08-02T13:00:45Z
+  note: cross-frame descriptor viewer helper.
+- path: `src/melder/nexus/rift/frame_viewer/view_frame.py`
+  start_line: 1
+  end_line: 2647
+  loc: 2647
+  verified_at: 2026-08-02T13:00:45Z
+  note: frame-local viewer helper.
+- path: `src/melder/nexus/rift/frame_viewer/view_conduit.py`
+  start_line: 1
+  end_line: 1929
+  loc: 1929
+  verified_at: 2026-08-02T13:00:45Z
+  note: conduit-local viewer helper.
+- path: `src/melder/nexus/rift/frame_viewer/view_spell.py`
+  start_line: 1
+  end_line: 3145
+  loc: 3145
+  verified_at: 2026-09-19T23:13:57Z
+  note: spell-local viewer helper.
+- path: `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py`
+  start_line: 1
+  end_line: 333
+  loc: 333
+  verified_at: 2026-09-27T11:46:59Z
+  note: static-room viewer overlay.
+- path: `src/melder/nexus/rift/rift_space/rift_space.py`
+  start_line: 1
+  end_line: 990
+  loc: 990
+  verified_at: 2026-08-02T13:00:45Z
+  note: base room/workspace object.
+- path: `src/melder/nexus/rift/rift_space/event_system/rift_event_system.py`
+  start_line: 1
+  end_line: 290
+  loc: 290
+  verified_at: 2026-08-02T13:00:45Z
+  note: room-local event publication system.
+- path: `src/melder/nexus/rift/rift_space/event_system/rift_event.py`
+  start_line: 1
+  end_line: 166
+  loc: 166
+  verified_at: 2026-08-02T13:00:45Z
+  note: immutable room-local event object.
+- path: `src/melder/nexus/rift/rift_space/static_rift_space.py`
+  start_line: 1
+  end_line: 142
+  loc: 142
+  verified_at: 2026-08-02T13:00:45Z
+  note: static room type.
+- path: `src/melder/nexus/rift/rift_space/codegen_rift_space.py`
+  start_line: 1
+  end_line: 176
+  loc: 176
+  verified_at: 2026-08-02T13:00:45Z
+  note: codegen room type.
+- path: `src/melder/nexus/rift/rift_space/capability_rift_space.py`
+  start_line: 1
+  end_line: 148
+  loc: 148
+  verified_at: 2026-08-02T13:00:45Z
+  note: broad manual non-codegen room type.
+- path: `src/melder/nexus/rift/rift_space/workstation.py`
+  start_line: 1
+  end_line: 947
+  loc: 947
+  verified_at: 2026-09-26T20:10:34Z
+  note: room-local binding canvas.
+- path: `src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py`
+  start_line: 1
+  end_line: 435
+  loc: 435
+  verified_at: 2026-08-02T13:00:45Z
+  note: room-local memory sequencing and callback hub.
+- path: `src/melder/nexus/rift/rift_space/memory_system/rift_memory.py`
+  start_line: 1
+  end_line: 135
+  loc: 135
+  verified_at: 2026-08-02T13:00:45Z
+  note: immutable room-memory record object.
+- path: `src/melder/nexus/rift/command_system/command_system.py`
+  start_line: 1
+  end_line: 1696
+  loc: 1696
+  verified_at: 2026-09-27T11:46:59Z
+  note: shared room-local command surface.
+- path: `src/melder/nexus/rift/command_system/static_command_system.py`
+  start_line: 1
+  end_line: 682
+  loc: 682
+  verified_at: 2026-09-27T11:46:59Z
+  note: static command posture.
+- path: `src/melder/nexus/rift/command_system/capability_command_system.py`
+  start_line: 1
+  end_line: 1681
+  loc: 1681
+  verified_at: 2026-09-23T11:33:20Z
+  note: capability command posture.
+- path: `src/melder/nexus/rift/command_system/codegen_command_system.py`
+  start_line: 1
+  end_line: 1936
+  loc: 1936
+  verified_at: 2026-09-23T11:33:20Z
+  note: codegen command posture.
+- path: `src/melder/nexus/acl/builder/frame_acl_builder.py`
+  start_line: 1
+  end_line: 773
+  loc: 773
+  verified_at: 2026-08-02T13:00:45Z
+  note: frame-local family draft/commit surface over view, command, and
+    codegen ACL chains.
+- path: `src/melder/nexus/rift/codegen_system/codegen_system.py`
+  start_line: 1
+  end_line: 537
+  loc: 537
+  verified_at: 2026-08-02T13:00:45Z
+  note: internal codegen engine root owned by codegen rooms.
+- path: `src/melder/nexus/rift/codegen_system/codegen_transaction_context.py`
+  start_line: 1
+  end_line: 293
+  loc: 293
+  verified_at: 2026-08-02T13:00:45Z
+  note: per-call transaction context for validation/execution.
+- path: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py`
+  start_line: 1
+  end_line: 211
+  loc: 211
+  verified_at: 2026-08-02T13:00:45Z
+  note: live namespace builder for codegen transactions.
+- path: `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py`
+  start_line: 1
+  end_line: 366
+  loc: 366
+  verified_at: 2026-08-02T13:00:45Z
+  note: namespace policy/configuration payload.
+- path: `src/melder/nexus/rift/codegen_system/validation/codegen_validator.py`
+  start_line: 1
+  end_line: 277
+  loc: 277
+  verified_at: 2026-08-02T13:00:45Z
+  note: orchestrated codegen validation surface.
+- path: `src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py`
+  start_line: 1
+  end_line: 310
+  loc: 310
+  verified_at: 2026-08-02T13:00:45Z
+  note: validator-owned result object.
+- path: `src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py`
+  start_line: 1
+  end_line: 103
+  loc: 103
+  verified_at: 2026-08-02T13:00:45Z
+  note: public payload formatter for validation results.
+- path: `src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py`
+  start_line: 1
+  end_line: 102
+  loc: 102
+  verified_at: 2026-08-02T13:00:45Z
+  note: compile step for accepted codegen requests.
+- path: `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py`
+  start_line: 1
+  end_line: 127
+  loc: 127
+  verified_at: 2026-08-02T13:00:45Z
+  note: execution step for compiled codegen requests.
+- path: `src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py`
+  start_line: 1
+  end_line: 355
+  loc: 355
+  verified_at: 2026-08-02T13:00:45Z
+  note: executor-owned result object.
+- path: `src/melder/nexus/rift/codegen_system/observability/codegen_monitor.py`
+  start_line: 1
+  end_line: 182
+  loc: 182
+  verified_at: 2026-08-02T13:00:45Z
+  note: room-local codegen event publisher/monitor.
+- path: `src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py`
+  start_line: 1
+  end_line: 248
+  loc: 248
+  verified_at: 2026-08-02T13:00:45Z
+  note: room-event publisher for codegen lifecycle signals.
+- path: `src/melder/aether/aetheric_frame/conduit_cloud.py`
+  start_line: 1
+  end_line: 1051
+  loc: 1051
+  verified_at: 2026-09-27T11:46:59Z
+  note: dynamic conduit registry.
+- path: `src/melder/aether/conduit/conduit_cluster.py`
+  start_line: 1
+  end_line: 1344
+  loc: 1344
+  verified_at: 2026-08-02T13:00:45Z
+  note: cluster auto-sharing.
+
+Introspection and tooling:
+
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py`
+  start_line: 1
+  end_line: 242
+  loc: 242
+  verified_at: 2026-08-02T13:00:45Z
+  note: registry-backed `general` / `detailed` profile facade.
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py`
+  start_line: 1
+  end_line: 190
+  loc: 190
+  verified_at: 2026-08-02T13:00:45Z
+  note: general spell profile.
+- path: `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py`
+  start_line: 1
+  end_line: 592
+  loc: 592
+  verified_at: 2026-08-02T13:00:45Z
+  note: detailed spell profile.
+- path: `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py`
+  start_line: 1
+  end_line: 515
+  loc: 515
+  verified_at: 2026-08-02T13:00:45Z
+  note: resolution profile.
+
+Conduit runtime:
+
+- path: `src/melder/aether/conduit/conduit.py`
+  start_line: 1
+  end_line: 7102
+  loc: 7102
+  verified_at: 2026-09-27T23:41:28Z
+  note: conduit lifecycle and meld facade.
+- path: `src/melder/aether/conduit/conduit_state/conduit_state.py`
+  start_line: 1
+  end_line: 94
+  loc: 94
+  verified_at: 2026-08-02T13:00:45Z
+  note: conduit state enum.
+- path: `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
+  start_line: 1
+  end_line: 3872
+  loc: 3872
+  verified_at: 2026-09-27T23:41:28Z
+  note: contracts and lineage.
+- path: `src/melder/aether/conduit/conduit_ward/policies/policies.py`
+  start_line: 1
+  end_line: 75
+  loc: 75
+  verified_at: 2026-08-02T13:00:45Z
+  note: policy enum.
+- path: `src/melder/aether/conduit/conduit_ward/permissions/permissions.py`
+  start_line: 1
+  end_line: 65
+  loc: 65
+  verified_at: 2026-08-02T13:00:45Z
+  note: permission enum.
+- path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
+  start_line: 1
+  end_line: 2000
+  loc: 2000
+  verified_at: 2026-09-27T11:46:59Z
+  note: ownership transfer.
+
+Resolution and creations:
+
+- path: `src/melder/aether/conduit/meld/meld.py`
+  start_line: 1
+  end_line: 2009
+  loc: 2009
+  verified_at: 2026-09-26T20:10:34Z
+  note: meld orchestration.
+- path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
+  start_line: 1
+  end_line: 310
+  loc: 310
+  verified_at: 2026-09-26T20:10:34Z
+  note: compiled execution lanes and runtime dispatch.
+- path: `src/melder/aether/conduit/meld/contracts/spell_map.py`
+  start_line: 1
+  end_line: 351
+  loc: 351
+  verified_at: 2026-09-26T20:10:34Z
+  note: SpellMap descriptor.
+- path: `src/melder/aether/conduit/meld/contracts/spell_contract.py`
+  start_line: 1
+  end_line: 344
+  loc: 344
+  verified_at: 2026-09-26T20:10:34Z
+  note: SpellContract descriptor.
+- path: `src/melder/aether/conduit/creations/creations.py`
+  start_line: 1
+  end_line: 1189
+  loc: 1189
+  verified_at: 2026-09-27T13:27:50Z
+  note: instance registry.
+- path: `src/melder/aether/conduit/creations/conduit_creations.py`
+  start_line: 1
+  end_line: 134
+  loc: 134
+  verified_at: 2026-09-25T23:40:00Z
+  note: conduit/root specialization seam over the generic creations store.
+- path: `src/melder/aether/conduit/spell_space/spell_space.py`
+  start_line: 1
+  end_line: 792
+  loc: 792
+  verified_at: 2026-09-27T23:41:28Z
+  note: spellspace scoping; lease flag and finished exits.
+- path: `src/melder/aether/conduit/spell_space/spell_space_pool.py`
+  start_line: 1
+  end_line: 301
+  loc: 301
+  verified_at: 2026-09-27T23:41:28Z
+  note: spellspace pool; release sets and acquisition clears the lease flag.
+- path: `src/melder/aether/conduit/spell_space/spell_space_thread_state.py`
+  start_line: 1
+  end_line: 328
+  loc: 328
+  verified_at: 2026-09-27T23:41:28Z
+  note: per-thread managed spellspace stack.
+
+Control plane:
+
+- path: `src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py`
+  start_line: 1
+  end_line: 568
+  loc: 568
+  verified_at: 2026-08-02T13:00:45Z
+  note: dev-ops hub.
+- path: `src/melder/aether/aetheric_frame/dev_ops/devops_information_registry.py`
+  start_line: 1
+  end_line: 1775
+  loc: 1775
+  verified_at: 2026-08-02T13:00:45Z
+  note: frame-local topology and transaction mirror.
+- path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
+  start_line: 1
+  end_line: 1522
+  loc: 1522
+  verified_at: 2026-09-26T08:22:34Z
+  note: lineage registry.
+- path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
+  start_line: 1
+  end_line: 676
+  loc: 676
+  verified_at: 2026-08-02T13:00:45Z
+  note: lineage state.
+- path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py`
+  start_line: 1
+  end_line: 75
+  loc: 75
+  verified_at: 2026-08-02T13:00:45Z
+  note: lineage flags.
+- path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py`
+  start_line: 1
+  end_line: 99
+  loc: 99
+  verified_at: 2026-08-02T13:00:45Z
+  note: change reasons.
+- path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
+  start_line: 1
+  end_line: 1679
+  loc: 1679
+  verified_at: 2026-08-02T13:00:45Z
+  note: change control.
+- path: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py`
+  start_line: 1
+  end_line: 655
+  loc: 655
+  verified_at: 2026-08-02T13:00:45Z
+  note: risk gating.
+
+Utilities:
+
+- path: `src/melder/utilities/caching_system/caching_system.py`
+  start_line: 1
+  end_line: 806
+  loc: 806
+  verified_at: 2026-09-26T20:10:34Z
+  note: release-bound creation-cache admission and atomic envelope persistence.
+
+- path: `src/melder/utilities/general_base/cleanable.py`
+  start_line: 1
+  end_line: 429
+  loc: 429
+  verified_at: 2026-09-27T23:41:28Z
+  note: cleanup contract.
+- path: `src/melder/utilities/synchronization/phase_scheduler.py`
+  start_line: 1
+  end_line: 988
+  loc: 988
+  verified_at: 2026-08-02T13:00:45Z
+  note: phase orchestration.
+- path: `src/melder/utilities/logger/safe_logger.py`
+  start_line: 1
+  end_line: 699
+  loc: 699
+  verified_at: 2026-08-02T13:00:45Z
+  note: logger adapter.
+- path: `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
+  start_line: 1
+  end_line: 2733
+  loc: 2733
+  verified_at: 2026-09-26T20:10:34Z
+  note: protocol generation and bounded interface-file maintenance utility.
+- path: `src/melder/utilities/helpers/id_builder.py`
+  start_line: 1
+  end_line: 172
+  loc: 172
+  verified_at: 2026-08-01T19:12:00Z
+  note: id generation.
+- path: `src/melder/utilities/helpers/init_helpers.py`
+  start_line: 1
+  end_line: 145
+  loc: 145
+  verified_at: 2026-08-02T13:00:45Z
+  note: logger resolution.
+
+
+Non-path notes carried forward from the previous revision:
+- Registration refusal itself lives in `src/melder/aether/spellbook/bind/bind.py`
+
+## Diagrams
+### Creation Cache Compatibility
+```text
+bundle -> format/release/interpreter admission -> compatible payloads -> existing context loading
+                                           -> cold store -> normal planning -> fresh stamped bundle
+```
+
+```mermaid
+flowchart LR
+  B[Persisted creation bundle] --> G[Format, Melder release and Python tag checks]
+  G -->|Compatible| H[Existing context loading]
+  G -->|Incompatible| C[Empty cache]
+  C --> P[Normal creation planning]
+  P --> W[Fresh release-stamped bundle]
+```
+
+### Named Scope Discovery and Replay
+```text
+create(name) -> attach -> Cloud + dynamic record + Nexus -> active named lesser
+cleanup -> dispose descendants -> retire name/record -> clear/detach -> ready pool
+checkpoint -> fold surviving carriers -> validate ancestry -> new root and lesser IDs
+```
+
+```mermaid
+flowchart LR
+  A[Acquire named lesser] --> C[Cloud named directory]
+  A --> R[Dynamic structural twin with ancestry]
+  A --> N[Nexus published scope]
+  A --> D[Cleanup and named retirement]
+  D --> P[Unnamed ready pool]
+  R --> F[Fold and validate hierarchy]
+  F --> B[Replay root then lesser parents with fresh IDs]
+  B --> A
+```
+
+### Pooled Hook Lifecycle
+```text
+root-owned baseline -> scope lease -> dispose creations -> restore temporary hooks -> idle pool
+                                                                  next acquisition -> owner selection
+```
+
+```mermaid
+flowchart LR
+  R[Root-owned shared baseline] --> L[Active scope with optional local hooks]
+  L --> D[Dispose current creations]
+  D --> H[Restore hooks only when modified]
+  H --> P[Publish ready scope to pool]
+  P --> A[Acquire next lease]
+  A --> O[Space adopts owner-local hooks when present]
+  O --> L
+```
+
+### Bind Lifecycle
+```text
+Book admission -> capture stages -> pre(reference) -> native Spell construction
+ -> activation(Spell) -> profile/publication -> post(Spell) -> transaction completion
+```
+
+```mermaid
+flowchart LR
+  B[Book: admit and capture] --> P[Bind: pre reference checks]
+  P --> C[Bind: construct Spell]
+  C --> A[Bind: activation receives Spell]
+  A --> R[Book: profile, register, publish]
+  R --> H[Bind: captured post callbacks]
+  H --> T[Existing transaction completion]
+```
+
+### Scoped Purge
+```text
+Conduit / SpellSpace -> shared discovery -> concrete Meld: authorize -> Creations: lock + retire -> dispose
+```
+
+```mermaid
+flowchart LR
+  C[Conduit or SpellSpace] --> L[Meld: inspect class or use explicit selectors]
+  L --> M[ConduitMeld or SpellSpaceMeld: scope authority]
+  M --> S[Creations: retire all or one under writer locks]
+  S --> D[Existing disposal helpers after lock release]
+```
+
+### Registration Capability Foundation
+```text
+bind / bind_inactive -> Bind bool admission + fingerprint -> Spell.resolvable
+                               |                                  |
+                     True: legacy hash domain          spellbook descriptions
+                     False: distinct hash domain
+```
+
+```mermaid
+flowchart LR
+  B[Active or inactive bind] --> V[Bind: validate bool and fingerprint]
+  V --> S[Spell: immutable per-version capability]
+  S --> D[Spellbook descriptions]
+```
+
+This diagram describes the registration boundary. Compiler selection now preserves reference-only
+required inputs through both plan variants. Direct runtime admission refuses False; ordinary supplied
+inputs use existing execution, Nexus exposes references, and durable replay preserves the capability.
+
+### Unresolved Input Resolution
+```text
+conjure: typed parameter, no provider -> UNRESOLVED_INPUT socket -> Phase-4 warning (conjure succeeds;
+         listed only by conjure(validation_warnings=True))
+meld:    value supplied -> constructor receives it
+         value missing  -> UnresolvedInputError (a MeldExecutionError) before construction
+bind:    matching provider added later -> consumer re-resolves -> normal dependency edge
+```
+
+```mermaid
+flowchart LR
+  C[Conjure: no registered provider] --> U[UNRESOLVED_INPUT socket]
+  U --> I[Phase-4 warning; reported only with validation_warnings=True; conjure continues]
+  U --> M{Meld supplies the value?}
+  M -->|Yes| K[Constructor receives it]
+  M -->|No| E[UnresolvedInputError before construction]
+  B[Later matching bind] --> R[Re-resolve to a normal edge]
+  U --> R
+```
+
+### Override Key-Set Plans
+```text
+meld(override) -> key tuple -> stored plan? -> plan(meld, ov)
+                               no -> resolver -> demand (skip supplied subtrees) -> emit, compile, store
+normal meld   -> normal plan (empty key set) of the same runtime
+```
+
+```mermaid
+flowchart LR
+  O[Override meld] --> K[Key tuple]
+  K --> C{Plan stored?}
+  C -->|No| R[Resolve keys, demand, emit, compile]
+  R --> P[Plan]
+  C -->|Yes| P
+  P --> B[Build only unsupplied sites]
+  N[Normal meld] --> Q[Normal plan of the same runtime]
+```
+
+### Conduit Lookup Coverage
+```text
+Aether lookup(frame: str = "default") -> _resolve_lookup_frame -> frame
+  *_root_*            -> frame root maps              -> roots
+  get_conduit_by_name -> frame ConduitCloud directory -> named roots + active named lessers
+  get_conduit_by_id   -> root map snapshot, then each root ward's lineage snapshot -> any live conduit
+```
+
+```mermaid
+flowchart LR
+  L[Aether lookup with frame name] --> R[Frame resolver: str required]
+  R --> F[Existing frame]
+  F -->|root lookups| M[Root maps: roots]
+  F -->|get_conduit_by_name| C[ConduitCloud: named roots and named lessers]
+  F -->|get_conduit_by_id| W[Root map, then ward lineages: any live conduit]
+```
+
+### Scope Exit and Pool Return
+```text
+with lesser: / lesser.cleanup():
+  descendants -> SpellSpaces -> own store -> retire name | detach -> hooks -> pool -> raise failures
+with conduit.enter_spellspace() as space:
+  pop (LIFO) -> dispose space store -> reset hooks -> release (released=True) -> raise failures
+  released space: meld / purge -> SpellSpaceScopeError; the next acquisition clears the flag
+with root: / root.cleanup():
+  ward (lesser lineage) -> SpellSpaces -> stores -> hooks -> logger -> raise failures
+```
+
+```mermaid
+flowchart LR
+  X[with block exit or cleanup] --> K{Scope}
+  K -->|lesser| D[Descendants return first]
+  D --> S[SpellSpaces, then own store]
+  S --> P[Retire or detach, reset hooks, back to pool]
+  K -->|root| T[Permanent teardown, logger last]
+  K -->|SpellSpace| R[Dispose store, reset hooks, release sets the flag]
+  P --> E[Raise the collected disposal failures]
+  T --> E
+  R --> E
+  R -.->|kept handle| F[meld or purge refused]
+```
+
+### ASCII Context Diagram (C4)
+```
+[User Code]
+    |
+    v
+[Spellbook] -> [Aether (global)] -> [AethericFrame] -> [SpellExaminer Profiles]
+    |               |
+    |               +--> [AetherUtilitySystem]
+    |               +--> [Nexus] -> [Rift] -> [RiftSpace]
+    |
+    v
+[Conduit] -> [Meld] -> [Creations]
+    |
+    v
+[Resolved Instances]
+```
+
+### Mermaid Context Diagram (C4)
+```mermaid
+graph TD
+  U[User Code] --> SB[Spellbook]
+  SB --> AE[Aether Singleton]
+  AE --> AUS[AetherUtilitySystem]
+  AE --> AF[AethericFrame]
+  AE --> NX[Nexus]
+  NX --> RF[Rift]
+  RF --> RS[RiftSpace]
+  SB --> C[Conduit]
+  C --> M[Meld]
+  M --> CR[Creations]
+  AF --> SP[SpellExaminer Profiles]
+  CR --> I[Resolved Instances]
+```
+
+### ASCII Conjure Pipeline Diagram
+```
+[Spellbook.conjure]
+  -> validate/freeze config
+  -> bind config to Aether
+  -> structural tier: full hit -> replay phase 3-4 rows | else phases 1-4 (structural)
+  -> phases 5-7 (foundational resolution)
+  -> phases 8-11 (plan resolution, if no errors)
+  -> Conduit() + hooks
+  -> wire ownership into spells
+```
+
+### Mermaid Meld Flow
+```mermaid
+sequenceDiagram
+  participant C as Conduit
+  participant M as Meld
+  participant CC as CreationContext
+  participant P12 as Phase12 Compiled Executors
+  participant CR as Creations
+  C->>M: meld(spell_id/input)
+  M->>CC: get/build creation context
+  M->>CC: invoke _execute_*_compiled(...)
+  CC->>P12: dispatch compiled lane
+  P12->>CR: reuse/construct/register
+  P12-->>CC: instance
+  CC-->>M: instance
+  M-->>C: instance
+```
+
+### Mermaid Conduit Upgrade
+```mermaid
+sequenceDiagram
+  participant LC as Lesser Conduit
+  participant G as CreationGate
+  participant W as ConduitWard
+  participant SB as New empty Spellbook
+  participant F as AethericFrame
+  LC->>G: close_and_drain()
+  LC->>SB: construct with optional configuration
+  LC->>W: detach former parent and prepare normal root
+  LC->>SB: _conjure_existing_conduit(LC)
+  SB->>SB: normal phases using existing conduit ID
+  SB->>LC: attach Book, hooks and Meld/Space lookup owners
+  SB->>F: register same root and publish records
+  SB->>G: restore original admission
+  SB->>SB: normal activation/publication tail
+  SB-->>LC: same conduit, retained creation stores
+```
+
+### Ordered Disposal Data Flow
+```text
+Book + per-bind candidates -> Bind -> Spell list -> compiler -> Creations -> ordered calls
+                                       |
+                                       +-> crystal ordered values -> replay -> new Bind
+```
+
+```mermaid
+flowchart LR
+  B[Book candidates and priority] --> M[Bind: match and compose once]
+  E[Per-bind candidates] --> M
+  M --> S[Spell-owned ordered list and content ID]
+  S --> P[Compiler references]
+  P --> C[Creations: ordered method calls]
+  S --> V[Crystal: ordered values]
+  V --> R[Replay through receiving book]
+  R --> M
+```
+
+Recorded values cross a persistence boundary; runtime references do not create a second
+policy source. Receiving-book order wins on replay. The loader follows changed binding IDs
+without rewriting the original record or existing live IDs.
+
+## Information Sources
+- `src/melder/utilities/caching_system/caching_system.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_lowering.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/site_plan_override_runtime.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/shared_assets/override_key_resolver.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/strategies/generalized/hydration/generalized_hydrator.py`
+- `src/melder/utilities/helpers/signature_reflection.py`
+- `src/melder/utilities/custom_exceptions/unresolved_input_error.py`
+- `src/melder/aether/spellbook/spell_compiler/phases/compiler_phase_3.py`
+- `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py`
+- `src/melder/crystallizer/crystal_analysis/preflight/conduit_hierarchy_strategy.py`
+- `README.md`
+- `src/melder/__init__.py`
+- `src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py`
+- `src/melder/system_document.py`
+- `src/melder/__architecture__.py`
+- `src/melder/__components__.py`
+- `src/melder/__graph_network__.py`
+- `src/melder/__graph_details__.py`
+- `src/melder/aether/aether_configuration.py`
+- `src/melder/aether/aether_configuration_builder.py`
+- `src/melder/aether/spellbook/spellbook.py`
+- `src/melder/aether/spellbook/spellbinder.py`
+- `src/melder/aether/spellbook/bind/bind.py`
+- `src/melder/aether/spellbook/bind/scan.py`
+- `src/melder/aether/spellbook/bind/spell_index.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/add_to_index_transaction_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/remove_from_index_transaction_strategy.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py`
+- `src/melder/aether/spellbook/spell.py`
+- `src/melder/aether/spellbook/configuration/spellbook_configuration.py`
+- `src/melder/aether/spellbook/existence/existence.py`
+- `src/melder/aether/spellbook/spell_types/spell_types.py`
+- `src/melder/aether/spellbook/resolution_style_matrix.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_requirements_finder/parameter_di_shape.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_compiler.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/validation_system.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/circular_dependency_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/binding_resolution_cycle_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/validation/strategies/contract_provider_presence_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/system/spell_system_validation_system.py`
+- `src/melder/aether/spellbook/spell_compiler/system/validation/cycle_detection_strategy.py`
+- `src/melder/aether/spellbook/spell_compiler/system/validation/contract_graph_cycle_strategy.py`
+- `src/melder/aether/aether.py`
+- `src/melder/aether/aetheric_frame/aetheric_frame.py`
+- `src/melder/aether/aetheric_mediator/mediator.py`
+- `src/melder/aether/aetheric_mediator/claim_table.py`
+- `src/melder/aether/aetheric_mediator/claim_mode.py`
+- `src/melder/aether/aetheric_mediator/admission_orchestrator.py`
+- `src/melder/aether/aetheric_mediator/admission_result.py`
+- `src/melder/aether/aetheric_mediator/identity.py`
+- `src/melder/aether/aetheric_mediator/information_registry.py`
+- `src/melder/aether/aetheric_mediator/scope_keys.py`
+- `src/melder/aether/aetheric_mediator/staged_transaction.py`
+- `src/melder/aether/aetheric_mediator/strategy_builder.py`
+- `src/melder/aether/aetheric_mediator/transaction_request.py`
+- `src/melder/aether/aetheric_mediator/transaction_session.py`
+- `src/melder/aether/aetheric_mediator/transaction_strategy.py`
+- `src/melder/aether/aetheric_mediator/transaction_type.py`
+- `src/melder/nexus/nexus.py`
+- `src/melder/nexus/frame_descriptor_manager.py`
+- `src/melder/nexus/frame_acl_manager.py`
+- `src/melder/nexus/nexus_frame_manager.py`
+- `src/melder/nexus/nexus_frame_builder.py`
+- `src/melder/nexus/acl/builder/frame_acl_builder.py`
+- `src/melder/nexus/rift/rift.py`
+- `src/melder/nexus/rift/frame_link/frame_link_contract.py`
+- `src/melder/nexus/rift/frame_link/frame_link.py`
+- `src/melder/nexus/rift/rift_gate/rift_gate.py`
+- `src/melder/nexus/rift/rift_gate_controller/rift_gate_controller.py`
+- `src/melder/nexus/rift/rift_space/codegen_rift_space.py`
+- `src/melder/nexus/rift/rift_space/memory_system/rift_memory_system.py`
+- `src/melder/nexus/rift/rift_space/memory_system/rift_memory.py`
+- `src/melder/nexus/rift/codegen_system/codegen_system.py`
+- `src/melder/nexus/rift/codegen_system/codegen_transaction_context.py`
+- `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_builder.py`
+- `src/melder/nexus/rift/codegen_system/namespace/codegen_namespace_configuration.py`
+- `src/melder/nexus/rift/codegen_system/validation/codegen_validator.py`
+- `src/melder/nexus/rift/codegen_system/validation/codegen_validation_result.py`
+- `src/melder/nexus/rift/codegen_system/validation/codegen_validation_reporter.py`
+- `src/melder/nexus/rift/codegen_system/execution/codegen_compiler.py`
+- `src/melder/nexus/rift/codegen_system/execution/codegen_executor.py`
+- `src/melder/nexus/rift/codegen_system/execution/codegen_execution_result.py`
+- `src/melder/nexus/rift/codegen_system/observability/codegen_monitor.py`
+- `src/melder/nexus/rift/codegen_system/observability/codegen_event_publisher.py`
+- `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py`
+- `src/melder/nexus/rift/rift_space/rift_space.py`
+- `src/melder/nexus/rift/rift_space/event_system/rift_event_system.py`
+- `src/melder/nexus/rift/rift_space/event_system/rift_event.py`
+- `src/melder/nexus/rift/rift_space/static_rift_space.py`
+- `src/melder/nexus/rift/rift_space/codegen_rift_space.py`
+- `src/melder/nexus/rift/rift_space/capability_rift_space.py`
+- `src/melder/nexus/rift/rift_space/workstation.py`
+- `src/melder/nexus/rift/command_system/command_system.py`
+- `src/melder/nexus/rift/command_system/static_command_system.py`
+- `src/melder/nexus/rift/command_system/capability_command_system.py`
+- `src/melder/nexus/rift/command_system/codegen_command_system.py`
+- `src/melder/aether/conduit/conduit.py`
+- `src/melder/aether/conduit/conduit_cluster.py`
+- `src/melder/aether/conduit/creations/creations.py`
+- `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
+- `src/melder/aether/conduit/spell_space/spell_space.py`
+- `src/melder/aether/conduit/spell_space/spell_space_pool.py`
+- `src/melder/aether/conduit/spell_space/spell_space_thread_state.py`
+- `src/melder/aether/conduit/meld/spellspace_meld.py`
+- `src/melder/utilities/general_base/cleanable.py`
+- `src/melder/utilities/custom_exceptions/spell_space_scope_error.py`
+- `src/melder/aether/conduit/meld/meld.py`
+- `src/melder/aether/conduit/meld/creation_context/creation_context.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_compiler_artifact.py`
+- `src/melder/aether/spellbook/spell_compiler/codegen_creation_system/codegen_creation_system.py`
+- `src/melder/aether/conduit/meld/contracts/spell_map.py`
+- `src/melder/aether/conduit/meld/contracts/spell_contract.py`
+- `src/melder/aether/spellbook/spell_compiler/dag/resolution_frame/resolution_frame.py`
+- `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
+- `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
+- `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
+- `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py`
+- `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py`
+- `src/melder/aether/aetheric_frame/dev_ops/dev_ops_manager.py`
+- `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
+- `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/spell_examiner.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/general_profile.py`
+- `src/melder/aether/spellbook/spell_compiler/spell_examiner/profiles/detailed_profile.py`
+- `src/melder/aether/spellbook/spell_compiler/profiles/resolution_profile.py`
+- `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
+
+## Context / Handoff Summary
+
+2026-09-27 scope exits (0.2.8203): `with conduit:` disposes the scope instead of holding the conduit lock, and
+`Conduit.enter_lesser_conduit()` makes a lesser for such a block. Every scope exit - SpellSpace managed exit
+and manual cleanup, lesser pool return, permanent teardown - finishes when a disposal method fails and then
+raises the failures as one ExceptionGroup; a lesser's pool return disposes its descendants first; a second
+soft cleanup does nothing; a released SpellSpace refuses meld and purge; `using_cleanup()` lets cleanup
+errors propagate. The boundary list, the lesser, SpellSpace and cleanup sequences, the operational
+invariants (the stale active-spellspace line corrected), the failure modes, a diagram and the code map carry
+it; the component map carries the per-method contracts. Still open: this document's `## Indexing` section
+names maintenance tool paths, which a reader outside the repository cannot resolve (pre-existing).
+
+2026-09-27 meld entry cache by name and class: the meld sequence names the second door registry that
+serves `meld("Name")` and `meld(spell=Cls)` warm; the component map carries the mechanics.
+
+2026-09-27 disposal failures (0.2.80): one failing disposal method no longer stops an object's teardown;
+every declared method runs and every failure reaches the caller chained from its original exception. The
+cleanup sequence, the operational invariants, the failure modes and the code map carry it; the component map
+carries the per-method contract.
+
+2026-09-27 conduit lookup coverage (0.2.79): Aether's eight root-only lookups carry `*_root_*` names;
+`get_conduit_by_name` now answers over a frame's named scopes and `get_conduit_by_id` over every live conduit,
+lessers included; one frame resolver makes a non-string frame a TypeError; `ConduitCloud.list_conduits()`
+lists named scopes. The boundary list, the operational invariants, the failure modes, the diagrams and the code
+map carry it; the component map carries the lookup contract and the snapshot ward walk.
+
+2026-09-26 door-held first builds (0.2.73): the normal site plan of a per-conduit or SpellSpace root no longer
+re-takes the root's build lock that its door already holds, so each first build takes that lock once; the meld
+sequence and the operational invariants carry the rule, and the component map carries the emission detail.
+
+2026-09-26 compiler pool reads (0.2.72): compiler passes iterate a copy of the spell pool instead of the live
+dict, so a concurrent bind no longer aborts meld-time revalidation; the operational invariants carry the rule.
+
+2026-09-26 override site-plan lane: override melds of the many_only and generalized families run one compiled
+plan per override key set that never builds a supplied dependency; normal melds of those families run the same
+runtime's normal plan, and unresolved inputs are decided before construction in every family. The Phase-5
+per-path overlay, the override-targeting surface and the old emitters are retired, so conjure no longer grows
+with logical paths. The meld sequence, the operational invariants, the failure modes, the diagrams and the code
+map carry it; the component map carries the mechanics.
+
+2026-09-26 structural snapshot: a warm conjure over an unchanged book replays the phase 3-4 results recorded in
+the conduit cache bundle instead of running phases 1-4; the conjure sequence, the pipeline diagram and the
+operational invariants carry the rule, the change-control sequence carries the survey note that the CCM
+dirty-root loop has no shipped caller. The component map carries the detail.
+
+2026-09-26 cycle consumers: the conjure report tells a spell that only needs a dependency cycle which of its
+dependencies leads there and that it is not part of the cycle, instead of calling it a member. The component map
+carries the wording.
+
+2026-09-26 self-referencing constructors: a constructor taking its own class is refused by the readable conjure
+report (SELF_DEPENDENCY, naming the parameter) instead of aborting in the compiler. The component map carries the
+detail.
+
+2026-09-26 class binding-profile annotations: a class whose field annotations name a `TYPE_CHECKING`-only type
+lost all of them from its binding profile, so its spell id ignored those fields. They are now kept as source
+text; affected classes get a new id once. The component map carries the detail.
+
+2026-09-26 conjure validation report: a refused conjure now tells the user which spells failed, why and how to
+fix it, by name; reasons from the conduit verdict are no longer dropped, warnings are counted rather than
+listed, and Melder-internal consistency codes are flagged as bugs to report. `*args: Any` / `**kwargs: Any`
+no longer break a spell. The component map carries the layout rules.
+
+2026-09-26 shared context rebuild windows (the September 5 design, finished): concurrent first melds of a
+shared dynamic spell failed in two ways - building a context from the gap between Phase 5 and Phase 11
+("Cannot build CreationContext before spell_codegen_creation exists") and using a context cleaned under
+them. Rebuilds now freeze and drain the spell-index gate before replacing the plan, and dynamic melds hold
+their ticket across the context read and execution; the two tests skipped in September run again. Warm melds
+measured unchanged within noise. The component map carries the mechanics.
+
+2026-09-26 deterministic signatures and live contract operands (tranche T1 of the IR epic): one signature
+leaf with both facades delegating (bytes unchanged for previously deterministic inputs), phase 8's pool digest
+hoisted to once per pass (-34% conjure at 300 spells, owner-run), and `SpellContract`/`SpellMap` `override`
+values riding as live meld operands - rows carry refs, never object values, and the provider receives the
+object by identity in-process and after a cross-process cache full hit. The same-day emission gate is retired.
+The component map carries the mechanics; the graph still needs regenerating for the new leaf module.
+
+2026-09-26 caller-supplied containers: a constructor parameter typed as a dict, set or tuple of user classes,
+or dict[str, Any], used to break conjure at Phase 4 although Melder never injects it. It is now a REQUIRED_HOLE
+caller input; the guard's container error and its Any mismatch with Phase 1 are removed.
+
+2026-09-26 process-stable spell ids: function, method, lambda, partial, callable-instance and default-repr
+instance spells used to get a new id per process because the fingerprint hashed "at 0x..." repr text; with
+any such spell a book never reached a cache full hit and its bundle grew every run. A pre-existing defect
+also made consumer melds fail on a full hit after a provider's id changed. Both fixed; cache generation 12.
+
+2026-09-26 TYPE_CHECKING annotation reflection: Melder's readers of signatures and annotations no longer
+raise NameError on names unbound at runtime - which had broken late binding in dynamic worlds, detailed
+profiles, `Package.describe` and ProtocolCrafter, and made such class spell ids differ per process. Readers
+use FORWARDREF or the `SignatureReflection` helper; an annotation integrity guard keeps `src/melder`
+evaluable. External default-format reads of Melder's API are documented under Failure Modes.
+
+2026-09-26 conjure validation warnings: `Spellbook.conjure(validation_warnings=False)` is an opt-in for
+beginners. When True, conjure logs every Phase-4 validation warning once, grouped by code, at WARNING
+level; the default logs nothing, replacing the 0.2.54 per-conjure INFO line about unresolved inputs.
+Nexus frame creation, crystallizer restore and upgrade_to_normal keep the default.
+
+2026-09-26 unresolved inputs: a single typed constructor parameter that no registered spell provides no
+longer fails conjure. It compiles as an UNRESOLVED_INPUT socket, the constructing meld supplies it by
+override, and a missing value raises UnresolvedInputError (a MeldExecutionError exported at the package
+root) from that object's constructor-failure path only. A later matching bind re-resolves it; stored
+objects are unaffected. Cache generation 11 retires older executors. The component map carries the
+compiler, runtime and watcher detail; the failure-path wiring is interim until the override build plan.
+
+2026-09-25 creation build locks moved from the store lock to per-slot guards (unique keeps its Spell
+lock). The store lock is now a leaf, removing the store/Spell lock-order deadlock between concurrent
+first melds and purge; cache generation 10 retires executors emitted with the old locking. The
+component map carries the Creations details and corrects the Meld concurrency entry.
+
+2026-09-25 boot and conjure sequences corrected from source: `Aether.__init__` builds six hosted
+roots eagerly in a fixed order (MutationResearch included, per the 2026-08-03 ruling), and conjure
+classifies the creation cache before the conduit phases, skipping only phases 8-11 on a full hit.
+Phases 1-7 run on every conjure. The component map now documents the codegen IR export seams the
+compiler already carries (a dormant, signed phase 2-5 export and consumed phase-11 step rows).
+
+2026-09-24 creation-cache generation 9 adds exact Melder release admission. Release changes,
+unstamped legacy input and other existing incompatibilities cold-reset at load; normal conjure
+handles regeneration. The component map describes the envelope's ownership and write boundaries.
+Ordinary meld and persisted world-record compatibility are unchanged.
+
+2026-09-23 named lesser contracts are promoted. Cloud discovery stays separate from root ownership;
+names retire before reuse. Crystallizer retains named structure plus necessary unnamed ancestry,
+never prior creations. Nexus preserves existing-ID projections through named pool cycles and retains
+explicit refresh for membership changes. Public configured-Book conjure records both owner and frame.
+The component map details the lifecycle and shared replay units; application ownership is unchanged.
+
+2026-09-22 pooled hook contracts are promoted. Temporary hook references are retired before idle
+publication, including manual/managed Spaces and prewarming. Root-shared maps retain identity for
+live updates; local changes remain isolated. Only pool boundaries inspect restoration flags, and
+existing locks are taken for changed state. Graduation installs independent root baselines on all
+retained runtime doors. Broader callback standardization remains a separate, deferred design.
+
+2026-09-22 Bind stages are Book-owned and independently adjustable through Book/normal-Conduit
+facades. Immutable per-bind capture preserves stage consistency through runtime updates. Activation
+and post receive the actual Spell at distinct publication boundaries; callback errors preserve phase
+and cause. Whole Book twins carry presence markers only; replay reports missing executable callbacks.
+The src_components binding and configuration entries detail stage ordering, cleanup and recording.
+
+2026-09-22 graduation uses a separate private Spellbook conjure route for the existing prepared
+Conduit. Normal configuration selection, initial Bind seeds and default Conduit/Meld events apply;
+the Book is always independent and empty. Retained creations keep disposal responsibility, but old
+definitions/verdicts and runtime hook overlays do not cross. Shared frame configuration intentionally
+reseeds configured defaults and remains frame-owned. Public rollback restores lesser topology and
+gate admission before attachment; later publication errors retain caller-owned normal cleanup.
+
+2026-09-21 purge supports instance shortcuts and explicit selectors through existing lookup.
+Concrete Meld doors retain scope authority; Creations retains lock/removal/disposal. Default
+purge_all=True retires the target's entries; False requires an instance and removes only its entry.
+Scope objects, definitions and compiled contexts remain reusable. Discovery performs no construction.
+
+2026-09-19 registration/compiler foundation: native policy, compatible True identities, False-only
+Protocol admission and OVERRIDE_REQUIRED compiler metadata are implemented. Executable roots exclude
+False definitions; selector changes use existing structural and resolution revalidation mechanisms.
+Direct runtime admission refuses False before validation, hooks, construction or reuse; its warm
+entries can only be minted after successful admission of an immutable True version. Supplied values
+use existing execution and normal Python errors. Nexus publishes/navigates typed references under
+existing ACLs; crystal capture, active/staged replay and graft retain the per-version bool. Record
+major 2 rejects old readers safely. Existing eager branch construction and version rules are unchanged.
+
+WHAT CHANGED (2026-08-01): this document was RECOMPOSED to the Required Section
+Contract in `src_architecture_instructions.md`. It now carries exactly the 17
+contract sections, in contract order, and nothing else.
+
+- `## Indexing` was ADDED; it did not exist.
+- `## Data Flows and Sequences` MOVED UP to its contract position, ahead of
+  `## Operational Invariants`. It previously sat after `## Failure Modes`.
+- `## C1 Code Map (Core Only)` was REBUILT with the contract's five fields per
+  entry - `path`, `start_line`, `end_line`, `loc`, `verified_at` - measured from
+  disk, never estimated. One entry was a DIRECTORY and was expanded into its 8
+  real modules rather than given a plausible range.
+- `## Table of Contents` was REMOVED. The generated index replaces it; a
+  hand-maintained contents list is a second addressing surface that drifts.
+- 34 non-contract H2 sections were MOVED, NOT DELETED, to
+  `system_docs/patches/active/system_doc_recompose_2026_08_01/component_material_for_migration.md`.
+  They are component-level deep dives - per-subsystem Responsibilities sections,
+  the glossary, pipeline narratives, and four promoted-patch blocks - which the
+  instructions name as an anti-pattern in THIS document. Four of them had
+  headings WRAPPED ACROSS TWO PHYSICAL LINES, which produces one-line index
+  fragments; they were unwrapped on the way out.
+
+WHAT CHANGED (2026-08-02): CONFORMED to the revised
+`src_architecture_instructions.md`. One defect class was found here, and it was
+invisible to every structural check in the Quality Gate.
+
+- ALL 134 C1 RANGES WERE OFF BY ONE and are now REMEASURED. The previous pass
+  measured `end_line` as the length of `text.split(newline)`, which counts a
+  phantom line after the file's final newline. `src/melder/__init__.py` was
+  documented as ending at 261; it ends at 260. `loc` was inflated by one on
+  every entry. 131 of 134 were wrong - the three that were right are the files
+  that happen to lack a trailing newline, which is why the error looked like
+  noise rather than a pattern. Every entry now carries a range measured with
+  `splitlines()` and a fresh `verified_at`.
+- Join re-verified by strict parse rather than assumed: 134 cited paths, 0
+  unresolved against `src_graph_index.md`.
+- Scored 85/100 (band B) against
+  `design_engineer/policies/system_document_quality_rubric.md`. The weak
+  criterion is Mirror agreement, 2/5: `tests_architecture.md` is 13 days stale
+  and its index is stale with it.
+
+DEPTH PASS (2026-08-02): `## Operational Invariants` and `## Failure Modes and
+Error Paths` were deepened where they asserted a rule without the mechanism that
+enforces it or the failure it prevents.
+
+- The Aether singleton invariant now names the double-checked `__new__` guard
+  and, more importantly, the IDENTITY-CHECKED teardown: singleton bookkeeping is
+  cleared only when `Aether._instance is self`, so cleaning a stale instance
+  cannot unseat the live one.
+- The four posture-gated operations - linking, severing, ownership transfer and
+  lesser-to-normal upgrade - are now stated AS ONE SET with their shared
+  rationale, because reading them as four unrelated rules invites fixing one in
+  isolation and breaking the promise `automatic` posture makes. The
+  frame-before-book boot ordering is recorded there as the consequence it is.
+- Scored 89.5/100 (band B), up from 85.
+
+PATCH LANE CLOSED (2026-08-02). The recomposition lane went 1,887 -> 644 lines
+and no block in it is undecided. Into this document came four promoted patch
+decision blocks under `## Promoted Patch Decisions`, the `Runtime Type Names`
+and `Extension Points` sections, and an extended `### Sequence: Cleanup` that
+now covers seven types rather than three. Everything re-absorbed was verified
+against source first; everything kept out carries a written reason in the lane.
+The document is 21 H2 sections with all 17 contract sections still in order.
+
+WHAT REMAINS UNKNOWN: the entries in `## Unknowns` are unchanged and still
+blocked by design - the advanced `SpellState` flag producers belong to the
+MutationResearch runtime-seam slice.
+
+WHERE THE NEXT READER SHOULD START: the `src_components.md` pass. The migration
+file above is its input. UNTIL THAT PASS LANDS, the component-level material it
+holds is in NEITHER canonical document. That is a real coverage gap; it is
+deliberate, bounded, and recorded here rather than left to be discovered.
+
+The graph pass follows. `src_graph.json` and `readable_src_graph.json` are the
+RETIRED artifacts; the replacement is `src_graph.md` + `src_graph_index.md` per
+`agent_onboarding/default/engineer/skills/src_graph_generation.md`.
+
+
+### Carried forward from the previous revision (2026-07-25)
+
+This is the prior handoff summary, PRESERVED VERBATIM. The recomposition above
+replaced it, and replacing it would have silently destroyed the decision record
+it carries - which is the more valuable half of a handoff summary.
+
+STATE: This document describes the Melder core as it stands on 2026-07-25, after the
+internal-bind guard replacement and the package-wide sweep that accompanied it. Every
+source path cited here was verified to resolve on that date, and no renamed or removed
+symbol survives as a live claim.
+
+DECISIONS CURRENTLY IN FORCE, and the sections that carry them:
+- Melder is framed as a Dependency Graph Runtime; DI-style binding and resolution are a
+  SUBSET capability, not the whole model. See Architecture Summary.
+- Internal-bind refusal is one module-level function over a committed manifest, exact
+  match, no MRO inheritance. See Entrypoints and Runtime Guardrails.
+- Conjure follows settle-then-inherit: the conduit inherits the world's mode rather than
+  policing the caller's flag. See Operational Invariants.
+- Structural mutation is admitted through one moded scope-acquisition gate. See
+  Contracts, Policies, and Permissions plus the components doc's admission plane.
+- The crystallizer is a passive sink; recording never changes runtime behaviour
+  (the R-A covenant). See Persistence & Restore Architecture.
+
+OPEN: one unknown remains - producer call sites for the advanced `SpellState` flags
+(`contract_violation`, `mutation_candidate`, `mutation_quarantined`, `mutation_failed`).
+It is blocked by design: those producers belong to the MutationResearch runtime-seam
+slice, which is deliberately deferred. See Unknowns and Open Questions.
+
+VOLATILE AREAS, most likely to drift first: the guard/manifest surface (it moved twice
+in one day on 2026-07-25), the crystallizer subsystem split, and the MutationResearch
+composition vocabulary. Re-verify those against source before relying on them.
+
+NOTE ON THIS SECTION: it previously held a 20-entry changelog of edits made TO this
+document, plus a 2026-07-07 marker recording that its tail had been lost to a mid-write
+truncation predating recoverable git history. Both were replaced on 2026-07-25 with the
+state-and-next-steps summary the template specifies; the edit history lives in git.

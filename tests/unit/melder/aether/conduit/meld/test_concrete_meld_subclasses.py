@@ -816,12 +816,48 @@ def test_spellspace_meld_describe_live_creation_status_reports_owner_conduit_sco
     }
 
 
-def test_spellspace_meld_describe_live_creation_status_reports_owner_conduit_many() -> None:
+def test_spellspace_meld_describe_live_creation_status_reports_spellspace_many() -> None:
     """
-    Verify SpellSpaceMeld reports owner conduit many-scope payloads.
+    Verify SpellSpaceMeld reports many-scope payloads from the space's own store.
+
+    A disposal-bearing `many` melded through a SpellSpace is registered in the
+    space's store (the innermost scope), the only store the space purges it
+    from, so the probe counts that bucket. Before the 2026-09-28 fix it read
+    the owner conduit's store and missed what the space held.
+    """
+    meld, spellspace_creations, _owner_creations, spellbook = _make_spellspace_meld()
+    spellspace_creations.add_many_creations("spell-1", object())
+    spellspace_creations.add_many_creations("spell-1", object())
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.many,
+        requires_spellspace_request=False,
+    )
+    _seed_spell(spellbook, spell)
+
+    assert meld.has_live_creation(spell="spell-1") is True
+    assert meld.describe_live_creation_status(spell="spell-1") == {
+        "is_live": True,
+        "spell_id": "spell-1",
+        "spell_name": "Spell",
+        "existence": "many",
+        "query_conduit_id": "conduit-1",
+        "storage_scope_kind": "spellspace_many",
+        "storage_owner_conduit_id": "conduit-1",
+        "active_spellspace_id": "space-1",
+        "creation_count": 2,
+    }
+
+
+def test_spellspace_meld_describe_live_creation_status_ignores_owner_conduit_many() -> None:
+    """
+    Verify SpellSpaceMeld does not count many objects the owner conduit holds.
+
+    A `many` melded through the owner conduit lives in the conduit's store and
+    is reported by the conduit's own probe; the space door neither registers
+    into nor purges from that store, so it reports none.
     """
     meld, _spellspace_creations, owner_creations, spellbook = _make_spellspace_meld()
-    owner_creations.add_many_creations("spell-1", object())
     owner_creations.add_many_creations("spell-1", object())
     spell = _SpellStub(
         spell_id="spell-1",
@@ -830,16 +866,17 @@ def test_spellspace_meld_describe_live_creation_status_reports_owner_conduit_man
     )
     _seed_spell(spellbook, spell)
 
+    assert meld.has_live_creation(spell="spell-1") is False
     assert meld.describe_live_creation_status(spell="spell-1") == {
-        "is_live": True,
+        "is_live": False,
         "spell_id": "spell-1",
         "spell_name": "Spell",
         "existence": "many",
         "query_conduit_id": "conduit-1",
-        "storage_scope_kind": "owner_conduit_many",
+        "storage_scope_kind": "spellspace_many",
         "storage_owner_conduit_id": "conduit-1",
-        "active_spellspace_id": None,
-        "creation_count": 2,
+        "active_spellspace_id": "space-1",
+        "creation_count": 0,
     }
 
 
