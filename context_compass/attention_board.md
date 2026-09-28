@@ -125,6 +125,7 @@ Message alert rules
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| owner_assets_rebuild | done | workflows_0 | tickets/tasks/completed/2026-09-28_rebuild_assets_after_owner_changes_task.md | Package assets rebuilt; all asset and LLM bundle checks OK. Next: none. | 2026-09-28T09:01:49Z |
 | melder_wheel | done | workflows_0 | tickets/tasks/completed/2026-09-28_build_melder_wheel_task.md | Built wheel and installed Melder 0.2.8206 in priv_commandops/.venv314; archive and isolated import verified. Next: none. | 2026-09-28T08:54:31Z |
 | probe_portability_followups | done | melder_0 | tickets/tasks/completed/2026-09-28_finish_probe_and_doc_portability_followups_task.md | ConduitMeld docstrings name each lifetime's store; src_architecture/src_components name no tooling path (both checks 0); ConduitMeld node accepted; notched 0.2.8205; waived rebuild covered by 0.2.8206 (asset/LLM checks OK). Next: none. | 2026-09-28T08:39:36Z |
 | qualified_spell_name_collisions | done | workflows_0 | tickets/tasks/completed/2026-09-28_investigate_qualified_spell_name_collisions_task.md | Canonical-address validation; 35 red checks to 147 passing, 2 pre-existing XPASS; docs/release promoted, notched 0.2.8206; asset and LLM checks OK. Next: none. | 2026-09-28T08:31:05Z |
@@ -136,7 +137,6 @@ Message alert rules
 | meld_entry_cache | done | fable_0 | tickets/tasks/completed/2026-09-27_meld_entry_cache_by_name_and_class_task.md | Name/class-keyed warm meld entries (Meld._fast_input_doors) landed with 20 tests, docs promoted, notched 0.2.8201 (tree then read 0.2.8202, writer unknown), assets rebuilt; VM -23..-47% per warm meld by name. | 2026-09-27T22:20:17Z |
 | creations_disposal_failures | done | melder_0 | tickets/tasks/completed/2026-09-27_aggregate_creations_disposal_method_failures_task.md | Every declared disposal method runs and each failure is reported, chained from its cause; notched 0.2.80, shipped in 0.2.82. Next: none. | 2026-09-27T21:32:08Z |
 | frame_descriptor_test_race | done | melder_0 | tickets/tasks/completed/2026-09-27_harden_frame_descriptor_cleanup_recheck_test_task.md | Windows flake was the test's lock stand-in losing a signal; the test now checks frame_name, cleans once and asserts check_cleaned(): no threads, no use after cleanup, no source change. Next: none. | 2026-09-27T21:26:35Z |
-| agent_contribution_guide | done | fable_0 | tickets/tasks/completed/2026-09-27_author_agent_contribution_guide_task.md | special_instructions/agent_contribution_guide.md: 0.0001 per ticket as decimal digits, running release note, cut procedure, assets rebuilt last; no notch (0.2.82 frozen window). | 2026-09-27T19:24:24Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
