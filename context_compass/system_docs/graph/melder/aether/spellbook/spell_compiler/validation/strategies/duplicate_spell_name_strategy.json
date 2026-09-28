@@ -1,103 +1,103 @@
 {
-  "schema_version": 1,
-  "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
-  "source_sha256": "f6fb4820d65b42cc6fbb16c2fff47f63e8ba4feb5f0612b7a820cdefe2a85f22",
-  "generator": "tools/system_documents/python/extract_graph.py",
-  "nodes": {
-    "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy",
-      "label": "duplicate_spell_name_strategy",
-      "kind": "module",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
-      "lineno": 1,
-      "include": true,
-      "role": "Phase 4 check for visible spells claiming one canonical lookup address.",
-      "responsibilities": [
-        "provides one validation or examination strategy/support surface"
-      ],
-      "phases": [
-        "validation",
-        "runtime"
-      ],
-      "semantics_authored_against": ""
-    },
-    "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy": {
-      "id": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
-      "label": "DuplicateSpellNameStrategy",
-      "kind": "class",
-      "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
-      "lineno": 14,
-      "bases": [
-        "SpellValidationStrategy"
-      ],
-      "markers": [],
-      "public_methods": [
-        "validate"
-      ],
-      "shape": {
-        "method_count": 1,
-        "has_bases": true,
-        "trivial": false
-      },
-      "span_sha256": "235f78f1facf0535395f12f372f8c3cc86734f0ec4f34ef3e94fc9c282c5e9a3",
-      "include": true,
-      "role": "Check normalized lookup-address uniqueness while permitting same-named spells at distinct addresses.",
-      "responsibilities": [
-        "use the visible spellbook spell pool as the source of truth",
-        "emit issues only - never rename or partition spells",
-        "collect canonical addresses from one pool copy because concurrent binds change the live dict",
-        "memoize address collisions within the validation pass and preserve DUPLICATE_SPELL_NAME diagnostics"
-      ],
-      "phases": [
-        "compile"
-      ],
-      "semantics_authored_against": "235f78f1facf0535395f12f372f8c3cc86734f0ec4f34ef3e94fc9c282c5e9a3"
-    }
+ "schema_version": 1,
+ "source": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
+ "source_sha256": "f6fb4820d65b42cc6fbb16c2fff47f63e8ba4feb5f0612b7a820cdefe2a85f22",
+ "generator": "tools/system_documents/python/extract_graph.py",
+ "nodes": {
+  "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy",
+   "label": "duplicate_spell_name_strategy",
+   "kind": "module",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
+   "lineno": 1,
+   "include": true,
+   "role": "Phase 4 check for visible spells claiming one canonical lookup address.",
+   "responsibilities": [
+    "provides one validation or examination strategy/support surface"
+   ],
+   "phases": [
+    "validation",
+    "runtime"
+   ],
+   "semantics_authored_against": ""
   },
-  "edges_out": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
-      "to_label": "SpellValidationStrategy",
-      "relation": "specializes",
-      "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
-    }
-  ],
-  "edge_candidates": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
-      "to_label": "SpellValidationIssue",
-      "relation": "creates",
-      "confidence": "candidate"
-    }
-  ],
-  "published_aliases": [],
-  "imports": {
-    "TYPE_CHECKING": "typing.TYPE_CHECKING",
-    "Dict": "typing.Dict",
-    "List": "typing.List",
-    "Any": "typing.Any",
-    "Optional": "typing.Optional",
-    "Tuple": "typing.Tuple",
-    "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
-    "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
-    "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
-    "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
-  },
-  "collapse_candidate": {
-    "module": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy",
-    "class": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
-    "label": "DuplicateSpellNameStrategy"
-  },
-  "edges_authored": [
-    {
-      "from": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
-      "to": "melder.utilities.helpers.general_helpers.SpellInputUtils",
-      "relation": "uses",
-      "cardinality": "many_to_one",
-      "phase": [
-        "compile"
-      ],
-      "why": "Validation derives frame/binding keys with the same normalizer used by registration and Meld."
-    }
-  ]
+  "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy": {
+   "id": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
+   "label": "DuplicateSpellNameStrategy",
+   "kind": "class",
+   "file": "src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py",
+   "lineno": 14,
+   "bases": [
+    "SpellValidationStrategy"
+   ],
+   "markers": [],
+   "public_methods": [
+    "validate"
+   ],
+   "shape": {
+    "method_count": 1,
+    "has_bases": true,
+    "trivial": false
+   },
+   "span_sha256": "235f78f1facf0535395f12f372f8c3cc86734f0ec4f34ef3e94fc9c282c5e9a3",
+   "include": true,
+   "role": "Check normalized lookup-address uniqueness while permitting same-named spells at distinct addresses.",
+   "responsibilities": [
+    "use the visible spellbook spell pool as the source of truth",
+    "emit issues only - never rename or partition spells",
+    "collect canonical addresses from one pool copy because concurrent binds change the live dict",
+    "memoize address collisions within the validation pass and preserve DUPLICATE_SPELL_NAME diagnostics"
+   ],
+   "phases": [
+    "compile"
+   ],
+   "semantics_authored_against": "235f78f1facf0535395f12f372f8c3cc86734f0ec4f34ef3e94fc9c282c5e9a3"
+  }
+ },
+ "edges_out": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
+   "to_label": "SpellValidationStrategy",
+   "relation": "specializes",
+   "to": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy"
+  }
+ ],
+ "edge_candidates": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
+   "to_label": "SpellValidationIssue",
+   "relation": "creates",
+   "confidence": "candidate"
+  }
+ ],
+ "published_aliases": [],
+ "imports": {
+  "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "Dict": "typing.Dict",
+  "List": "typing.List",
+  "Any": "typing.Any",
+  "Optional": "typing.Optional",
+  "Tuple": "typing.Tuple",
+  "SpellValidationIssue": "melder.aether.spellbook.spell_compiler.validation.spell_validation_issue.SpellValidationIssue",
+  "SpellValidationStrategy": "melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy.SpellValidationStrategy",
+  "SpellInputUtils": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+  "SpellValidationContext": "melder.aether.spellbook.spell_compiler.validation.spell_validation_context.SpellValidationContext"
+ },
+ "collapse_candidate": {
+  "module": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy",
+  "class": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
+  "label": "DuplicateSpellNameStrategy"
+ },
+ "edges_authored": [
+  {
+   "from": "melder.aether.spellbook.spell_compiler.validation.strategies.duplicate_spell_name_strategy.DuplicateSpellNameStrategy",
+   "to": "melder.utilities.helpers.general_helpers.SpellInputUtils",
+   "relation": "uses",
+   "cardinality": "many_to_one",
+   "phase": [
+    "compile"
+   ],
+   "why": "Validation derives frame/binding keys with the same normalizer used by registration and Meld."
+  }
+ ]
 }

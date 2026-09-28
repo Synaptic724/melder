@@ -265,35 +265,43 @@ Responsibilities:
 - Instantiate the package-root hardcopy document objects:
   `__architecture__`, `__components__`, `__graph_network__`, and
   `__graph_details__`.
-- Provide the immutable `StaticSystemDocument` carrier used by those exports.
+- Provide `SystemDocumentView` / `SystemGraphView` query surfaces over lazy immutable
+  `StaticSystemDocument` text carriers.
 - Export root configuration helpers:
   `AetherConfiguration` and `AetherConfigurationBuilder`.
 - Export the public `ProtocolCrafter` helper for protocol generation and
   bounded interface-file maintenance.
 
 Inputs:
-- Minified JSON hardcopy payload strings for packaged document modules.
+- Generated manifest entries, section tables, text payloads and graph adjacency. The underlying
+  `StaticSystemDocument` carrier also supports explicit JSON hardcopy construction.
 - Public helper/config class implementations wired into `melder.__all__`.
 
 Outputs:
-- Package-root `StaticSystemDocument` objects for agent-facing hardcopy access.
+- Package-root `SystemDocumentView` and `SystemGraphView` objects for bounded document/graph queries.
 - Public helper/config class exports available from the top-level package.
 
 Owned State:
-- Module-level `StaticSystemDocument` singletons in the packaged doc modules.
+- Module-level shared query views; each lazily retains its section tuple/key map, text carrier and,
+  for a graph view, the adjacency module. Reader cursors are private to their callers.
 
 Lifecycle/Cleanup:
-- Hardcopy document exports are immutable after import and define no cleanup
-  contract.
+- Hardcopy data is immutable; derived caches initialize on first use and have no cleanup contract.
 - Helper/config objects own their own cleanup only when callers instantiate
   them.
 
 Concurrency/Threading:
-- Hardcopy exports are import-time objects only.
+- Shared views initialize lazily. The index publishes its complete key map before `_sections`, its
+  readiness marker (2026-09-28). A concurrent first reader may build equivalent immutable values but
+  cannot observe ready sections with a missing map. Warm reads take no lock. Failed map construction
+  leaves the marker None and the next call retries. Text and adjacency publish one completed reference.
 - Exported helpers use their own instance locks when instantiated.
 
 Invariants/Guarantees:
 - Package-root hardcopy docs remain queryable without conjuring a conduit.
+- Section tuple and key map are available together whenever `_index()` returns; first-use publication
+  does not require an eager payload import or a new lock.
+  EVIDENCE: `src/melder/utilities/ai_native_support_tools/system_document_view.py:SystemDocumentView._index`.
 - Packaged hardcopy payloads are live build-time ingestions of the system
   docs with section addressing and a SHA verification gate (manifest 2.0.0;
   the 1.0.0 placeholder envelopes are history).
@@ -303,7 +311,8 @@ Invariants/Guarantees:
   imported from `melder`.
 
 Failure Modes:
-- Invalid hardcopy JSON would fail import of the packaged doc module.
+- Unavailable manifest entries retain their refusal reason; text reads raise rather than returning
+  empty content. Deferred import/construction failures propagate on access; index construction can retry.
 - Helper/config misuse fails when the helper/config instance is used, not at
   package export time.
 
@@ -319,6 +328,8 @@ Extension Points:
 
 Key Files (C1):
 - `src/melder/system_document.py`
+- `src/melder/utilities/ai_native_support_tools/system_document_view.py`
+- `src/melder/_build_assets/_system_documents/system_documents.py`
 - `src/melder/__architecture__.py`
 - `src/melder/__components__.py`
 - `src/melder/__graph_network__.py`
@@ -6860,6 +6871,13 @@ neither of which happens.
    the general profile contract.
 
 ## C1 Code Map (Core)
+- path: `src/melder/utilities/ai_native_support_tools/system_document_view.py`
+  start_line: 1
+  end_line: 1423
+  loc: 1423
+  verified_at: 2026-09-28T09:42:05Z
+  note: shared document/graph query views; key map published before the section readiness marker.
+
 - path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py`
   start_line: 1
   end_line: 166
@@ -9848,6 +9866,10 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-28 document-index publication: the key map is assigned before the section tuple that signals
+readiness. Concurrent first readers see complete index data; construction failure remains retryable.
+The packaged-document component now identifies the public lazy views and their underlying carriers.
 
 2026-09-28 qualified same-name registrations: Phase 4 now compares canonical lookup addresses using the
 registration/Meld normalizer. Distinct addresses pass; actual collisions retain DUPLICATE_SPELL_NAME and

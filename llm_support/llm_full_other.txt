@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 99a5d734c1540aa5929e8f3ea774e65060193499b57fa82aff52a2ce10fd88e7
+SOURCE FINGERPRINT: 6a514544fd11d456dbcf75567e6854ab0eab633e2356127bed6b2b7af0cb8064
 FILE COUNT: 379
 
 ================================================================================
@@ -71542,10 +71542,10 @@ END FILE: release_docs/0.2.82.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: e093314b6395d59215920fec944012e5463adebf138d81c14a8203682c4f5ec2
+CONTENT SHA256: 88308d2970ad06501214c131f6855a56d7ee1cd12992b42c76687a1788d21aec
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8206
+# Melder 0.2.8207
 
 **Unreleased**
 
@@ -71644,6 +71644,14 @@ bindings. A genuine shared address still produces a collision; its diagnostic re
 `DUPLICATE_SPELL_NAME` code and names the normalized address. Discoverable definitions retain their
 address ownership and direct-meld refusal. Bare-class lookup semantics are unchanged.
 
+## Fixed: concurrent first reads of system documents
+
+Concurrent first access to `__architecture__`, `__components__`, `__graph_network__` or
+`__graph_details__` could fail with a `NoneType` error during section lookup. The lazy loader marked
+the section table ready before publishing its key map, so another reader could observe only half
+the index. It now publishes the complete map before setting that ready marker. A failed map build
+also remains retryable. Loading stays deferred and reads remain lock-free.
+
 ## Packaging and documentation
 
 - The packaged system documents (`melder.__components__`, `melder.__architecture__`) are regenerated: the Meld
@@ -71659,7 +71667,9 @@ address ownership and direct-meld refusal. Bare-class lookup semantics are uncha
   the store each lifetime uses and no longer promise an active-spellspace check.
 - The source and test system documents describe canonical address validation and the qualified-name
   regressions, including discoverable definitions, contracted bindings and genuine address collisions.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8206.
+- The system-document contracts describe readiness-last index publication and the deterministic
+  concurrency/retry regressions that protect it.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8207.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

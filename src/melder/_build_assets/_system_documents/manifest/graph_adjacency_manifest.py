@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8206"
+BUILT_FOR_VERSION = "0.2.8207"
 NODE_COUNT = 1211
 EDGE_COUNT = 1394
 WHY_COUNT = 939
@@ -1127,14 +1127,14 @@ NODES = {
     'melder.utilities.ai_native_support_tools.protocol_crafter': ('src/melder/utilities/ai_native_support_tools/protocol_crafter.py', 'protocol_crafter', 'module', 1, False),
     'melder.utilities.ai_native_support_tools.protocol_crafter.ProtocolCrafter': ('src/melder/utilities/ai_native_support_tools/protocol_crafter.py', 'ProtocolCrafter', 'class', 22, False),
     'melder.utilities.ai_native_support_tools.system_document_view': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'system_document_view', 'module', 1, False),
-    'melder.utilities.ai_native_support_tools.system_document_view.Edge': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'Edge', 'record', 185, False),
-    'melder.utilities.ai_native_support_tools.system_document_view.Group': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'Group', 'record', 160, False),
-    'melder.utilities.ai_native_support_tools.system_document_view.Impact': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'Impact', 'record', 233, True),
-    'melder.utilities.ai_native_support_tools.system_document_view.Node': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'Node', 'record', 260, False),
-    'melder.utilities.ai_native_support_tools.system_document_view.SearchHit': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'SearchHit', 'record', 131, False),
-    'melder.utilities.ai_native_support_tools.system_document_view.Section': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'Section', 'record', 81, False),
-    'melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'SystemDocumentView', 'class', 293, False),
-    'melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'SystemGraphView', 'class', 958, False),
+    'melder.utilities.ai_native_support_tools.system_document_view.Edge': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'Edge', 'record', 187, False),
+    'melder.utilities.ai_native_support_tools.system_document_view.Group': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'Group', 'record', 162, False),
+    'melder.utilities.ai_native_support_tools.system_document_view.Impact': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'Impact', 'record', 235, True),
+    'melder.utilities.ai_native_support_tools.system_document_view.Node': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'Node', 'record', 262, False),
+    'melder.utilities.ai_native_support_tools.system_document_view.SearchHit': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'SearchHit', 'record', 133, False),
+    'melder.utilities.ai_native_support_tools.system_document_view.Section': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'Section', 'record', 83, False),
+    'melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'SystemDocumentView', 'class', 295, False),
+    'melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView': ('src/melder/utilities/ai_native_support_tools/system_document_view.py', 'SystemGraphView', 'class', 970, False),
     'melder.utilities.caching_system.asset_cache': ('src/melder/utilities/caching_system/asset_cache.py', 'asset_cache', 'module', 1, False),
     'melder.utilities.caching_system.asset_cache.AssetCachePolicy': ('src/melder/utilities/caching_system/asset_cache.py', 'AssetCachePolicy', 'class', 85, False),
     'melder.utilities.caching_system.caching_system': ('src/melder/utilities/caching_system/caching_system.py', 'caching_system', 'module', 1, False),

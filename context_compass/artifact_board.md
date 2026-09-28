@@ -91,6 +91,8 @@ Disposition values
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/completed/2026-09-28_fix_system_document_lazy_publication_race_task.md | system_docs/patches/completed/document_index_publication_2026_09_28/ | promote_to_documentation | Publication/retry contracts promoted to source/test docs, graph and release; patch records archived. | 2026-09-28T09:47:24Z |
+| tickets/tasks/completed/2026-09-28_fix_system_document_lazy_publication_race_task.md | artifacts/system_document_publication_race_20260928/ | retain_as_reference | Red/green regressions, free-threaded contention stress and documentation/graph evidence. | 2026-09-28T09:47:24Z |
 | tickets/tasks/completed/2026-09-28_rebuild_assets_after_owner_changes_task.md | artifacts/assets_rebuild_20260928_0859/ | retain_as_reference | Canonical asset rebuild/check and current LLM bundle/check logs. | 2026-09-28T09:01:49Z |
 | tickets/tasks/completed/2026-09-28_build_melder_wheel_task.md | artifacts/wheel_build_20260928/ | retain_as_reference | Build logs, fresh source staging, asset check and successful installation log; delivered wheel remains in dist/. | 2026-09-28T08:54:31Z |
 | tickets/tasks/completed/2026-09-28_finish_probe_and_doc_portability_followups_task.md | artifacts/probe_and_portability_followups_20260928/ | retain_as_reference | Apply and edit scripts (docstrings, system docs, graph, closure), graph run logs and walker reports, the preservation report, validation logs at 0.2.8205 and 0.2.8206. | 2026-09-28T08:39:36Z |

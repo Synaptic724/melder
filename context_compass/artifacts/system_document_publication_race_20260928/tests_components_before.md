@@ -1302,9 +1302,6 @@ Protects:
   complete, each in its own child interpreter with a timeout backstop
 - thread-safe first loads, private cursors and consistent search, walk and impact
   results on the packaged system documents and the agent text reader
-- deterministic index publication (2026-09-28): an Event pauses the first mapping constructor while
-  another public lookup runs; all four views must return complete data. A failing mapping constructor
-  must propagate its error and permit a successful retry. Existing simultaneous-load tests remain.
 Key Files (C1):
 - `tests/integration/melder/multithreading/test_multithreading_link_bind_contract_features.py`
 - `tests/integration/melder/multithreading/test_multithreading_spell_system_states.py`
@@ -2366,10 +2363,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/integration/melder/multithreading/test_multithreading_system_document_view.py`
   start_line: 1
-  end_line: 415
-  loc: 415
-  verified_at: 2026-09-28T09:42:05Z
-  note: deterministic partial-publication/retry regressions plus concurrent lazy-load and query contracts.
+  end_line: 346
+  loc: 346
+  verified_at: 2026-09-26T22:11:36Z
 - path: `tests/integration/melder/multithreading/test_multithreading_agent_text_reader.py`
   start_line: 1
   end_line: 359
@@ -2507,10 +2503,6 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
-
-2026-09-28 document index: eight deterministic regressions cover concurrent reads during key-map
-construction and recovery after a failed construction, across all four shipped views. The original
-mixed index/text/adjacency contention test is retained; readiness claims no longer treat two writes as atomic.
 
 2026-09-28 qualified-name validation: strategy unit tests compare canonical addresses, including
 case/default normalization and pass caching. Public integration regressions verify exact classes after

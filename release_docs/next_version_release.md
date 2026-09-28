@@ -1,4 +1,4 @@
-# Melder 0.2.8206
+# Melder 0.2.8207
 
 **Unreleased**
 
@@ -97,6 +97,14 @@ bindings. A genuine shared address still produces a collision; its diagnostic re
 `DUPLICATE_SPELL_NAME` code and names the normalized address. Discoverable definitions retain their
 address ownership and direct-meld refusal. Bare-class lookup semantics are unchanged.
 
+## Fixed: concurrent first reads of system documents
+
+Concurrent first access to `__architecture__`, `__components__`, `__graph_network__` or
+`__graph_details__` could fail with a `NoneType` error during section lookup. The lazy loader marked
+the section table ready before publishing its key map, so another reader could observe only half
+the index. It now publishes the complete map before setting that ready marker. A failed map build
+also remains retryable. Loading stays deferred and reads remain lock-free.
+
 ## Packaging and documentation
 
 - The packaged system documents (`melder.__components__`, `melder.__architecture__`) are regenerated: the Meld
@@ -112,4 +120,6 @@ address ownership and direct-meld refusal. Bare-class lookup semantics are uncha
   the store each lifetime uses and no longer promise an active-spellspace check.
 - The source and test system documents describe canonical address validation and the qualified-name
   regressions, including discoverable definitions, contracted bindings and genuine address collisions.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8206.
+- The system-document contracts describe readiness-last index publication and the deterministic
+  concurrency/retry regressions that protect it.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8207.

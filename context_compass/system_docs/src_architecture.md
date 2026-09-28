@@ -882,6 +882,11 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Shared document-view initialization (2026-09-28): a non-None section tuple signals a complete index,
+  so its key map is published first. Concurrent first reads may build equivalent immutable indexes;
+  warm reads stay lock-free and failed map construction is retryable. Payload and adjacency loads each
+  publish one completed reference. This runtime ordering is independent of build-time asset integrity.
+  EVIDENCE: `src/melder/utilities/ai_native_support_tools/system_document_view.py:SystemDocumentView._index`.
 - Qualified spell identity (2026-09-28): Phase 4 checks the normalized `(frame_key, binding_key)` that
   registration and Meld use. Same-named classes at distinct frames or bindings can coexist, including
   discoverable and contracted registrations. Case/default normalization and frame-wide address ownership
@@ -1610,6 +1615,13 @@ shortfall honesty, R-A covenant) are unchanged.
 
 
 ## C1 Code Map (Core Only)
+
+- path: `src/melder/utilities/ai_native_support_tools/system_document_view.py`
+  start_line: 1
+  end_line: 1423
+  loc: 1423
+  verified_at: 2026-09-28T09:42:05Z
+  note: package-root query views with complete-state lazy index publication.
 
 - path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py`
   start_line: 1
@@ -2955,6 +2967,9 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-28 document-view race: publishing sections before the key map allowed a concurrent first lookup
+to receive None. The map now precedes the readiness marker, preserving deferred loading and lock-free reads.
 
 2026-09-28 qualified same-name registrations: conjure accepts repeated class names at distinct canonical
 addresses. Phase 4 uses the registration/Meld key normalizer and retains DUPLICATE_SPELL_NAME for actual

@@ -1,0 +1,28 @@
+{
+  "src_architecture": {
+    "removed": {},
+    "added_lines": 13
+  },
+  "src_components": {
+    "removed": {
+      "- Provide the immutable `StaticSystemDocument` carrier used by those exports.": 1,
+      "- Minified JSON hardcopy payload strings for packaged document modules.": 1,
+      "- Package-root `StaticSystemDocument` objects for agent-facing hardcopy access.": 1,
+      "- Module-level `StaticSystemDocument` singletons in the packaged doc modules.": 1,
+      "- Hardcopy document exports are immutable after import and define no cleanup": 1,
+      "contract.": 1,
+      "- Hardcopy exports are import-time objects only.": 1,
+      "- Invalid hardcopy JSON would fail import of the packaged doc module.": 1
+    },
+    "added_lines": 28
+  },
+  "tests_components": {
+    "removed": {
+      "verified_at: 2026-09-26T22:11:36Z": 1,
+      "end_line: 346": 1,
+      "loc: 346": 1
+    },
+    "added_lines": 10
+  },
+  "accounting": "Eight obsolete eager/StaticSystemDocument export claims corrected; three test map size/date values remeasured. All other baseline content retained."
+}

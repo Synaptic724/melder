@@ -11,10 +11,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `src_graph.md` |
 | index_version | 1.0.0 |
-| generated_at | 2026-09-28T08:26:14Z |
-| line_count | 27544 |
+| generated_at | 2026-09-28T09:47:24Z |
+| line_count | 27545 |
 | line_ending | lf |
-| content_sha256 | `35499a1aaa2ff5a4bf0443ec13f0b8f4d6e2e9e1e9b81406bcd1004eef49bee6` |
+| content_sha256 | `b522f9ce9c36a7a4502082702d254dc9ce069ea00c5f4cb437c337165b96d4fb` |
 | sections | 584 |
 
 Recompute `line_count` and `content_sha256` before slicing. On any
@@ -563,48 +563,48 @@ mismatch the document was hand-edited: STOP, do not slice, reassemble.
 | 25166-25204 | `src/melder/system_document.py` | 2 | 0 |
 | 25206-25280 | `src/melder/utilities/ai_native_support_tools/agent_text_reader.py` | 5 | 0 |
 | 25282-25342 | `src/melder/utilities/ai_native_support_tools/protocol_crafter.py` | 2 | 3 |
-| 25344-25466 | `src/melder/utilities/ai_native_support_tools/system_document_view.py` | 9 | 1 |
-| 25468-25495 | `src/melder/utilities/caching_system/asset_cache.py` | 2 | 0 |
-| 25497-25557 | `src/melder/utilities/caching_system/caching_system.py` | 2 | 5 |
-| 25559-25593 | `src/melder/utilities/custom_exceptions/dead_reference_error.py` | 2 | 1 |
-| 25595-25623 | `src/melder/utilities/custom_exceptions/empty_error.py` | 2 | 0 |
-| 25625-25655 | `src/melder/utilities/custom_exceptions/hook_execution_error.py` | 2 | 0 |
-| 25657-25685 | `src/melder/utilities/custom_exceptions/internal_registration_error.py` | 2 | 0 |
-| 25687-25716 | `src/melder/utilities/custom_exceptions/meld_execution_error.py` | 2 | 0 |
-| 25718-25746 | `src/melder/utilities/custom_exceptions/operation_cancelled_error.py` | 2 | 0 |
-| 25748-25783 | `src/melder/utilities/custom_exceptions/phase_execution_error.py` | 2 | 1 |
-| 25785-25813 | `src/melder/utilities/custom_exceptions/phase_scheduler_error.py` | 2 | 0 |
-| 25815-25849 | `src/melder/utilities/custom_exceptions/phase_timeout_error.py` | 2 | 1 |
-| 25851-25880 | `src/melder/utilities/custom_exceptions/spell_space_scope_error.py` | 2 | 0 |
-| 25882-25916 | `src/melder/utilities/custom_exceptions/spellbook_validation_error.py` | 2 | 0 |
-| 25918-25967 | `src/melder/utilities/custom_exceptions/unresolved_input_error.py` | 2 | 2 |
-| 25969-26052 | `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py` | 5 | 5 |
-| 26054-26104 | `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py` | 2 | 2 |
-| 26106-26155 | `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_set.py` | 2 | 2 |
-| 26157-26205 | `src/melder/utilities/data_structures/weak_data_structures/weak_ref_node.py` | 2 | 2 |
-| 26207-26256 | `src/melder/utilities/general_base/abstract_elastic_pool.py` | 2 | 2 |
-| 26258-26329 | `src/melder/utilities/general_base/cleanable.py` | 4 | 1 |
-| 26331-26370 | `src/melder/utilities/general_base/sync.py` | 2 | 0 |
-| 26372-26446 | `src/melder/utilities/helpers/class_surface_ast_describer.py` | 5 | 1 |
-| 26448-26466 | `src/melder/utilities/helpers/class_wraps.py` | 1 | 0 |
-| 26468-26530 | `src/melder/utilities/helpers/general_helpers.py` | 3 | 3 |
-| 26532-26583 | `src/melder/utilities/helpers/id_builder.py` | 2 | 5 |
-| 26585-26638 | `src/melder/utilities/helpers/init_helpers.py` | 2 | 5 |
-| 26640-26696 | `src/melder/utilities/helpers/package.py` | 2 | 2 |
-| 26698-26726 | `src/melder/utilities/helpers/signature_reflection.py` | 2 | 0 |
-| 26728-26762 | `src/melder/utilities/helpers/ulid_factory.py` | 2 | 0 |
-| 26764-26794 | `src/melder/utilities/interfaces/ichannellogger.py` | 2 | 0 |
-| 26796-26826 | `src/melder/utilities/interfaces/icleanable.py` | 2 | 0 |
-| 26828-26880 | `src/melder/utilities/logger/safe_logger.py` | 2 | 3 |
-| 26882-26957 | `src/melder/utilities/synchronization/cancellation_event_signal.py` | 3 | 6 |
-| 26959-27011 | `src/melder/utilities/synchronization/counter_switch.py` | 2 | 2 |
-| 27013-27065 | `src/melder/utilities/synchronization/creation_gate.py` | 2 | 2 |
-| 27067-27121 | `src/melder/utilities/synchronization/creation_gate_controller.py` | 2 | 3 |
-| 27123-27164 | `src/melder/utilities/synchronization/fast_switch.py` | 2 | 2 |
-| 27166-27215 | `src/melder/utilities/synchronization/load_gate.py` | 2 | 1 |
-| 27217-27260 | `src/melder/utilities/synchronization/phase_latch.py` | 2 | 0 |
-| 27262-27336 | `src/melder/utilities/synchronization/phase_scheduler.py` | 2 | 8 |
-| 27338-27387 | `src/melder/utilities/synchronization/safeguard.py` | 2 | 2 |
-| 27389-27442 | `src/melder/utilities/synchronization/sync_weak_ref.py` | 2 | 3 |
-| 27444-27485 | `src/melder/utilities/synchronization/ticket_flag.py` | 2 | 2 |
-| 27487-27543 | `src/melder/utilities/synchronization/unit_of_work.py` | 2 | 4 |
+| 25344-25467 | `src/melder/utilities/ai_native_support_tools/system_document_view.py` | 9 | 1 |
+| 25469-25496 | `src/melder/utilities/caching_system/asset_cache.py` | 2 | 0 |
+| 25498-25558 | `src/melder/utilities/caching_system/caching_system.py` | 2 | 5 |
+| 25560-25594 | `src/melder/utilities/custom_exceptions/dead_reference_error.py` | 2 | 1 |
+| 25596-25624 | `src/melder/utilities/custom_exceptions/empty_error.py` | 2 | 0 |
+| 25626-25656 | `src/melder/utilities/custom_exceptions/hook_execution_error.py` | 2 | 0 |
+| 25658-25686 | `src/melder/utilities/custom_exceptions/internal_registration_error.py` | 2 | 0 |
+| 25688-25717 | `src/melder/utilities/custom_exceptions/meld_execution_error.py` | 2 | 0 |
+| 25719-25747 | `src/melder/utilities/custom_exceptions/operation_cancelled_error.py` | 2 | 0 |
+| 25749-25784 | `src/melder/utilities/custom_exceptions/phase_execution_error.py` | 2 | 1 |
+| 25786-25814 | `src/melder/utilities/custom_exceptions/phase_scheduler_error.py` | 2 | 0 |
+| 25816-25850 | `src/melder/utilities/custom_exceptions/phase_timeout_error.py` | 2 | 1 |
+| 25852-25881 | `src/melder/utilities/custom_exceptions/spell_space_scope_error.py` | 2 | 0 |
+| 25883-25917 | `src/melder/utilities/custom_exceptions/spellbook_validation_error.py` | 2 | 0 |
+| 25919-25968 | `src/melder/utilities/custom_exceptions/unresolved_input_error.py` | 2 | 2 |
+| 25970-26053 | `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_dict.py` | 5 | 5 |
+| 26055-26105 | `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_list.py` | 2 | 2 |
+| 26107-26156 | `src/melder/utilities/data_structures/weak_data_structures/weak_concurrent_set.py` | 2 | 2 |
+| 26158-26206 | `src/melder/utilities/data_structures/weak_data_structures/weak_ref_node.py` | 2 | 2 |
+| 26208-26257 | `src/melder/utilities/general_base/abstract_elastic_pool.py` | 2 | 2 |
+| 26259-26330 | `src/melder/utilities/general_base/cleanable.py` | 4 | 1 |
+| 26332-26371 | `src/melder/utilities/general_base/sync.py` | 2 | 0 |
+| 26373-26447 | `src/melder/utilities/helpers/class_surface_ast_describer.py` | 5 | 1 |
+| 26449-26467 | `src/melder/utilities/helpers/class_wraps.py` | 1 | 0 |
+| 26469-26531 | `src/melder/utilities/helpers/general_helpers.py` | 3 | 3 |
+| 26533-26584 | `src/melder/utilities/helpers/id_builder.py` | 2 | 5 |
+| 26586-26639 | `src/melder/utilities/helpers/init_helpers.py` | 2 | 5 |
+| 26641-26697 | `src/melder/utilities/helpers/package.py` | 2 | 2 |
+| 26699-26727 | `src/melder/utilities/helpers/signature_reflection.py` | 2 | 0 |
+| 26729-26763 | `src/melder/utilities/helpers/ulid_factory.py` | 2 | 0 |
+| 26765-26795 | `src/melder/utilities/interfaces/ichannellogger.py` | 2 | 0 |
+| 26797-26827 | `src/melder/utilities/interfaces/icleanable.py` | 2 | 0 |
+| 26829-26881 | `src/melder/utilities/logger/safe_logger.py` | 2 | 3 |
+| 26883-26958 | `src/melder/utilities/synchronization/cancellation_event_signal.py` | 3 | 6 |
+| 26960-27012 | `src/melder/utilities/synchronization/counter_switch.py` | 2 | 2 |
+| 27014-27066 | `src/melder/utilities/synchronization/creation_gate.py` | 2 | 2 |
+| 27068-27122 | `src/melder/utilities/synchronization/creation_gate_controller.py` | 2 | 3 |
+| 27124-27165 | `src/melder/utilities/synchronization/fast_switch.py` | 2 | 2 |
+| 27167-27216 | `src/melder/utilities/synchronization/load_gate.py` | 2 | 1 |
+| 27218-27261 | `src/melder/utilities/synchronization/phase_latch.py` | 2 | 0 |
+| 27263-27337 | `src/melder/utilities/synchronization/phase_scheduler.py` | 2 | 8 |
+| 27339-27388 | `src/melder/utilities/synchronization/safeguard.py` | 2 | 2 |
+| 27390-27443 | `src/melder/utilities/synchronization/sync_weak_ref.py` | 2 | 3 |
+| 27445-27486 | `src/melder/utilities/synchronization/ticket_flag.py` | 2 | 2 |
+| 27488-27544 | `src/melder/utilities/synchronization/unit_of_work.py` | 2 | 4 |

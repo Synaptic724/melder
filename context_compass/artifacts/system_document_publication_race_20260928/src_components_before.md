@@ -1,23 +1,4 @@
-"""
-GENERATED BUILD ASSET - DO NOT EDIT MANUALLY.
-
-Verbatim text of `context_compass/system_docs/src_components.md`,
-captured at build time so an installed melder can serve it without the
-repository present.
-
-Imported LAZILY - only when something actually slices this document.
-`LINE_COUNT` and `CONTENT_SHA256` are the same proof the index carries,
-repeated here so a consumer can verify without loading the manifest.
-
-Regenerate with:
-    python src/melder/_build_assets/_build_asset_runner.py
-"""
-
-DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 10207
-CONTENT_SHA256 = '542c99c19d5b98c71381f801894bbe7ab8f8cc24600e82fcf48c8f54438e946b'
-
-TEXT = """# Src Components (C3/C2/C1)
+# Src Components (C3/C2/C1)
 
 ## Metadata
 - Doc ID: COMP-SRC-2026-01-17
@@ -82,7 +63,7 @@ Run this after any pass that touches source or citations:
 ```bash
 python - <<'EOF'
 import pathlib, re
-CITE = re.compile(r"`?([a-z][A-Za-z0-9_/.]*\\.py):(\\d+)(?:\\s*-\\s*(\\d+))?`?")
+CITE = re.compile(r"`?([a-z][A-Za-z0-9_/.]*\.py):(\d+)(?:\s*-\s*(\d+))?`?")
 # Cited source paths are relative to the SOURCE-TREE root, which is not
 # necessarily the directory you run this from. Walk up until `src/` appears, so
 # the check works from the documentation root or the repository root.
@@ -93,7 +74,7 @@ docs = next(p for p in (pathlib.Path("system_docs"), pathlib.Path("."))
 for doc in docs.glob("src_*.md"):
     if doc.name.endswith("_index.md"):
         continue
-    for i, line in enumerate(doc.read_text(encoding="utf-8").split("\\n"), 1):
+    for i, line in enumerate(doc.read_text(encoding="utf-8").split("\n"), 1):
         for m in CITE.finditer(line):
             f = root / m.group(1)
             if not f.exists():
@@ -284,43 +265,35 @@ Responsibilities:
 - Instantiate the package-root hardcopy document objects:
   `__architecture__`, `__components__`, `__graph_network__`, and
   `__graph_details__`.
-- Provide `SystemDocumentView` / `SystemGraphView` query surfaces over lazy immutable
-  `StaticSystemDocument` text carriers.
+- Provide the immutable `StaticSystemDocument` carrier used by those exports.
 - Export root configuration helpers:
   `AetherConfiguration` and `AetherConfigurationBuilder`.
 - Export the public `ProtocolCrafter` helper for protocol generation and
   bounded interface-file maintenance.
 
 Inputs:
-- Generated manifest entries, section tables, text payloads and graph adjacency. The underlying
-  `StaticSystemDocument` carrier also supports explicit JSON hardcopy construction.
+- Minified JSON hardcopy payload strings for packaged document modules.
 - Public helper/config class implementations wired into `melder.__all__`.
 
 Outputs:
-- Package-root `SystemDocumentView` and `SystemGraphView` objects for bounded document/graph queries.
+- Package-root `StaticSystemDocument` objects for agent-facing hardcopy access.
 - Public helper/config class exports available from the top-level package.
 
 Owned State:
-- Module-level shared query views; each lazily retains its section tuple/key map, text carrier and,
-  for a graph view, the adjacency module. Reader cursors are private to their callers.
+- Module-level `StaticSystemDocument` singletons in the packaged doc modules.
 
 Lifecycle/Cleanup:
-- Hardcopy data is immutable; derived caches initialize on first use and have no cleanup contract.
+- Hardcopy document exports are immutable after import and define no cleanup
+  contract.
 - Helper/config objects own their own cleanup only when callers instantiate
   them.
 
 Concurrency/Threading:
-- Shared views initialize lazily. The index publishes its complete key map before `_sections`, its
-  readiness marker (2026-09-28). A concurrent first reader may build equivalent immutable values but
-  cannot observe ready sections with a missing map. Warm reads take no lock. Failed map construction
-  leaves the marker None and the next call retries. Text and adjacency publish one completed reference.
+- Hardcopy exports are import-time objects only.
 - Exported helpers use their own instance locks when instantiated.
 
 Invariants/Guarantees:
 - Package-root hardcopy docs remain queryable without conjuring a conduit.
-- Section tuple and key map are available together whenever `_index()` returns; first-use publication
-  does not require an eager payload import or a new lock.
-  EVIDENCE: `src/melder/utilities/ai_native_support_tools/system_document_view.py:SystemDocumentView._index`.
 - Packaged hardcopy payloads are live build-time ingestions of the system
   docs with section addressing and a SHA verification gate (manifest 2.0.0;
   the 1.0.0 placeholder envelopes are history).
@@ -330,8 +303,7 @@ Invariants/Guarantees:
   imported from `melder`.
 
 Failure Modes:
-- Unavailable manifest entries retain their refusal reason; text reads raise rather than returning
-  empty content. Deferred import/construction failures propagate on access; index construction can retry.
+- Invalid hardcopy JSON would fail import of the packaged doc module.
 - Helper/config misuse fails when the helper/config instance is used, not at
   package export time.
 
@@ -347,8 +319,6 @@ Extension Points:
 
 Key Files (C1):
 - `src/melder/system_document.py`
-- `src/melder/utilities/ai_native_support_tools/system_document_view.py`
-- `src/melder/_build_assets/_system_documents/system_documents.py`
 - `src/melder/__architecture__.py`
 - `src/melder/__components__.py`
 - `src/melder/__graph_network__.py`
@@ -6890,13 +6860,6 @@ neither of which happens.
    the general profile contract.
 
 ## C1 Code Map (Core)
-- path: `src/melder/utilities/ai_native_support_tools/system_document_view.py`
-  start_line: 1
-  end_line: 1423
-  loc: 1423
-  verified_at: 2026-09-28T09:42:05Z
-  note: shared document/graph query views; key map published before the section readiness marker.
-
 - path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py`
   start_line: 1
   end_line: 166
@@ -9886,10 +9849,6 @@ Companion documents:
 
 ## Context / Handoff Summary
 
-2026-09-28 document-index publication: the key map is assigned before the section tuple that signals
-readiness. Concurrent first readers see complete index data; construction failure remains retryable.
-The packaged-document component now identifies the public lazy views and their underlying carriers.
-
 2026-09-28 qualified same-name registrations: Phase 4 now compares canonical lookup addresses using the
 registration/Meld normalizer. Distinct addresses pass; actual collisions retain DUPLICATE_SPELL_NAME and
 report their address. The pass cache, pool-copy concurrency boundary and capability semantics remain.
@@ -10224,4 +10183,3 @@ judgement - fold the unique detail in, drop what is already said - not a
 mechanical move. Until that merge lands, that material is in NEITHER canonical
 document. That gap is deliberate, bounded, and recorded here so it cannot be
 discovered by accident.
-"""

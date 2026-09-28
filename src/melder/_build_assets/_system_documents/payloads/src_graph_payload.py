@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_graph.md'
-LINE_COUNT = 27544
-CONTENT_SHA256 = '35499a1aaa2ff5a4bf0443ec13f0b8f4d6e2e9e1e9b81406bcd1004eef49bee6'
+LINE_COUNT = 27545
+CONTENT_SHA256 = 'b522f9ce9c36a7a4502082702d254dc9ce069ea00c5f4cb437c337165b96d4fb'
 
 TEXT = """# src_graph
 
@@ -247,7 +247,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `d95617558117a89b9d2d39c1ea34550b82cd66eb5aa97f27e098082d0d985395`
+- source_sha256: `d14ed99459b4e80b25316a6cb31581c6b71f4a4bc784f84b885be18396e16437`
 - nodes: 1
 
 ### Nodes
@@ -336,7 +336,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `209c110965c4f9e5c6430b578cd47947c399f9daeb4037a3c2cda9241dd70bf3`
+- source_sha256: `7d021a5f0a9ac265cf47ba099b310057ab7ac8718b9408b535eabc39f4c117b3`
 - nodes: 1
 
 ### Nodes
@@ -415,7 +415,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `9b17f99f27781f9f371b9ad29a6886ff16a3d54860bdd12e5675152aa72a5379`
+- source_sha256: `238fb81c31dfe3c87df886085e065ca68d1e01e03465b78db2dc2db360f78599`
 - nodes: 1
 
 ### Nodes
@@ -493,7 +493,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `6804bd7802c50e913586bcd84065d36742b8682eaed1bf12a45c322776e4ea74`
+- source_sha256: `724b587fb5d7a4d6cf4ef3b95654acbc000700428bdaaf777ea60fcda91b3c13`
 - nodes: 1
 
 ### Nodes
@@ -510,7 +510,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `039a1766d7eb532842146c3c40959bcd8ef5152a6b8a1d7040bd8cf649f8dace`
+- source_sha256: `2ecdb7f5af7eb43a72912bf90cdd27bdcac52c355f6742e43dc9563e77f5c5d2`
 - nodes: 1
 
 ### Nodes
@@ -527,7 +527,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `99803cbc254d8ef80f7fcba6dd797aad253d6e6749a72055dc4d335aa2c43178`
+- source_sha256: `742fae4618250291ba499c607f949ea26bd7c745c09044b5b41481a2f96475e3`
 - nodes: 1
 
 ### Nodes
@@ -547,7 +547,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `5c419a40d2e2ada238ec8b805ad3cd9c2b75b5fc51ba36974eb0d2988abca302`
+- source_sha256: `33633f5dcaff5245c823d4e3dfc4cbc2391b61e6da45f0d03032303f0e9bc86d`
 - nodes: 1
 
 ### Nodes
@@ -564,7 +564,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `c0a7af74088d3c0914178bd053134c3740669f6123ed9c5ec1414d405a03e653`
+- source_sha256: `ad01828df21b526f8dc2d468c4d82937c8a394633f148d62fa85221cdc77a441`
 - nodes: 1
 
 ### Nodes
@@ -581,7 +581,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `56d2c47656f72e1f08711face7797310ff7b78d4de6ace92a60df50f6e12c869`
+- source_sha256: `3634ce335cb740b07dceef9332114748ae4c7317e6d86db5bea719b7b377f1ad`
 - nodes: 1
 
 ### Nodes
@@ -25364,7 +25364,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/utilities/ai_native_support_tools/system_document_view.py
 
-- source_sha256: `1a2034e8f0c6bc30ea7bb60786e90b2e51dfb739daa7af314afe20087c1ebb42`
+- source_sha256: `29393cd52dec410b4e91b40ec825014eb5b41ec6b95c08e67ff57072db985593`
 - nodes: 9
 
 ### Nodes
@@ -25378,7 +25378,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Section` (record)
 
 - id: `melder.utilities.ai_native_support_tools.system_document_view.Section`
-- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:81`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:83`
 - markers: `NamedTuple`
 - role: One addressable span of a system document, keyed by heading path or by repository-relative source path depending on the document's addressing scheme.
 - responsibilities:
@@ -25388,7 +25388,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SearchHit` (record)
 
 - id: `melder.utilities.ai_native_support_tools.system_document_view.SearchHit`
-- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:131`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:133`
 - markers: `NamedTuple`
 - role: One section whose BODY matches a search term, with a ranking signal attached.
 - responsibilities:
@@ -25399,7 +25399,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Group` (record)
 
 - id: `melder.utilities.ai_native_support_tools.system_document_view.Group`
-- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:160`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:162`
 - markers: `NamedTuple`
 - role: A cluster of sections sharing a prefix, so a caller can see the cost of reading a whole group before asking for it.
 - responsibilities:
@@ -25410,7 +25410,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Edge` (record)
 
 - id: `melder.utilities.ai_native_support_tools.system_document_view.Edge`
-- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:185`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:187`
 - markers: `NamedTuple`
 - role: One outbound relationship between two graph nodes, as resolved at build time.
 - responsibilities:
@@ -25420,14 +25420,14 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Impact` (record)
 
 - id: `melder.utilities.ai_native_support_tools.system_document_view.Impact`
-- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:233`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:235`
 - markers: `NamedTuple`
 - **UNSEMANTIC** - mechanical scaffold only, not yet authored
 
 #### `Node` (record)
 
 - id: `melder.utilities.ai_native_support_tools.system_document_view.Node`
-- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:260`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:262`
 - markers: `NamedTuple`
 - role: One graph node; its `source` path is also its section key in __graph_details__, which is the join between the two graph views.
 - responsibilities:
@@ -25437,20 +25437,21 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `SystemDocumentView` (class)
 
 - id: `melder.utilities.ai_native_support_tools.system_document_view.SystemDocumentView`
-- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:293`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:295`
 - role: An indexed, sliceable view over one shipped system document - a document an agent can interrogate rather than one it must consume.
 - responsibilities:
   - state every bound up front through index(), so every read is bounded
   - look sections up exactly by key, with find() covering the substring case
   - RAISE when slicing an unavailable document - a silent empty slice reads exactly like a section that says nothing
-  - stay immutable and shared
+  - share immutable document data while materializing lazy query caches
+  - publish the complete key map before the section tuple marks the index ready; keep failed construction retryable and warm reads lock-free
 - phases: `runtime`
 - public methods: `addressing`, `available`, `char_count`, `cite`, `content_sha256`, `document_name`, `find`, `get`, `groups`, `head`, `index`, `keys` (+14 more)
 
 #### `SystemGraphView` (class)
 
 - id: `melder.utilities.ai_native_support_tools.system_document_view.SystemGraphView`
-- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:958`
+- defined at: `src/melder/utilities/ai_native_support_tools/system_document_view.py:970`
 - extends: `SystemDocumentView`
 - role: A document view that is also a walkable graph; backs __graph_network__ and __graph_details__ over the same document.
 - responsibilities:

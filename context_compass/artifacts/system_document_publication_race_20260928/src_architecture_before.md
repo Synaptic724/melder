@@ -1,23 +1,4 @@
-"""
-GENERATED BUILD ASSET - DO NOT EDIT MANUALLY.
-
-Verbatim text of `context_compass/system_docs/src_architecture.md`,
-captured at build time so an installed melder can serve it without the
-repository present.
-
-Imported LAZILY - only when something actually slices this document.
-`LINE_COUNT` and `CONTENT_SHA256` are the same proof the index carries,
-repeated here so a consumer can verify without loading the manifest.
-
-Regenerate with:
-    python src/melder/_build_assets/_build_asset_runner.py
-"""
-
-DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 3251
-CONTENT_SHA256 = '29d2ef59025e2caed3c5296aebfacba2f1c3ed92ae37cc297e513cb790af5c1d'
-
-TEXT = """# Src Architecture (C4)
+# Src Architecture (C4)
 
 ## Metadata
 - Doc ID: ARCH-SRC-2026-01-17
@@ -90,7 +71,7 @@ Run this after any pass that touches source or citations:
 ```bash
 python - <<'EOF'
 import pathlib, re
-CITE = re.compile(r"`?([a-z][A-Za-z0-9_/.]*\\.py):(\\d+)(?:\\s*-\\s*(\\d+))?`?")
+CITE = re.compile(r"`?([a-z][A-Za-z0-9_/.]*\.py):(\d+)(?:\s*-\s*(\d+))?`?")
 # Cited source paths are relative to the SOURCE-TREE root, which is not
 # necessarily the directory you run this from. Walk up until `src/` appears, so
 # the check works from the documentation root or the repository root.
@@ -101,7 +82,7 @@ docs = next(p for p in (pathlib.Path("system_docs"), pathlib.Path("."))
 for doc in docs.glob("src_*.md"):
     if doc.name.endswith("_index.md"):
         continue
-    for i, line in enumerate(doc.read_text(encoding="utf-8").split("\\n"), 1):
+    for i, line in enumerate(doc.read_text(encoding="utf-8").split("\n"), 1):
         for m in CITE.finditer(line):
             f = root / m.group(1)
             if not f.exists():
@@ -901,11 +882,6 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
-- Shared document-view initialization (2026-09-28): a non-None section tuple signals a complete index,
-  so its key map is published first. Concurrent first reads may build equivalent immutable indexes;
-  warm reads stay lock-free and failed map construction is retryable. Payload and adjacency loads each
-  publish one completed reference. This runtime ordering is independent of build-time asset integrity.
-  EVIDENCE: `src/melder/utilities/ai_native_support_tools/system_document_view.py:SystemDocumentView._index`.
 - Qualified spell identity (2026-09-28): Phase 4 checks the normalized `(frame_key, binding_key)` that
   registration and Meld use. Same-named classes at distinct frames or bindings can coexist, including
   discoverable and contracted registrations. Case/default normalization and frame-wide address ownership
@@ -1634,13 +1610,6 @@ shortfall honesty, R-A covenant) are unchanged.
 
 
 ## C1 Code Map (Core Only)
-
-- path: `src/melder/utilities/ai_native_support_tools/system_document_view.py`
-  start_line: 1
-  end_line: 1423
-  loc: 1423
-  verified_at: 2026-09-28T09:42:05Z
-  note: package-root query views with complete-state lazy index publication.
 
 - path: `src/melder/aether/spellbook/spell_compiler/validation/strategies/duplicate_spell_name_strategy.py`
   start_line: 1
@@ -2987,9 +2956,6 @@ without rewriting the original record or existing live IDs.
 
 ## Context / Handoff Summary
 
-2026-09-28 document-view race: publishing sections before the key map allowed a concurrent first lookup
-to receive None. The map now precedes the readiness marker, preserving deferred loading and lock-free reads.
-
 2026-09-28 qualified same-name registrations: conjure accepts repeated class names at distinct canonical
 addresses. Phase 4 uses the registration/Meld key normalizer and retains DUPLICATE_SPELL_NAME for actual
 address collisions. Address ownership, discovery capability and class-object lookup are unchanged.
@@ -3268,4 +3234,3 @@ NOTE ON THIS SECTION: it previously held a 20-entry changelog of edits made TO t
 document, plus a 2026-07-07 marker recording that its tail had been lost to a mid-write
 truncation predating recoverable git history. Both were replaced on 2026-07-25 with the
 state-and-next-steps summary the template specifies; the edit history lives in git.
-"""
