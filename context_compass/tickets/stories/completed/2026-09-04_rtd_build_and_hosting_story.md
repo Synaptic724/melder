@@ -2,7 +2,7 @@
 
 ## Closure Acceptance
 
-Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+Closed at owner direction. See the [closure record](../../../artifacts/Archived/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
 validation limits below are retained; closure does not claim that unperformed checks passed.
 
 ## Metadata
@@ -183,7 +183,7 @@ Record exact pins, build revisions, service settings without secrets, feature ve
 
 ## Context / Handoff Summary
 
-Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+Closed at owner direction. See the [closure record](../../../artifacts/Archived/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
 validation limits below are retained; closure does not claim that unperformed checks passed.
 
 The previous handoff is preserved below as historical context.

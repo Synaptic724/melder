@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/spell_space/spell_space_thread_state.py",
- "source_sha256": "a37c7a07159ab6932f8aec86c95c7cbbf0f3dc97930ab4271f8fef4d463bb5d8",
+ "source_sha256": "66147486a28f3b97a556b0f6d764f75d849dc6ecdc9f424a7c473e773c7ab65f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.spell_space.spell_space_thread_state": {
@@ -18,7 +18,7 @@
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "a37c7a07159ab6932f8aec86c95c7cbbf0f3dc97930ab4271f8fef4d463bb5d8"
+   "semantics_authored_against": ""
   },
   "melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal": {
    "id": "melder.aether.conduit.spell_space.spell_space_thread_state._SpellSpaceLocal",
@@ -60,6 +60,7 @@
    "public_methods": [
     "cleanup",
     "clear_current_thread",
+    "discard_expected",
     "drain",
     "get",
     "get_active",
@@ -69,16 +70,17 @@
     "set"
    ],
    "shape": {
-    "method_count": 9,
+    "method_count": 10,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "33de719ee4df04979a75a31255de7e2dc66c3bd3b41a847c69b16f5e6b1f6c2a",
+   "span_sha256": "00f976b80c3d6d14797bbbf5f1805c8779a92de8fc93801412f9b948f707498a",
    "role": "Per-thread active spellspace stack holder for one conduit.",
    "responsibilities": [
     "stores one independent active spellspace stack per thread",
     "supports push/pop and top-of-stack validation for managed spellspace exit",
-    "drains or clears the current thread stack during cleanup and teardown"
+    "drains or clears the current thread stack during cleanup and teardown",
+    "removes an expected top entry without raising, for a space released or destroyed inside its own block"
    ],
    "owns_state": [
     "_local"
@@ -88,7 +90,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "33de719ee4df04979a75a31255de7e2dc66c3bd3b41a847c69b16f5e6b1f6c2a"
+   "semantics_authored_against": "00f976b80c3d6d14797bbbf5f1805c8779a92de8fc93801412f9b948f707498a"
   }
  },
  "edges_out": [

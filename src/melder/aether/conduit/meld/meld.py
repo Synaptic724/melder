@@ -100,6 +100,29 @@ class Meld(Cleanable, ABC):
       full-lane meld (no-override or override branch, never for a spell
       holding a mutation override), so the keyspace is the bound-spell
       registry, not caller input. The registry is deleted in `cleanup()`.
+    - own the second success-only registry, `_fast_input_doors`
+      (2026-09-27): the same entry tuples keyed by what a user passes as
+      `spell` - a registered-name string or a class object - so the
+      public front doors serve `meld("Name")` and `meld(spell=Cls)`
+      in one lookup instead of the door frame plus the name/class -> id
+      lookup. The two concrete doors mint it on the same two success
+      arms as the id registry (a str `spell` mints the id registry, a
+      name or class shape mints this one; never both) and never read
+      it: a front-door miss means the entry is absent or stale, so the
+      door goes straight to its full lane, which re-mints. Only
+      `Conduit.meld` and `SpellSpace.meld` read it, with the id lane's
+      ladder and arms. Keys are restricted to `str` names and classes
+      (`isinstance(spell, type)`): `SpellInputUtils.normalize_spell_name`
+      keys an instance by its class name, so an instance key would be
+      unbounded and would keep the instance alive; instances and
+      callables keep the door path. Names live apart from the id
+      registry so a registered name that equals another spell's id can
+      never serve the id lane. A key comes to resolve to a different
+      spell only after its holder was parked by notch (epoch bump,
+      context cleared) or cleaned by removal (slots deleted, so the
+      guard read raises AttributeError and misses); the frame's
+      `LookupContainer.claim` refuses a second active spell per
+      signature. Deleted in `cleanup()`, cleared by the upgrade route.
 
     High-level activation flow:
     1. Resolve the target spell from the requested identity inputs.
@@ -174,6 +197,7 @@ class Meld(Cleanable, ABC):
         "_meld_hooks_modified",
         "_spell_compiler_system",
         "_fast_meld_doors",
+        "_fast_input_doors",
         # Canonical creation-store surface (both concrete doors inherit these).
         "_conduit_creations",
         "_root_creations",
@@ -303,6 +327,15 @@ class Meld(Cleanable, ABC):
             str,
             Tuple[Spell, CreationContext, int, bool],
         ] = {}
+        # Name/class registry (2026-09-27): the same entries keyed by the
+        # registered-name string or class object a user passes as `spell`.
+        # Minted by the concrete doors on their success arms, read by the
+        # public front doors only. Plain dict for the same reasons; keys
+        # are restricted to str names and classes (see the class docstring).
+        self._fast_input_doors: Dict[
+            Union[str, type],
+            Tuple[Spell, CreationContext, int, bool],
+        ] = {}
 
         # Canonical creation-store surface. `_conduit_creations` is the owning
         # conduit's store (`unique_per_conduit` / `many`); `_root_creations` is
@@ -368,6 +401,7 @@ class Meld(Cleanable, ABC):
             # Fast-door entries hold spell/context/executor/creations refs;
             # dropping the dict here is the owner-driven release point.
             del self._fast_meld_doors
+            del self._fast_input_doors
             if self._spell_compiler_system is not None:
                 self._spell_compiler_system.cleanup()
             del self._spell_compiler_system

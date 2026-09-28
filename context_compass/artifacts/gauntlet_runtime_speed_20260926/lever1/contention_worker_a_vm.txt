@@ -1,9 +1,0 @@
-# melder_2 VM, 2026-09-26T20:45:22Z: probe_contention.py on tree_0270, CPython 3.14.7t -X gil=0, 2 vCPUs; per-cycle thread CPU time, worker_a lane, 1 vs 2 concurrent threads, median of 5 blocks x 3000 cycles; two interleaved rounds.
-melder lane=worker_a threads=1 cycles/block=3000 | cpu ns/cycle per thread: 7,149
-melder lane=worker_a threads=2 cycles/block=3000 | cpu ns/cycle per thread: 10,091 10,219
-dishka lane=worker_a threads=1 cycles/block=3000 | cpu ns/cycle per thread: 5,831
-dishka lane=worker_a threads=2 cycles/block=3000 | cpu ns/cycle per thread: 9,002 9,119
-melder lane=worker_a threads=1 cycles/block=3000 | cpu ns/cycle per thread: 7,081
-melder lane=worker_a threads=2 cycles/block=3000 | cpu ns/cycle per thread: 9,990 10,065
-dishka lane=worker_a threads=1 cycles/block=3000 | cpu ns/cycle per thread: 5,966
-dishka lane=worker_a threads=2 cycles/block=3000 | cpu ns/cycle per thread: 9,146 9,065

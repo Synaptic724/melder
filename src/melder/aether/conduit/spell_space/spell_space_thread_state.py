@@ -247,6 +247,32 @@ class SpellSpaceThreadState(Cleanable):
             )
         return stack.pop()
 
+    def discard_expected(self, expected: Any) -> bool:
+        """
+        Remove `expected` from the top of the current thread's stack if it is there.
+
+        Purpose:
+            Let a managed spellspace that was already released inside its own
+            `with` block (an explicit cleanup, or its conduit's pool return)
+            leave that block without a stack error.
+
+        Contract:
+            - Pops only when `expected` is the top entry; otherwise changes
+              nothing. Never raises.
+
+        Args:
+            expected:
+                Spellspace object whose block is ending.
+
+        Returns:
+            bool: True when the entry was removed.
+        """
+        stack = self._local.spellspace_stack
+        if stack and stack[-1] is expected:
+            stack.pop()
+            return True
+        return False
+
     def clear_current_thread(self) -> None:
         """
         Clear the current thread's spellspace stack in place.

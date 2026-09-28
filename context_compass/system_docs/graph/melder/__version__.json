@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/__version__.py",
- "source_sha256": "60a4d2dd0e8e42c32c04ac2153e61fa9fa7c87cecc1ffffe339b077909a9b3a8",
+ "source_sha256": "d14ed99459b4e80b25316a6cb31581c6b71f4a4bc784f84b885be18396e16437",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.__version__": {
@@ -19,7 +19,8 @@
    ],
    "phases": [
     "runtime"
-   ]
+   ],
+   "semantics_authored_against": ""
   }
  },
  "edges_out": [],

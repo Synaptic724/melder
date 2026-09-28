@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/aetheric_frame.py",
- "source_sha256": "22438de3c9ce7cb6526a51e8232296301f65d61134eaaa4f42cb3d3792e4ecb8",
+ "source_sha256": "e470e3977783eaf04a1966bef19d9024ba87c6545dd236073e6645211941c75c",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.aetheric_frame": {
@@ -12,7 +12,7 @@
    "lineno": 1,
    "include": true,
    "role": "The per-frame runtime container - the boundary everything frame-scoped hangs off.",
-   "semantics_authored_against": "1236a76e6e8b5cd92a63ec71d93fd949ccbcfeeed942d34def3acc83e726068c"
+   "semantics_authored_against": ""
   },
   "melder.aether.aetheric_frame.aetheric_frame.AethericFrame": {
    "id": "melder.aether.aetheric_frame.aetheric_frame.AethericFrame",
@@ -59,7 +59,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f38876c6e40476f5d725135e2857a6b472b059a5ae58280ae3e56b842f534c4b",
+   "span_sha256": "4117048949e826e2d98ee7120258da71cd59f7c7e5cb45b93e101912157a2196",
    "role": "Per-frame runtime container.",
    "responsibilities": [
     "stores frame-local conduits and registries",
@@ -67,7 +67,8 @@
     "hosts cloud and cluster services",
     "holds the frame-bound configuration snapshot",
     "owns the frame-local dev-ops information registry used by reporting and transaction topology",
-    "bridges normal-root registration into Cloud's shared name collision authority"
+    "bridges normal-root registration into Cloud's shared name collision authority",
+    "logs a conduit that raises during frame teardown through the Aether logger and cleans the rest"
    ],
    "owns_state": [
     "_conduits",
@@ -83,7 +84,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "6055c2a4c23cd4f6bdbb8542f406624350acc5176432374bf5ded3b7526724c3"
+   "semantics_authored_against": "4117048949e826e2d98ee7120258da71cd59f7c7e5cb45b93e101912157a2196"
   }
  },
  "edges_out": [

@@ -383,3 +383,50 @@ def test_component_spellspace_pool_cleanup_destroys_idle_spellspaces_directly() 
         assert conduit._spellspace_registry == set()
     finally:
         conduit.permanent_cleanup()
+
+
+def test_component_spellspace_live_creation_probe_counts_space_held_many() -> None:
+    """
+    Purpose:
+        Validate the SpellSpace door's live-creation probe counts the
+        disposal-bearing many objects the space holds.
+    Contract:
+        - a disposal-bearing many melded through a space is held in the space's
+          store and counted by the space door's probe (before the 2026-09-28
+          fix the probe read the owner conduit's store and reported none).
+        - a many melded through the owner conduit is counted by the conduit's
+          probe and not by the space door's.
+        - the space's exit disposes what it held; the conduit's object stays.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the probe misses the space's objects or counts the
+            conduit's.
+    """
+    spellbook = _make_spellbook(disposal=True, disposal_methods=["cleanup"])
+    spell_id = spellbook.bind(
+        spell=DisposableService,
+        existence=Existence.many,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        conduit_instance = conduit.meld(spell_id=spell_id)
+        with conduit.enter_spellspace() as space:
+            first = space.meld(spell_id=spell_id)
+            second = space.meld(spell_id=spell_id)
+            assert space._meld.has_live_creation(spell=spell_id) is True
+            status = space._meld.describe_live_creation_status(spell=spell_id)
+            assert status["is_live"] is True
+            assert status["creation_count"] == 2
+            assert status["storage_scope_kind"] == "spellspace_many"
+            assert status["storage_owner_conduit_id"] == conduit._id
+            assert status["active_spellspace_id"] == space.id
+            conduit_status = conduit.describe_live_creation_status(spell=spell_id)
+            assert conduit_status["creation_count"] == 1
+        assert first.cleanup_calls == 1
+        assert second.cleanup_calls == 1
+        assert conduit_instance.cleanup_calls == 0
+        assert conduit.has_live_creation(spell=spell_id) is True
+    finally:
+        conduit.permanent_cleanup()

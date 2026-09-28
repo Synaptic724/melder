@@ -32,9 +32,9 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
 
     Lifecycle / Cleanup:
         Owned by one conduit and torn down with it. Recycling a spellspace is
-        NOT destruction - `reset()` clears spellspace-scoped instances and bumps
-        the version, while the permanent cleanup lane is what actually destroys
-        one.
+        NOT destruction - the scope's own store is cleared and the space is
+        released back here, while the permanent cleanup lane is what actually
+        destroys one.
 
     Registration:
         MELDER KERNEL - guarded. Constructed by the owning conduit; users reach
@@ -47,14 +47,15 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         would otherwise be paid on every scope entry.
 
     System Context:
-        Pooling a scope object is only safe because scope identity is VERSIONED
-        rather than object-identity based. A recycled spellspace bumps its
-        version on reset, so any stale handle held across the recycle boundary
-        fails its active-scope check instead of silently melding into a reused
-        shell that now belongs to a different request. Without that versioning
-        this pool would be a correctness hazard rather than an optimization -
-        which is the same reasoning that makes `pooled_lesser` a distinct
-        `ConduitState` rather than just an idle `lesser`.
+        Pooling a scope object is only safe because a pooled space knows it is
+        not leased: `release()` sets its released flag, every acquisition clears
+        it, and a released space refuses `meld` and `purge` with
+        SpellSpaceScopeError. A handle kept across the recycle boundary therefore
+        fails loudly instead of melding into an idle shell that the next request
+        would be served. Using a handle after its space was leased again to
+        another caller remains a caller contract violation. The same reasoning
+        makes `pooled_lesser` a distinct `ConduitState` rather than just an idle
+        `lesser`.
 
     AGENT_ACCESS: internal
 
@@ -154,6 +155,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Reactivate one spellspace before use.
 
         Contract:
+            Clears the space's released flag: the lease starts here.
             Manual-path reactivation hook: when `track_registry` is True, marks
             the spellspace registry-tracked and adds it to the shared registry;
             when False, leaves it untracked (the managed enter path tracks on
@@ -175,6 +177,7 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Returns:
             SpellSpace: The same, reactivated spellspace.
         """
+        obj._released = False
         if self._conduit_meld._meld_hooks_modified:
             obj._meld._inherit_meld_hooks(self._conduit_meld)
         if track_registry:
@@ -200,11 +203,14 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
               state under an outer Python lock.
             - A reused Space adopts temporary owner hooks only when the owner's
               divergence bool is set. Construction handles the fresh path.
+            - Clears a reused space's released flag: the lease starts here. A new
+              space starts unreleased.
         """
         try:
             space = self._idle.pop()
         except IndexError:
             return self.create_object(*args, **kwargs)
+        space._released = False
         if self._conduit_meld._meld_hooks_modified:
             space._meld._inherit_meld_hooks(self._conduit_meld)
         return space
@@ -267,8 +273,11 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
 
         Contract:
             - Uses a conduit-local fixed-capacity fast path.
+            - Marks the space released first; it refuses `meld` and `purge` until
+              its next acquisition.
             - Assumes trusted private callers do not double-return the same
-              spellspace shell.
+              spellspace shell; SpellSpace cleanup and recycle return early for a
+              space that is already released.
             - Appends the returned spellspace first.
             - Retains returned spellspaces while idle capacity remains at or
               below the current target.
@@ -278,11 +287,15 @@ class SpellSpacePool(AbstractElasticPool[SpellSpace]):
         Returns:
             None.
         """
-        self._idle.append(obj)
-        if len(self._idle) <= self._target_idle:
+        obj._released = True
+        # Hot path (one release per managed scope): one read of the idle deque
+        # serves the append, the capacity check and the overflow eviction.
+        idle = self._idle
+        idle.append(obj)
+        if len(idle) <= self._target_idle:
             return
         try:
-            overflow_space = self._idle.popleft()
+            overflow_space = idle.popleft()
         except IndexError:
             return
         self.destroy_object(overflow_space)

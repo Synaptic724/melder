@@ -2,7 +2,7 @@
 
 ## Closure Acceptance
 
-Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+Closed at owner direction. See the [closure record](../../../artifacts/Archived/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
 validation limits below are retained; closure does not claim that unperformed checks passed.
 
 ## Metadata
@@ -205,7 +205,7 @@ downloads. S9 audits the complete experience, launch candidate, and maintenance 
 - IF_UNKNOWN: none
 
 ## Current Site Definition
-The [site blueprint](../../../artifacts/2026-09-04_readthedocs_site_blueprint.md) is the detailed product
+The [site blueprint](../../../artifacts/Archived/2026-09-04_readthedocs_site_blueprint.md) is the detailed product
 contract. The story table above owns delivery routing. The latest owner direction takes precedence
 over historical proposals retained in Notes.
 
@@ -611,7 +611,7 @@ Canonical scripts remain in UX_and_AIX_experiences and architecture material rem
 
 ## Context / Handoff Summary
 
-Closed at owner direction. See the [closure record](../../../artifacts/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
+Closed at owner direction. See the [closure record](../../../artifacts/Archived/2026-09-06_codex_2_ticket_closure.md). Historical checklists and
 validation limits below are retained; closure does not claim that unperformed checks passed.
 
 The previous handoff is preserved below as historical context.

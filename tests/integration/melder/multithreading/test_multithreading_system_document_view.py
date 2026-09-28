@@ -13,28 +13,29 @@ THE PART THAT IS ACTUALLY RACY
 ------------------------------
 The views are immutable in the sense that nothing mutates their DATA. They are
 not immutable in the sense of having no writes: three things load lazily and
-each is a check-then-set on an instance attribute.
+each has a readiness check followed by publication.
 
     _index()  ->  the section table
     _doc()    ->  the document payload
     _graph()  ->  the graph adjacency
 
-Two threads arriving first can both see `None`, both build, and both assign.
-That is benign - the built values are equivalent and the assignment is atomic -
-but "benign" is a claim too, so these tests hammer exactly that window with a
-`Barrier` and assert every thread got correct data, not merely non-crashing
-data.
+Two threads arriving first can both see `None` and build equivalent values.
+That is safe only when readiness implies COMPLETE data. The index has two
+related fields: publishing its section tuple before its key map let another
+reader return a None map. Event-controlled regressions force that exact window
+and verify retry after construction failure; Barrier tests exercise simultaneous
+loads and assert correct data, not merely non-crashing data.
 
 WHAT A GREEN RUN HERE DOES AND DOES NOT PROVE
 ---------------------------------------------
-Under a GIL these tests demonstrate correctness, not absence of data races -
-the interpreter is serialising the critical sections for free. The target is
-3.14 free-threaded, where it does not. Run them there before believing the
-no-lock claim; that run is the one that matters and it is the owner's to make.
+The deterministic regressions force their interleaving even under a GIL. The
+stress tests also need a Python 3.14 free-threaded run with the GIL disabled to
+exercise real simultaneous loads. Report the actual interpreter and GIL state;
+one ordinary green run alone does not establish the publication invariant.
 """
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Mapping
 
 import pytest
 
@@ -43,7 +44,9 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.spellbook.spellbook import Spellbook
 from melder.nexus.nexus import Nexus
 from melder._build_assets._system_documents import system_documents
+import melder.utilities.ai_native_support_tools.system_document_view as document_views
 from melder.utilities.ai_native_support_tools.system_document_view import (
+    Section,
     SystemDocumentView,
     SystemGraphView,
 )
@@ -119,6 +122,72 @@ def _cold(name: str) -> SystemDocumentView:
 # ---------------------------------------------------------------------------
 # Racing the three lazy loads
 # ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", system_documents.READ_ORDER)
+def test_index_lookup_during_another_threads_key_map_construction(
+    name: str, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A reader cannot observe sections before their exact-key map is complete.
+
+    Pause the first builder at the real mapping constructor, then perform public
+    reads on another thread. Events force the CI interleaving without sleeps;
+    the paused worker is always released and joined, even when a read fails.
+    """
+    view = _cold(name)
+    reference = system_documents.get(name)
+    expected = reference.index()[0]
+    expected_text = reference.get(expected.key)
+    mapping_started = threading.Event()
+    release_mapping = threading.Event()
+    original_proxy = document_views.MappingProxyType
+
+    def pause_first_builder(values: dict[str, Section]) -> Mapping[str, Section]:
+        """Delay only the named loader, preserving the real read-only mapping."""
+        if threading.current_thread().name.startswith("paused-document-index"):
+            mapping_started.set()
+            assert release_mapping.wait(10), "The test did not release its index builder."
+        return original_proxy(values)
+
+    monkeypatch.setattr(document_views, "MappingProxyType", pause_first_builder)
+    with ThreadPoolExecutor(max_workers=1, thread_name_prefix="paused-document-index") as pool:
+        first_read = pool.submit(view.section, expected.key)
+        try:
+            assert mapping_started.wait(10), "The first index builder never reached the mapping constructor."
+            assert view.section(expected.key) == expected
+            assert expected.key in view
+            assert view.get(expected.key) == expected_text
+        finally:
+            release_mapping.set()
+        assert first_read.result(timeout=10) == expected
+    assert view.index() == reference.index()
+
+
+@pytest.mark.parametrize("name", system_documents.READ_ORDER)
+def test_failed_key_map_construction_leaves_index_retryable(
+    name: str, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed first key-map build cannot leave the section marker falsely ready.
+
+    The injected construction error must propagate, and a subsequent real public
+    lookup must rebuild successfully instead of returning a missing key map.
+    """
+    view = _cold(name)
+    reference = system_documents.get(name)
+    expected = reference.index()[0]
+    original_proxy = document_views.MappingProxyType
+
+    def fail_mapping(values: dict[str, Section]) -> Mapping[str, Section]:
+        """Simulate a mapping allocation failure before a complete index exists."""
+        raise RuntimeError("injected key-map construction failure")
+
+    monkeypatch.setattr(document_views, "MappingProxyType", fail_mapping)
+    with pytest.raises(RuntimeError, match="injected key-map construction failure"):
+        view.index()
+    monkeypatch.setattr(document_views, "MappingProxyType", original_proxy)
+
+    assert view.section(expected.key) == expected
+    assert view.get(expected.key) == reference.get(expected.key)
 
 
 def test_concurrent_first_index_load_gives_every_thread_the_same_table() -> None:

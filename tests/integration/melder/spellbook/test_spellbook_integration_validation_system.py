@@ -157,16 +157,17 @@ def test_validation_system_resolves_contracted_dependency_without_dangling() -> 
             owner.cleanup()
 
 
-def test_validation_system_duplicate_spell_name_across_contracted() -> None:
+def test_validation_system_same_name_at_distinct_contracted_bindings() -> None:
     """
     Purpose:
-        Validate duplicate spell names are detected across local and contracted spells.
+        Validate qualified same-named local and contracted spells independently.
     Contract:
-        - Duplicate spell_name across local and contracted spells yields an error.
+        - Distinct owner/borrower binding addresses produce no collision issue.
+        - Both addresses resolve to their exact registered class through the borrower.
     Returns:
         None.
     Raises:
-        AssertionError: If duplicate spell names are not reported.
+        AssertionError: If distinct addresses collide or return the wrong class.
     """
     configuration = _make_dynamic_configuration()
     owner_book = Spellbook(configuration=configuration)
@@ -262,11 +263,9 @@ def test_validation_system_duplicate_spell_name_across_contracted() -> None:
             resolution_frame=object(),
         )
         try:
-            assert len(result.issues) == 1
-            issue = result.issues[0]
-            assert issue.code == "DUPLICATE_SPELL_NAME"
-            assert issue.severity == "error"
-            assert issue.details["collision_count"] == 2
+            assert result.issues == []
+            assert type(borrower.meld("Service", binding_name="owner")) is ContainerB.Service
+            assert type(borrower.meld("Service", binding_name="borrower")) is ContainerA.Service
         finally:
             result.cleanup()
     finally:
@@ -569,17 +568,17 @@ def test_validation_system_detects_cross_boundary_cycle() -> None:
             owner.cleanup()
 
 
-def test_validation_system_duplicate_name_clears_after_unlink() -> None:
+def test_validation_system_qualified_same_name_stays_valid_after_unlink() -> None:
     """
     Purpose:
-        Validate duplicate spell names clear after unlinking conduits.
+        Validate qualified same-named bindings before and after unlinking conduits.
     Contract:
-        - Duplicate spell names are reported while contracted.
-        - After sever_link, duplicates are no longer reported.
+        - Distinct addresses remain valid while contracted.
+        - After sever_link, the local address remains valid and resolves normally.
     Returns:
         None.
     Raises:
-        AssertionError: If duplicate names persist after unlink.
+        AssertionError: If qualified bindings are rejected before or after unlink.
     """
     configuration = _make_dynamic_configuration()
     owner_book = Spellbook(configuration=configuration)
@@ -675,8 +674,7 @@ def test_validation_system_duplicate_name_clears_after_unlink() -> None:
             resolution_frame=object(),
         )
         try:
-            codes = {issue.code for issue in result.issues}
-            assert codes == {"DUPLICATE_SPELL_NAME"}
+            assert result.issues == []
         finally:
             result.cleanup()
 
@@ -690,6 +688,7 @@ def test_validation_system_duplicate_name_clears_after_unlink() -> None:
         )
         try:
             assert result.issues == []
+            assert type(borrower.meld("Service", binding_name="borrower")) is ContainerA.Service
         finally:
             result.cleanup()
     finally:
@@ -1078,16 +1077,16 @@ def test_validation_system_reports_self_dependency_errors() -> None:
         spellbook.cleanup()
 
 
-def test_validation_system_duplicate_spell_name_local_only() -> None:
+def test_validation_system_qualified_same_name_local_only() -> None:
     """
     Purpose:
-        Validate duplicate spell names are detected within a single Spellbook.
+        Validate same-named spells at distinct addresses within one Spellbook.
     Contract:
-        - Duplicate spell_name across local spells yields DUPLICATE_SPELL_NAME.
+        - Default and secondary bindings remain distinct and yield no collision issue.
     Returns:
         None.
     Raises:
-        AssertionError: If duplicate spell names are not reported.
+        AssertionError: If distinct local addresses are rejected.
     """
     spellbook = Spellbook()
     system = SpellValidationSystem()
@@ -1169,8 +1168,7 @@ def test_validation_system_duplicate_spell_name_local_only() -> None:
             resolution_frame=object(),
         )
         try:
-            codes = {issue.code for issue in result.issues}
-            assert codes == {"DUPLICATE_SPELL_NAME"}
+            assert result.issues == []
         finally:
             result.cleanup()
     finally:

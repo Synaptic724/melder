@@ -70,7 +70,7 @@ with a maintainable manifest, README guidance, and commit-time GitHub Action.
 - `context_compass/attention_board.md`
 - `context_compass/artifact_board.md`
 - This task.
-- `context_compass/artifacts/2026-08-30_llm_support_compilation_pipeline_discovery.md`
+- `../../../artifacts/Archived/2026-08-30_llm_support_compilation_pipeline_discovery.md`
 - Product/repository files are read-only during discovery.
 
 ## Validation
