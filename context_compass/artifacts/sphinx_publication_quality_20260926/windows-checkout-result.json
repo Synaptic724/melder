@@ -1,8 +1,0 @@
-{
-  "check": "Windows git checkout-index",
-  "core_longpaths": false,
-  "descriptors": 20,
-  "byte_identical": 20,
-  "maximum_probe_path": 241.0,
-  "main_index_unchanged": true
-}

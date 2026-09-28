@@ -6841,6 +6841,7 @@ class Spellbook(Cleanable):
                                 runtime._cluster_creations = conduit._cluster_creations
                                 runtime._input_resolution_cache.clear()
                                 runtime._fast_meld_doors.clear()
+                                runtime._fast_input_doors.clear()
                                 runtime._bind_meld_hook_baseline(conduit._meld_hooks)
                             conduit._ensure_transaction_identity_registered()
                             conduit._refresh_devops_identity_state()

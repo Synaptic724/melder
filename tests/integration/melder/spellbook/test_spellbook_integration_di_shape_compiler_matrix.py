@@ -544,8 +544,8 @@ def test_phase4_two_independent_leaves_are_clean() -> None:
 # =========================================================================== #
 # Section C - Phase 4 issue catalog (faults, collisions, characterizations)
 # =========================================================================== #
-def test_phase4_duplicate_spell_name_errors_and_breaks() -> None:
-    """Two visible spells sharing a name is a DUPLICATE_SPELL_NAME error."""
+def test_phase4_same_name_at_distinct_bindings_does_not_break_spell() -> None:
+    """Default and secondary bindings sharing a name remain structurally valid."""
     spellbook = _make_spellbook()
 
     class ContainerA:
@@ -563,17 +563,16 @@ def test_phase4_duplicate_spell_name_errors_and_breaks() -> None:
         target_id = spellbook.bind(spell=ContainerB.Service, existence=Existence.unique, permissions="create", binding_name="secondary")
         spell = _get_spell(spellbook, target_id)
         _phases_1_4(spell)
-        assert "DUPLICATE_SPELL_NAME" in _codes4(spell)
-        assert spell.is_broken is True
+        assert "DUPLICATE_SPELL_NAME" not in _codes4(spell)
+        assert spell.is_broken is False
     finally:
         spellbook.cleanup()
 
 
-def test_phase4_duplicate_name_still_errors_with_distinct_frame_and_binding() -> None:
+def test_phase4_same_name_is_valid_with_distinct_frame_and_binding() -> None:
     """
-    CHARACTERIZATION (suspected fault A): duplicate bare names still error even
-    when fully disambiguated by different spellframe AND binding_name, despite
-    the diagnostic telling the user to do exactly that.
+    Distinct spellframes and binding names disambiguate same-named classes.
+    Phase 4 must judge the canonical address, matching its remediation advice.
     """
     spellbook = _make_spellbook()
 
@@ -592,8 +591,8 @@ def test_phase4_duplicate_name_still_errors_with_distinct_frame_and_binding() ->
         target_id = spellbook.bind(spell=ContainerB.Repo, existence=Existence.unique, permissions="create", spellframe="frame_b", binding_name="two")
         spell = _get_spell(spellbook, target_id)
         _phases_1_4(spell)
-        # Documents present behavior; flip this to `not in` once fault A is fixed.
-        assert "DUPLICATE_SPELL_NAME" in _codes4(spell)
+        # Regression: qualifiers must affect the validator as well as registration.
+        assert "DUPLICATE_SPELL_NAME" not in _codes4(spell)
     finally:
         spellbook.cleanup()
 

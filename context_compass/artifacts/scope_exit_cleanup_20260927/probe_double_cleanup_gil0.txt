@@ -1,4 +1,0 @@
-spellspace: idle entries 2 copies of the same space 2
-spellspace: next two managed leases are the same object: True
-lesser: idle entries 2 copies of the same lesser 2
-lesser: next two acquisitions are the same object: True

@@ -364,8 +364,8 @@ def test_unbound_dependency_conjures_and_fails_at_meld() -> None:
         spellbook.cleanup()
 
 
-def test_conjure_with_duplicate_spell_name_raises() -> None:
-    """Duplicate visible spell_name (DUPLICATE_SPELL_NAME error) must block conjure."""
+def test_conjure_with_qualified_same_name_resolves_each_class() -> None:
+    """Shared display names at distinct bindings conjure and resolve independently."""
     spellbook = _make_spellbook()
 
     class ContainerA:
@@ -381,8 +381,12 @@ def test_conjure_with_duplicate_spell_name_raises() -> None:
     try:
         spellbook.bind(spell=ContainerA.Service, existence=Existence.unique, permissions="create")
         spellbook.bind(spell=ContainerB.Service, existence=Existence.unique, permissions="create", binding_name="secondary")
-        with pytest.raises(Exception):
-            spellbook.conjure(name="root")
+        root = spellbook.conjure(name="root")
+        try:
+            assert type(root.meld("Service")) is ContainerA.Service
+            assert type(root.meld("Service", binding_name="secondary")) is ContainerB.Service
+        finally:
+            root.cleanup()
     finally:
         spellbook.cleanup()
 

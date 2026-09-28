@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "92bf7b90687b3d78f5f774f6ac5342425f9b0ab4b7866d82aba4fbded6725063",
+ "source_sha256": "c2033a58a1eaebabc41eaa5aed151cd91ed8044068d026223c4ccf3863d42cf1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -22,14 +22,14 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "f7611eacae8947592240fbb97f3fa5d7541f589e9755d411703d088bf0a0b74b"
+   "semantics_authored_against": ""
   },
   "melder.aether.conduit.conduit.Conduit": {
    "id": "melder.aether.conduit.conduit.Conduit",
    "label": "Conduit",
    "kind": "class",
    "file": "src/melder/aether/conduit/conduit.py",
-   "lineno": 79,
+   "lineno": 81,
    "bases": [
     "Cleanable"
    ],
@@ -56,6 +56,7 @@
     "disable_meld",
     "enable_meld",
     "end_transaction",
+    "enter_lesser_conduit",
     "enter_spellspace",
     "find_contracted_spell",
     "find_spell_id",
@@ -113,11 +114,11 @@
     "validate_resolution"
    ],
    "shape": {
-    "method_count": 130,
+    "method_count": 131,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "9fb4a8408785947ab61e52b80bd461ad7edfdc9b8867518299fbdfbbd978dd0e",
+   "span_sha256": "3ebdc50daec4b5914caaf0a6b6eedf0be3aa6066b4b02fb2cae03319b1e333ba",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",
@@ -134,7 +135,11 @@
     "assigns creation-only names to fresh/pooled lessers and retires named discovery before idle publication",
     "emits dynamic named structural ancestry and publishes named Nexus lifecycle under existing scope locks",
     "reserves promotion names and exchanges aliases without changing the live conduit identity",
-    "serves warm automatic id melds (plain or with a non-empty dict override payload) straight from Meld's fast-door entry with ConduitMeld's guard ladder, returning an existing object's bound object without the door call"
+    "serves warm automatic melds by id, by registered name and by class (plain or with a non-empty dict override payload) straight from Meld's fast-door entries (_fast_meld_doors, _fast_input_doors) with ConduitMeld's guard ladder, returning an existing object's bound object without the door call",
+    "is a dispose scope in `with`: __enter__ takes no lock and __exit__ runs cleanup(), so a lesser returns to its pool and a root is torn down at block exit (0.2.8203)",
+    "creates a lesser for a `with` block through enter_lesser_conduit, which returns create_lesser_conduit's result unchanged",
+    "returns a lesser to its pool descendants first, then SpellSpaces, then its own store, and raises the collected disposal failures after the shell is pooled; soft cleanup of a pooled lesser is a no-op",
+    "finishes permanent teardown when a disposal method fails and then raises the collected disposal groups"
    ],
    "owns_state": [
     "_meld",
@@ -151,7 +156,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "9fb4a8408785947ab61e52b80bd461ad7edfdc9b8867518299fbdfbbd978dd0e"
+   "semantics_authored_against": "3ebdc50daec4b5914caaf0a6b6eedf0be3aa6066b4b02fb2cae03319b1e333ba"
   }
  },
  "edges_out": [
@@ -249,6 +254,12 @@
   },
   {
    "from": "melder.aether.conduit.conduit.Conduit",
+   "to_label": "ExceptionGroup",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.conduit.Conduit",
    "to_label": "Conduit",
    "relation": "creates",
    "confidence": "candidate"
@@ -282,7 +293,9 @@
   "Dict": "typing.Dict",
   "Generator": "typing.Generator",
   "ClassVar": "typing.ClassVar",
+  "List": "typing.List",
   "Set": "typing.Set",
+  "Type": "typing.Type",
   "ChangeTransactionType": "melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request.ChangeTransactionType",
   "Policies": "melder.aether.conduit.conduit_ward.policies.policies.Policies",
   "DetailReason": "melder.aether.conduit.conduit_ward.contract.detail_reason.DetailReason",
