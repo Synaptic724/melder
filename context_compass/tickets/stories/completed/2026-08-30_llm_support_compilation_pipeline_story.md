@@ -132,11 +132,11 @@ staleness, encoding, exclusion, and incremental rebuild contracts.
   CLAIM: Implement the accepted discovery design with check-only CI, rename the
     existing source workflow, and add a generic repository-assets workflow.
   EVIDENCE:
-  - `context_compass/artifacts/2026-08-30_llm_support_compilation_pipeline_discovery.md`
+  - `../../../artifacts/Archived/2026-08-30_llm_support_compilation_pipeline_discovery.md`
   IMPACT: Implementation has one accepted file/behavior boundary.
-  NEXT: Execute the linked task from builder core through generated outputs and workflows.
-  REREAD: REQUIRED
-  SCORE_0_TO_10: 10
+    NEXT: Execute the linked task from builder core through generated outputs and workflows.
+    REREAD: REQUIRED
+    SCORE_0_TO_10: 10
 
 - DATETIME: 2026-09-06T01:56:48Z
   TYPE: DECISION

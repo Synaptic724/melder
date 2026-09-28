@@ -1,2 +1,0 @@
-gil=False mode=live errors=19981 short_reads=0 of 20000
-gil=False mode=copy errors=0 short_reads=0 of 20000

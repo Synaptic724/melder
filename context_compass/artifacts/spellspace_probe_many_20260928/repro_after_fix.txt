@@ -1,5 +1,0 @@
-# melder_0 2026-09-28T00:36:41Z repro after the probe fix (source 0.2.8203 + fix), 3.14t
-space bucket: list 1
-space probe: {'is_live': True, 'spell_id': 'e2051d53f11b91fc102f3b0aef6f4ed88ad5e52955fa45613ce4bf8aa14f7195', 'spell_name': 'Disp', 'existence': 'many', 'query_conduit_id': '01M3JQ2Q31WQPRYMWXXZNX0DT5', 'storage_scope_kind': 'spellspace_many', 'storage_owner_conduit_id': '01M3JQ2Q31WQPRYMWXXZNX0DT5', 'active_spellspace_id': '01M3JQ2Q97SJY0CMP0EV6DTQ55', 'creation_count': 1}
-conduit probe: {'is_live': False, 'spell_id': 'e2051d53f11b91fc102f3b0aef6f4ed88ad5e52955fa45613ce4bf8aa14f7195', 'spell_name': 'Disp', 'existence': 'many', 'query_conduit_id': '01M3JQ2Q31WQPRYMWXXZNX0DT5', 'storage_scope_kind': 'caller_conduit_many', 'storage_owner_conduit_id': '01M3JQ2Q31WQPRYMWXXZNX0DT5', 'active_spellspace_id': None, 'creation_count': 0}
-after exit cleanup_calls: 1

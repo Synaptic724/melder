@@ -1,9 +1,0 @@
-== 3.14.7t PYTHON_GIL=0: python -m pytest tests/unit/melder/aether/test_aetheric_frame_descriptor.py -q -p no:cacheprovider -W error::pytest.PytestUnhandledThreadExceptionWarning
-11 passed in 0.14s
-== 3.14.7t PYTHON_GIL=1: python -m pytest tests/unit/melder/aether/test_aetheric_frame_descriptor.py -q -p no:cacheprovider -W error::pytest.PytestUnhandledThreadExceptionWarning
-11 passed, 1 warning in 0.13s
-== 3.14.7 GIL build: ~/.venv314/bin/python -m pytest tests/unit/melder/aether/test_aetheric_frame_descriptor.py -q -p no:cacheprovider -W error::pytest.PytestUnhandledThreadExceptionWarning
-11 passed, 1 warning in 0.11s
-PASSED tests/unit/melder/aether/test_aetheric_frame_descriptor.py::test_descriptor_exposes_frame_name_and_reports_cleaned_after_cleanup
-1 passed, 10 deselected in 0.15s
-device tree, 3.14.7t PYTHON_GIL=0: 11 passed in 4.59s

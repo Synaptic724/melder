@@ -1,3 +1,0 @@
-python 3.14.7 gil_enabled=False test=test_descriptor_exposes_frame_name_and_cleanup_rechecks_cleaned_inside_lock runs=20000 failures={'AssertionError': 3} thread_errors=3 stuck_threads=3 seconds=11.4
-python 3.14.7 gil_enabled=True test=test_descriptor_exposes_frame_name_and_cleanup_rechecks_cleaned_inside_lock runs=20000 failures={} thread_errors=0 stuck_threads=0 seconds=12.3
-python 3.14.7 gil_enabled=True test=test_descriptor_exposes_frame_name_and_cleanup_rechecks_cleaned_inside_lock runs=20000 failures={} thread_errors=0 stuck_threads=0 seconds=3.8

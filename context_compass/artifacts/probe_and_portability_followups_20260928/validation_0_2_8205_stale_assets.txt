@@ -1,7 +1,0 @@
-# melder_0 2026-09-28T01:17:29Z: device tree at 0.2.8205, assets NOT rebuilt (owner waiver), 3.14t PYTHON_GIL=0
---- meld/conduit tests
-1915 passed in 19.29s
---- package/asset/system-document set
-FAILED tests/unit/melder/test_package_version_metadata.py::test_generated_build_assets_are_stamped_for_the_live_version
-1 failed, 287 passed, 1 skipped in 75.57s (0:01:15)
---- asset --check
