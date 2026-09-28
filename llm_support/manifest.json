@@ -5772,13 +5772,13 @@
     },
     "tests": {
       "bundle": {
-        "bytes": 12022856,
-        "lines": 335482,
+        "bytes": 12022634,
+        "lines": 335464,
         "path": "llm_support/llm_full_tests.txt",
-        "sha256": "cc05062cfb95455bd2504a1d1393a09bc4fcfe57eb83567864e0378ad58c5412"
+        "sha256": "15a1f3e07e36f202826371a90f84e466243e4e2f0aaca2d3489d9661976d9f63"
       },
-      "content_bytes": 11392622,
-      "content_lines": 327212,
+      "content_bytes": 11392400,
+      "content_lines": 327194,
       "file_count": 1033,
       "files": {
         "tests/_annotation_audit_support.py": {
@@ -9220,9 +9220,9 @@
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py": {
-          "content_bytes": 42883,
-          "content_lines": 1165,
-          "content_sha256": "25d9419fbd86f9ba8f3149a4f790a22c91d24b6eb4c1cedab04bbb481c3bda5f",
+          "content_bytes": 42661,
+          "content_lines": 1147,
+          "content_sha256": "8f0431f1781bfe8f81125084fae0d2e31857e6cf8990526bbe6e5a6466cb042a",
           "source_encoding": "utf-8"
         },
         "tests/unit/melder/aether/conduit/conduit_ward/contract/test_contract.py": {
@@ -11984,9 +11984,9 @@
         "bytes": 203027,
         "lines": 1055,
         "path": "llm_support/llm_full_tests_index.md",
-        "sha256": "4ef78a06fd7fc86911926a222c1325d434dfd8ccde5ed76aa86d224876ae9d82"
+        "sha256": "4f93a4c1dfa2c75400fac97ced74441fb8f5680277d77c1ad880359d4f257d70"
       },
-      "source_fingerprint": "9997fcaea2318306631c40f779e8a140c0b1b893ab73ab4abdd799976c680b56"
+      "source_fingerprint": "f54e8d0e4041de8a3d2f948b736068757f6ab335e21fdee0d3208bc5a48c30cc"
     }
   },
   "generator_sha256": "d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3",

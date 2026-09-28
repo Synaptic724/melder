@@ -91,6 +91,7 @@ Disposition values
 | ticket | artifact_path | disposition | reason | closed_at |
 | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: cleared_artifacts -->
+| tickets/tasks/completed/2026-09-28_investigate_transaction_session_cleanup_race_task.md | artifacts/transaction_session_cleanup_race_20260928/ | retain_as_reference | Mediator unit qualification, documented lifecycle boundary and preservation/build evidence. | 2026-09-28T11:32:40Z |
 | tickets/tasks/completed/2026-09-28_fix_system_document_lazy_publication_race_task.md | system_docs/patches/completed/document_index_publication_2026_09_28/ | promote_to_documentation | Publication/retry contracts promoted to source/test docs, graph and release; patch records archived. | 2026-09-28T09:47:24Z |
 | tickets/tasks/completed/2026-09-28_fix_system_document_lazy_publication_race_task.md | artifacts/system_document_publication_race_20260928/ | retain_as_reference | Red/green regressions, free-threaded contention stress and documentation/graph evidence. | 2026-09-28T09:47:24Z |
 | tickets/tasks/completed/2026-09-28_rebuild_assets_after_owner_changes_task.md | artifacts/assets_rebuild_20260928_0859/ | retain_as_reference | Canonical asset rebuild/check and current LLM bundle/check logs. | 2026-09-28T09:01:49Z |

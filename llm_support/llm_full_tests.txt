@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: 9997fcaea2318306631c40f779e8a140c0b1b893ab73ab4abdd799976c680b56
+SOURCE FINGERPRINT: f54e8d0e4041de8a3d2f948b736068757f6ab335e21fdee0d3208bc5a48c30cc
 FILE COUNT: 1033
 
 ================================================================================
@@ -159169,7 +159169,7 @@ END FILE: tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_stra
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py
-CONTENT SHA256: 25d9419fbd86f9ba8f3149a4f790a22c91d24b6eb4c1cedab04bbb481c3bda5f
+CONTENT SHA256: 8f0431f1781bfe8f81125084fae0d2e31857e6cf8990526bbe6e5a6466cb042a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -159906,11 +159906,13 @@ def test_registry_replaces_registrations_and_rejects_instances():
 
 # --------------------------------------------------------------------------
 # Lifecycle
+# Teardown is serialized by the owner after use has stopped. A public entry
+# check rejects use-after-clean; it is not a lease against concurrent destruction.
 # --------------------------------------------------------------------------
 
 @pytest.mark.parametrize(
     "factory",
-    [ClaimTable, AdmissionOrchestrator, StrategyBuilder],
+    [ClaimTable, AdmissionOrchestrator, StrategyBuilder, InformationRegistry, Mediator],
 )
 def test_cleanup_is_idempotent_and_use_after_clean_raises(factory):
     """Every owned component honours the Cleanable contract."""
@@ -159922,69 +159924,49 @@ def test_cleanup_is_idempotent_and_use_after_clean_raises(factory):
         instance.describe()
 
 
-@pytest.mark.parametrize(
-    "factory",
-    [ClaimTable, AdmissionOrchestrator, StrategyBuilder, InformationRegistry],
-)
-def test_concurrent_cleanup_does_not_double_free(factory):
+def test_session_owner_cleanup_releases_records_without_running_inverses() -> None:
+    """Owner teardown is repeatable and releases owned records, not the borrowed holder.
+
+    Cleanup is not abort: pending inverse callbacks must not run. Subsequent
+    public inspection, mutation and record access must raise the cleaned-state
+    RuntimeError rather than touching deleted fields.
     """
-    REGRESSION: cleanup must re-check `_cleaned` INSIDE the lock.
+    holder = _identity()
+    request = _request(submitter=holder)
+    staged = StagedTransaction.from_request(request=request, admitted_at=0.0)
+    session = TransactionSession(request=request, staged=staged, holder=holder)
+    inverse_calls: list[str] = []
 
-    Sequential double-cleanup is caught by the test above, but it cannot
-    catch the real race: two threads both pass the cheap outer
-    `if self._cleaned` check, both enter the lock, both set the flag, and both
-    fall through to the `del` statements - the loser raising AttributeError on
-    an already-deleted slot. Free-threaded 3.14t removed the accidental
-    serialisation that used to hide this, so it is a live hazard rather than a
-    theoretical one.
+    def inverse() -> None:
+        """Record an unintended abort side effect if cleanup invokes this callback."""
+        inverse_calls.append("ran")
 
-    `cleanup_and_disposal.md` states the rule: check `_cleaned` before AND
-    after locking.
-    """
-    instance = factory()
-    barrier = threading.Barrier(8)
-    failures = []
+    try:
+        session.register_rollback_action(action=inverse, description="must not run during cleanup")
+        session.leave()
+        session.mark_committing()
+        session.mark_committed()
+        session.cleanup()
+        session.cleanup()
 
-    def racer() -> None:
-        barrier.wait()
-        try:
-            instance.cleanup()
-        except BaseException as error:
-            failures.append("{0}: {1}".format(type(error).__name__, error))
-
-    threads = [threading.Thread(target=racer) for _ in range(8)]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join(timeout=10.0)
-
-    assert all(not thread.is_alive() for thread in threads)
-    assert failures == [], "concurrent cleanup raised: {0}".format(failures)
-    assert instance.cleaned is True
-
-
-def test_concurrent_session_cleanup_does_not_double_free():
-    """The same race on a session, which also clears two collections."""
-    session = _session()
-    barrier = threading.Barrier(8)
-    failures = []
-
-    def racer() -> None:
-        barrier.wait()
-        try:
-            session.cleanup()
-        except BaseException as error:
-            failures.append("{0}: {1}".format(type(error).__name__, error))
-
-    threads = [threading.Thread(target=racer) for _ in range(8)]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join(timeout=10.0)
-
-    assert all(not thread.is_alive() for thread in threads)
-    assert failures == [], "concurrent cleanup raised: {0}".format(failures)
-    assert session.cleaned is True
+        assert session.cleaned is True
+        assert request.cleaned is True
+        assert staged.cleaned is True
+        assert holder.cleaned is False
+        assert inverse_calls == []
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            session.describe()
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            session.join()
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            _ = session.request
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            request.describe()
+        with pytest.raises(RuntimeError, match="already been cleaned"):
+            staged.describe()
+    finally:
+        session.cleanup()
+        holder.cleanup()
 
 
 # --------------------------------------------------------------------------
