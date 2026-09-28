@@ -889,21 +889,6 @@ Key Files (C1):
 - `tests/unit/melder/aether/test_workstation.py`
 - `tests/unit/melder/aether/test_command_system_direct.py`
 
-### Subcomponent: Aetheric Mediator Lifecycle Unit Cluster
-Parent Component: Unit Test Suite
-Purpose:
-- verify owner-driven mediator/session teardown and public cleaned-state boundaries
-Protects:
-- repeated sequential cleanup remains harmless for the plane and its owned components
-- a session cleans its owned request and staged records, preserves the borrowed holder and never
-  runs inverse callbacks merely because it is being cleaned
-- public inspection, mutation and record access begun after cleanup raise the cleaned-state error
-Lifecycle boundary (owner clarified 2026-09-28):
-- teardown is serialized by the owner after use stops; a public entry check is not a lifetime lease
-  against destruction by another caller. Eight simultaneous cleanup calls are outside this contract.
-Key Files (C1):
-- `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py`
-
 ### Subcomponent: Crystallizer Unit Cluster
 Parent Component: Unit Test Suite
 Purpose:
@@ -1438,13 +1423,6 @@ Key Files (C1):
    - tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py:148-235
 
 ## C1 Code Map (Core)
-- path: `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py`
-  start_line: 1
-  end_line: 1147
-  loc: 1147
-  verified_at: 2026-09-28T11:31:18Z
-  note: mediator contracts including owner-driven cleanup, owned records and public use-after-clean guards.
-
 - path: `tests/integration/melder/spellbook/test_spellbook_qualified_same_name_regressions.py`
   start_line: 1
   end_line: 131
@@ -2471,7 +2449,6 @@ graph TD
 ```
 
 ## Information Sources
-- `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py`
 - `tests/integration/melder/spellbook/test_spellbook_qualified_same_name_regressions.py`
 - `tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_duplicate_spell_name_strategy.py`
 - `pyproject.toml`
@@ -2530,11 +2507,6 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
-
-2026-09-28 mediator teardown contract: retired the session and component tests that required eight
-callers to destroy one object simultaneously. Coverage now verifies owner-serialized, repeatable
-teardown, session-owned records, borrowed-holder survival and public entry rejection after cleanup.
-Runtime cleanup and lock handling are unchanged; entry checks do not confer a lifetime lease.
 
 2026-09-28 document index: eight deterministic regressions cover concurrent reads during key-map
 construction and recovery after a failed construction, across all four shipped views. The original
