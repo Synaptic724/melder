@@ -276,7 +276,9 @@ class AethericFrame(Cleanable):
         Clean up all frame-owned registries and child services.
 
         Contract:
-        - Cleans child conduits before clearing conduit registries.
+        - Cleans child conduits before clearing conduit registries. A conduit whose
+          teardown raises (disposal failures are raised only after its teardown
+          finishes) is logged through the Aether logger and the frame keeps going.
         - Cleans the frame-owned dev-ops registry after child objects and
           after `DevOpsManager` drops its borrowed reference.
         - Clears spell and version registries owned by the frame.
@@ -292,9 +294,16 @@ class AethericFrame(Cleanable):
                 try:
                     conduit.permanent_cleanup()
                 except Exception:
-                    # DevOps surfaces can record incidents if you want;
-                    # frame cleanup never dies on conduit cleanup.
-                    pass
+                    # Frame cleanup never dies on conduit cleanup: log the failure
+                    # and keep going (DevOps surfaces can record incidents from the
+                    # log). A conduit raises its disposal failures only after its
+                    # own teardown finished.
+                    if self._aether._logger is not None:
+                        self._aether._logger.error(
+                            "Error cleaning conduit during frame teardown",
+                            "_cleanup_data_structures",
+                            exc_info=True,
+                        )
             self._conduits.clear()
 
         if self._conduit_ids_by_name is not None:

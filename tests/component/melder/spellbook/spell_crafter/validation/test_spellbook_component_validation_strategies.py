@@ -992,16 +992,16 @@ def test_component_circular_dependency_strategy_detects_cycle() -> None:
         spellbook.cleanup()
 
 
-def test_component_duplicate_spell_name_strategy_flags_collision() -> None:
+def test_component_duplicate_spell_name_strategy_accepts_distinct_bindings() -> None:
     """
     Purpose:
-        Validate DuplicateSpellNameStrategy reports same-name collisions.
+        Validate DuplicateSpellNameStrategy honors distinct binding addresses.
     Contract:
-        - Two visible spells with the same name yield DUPLICATE_SPELL_NAME errors.
+        - Two same-named spells at distinct bindings yield no collision issue.
     Returns:
         None.
     Raises:
-        AssertionError: If collisions are not reported.
+        AssertionError: If a harmless shared display name is rejected.
     """
     spellbook = _make_spellbook()
     strategy = DuplicateSpellNameStrategy()
@@ -1078,11 +1078,7 @@ def test_component_duplicate_spell_name_strategy_flags_collision() -> None:
         context, issues = _make_context(spell=spell, spellbook=spellbook)
         try:
             strategy.validate(context)
-            assert len(issues) == 1
-            issue = issues[0]
-            assert issue.code == "DUPLICATE_SPELL_NAME"
-            assert issue.severity == "error"
-            assert issue.details["collision_count"] == 2
+            assert issues == []
         finally:
             context.cleanup()
     finally:

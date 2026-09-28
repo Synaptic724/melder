@@ -1,5 +1,0 @@
-
-docs\_build\html\index.html:10:  <title>A dependency graph runtime for Python &mdash; Melder</title>
-docs\_build\html\index.html:115:<span id="a-runtime-you-can-build-on"></span><h1>A dependency graph runtime for Python<a class="headerlink" href="#a-dependency-graph-runtime-for-python" title="Link to this heading"></a></h1>
-
-

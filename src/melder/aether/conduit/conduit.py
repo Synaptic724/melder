@@ -14,7 +14,9 @@ from typing import (
     Dict,
     Generator,
     ClassVar,
+    List,
     Set,
+    Type,
 )
 # Melder Imports
 from melder.aether.aetheric_frame.dev_ops.change_control_manager.transaction_request.transaction_request import (
@@ -573,6 +575,8 @@ class Conduit(Cleanable):
             - Permanent cleanup is idempotent after `_cleaned` flips. A successful
               soft lesser return ends its current use; callers must reacquire it
               through create_lesser_conduit before starting another use.
+            - Soft cleanup of a lesser already in its pool (`pooled_lesser`) does
+              nothing, so a second cleanup never pools the shell twice.
             - Permanent teardown fires `on_conduit_cleanup_start` and
               `on_conduit_cleanup_complete`. Soft return preserves the shell.
             - Dispatches to the lesser- or normal-conduit cleanup path based on the
@@ -582,14 +586,21 @@ class Conduit(Cleanable):
             - This is local conduit teardown only; it does not clean Aether or the
               owning frame itself.
             - Soft cleanup does not publish idle until descendants and named record/
-              directory retirement finish. Failed cleanup remains owned for retry;
+              directory retirement finish. A descendant that cannot finish its own
+              return, or a failed retirement, keeps this scope owned for retry;
               already completed disposal work is not rolled back.
+            - A failing disposal method stops neither path: the lesser still returns
+              to its pool and a permanent teardown still finishes, and then every
+              disposal failure is raised as one ExceptionGroup (since 0.2.8203;
+              permanent teardown used to only log them).
 
         Returns:
             None.
 
         Raises:
-            ExceptionGroup: Creation disposal or descendant soft cleanup failed.
+            ExceptionGroup: A disposal method failed (raised after the pool return or
+                the teardown finished), or a descendant could not finish its own pool
+                return (this scope stays attached for retry).
             Exception: Named record/directory retirement failed before pool return.
 
         """
@@ -609,38 +620,89 @@ class Conduit(Cleanable):
 
         Contract:
             - Normal conduits do not enter the lesser pool and still hard-clean.
+            - A lesser already in its pool (`pooled_lesser`) returns at once, so a
+              second soft cleanup never pools the shell twice.
             - Lesser conduits transition to `pooled_lesser` locally before they
               are returned to the root-owned pool.
             - Anonymous pool return stays local and does not refresh dev-ops or
               Nexus. Named return first retires its published scope metadata.
-            - Dispose Spaces and creations before clearing local lifecycle hooks
-              and restoring temporary Meld hooks. The ordinary path checks one
-              bool; only a modified Meld acquires its existing mutation lock.
+            - Disposes descendants first, then Spaces, then its own creations (the
+              permanent teardown order), before clearing local lifecycle hooks and
+              restoring temporary Meld hooks. The ordinary path checks one bool;
+              only a modified Meld acquires its existing mutation lock.
+            - Finishes the return when a disposal method fails: every child, Space
+              and store is emptied before any of its methods run, so their failures
+              are collected, the scope is pooled, and then one ExceptionGroup of
+              them is raised. The no-failure path allocates nothing for this.
             - Named scopes unregister and clear their label before idle publication.
               Unnamed return performs only the direct name check: no directory
               call, lock, allocation or scan is introduced on that branch.
-            - Failed descendant cleanup or named record retirement keeps this
-              scope attached and out of the pool so its owner can retry cleanup.
+            - A descendant that cannot finish its own return, or a failed named
+              record retirement or detach, keeps this scope attached and out of the
+              pool so its owner can retry cleanup; failures collected before it are
+              raised together with that error.
 
         Returns:
             None. The caller holds the conduit lock through idle publication.
+
+        Raises:
+            ExceptionGroup: Disposal failures, after this scope is back in its pool;
+                or an unfinished descendant or a retirement failure together with the
+                disposal failures collected before it (this scope stays attached).
+            Exception: Named record retirement or detach failed and nothing else did.
         """
-        if self._conduit_state is ConduitState.normal:
-            self._permanent_cleanup()
+        # Hot path (one call per scope cycle). Read the state once: only a lesser
+        # is returned, so the common case pays one comparison, as before.
+        state = self._conduit_state
+        if state is not ConduitState.lesser:
+            if state is ConduitState.normal:
+                self._permanent_cleanup()
+            # pooled_lesser: already back in its pool, nothing to do.
             return
-        self._cleanup_spellspaces_for_pool()
-        self._creations.reset_for_pool()
-        if self._name is not None:
-            self._prepare_named_for_pool()
-        else:
-            self._conduit_ward._detach_for_pool()
-        self._conduit_state = ConduitState.pooled_lesser
-        self._conduit_ward._conduit_type = ConduitState.pooled_lesser
+        # One read each of the ward and the pooled state serves every use below:
+        # on the free-threaded build an attribute or enum-member load of a shared
+        # object costs about 5-14 ns (measured 2026-09-27, scope_exit_dispose lane).
+        ward = self._conduit_ward
+        pooled = ConduitState.pooled_lesser
+        failures: Optional[List[Exception]] = None
+        # The caller holds this conduit's lock, which every new child link also
+        # takes, so this unlocked read cannot miss a racing attachment.
+        if ward._lesser_conduits:
+            failures = ward._cleanup_children_for_pool(collect_finished=True)
+        space_failures = self._cleanup_spellspaces_for_pool()
+        if space_failures is not None:
+            if failures is None:
+                failures = space_failures
+            else:
+                failures.extend(space_failures)
+        try:
+            self._creations.reset_for_pool()
+        except ExceptionGroup as store_failures:
+            if failures is None:
+                failures = [store_failures]
+            else:
+                failures.append(store_failures)
+        try:
+            if self._name is not None:
+                self._prepare_named_for_pool()
+            else:
+                ward._detach_for_pool()
+        except Exception as retirement_failure:
+            if failures is None:
+                raise
+            raise ExceptionGroup(
+                "Lesser conduit could not finish its pool return and stays attached for retry.",
+                [*failures, retirement_failure],
+            ) from None
+        self._conduit_state = pooled
+        ward._conduit_type = pooled
         if self._local_conduit_hooks is not None:
             self._local_conduit_hooks.clear()
         if self._meld._meld_hooks_modified:
             self._meld._reset_pooled_meld_hooks()
         self._conduit_pool.return_lesser_conduit(self)
+        if failures is not None:
+            raise ExceptionGroup("Lesser conduit returned to its pool with disposal failures.", failures)
 
     def _prepare_named_for_pool(self) -> None:
         """Retire a named scope only after descendants finish, retaining ownership on failure.
@@ -669,7 +731,7 @@ class Conduit(Cleanable):
         self._name = None
         self._conduit_ward._detach_for_pool()
 
-    def _cleanup_spellspaces_for_pool(self) -> None:
+    def _cleanup_spellspaces_for_pool(self) -> Optional[List[Exception]]:
         """
         Internal
 
@@ -680,29 +742,46 @@ class Conduit(Cleanable):
               assigned exactly once in `__init__` and only deleted during
               permanent teardown, so this path drains it directly without a
               defensive type probe.
+            - Every space is cleaned even when one raises. A space finishes its
+              own pool return before raising (its store is emptied first), so each
+              error is collected, not logged, for the caller to raise once this
+              conduit's return is complete.
+            - The list is allocated only when a space failed.
+            - Returns None at once when this thread has no open managed Space
+              and no manual Space is registered (the common case), without the
+              drain call.
+
+        Returns:
+            Optional[List[Exception]]: The spaces' cleanup errors, or None.
         """
         # Hot path: runs once per pooled lesser cleanup (one per scope cycle).
+        # Nothing to sweep in the common case: return before the drain call.
+        # Reads the owned thread state's per-thread stack directly (saves a
+        # call per cycle, measured 2026-09-27); keep in step with
+        # SpellSpaceThreadState.drain.
+        if not self._spellspace_registry and not self._spellspace_stack._local.spellspace_stack:
+            return None
         # The stack holder type is an owned lifecycle invariant; drain directly.
+        failures: Optional[List[Exception]] = None
         active_spellspaces = self._spellspace_stack.drain()
         for spellspace in active_spellspaces:
             try:
                 spellspace.cleanup()
-            except Exception:
-                self._logger.error(
-                    "Error cleaning spellspace for pool",
-                    "_cleanup_spellspaces_for_pool",
-                    exc_info=True,
-                )
+            except Exception as error:
+                if failures is None:
+                    failures = [error]
+                else:
+                    failures.append(error)
 
         while self._spellspace_registry:
             try:
                 self._spellspace_registry.pop().cleanup()
-            except Exception:
-                self._logger.error(
-                    "Error cleaning spellspace for pool",
-                    "_cleanup_spellspaces_for_pool",
-                    exc_info=True,
-                )
+            except Exception as error:
+                if failures is None:
+                    failures = [error]
+                else:
+                    failures.append(error)
+        return failures
 
     def permanent_cleanup(self) -> None:
         """
@@ -719,12 +798,24 @@ class Conduit(Cleanable):
         self._permanent_cleanup_requested = True
         self.cleanup()
 
-    def _permanent_cleanup(self):
+    def _permanent_cleanup(self) -> None:
         """
         Internal
 
         Cleans up all resources associated with the Conduit, including
         deregistering from Aether and Spellbook, and removing all references.
+
+        Contract:
+            - Every teardown step runs when a disposal method fails: the ward's
+              lesser lineage, the SpellSpaces, the stores and (normal) the cluster
+              facade each finish before their disposal failures are collected;
+              other step errors stay logged.
+            - Hooks fire, hook maps are deleted and the logger goes last; then the
+              collected disposal failures are raised as one ExceptionGroup.
+
+        Raises:
+            ExceptionGroup: One or more owned objects failed a disposal method.
+            RuntimeError: The conduit state is unknown.
         """
         if self._conduit_hooks or self._local_conduit_hooks:
             self._fire_conduit_hooks("on_conduit_cleanup_start", self)
@@ -733,9 +824,9 @@ class Conduit(Cleanable):
                     ConduitState.lesser,
                     ConduitState.pooled_lesser,
             ):
-                self._cleanup_lesser_conduit()
+                disposal_failures = self._cleanup_lesser_conduit()
             elif self._conduit_state == ConduitState.normal:
-                self._cleanup_normal_conduit()
+                disposal_failures = self._cleanup_normal_conduit()
             else:
                 self._logger.error("Unknown Conduit state during cleanup", "cleanup")
                 raise RuntimeError("Conduit state is unknown during cleanup")
@@ -758,9 +849,9 @@ class Conduit(Cleanable):
                     ConduitState.lesser,
                     ConduitState.pooled_lesser,
             ):
-                self._cleanup_lesser_conduit()
+                disposal_failures = self._cleanup_lesser_conduit()
             elif self._conduit_state == ConduitState.normal:
-                self._cleanup_normal_conduit()
+                disposal_failures = self._cleanup_normal_conduit()
             else:
                 self._logger.error("Unknown Conduit state during cleanup", "cleanup")
                 raise RuntimeError("Conduit state is unknown during cleanup")
@@ -776,8 +867,10 @@ class Conduit(Cleanable):
             except Exception:
                 pass
             del self._logger
+        if disposal_failures:
+            raise ExceptionGroup("Conduit torn down with disposal failures.", disposal_failures)
 
-    def _cleanup_lesser_conduit(self) -> None:
+    def _cleanup_lesser_conduit(self) -> List[Exception]:
         """
         Internal
 
@@ -787,9 +880,13 @@ class Conduit(Cleanable):
             Remove named discovery before deleting frame/ward references. Unnamed
             shells skip directory work. The shared Book and root maps remain owned
             by the lineage root; local children and stores follow existing teardown.
+            The ward (lesser lineage), the SpellSpaces and the own store raise their
+            disposal failures only after finishing; those groups are collected and
+            returned, other step errors stay logged.
         Returns:
-            None.
+            List[Exception]: Collected disposal failure groups; empty when none failed.
         """
+        failures: List[Exception] = []
         if self._name is not None:
             try:
                 self._emit_conduit_retirement()
@@ -827,14 +924,18 @@ class Conduit(Cleanable):
         try:
             if self._conduit_ward is not None:
                 self._conduit_ward.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
         except Exception:
             self._logger.error("Error cleaning conduit ward", "_cleanup_lesser_conduit", exc_info=True)
 
-        self._cleanup_spellspaces()
+        failures.extend(self._cleanup_spellspaces())
 
         try:
             if self._creations is not None:
                 self._creations.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
         except Exception:
             self._logger.error("Error cleaning creations", "_cleanup_lesser_conduit", exc_info=True)
 
@@ -858,14 +959,25 @@ class Conduit(Cleanable):
         del self._configuration
         del self._root_conduit_id
         del self._nexus
+        return failures
 
 
-    def _cleanup_normal_conduit(self) -> None:
+    def _cleanup_normal_conduit(self) -> List[Exception]:
         """
         Internal
 
         Cleans up a normal Conduit.
+
+        Contract:
+            The cluster facade, the ward (lesser lineage), the SpellSpaces and the
+            own store raise their disposal failures only after finishing; those
+            groups are collected and returned, other step errors stay logged, and
+            every later step still runs.
+
+        Returns:
+            List[Exception]: Collected disposal failure groups; empty when none failed.
         """
+        failures: List[Exception] = []
         self._remove_conduit_record_from_nexus()
         # 1) Meld runtime (stop new object creation paths)
         if self._creation_gate_controller is not None:
@@ -882,6 +994,8 @@ class Conduit(Cleanable):
         try:
             if self._cluster_creations is not None:
                 self._cluster_creations.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
         except Exception:
             self._logger.error(
                 "Error cleaning cluster facade", "_cleanup_normal_conduit", exc_info=True
@@ -896,16 +1010,20 @@ class Conduit(Cleanable):
         try:
             if self._conduit_ward is not None:
                 self._conduit_ward.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
         except Exception:
             self._logger.error("Error cleaning conduit ward", "_cleanup_normal_conduit", exc_info=True)
 
         # 2.5) Spellspaces (ensure stack is flushed)
-        self._cleanup_spellspaces()
+        failures.extend(self._cleanup_spellspaces())
 
         # 3) Creations
         try:
             if self._creations is not None:
                 self._creations.cleanup()
+        except ExceptionGroup as disposal_failures:
+            failures.append(disposal_failures)
         except Exception:
             self._logger.error("Error cleaning creations", "_cleanup_normal_conduit", exc_info=True)
 
@@ -983,6 +1101,7 @@ class Conduit(Cleanable):
         del self._crystallizer
         del self._mutation_research
         del self._nexus
+        return failures
 
     def _publish_conduit_record_to_nexus(self, *, pooled: bool = False) -> None:
         """
@@ -1071,14 +1190,24 @@ class Conduit(Cleanable):
 
         self._nexus._remove_conduit_record(self._id, self._aetheric_frame_name)
 
-    def _cleanup_spellspaces(self) -> None:
+    def _cleanup_spellspaces(self) -> List[Exception]:
         """
         Internal
 
         Best-effort cleanup of any spellspaces still on the stack.
+
+        Contract:
+            - Permanently cleans the calling thread's managed spaces and every
+              registry-tracked space, then the spellspace pool.
+            - A space's disposal failures - the ExceptionGroup its permanent cleanup
+              raises after finishing - are collected and returned; other errors are
+              logged, as before.
+
+        Returns:
+            List[Exception]: Collected disposal failure groups; empty when none failed.
         """
         if self._spellspace_stack is None:
-            return
+            return []
         try:
             stack_holder = self._spellspace_stack
             if isinstance(stack_holder, SpellSpaceThreadState):
@@ -1092,14 +1221,17 @@ class Conduit(Cleanable):
                 "_cleanup_spellspaces",
                 exc_info=True,
             )
-            return
+            return []
         registry = list(self._spellspace_registry) if self._spellspace_registry is not None else []
         spellspaces = list(dict.fromkeys([*stack, *registry]))
         if self._spellspace_registry is not None:
             self._spellspace_registry.clear()
+        failures: List[Exception] = []
         for spellspace in spellspaces:
             try:
                 spellspace.permanent_cleanup()
+            except ExceptionGroup as disposal_failures:
+                failures.append(disposal_failures)
             except Exception:
                 self._logger.error(
                     "Error cleaning spellspace",
@@ -1115,6 +1247,7 @@ class Conduit(Cleanable):
                     "_cleanup_spellspaces",
                     exc_info=True,
                 )
+        return failures
 
 
     #endregion Cleanup and Disposal
@@ -1230,7 +1363,10 @@ class Conduit(Cleanable):
                 On scope exit, if stack integrity is violated.
         """
         space = self._spellspace_pool.acquire_untracked()
-        self._spellspace_stack.push(space)
+        # Hot path (one entry per managed scope): the owned thread state's push,
+        # inlined to save a call per scope (measured 2026-09-27); keep in step
+        # with SpellSpaceThreadState.push.
+        self._spellspace_stack._local.spellspace_stack.append(space)
         return space
 
     def prewarm_spellspaces(self, count: int) -> int:
@@ -1558,62 +1694,70 @@ class Conduit(Cleanable):
 
 
     #region Context Management
-    def __enter__(self) -> "Conduit":
+    def __enter__(self) -> Conduit:
         """
         Public API
 
-        Enter the conduit lock context and return `self`.
+        Enter a dispose scope over this conduit and return `self`.
 
         Purpose:
-            Allow internal or advanced coordinated operations to hold the conduit lock
-            across a controlled block without exposing `_lock` directly.
+            Make `with conduit:` behave like a .NET `using` block: the conduit is
+            released when the block ends. Pair it with `enter_lesser_conduit()` for a
+            request-scoped lesser.
 
         Contract:
-            - Acquires the conduit lock and returns `self`, so `with conduit:` groups
-              several operations under one lock rather than exposing `_lock`.
-            - The lock is REENTRANT, so nested `with` blocks are legal and each level
-              must exit.
-            - Performs no cleaned-state check of its own; callers must be operating
-              on a live conduit.
+            - Returns `self` and does nothing else: no lock is taken and no state
+              changes (changed 0.2.8203; `with conduit:` used to hold the conduit
+              lock for the block).
+            - Performs no cleaned-state check; entering a cleaned conduit is a caller
+              contract violation, like any other use after cleanup.
 
         Returns:
             Conduit:
-                This conduit instance while the lock is held.
+                This conduit, for use inside the block.
 
         """
-        self._lock.acquire()
         return self
 
     def __exit__(
             self,
-            exc_type: type[BaseException] | None,
-            exc_value: BaseException | None,
-            traceback: TracebackType | None,
+            exc_type: Optional[Type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType],
     ) -> None:
         """
         Public API
 
-        Exit the conduit lock context.
+        End the dispose scope: clean this conduit up.
 
         Contract:
-            - Releases unconditionally, including when the block raised. Exception
-              arguments are accepted and IGNORED, so no exception is suppressed.
-            - Exactly one release per `__enter__`; the lock is reentrant.
+            - Calls `cleanup()` at every block exit, including when the block raised:
+              a lesser disposes its descendants, SpellSpaces and own creations and
+              returns to its pool; a normal (root) conduit is torn down permanently.
+            - Never suppresses the block's exception (returns None).
+            - Disposal failures are raised after the cleanup finished, as one
+              ExceptionGroup; when the block raised too, that group rises with the
+              block's exception as its `__context__` (Python's rule for an error
+              raised in `__exit__`).
+            - A lesser already returned inside the block (an explicit `cleanup()`)
+              is not pooled twice while the shell is idle. If another caller
+              acquired the shell in between, this exit reaches that new lease, so a
+              scope must not be released inside its own block.
 
         Threading:
-            Releases the conduit lock acquired by `__enter__`.
-
-        Lifecycle / Cleanup:
-            Performs no cleaned-state check - it is purely the unlock half.
+            Takes the conduit lock only inside `cleanup()`.
 
         Raises:
-            RuntimeError: If called without a matching `__enter__` on this thread.
+            ExceptionGroup: Disposal failures, after the scope was cleaned up.
+            Exception: A named lesser's record retirement failed; the lesser stays
+                attached for a retry.
 
         Returns:
             None.
 
         """
-        self._lock.release()
+        self.cleanup()
+        return None
 
     #endregion Context Management
     #region Logger
@@ -2719,6 +2863,53 @@ class Conduit(Cleanable):
                 new_conduit._publish_conduit_record_to_nexus()
 
         return new_conduit
+
+    def enter_lesser_conduit(
+            self,
+            logger: Optional[Any] = None,
+            *,
+            name: Optional[str] = None,
+    ) -> Conduit:
+        """
+        Public API
+
+        Create a lesser conduit for use as a `with` block scope.
+
+        Usage:
+            with conduit.enter_lesser_conduit() as lesser:
+                service = lesser.meld(spell_id=service_id)
+            # the block exit ran lesser.cleanup(): its objects are disposed and
+            # the shell is back in the root's pool
+
+        Contract:
+            - Returns exactly what `create_lesser_conduit(logger, name=name)` returns:
+              a live lesser attached to this conduit, named when `name` is given.
+            - `with` calls `cleanup()` at block exit, even when the block raised: the
+              lesser disposes its descendants, SpellSpaces and own creations and
+              returns to its pool. Disposal failures are raised after the return as
+              one ExceptionGroup, carrying the block's exception as `__context__`
+              when the block raised too.
+            - Plain: nothing is pushed on a per-thread stack and no implicit current
+              scope is tracked, so the call costs what `create_lesser_conduit` costs
+              and blocks nest freely.
+            - Called without `with`, the caller calls `cleanup()` itself, exactly as
+              for `create_lesser_conduit`.
+
+        Args:
+            logger:
+                Optional logger, passed to `create_lesser_conduit` unchanged.
+            name:
+                Optional exact name for this use of the child scope.
+
+        Returns:
+            Conduit: The new lesser conduit, to use as the `with` target.
+
+        Raises:
+            RuntimeError: If this conduit or the named child is cleaned during acquisition.
+            ValueError: Name is empty or already owned/reserved in this frame.
+            TypeError: A supplied name is not a string.
+        """
+        return self.create_lesser_conduit(logger, name=name)
 
     def _link_new_lesser_under_lock(
             self, new_conduit: Conduit, *, name: Optional[str] = None,
@@ -4471,6 +4662,13 @@ class Conduit(Cleanable):
               the door's, and any miss continues in the door's id lane. A plain
               id meld of an existing-object spell returns its bound object there
               without calling the existing-creation door.
+            - On an automatic conduit a meld by registered name (`meld("Name")`)
+              or by class (`meld(spell=Cls)`) with no `spellframe` or
+              `binding_name` is served the same way from the door's name/class
+              registry (2026-09-27), with the same guards and arms; the entry is
+              minted by the door after one successful meld of that shape, so
+              results, errors and lifetimes are the door's. A miss, an unhashable
+              `spell`, an instance or a callable as `spell` continue in the door.
             - GATING IS MODE-DEPENDENT: in dynamic mode entry runs through the
               creation gate and is ticketed; in automatic mode the gate is BYPASSED
               entirely for a minimal hot path. The same call therefore has different
@@ -4528,21 +4726,27 @@ class Conduit(Cleanable):
             self.check_cleaned()
 
         meld_component = self._meld
-        # Warm automatic id lane (2026-09-26): the dominant call - an id meld on an automatic
-        # conduit - reads the meld door's fast-door entry here, saving the door frame and keyword
-        # marshaling on a hit (solo meld 209 -> 111 ns on 3.14t). The guard ladder and both arms
-        # mirror `ConduitMeld.meld` exactly (`Meld._fast_meld_doors` lists every reader); only
-        # guard reads sit inside the AttributeError try, so a constructor's own AttributeError is
-        # never swallowed. A miss continues in the door's positional id lane; every other call
-        # shape keeps the path below.
-        if (
-            type(spell_id) is str
-            and spell is None
-            and spellframe is None
-            and binding_name is None
-            and not self.__dynamic_environment__
-        ):
-            fast_entry = meld_component._fast_meld_doors.get(spell_id)
+        # Warm automatic lanes (id lane 2026-09-26, name/class lane 2026-09-27): on an automatic
+        # conduit a meld by id, by registered name or by class reads the meld door's success-only
+        # entry here - ids from `_fast_meld_doors`, names and classes from `_fast_input_doors` -
+        # saving the door frame, the name/class -> id lookup and keyword marshaling on a hit (id:
+        # solo meld 209 -> 111 ns; name: 453 -> ~200 ns prototyped, both on 3.14t). The guard
+        # ladder and both arms mirror `ConduitMeld.meld` exactly (`Meld._fast_meld_doors` lists
+        # every reader); only guard reads sit inside the AttributeError try, so a constructor's
+        # own AttributeError is never swallowed. An id miss continues in the door's positional id
+        # lane; a name/class miss and every other call shape keep the path below, and the door
+        # mints the name/class entry on success.
+        if spellframe is None and binding_name is None and not self.__dynamic_environment__:
+            fast_entry = None
+            if spell is None:
+                if type(spell_id) is str:
+                    fast_entry = meld_component._fast_meld_doors.get(spell_id)
+            elif spell_id is None:
+                try:
+                    fast_entry = meld_component._fast_input_doors.get(spell)
+                except TypeError:
+                    # Unhashable `spell` (never minted): the door resolves it uncached.
+                    fast_entry = None
             if fast_entry is not None:
                 (
                     door_spell,
@@ -4580,9 +4784,10 @@ class Conduit(Cleanable):
                     if spellbook._cache_emit_required:
                         spellbook._emit_cache_file_if_required()
                     return instance
-            if override is None:
-                return meld_component.meld(spell_id)
-            return meld_component.meld(spell_id, spell_override=override)
+            if spell is None and type(spell_id) is str:
+                if override is None:
+                    return meld_component.meld(spell_id)
+                return meld_component.meld(spell_id, spell_override=override)
 
         if spell is not None and spell_id is not None:
             raise ValueError("meld accepts either `spell` or `spell_id`, not both.")

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/utilities/general_base/cleanable.py",
- "source_sha256": "dc25bcce431ba9f159e34cc64d2e914fad1eea739a1798f973b8793296989297",
+ "source_sha256": "ca1c16d6089bb39f029d9e3d230189578590363554108deb8206e935959dcf81",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.utilities.general_base.cleanable": {
@@ -20,7 +20,7 @@
     "init",
     "cleanup"
    ],
-   "semantics_authored_against": "d530df3c1b1c2d97af0695c1be5b94da43dcabf3c50d4e6af05f1c5067f69a4a"
+   "semantics_authored_against": ""
   },
   "melder.utilities.general_base.cleanable.Cleanable": {
    "id": "melder.utilities.general_base.cleanable.Cleanable",
@@ -46,12 +46,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "5bb5aaf2ad46eaf8935d5b293111e169fba879b1dd622fa9e1f71625b8a35462",
+   "span_sha256": "d964d43ea2097cbb0031931086547589ba1122414c8260d9ec601a0671ce2ba8",
    "role": "Universal explicit-cleanup base contract.",
    "responsibilities": [
     "stores the canonical cleaned-state flag",
     "defines idempotent cleanup and cleaned-state guard expectations",
-    "provides the cleanup-context helper for deterministic teardown"
+    "provides using_cleanup() and async_using_cleanup() helper contexts that clean up at most once and let cleanup errors propagate"
    ],
    "owns_state": [
     "_cleaned"
@@ -61,7 +61,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "6ba91f755243b57c72cee5712c5a94e94728af02266f90bc1950f50cf7e31944"
+   "semantics_authored_against": "d964d43ea2097cbb0031931086547589ba1122414c8260d9ec601a0671ce2ba8"
   },
   "melder.utilities.general_base.cleanable._CleanupContext": {
    "id": "melder.utilities.general_base.cleanable._CleanupContext",
@@ -77,23 +77,24 @@
     "has_bases": false,
     "trivial": true
    },
-   "span_sha256": "53f990c7c30e25135d207bed4fb97f20a83901630f4ecc0d46a68f28ea76b889",
+   "span_sha256": "854de0286eb8951c5aa147ef324c0b350cf4bc0724cf0a449790c2ea3645942f",
    "include": true,
    "role": "Internal context helper supporting the Cleanable teardown contract.",
    "responsibilities": [
-    "scope one cleanup pass"
+    "scope one cleanup pass",
+    "drops its owner reference, calls cleanup() at most once and lets its error propagate without suppressing the block's exception"
    ],
    "phases": [
     "cleanup"
    ],
-   "semantics_authored_against": "3da0ba73d972566c9a658ab10bfc2961e1969216e7994793695448d4be4d6abf"
+   "semantics_authored_against": "854de0286eb8951c5aa147ef324c0b350cf4bc0724cf0a449790c2ea3645942f"
   },
   "melder.utilities.general_base.cleanable._AsyncCleanupContext": {
    "id": "melder.utilities.general_base.cleanable._AsyncCleanupContext",
    "label": "_AsyncCleanupContext",
    "kind": "class",
    "file": "src/melder/utilities/general_base/cleanable.py",
-   "lineno": 296,
+   "lineno": 301,
    "bases": [],
    "markers": [],
    "public_methods": [],
@@ -102,7 +103,12 @@
     "has_bases": false,
     "trivial": true
    },
-   "span_sha256": "8a0c9189a732f2135cb804963d187e20f8aabb58263b370b41901f0e112be229"
+   "span_sha256": "8c9b0addd485f434498d384b8677bfeb64b164c2684e2eea0b35c2157ae8ba44",
+   "role": "Async counterpart of the cleanup context, driving async_cleanup().",
+   "responsibilities": [
+    "drops its owner reference, awaits async_cleanup() at most once and lets its error propagate without suppressing the block's exception"
+   ],
+   "semantics_authored_against": "8c9b0addd485f434498d384b8677bfeb64b164c2684e2eea0b35c2157ae8ba44"
   }
  },
  "edges_out": [],

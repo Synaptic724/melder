@@ -65,9 +65,11 @@ are leads rather than evidence, so no walk can traverse one by accident.
 
 CONCURRENCY
 -----------
-Views and their adjacency are immutable and shared. Every cursor handed out is
-private to its caller. Many agents may read and walk concurrently with no lock,
-which is the property the free-threaded build is being aimed at.
+Document data and adjacency are immutable and shared. Lazy caches become ready
+only after their complete values exist: the section index publishes its key map
+before the section tuple that marks it ready. Concurrent first readers may build
+equivalent values, while warm reads and walks require no lock. Every cursor
+handed out is private to its caller.
 """
 from types import MappingProxyType
 from typing import Dict, Iterator, List, Mapping, NamedTuple, Optional, Tuple
@@ -308,7 +310,7 @@ class SystemDocumentView:
     Attributes:
         _document: The underlying `StaticSystemDocument`.
         _entry: That document's manifest entry.
-        _sections: Ordered sections, as emitted by the build.
+        _sections: Ordered sections; non-None only after the key map is published.
         _by_key: Key -> section, for exact lookup.
 
     AGENT_ACCESS: public
@@ -358,6 +360,14 @@ class SystemDocumentView:
             here rather than in `__init__` keeps `import melder` off the hook
             for hundreds of tuples nothing has asked for yet.
 
+        Contract:
+            `_sections` is the readiness marker and is assigned LAST, after
+            the complete read-only key map. A concurrent reader may build an
+            equivalent index while that marker is None, but cannot return a
+            missing map after observing it ready. Published values are never
+            mutated, and warm reads take no lock. If table construction raises,
+            the marker remains None so a later call can retry.
+
         Returns:
             Tuple: (ordered sections, key -> section).
         """
@@ -372,8 +382,10 @@ class SystemDocumentView:
             sections = tuple(
                 Section(key, start, end, end - start + 1) for key, start, end in rows
             )
-            self._sections = sections
+            # Publish the companion map before the readiness marker. Reversing
+            # these writes lets another reader skip loading and return a None map.
             self._by_key = MappingProxyType({s.key: s for s in sections})
+            self._sections = sections
         return self._sections, self._by_key
 
     def _doc(self) -> object:

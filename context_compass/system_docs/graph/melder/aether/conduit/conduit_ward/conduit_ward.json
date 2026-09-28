@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/conduit_ward.py",
- "source_sha256": "4b246e6890a1a06a58f5bd766a1061f8979fa7d4acd48579208757c38fd2e2be",
+ "source_sha256": "7282a938ec3345fd7c2e294b6c65327267feb0e44d5924d97618b2fb389b0dc2",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.conduit_ward": {
@@ -21,7 +21,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "1c4641a5fe86188eff43da8ea23d40298ef4b837214ed7c0ab36dbaa78c7cc59"
+   "semantics_authored_against": ""
   },
   "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard": {
    "id": "melder.aether.conduit.conduit_ward.conduit_ward.ConduitWard",
@@ -43,7 +43,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "0b317bde66df350307e4d9cb2730528ee35ec43fbb0ab9e1037ff599b53d40bf",
+   "span_sha256": "e1f2348b34b8b7eea3e4c8417188220100630cabd5c4a31bb484bd9501853eef",
    "role": "Contract and lineage graph manager for a conduit.",
    "responsibilities": [
     "manages peer contracts",
@@ -51,8 +51,9 @@
     "detaches both parent relationship directions when a childless lesser becomes an independent normal root",
     "applies policy to link creation and severing",
     "updates contracted spell visibility",
-    "retains failed descendant ownership and prevents ancestor pooling until child cleanup succeeds",
-    "resolves attached lessers by id over per-level dict.copy() snapshots of its child map, skipping children whose ward was torn down"
+    "retains a descendant that could not finish its pool return and prevents ancestor pooling; a child that finished but raised disposal failures is returned to the pooling parent",
+    "resolves attached lessers by id over per-level dict.copy() snapshots of its child map, skipping children whose ward was torn down",
+    "raises its lesser children's disposal failures after finishing its own teardown"
    ],
    "owns_state": [
     "_contracts",
@@ -64,7 +65,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "80fc014c04afff9d4b90dc572f62a3f1b773d8b36ba8318b17d54d2f34180d84"
+   "semantics_authored_against": "e1f2348b34b8b7eea3e4c8417188220100630cabd5c4a31bb484bd9501853eef"
   }
  },
  "edges_out": [

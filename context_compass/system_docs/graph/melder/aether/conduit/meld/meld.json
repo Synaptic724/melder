@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/meld.py",
- "source_sha256": "0a8fb807f0a0f065e2594d85522423ad2fa7fc6bf44fcf504f3b24ba99bf07d6",
+ "source_sha256": "0c3239b0476b96a19741c13eb552da9d9f121ec5c68d793ee8ee5a424719b6f8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.meld": {
@@ -53,7 +53,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6b9ae7bd4a752f478fd88a75d33eea36f81f54da5125c6cd9602e881eda976c7",
+   "span_sha256": "59d0b7ee5bbedb20d2ebf283a86535da86e6699aa7f779ff7a1edc3798343536",
    "role": "Resolution runtime orchestrator.",
    "responsibilities": [
     "resolves target spells",

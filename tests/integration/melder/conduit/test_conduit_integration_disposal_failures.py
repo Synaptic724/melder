@@ -14,7 +14,9 @@ Why these are integration tests:
 
 Contract under test:
     Every declared disposal method runs, in the book's declared order, even
-    after an earlier one raised; conduit cleanup logs the failure and finishes.
+    after an earlier one raised; conduit cleanup finishes its teardown and then
+    raises the failure as an ExceptionGroup (since 0.2.8203; it used to only log
+    it).
 """
 
 from typing import List
@@ -87,8 +89,25 @@ def _configuration() -> SpellbookConfiguration:
     return configuration
 
 
+def _leaves(error: BaseException) -> List[BaseException]:
+    """Flatten nested exception groups to their leaf exceptions, in group order.
+
+    Args:
+        error: The raised exception or group.
+
+    Returns:
+        List[BaseException]: Every leaf exception.
+    """
+    if isinstance(error, BaseExceptionGroup):
+        leaves: List[BaseException] = []
+        for inner in error.exceptions:
+            leaves.extend(_leaves(inner))
+        return leaves
+    return [error]
+
+
 def test_conduit_cleanup_runs_every_disposal_method_after_one_fails() -> None:
-    """Conduit teardown releases the connection even though its `close` raised."""
+    """Conduit teardown releases the connection even though its `close` raised, then reports it."""
     spellbook = Spellbook(configuration=_configuration())
     connection_id = spellbook.bind(
         spell=_Connection, existence=Existence.unique_per_conduit, permissions="create",
@@ -96,9 +115,12 @@ def test_conduit_cleanup_runs_every_disposal_method_after_one_fails() -> None:
     conduit = spellbook.conjure(dynamic=True, name="root")
     connection = conduit.meld(spell_id=connection_id)
 
-    conduit.cleanup()
+    with pytest.raises(ExceptionGroup) as raised:
+        conduit.cleanup()
 
     assert connection.calls == ["close", "release"]
+    assert conduit.cleaned is True
+    assert [type(leaf.__cause__) for leaf in _leaves(raised.value)] == [ConnectionError]
 
 
 def test_spellspace_exit_runs_every_disposal_method_and_reports_the_failure() -> None:

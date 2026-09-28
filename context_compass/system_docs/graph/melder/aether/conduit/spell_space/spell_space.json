@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/spell_space/spell_space.py",
- "source_sha256": "b53033cc85ea2c8f39d473513db5f38305b0ab9656d6b562ff70c804c93ce67c",
+ "source_sha256": "88882c5fe2771320077f670f8ace3d57645122930ff21780b0610d8025ca155f",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.spell_space.spell_space": {
@@ -14,20 +14,20 @@
    "role": "Explicit scope handle for unique_per_spell_space resolution.",
    "responsibilities": [
     "represent one spellspace-bound resolution window",
-    "refuse meld when it is not the active scope"
+    "refuse meld and purge once released to its pool (one lease flag)"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "f9c18ae2420436e347b824a38412e30fef05e20d1e291f96b2e167b830ae35f7"
+   "semantics_authored_against": ""
   },
   "melder.aether.conduit.spell_space.spell_space.SpellSpace": {
    "id": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
    "label": "SpellSpace",
    "kind": "class",
    "file": "src/melder/aether/conduit/spell_space/spell_space.py",
-   "lineno": 21,
+   "lineno": 22,
    "bases": [
     "Cleanable"
    ],
@@ -42,19 +42,21 @@
     "recycle_from_managed_context"
    ],
    "shape": {
-    "method_count": 9,
+    "method_count": 11,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "13aa4727eebb3b1c3f28c53df66267e7b08e7d044a8f468fedfc074051e0d8b8",
+   "span_sha256": "68fc2713d2365253986e2fa1e6818b2642f3819eeb01ffd8e42a3dbf164f7cdc",
    "role": "Explicit spellspace scope handle with request-local creations and a spellspace-facing meld door.",
    "responsibilities": [
-    "marks one active spellspace scope on a conduit",
-    "enforces active-scope usage for spellspace-bound meld calls",
-    "clears spellspace-scoped instances on reset or cleanup",
+    "is one leased spellspace scope on a conduit, pushed on the calling thread's stack when managed",
+    "refuses meld and purge while released to its pool (the _released lease flag); a destroyed space raises the cleaned RuntimeError",
+    "clears spellspace-scoped instances on managed exit or cleanup, finishing its pool return or destroy when a disposal method fails and then raising the store's group",
     "exposes instance or explicit purge selectors and single/all mode for local many and spellspace creations through its concrete Meld door",
     "restores temporary Meld maps after creation disposal and before manual or managed pool return",
-    "explicitly cleans its owned Meld runtime on permanent teardown to release callback references"
+    "explicitly cleans its owned Meld runtime on permanent teardown to release callback references",
+    "leaves its thread stack without error when released or destroyed inside its own managed block",
+    "serves warm melds by id, by name and by class from its door's fast-door entries"
    ],
    "owns_state": [
     "_id",
@@ -63,13 +65,14 @@
     "_creations",
     "_owner_conduit_creations",
     "_spellspace_pool",
-    "_spellspace_stack_state"
+    "_spellspace_stack_state",
+    "_released"
    ],
    "phases": [
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "3bf71d6d0a5e58e5b49ddeb1fd145142d95db3df816773d95fb3292ec6596fbc"
+   "semantics_authored_against": "68fc2713d2365253986e2fa1e6818b2642f3819eeb01ffd8e42a3dbf164f7cdc"
   }
  },
  "edges_out": [
@@ -101,6 +104,12 @@
   },
   {
    "from": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
+   "to_label": "SpellSpaceScopeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.conduit.spell_space.spell_space.SpellSpace",
    "to_label": "ValueError",
    "relation": "creates",
    "confidence": "candidate"
@@ -110,6 +119,7 @@
  "imports": {
   "TracebackType": "types.TracebackType",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
+  "NoReturn": "typing.NoReturn",
   "Optional": "typing.Optional",
   "Type": "typing.Type",
   "Union": "typing.Union",
@@ -118,6 +128,7 @@
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "IDBuilder": "melder.utilities.helpers.id_builder.IDBuilder",
   "SpellSpaceMeld": "melder.aether.conduit.meld.spellspace_meld.SpellSpaceMeld",
+  "SpellSpaceScopeError": "melder.utilities.custom_exceptions.spell_space_scope_error.SpellSpaceScopeError",
   "ConduitCreations": "melder.aether.conduit.creations.conduit_creations.ConduitCreations",
   "ConduitMeld": "melder.aether.conduit.meld.conduit_meld.ConduitMeld",
   "SpellSpacePool": "melder.aether.conduit.spell_space.spell_space_pool.SpellSpacePool",

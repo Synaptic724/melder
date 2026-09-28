@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Any, Optional
+from typing import TYPE_CHECKING, Dict, List, Any, Optional, Tuple
 
 
 
@@ -6,26 +6,29 @@ from melder.aether.spellbook.spell_compiler.validation.spell_validation_issue im
 from melder.aether.spellbook.spell_compiler.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 if TYPE_CHECKING:
     from melder.aether.spellbook.spell_compiler.validation.spell_validation_context import SpellValidationContext
 
 
 class DuplicateSpellNameStrategy(SpellValidationStrategy):
     """
-    Detect spells that share the same ``spell_name`` within the visible Spellbook
+    Detect spells that claim the same lookup address within the visible Spellbook
     (local + contracted).
 
-    Now that `meld(...)` can resolve by ``spell_name`` / simple string, having
-    multiple visible spells with the same name makes name-based resolution
-    ambiguous and unsafe.
+    Registration and Meld identify a spell by its normalized ``(frame_key,
+    binding_key)``. An explicit spellframe replaces the display name in that
+    address; distinct frames or bindings therefore disambiguate same-named spells.
 
-    This strategy treats such overlaps as **errors** and instructs the user to
-    disambiguate via spellframe and/or binding_name.
+    Equal addresses are errors regardless of display name or resolution
+    capability. Ordinary binding admission already prevents them; this strategy
+    checks the same invariant over the visible validation pool.
 
     Contract:
     - Uses the visible spellbook spell pool as the source of truth.
-    - Treats duplicate visible `spell_name` values as a hard ambiguity for
-      name-based resolution.
+    - Uses SpellInputUtils so case and default bindings match runtime lookup.
+    - Permits shared display names when their canonical addresses differ.
+    - Preserves the ``DUPLICATE_SPELL_NAME`` code for actual address collisions.
     - Emits validation issues only; it does not rename or partition spells.
 
     Registration:
@@ -36,16 +39,15 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
         `_spell_id_pool` the dangling/circular strategies read.
 
     System Context:
-        Phase 4 (validation) of the conjure pipeline. It guards the name-based meld
-        entry mode (`meld(spell_name=...)`) against ambiguity.
+        Phase 4 (validation) of the conjure pipeline. It checks the same address
+        identity used by binding admission and name/frame-based Meld resolution.
 
     AGENT_ACCESS: internal
 
     AGENT_PURPOSE:
-        access: internal. Phase-4 strategy: collects visible spells sharing a spell_name
-        (pass-cached) and emits DUPLICATE_SPELL_NAME (error) when more than one collide, since
-        meld(spell_name=...) would be ambiguous. Advises disambiguating via
-        spellframe/binding_name.
+        access: internal. Phase-4 strategy: collects visible spells by normalized lookup
+        address (pass-cached) and emits DUPLICATE_SPELL_NAME for a shared address. Same-named
+        spells at distinct addresses are valid. Advises changing the frame or binding.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -61,21 +63,24 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
         super().__init__(
             name="duplicate_spell_name",
             description=(
-                "Detects multiple visible spells that share the same spell_name, "
-                "which would make name-based resolution via meld(spell_name=...) "
-                "ambiguous."
+                "Detects multiple visible spells that share a normalized lookup "
+                "address (frame_key, binding_key)."
             ),
         )
 
     def validate(self, context: SpellValidationContext) -> None:
         """
-        Detect ambiguous visible spell-name collisions.
+        Detect visible collisions at the canonical frame/binding address.
 
         Contract:
         - Stops early if the validation context has been cancelled.
         - Uses the spellbook's visible spell pool to collect collisions.
+        - Normalizes addresses with the same helper as registration and Meld.
         - Emits one `DUPLICATE_SPELL_NAME` issue when more than one visible
-          spell shares the same name.
+          spell claims the target address, including discoverable definitions.
+        - Reuses a completed collision map only within the supplied validation
+          pass; without a cache, each invocation examines a fresh pool copy.
+        - Does not mutate registrations or their resolution capability.
         """
         self.check_cleaned()
 
@@ -95,37 +100,49 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
             # Nothing to check if this spell has no name.
             return
 
-        # Pass-scoped memo: the name->collisions map derives only from
+        lookup_key = SpellInputUtils.make_spell_key_from_parts(
+            spellframe=spell.spellframe,
+            spell_name=spell_name,
+            binding_name=spell.binding_name,
+        )
+
+        # Pass-scoped memo: the address->collisions map derives only from
         # bind-transactional pool truth, so one build serves every spell in
         # the validation pass (mirrors the binding-graph memo). Without a
         # pass cache (deferred single-spell paths) the map is built fresh,
-        # matching the previous per-spell scan byte-for-byte.
+        # with the same address semantics as the shared-pass path.
         pass_cache = context.validation_pass_cache
-        name_collisions: Optional[Dict[str, List[Dict[str, Any]]]] = None
+        address_collisions: Optional[Dict[Tuple[str, str], List[Dict[str, Any]]]] = None
         if pass_cache is not None:
-            name_collisions = pass_cache.get("duplicate_name_collisions")
-        if name_collisions is None:
-            name_collisions = {}
+            address_collisions = pass_cache.get("duplicate_lookup_collisions")
+        if address_collisions is None:
+            address_collisions = {}
             # A copy: concurrent binds change the live pool under the Spellbook lock, not held here.
             for spell_id, other_spell in spellbook._spell_id_pool.copy().items():
                 other_name = other_spell.spell_name
                 if not other_name:
                     continue
+                other_key = SpellInputUtils.make_spell_key_from_parts(
+                    spellframe=other_spell.spellframe,
+                    spell_name=other_name,
+                    binding_name=other_spell.binding_name,
+                )
                 index = other_spell.spell_index
-                name_collisions.setdefault(other_name, []).append(
+                address_collisions.setdefault(other_key, []).append(
                     {
                         "spell_index_id": index.id,
                         "spell_id": spell_id,
+                        "spell_name": other_name,
                         "spellframe": other_spell.spellframe,
                         "binding_name": other_spell.binding_name,
                     }
                 )
             if pass_cache is not None:
-                pass_cache["duplicate_name_collisions"] = name_collisions
+                pass_cache["duplicate_lookup_collisions"] = address_collisions
 
-        collisions = name_collisions.get(spell_name, [])
+        collisions = address_collisions.get(lookup_key, [])
 
-        # If this spell is the only one with that name, we're fine.
+        # If this spell is the only one at that address, we're fine.
         if len(collisions) <= 1:
             return
 
@@ -134,14 +151,14 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
                 severity="error",
                 code="DUPLICATE_SPELL_NAME",
                 message=(
-                    f"Multiple visible spells share the name {spell_name!r}. "
-                    "Name-based resolution via meld(spell_name=...) would be "
-                    "ambiguous. Disambiguate by using a spellframe (Protocol/"
-                    "string frame key) and/or a binding_name so that each "
-                    "resolution path is uniquely identifiable."
+                    "Multiple visible spells share the lookup address "
+                    f"frame={lookup_key[0]!r}, binding={lookup_key[1]!r}. "
+                    "Use a distinct spellframe or binding_name so that each "
+                    "registration has a unique normalized address."
                 ),
                 details={
                     "spell_name": spell_name,
+                    "lookup_key": lookup_key,
                     "collision_count": len(collisions),
                     "collisions": collisions,
                 },

@@ -202,7 +202,7 @@ def test_component_validation_system_reports_all_issue_types_in_complex_case() -
         Validate builtin strategies aggregate multiple issue types in one run.
     Contract:
         - Reports required holes, missing dependency graph, dangling deps,
-          self deps, circular deps, and duplicate spell names.
+          self deps and circular deps; qualified same-name spells add no issue.
     Returns:
         None.
     Raises:
@@ -306,7 +306,6 @@ def test_component_validation_system_reports_all_issue_types_in_complex_case() -
                 "SELF_DEPENDENCY",
                 "CIRCULAR_DEPENDENCY",
                 "REQUIRED_HOLE",
-                "DUPLICATE_SPELL_NAME",
             }
             assert expected.issubset(codes)
             severity_by_code = {issue.code: issue.severity for issue in result.issues}
@@ -314,7 +313,7 @@ def test_component_validation_system_reports_all_issue_types_in_complex_case() -
             assert severity_by_code["DANGLING_DEPENDENCY"] == "error"
             assert severity_by_code["SELF_DEPENDENCY"] == "error"
             assert severity_by_code["CIRCULAR_DEPENDENCY"] == "error"
-            assert severity_by_code["DUPLICATE_SPELL_NAME"] == "error"
+            assert "DUPLICATE_SPELL_NAME" not in codes
             assert result.has_errors is True
             assert result.has_warnings is True
         finally:
