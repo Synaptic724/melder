@@ -1,0 +1,15 @@
+kind=code objects=      0 median=   204.2us p90=   239.4us
+kind=code objects=   5000 median=   211.7us p90=   250.7us
+kind=code objects=  20000 median=   218.2us p90=   263.3us
+kind=code objects=  60000 median=   213.3us p90=   259.2us
+kind=code objects= 150000 median=   300.9us p90=   538.4us
+kind=type objects=      0 median=   230.8us p90=   274.1us
+kind=type objects=   5000 median=   225.8us p90=   259.7us
+kind=type objects=  20000 median=   177.9us p90=   212.5us
+kind=type objects=  60000 median=   208.4us p90=   254.8us
+kind=type objects= 150000 median=   280.7us p90=   316.0us
+kind=dict objects=      0 median=   210.4us p90=   246.1us
+kind=dict objects=   5000 median=   207.9us p90=   246.3us
+kind=dict objects=  20000 median=   202.9us p90=   232.5us
+kind=dict objects=  60000 median=   224.7us p90=   272.3us
+kind=dict objects= 150000 median=   271.6us p90=   324.4us

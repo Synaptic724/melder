@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-09-28
+- Updated: 2026-09-30
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -883,8 +883,11 @@ Protects:
   that re-checks the cleaned flag under its lock; workstation binding and target
   guardrails; command-system lookups (conduit ids resolve through Aether's live lookup and a
   missing runtime frame keeps its frame error), and one room memory per top-level public call
+- the value snapshot the four root configurations expose (`get_configuration_dictionary()`, 0.2.8212): exact
+  properties, independence, equality, lifecycle states and the cleaned refusal
 Key Files (C1):
 - `tests/unit/melder/aether/test_nexus.py`
+- `tests/unit/melder/aether/test_root_configuration_value_snapshots.py` (root configuration snapshots, 2026-09-30)
 - `tests/unit/melder/aether/test_rift_runtime_contracts.py`
 - `tests/unit/melder/aether/test_workstation.py`
 - `tests/unit/melder/aether/test_command_system_direct.py`
@@ -1112,12 +1115,16 @@ Protects:
   down, the block's error kept), `enter_lesser_conduit`, children-first pool return, finish-then-raise on
   every exit, idempotent soft cleanup (two cleanups, one pool entry), and the SpellSpace lease flag (a kept
   handle refuses meld and purge; a space released or destroyed inside its own block exits cleanly)
+- root configuration guards: Aether's sealed spell-id regime refusing another regime once a frame exists
+  (0.2.8209), and an active Nexus refusing another configuration until deactivated (0.2.8210)
 Key Files (C1):
 - `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
 - `tests/component/melder/aether/test_frame_acl_component.py`
 - `tests/component/melder/aether/test_nexus_viewer_extended_surface_component_matrix.py`
 - `tests/component/melder/aether/conduit/test_conduit_component_scope_exit_dispose.py`
 - `tests/component/melder/aether/conduit/test_spellspace_component_lease_release.py`
+- `tests/component/melder/aether/test_aether_sealed_regime_guard_component.py` (sealed regime, 2026-09-30)
+- `tests/component/melder/aether/test_nexus_active_reconfiguration_guard_component.py` (active Nexus, 2026-09-30)
 
 ### Subcomponent: Crystallizer Component Cluster
 Parent Component: Component Test Suite
@@ -1155,6 +1162,8 @@ Protects:
   collisions; SpellIndex version tracking; cache-gate posture stamps
 - the conduit cache bundle rebuilt from each non-full-hit conjure, and spell ids
   that agree across two fresh interpreters
+- a dynamic conjure refused by the recorded-world configuration discipline leaving its frame unsettled, and
+  the predicted conjure mode agreeing with settlement for every posture and flag (0.2.8211)
 Key Files (C1):
 - `tests/component/melder/spellbook/test_spellbook_component_bind.py`
 - `tests/component/melder/spellbook/test_spellbook_component_configuration.py`
@@ -1165,6 +1174,7 @@ Key Files (C1):
 - `tests/component/melder/spellbook/test_spellbook_component_caching_system.py`
 - `tests/component/melder/spellbook/test_conjure_cache_restage.py` (bundle rebuilt per non-full-hit conjure, 2026-09-26)
 - `tests/component/melder/spellbook/test_spell_id_process_stability.py` (spell ids in two fresh interpreters, 2026-09-26)
+- `tests/component/melder/spellbook/test_conjure_refusal_leaves_frame_unsettled_component.py` (refusal before settlement, 2026-09-30)
 
 ### Subcomponent: Spellbook Compiler Component Cluster
 Parent Component: Component Test Suite
@@ -1233,9 +1243,13 @@ Protects:
 - crystallization of really bound spells (root module name and kind, targets,
   direct dependencies, describe snapshot) and the synthetic-module cases through
   the hosted crystallizer
+- restores into live worlds: a world whose first frame sealed the Aether regime (0.2.8209), and a live active
+  Nexus replaced by the recorded policy through deactivate-first, recorded "disabled" included (0.2.8210)
 Key Files (C1):
 - `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
 - `tests/integration/melder/crystallizer/test_synthetic_module_integration.py`
+- `tests/integration/melder/crystallizer/test_restore_sealed_aether_regime_integration.py` (2026-09-30)
+- `tests/integration/melder/crystallizer/test_restore_over_active_nexus_integration.py` (2026-09-30)
 
 ### Subcomponent: MutationResearch Integration Cluster
 Parent Component: Integration Runtime Suite
@@ -1797,9 +1811,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/aether/test_nexus.py`
   start_line: 1
-  end_line: 6368
-  loc: 6368
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 6377
+  loc: 6377
+  verified_at: 2026-09-30T00:31:41Z
+- path: `tests/unit/melder/aether/test_root_configuration_value_snapshots.py`
+  start_line: 1
+  end_line: 197
+  loc: 197
+  verified_at: 2026-09-30T00:31:41Z
 - path: `tests/unit/melder/aether/test_rift_runtime_contracts.py`
   start_line: 1
   end_line: 458
@@ -1945,6 +1964,16 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 317
   loc: 317
   verified_at: 2026-09-27T23:41:28Z
+- path: `tests/component/melder/aether/test_aether_sealed_regime_guard_component.py`
+  start_line: 1
+  end_line: 121
+  loc: 121
+  verified_at: 2026-09-30T00:31:41Z
+- path: `tests/component/melder/aether/test_nexus_active_reconfiguration_guard_component.py`
+  start_line: 1
+  end_line: 160
+  loc: 160
+  verified_at: 2026-09-30T00:31:41Z
 - path: `tests/component/melder/crystallizer/test_spell_crystal_component.py`
   start_line: 1
   end_line: 135
@@ -2022,9 +2051,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py`
   start_line: 1
-  end_line: 325
-  loc: 325
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 324
+  loc: 324
+  verified_at: 2026-09-30T00:32:11Z
 - path: `tests/integration/melder/aether/test_nexus_frame_surface_projection_integration.py`
   start_line: 1
   end_line: 215
@@ -2050,6 +2079,16 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 215
   loc: 215
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/integration/melder/crystallizer/test_restore_sealed_aether_regime_integration.py`
+  start_line: 1
+  end_line: 121
+  loc: 121
+  verified_at: 2026-09-30T00:31:41Z
+- path: `tests/integration/melder/crystallizer/test_restore_over_active_nexus_integration.py`
+  start_line: 1
+  end_line: 136
+  loc: 136
+  verified_at: 2026-09-30T00:31:41Z
 - path: `tests/integration/melder/crystallizer/test_synthetic_module_integration.py`
   start_line: 1
   end_line: 142
@@ -2103,9 +2142,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `pyproject.toml`
   start_line: 1
-  end_line: 245
-  loc: 245
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 246
+  loc: 246
+  verified_at: 2026-09-30T00:32:11Z
 - path: `.github/scripts/run_runtime_tests.py`
   start_line: 1
   end_line: 54
@@ -2248,9 +2287,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/github_workflows/test_workflow_contracts.py`
   start_line: 1
-  end_line: 454
-  loc: 454
-  verified_at: 2026-09-26T22:11:36Z
+  end_line: 474
+  loc: 474
+  verified_at: 2026-09-30T00:32:11Z
 - path: `tests/unit/github_workflows/test_candidate_publication.py`
   start_line: 1
   end_line: 357
@@ -2301,6 +2340,11 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   end_line: 111
   loc: 111
   verified_at: 2026-09-26T22:11:36Z
+- path: `tests/component/melder/spellbook/test_conjure_refusal_leaves_frame_unsettled_component.py`
+  start_line: 1
+  end_line: 148
+  loc: 148
+  verified_at: 2026-09-30T00:31:41Z
 - path: `tests/component/melder/utilities/synchronization/test_creation_gate_component.py`
   start_line: 1
   end_line: 303
@@ -2530,6 +2574,12 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+
+2026-09-30 root configuration guards (0.2.8209-0.2.8212): six new files - root configuration value snapshots
+(unit), the sealed Aether regime and the active-Nexus refusal (component), the conjure refusal before
+settlement with its prediction table (component), and restores into live worlds over a sealed regime and over
+an active Nexus (integration). Two `test_nexus.py` rows that re-activated the live Nexus with another policy as
+setup now deactivate it first; what they assert is unchanged. The test-file extents are measured.
 
 2026-09-28 mediator teardown contract: retired the session and component tests that required eight
 callers to destroy one object simultaneously. Coverage now verifies owner-serialized, repeatable

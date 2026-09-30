@@ -3,11 +3,13 @@ from __future__ import annotations
 import contextvars
 import csv
 import gc
+import json
 import os
 import random
 import statistics
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import typing
@@ -440,9 +442,9 @@ _WORKER_B_JOBS_DEFAULT = 30
 _BOOTSTRAP_FANOUT_PER_SINGLETON = 5
 _VARIANT_COUNT = 3
 _LIB_SEEDS = {
-    "dependency-injector": 110_003,
     "dishka": 220_007,
     "melder": 330_011,
+    "dependency-injector": 110_003,
 }
 
 
@@ -457,7 +459,7 @@ class _GauntletConfig:
     @staticmethod
     def from_env() -> _GauntletConfig:
         cfg = _GauntletConfig(
-            iterations=_env_int("DI_GAUNTLET_ITERS", 5_000),
+            iterations=_env_int("DI_GAUNTLET_ITERS", 30_000),
             threads=_env_int("DI_GAUNTLET_THREADS", 3),
             request_scope_runs=_env_int("DI_GAUNTLET_REQUEST_SCOPES", _REQUEST_SCOPE_RUNS_DEFAULT),
             worker_a_jobs=_env_int("DI_GAUNTLET_WORKER_A_JOBS", _WORKER_A_JOBS_DEFAULT),
@@ -1387,6 +1389,71 @@ def verify_scope_semantics(ops: _RuntimeOps) -> int:
     return checks
 
 
+def _gauntlet_libraries() -> tuple[str, ...]:
+    """
+    Return the libraries the shared gauntlet compares, in their printed order.
+
+    Contract:
+        - The order the standalone runner has always used: dependency-injector,
+          dishka, melder. Every name is accepted by `_build_ops`.
+        - Pure: returns the same constant names on every call.
+
+    Returns:
+        tuple[str, ...]: The three library names.
+    """
+    return ("dependency-injector", "dishka", "melder")
+
+
+def _gauntlet_rounds() -> int:
+    """
+    Read how many times the pytest wrapper measures every library.
+
+    Contract:
+        - `REAL_WORLD_GAUNTLET_ROUNDS` unset or blank means one round; any other
+          value must be a positive integer.
+        - Each round runs every library once, each in its own process.
+
+    Returns:
+        int: The number of rounds, at least 1.
+
+    Raises:
+        AssertionError: When the variable is set to zero or a negative number.
+        ValueError: When the variable is not an integer.
+    """
+    rounds = _env_int("REAL_WORLD_GAUNTLET_ROUNDS", 1)
+    if rounds <= 0:
+        raise AssertionError("REAL_WORLD_GAUNTLET_ROUNDS must be > 0")
+    return rounds
+
+
+def _isolated_order(round_ix: int) -> tuple[str, ...]:
+    """
+    Return the library order for one round of the one-process-per-library wrapper.
+
+    Contract:
+        - Round 0 is the printed order of `_gauntlet_libraries()`; each later round
+          rotates it by one, so over three rounds every library runs once in every
+          slot.
+        - Every library runs in a fresh process whatever its slot, so the rotation
+          does not remove the order effect (the separate processes do); it spreads
+          machine drift over a session (heat, background load) across the libraries.
+
+    Args:
+        round_ix: Zero-based round index.
+
+    Returns:
+        tuple[str, ...]: The three library names in this round's order.
+
+    Raises:
+        AssertionError: When `round_ix` is negative.
+    """
+    if round_ix < 0:
+        raise AssertionError("round_ix must be >= 0")
+    libraries = _gauntlet_libraries()
+    shift = round_ix % len(libraries)
+    return libraries[shift:] + libraries[:shift]
+
+
 def _build_ops(lib: str) -> _RuntimeOps:
     if lib == "dependency-injector":
         return _build_runtime_dependency_injector()
@@ -2066,24 +2133,42 @@ def _run_gauntlet_benchmark(lib: str, cfg: _GauntletConfig) -> _BenchmarkResult:
     )
 
 
-def _maybe_write_per_turn_csv(results: list) -> None:
+def _per_turn_csv_enabled() -> bool:
     """
-    Write one CSV with every single turn for all libraries, if enabled.
+    Report whether `GAUNTLET_PER_TURN_CSV` asks for the per-turn CSV.
 
-    Off unless GAUNTLET_PER_TURN_CSV is truthy. Produces a single file next to
-    this test module, one row per iteration per library, tagged with a
-    "DI Container" column so all three libraries live in the same sheet.
+    Returns:
+        bool: True for "1", "true", "yes" or "on", in any case and with
+            surrounding spaces ignored; False otherwise or when unset.
     """
-    enabled = os.getenv("GAUNTLET_PER_TURN_CSV", "").strip().lower() in {
+    return os.getenv("GAUNTLET_PER_TURN_CSV", "").strip().lower() in {
         "1", "true", "yes", "on"
     }
-    if not enabled:
-        return
+
+
+def _per_turn_csv_path() -> Path:
+    """
+    Resolve the per-turn CSV file written next to this module.
+
+    Returns:
+        Path: `real_world_gauntlet_per_turn<suffix>.csv`, where the suffix is
+            `GAUNTLET_PER_TURN_CSV_SUFFIX` (empty by default).
+    """
     suffix = os.getenv("GAUNTLET_PER_TURN_CSV_SUFFIX", "").strip()
-    path = Path(__file__).resolve().with_name(
+    return Path(__file__).resolve().with_name(
         f"real_world_gauntlet_per_turn{suffix}.csv"
     )
-    header = [
+
+
+def _per_turn_csv_header() -> list[str]:
+    """
+    Return the per-turn CSV columns both writers share.
+
+    Returns:
+        list[str]: Library, turn, the three timings in ms, GC incidence and the
+            gen0 live count.
+    """
+    return [
         "DI Container",
         "Turn",
         "Total (ms)",
@@ -2092,26 +2177,90 @@ def _maybe_write_per_turn_csv(results: list) -> None:
         "GC During",
         "Gen0 Live",
     ]
+
+
+def _per_turn_csv_row(lib: str, row: Sequence[Any]) -> list[Any]:
+    """
+    Format one captured turn as a per-turn CSV row.
+
+    Args:
+        lib: Library name for the "DI Container" column.
+        row: `(turn, total_ns, bootstrap_ns, threaded_ns, gc_during, gen0_live)`
+            as captured in `_BenchmarkResult.per_turn_rows` (a list after a JSON
+            round trip).
+
+    Returns:
+        list[Any]: The row, with the three timings in milliseconds to four
+            decimals and GC incidence as "yes"/"no".
+    """
+    turn, total_ns, bootstrap_ns, threaded_ns, gc_during, gen0_live = row
+    return [
+        lib,
+        turn,
+        f"{total_ns / 1_000_000:.4f}",
+        f"{bootstrap_ns / 1_000_000:.4f}",
+        f"{threaded_ns / 1_000_000:.4f}",
+        "yes" if gc_during else "no",
+        gen0_live,
+    ]
+
+
+def _maybe_write_per_turn_csv(results: list) -> None:
+    """
+    Write one CSV with every single turn for all libraries, if enabled.
+
+    Off unless GAUNTLET_PER_TURN_CSV is truthy. Produces a single file next to
+    this test module, one row per iteration per library, tagged with a
+    "DI Container" column so all three libraries live in the same sheet.
+    Used by the runner's all-in-one mode and by `--lib` when run by hand; the
+    one-process-per-library wrapper writes the same file through
+    `_write_isolated_per_turn_csv`, which adds a Round column.
+    """
+    if not _per_turn_csv_enabled():
+        return
+    path = _per_turn_csv_path()
     written = 0
     with open(path, "w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(header)
+        writer.writerow(_per_turn_csv_header())
         for result in results:
-            for turn, total_ns, bootstrap_ns, threaded_ns, gc_during, gen0_live in (
-                result.per_turn_rows
-            ):
-                writer.writerow([
-                    result.lib,
-                    turn,
-                    f"{total_ns / 1_000_000:.4f}",
-                    f"{bootstrap_ns / 1_000_000:.4f}",
-                    f"{threaded_ns / 1_000_000:.4f}",
-                    "yes" if gc_during else "no",
-                    gen0_live,
-                ])
+            for row in result.per_turn_rows:
+                writer.writerow(_per_turn_csv_row(result.lib, row))
                 written += 1
     print(
         f"[per-turn csv] wrote {written} rows for {len(results)} libraries -> {path}"
+    )
+
+
+def _write_isolated_per_turn_csv(payloads: Sequence[dict[str, Any]]) -> None:
+    """
+    Write the one-process-per-library wrapper's per-turn CSV, if enabled.
+
+    Contract:
+        - Off unless `GAUNTLET_PER_TURN_CSV` is truthy. Same file as
+          `_maybe_write_per_turn_csv`, overwritten.
+        - One row per turn per library per round, in the order the processes ran,
+          with the same columns plus a trailing "Round" column (1-based), since
+          more than one round repeats every library.
+        - The rows come from the payloads the per-library processes handed back
+          (`_result_payload`); those processes do not write the CSV themselves.
+
+    Args:
+        payloads: One `_result_payload` dict per library process, in run order.
+    """
+    if not _per_turn_csv_enabled():
+        return
+    path = _per_turn_csv_path()
+    written = 0
+    with open(path, "w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow([*_per_turn_csv_header(), "Round"])
+        for payload in payloads:
+            for row in payload["per_turn_rows"]:
+                writer.writerow([*_per_turn_csv_row(payload["lib"], row), payload["round"]])
+                written += 1
+    print(
+        f"[per-turn csv] wrote {written} rows for {len(payloads)} library runs -> {path}"
     )
 
 
@@ -2194,25 +2343,119 @@ def _print_benchmark_result(result: _BenchmarkResult) -> None:
         )
 
 
-@pytest.mark.timeout(3600)
-def test_real_world_gauntlet() -> None:
+def _result_payload(result: _BenchmarkResult, round_number: int) -> dict[str, Any]:
     """
-    Run the shared real-world gauntlet through the standalone runner.
+    Reduce one library's result to the JSON payload a per-library process hands back.
 
     Contract:
-        - Uses the same standalone runner pattern as the working Melder-only
-          benchmark/cProfile wrappers.
-        - Forces `-X gil=0` when `REAL_WORLD_GAUNTLET_FORCE_NOGIL` is true.
-        - Streams child stdout/stderr back into pytest output for direct
-          visibility in IDE runs.
-        - Fails if the standalone runner exits non-zero.
+        - Values only (str, int, float, bool and lists of them), so `json.dumps`
+          accepts it and the parent needs nothing else from the child process.
+        - Carries what the wrapper summarizes across rounds - setup, the loop total
+          and per-iteration statistics, the threaded and bootstrap averages,
+          throughput - and the per-turn rows, which stay empty unless
+          `GAUNTLET_PER_TURN_CSV` is set.
+
+    Args:
+        result: The library's `_BenchmarkResult`.
+        round_number: 1-based round this run belongs to.
+
+    Returns:
+        dict[str, Any]: The payload; times in milliseconds.
+    """
+    return {
+        "lib": result.lib,
+        "round": round_number,
+        "iterations": result.cfg.iterations,
+        "threads": result.cfg.threads,
+        "gil_status": result.gil_status,
+        "setup_ms": _ms(result.setup_ns),
+        "cleanup_ms": _ms(result.cleanup_ns),
+        "total_ms": _ms(result.iteration_summary.total_ns),
+        "avg_ms": _ms(result.iteration_summary.avg_ns),
+        "median_ms": _ms(result.iteration_summary.median_ns),
+        "p95_ms": _ms(result.iteration_summary.p95_ns),
+        "p99_ms": _ms(result.iteration_summary.p99_ns),
+        "max_ms": _ms(result.iteration_summary.max_ns),
+        "threaded_avg_ms": _ms(result.threaded_summary.avg_ns),
+        "bootstrap_avg_ms": _ms(result.bootstrap_summary.avg_ns),
+        "hot_scopes_per_s": result.hot_scope_cycles_per_s,
+        "per_turn_rows": [list(row) for row in result.per_turn_rows],
+    }
+
+
+def _isolated_median_lines(payloads: Sequence[dict[str, Any]]) -> list[str]:
+    """
+    Summarize each library across the wrapper's rounds as one median line.
+
+    Contract:
+        - One line per library that has payloads, in `_gauntlet_libraries()` order;
+          a library with none is skipped.
+        - Every value is the median over that library's runs; the loop total also
+          shows its min and max, so run-to-run spread stays visible.
+
+    Args:
+        payloads: `_result_payload` dicts from the library processes.
+
+    Returns:
+        list[str]: The lines to print.
+    """
+    lines: list[str] = []
+    for lib in _gauntlet_libraries():
+        runs = [payload for payload in payloads if payload["lib"] == lib]
+        if not runs:
+            continue
+        totals = [run["total_ms"] for run in runs]
+        noun = "round" if len(runs) == 1 else "rounds"
+        lines.append(
+            f"[{lib}] isolated median over {len(runs)} {noun} | "
+            f"total={statistics.median(totals):.2f}ms (min={min(totals):.2f}, max={max(totals):.2f}) | "
+            f"avg={statistics.median([run['avg_ms'] for run in runs]):.3f}ms | "
+            f"p99={statistics.median([run['p99_ms'] for run in runs]):.3f}ms | "
+            f"threaded avg={statistics.median([run['threaded_avg_ms'] for run in runs]):.3f}ms | "
+            f"hot_scopes/s={statistics.median([run['hot_scopes_per_s'] for run in runs]):,.0f} | "
+            f"setup={statistics.median([run['setup_ms'] for run in runs]):.3f}ms"
+        )
+    return lines
+
+
+def _run_isolated_library(
+        lib: str,
+        round_number: int,
+        result_path: Path,
+) -> subprocess.CompletedProcess[str]:
+    """
+    Run one library of the shared gauntlet in a fresh interpreter process.
+
+    Contract:
+        - Starts `real_world_gauntlet_gil_runner.py --lib <lib>` with this
+          interpreter, adding `-X gil=0` when `REAL_WORLD_GAUNTLET_FORCE_NOGIL` is
+          true, from the repository root and with a copy of this environment.
+        - The child loads and runs only that library, prints its result and writes
+          its `_result_payload` JSON to `result_path`.
+        - Never raises for a failing child: the caller checks `returncode`.
+
+    Args:
+        lib: A name from `_gauntlet_libraries()`.
+        round_number: 1-based round, recorded in the payload.
+        result_path: Where the child writes its JSON payload.
+
+    Returns:
+        subprocess.CompletedProcess[str]: The finished child, with stdout and stderr
+            captured as text.
     """
     command = [sys.executable]
     if REAL_WORLD_GAUNTLET_FORCE_NOGIL:
         command.extend(["-X", "gil=0"])
-    command.append(str(_runner_path()))
-
-    completed = subprocess.run(
+    command.extend([
+        str(_runner_path()),
+        "--lib",
+        lib,
+        "--round",
+        str(round_number),
+        "--result-json",
+        str(result_path),
+    ])
+    return subprocess.run(
         command,
         cwd=str(_repo_root()),
         env=os.environ.copy(),
@@ -2221,14 +2464,52 @@ def test_real_world_gauntlet() -> None:
         check=False,
     )
 
-    if completed.stdout:
-        print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
-    if completed.stderr:
-        print(completed.stderr, end="" if completed.stderr.endswith("\n") else "\n")
 
-    if completed.returncode != 0:
-        raise AssertionError(
-            "Shared real-world gauntlet runner failed with exit code "
-            f"{completed.returncode}."
-        )
+@pytest.mark.timeout(3600)
+def test_real_world_gauntlet() -> None:
+    """
+    Run the shared real-world gauntlet with every library in its own process.
+
+    Contract:
+        - Uses the same standalone runner pattern as the Melder-only benchmark and
+          cProfile wrappers, once per library.
+        - Each library runs in a fresh interpreter (`real_world_gauntlet_gil_runner.py
+          --lib`), so no library's result depends on the libraries that ran before
+          it. Running all three in one process, as this test did before 2026-09-30,
+          made a library 5-12% slower when it ran second or third: on free-threaded
+          CPython each library's run leaves starting and joining threads slower, and
+          the gauntlet starts three threads per iteration. The runner with no
+          arguments still runs that layout, to reproduce earlier baselines.
+        - Forces `-X gil=0` when `REAL_WORLD_GAUNTLET_FORCE_NOGIL` is true.
+        - `REAL_WORLD_GAUNTLET_ROUNDS` (default 1) repeats every library that many
+          times, rotating the order each round (`_isolated_order`), and then prints
+          one median line per library.
+        - Streams each process's stdout/stderr into pytest output as soon as that
+          process finishes, for direct visibility in IDE runs, and writes the
+          per-turn CSV at the end when `GAUNTLET_PER_TURN_CSV` is set.
+        - Fails, naming the library and round, if a process exits non-zero.
+    """
+    rounds = _gauntlet_rounds()
+    payloads: list[dict[str, Any]] = []
+    with tempfile.TemporaryDirectory(prefix="real_world_gauntlet_") as scratch:
+        for round_ix in range(rounds):
+            round_number = round_ix + 1
+            for lib in _isolated_order(round_ix):
+                result_path = Path(scratch) / f"round{round_number}_{lib}.json"
+                print(f"[gauntlet] round {round_number}/{rounds}: {lib} in its own process")
+                completed = _run_isolated_library(lib, round_number, result_path)
+                if completed.stdout:
+                    print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
+                if completed.stderr:
+                    print(completed.stderr, end="" if completed.stderr.endswith("\n") else "\n")
+                if completed.returncode != 0:
+                    raise AssertionError(
+                        f"Shared real-world gauntlet runner failed for {lib} in round {round_number} "
+                        f"with exit code {completed.returncode}."
+                    )
+                payloads.append(json.loads(result_path.read_text(encoding="utf-8")))
+    if rounds > 1:
+        for line in _isolated_median_lines(payloads):
+            print(line)
+    _write_isolated_per_turn_csv(payloads)
 

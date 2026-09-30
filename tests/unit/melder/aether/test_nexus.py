@@ -5777,6 +5777,9 @@ def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
     replacement_configuration.with_target_frame_override(True)
     replacement_configuration.with_allowed_target_frame_names(("default", "ops"))
     replacement_configuration.with_denied_target_frame_names(tuple())
+    # An active Nexus refuses another configuration (0.2.8210): deactivate it,
+    # then activate the replacement policy.
+    nexus.deactivate()
     nexus.activate(replacement_configuration)
     _seed_frame_descriptor("ops")
     rift = nexus.create_rift(rift_name="allowed")
@@ -5969,6 +5972,9 @@ def test_shared_and_private_nexus_frames_are_realized_only_on_request() -> None:
     configuration.with_direct_rift_access(True)
     configuration.with_nexus_frame_mode("one_per_workspace")
     configuration.with_max_nexus_frame_count(2)
+    # Nexus is a singleton: this is the shared Nexus above, still active. An active
+    # Nexus refuses another configuration (0.2.8210), so deactivate it first.
+    isolated_nexus.deactivate()
     isolated_nexus.activate(configuration)
 
     isolated_rift = isolated_nexus.create_rift(rift_name="isolated")

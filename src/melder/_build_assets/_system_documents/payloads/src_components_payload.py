@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_components.md'
-LINE_COUNT = 10207
-CONTENT_SHA256 = '542c99c19d5b98c71381f801894bbe7ab8f8cc24600e82fcf48c8f54438e946b'
+LINE_COUNT = 10260
+CONTENT_SHA256 = '679906162bf123120f6cd2072dd4796ba89ac90b4d36007374e062e54ef080f0'
 
 TEXT = """# Src Components (C3/C2/C1)
 
@@ -24,7 +24,7 @@ TEXT = """# Src Components (C3/C2/C1)
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-09-28
+- Updated: 2026-09-30
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -551,8 +551,8 @@ Concurrency/Threading:
     ordering on each other". They do. That wording invited exactly the inversion
     described above.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7016-7027 (`_run_structural_phases`
-    at :7016; the caller-held-lock precondition is stated at :7027)
+  - src/melder/aether/spellbook/spellbook.py:7121-7132 (`_run_structural_phases`
+    at :7121; the caller-held-lock precondition is stated at :7132; remeasured 2026-09-30)
   - src/melder/aether/spellbook/spellbook_creation_system.py:2000 (the only
     `_phase_run_lock` acquisition, reached from that path)
 - `_run_structural_phases` documents a CALLER-HELD precondition rather than
@@ -571,9 +571,20 @@ Invariants/Guarantees:
   ownership checks, and `cleanup` deletes it along with the rest of the slots.
 - `SpellbookConfiguration` must be frozen before Conduit creation.
 - Existing-object spells are registered into Creations on conjure/bind.
+- A conjure refused by the recorded-world configuration discipline has no posture side effect (0.2.8211):
+  `conjure` starts the CONJURE transaction, predicts the effective mode (`_effective_conjure_mode`, pure, branch
+  for branch the same as `_settle_or_inherit_conjure_mode`), refuses on it, and only then settles. The
+  transaction window checks again on the SETTLED mode, because Books are separate transaction identities and
+  another Book can settle the shared frame between prediction and settlement.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.conjure`, `Spellbook._effective_conjure_mode`,
+  `Spellbook._refuse_recorded_conjure_after_mutable_binds` and `Spellbook._conjure_within_transaction_window`.
 
 Failure Modes:
 - `SpellbookValidationError` when Phase 1-4 produces broken spells.
+- RuntimeError "... requires the SpellbookConfiguration to be finalized BEFORE the first bind" when a conjure
+  would run dynamic, the Crystallizer is active and binds ran while the configuration was still mutable
+  (`_binds_before_configuration_count`). Since 0.2.8211 the refusal leaves the frame posture as it was; before,
+  it left an unsettled frame frozen dynamic, so later conjures there - automatic ones included - were refused.
 - RuntimeError for duplicate spell ids or lookup key collisions.
 - RuntimeError from the SpellIndex multi-member seams when their ownership /
   activity preconditions are violated: notching a spell that is not parked in
@@ -1118,10 +1129,19 @@ Invariants/Guarantees:
   walk reads `dict.copy()` snapshots of the root map and of every ward's child map (0.2.79).
   EVIDENCE: `src/melder/aether/aether.py:Aether._resolve_lookup_frame`, `Aether.get_conduit_by_name`,
   `Aether.get_conduit_by_id` and `Aether._find_live_conduit`.
+- Sealed spell-id regime (0.2.8209): the first frame born seals `_process_wide_unique_spell_ids` from the
+  installed configuration (frozen defaults when none is installed) and it is never re-read while frames exist.
+  `configure` and `activate` therefore refuse, under the lock frame birth holds, a configuration whose
+  `process_wide_unique_spell_ids` differs, and install nothing - so `configuration` never reports a regime that
+  is not in force. With no frame any regime installs and the next first frame seals it.
+  EVIDENCE: `src/melder/aether/aether.py:Aether._refuse_regime_change_while_frames_exist`, `Aether.configure`
+  and `Aether.activate`.
 
 Failure Modes:
 - ValueError for missing frames, duplicate registry entries, or not-found lookups. A not-found conduit
   lookup names the searched frame and points at the wider lookup (0.2.79).
+- RuntimeError from `configure(...)` / `activate()` while frames exist when the configuration's spell-id regime
+  differs from the sealed one; the message names both values and the remedy (0.2.8209).
 - TypeError for invalid input types (e.g., non-string frame names, including every conduit lookup's frame).
 - RuntimeError when singleton/frame registries are cleaned or unavailable.
 
@@ -1515,7 +1535,13 @@ Invariants/Guarantees:
   crystallizer-off worlds are byte-identical (R-A covenant).
 - The conjure configuration-discipline guard refuses a dynamic conjure over
   binds that ran while the spellbook configuration was mutable (recorded
-  worlds are never born config-incoherent).
+  worlds are never born config-incoherent). Since 0.2.8211 it refuses before
+  the frame posture is settled, so the refusal changes nothing.
+- Restore stage 4 (`RestoreEngine._replay_nexus`) deactivates an ACTIVE live
+  Nexus before activating the reloaded configuration, because an active Nexus
+  refuses reconfiguration since 0.2.8210 - the same deactivate-first act stage 3
+  performs for MutationResearch. A recorded "disabled" still replays
+  enable-then-disable.
 - Runtime ULIDs are emitted, never rehydrated, and normalized out of seal
   fingerprints (restore mints fresh identities via translation map).
 - Aether/Crystallizer have NO state switch by design: the record dies with
@@ -1725,6 +1751,11 @@ Concurrency/Threading:
   cleanup.
 
 Invariants/Guarantees:
+- An active `Nexus` keeps its installed policy object (0.2.8210): `configure(...)`, and `activate(...)` handed
+  another object (identity, not values), raise until `deactivate()` - the rule Crystallizer and
+  MutationResearch already had. A live Nexus reads its policy at every Rift validation, so a swap would change
+  the rules under existing Rifts. `activate()` and `activate(installed)` still re-enable; an inactive Nexus
+  accepts any configuration. EVIDENCE: `src/melder/nexus/nexus.py:Nexus.configure` and `Nexus.activate`.
 - `Nexus` is the only intended public root for Rift-domain work.
 - `Aether` still owns actual `AethericFrame` objects; `Nexus` owns policy and
   frame records only.
@@ -1799,6 +1830,8 @@ Invariants/Guarantees:
 
 Failure Modes:
 - Unconfigured or disabled `Nexus` operations fail fast.
+- RuntimeError "Cannot reconfigure Nexus while it is active. Deactivate it first." from `configure(...)`, or
+  from `activate(...)` handed a configuration other than the installed one, on an active Nexus (0.2.8210).
 - Rift creation or direct-access requests fail when Nexus policy gates,
   required tokens, or configured budgets reject them.
 - `Rift` creation fails when configuration is invalid.
@@ -4384,7 +4417,7 @@ STATUS - READ BEFORE ANYTHING ELSE:
   - src/melder/aether/aether.py:17-19
   - src/melder/aether/aether.py:209-222
   - src/melder/aether/aether.py:762-795
-  - src/melder/aether/aether.py:1219-1264
+  - src/melder/aether/aether.py:1288-1333
 - Statements below describe live plane contracts; adoption beyond frame
   creation is pending per the Known Gaps.
 
@@ -4539,7 +4572,7 @@ through it. The remaining vocabulary (loads, graft, subsystem edges,
 repair) has no live submitters yet.
 EVIDENCE:
 - src/melder/aether/aether.py:209-222
-- src/melder/aether/aether.py:1219-1264
+- src/melder/aether/aether.py:1288-1333
 
 Purpose:
 - Serialize TOP-LEVEL structural work across Crystallizer, MutationResearch,
@@ -5100,8 +5133,15 @@ Purpose:
 Contract/Interface:
 - `create_configuration()`
 - `create_configuration_builder()`
-- `configure(...)`
-- `activate(...)`
+- `configure(...)` - refuses a spell-id regime other than the sealed one while frames exist (0.2.8209)
+- `activate(...)` - re-checks the sealed regime, so a mutable configuration edited after install is caught
+- `AetherConfiguration.get_configuration_dictionary()` (0.2.8212), shared with the Crystallizer,
+  MutationResearch and Nexus configurations: a new dict of the properties the configuration holds, read under
+  its lock after `check_cleaned()`; values by reference; never freezes or validates; only set properties appear.
+  EVIDENCE: `src/melder/aether/aether_configuration.py:AetherConfiguration.get_configuration_dictionary`,
+  `src/melder/crystallizer/configuration/crystallizer_configuration.py:CrystallizerConfiguration.get_configuration_dictionary`,
+  `src/melder/mutation_research/mutation_configuration.py:MutationResearchConfiguration.get_configuration_dictionary`
+  and `src/melder/nexus/configuration/nexus_configuration.py:NexusConfiguration.get_configuration_dictionary`.
 Data Structures:
 - Installed `AetherConfiguration` plus the one-shot
   `AetherConfigurationBuilder`.
@@ -5632,6 +5672,7 @@ Purpose:
 Contract/Interface:
 - `create_configuration()`, `configure(...)`, `activate(...)`, `deactivate()`
 - `create_spell_crystal(...)`
+- `CrystallizerConfiguration.get_configuration_dictionary()` - value snapshot of the properties held (0.2.8212)
 Data Structures:
 - Installed `CrystallizerConfiguration` plus configured/activated state.
 Concurrency/Threading:
@@ -5951,6 +5992,7 @@ Purpose:
 Contract/Interface:
 - `set_property(...)`, `with_defaults()`, `with_unrestricted_module_mutations(...)`,
 - `validate()`, `freeze()`, `finalize()`, `activate()`
+- `get_configuration_dictionary()` - value snapshot of the properties held (0.2.8212)
 Data Structures:
 - `_properties`, `available_properties`, `_frozen`, `_activated`.
 Concurrency/Threading:
@@ -6614,17 +6656,17 @@ These flows describe concrete method sequences for core behaviors.
    advances or changes current selection.
 2. The frame ACL container emits a frame-level ACL change callback.
 3. `FrameACLManager` forwards that through
-   `Nexus._on_frame_acl_changed(frame_name)` (`src/melder/nexus/nexus.py:2579`),
+   `Nexus._on_frame_acl_changed(frame_name)` (`src/melder/nexus/nexus.py:2740`),
    the single entry point for the whole fan-out below.
 4. `Nexus` finds impacted Rifts by checking whether the changed frame is
    present in each Rift's assigned frame-contract set.
 5. By default, `NexusConfiguration` enables RiftGate-controlled refresh:
    - disable the impacted Rift gates (`Nexus.disable_rift_gate(rift_id)`,
-     `src/melder/nexus/nexus.py:1375`)
+     `src/melder/nexus/nexus.py:1536`)
    - wait for in-flight tickets to drain
    - delegate the single-frame callback into the batch refresh primitive
      `Nexus._refresh_rift_projection_sets_for_frames(...)`
-     (`src/melder/nexus/nexus.py:2491`) - the single-frame path and the batch
+     (`src/melder/nexus/nexus.py:2652`) - the single-frame path and the batch
      path share this ONE primitive rather than each carrying its own refresh
    - refresh each impacted Rift once for its changed-frame subset via
      `Rift.refresh_runtime_projections(...)`
@@ -6632,7 +6674,7 @@ These flows describe concrete method sequences for core behaviors.
     - apply the refreshed projection state to the durable room viewer and
       room-owned command assets
    - reopen the impacted Rift gates (`Nexus.enable_rift_gate(rift_id)`,
-     `src/melder/nexus/nexus.py:1343`)
+     `src/melder/nexus/nexus.py:1504`)
    The same config owns the drain timeout and poll interval.
 6. Each impacted `Rift` asks `Nexus` for one refreshed multi-frame projection
    subset, merges it into the Rift-owned projection registry once, and then
@@ -6707,6 +6749,9 @@ These flows describe concrete method sequences for core behaviors.
 
 ### Flow: Conjure -> Phases -> Conduit
 1. `Spellbook.conjure(...)`:
+   - Starts the CONJURE transaction, refuses the recorded-world configuration discipline on the predicted
+     mode (`_effective_conjure_mode`), then settles or inherits the frame mode (0.2.8211); the window re-checks
+     the discipline on the settled mode.
    - Validates and freezes `SpellbookConfiguration`.
    - Binds `SpellbookConfiguration` to Aether frame.
    - Classifies the structural tier of the conduit bundle (`_prepare_spellbook_for_conjure` ->
@@ -6956,9 +7001,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T16:30:22Z
 - path: `src/melder/aether/aether_configuration.py`
   start_line: 1
-  end_line: 885
-  loc: 885
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 920
+  loc: 920
+  verified_at: 2026-09-30T00:30:14Z
 - path: `src/melder/aether/aether_configuration_builder.py`
   start_line: 1
   end_line: 286
@@ -6971,9 +7016,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-26T20:10:34Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7222
-  loc: 7222
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 7327
+  loc: 7327
+  verified_at: 2026-09-30T00:30:14Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 870
@@ -7036,9 +7081,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aether.py`
   start_line: 1
-  end_line: 2690
-  loc: 2690
-  verified_at: 2026-09-27T11:46:59Z
+  end_line: 2911
+  loc: 2911
+  verified_at: 2026-09-30T00:30:14Z
 - path: `src/melder/crystallizer/crystallizer.py`
   start_line: 1
   end_line: 3009
@@ -7066,9 +7111,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/configuration/crystallizer_configuration.py`
   start_line: 1
-  end_line: 1063
-  loc: 1063
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1097
+  loc: 1097
+  verified_at: 2026-09-30T00:30:14Z
 - path: `src/melder/crystallizer/configuration/crystallizer_configuration_builder.py`
   start_line: 1
   end_line: 275
@@ -7101,9 +7146,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/nexus/nexus.py`
   start_line: 1
-  end_line: 3565
-  loc: 3565
-  verified_at: 2026-09-23T11:33:20Z
+  end_line: 3582
+  loc: 3582
+  verified_at: 2026-09-30T00:30:14Z
 - path: `src/melder/nexus/frame_descriptor_manager.py`
   start_line: 1
   end_line: 871
@@ -7721,14 +7766,14 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
   start_line: 1
-  end_line: 2768
-  loc: 2768
-  verified_at: 2026-09-23T11:33:20Z
+  end_line: 2780
+  loc: 2780
+  verified_at: 2026-09-30T00:30:14Z
 - path: `src/melder/mutation_research/mutation_configuration.py`
   start_line: 1
-  end_line: 659
-  loc: 659
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 693
+  loc: 693
+  verified_at: 2026-09-30T00:30:14Z
 - path: `src/melder/mutation_research/mutation_configuration_builder.py`
   start_line: 1
   end_line: 335
@@ -9885,6 +9930,14 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-30 root configuration guards (0.2.8209-0.2.8212): the Aether Singleton entry and its root configuration
+subcomponent carry the sealed spell-id regime and its refusal; the AR Runtime Surface entry carries the active
+Nexus refusal and the Crystallizer entry restore stage 4's deactivate-first; the Spellbook Core entry and the
+conjure flow carry the refusal before settlement and its re-check in the window; the four root configurations'
+`get_configuration_dictionary()` is listed under their subcomponents. Remeasured: the mediator plane's
+`_frame_creation_transaction` citation, the `_run_structural_phases` citation, four nexus.py citations in the
+frame ACL fan-out flow (already stale before this pass), and the code-map extents of the touched files.
 
 2026-09-28 document-index publication: the key map is assigned before the section tuple that signals
 readiness. Concurrent first readers see complete index data; construction failure remains retryable.

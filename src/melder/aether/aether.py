@@ -983,15 +983,25 @@ class Aether(Cleanable):
               unactivated configuration succeeds here and fails later at `activate()`.
             - Type-checked: a non-`AetherConfiguration` raises `TypeError`.
             - Replaces any previously installed configuration outright.
+            - SEALED REGIME (0.2.8209): while any frame exists the spell-id regime
+              was sealed when the first frame was born and is in force; a
+              configuration whose `process_wide_unique_spell_ids` differs is
+              refused and nothing is installed, so `configuration` can never
+              report a regime that does not apply. With no frame, any regime is
+              accepted and the next first frame seals it.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            The regime check and the install run under the Aether lock that frame
+            birth holds, so a concurrent first frame either seals from this
+            configuration or is seen by the check.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or frames exist and the
+                configuration's spell-id regime differs from the sealed one.
+            TypeError: If `configuration` is not an `AetherConfiguration`.
 
         Returns:
             None.
@@ -999,8 +1009,10 @@ class Aether(Cleanable):
         self.check_cleaned()
         if not isinstance(configuration, AetherConfiguration):
             raise TypeError("configuration must be an AetherConfiguration instance.")
-        self._configuration = configuration
-        self._configured = True
+        with self._lock:
+            self._refuse_regime_change_while_frames_exist(configuration)
+            self._configuration = configuration
+            self._configured = True
 
     def activate(
             self,
@@ -1021,16 +1033,22 @@ class Aether(Cleanable):
               first; omitting it uses whatever is already installed.
             - Refuses when nothing is configured, so the two failure modes are
               distinct: "not configured" and "configuration not activated".
+            - Re-checks the SEALED REGIME (0.2.8209): an installed configuration
+              that was still mutable when installed can have its
+              `process_wide_unique_spell_ids` changed afterwards, so activation
+              refuses it while frames exist exactly as `configure()` would.
 
         Threading:
-            State transition applied under the Aether lock.
+            The regime check runs under the Aether lock; the rest of the state
+            transition is unchanged.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If Aether is not configured, or the installed
-                configuration has not been activated.
+            RuntimeError: If Aether is not configured, the installed
+                configuration has not been activated, or frames exist and its
+                spell-id regime differs from the sealed one.
             TypeError: If a supplied configuration is not an `AetherConfiguration`.
 
         Returns:
@@ -1045,9 +1063,60 @@ class Aether(Cleanable):
             raise RuntimeError(
                 "AetherConfiguration must be activated before activating Aether."
             )
+        with self._lock:
+            self._refuse_regime_change_while_frames_exist(self._configuration)
         self._configuration.validate()
         self._apply_configuration_to_utility_system()
         self._activated = True
+
+    def _refuse_regime_change_while_frames_exist(
+            self,
+            configuration: AetherConfiguration,
+    ) -> None:
+        """
+        Internal
+
+        Refuse a configuration whose spell-id regime differs from the sealed one.
+
+        Purpose:
+            The regime (`_process_wide_unique_spell_ids`) is sealed when the first
+            frame is born and never re-read while frames exist, because spell ids
+            already registered were allocated under it. A configuration saying
+            otherwise would be reported by `configuration` without ever applying.
+
+        Contract:
+            - The caller holds the Aether lock, so no frame is born or retired
+              between this check and the caller's install or activation.
+            - No frame: returns without reading anything - any regime may still
+              be installed, and the next first frame seals it.
+            - Frames exist: returns only when
+              `bool(configuration.process_wide_unique_spell_ids)` equals the
+              sealed value; otherwise raises and changes nothing.
+
+        Args:
+            configuration: The configuration about to be installed or activated.
+
+        Raises:
+            RuntimeError: Frames exist and the configuration's regime differs.
+            TypeError: The configuration's stored regime value is not a bool
+                (its defensive property refuses it).
+
+        Returns:
+            None.
+        """
+        if not self._aetheric_frames:
+            return
+        requested = bool(configuration.process_wide_unique_spell_ids)
+        sealed = self._process_wide_unique_spell_ids
+        if requested != sealed:
+            raise RuntimeError(
+                "Aether's spell-id regime is sealed while frames exist: "
+                f"process_wide_unique_spell_ids is {sealed}. A configuration with "
+                f"process_wide_unique_spell_ids={requested} would be reported without "
+                "ever applying, so it is refused. Install it before the first "
+                "Spellbook creates a frame, or keep "
+                f"process_wide_unique_spell_ids={sealed}."
+            )
 
     def _apply_configuration_to_utility_system(self) -> None:
         """
@@ -1683,6 +1752,155 @@ class Aether(Cleanable):
             self._logger.error(message, "_resolve_lookup_frame")
             raise TypeError(message)
         return self._get_existing_frame(aetheric_frame_name)
+
+    def find_frame(self, aetheric_frame_name: str) -> Optional[AethericFrame]:
+        """
+        Return the registered, live frame with this exact name, or None, without creating any frame.
+
+        Purpose:
+            Let a host that creates frames (by constructing Spellbooks) find them again without reading Aether's
+            private registry. The frame-scoped calls such as `get_conduit_cloud` and the conduit lookups resolve
+            "default" through the lazy creation path, so asking them about a missing "default" creates it and,
+            on a world with no frames yet, seals the Aether configuration. This lookup never does either.
+
+        Contract:
+            - NONCREATING, "default" included: an absent frame returns None. No frame is created, no plane claim
+              is taken, and the Aether configuration is neither installed nor frozen.
+            - Exact name match against the frame registry, which holds every frame ("default" is an ordinary
+              entry once something has created it).
+            - A registered frame that already reads `cleaned` (its cleanup has started but has not yet detached
+              it from Aether) returns None, like a detached one.
+            - Returns a borrowed reference and grants no lease. Aether owns every frame, and a Nexus removal,
+              `AethericFrame.cleanup()` or `Aether.cleanup()` may clean it at any time, after which the reference
+              must not be used. A later frame can reuse the name: compare identity (`is`) to tell them apart.
+            - `get_frame` raises instead of returning None; `list_frame_names` lists the live names.
+
+        Threading:
+            One `dict.get` on the registry, without the Aether lock: a point-in-time answer. Taking no lock keeps
+            the lookup off the Aether -> Nexus lock order used while a cleaned frame is detached.
+
+        Args:
+            aetheric_frame_name:
+                Exact frame name, for example "default" or the name a Spellbook was constructed with.
+
+        Returns:
+            Optional[AethericFrame]: The live frame, or None when no live frame has this name.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            RuntimeError: If Aether has been cleaned.
+        """
+        return self._find_registered_frame(aetheric_frame_name, "find_frame")
+
+    def get_frame(self, aetheric_frame_name: str) -> AethericFrame:
+        """
+        Return the registered, live frame with this exact name, or raise. Never creates a frame.
+
+        Purpose:
+            The raising counterpart of `find_frame`, for callers that expect the frame to exist.
+
+        Contract:
+            - Resolves exactly as `find_frame`: noncreating ("default" included), exact name, frames that read
+              `cleaned` are absent, and the reference is borrowed with no lease.
+            - The not-found message starts with "Aetheric frame '<name>' does not exist.", like the frame errors
+              of the conduit lookups, and says how to create the frame or test for it without raising.
+
+        Threading:
+            As `find_frame`: one registry read, no lock.
+
+        Args:
+            aetheric_frame_name:
+                Exact frame name.
+
+        Returns:
+            AethericFrame: The live frame.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If no live frame has this name.
+            RuntimeError: If Aether has been cleaned.
+        """
+        frame = self._find_registered_frame(aetheric_frame_name, "get_frame")
+        if frame is None:
+            message = (
+                f"Aetheric frame '{aetheric_frame_name}' does not exist. get_frame never creates a frame: "
+                f"constructing a Spellbook with aetheric_frame='{aetheric_frame_name}' creates it, and "
+                "find_frame(...) tests for it without raising."
+            )
+            self._logger.error(message, "get_frame")
+            raise ValueError(message)
+        return frame
+
+    def list_frame_names(self) -> tuple[str, ...]:
+        """
+        Return the names of the live frames in the order they were created, without creating any frame.
+
+        Purpose:
+            Let a host see which frames exist - for example, whether constructing a Spellbook will create its
+            frame or join an existing one - without reading Aether's private registry.
+
+        Contract:
+            - NONCREATING: an Aether with no frames returns an empty tuple, and "default" appears only once
+              something has created it.
+            - Built from one copy of the registry, so the tuple is a snapshot: frames created or cleaned later do
+              not change it, and a listed frame may be gone by the time it is used - resolve it with `find_frame`.
+            - Frames that already read `cleaned` are left out.
+            - Order is registration order.
+
+        Threading:
+            One `dict.copy()` of the registry, without the Aether lock; the copy is atomic, so a concurrent frame
+            creation cannot interrupt the listing.
+
+        Returns:
+            tuple[str, ...]: Live frame names.
+
+        Raises:
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        registry = self._aetheric_frames.copy()
+        return tuple(name for name, frame in registry.items() if not frame.cleaned)
+
+    def _find_registered_frame(
+            self,
+            aetheric_frame_name: str,
+            method_name: str,
+    ) -> Optional[AethericFrame]:
+        """
+        Internal
+
+        Validate a frame lookup's name and read the registry without creating anything.
+
+        Contract:
+            - Shared by `find_frame` and `get_frame`, so both refuse a non-string name the same way and name the
+              public call that received it.
+            - Never reaches `_get_existing_frame` or `_ensure_frame`: no creation, no plane claim, no seal.
+
+        Args:
+            aetheric_frame_name:
+                Name received by the public lookup.
+            method_name:
+                Name of the public lookup, used in the TypeError message and its log line.
+
+        Returns:
+            Optional[AethericFrame]: The live frame, or None.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        if not isinstance(aetheric_frame_name, str):
+            message = (
+                f"{method_name}: aetheric_frame_name must be a frame name string such as 'default'; "
+                f"got {type(aetheric_frame_name).__name__}."
+            )
+            self._logger.error(message, "_find_registered_frame")
+            raise TypeError(message)
+        frame = self._aetheric_frames.get(aetheric_frame_name)
+        if frame is None or frame.cleaned:
+            return None
+        return frame
 
     def list_root_conduit_ids(
             self,
@@ -2344,7 +2562,10 @@ class Aether(Cleanable):
               keeps exactly what the caller installed. This only fills the gap
               left by never configuring at all.
             - Installs `AetherConfiguration().with_defaults()` and FREEZES it, so
-              the regime cannot be changed afterwards by any path.
+              the regime cannot be changed afterwards by any path. `configure()`
+              and `activate()` refuse a configuration with a different regime
+              while frames exist (0.2.8209), so the installed configuration
+              always reports the regime in force.
             - Never raises. A failure to collapse must not stop a frame being
               born; `_process_wide_unique_spell_ids` is already initialised to
               the same default in `__init__`, so the behaviour is identical

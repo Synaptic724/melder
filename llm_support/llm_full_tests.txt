@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: f54e8d0e4041de8a3d2f948b736068757f6ab335e21fdee0d3208bc5a48c30cc
-FILE COUNT: 1033
+SOURCE FINGERPRINT: d3d1d8678520b8900215e27f18b44fc8fb0065ef74ddbe762d7c48757946aa8c
+FILE COUNT: 1041
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -26171,6 +26171,135 @@ def test_component_spellbook_automatic_logger_uses_configured_default_logger_whe
 END FILE: tests/component/melder/aether/test_aether_logging_configuration_component.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/component/melder/aether/test_aether_sealed_regime_guard_component.py
+CONTENT SHA256: 4cae5d9d46f0b69723669773438d2b1e3364ad2ebc7627f3849c26212e175b08
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Component tests for the sealed spell-id regime guard on Aether (0.2.8209).
+
+WHY THIS EXISTS. The regime (`process_wide_unique_spell_ids`) is sealed when the
+first frame is born, and spell ids registered afterwards were allocated under
+it. `Aether.configure` used to install ANY later configuration, so a host (or a
+second Melder user such as MelderOps) could install a per-frame policy that
+`Aether.configuration` then reported while the process kept the process-wide
+rule - the same class bound into a second frame still collided. Configure and
+activate now refuse that configuration while frames exist.
+
+Contract under test:
+    1. after the first frame, a different regime is refused and nothing changes;
+    2. after the first frame, the sealed regime is accepted;
+    3. before any frame, either regime is accepted and the first frame seals it;
+    4. activate refuses an installed configuration changed to another regime;
+    5. activate(configuration) refuses a different regime through configure.
+"""
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.spellbook import Spellbook
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_regime_guard() -> None:
+    """Give each test an Aether with no frames and no configuration."""
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _birth_a_frame(frame_name: str) -> Spellbook:
+    """Bring one frame into existence; constructing a Spellbook on it births it."""
+    return Spellbook(aetheric_frame=frame_name)
+
+
+def _policy(process_wide: bool) -> AetherConfiguration:
+    """Return a mutable default Aether configuration with the given regime."""
+    configuration = AetherConfiguration().with_defaults()
+    configuration.set_process_wide_unique_spell_ids(process_wide)
+    return configuration
+
+
+def test_different_regime_after_the_first_frame_is_refused_and_nothing_changes() -> None:
+    """A per-frame policy after the host's first frame is refused; the sealed default stays."""
+    aether = Aether()
+    _birth_a_frame("host")
+    sealed = aether.configuration
+    assert sealed is not None and sealed.process_wide_unique_spell_ids is True
+
+    with pytest.raises(RuntimeError, match="spell-id regime is sealed while frames exist"):
+        aether.configure(_policy(False))
+
+    assert aether.configuration is sealed
+    assert aether.configured is False
+    assert aether.configuration.process_wide_unique_spell_ids is True
+
+
+def test_sealed_regime_after_the_first_frame_is_accepted() -> None:
+    """Replacing the policy is still allowed when it keeps the sealed regime."""
+    aether = Aether()
+    _birth_a_frame("host")
+    replacement = _policy(True).with_channel_logger_activation_enabled(False)
+    aether.configure(replacement)
+    assert aether.configuration is replacement
+    assert aether.configured is True
+
+
+def test_before_any_frame_either_regime_installs_and_the_first_frame_seals_it() -> None:
+    """With no frame the guard reads nothing; the first frame seals the caller's choice."""
+    aether = Aether()
+    per_frame = _policy(False)
+    aether.configure(per_frame)
+    assert aether.configuration is per_frame
+    _birth_a_frame("tenant_a")
+    assert per_frame.frozen is True
+    assert aether.configuration.process_wide_unique_spell_ids is False
+    with pytest.raises(RuntimeError, match="process_wide_unique_spell_ids is False"):
+        aether.configure(_policy(True))
+
+
+def test_activate_refuses_an_installed_configuration_changed_to_another_regime() -> None:
+    """A mutable installed configuration edited after configure is caught at activate."""
+    aether = Aether()
+    _birth_a_frame("host")
+    installed = _policy(True)
+    aether.configure(installed)
+    installed.set_process_wide_unique_spell_ids(False)
+    installed.activate()
+    with pytest.raises(RuntimeError, match="spell-id regime is sealed while frames exist"):
+        aether.activate()
+    assert aether.activated is False
+
+
+def test_activate_with_a_configuration_refuses_a_different_regime() -> None:
+    """activate(configuration) installs through configure, so the same refusal applies."""
+    aether = Aether()
+    _birth_a_frame("host")
+    per_frame = _policy(False).activate()
+    with pytest.raises(RuntimeError, match="spell-id regime is sealed while frames exist"):
+        aether.activate(per_frame)
+    assert aether.activated is False
+    assert aether.configuration.process_wide_unique_spell_ids is True
+
+
+def test_matching_activation_after_the_first_frame_still_applies() -> None:
+    """The guard is silent for the sealed regime: activation proceeds as before."""
+    aether = Aether()
+    _birth_a_frame("host")
+    aether.activate(_policy(True).activate())
+    assert aether.activated is True
+================================================================================
+END FILE: tests/component/melder/aether/test_aether_sealed_regime_guard_component.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/component/melder/aether/test_codegen_system_component_matrix.py
 CONTENT SHA256: 714a33bc6ba7294d9ecc5f4eb262052466c5dd4ea0f7c77a9a28b59a289878b4
 SOURCE ENCODING: utf-8
@@ -28362,6 +28491,174 @@ def test_component_manager_keeps_frame_conduit_and_spell_records_coherent() -> N
 
 ================================================================================
 END FILE: tests/component/melder/aether/test_frame_descriptor_manager_component.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/component/melder/aether/test_nexus_active_reconfiguration_guard_component.py
+CONTENT SHA256: 13262501fffe31da2c0125d869291377873cf2da8da9c299944cbb604fc75334
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Component tests for the Nexus active-reconfiguration guard (0.2.8210).
+
+WHY THIS EXISTS. A live Nexus reads its installed policy at every Rift
+validation, so replacing the policy of an ACTIVE Nexus changes the rules under
+Rifts that already passed them - and `configure` installs the replacement
+unfrozen, so it could keep changing afterwards. Crystallizer and
+MutationResearch have always refused reconfiguration while active; Nexus
+accepted it, which let a second Melder user in the same process (MelderOps)
+swap a host's live AR policy without the host knowing. `configure`, and
+`activate` handed another configuration, now refuse while Nexus is active.
+
+Contract under test:
+    1. configure on an active Nexus raises and the installed policy stays in force;
+    2. the refused replacement is left untouched, so it can be installed later;
+    3. after deactivate, configure installs the replacement and activate brings it live;
+    4. activate with another configuration while active raises and changes nothing;
+    5. the guard compares identity: an equal-valued second object is still refused;
+    6. activate with the installed configuration, or with none, re-enables as before;
+    7. a configured but inactive Nexus still accepts a replacement through either verb.
+"""
+
+from typing import Iterator
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.mutation_research.mutation_research import MutationResearch
+from melder.nexus.configuration.nexus_configuration import NexusConfiguration
+from melder.nexus.nexus import Nexus
+
+
+@pytest.fixture(autouse=True)
+def reset_world_for_nexus_guard() -> Iterator[None]:
+    """Give each test fresh hosted roots, so every Nexus starts unconfigured and inactive."""
+
+    def _reset() -> None:
+        """Reset the hosted roots and rebind the static Aether references."""
+        MutationResearch._reset_singleton_for_tests()
+        Crystallizer._reset_singleton_for_tests()
+        Nexus._reset_singleton_for_tests()
+        Aether._reset_singleton_for_tests()
+        aether = Aether()
+        Spellbook._aether = aether
+        Conduit._aether = aether
+
+    _reset()
+    yield
+    _reset()
+
+
+def _policy(allowed_frame: str) -> NexusConfiguration:
+    """Return a mutable default Nexus policy whose Rift targets are limited to one named frame."""
+    return NexusConfiguration().with_defaults().with_allowed_target_frame_names((allowed_frame,))
+
+
+def _live_nexus() -> Nexus:
+    """Return the hosted Nexus, activated with a default policy that targets frame 'default'."""
+    nexus = Aether().nexus
+    nexus.activate(_policy("default"))
+    return nexus
+
+
+def test_configure_on_an_active_nexus_is_refused_and_the_live_policy_stays() -> None:
+    """A host's live AR policy cannot be swapped underneath it; the refusal names the fix."""
+    nexus = _live_nexus()
+    installed = nexus.configuration
+
+    with pytest.raises(RuntimeError, match="Cannot reconfigure Nexus while it is active. Deactivate it first."):
+        nexus.configure(_policy("melderops"))
+
+    assert nexus.configuration is installed
+    assert nexus.activated is True
+    assert nexus.configuration.get_property("allowed_target_frame_names") == ("default",)
+
+
+def test_a_refused_replacement_is_left_untouched() -> None:
+    """The refusal happens before install: the caller's object is neither frozen nor consumed."""
+    nexus = _live_nexus()
+    replacement = _policy("melderops")
+
+    with pytest.raises(RuntimeError, match="Cannot reconfigure Nexus while it is active"):
+        nexus.configure(replacement)
+
+    assert replacement.frozen is False
+    assert replacement.activated is False
+    assert replacement.get_property("allowed_target_frame_names") == ("melderops",)
+
+
+def test_after_deactivate_configure_installs_and_activate_brings_it_live() -> None:
+    """Deactivating first is the documented remedy; the replacement then goes live as usual."""
+    nexus = _live_nexus()
+    replacement = _policy("melderops")
+
+    nexus.deactivate()
+    nexus.configure(replacement)
+    assert nexus.configuration is replacement
+    assert replacement.frozen is False
+
+    nexus.activate()
+    assert nexus.activated is True
+    assert replacement.frozen is True
+    assert nexus.configuration.get_property("allowed_target_frame_names") == ("melderops",)
+
+
+def test_activate_with_another_configuration_while_active_is_refused() -> None:
+    """activate(configuration) installs, so it follows the same rule as configure."""
+    nexus = _live_nexus()
+    installed = nexus.configuration
+    replacement = _policy("melderops")
+
+    with pytest.raises(RuntimeError, match="Cannot reconfigure Nexus while it is active. Deactivate it first."):
+        nexus.activate(replacement)
+
+    assert nexus.configuration is installed
+    assert nexus.activated is True
+    assert replacement.frozen is False
+
+
+def test_an_equal_valued_second_object_is_still_refused_while_active() -> None:
+    """The guard compares identity, not values: another object is a replacement even when equal."""
+    nexus = _live_nexus()
+    twin = _policy("default")
+    assert twin.get_configuration_dictionary() == nexus.configuration.get_configuration_dictionary()
+
+    with pytest.raises(RuntimeError, match="Cannot reconfigure Nexus while it is active"):
+        nexus.configure(twin)
+    with pytest.raises(RuntimeError, match="Cannot reconfigure Nexus while it is active"):
+        nexus.activate(twin)
+
+
+def test_activate_with_the_installed_configuration_or_none_re_enables() -> None:
+    """Re-enabling a live Nexus with its own policy stays legal and keeps that policy."""
+    nexus = _live_nexus()
+    installed = nexus.configuration
+
+    nexus.activate(installed)
+    nexus.activate()
+
+    assert nexus.configuration is installed
+    assert nexus.activated is True
+
+
+def test_a_configured_but_inactive_nexus_still_accepts_a_replacement() -> None:
+    """The guard is about liveness: an installed policy that is not in force can be replaced."""
+    nexus = Aether().nexus
+    nexus.configure(_policy("default"))
+    replacement = _policy("melderops")
+
+    nexus.configure(replacement)
+    assert nexus.configuration is replacement
+
+    final = _policy("tenant")
+    nexus.activate(final)
+    assert nexus.configuration is final
+    assert nexus.activated is True
+    assert nexus.configuration.get_property("allowed_target_frame_names") == ("tenant",)
+================================================================================
+END FILE: tests/component/melder/aether/test_nexus_active_reconfiguration_guard_component.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/test_nexus_configuration_ladder_component.py
@@ -45315,6 +45612,162 @@ def test_function_provider_book_reaches_a_full_hit_in_the_next_world() -> None:
     assert isinstance(book._conduit.meld(spell=consumer).product, _Product)
 ================================================================================
 END FILE: tests/component/melder/spellbook/test_conjure_cache_restage.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/component/melder/spellbook/test_conjure_refusal_leaves_frame_unsettled_component.py
+CONTENT SHA256: b9a8985307d84c6fad72521af654aa2c7da5969ef899dc16a454e30a6ba42352
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Component tests: a refused dynamic conjure leaves its frame as it was (0.2.8211).
+
+WHY THIS EXISTS. With an active Crystallizer, a dynamic conjure is refused when spells were bound while the Book's
+configuration was still mutable (the recorded world would persist binds that ran against unsettled
+configuration). The refusal used to run AFTER conjure settled the frame posture, so a refused
+`conjure(dynamic=True)` left an unsettled frame frozen dynamic - and every later conjure in that frame inherited
+dynamic and was refused too, even a plain automatic one the discipline exempts. That is how a second Melder user
+turning recording on (MelderOps' AI preset) could lock a host's frame. The refusal now runs on the mode settlement
+WOULD produce, before settling.
+
+Contract under test:
+    1. after the refusal an unsettled frame is still unfrozen and automatic;
+    2. an automatic conjure in that frame then succeeds and settles it automatic;
+    3. a settled dynamic frame is still refused for an inheriting conjure (dynamic=False);
+    4. the predicted mode equals the settled mode for every posture/flag combination, and predicting mutates nothing.
+"""
+
+from typing import Iterator
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.configuration.system_state import SystemState
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.crystallizer.configuration.crystallizer_configuration import CrystallizerConfiguration
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.mutation_research.mutation_research import MutationResearch
+from melder.nexus.nexus import Nexus
+from tests._frame_posture_test_support import apply_dynamic_defaults_for_spellbook_configuration
+
+
+class RefusalHostService:
+    """Plain spell bound by the host Book before its configuration is finalized."""
+
+
+class RefusalPeerService:
+    """Plain spell bound by a peer Book whose configuration is finalized first."""
+
+
+@pytest.fixture(autouse=True)
+def reset_world_for_conjure_refusal() -> Iterator[None]:
+    """Give each test fresh hosted roots, so every frame is born unsettled and recording is off."""
+
+    def _reset() -> None:
+        """Reset the hosted roots and rebind the static Aether references."""
+        MutationResearch._reset_singleton_for_tests()
+        Crystallizer._reset_singleton_for_tests()
+        Nexus._reset_singleton_for_tests()
+        Aether._reset_singleton_for_tests()
+        aether = Aether()
+        Spellbook._aether = aether
+        Conduit._aether = aether
+
+    _reset()
+    yield
+    _reset()
+
+
+def _turn_recording_on() -> None:
+    """Activate the hosted Crystallizer with its default policy, as a second Melder user would."""
+    policy = CrystallizerConfiguration().with_defaults()
+    policy.activate()
+    Crystallizer().activate(policy)
+
+
+def _early_bound_book(frame_name: str) -> Spellbook:
+    """Return a Book on `frame_name` that bound one spell while its configuration was still mutable."""
+    book = Spellbook(aetheric_frame=frame_name)
+    book.bind(spell=RefusalHostService, existence="many")
+    return book
+
+
+def test_refused_dynamic_conjure_leaves_an_unsettled_frame_unsettled() -> None:
+    """The refusal no longer settles the frame dynamic on its way out."""
+    book = _early_bound_book("refusal_host")
+    _turn_recording_on()
+    posture = Aether().get_frame("refusal_host").frame_configuration
+    assert posture.frozen is False
+    assert posture.system_state is SystemState.automatic
+
+    with pytest.raises(RuntimeError, match="finalized BEFORE the first bind"):
+        book.conjure(name="root", dynamic=True)
+
+    assert Aether().get_frame("refusal_host").frame_configuration is posture
+    assert posture.frozen is False
+    assert posture.system_state is SystemState.automatic
+
+
+def test_an_automatic_conjure_after_the_refusal_still_runs_automatic() -> None:
+    """The discipline exempts automatic worlds, and the refused attempt no longer forces dynamic on them."""
+    book = _early_bound_book("refusal_host")
+    _turn_recording_on()
+    with pytest.raises(RuntimeError, match="finalized BEFORE the first bind"):
+        book.conjure(name="root", dynamic=True)
+
+    conduit = book.conjure(name="root")
+
+    posture = Aether().get_frame("refusal_host").frame_configuration
+    assert conduit.spellbook is book
+    assert posture.frozen is True
+    assert posture.system_state is SystemState.automatic
+
+
+def test_an_inheriting_conjure_in_a_settled_dynamic_frame_is_still_refused() -> None:
+    """dynamic=False inherits a settled dynamic world, so the prediction must still say dynamic."""
+    peer_configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(peer_configuration)
+    peer_configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    peer_configuration.finalize()
+    peer = Spellbook(configuration=peer_configuration)
+    peer.bind(spell=RefusalPeerService, existence="many")
+    peer.conjure(name="peer_root", dynamic=True)
+    frame_name = peer_configuration.aether_frame
+    posture = Aether().get_frame(frame_name).frame_configuration
+    assert posture.frozen is True and posture.system_state is SystemState.dynamic
+
+    book = _early_bound_book(frame_name)
+    _turn_recording_on()
+    with pytest.raises(RuntimeError, match="finalized BEFORE the first bind"):
+        book.conjure(name="root")
+    assert posture.system_state is SystemState.dynamic
+
+
+@pytest.mark.parametrize("staged_state", [SystemState.automatic, SystemState.dynamic])
+@pytest.mark.parametrize("frozen", [False, True])
+@pytest.mark.parametrize("requested_dynamic", [False, True])
+def test_the_predicted_mode_equals_the_settled_mode(
+        staged_state: SystemState,
+        frozen: bool,
+        requested_dynamic: bool,
+) -> None:
+    """_effective_conjure_mode must agree with _settle_or_inherit_conjure_mode and mutate nothing."""
+    book = Spellbook(aetheric_frame="prediction")
+    frame = Aether().get_frame("prediction")
+    posture = frame.frame_configuration
+    posture.with_system_state(staged_state)
+    if frozen:
+        frame.freeze_frame_configuration()
+
+    predicted = book._effective_conjure_mode(requested_dynamic)
+    assert posture.frozen is frozen
+    assert posture.system_state is staged_state
+
+    settled = book._settle_or_inherit_conjure_mode(requested_dynamic)
+    assert predicted is settled
+================================================================================
+END FILE: tests/component/melder/spellbook/test_conjure_refusal_leaves_frame_unsettled_component.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/spellbook/test_existing_instance_protocol_admission.py
@@ -91465,6 +91918,289 @@ def test_static_rift_json_driver_can_execute_bound_target_method() -> None:
 END FILE: tests/integration/melder/aether/rift/test_static_rift_json_testbench_integration.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/integration/melder/aether/test_aether_frame_lookups.py
+CONTENT SHA256: 8df23e0ffc96313c81eeda4c1e57f8ed12942acf9db8b9c1256dc242d73c0f9d
+SOURCE ENCODING: utf-8
+================================================================================
+"""Aether finds, lists and returns frames without creating them, and hosts can read what they compare against.
+
+Host integrations such as MelderOps create frames by constructing Spellbooks and later need to find the frames
+they created. Every other frame-scoped Aether call creates "default" when it is missing (and the first frame seals
+the Aether configuration), so a host had to read Aether's private registry to look without creating. Since
+0.2.8208 `Aether.find_frame`, `Aether.get_frame` and `Aether.list_frame_names` never create a frame, and the frame
+and conduit accessors a host compares against (`AethericFrame.shared_spellbook_configuration`, `Conduit.spellbook`)
+are public reads.
+"""
+
+import logging
+import threading
+from collections.abc import Iterator
+from typing import List
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aetheric_frame.aetheric_frame import AethericFrame
+from melder.aether.spellbook.spellbook import Spellbook
+from tests._codegen_system_support import reset_runtime_singletons
+
+
+@pytest.fixture(autouse=True)
+def isolated_world() -> Iterator[None]:
+    """Give every scenario a fresh Aether with no frames and clean the singletons afterwards."""
+    reset_runtime_singletons()
+    try:
+        yield
+    finally:
+        reset_runtime_singletons()
+
+
+def test_lookups_on_a_fresh_world_create_no_frame_and_leave_the_configuration_unsealed() -> None:
+    """No lookup births "default": the registry stays empty and no configuration is installed or frozen."""
+    aether = Aether()
+    assert aether.list_frame_names() == ()
+    assert aether.find_frame("default") is None
+    with pytest.raises(ValueError, match="Aetheric frame 'default' does not exist"):
+        aether.get_frame("default")
+    assert aether.find_frame("anything") is None
+    assert aether.list_frame_names() == ()
+    assert aether.configuration is None
+
+
+def test_a_spellbook_frame_is_found_and_returned_as_the_same_object() -> None:
+    """The frame a Spellbook creates is the object both lookups return, under its own name."""
+    Spellbook(aetheric_frame="ops")
+    aether = Aether()
+    frame = aether.find_frame("ops")
+    assert frame is not None
+    assert aether.get_frame("ops") is frame
+    assert frame.name == "ops"
+    assert aether.find_frame("default") is None
+
+
+def test_list_frame_names_follows_registration_order_and_is_a_snapshot() -> None:
+    """Names come back in creation order as a tuple that later creations do not change."""
+    Spellbook(aetheric_frame="first")
+    Spellbook()
+    Spellbook(aetheric_frame="second")
+    names = Aether().list_frame_names()
+    assert names == ("first", "default", "second")
+    Spellbook(aetheric_frame="third")
+    assert names == ("first", "default", "second")
+    assert Aether().list_frame_names() == ("first", "default", "second", "third")
+
+
+def test_a_cleaned_frame_is_absent_from_every_lookup() -> None:
+    """Once a frame is cleaned it is neither found, listed nor returned."""
+    book = Spellbook(aetheric_frame="gone")
+    aether = Aether()
+    frame = aether.get_frame("gone")
+    book.cleanup()
+    frame.cleanup()
+    assert aether.find_frame("gone") is None
+    assert "gone" not in aether.list_frame_names()
+    with pytest.raises(ValueError, match="Aetheric frame 'gone' does not exist"):
+        aether.get_frame("gone")
+
+
+def test_get_frame_error_says_how_to_create_or_probe_the_frame() -> None:
+    """The not-found message keeps the familiar prefix and points at find_frame and Spellbook."""
+    with pytest.raises(ValueError) as caught:
+        Aether().get_frame("missing")
+    message = str(caught.value)
+    assert message.startswith("Aetheric frame 'missing' does not exist.")
+    assert "find_frame" in message
+    assert "Spellbook" in message
+
+
+@pytest.mark.parametrize("bad_name", [None, 7, ("ops",)], ids=["none", "int", "tuple"])
+def test_frame_lookups_refuse_a_name_that_is_not_a_string(bad_name: object) -> None:
+    """A non-string frame name raises TypeError naming the call that received it."""
+    aether = Aether()
+    with pytest.raises(TypeError, match="find_frame"):
+        aether.find_frame(bad_name)
+    with pytest.raises(TypeError, match="get_frame"):
+        aether.get_frame(bad_name)
+
+
+def test_frame_lookups_on_a_cleaned_aether_raise_runtime_error() -> None:
+    """A cleaned Aether refuses every frame lookup instead of reading a torn-down registry."""
+    aether = Aether()
+    aether.cleanup()
+    with pytest.raises(RuntimeError):
+        aether.find_frame("default")
+    with pytest.raises(RuntimeError):
+        aether.get_frame("default")
+    with pytest.raises(RuntimeError):
+        aether.list_frame_names()
+
+
+def test_listing_while_other_threads_create_frames_never_raises() -> None:
+    """Listing takes one copy of the registry, so concurrent frame creation never breaks it."""
+    errors: List[BaseException] = []
+    stop = threading.Event()
+
+    def lister() -> None:
+        try:
+            while not stop.is_set():
+                names = Aether().list_frame_names()
+                assert len(names) == len(set(names))
+        except BaseException as error:
+            errors.append(error)
+
+    def creator(offset: int) -> None:
+        try:
+            for index in range(10):
+                Spellbook(aetheric_frame=f"frame-{offset}-{index}")
+        except BaseException as error:
+            errors.append(error)
+
+    listener = threading.Thread(target=lister, daemon=True)
+    creators = [threading.Thread(target=creator, args=(offset,), daemon=True) for offset in range(4)]
+    listener.start()
+    for thread in creators:
+        thread.start()
+    for thread in creators:
+        thread.join(timeout=60)
+    stop.set()
+    listener.join(timeout=60)
+    assert not listener.is_alive()
+    assert not any(thread.is_alive() for thread in creators)
+    assert errors == []
+    expected = {f"frame-{offset}-{index}" for offset in range(4) for index in range(10)}
+    assert expected <= set(Aether().list_frame_names())
+
+
+def test_shared_spellbook_configuration_is_none_while_the_frame_does_not_share_it() -> None:
+    """A frame whose posture does not share the rich configuration reports None after conjure."""
+    Spellbook(aetheric_frame="private").conjure(name="root")
+    frame = Aether().get_frame("private")
+    assert frame.frame_configuration.shared_framewide_spellbook_configuration is False
+    assert frame.shared_spellbook_configuration is None
+
+
+def test_shared_spellbook_configuration_is_the_bound_configuration_when_shared() -> None:
+    """With sharing on, the frame reports the rich configuration the first Book bound, by identity."""
+    book = Spellbook(aetheric_frame="shared")
+    book.configure_aether_frame(
+        system_state="automatic", disposal=None, disposal_method_names=None,
+        shared_framewide_spellbook_configuration=True,
+    )
+    book.conjure(name="root")
+    frame = Aether().get_frame("shared")
+    assert frame.frame_configuration.shared_framewide_spellbook_configuration is True
+    assert frame.shared_spellbook_configuration is book.get_configuration()
+
+
+def test_shared_spellbook_configuration_raises_once_the_frame_is_cleaned() -> None:
+    """A cleaned frame refuses the read instead of reporting stale configuration."""
+    book = Spellbook(aetheric_frame="short")
+    frame = Aether().get_frame("short")
+    book.cleanup()
+    frame.cleanup()
+    with pytest.raises(RuntimeError):
+        _ = frame.shared_spellbook_configuration
+
+
+def test_conduit_spellbook_is_the_conjuring_book_for_a_root_and_its_lessers() -> None:
+    """A root and the lessers under it all resolve through the Book that conjured the root."""
+    book = Spellbook(aetheric_frame="scopes")
+    root = book.conjure(name="root")
+    lesser = root.create_lesser_conduit()
+    nested = lesser.create_lesser_conduit(name="nested")
+    assert root.spellbook is book
+    assert book.conduit is root
+    assert lesser.spellbook is book
+    assert nested.spellbook is book
+
+
+def test_conduit_spellbook_raises_after_the_root_is_torn_down() -> None:
+    """A torn-down root refuses the read."""
+    root = Spellbook(aetheric_frame="teardown").conjure(name="root")
+    root.cleanup()
+    with pytest.raises(RuntimeError):
+        _ = root.spellbook
+
+
+def test_a_lookup_does_not_stand_in_for_frame_creation() -> None:
+    """After a lookup finds nothing, the first Spellbook still creates the frame and seals the configuration."""
+    aether = Aether()
+    assert aether.find_frame("default") is None
+    assert aether.configuration is None
+    Spellbook()
+    assert aether.find_frame("default") is not None
+    assert aether.configuration is not None
+    assert aether.configuration.frozen is True
+
+
+def test_get_frame_logs_the_not_found_message(caplog: pytest.LogCaptureFixture) -> None:
+    """The refusal is logged at ERROR with the same text the ValueError carries."""
+    logger = logging.getLogger("melder.tests.frame_lookups")
+    Aether().attach_logger(logger)
+    with caplog.at_level(logging.ERROR, logger="melder.tests.frame_lookups"):
+        with pytest.raises(ValueError):
+            Aether().get_frame("missing")
+    assert any("Aetheric frame 'missing' does not exist." in record.getMessage() for record in caplog.records)
+
+
+def test_lookups_while_a_frame_is_created_and_cleaned_never_raise() -> None:
+    """A frame cleaned while another thread looks it up reads as present or absent, never as an error."""
+    errors: List[BaseException] = []
+    stop = threading.Event()
+
+    def reader() -> None:
+        try:
+            while not stop.is_set():
+                frame = Aether().find_frame("churn")
+                assert frame is None or isinstance(frame, AethericFrame)
+                names = Aether().list_frame_names()
+                assert names.count("churn") <= 1
+        except BaseException as error:
+            errors.append(error)
+
+    thread = threading.Thread(target=reader, daemon=True)
+    thread.start()
+    try:
+        for _ in range(30):
+            book = Spellbook(aetheric_frame="churn")
+            frame = Aether().get_frame("churn")
+            book.cleanup()
+            frame.cleanup()
+    finally:
+        stop.set()
+        thread.join(timeout=60)
+    assert not thread.is_alive()
+    assert errors == []
+    assert Aether().find_frame("churn") is None
+
+
+def test_a_second_spellbook_in_a_sharing_frame_adopts_the_reported_configuration() -> None:
+    """The configuration the frame reports as shared is the one the next Spellbook in the frame adopts."""
+    book = Spellbook(aetheric_frame="shared")
+    book.configure_aether_frame(
+        system_state="automatic", disposal=None, disposal_method_names=None,
+        shared_framewide_spellbook_configuration=True,
+    )
+    book.conjure(name="root")
+    shared = Aether().get_frame("shared").shared_spellbook_configuration
+    assert shared is not None
+    second = Spellbook(aetheric_frame="shared")
+    assert second.get_configuration() is shared
+
+
+def test_conduit_spellbook_follows_an_upgrade_to_its_new_spellbook() -> None:
+    """An upgraded lesser reports the new Spellbook it now belongs to, which reports it back as its root."""
+    book = Spellbook(aetheric_frame="grow")
+    root = book.conjure(name="root", dynamic=True)
+    lesser = root.create_lesser_conduit()
+    assert lesser.spellbook is book
+    lesser.upgrade_to_normal("promoted")
+    assert lesser.spellbook is not book
+    assert lesser.spellbook.conduit is lesser
+================================================================================
+END FILE: tests/integration/melder/aether/test_aether_frame_lookups.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/integration/melder/aether/test_aether_integration_change_control_transactions.py
 CONTENT SHA256: 8518b0211b90b14504ec4dcbe934af1f2461f4f5f302244da8258f4610f01e14
 SOURCE ENCODING: utf-8
@@ -120674,6 +121410,279 @@ def test_changed_id_restore_regrants_contract_details() -> None:
         engine.cleanup()
 ================================================================================
 END FILE: tests/integration/melder/crystallizer/test_ordered_disposal_replay.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/crystallizer/test_restore_over_active_nexus_integration.py
+CONTENT SHA256: e261986d541ef45e4528ce8d3c6058bb94192f7db9965ec92ffb8894dee92ab9
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration tests: restoring a recorded Nexus into a world whose Nexus is already active (0.2.8210).
+
+An active Nexus now refuses reconfiguration (`configure`, or `activate` handed another configuration). Restore
+stage 4 rebuilds the recorded Nexus by activating a freshly reloaded configuration on the hosted Nexus, so a
+live-world load over an active Nexus would have been refused and rolled back. Stage 4 now deactivates an active
+Nexus first - a truthful recorded act, exactly as stage 3 does for MutationResearch - and these tests pin that a
+world-scope load still replaces the live Nexus policy with the recorded one, and replays a recorded "disabled".
+
+Runs only on 3.14t (melder package root import chain).
+"""
+from pathlib import Path
+from typing import Iterator
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.crystallizer.configuration.crystallizer_configuration import (
+    CrystallizerConfiguration,
+)
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.nexus.configuration.nexus_configuration import NexusConfiguration
+from melder.nexus.nexus import Nexus
+
+
+def _reset_world() -> None:
+    """Reset every world singleton and rebind the static Aether references."""
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def reset_world_singletons() -> Iterator[None]:
+    """Isolate each test behind fresh Aether/Nexus/Crystallizer singletons."""
+    _reset_world()
+    yield
+    _reset_world()
+
+
+@pytest.fixture()
+def cache_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Route the crystallizer cache into a per-test directory."""
+    from melder.crystallizer.asset_management import crystallizer_cache
+
+    root = tmp_path / "__melder_cache__" / "__crystallizer_cache__"
+    monkeypatch.setattr(
+        crystallizer_cache.CrystallizerCache,
+        "resolve_cache_root_path",
+        staticmethod(lambda: root),
+    )
+    return root
+
+
+def _activate_crystallizer() -> Crystallizer:
+    """Activate the Aether-hosted crystallizer with default knobs."""
+    configuration = CrystallizerConfiguration().with_defaults()
+    configuration.activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+    return crystallizer
+
+
+def _nexus_policy(max_active_rift_count: int) -> NexusConfiguration:
+    """Return a mutable default Nexus policy with a distinguishing Rift cap."""
+    return NexusConfiguration().with_defaults().with_max_active_rift_count(max_active_rift_count)
+
+
+def _record_a_nexus_world(deactivate_before_seal: bool) -> str:
+    """Record a world whose Nexus ran with a Rift cap of 5; return the flushed checkpoint id."""
+    crystallizer = _activate_crystallizer()
+    Nexus().activate(_nexus_policy(5))
+    if deactivate_before_seal:
+        Nexus().deactivate()
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+    return checkpoint_id
+
+
+def _reboot_with_an_active_host_nexus() -> Crystallizer:
+    """Simulate a new process whose host brought its own Nexus live (Rift cap 2) before the load."""
+    _reset_world()
+    rebooted = _activate_crystallizer()
+    Nexus().activate(_nexus_policy(2))
+    assert Nexus().activated is True
+    return rebooted
+
+
+def test_restore_replaces_an_active_live_nexus_policy_with_the_recorded_one(cache_root: Path) -> None:
+    """
+    Purpose:
+        A world-scope load over a live, active Nexus completes and leaves the recorded policy in force.
+    Contract:
+        The report completes with one nexus build; the Nexus is active under the recorded Rift cap, and the
+        host's policy object is no longer installed.
+    """
+    checkpoint_id = _record_a_nexus_world(deactivate_before_seal=False)
+    rebooted = _reboot_with_an_active_host_nexus()
+    host_policy = Nexus().configuration
+
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["nexus"] == 1
+    assert Nexus().activated is True
+    assert Nexus().configuration is not host_policy
+    assert Nexus().configuration.get_property("max_active_rift_count") == 5
+
+
+def test_restore_of_a_disabled_nexus_over_an_active_live_nexus_ends_disabled(cache_root: Path) -> None:
+    """
+    Purpose:
+        A recorded "disabled" Nexus replays over a live, active one as enable-then-disable.
+    Contract:
+        The report completes with one nexus build; the Nexus ends inactive, still configured with the
+        recorded Rift cap.
+    """
+    checkpoint_id = _record_a_nexus_world(deactivate_before_seal=True)
+    rebooted = _reboot_with_an_active_host_nexus()
+
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["nexus"] == 1
+    assert Nexus().activated is False
+    assert Nexus().configured is True
+    assert Nexus().configuration.get_property("max_active_rift_count") == 5
+================================================================================
+END FILE: tests/integration/melder/crystallizer/test_restore_over_active_nexus_integration.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/crystallizer/test_restore_sealed_aether_regime_integration.py
+CONTENT SHA256: d017ccf25452087a09fc6a08cd8d3ef32ad894e20d46c89fba98fb80fb6de738
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration test: restoring into a live world whose first frame sealed the regime still completes (0.2.8209).
+
+Aether now refuses a configuration whose spell-id regime differs from the one a live frame sealed. Restore
+stage 1 installs the recorded root configuration whenever the live Aether is not explicitly configured - which
+is also true of the default policy a live world's first frame sealed - so this guards the common case: the
+recorded root configuration carries the default regime (its record holds only the logger half) and the restore
+completes with the regime unchanged.
+
+Runs only on 3.14t (melder package root import chain).
+"""
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import (
+    SpellbookConfiguration,
+)
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.crystallizer.configuration.crystallizer_configuration import (
+    CrystallizerConfiguration,
+)
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.nexus.nexus import Nexus
+from tests._frame_posture_test_support import (
+    apply_dynamic_defaults_for_spellbook_configuration,
+)
+
+
+class SealedRegimeService:
+    """Importable restore target bound in the recorded world."""
+
+    def __init__(self) -> None:
+        """Initialize the marker service."""
+        self.alive: bool = True
+
+
+def _reset_world() -> None:
+    """Reset every world singleton and rebind the static Aether references."""
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def reset_world_singletons():
+    """Isolate the test behind fresh Aether/Nexus/Crystallizer singletons."""
+    _reset_world()
+    yield
+    _reset_world()
+
+
+@pytest.fixture()
+def cache_root(tmp_path, monkeypatch):
+    """Route the crystallizer cache into a per-test directory."""
+    from melder.crystallizer.asset_management import crystallizer_cache
+
+    root = tmp_path / "__melder_cache__" / "__crystallizer_cache__"
+    monkeypatch.setattr(
+        crystallizer_cache.CrystallizerCache,
+        "resolve_cache_root_path",
+        staticmethod(lambda: root),
+    )
+    return root
+
+
+def _activate_crystallizer() -> Crystallizer:
+    """Activate the Aether-hosted crystallizer with default knobs."""
+    configuration = CrystallizerConfiguration().with_defaults()
+    configuration.activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+    return crystallizer
+
+
+def _dynamic_book() -> Spellbook:
+    """Build one dynamic-posture Spellbook with its configuration finalized first."""
+    configuration = SpellbookConfiguration()
+    apply_dynamic_defaults_for_spellbook_configuration(configuration)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.finalize()
+    return Spellbook(configuration=configuration)
+
+
+def test_restore_into_a_live_world_with_a_sealed_regime_completes(cache_root) -> None:
+    """
+    Purpose:
+        A checkpoint restored into a world whose first frame already sealed the regime
+        installs its recorded root configuration and completes.
+    Contract:
+        The restore completes and rebuilds the spell; stage 1 installed the recorded root
+        configuration (Aether is now configured); the regime in force is unchanged.
+    """
+    recorded_root = AetherConfiguration().with_defaults()
+    recorded_root.activate()
+    Aether().activate(recorded_root)
+    crystallizer = _activate_crystallizer()
+    book = _dynamic_book()
+    book.bind(spell=SealedRegimeService, existence=Existence.unique, permissions="create")
+    book.conjure(dynamic=True, name="root")
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+
+    _reset_world()
+    Spellbook(aetheric_frame="live_world")
+    assert Aether().configured is False
+    rebooted = _activate_crystallizer()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    report = rebooted.load_checkpoint(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["spell_active"] == 1
+    assert Aether().configured is True
+    assert Aether().configuration.process_wide_unique_spell_ids is True
+================================================================================
+END FILE: tests/integration/melder/crystallizer/test_restore_sealed_aether_regime_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/crystallizer/test_spell_crystal_integration.py
@@ -219098,6 +220107,94 @@ def test_conduit_record_cleanup_is_idempotent_and_cleans_owned_payload() -> None
 END FILE: tests/unit/melder/aether/test_conduit_record.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/melder/aether/test_configuration_read_accessors.py
+CONTENT SHA256: 21b79d99adc7cf5658a08e44ae13444d17c4f5390d00a6e50865fe76b25247c3
+SOURCE ENCODING: utf-8
+================================================================================
+"""Frame and Spellbook configurations report their freeze state and target frame through public reads.
+
+Hosts compare a supplied configuration against the frame it will be used in and check whether a posture or a
+rich configuration has already been settled. Until 0.2.8208 those facts were readable only as `_frozen` and
+`_aether_frame`; `AethericFrameConfiguration.frozen`, `SpellbookConfiguration.frozen` and
+`SpellbookConfiguration.aether_frame` now answer them without changing either configuration.
+"""
+
+import pytest
+
+from melder.aether.aetheric_frame.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.configuration.system_state import SystemState
+
+
+def _posture() -> AethericFrameConfiguration:
+    """Build one automatic, unfrozen frame posture with no origin."""
+    return AethericFrameConfiguration(
+        origin_spellbook_id=None,
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=False,
+    )
+
+
+def test_spellbook_configuration_reports_the_frame_it_was_built_for() -> None:
+    """The target frame is the constructor's `aether_frame`, "default" when omitted."""
+    assert SpellbookConfiguration().aether_frame == "default"
+    assert SpellbookConfiguration(aether_frame="ops").aether_frame == "ops"
+
+
+def test_spellbook_configuration_frozen_is_false_until_frozen() -> None:
+    """`frozen` reads False while mutable and True once `freeze()` succeeds."""
+    configuration = SpellbookConfiguration().with_defaults()
+    assert configuration.frozen is False
+    configuration.freeze()
+    assert configuration.frozen is True
+
+
+def test_spellbook_configuration_finalize_reports_frozen() -> None:
+    """`finalize()` freezes, and the read reflects it."""
+    configuration = SpellbookConfiguration().with_defaults().finalize()
+    assert configuration.frozen is True
+
+
+def test_spellbook_configuration_reads_change_nothing() -> None:
+    """Reading the accessors leaves the configuration mutable."""
+    configuration = SpellbookConfiguration(aether_frame="ops").with_defaults()
+    assert configuration.frozen is False
+    assert configuration.aether_frame == "ops"
+    configuration.with_phase_scheduler_workers(2)
+    assert configuration.frozen is False
+
+
+def test_spellbook_configuration_accessors_raise_once_cleaned() -> None:
+    """A cleaned configuration refuses both reads."""
+    configuration = SpellbookConfiguration(aether_frame="ops")
+    configuration.cleanup()
+    with pytest.raises(RuntimeError):
+        _ = configuration.frozen
+    with pytest.raises(RuntimeError):
+        _ = configuration.aether_frame
+
+
+def test_frame_posture_frozen_is_false_until_frozen() -> None:
+    """A posture reads unfrozen until `freeze()`, then frozen; its builders refuse from then on."""
+    posture = _posture()
+    assert posture.frozen is False
+    posture.freeze()
+    assert posture.frozen is True
+    with pytest.raises(RuntimeError):
+        posture.with_rift_enabled(True)
+
+
+def test_frame_posture_frozen_raises_once_cleaned() -> None:
+    """A cleaned posture refuses the read."""
+    posture = _posture()
+    posture.cleanup()
+    with pytest.raises(RuntimeError):
+        _ = posture.frozen
+================================================================================
+END FILE: tests/unit/melder/aether/test_configuration_read_accessors.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_configuration_reload_lanes.py
 CONTENT SHA256: 5c092050b2cbb1f95b9a3ca0ad608b3b08ac5d62e0b3ba1cf2b1e69892917966
 SOURCE ENCODING: utf-8
@@ -231571,7 +232668,7 @@ END FILE: tests/unit/melder/aether/test_lookup_container.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_nexus.py
-CONTENT SHA256: 175606a2ed12d741237483f594aea6e178e478c928239b136546b1dc1d9ccd5e
+CONTENT SHA256: 80dcffa37e49a25b446b379ae66e06400cc1a84b96ae469abdcfb33f14eb9020
 SOURCE ENCODING: utf-8
 ================================================================================
 import gc
@@ -237353,6 +238450,9 @@ def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
     replacement_configuration.with_target_frame_override(True)
     replacement_configuration.with_allowed_target_frame_names(("default", "ops"))
     replacement_configuration.with_denied_target_frame_names(tuple())
+    # An active Nexus refuses another configuration (0.2.8210): deactivate it,
+    # then activate the replacement policy.
+    nexus.deactivate()
     nexus.activate(replacement_configuration)
     _seed_frame_descriptor("ops")
     rift = nexus.create_rift(rift_name="allowed")
@@ -237545,6 +238645,9 @@ def test_shared_and_private_nexus_frames_are_realized_only_on_request() -> None:
     configuration.with_direct_rift_access(True)
     configuration.with_nexus_frame_mode("one_per_workspace")
     configuration.with_max_nexus_frame_count(2)
+    # Nexus is a singleton: this is the shared Nexus above, still active. An active
+    # Nexus refuses another configuration (0.2.8210), so deactivate it first.
+    isolated_nexus.deactivate()
     isolated_nexus.activate(configuration)
 
     isolated_rift = isolated_nexus.create_rift(rift_name="isolated")
@@ -244869,6 +245972,211 @@ def test_rift_validation_mode_internal_sentinel_is_not_public_member() -> None:
     assert "__melder_internal__" not in RiftValidationMode.__members__
 ================================================================================
 END FILE: tests/unit/melder/aether/test_rift_validation_mode.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/aether/test_root_configuration_value_snapshots.py
+CONTENT SHA256: 2f8c8297f47c2f3ab4a976b7841d2b1b0187553e7721c2ec796a7157f0e49e4e
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit tests for `get_configuration_dictionary()` on the four root configurations.
+
+WHY THIS EXISTS. A host that embeds Melder next to another Melder user compares
+the policy it was handed with the one already installed on a root (MelderOps
+does this before reusing or refusing). Aether, Crystallizer, MutationResearch
+and Nexus configurations keep their values in a private property bag and had no
+public way to read all of them, so the comparison crashed with AttributeError.
+Each now returns a snapshot of the properties it holds (0.2.8212).
+
+Contract under test, for every root configuration:
+    1. the snapshot carries exactly the values the public readers return;
+    2. it is a NEW dict - editing it never edits the configuration;
+    3. values are the stored objects, by reference;
+    4. equal construction compares equal, one setter makes them differ;
+    5. reading it never freezes or activates, and it works frozen and activated;
+    6. a cleaned configuration refuses with RuntimeError.
+"""
+
+import logging
+from typing import Callable, Union
+
+import pytest
+
+from melder import (
+    AetherConfiguration,
+    CrystallizerConfiguration,
+    MutationResearchConfiguration,
+    NexusConfiguration,
+)
+
+RootConfiguration = Union[
+    AetherConfiguration, CrystallizerConfiguration, MutationResearchConfiguration, NexusConfiguration,
+]
+
+
+def _aether() -> AetherConfiguration:
+    """Return an Aether configuration seeded with its defaults."""
+    return AetherConfiguration().with_defaults()
+
+
+def _crystallizer() -> CrystallizerConfiguration:
+    """Return a Crystallizer configuration seeded with its defaults."""
+    return CrystallizerConfiguration().with_defaults()
+
+
+def _mutation_research() -> MutationResearchConfiguration:
+    """Return a MutationResearch configuration seeded with its defaults."""
+    return MutationResearchConfiguration().with_defaults()
+
+
+def _nexus() -> NexusConfiguration:
+    """Return a Nexus configuration seeded with its defaults."""
+    return NexusConfiguration().with_defaults()
+
+
+def _change_aether(configuration: AetherConfiguration) -> None:
+    """Flip the spell-id regime on a mutable Aether configuration."""
+    configuration.set_process_wide_unique_spell_ids(False)
+
+
+def _change_crystallizer(configuration: CrystallizerConfiguration) -> None:
+    """Change the checkpoint retention bound on a mutable Crystallizer configuration."""
+    configuration.with_max_persistence_crystals(3)
+
+
+def _change_mutation_research(configuration: MutationResearchConfiguration) -> None:
+    """Switch lane-type enforcement on for a mutable MutationResearch configuration."""
+    configuration.with_lane_type_enforcement(True)
+
+
+def _change_nexus(configuration: NexusConfiguration) -> None:
+    """Restrict Rift targets to one named frame on a mutable Nexus configuration."""
+    configuration.with_allowed_target_frame_names(("melderops",))
+
+
+def _public_values(configuration: RootConfiguration) -> dict[str, object]:
+    """Read every reported property back through the configuration's public readers.
+
+    Aether exposes typed properties; the other three expose `get_property` over their
+    property bag. The snapshot must agree with whatever the public reader returns.
+    """
+    if isinstance(configuration, AetherConfiguration):
+        return {
+            "channel_logger_activation_enabled": configuration.channel_logger_activation_enabled,
+            "channel_logger_resolver": configuration.channel_logger_resolver,
+            "default_logger": configuration.default_logger,
+            "process_wide_unique_spell_ids": configuration.process_wide_unique_spell_ids,
+        }
+    keys = configuration.get_configuration_dictionary().keys()
+    assert all(configuration.has_property(key) for key in keys)
+    return {key: configuration.get_property(key) for key in keys}
+
+
+FAMILIES = [
+    pytest.param(_aether, _change_aether, id="aether"),
+    pytest.param(_crystallizer, _change_crystallizer, id="crystallizer"),
+    pytest.param(_mutation_research, _change_mutation_research, id="mutation_research"),
+    pytest.param(_nexus, _change_nexus, id="nexus"),
+]
+
+
+@pytest.mark.parametrize(("build", "change"), FAMILIES)
+def test_snapshot_matches_the_public_readers(
+        build: Callable[[], RootConfiguration], change: Callable[[RootConfiguration], None],
+) -> None:
+    """The snapshot reports the same value the public reader returns, key for key."""
+    configuration = build()
+    snapshot = configuration.get_configuration_dictionary()
+    assert snapshot, "a configuration seeded with defaults must report its defaults"
+    assert snapshot == _public_values(configuration)
+    change(configuration)
+    assert configuration.get_configuration_dictionary() == _public_values(configuration)
+
+
+@pytest.mark.parametrize(("build", "change"), FAMILIES)
+def test_snapshot_is_independent_of_the_configuration(
+        build: Callable[[], RootConfiguration], change: Callable[[RootConfiguration], None],
+) -> None:
+    """Editing the returned dict never edits the configuration it came from."""
+    configuration = build()
+    snapshot = configuration.get_configuration_dictionary()
+    first_key = next(iter(snapshot))
+    snapshot[first_key] = object()
+    snapshot["not_a_property"] = 1
+    fresh = configuration.get_configuration_dictionary()
+    assert fresh != snapshot
+    assert "not_a_property" not in fresh
+
+
+@pytest.mark.parametrize(("build", "change"), FAMILIES)
+def test_equal_construction_compares_equal_and_one_setter_differs(
+        build: Callable[[], RootConfiguration], change: Callable[[RootConfiguration], None],
+) -> None:
+    """Two policies built the same way compare equal; one changed setting separates them."""
+    left, right = build(), build()
+    assert left.get_configuration_dictionary() == right.get_configuration_dictionary()
+    change(right)
+    assert left.get_configuration_dictionary() != right.get_configuration_dictionary()
+
+
+@pytest.mark.parametrize(("build", "change"), FAMILIES)
+def test_reading_never_freezes_and_works_frozen_and_activated(
+        build: Callable[[], RootConfiguration], change: Callable[[RootConfiguration], None],
+) -> None:
+    """A snapshot is observation only and is available in every state before cleanup."""
+    configuration = build()
+    configuration.get_configuration_dictionary()
+    assert configuration.frozen is False
+    assert configuration.activated is False
+    change(configuration)
+    mutable_view = configuration.get_configuration_dictionary()
+    configuration.activate()
+    assert configuration.frozen is True
+    assert configuration.activated is True
+    assert configuration.get_configuration_dictionary() == mutable_view
+
+
+@pytest.mark.parametrize(("build", "change"), FAMILIES)
+def test_cleaned_configuration_refuses(
+        build: Callable[[], RootConfiguration], change: Callable[[RootConfiguration], None],
+) -> None:
+    """After cleanup the snapshot raises instead of reading a torn-down bag."""
+    configuration = build()
+    configuration.cleanup()
+    with pytest.raises(RuntimeError):
+        configuration.get_configuration_dictionary()
+
+
+def test_aether_snapshot_holds_logger_values_by_reference() -> None:
+    """Callables and loggers come back as the same objects, never copies."""
+
+    def resolver(*args: object, **kwargs: object) -> None:
+        """Stand-in channel resolver; never called."""
+        return None
+
+    default_logger = logging.getLogger("melder.tests.value_snapshot")
+    configuration = _aether()
+    configuration.set_channel_logger_resolver(resolver)
+    configuration.set_default_logger(default_logger)
+    snapshot = configuration.get_configuration_dictionary()
+    assert snapshot["channel_logger_resolver"] is resolver
+    assert snapshot["default_logger"] is default_logger
+    assert set(snapshot) == {
+        "channel_logger_activation_enabled",
+        "channel_logger_resolver",
+        "default_logger",
+        "process_wide_unique_spell_ids",
+    }
+
+
+def test_crystallizer_snapshot_omits_properties_never_set() -> None:
+    """A property that was never set is absent rather than reported with a default."""
+    configuration = CrystallizerConfiguration()
+    assert configuration.get_configuration_dictionary() == {}
+    configuration.with_max_persistence_crystals(5)
+    assert configuration.get_configuration_dictionary() == {"max_persistence_crystals": 5}
+================================================================================
+END FILE: tests/unit/melder/aether/test_root_configuration_value_snapshots.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_spell_descriptor_payload.py

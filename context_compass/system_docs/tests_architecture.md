@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-22
-- Updated: 2026-09-26
+- Updated: 2026-09-30
 
 ## Scope and Intent
 This document describes the tests architecture (C4) for `tests/` and how it
@@ -577,9 +577,9 @@ constituent files.
 
 - path: `pyproject.toml`
   start_line: 1
-  end_line: 245
-  loc: 245
-  verified_at: 2026-09-26T21:51:55Z
+  end_line: 246
+  loc: 246
+  verified_at: 2026-09-30T00:32:11Z
 - path: `tests/conftest.py`
   start_line: 1
   end_line: 22
@@ -642,9 +642,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_nexus.py`
   start_line: 1
-  end_line: 6368
-  loc: 6368
-  verified_at: 2026-09-26T21:51:55Z
+  end_line: 6377
+  loc: 6377
+  verified_at: 2026-09-30T00:32:11Z
 - path: `tests/unit/melder/aether/test_rift_runtime_contracts.py`
   start_line: 1
   end_line: 458
@@ -657,9 +657,9 @@ constituent files.
   verified_at: 2026-09-26T21:51:55Z
 - path: `tests/unit/melder/aether/test_command_system_direct.py`
   start_line: 1
-  end_line: 457
-  loc: 457
-  verified_at: 2026-09-26T21:51:55Z
+  end_line: 483
+  loc: 483
+  verified_at: 2026-09-30T00:32:11Z
 - path: `tests/mocks/spellbook/contract_classes.py`
   start_line: 1
   end_line: 425
@@ -846,6 +846,10 @@ graph TD
 - direct filesystem inventory of `tests/`
 
 ## Context / Handoff Summary
+
+2026-09-30 (root configuration guards pass): three code-map extents remeasured by the verification
+recipe - `pyproject.toml` 246, `test_nexus.py` 6377 (two setup rows now deactivate the live Nexus first) and
+`test_command_system_direct.py` 483. No architecture change.
 
 REFRESHED 2026-09-26 (first update since 2026-06-13 besides the August
 recomposition). CI now lives in the repository: one free-threaded pytest process per

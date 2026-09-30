@@ -809,14 +809,19 @@ class Nexus(Cleanable):
               accepts a configuration that is still mutable. This is the
               separation `enable()` never offered: install now, settle later.
             - Type-checked: a non-`NexusConfiguration` raises `TypeError`.
-            - Replaces any previously installed configuration.
+            - Replaces any previously installed configuration - but REFUSES while
+              Nexus is active (0.2.8210): a live Nexus reads its policy at every
+              Rift validation, so a swap would change the rules under existing
+              Rifts. Deactivate first; the installed policy is kept until then.
+              Crystallizer and MutationResearch refuse the same way.
 
         Args:
             configuration:
                 Configuration object to install.
 
         Threading:
-            Applied under the Nexus lock.
+            Applied under the Nexus lock; the active check and the install are one
+            critical section.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
@@ -825,13 +830,17 @@ class Nexus(Cleanable):
             None.
 
         Raises:
-            RuntimeError: If Nexus has been cleaned.
+            RuntimeError: If Nexus has been cleaned, or is active.
             TypeError: If `configuration` is not a `NexusConfiguration`.
         """
         self.check_cleaned()
         if not isinstance(configuration, NexusConfiguration):
             raise TypeError("configuration must be a NexusConfiguration.")
         with self._lock:
+            if self._activated:
+                raise RuntimeError(
+                    "Cannot reconfigure Nexus while it is active. Deactivate it first."
+                )
             self._configuration = configuration
             self._configured = True
 
@@ -846,7 +855,10 @@ class Nexus(Cleanable):
             Transition Nexus into its enabled state for Rift-domain operations.
 
         Contract:
-            - Optionally replaces the installed configuration before enabling.
+            - Optionally replaces the installed configuration before enabling -
+              but not while Nexus is already active (0.2.8210): passing a
+              different configuration then raises, exactly as `configure()` does.
+              Passing the installed configuration, or none, re-enables as before.
             - Finalizes the installed configuration before setting enabled.
             - Does not create a default configuration automatically when none
               is installed.
@@ -860,11 +872,16 @@ class Nexus(Cleanable):
 
         Raises:
             RuntimeError:
-                If Nexus has no installed configuration.
+                If Nexus has no installed configuration, or it is active and a
+                different configuration is supplied.
         """
         self.check_cleaned()
         with self._lock:
             if configuration is not None:
+                if self._activated and configuration is not self._configuration:
+                    raise RuntimeError(
+                        "Cannot reconfigure Nexus while it is active. Deactivate it first."
+                    )
                 self._configuration = configuration
                 self._configured = True
             configured = self.configuration

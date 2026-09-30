@@ -1,0 +1,1676 @@
+      1  "--junitxml=..."])`, plus `--cov=melder --cov-branch --cov-report=xml:...` when
+      1  "requires a live SpellSystemState", or a Phase-8 walk that returns None.
+      1  # 1. every cited path exists. Globs are statements about a set, not
+      1  # 2. every path:line range is in bounds
+      1  # 3. every C1 record's end_line still matches the file on disk. This is the
+      1  # check that catches drift, and the one nothing else here can do.
+      1  # citations, so they are skipped rather than reported.
+      1  (0.2.79 regression for named lessers looking absent from Aether)
+      1  (0.2.80); conduit cleanup and a SpellSpace exit finish and then raise the failures as one
+      1  (50 of the tree's 57 `__init__.py` files). The benches create a fresh suffixed or
+      1  (TREE ARTIFACTS in `tests_architecture`)
+      1  (`_annotation_audit_support.py`, enforced by
+      1  (`github_workflows`), the LLM support bundle builder (`llm_support`) and the
+      1  (`spell_crystal_demo_pkg`), which `spell_crystal_harness.py` imports under a known
+      1  (`test_spellbook_validation_error.py`)
+      1  (`tests/component/melder/utilities/synchronization/test_creation_gate_component.py`)
+      1  (added 2026-09-26)
+      1  (an earlier revision of this entry claimed worktrees were excluded - they are not)
+      1  (free-threaded build, GIL disabled), not test concurrency
+      1  (or from its own package) and never boots Melder
+      1  (see `## Unknowns` for the tracked copies)
+      1  (see `### Subcomponent: Live Sim Integration Cluster`)
+      1  (see `### Subcomponent: Multithreading Integration Cluster`)
+      1  +--> [capability Rift bench]
+      1  +--> [codegen/compiler helpers]
+      1  +--> [frame-posture support]
+      1  +--> [static Rift bench]
+      1  +--> [synthetic-module experiment benches]
+      1  +--> [viewer matrix support]
+      1  - tests/experimentation/physical_to_synthetic_module_swap_semantics_testbench.py:109-123
+      1  - tests/experimentation/unittest_synthetic_module_edge_cases_testbench.py:62-65
+      1  - tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py:148-235
+      1  - tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py:51-103
+      1  118 measured entries. It is now exactly the deduplicated union of every
+      1  18 component and 6 integration files, so a projection change fails every tier
+      1  2026-09-26 (its teardown now ends by booting); the registration-guard file now
+      1  A reset cleans and forgets the instance; it boots nothing.
+      1  Aether and activates only with an activated configuration
+      1  C --> SH["shared helpers"]
+      1  CI is in the repository and runs no shards; tiers are selected by directory,
+      1  CI["CI: run_runtime_tests.py"] -->|"unit, component, integration"| P
+      5  CONTENT of this component rather than its key surfaces, and are counted here
+      1  Contracted validation tests verify independent owner/borrower bindings and validity after unlink.
+      1  Current status: by design; recorded per run, not in the tree.
+      2  Current status: raised to the owner; not changed.
+      2  EVIDENCE:
+      1  EVIDENCE: .github/scripts/run_runtime_tests.py:10-50
+      1  EX -.-> I
+      1  EX -.->|"imported as cases"| CP
+      1  ExceptionGroup (0.2.8203)
+      1  LLM support bundle builder and the architecture-docs tool; each is loaded by path
+      1  LOC["experimentation probes (local pytest only)"] -.-> EX
+      1  M --> CP
+      1  M["tests/mocks"] --> U
+      1  P["pytest / pyproject"] --> C["conftest bootstrap"]
+      1  RT["repository tooling tests"] --> U
+      1  Rift JSON benches), not on mocks
+      1  SH --> CG["codegen/compiler helpers"]
+      1  SH --> CP["component suite"]
+      1  SH --> CR["CapabilityRiftJsonBench"]
+      1  SH --> EX["synthetic-module experiment benches"]
+      1  SH --> FP["frame-posture support"]
+      1  SH --> I["integration suite"]
+      1  SH --> SR["StaticRiftJsonBench"]
+      1  SH --> U["unit suite"]
+      1  SH --> VM["viewer matrix support"]
+      1  SpellSpaces, links, contracts, lifecycle and teardown
+      1  The modules are the component's CONTENT and are now counted per entry rather
+     12  WITHOUT backticks because they are directories - descriptive, never citations.
+      1  Where to investigate: `tests/unit/melder/utilities/test_caching_system.py` history.
+      1  Where to investigate: the `runtime-python-matrix-*` artifact of that run.
+      1  Where to investigate: the two benches' teardown and the commits that added the
+      1  Why it matters: no test references those directories, so they are dead
+      1  Why it matters: the matrix is discovered per run (every stable free-threaded
+      1  Why it matters: they are case packages the two synthetic-module benches write
+      1  `### Component: Pytest Runner And Path Bootstrap`.
+      1  `### Flow: Concurrent-Writer Stand-In`)
+      1  `### Subcomponent: Repository Tooling Unit Cluster`)
+      1  `### Subcomponent: Synthetic Module Experiment Benches`)
+      1  `--cov=melder --cov-branch` into one XML only when `--coverage-report` is given.
+      1  `--report` and `--coverage-report` (`.github/workflows/test-runtime.yml:70-73`).
+      1  `Aether()` after each reset.
+      1  `AnnotationFinding` rows (`kind`, `path`, `line`, `owner`, `detail`); kinds `STRING_IN_UNION`,
+      1  `Conduit._aether = ...` lines many test files carry set an attribute nothing
+      1  `Key Files (C1)` list; it previously named 18 paths, had no ranges, and was
+      1  `Nexus._reset_singleton_for_tests()` and `Aether._reset_singleton_for_tests()`.
+      1  `PYTHON_GIL=0`), before or after the run
+      1  `PoolService`, and conjures, so every compiler pass has a real graph.
+      1  `Rift`, `StaticRiftSpace`, viewer, command system, and workstation.
+      1  `StaticFrameViewer._aether`. `Conduit` has no class-level `_aether`, so the
+      1  `UNDEFINED_NAME`, `UNPARSEABLE_STRING`, `EVAL_ERROR`, plus `IMPORT_ERROR` / `TC_IMPORT_ERROR` when a
+      1  `build_multi_frame_viewer`
+      1  `build_scripts`, `.venv`, `.venv_new`, `__pycache__`, `__melder_cache__`) and the
+      1  `bundle.json` leftovers should leave the repository (see `## Unknowns`).
+      1  `context_compass`, `UX_and_AIX_experiences`, `performance_hunt`, `profiles`,
+      1  `items`/`values`/`keys`/iteration insert one entry after yielding the first,
+      1  `melder/spellbook`, `melder/utilities` and `melder/build_assets`, plus nine
+      1  `require_free_threading(sys.version_info, Py_GIL_DISABLED, sys._is_gil_enabled())`,
+      1  `results/`, ignored by that directory's own `.gitignore`
+      1  `scan_bind` metadata, duplicates, an empty module, lambdas, re-exports, wrapped
+      1  `shutil.rmtree(..., ignore_errors=True)`, so a removal that fails leaves the
+      1  `spell_crafter` compatibility subtree that still anchors many low-level DAG,
+      1  `spell_crafter` compatibility subtree through real spellbook/component
+      1  `sys.modules` and the meta path clean
+      1  `test_abstract_elastic_pool_multithreaded.py` runs threads against the pool; a
+      1  `testpaths = ["tests"]`, a `norecursedirs` list (`benchmarks`, `Plans`,
+      1  `tests/experimentation/` is not among them
+      1  `tests/integration` in one `pytest.main` call with a JUnit report, adding
+      1  `tests/unit/melder/test_annotation_integrity.py`)
+      1  `tests/unit/melder/test_system_document_view.py:51-84` did that until
+      1  a coverage report was requested.
+      1  a missing artifact, a schema drift or an empty asset root, reports every stale
+      1  across runtime-heavy test lanes
+      1  adoption and refusal against the frame; contracted-spell maps and peer
+      1  against concurrent meld workers, lock-order shapes run in child processes under
+      1  against destruction by another caller. Eight simultaneous cleanup calls are outside this contract.
+      1  agree (see `### Subcomponent: Package Root Unit Cluster`)
+      1  alone boots nothing (see `### Flow: Singleton Reset And Re-Boot`)
+      1  and AR integration behavior
+      1  and `Aether`, then boot `Aether()` and bind it to `Spellbook._aether`, both before
+      1  and after each test (`tests/unit/melder/aether/conduit/conftest.py:65-85`); a reset
+      1  and experimentation setup inline.
+      1  and full integration would be too expensive.
+      1  and honouring cancellation; the phase 2-5 codegen IR shape and deterministic
+      1  and its context manager; scan-bind of marked objects; configuration defaults,
+      1  and load-gate/scheduler composition
+      1  and phase scheduler composed so a parallel restore runs behind held load
+      1  and placeholder mutation-conduit/frame cleanup guards
+      1  and render-hash checks
+      1  and room behaviour driven through the Rift benches
+      1  and spellbook contract/bind behavior
+      1  another public lookup runs; all four views must return complete data. A failing mapping constructor
+      1  architecture-docs tool (`architecture_and_design`).
+      1  are stamped for it, and `py.typed` ships beside the package
+      1  asset, and propagates its exit code
+      1  atomic counters); none is a gate
+      1  authority; the scheduler's inter-phase guarantees
+      1  automatic-mode refusal of dynamic APIs
+      1  behavior across hosted crystallizer integration cases
+      1  behavior of a real Spellbook, compiler phases through real conjures (key-set
+      1  behavior.
+      1  benches, mock packages, shared builders), not its 638 `test_*.py` modules.
+      1  boots its own world (`tests/unit/melder/test_melder_registration_guard.py:22-45`).
+      1  bound spell ids registering into the default set; dynamic binds auto-declaring
+      1  caching system and the agent text reader
+      1  callables)
+      1  can verify.
+      1  cancellation); latches and switches
+      1  carries no range and cannot be remeasured. WHAT REPLACED THEM IS THE POINT: a
+      1  case/default aliases and different display names at one address still collide, with identical
+      1  cell runs `tests/unit`, `tests/component` and `tests/integration` in one pytest
+      1  citation checker cannot mistake a description for a claim.
+      1  cited; they are this component's content.
+      1  cleanup, crystallizer graph extraction over real module graphs, the
+      1  cleanup; scan-bind order and refusals (re-exports, duplicates, rescans); meld by
+      1  clearing a contract keeps the link), ownership transfer end to end, and
+      1  clobbers live research; idempotent world-entry recording
+      1  clusters carry the same line)
+      1  codegen-system and spell compiler test lanes.
+      1  collection DI; read-only public mappings; compiler phases followed by a meld
+      1  collisions; SpellIndex version tracking; cache-gate posture stamps
+      1  comparisons) and bench modules; a local `pytest` collects the test modules
+      1  compiled-surface shape: `_nexus_viewer_matrix_support.py` is imported by 38 unit,
+      1  complete, each in its own child interpreter with a timeout backstop
+      1  composition round trip
+      1  concurrent melds across four linked conduits
+      1  concurrent melds, the meld lock order (shapes that deadlocked before the
+      1  conduit or in one shared SpellSpace, construct it and its dependency once
+      1  conduits before the application resolves
+     12  conftests named in `tests_architecture.md`. Paths in this bullet are written
+      1  container per descriptor creation flow, cleaned on frame detach even without
+      3  continue
+      1  crystallizer component/integration tests
+      1  crystallizer component/integration tests wrap as stable cases.
+      1  crystallizer harness surfaces for tests that should not depend on ad hoc
+      1  crystallizer tests import as stable cases (see
+      1  crystallizer unit/component/integration graph cases
+      2  cur = None
+      1  cur = m.group(1); continue
+      1  default discovery and run only when passed explicitly
+      1  dependencies; dynamic bootstrap contracting owner dependencies into linked
+      1  descriptor/viewer fixtures, frame-posture helpers, compiler/codegen helpers,
+      1  deterministic stand-in at the unit tier, not by rerunning this suite
+      1  direct dependencies, describe snapshot) and the synthetic-module cases through
+      1  directories.
+      1  directory (TREE ARTIFACTS in `tests_architecture`)
+      1  directory behind without a signal; a new case always gets a fresh directory name
+      2  dispatch
+      1  disposal order at scoped teardown, Nexus projection after passive publication,
+      1  documents) without importing `melder`
+      1  down, the block's error kept), `enter_lesser_conduit`, children-first pool return, finish-then-raise on
+      1  drains; load-gate holder rules (one labelled holder, the holder passes free,
+      1  drive compiler phases through the supported compiler-system surfaces
+      1  edit by digest
+      1  end_line: 1049
+      1  end_line: 1069
+      1  end_line: 111
+      1  end_line: 113
+      2  end_line: 114
+      1  end_line: 1147
+      1  end_line: 1148
+      1  end_line: 1179
+      1  end_line: 123
+      1  end_line: 124
+      1  end_line: 1255
+      1  end_line: 129
+      5  end_line: 13
+      1  end_line: 130
+      1  end_line: 131
+      1  end_line: 1314
+      1  end_line: 132
+      1  end_line: 135
+      1  end_line: 138
+      1  end_line: 14
+      2  end_line: 142
+      1  end_line: 145
+      1  end_line: 1459
+      1  end_line: 147
+     10  end_line: 15
+      1  end_line: 150
+      1  end_line: 1505
+      1  end_line: 154
+      1  end_line: 156
+      1  end_line: 157
+      1  end_line: 158
+      1  end_line: 159
+      1  end_line: 16
+      1  end_line: 163
+      3  end_line: 17
+      1  end_line: 1705
+      1  end_line: 1738
+      1  end_line: 174
+      1  end_line: 176
+      1  end_line: 18
+      1  end_line: 180
+      1  end_line: 185
+      1  end_line: 1879
+      1  end_line: 188
+      1  end_line: 19
+      1  end_line: 1968
+      1  end_line: 197
+      1  end_line: 204
+      1  end_line: 21
+      2  end_line: 215
+      2  end_line: 22
+      1  end_line: 221
+      1  end_line: 224
+      2  end_line: 231
+      1  end_line: 235
+      1  end_line: 243
+      2  end_line: 245
+      1  end_line: 248
+      1  end_line: 25
+      2  end_line: 251
+      1  end_line: 257
+      1  end_line: 259
+      2  end_line: 263
+      1  end_line: 267
+      1  end_line: 278
+      2  end_line: 28
+      1  end_line: 282
+      1  end_line: 283
+      1  end_line: 290
+      1  end_line: 292
+      1  end_line: 296
+      7  end_line: 3
+      2  end_line: 303
+      1  end_line: 317
+      1  end_line: 324
+      1  end_line: 325
+      1  end_line: 326
+      1  end_line: 330
+      1  end_line: 334
+      1  end_line: 34
+      1  end_line: 342
+      1  end_line: 352
+      2  end_line: 357
+      1  end_line: 359
+      1  end_line: 363
+      1  end_line: 368
+      1  end_line: 375
+      1  end_line: 376
+      1  end_line: 394
+      1  end_line: 402
+      1  end_line: 406
+      2  end_line: 408
+      1  end_line: 415
+      1  end_line: 42
+      1  end_line: 425
+      1  end_line: 432
+      1  end_line: 437
+      1  end_line: 443
+      1  end_line: 445
+      1  end_line: 454
+      1  end_line: 458
+      1  end_line: 46
+      1  end_line: 476
+      1  end_line: 48
+      1  end_line: 483
+      1  end_line: 487
+      1  end_line: 511
+      1  end_line: 515
+      1  end_line: 522
+      1  end_line: 5249
+      1  end_line: 531
+      1  end_line: 54
+      1  end_line: 540
+      2  end_line: 55
+      1  end_line: 581
+      1  end_line: 582
+      1  end_line: 587
+      1  end_line: 59
+      1  end_line: 606
+      1  end_line: 608
+      1  end_line: 610
+      1  end_line: 620
+      1  end_line: 628
+      1  end_line: 629
+      1  end_line: 630
+      1  end_line: 6368
+      1  end_line: 638
+      1  end_line: 65
+      1  end_line: 662
+      1  end_line: 665
+      1  end_line: 669
+      1  end_line: 675
+      1  end_line: 69
+      1  end_line: 7
+      1  end_line: 709
+      1  end_line: 716
+      1  end_line: 73
+      2  end_line: 74
+      1  end_line: 742
+      1  end_line: 749
+      1  end_line: 758
+      1  end_line: 76
+      1  end_line: 769
+      1  end_line: 798
+      1  end_line: 8
+      1  end_line: 82
+      1  end_line: 86
+      1  end_line: 868
+      1  end_line: 920
+      1  end_line: 935
+      1  end_line: 944
+      1  end_line: 959
+      1  end_line: 970
+      1  end_line: 98
+      1  end_line: 994
+      1  endings
+      1  entry with no registered state (see `### Flow: Concurrent-Writer Stand-In`)
+      1  every exit, idempotent soft cleanup (two cleanups, one pool entry), and the SpellSpace lease flag (a kept
+      1  every other site and plan keeps its guard (`test_site_plan_door_held_root.py`)
+      1  exact registered types in automatic and dynamic frames. Discoverable twins permit conjure but
+      1  exact, refusal never reads as empty, graph walks terminate on cycles, and search,
+      1  existence across lineages and SpellSpaces, contracts and ownership transfer,
+      1  extended period - 115 recorded lines against a live 386 here, 140 against 767
+      1  f = root / cur
+      1  f = root / m.group(1)
+      1  file's `Spellbook()` raises "Nexus must be initialized with an Aether instance".
+      1  fingerprints with no memory address in them
+      1  fixtures (`test_agent_text_reader_component.py`)
+      1  fixtures or committed droppings of the cwd-relative cache tests.
+      1  for `src/melder`, checks both passes against a seeded control package, and pins the string-union
+      3  for i, line in enumerate(text.split("\n"), 1):
+      1  for m in CITE.finditer(line):
+      1  for p in PATH.findall(line):
+      1  foreign threads wait); phase-scheduler failure semantics (fail-fast, timeout,
+      1  formal marker taxonomy or shard map; no in-repo CI workflow evidence existed).
+      1  frame-wide, the Phase-8 walk - and asserts the pass completes (and, for Phase 5,
+      1  freeze and disposal priority; conjure cache-path classification and emission
+      1  gate timeouts with a `subprocess.run(timeout=...)` backstop, and sixteen-thread
+      1  generalized-family discovery routing
+      1  graph extraction, and synthetic-module import/materialization behavior
+      1  guardrails; command-system lookups (conduit ids resolve through Aether's live lookup and a
+      1  handle refuses meld and purge; a space released or destroyed inside its own block exits cleanly)
+      1  id, name, class, Protocol or string spellframe, forward-reference type hints and
+      1  identity, distribution contents, the free-threaded runtime gate (see
+      1  if "*" in p or "?" in p:
+      1  if cur:
+      1  if doc.name.endswith("_index.md"):
+      1  if f.exists():
+      1  if int(m2.group(1)) != n:
+      1  if list(p.glob("tests_*.md")))
+      1  if m2:
+      1  if m:
+      1  if not (root / p).exists():
+      1  if not f.exists():
+      1  if s < 1 or e > n or s > e:
+      1  impact and cite stay index-shaped
+      1  in the github_workflows conftest
+      1  inflate the tree and its file counts.
+      1  inline mock object definitions.
+      1  integration flows across binding, resolution, existence, contracts, hooks,
+      1  integration tests.
+      1  internal depths such as `ConduitWard` staying off it
+      1  involved
+      1  is the model. A teardown that stops after step 1 leaves no world, and the next
+      1  it, so an import or plugin that re-enabled the GIL fails the run
+      1  its own `TYPE_CHECKING` imports and evaluates every annotation owner in VALUE format, so it mutates
+      1  job required, publication only for the live candidate with a resolved release
+      1  live pool they fail as the race did: "dictionary changed size during iteration",
+      1  live-sim application
+      1  llm_support 1, architecture_and_design 1), cited in their C2 cluster.
+      1  load gate, phase scheduler, latches, switches, weak concurrent containers);
+      1  loc: 1049
+      1  loc: 1069
+      1  loc: 111
+      1  loc: 113
+      2  loc: 114
+      1  loc: 1147
+      1  loc: 1148
+      1  loc: 1179
+      1  loc: 123
+      1  loc: 124
+      1  loc: 1255
+      1  loc: 129
+      5  loc: 13
+      1  loc: 130
+      1  loc: 131
+      1  loc: 1314
+      1  loc: 132
+      1  loc: 135
+      1  loc: 138
+      1  loc: 14
+      2  loc: 142
+      1  loc: 145
+      1  loc: 1459
+      1  loc: 147
+     10  loc: 15
+      1  loc: 150
+      1  loc: 1505
+      1  loc: 154
+      1  loc: 156
+      1  loc: 157
+      1  loc: 158
+      1  loc: 159
+      1  loc: 16
+      1  loc: 163
+      3  loc: 17
+      1  loc: 1705
+      1  loc: 1738
+      1  loc: 174
+      1  loc: 176
+      1  loc: 18
+      1  loc: 180
+      1  loc: 185
+      1  loc: 1879
+      1  loc: 188
+      1  loc: 19
+      1  loc: 1968
+      1  loc: 197
+      1  loc: 204
+      1  loc: 21
+      2  loc: 215
+      2  loc: 22
+      1  loc: 221
+      1  loc: 224
+      2  loc: 231
+      1  loc: 235
+      1  loc: 243
+      2  loc: 245
+      1  loc: 248
+      1  loc: 25
+      2  loc: 251
+      1  loc: 257
+      1  loc: 259
+      2  loc: 263
+      1  loc: 267
+      1  loc: 278
+      2  loc: 28
+      1  loc: 282
+      1  loc: 283
+      1  loc: 290
+      1  loc: 292
+      1  loc: 296
+      7  loc: 3
+      2  loc: 303
+      1  loc: 317
+      1  loc: 324
+      1  loc: 325
+      1  loc: 326
+      1  loc: 330
+      1  loc: 334
+      1  loc: 34
+      1  loc: 342
+      1  loc: 352
+      2  loc: 357
+      1  loc: 359
+      1  loc: 363
+      1  loc: 368
+      1  loc: 375
+      1  loc: 376
+      1  loc: 394
+      1  loc: 402
+      1  loc: 406
+      2  loc: 408
+      1  loc: 415
+      1  loc: 42
+      1  loc: 425
+      1  loc: 432
+      1  loc: 437
+      1  loc: 443
+      1  loc: 445
+      1  loc: 454
+      1  loc: 458
+      1  loc: 46
+      1  loc: 476
+      1  loc: 48
+      1  loc: 483
+      1  loc: 487
+      1  loc: 511
+      1  loc: 515
+      1  loc: 522
+      1  loc: 5249
+      1  loc: 531
+      1  loc: 54
+      1  loc: 540
+      2  loc: 55
+      1  loc: 581
+      1  loc: 582
+      1  loc: 587
+      1  loc: 59
+      1  loc: 606
+      1  loc: 608
+      1  loc: 610
+      1  loc: 620
+      1  loc: 628
+      1  loc: 629
+      1  loc: 630
+      1  loc: 6368
+      1  loc: 638
+      1  loc: 65
+      1  loc: 662
+      1  loc: 665
+      1  loc: 669
+      1  loc: 675
+      1  loc: 69
+      1  loc: 7
+      1  loc: 709
+      1  loc: 716
+      1  loc: 73
+      2  loc: 74
+      1  loc: 742
+      1  loc: 749
+      1  loc: 758
+      1  loc: 76
+      1  loc: 769
+      1  loc: 798
+      1  loc: 8
+      1  loc: 82
+      1  loc: 86
+      1  loc: 868
+      1  loc: 920
+      1  loc: 935
+      1  loc: 944
+      1  loc: 959
+      1  loc: 970
+      1  loc: 98
+      1  loc: 994
+      1  m = re.match(r"^- path: `([^`]+)`", line)
+      1  m2 = re.match(r"^\s+end_line:\s*(\d+)", line)
+      1  managed-frame state; the extended viewer surface matrix
+      1  manager, conduit cloud and frame around real `Conduit` objects)
+      1  match the system surfaces; real codegen processor and planner outputs;
+      1  meld parity probes, lineage and SpellSpace experiments, performance
+      1  minor at or above the `requires-python` floor, on three runners), so the tree
+      1  missing runtime frame keeps its frame error), and one room memory per top-level public call
+      1  mode, and meld its root
+      1  module globals and runs in a separate process through the command-line entry point
+      1  module or one of its `TYPE_CHECKING` imports cannot be loaded
+      1  modules directly under tests/unit/melder/ are cited in their C2 clusters.
+      1  modules, the internal registration guard, the annotation guard and the packaged
+      1  most once and let the cleanup error propagate, chained to the block's error
+      1  multithreading, mutation_research, and spellbook behavior
+      1  must propagate its error and permit a successful retry. Existing simultaneous-load tests remain.
+      1  mutation lanes and mid-run cleanup
+      1  mutation-conduit/frame surfaces against live spellbook and conduit state
+      1  mutation-research root on a real Aether, bind/configuration/contract/cache
+      2  n = len(f.read_bytes().decode("utf-8", "replace").splitlines())
+      1  never built, three of five supplied parts build only the other two, positional
+      1  no module matching default discovery
+      1  not by the declared `integration` and `component` markers.
+      1  not equality), user-held surfaces and catchable errors reaching the root, and
+      1  not the union of anything.
+      1  note: deterministic partial-publication/retry regressions plus concurrent lazy-load and query contracts.
+      1  note: frame-isolated automatic/dynamic qualified-name regressions and real collision controls.
+      1  note: mediator contracts including owner-driven cleanup, owned records and public use-after-clean guards.
+      1  object, internal classes stay unbindable, the version and build-asset stamps
+      1  objects explicitly
+      1  objects, stubbed external boundaries, deterministic, contract-level assertions
+      1  opt-in for untracked files; the architecture-docs tool's manifest, link, anchor
+      1  opt-in profiling scripts, outside the three tiers CI runs.
+      1  order, call shape and unresolved inputs
+      1  ordering and structural resolution alignment), and SpellSpace isolation across
+      1  over real module graphs; the bench cases executing repeatably and leaving
+      1  package-root modules directly under tests/unit/melder/.
+      1  partitioning/sharding, blocked while the checkout had no in-repo `.github/`
+      1  pass alone and fail after another file
+      1  payloads, collection members, stored shared sites
+      1  per-slot build locks), and thread-safe lazy loading of the packaged documents
+      1  permission, projection refresh through the Rift gate barrier
+      1  persistence round trips; exact line accounting in the agent text reader
+      1  physical or mixed module graphs
+      1  plans, cache restage, spell ids across two interpreters), creation-gate drains
+      1  pooled data structures, custom exceptions, helpers, the logger adapter, the
+      1  prefix so the expected targets, dependencies and kinds are stable
+      1  print("MISSING", doc.name, i, p)
+      1  print("OUT OF BOUNDS", doc.name, i, m.group(0), "file has", n)
+      1  print("STALE RANGE", doc.name, i, cur, m2.group(1), "->", n)
+      1  probe that starts failing means the question's answer changed, which is worth
+      1  process through `.github/scripts/run_runtime_tests.py`. See
+      1  profiling scripts; their `pytest_profile_*.py` wrappers are named to avoid
+      1  public API, scan-bind, and compiler-system execution
+      1  pytest's exit code unchanged.
+      1  race in larger code is pinned by a stand-in, not by threads
+      1  races on first lazy loads; the conduit concurrency file stresses
+      1  raised on 3.14.0rc2 and wraps the string in a ForwardRef on 3.14.7)
+      5  rather than cited so the core set stays a set an agent can verify.
+      1  re-deriving ranges, refusing an index without its proof, and catching a one-byte
+      1  re-encoding synthetic graphs inside the test files
+      1  reading but is not a regression gate
+      1  reads.
+      1  real Aether, and the configuration/activation matrix
+      1  records no version list and "passes in CI" names no interpreter.
+      1  related manager classes
+      1  reproducible sdist normalization; workflow wiring checked on parsed YAML
+      1  research; the residency view joining live runtime; research lines surviving a
+      1  resolve under a bare `pytest`, not only under `python -m pytest`.
+      1  results on the packaged system documents and the agent text reader
+      1  results through fresh and pass-cached validation (`test_duplicate_spell_name_strategy.py`).
+      1  retain direct-meld refusal; genuine case-normalized address conflicts still fail at bind.
+      1  retire the probe rather than the runtime
+      1  returns the entries as they were, as a real pool's copy does.
+      1  rolled back after conjure, and removed on frame detach; Aether's conduit lookups over real
+      1  roots, and binds it to the class-level references its tests use. Three exist in
+      1  running with the GIL off.
+      1  runs in the same process before and after `pytest.main`
+      1  runs inverse callbacks merely because it is being cleaned
+      1  s = int(m.group(2)); e = int(m.group(3) or m.group(2))
+      1  same three benches; they are counted here rather than cited.
+      1  scan-bind, spell state, spellbook creation-system behaviors, caching
+      1  scan/bind coverage grows.
+      1  scopes - named lessers by name at any depth, anonymous and nested lessers by id, roots through
+      1  service wiring across dynamic integration frames
+      1  set and unique set names; composition emission only while active
+      1  setup without duplicating posture boilerplate in each test file
+      1  shapes that raise on every observed 3.14 build (a `typing.Union` operand is build-dependent: it
+      1  signature hashing; the validation-strategy registry and Phase-6 validity gating
+      1  silently
+      1  singleton before one), Rift creation gated on an enabled Nexus and creation
+      1  slices and shared compiler helpers
+      1  slices, including caching, spell index behavior, conduit-definition posture,
+      1  so an entry cannot describe a harness without naming what it guards; C2
+      1  spell compiler test lanes
+      1  spellbook internals, utilities, the package-root surface and build assets; in
+      1  spellbook, conduit, crystallizer, and mutation-research tests.
+      1  spellspace root does not take the slot guard its route door already holds;
+      1  src: `Spellbook._aether` (a `ClassVar`), `CommandSystem._aether` and
+    190  start_line: 1
+      1  support shape.
+      1  system documents
+      1  tag, and the runtime guard checking actual free threading
+      1  test component's key files are its HARNESS AND SUPPORT SURFACES (conftests,
+      1  tests/component/melder/aether/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/component/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/component/melder/mutation_research/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/component/melder/utilities/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/experimentation/_physical_to_synth_swap_tmp/ and
+      1  tests/experimentation/_synthetic_edge_tmp/ should be in the repository.
+      1  tests/integration/melder/conduit/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/integration/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/integration/melder/multithreading/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/integration/melder/mutation_research/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/integration/melder/spellbook/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/unit/melder/crystallizer/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/unit/melder/mutation_research/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/unit/melder/utilities/ depend only on the shared surfaces at tests/ and the scoped
+      1  tests/unit/melder/utilities/_caching_system_tmp_* directories which survive runs
+      1  tests/unit/melder/utilities/_caching_system_tmp_load_*/ are fixtures or leftovers.
+      1  text = doc.read_text(encoding="utf-8")
+      1  text reader against the real packaged documents
+      1  than cited, because a core set that lists the entire tree is not a set anyone
+      1  that agree across two fresh interpreters
+      1  that an entry with no registered state is left out). On source that iterates the
+      1  that re-checks the cleaned flag under its lock; workstation binding and target
+      1  the Phase-8 walk survive a pool that grows while iterated, and Phase 5 skips an
+      1  the class that caused it rather than inside a stack test
+      1  the hosted crystallizer
+      1  the real front door across linked and clustered conduits, scope ordering and
+      1  the root-named lookups, returned scopes absent, frame-naming errors and the frame-string TypeError
+      1  the second lets `import tests.mocks...` and the `tests/_*_support` modules
+      1  the three tiers on a verified free-threaded interpreter.
+      1  their dependencies; a failing disposal method no longer skips the object's later methods
+      1  there - so every range they offered was wrong while still parsing.
+      1  threads
+      1  threads to prove that a gate drain waits for tickets in flight
+      1  three separate trees, the repository tooling that qualifies and ships the package.
+      1  through both Nexus and Rift; the ACL chain provisioned on publish, advanced and
+      1  to an older green run, bounded waits and API reads, immutable uploads
+      1  together instead of drifting in one
+      1  trees - one named a directory holding 181 test modules - and a directory
+      1  two declared markers `integration` and `component`.
+      1  unit is one class (the conduit conftest stubs the Spellbook, Aether, DevOps
+      1  updated source on reload, allow a benign import cycle and surface a bad one
+      1  used as a `|` operand (`"Conduit" | None`) or a name no scope binds, even under `TYPE_CHECKING`
+      1  uuid-named directory per case, so no run reads the tracked copies back; they only
+      3  v
+      1  validation, topology, and system tests
+      1  verification, and snapshot-style helpers
+    179  verified_at: 2026-09-26T22:11:36Z
+      2  verified_at: 2026-09-26T22:15:16Z
+      2  verified_at: 2026-09-27T11:46:59Z
+      4  verified_at: 2026-09-27T23:41:28Z
+      1  verified_at: 2026-09-28T01:11:03Z
+      1  verified_at: 2026-09-28T09:42:05Z
+      1  verified_at: 2026-09-28T11:31:18Z
+      1  which is what a live iteration sees when another thread binds; its `copy()`
+      1  which raises `RuntimeError` unless the process is 3.14+, free-threaded and
+      1  which the workflow sets for the test process
+      1  whole run: `require_free_threading` raises before `pytest.main` and again after
+      1  without `unique` existence, unnamed lambdas; binding-profile hashing, including
+      1  without booting Melder
+      1  workflow config). CI is in the repository and does not shard: each OS/Python
+      1  world; see `### Flow: Singleton Reset And Re-Boot`)
+      4  |
+      1  | [component suite]
+      1  | [integration suite]
+      1 # Tests Components (C3/C2/C1)
+      1 ## C1 Code Map (Core)
+      1 ## C2 Subcomponents Catalog
+      1 ## C3 Components Catalog
+      1 ## Component Template
+      1 ## Context / Handoff Summary
+      1 ## DO NOT ASSUME / Unknowns Gate
+      1 ## Diagrams
+      1 ## Documentation Quality Standard
+      1 ## Indexing
+      1 ## Information Sources
+      1 ## Metadata
+      1 ## Method-Level Call Flows (C1)
+      1 ## Open Questions
+      1 ## Scope
+      1 ## Table of Contents
+      1 ## Unknowns
+      1 ### ASCII Component Diagram (C3/C2)
+      1 ### Component: Component Test Suite
+      1 ### Component: Experimentation And Profiling Trees (Local Only)
+      1 ### Component: Integration Runtime Suite
+      1 ### Component: Mock Fixture Corpus
+      1 ### Component: Pytest Runner And Path Bootstrap
+      1 ### Component: Shared Test Support And Matrix Fixtures
+      1 ### Component: Unit Test Suite
+      1 ### Flow: CI Runtime Qualification
+      1 ### Flow: Capability Rift JSON Bench
+      1 ### Flow: Concurrent-Writer Stand-In
+      1 ### Flow: Pytest Bootstrap
+      1 ### Flow: Singleton Reset And Re-Boot
+      1 ### Flow: Static Rift JSON Bench
+      1 ### Flow: Viewer Matrix Fixture Build
+      1 ### Mermaid Component Diagram (C3/C2)
+      1 ### Subcomponent: Aether Component Cluster
+      1 ### Subcomponent: Aether Integration Cluster
+      1 ### Subcomponent: Aether/Nexus/Rift Unit Cluster
+      1 ### Subcomponent: Aetheric Mediator Lifecycle Unit Cluster
+      1 ### Subcomponent: Annotation Integrity Audit Support
+      1 ### Subcomponent: Build Assets Unit Cluster
+      1 ### Subcomponent: Capability Rift JSON Bench
+      1 ### Subcomponent: Compiler And Codegen Test Helpers
+      1 ### Subcomponent: Conduit Integration Cluster
+      1 ### Subcomponent: Crystallizer Component Cluster
+      1 ### Subcomponent: Crystallizer Integration Cluster
+      1 ### Subcomponent: Crystallizer Unit Cluster
+      1 ### Subcomponent: Frame Posture Test Support
+      1 ### Subcomponent: Live Sim Integration Cluster
+      1 ### Subcomponent: Mock Crystallizer Harnesses
+      1 ### Subcomponent: Mock Spellbook Fixtures
+      1 ### Subcomponent: Multithreading Integration Cluster
+      1 ### Subcomponent: MutationResearch Component Cluster
+      1 ### Subcomponent: MutationResearch Integration Cluster
+      1 ### Subcomponent: MutationResearch Unit Cluster
+      1 ### Subcomponent: Nexus Viewer Matrix Support
+      1 ### Subcomponent: Package Root Unit Cluster
+      1 ### Subcomponent: Repository Tooling Unit Cluster
+      1 ### Subcomponent: Spellbook Compiler Component Cluster
+      1 ### Subcomponent: Spellbook Compiler Unit Cluster
+      1 ### Subcomponent: Spellbook Integration Cluster
+      1 ### Subcomponent: Spellbook Runtime And Binding Component Cluster
+      1 ### Subcomponent: Spellbook Runtime And Binding Unit Cluster
+      1 ### Subcomponent: Static Rift JSON Bench
+      1 ### Subcomponent: Synthetic Module Experiment Benches
+      1 ### Subcomponent: Utilities Component Cluster
+      1 ### Subcomponent: Utilities Unit Cluster
+      1 ### Subcomponent: `conftest.py` Path Bootstrap
+      1 ### Verifying the cited test paths and ranges in this document
+      1 (`tests_components_index`), rebuilt in the SAME pass as any edit by the
+      1 (override and normal melds through real conjures, fresh and cached, both plan families) the Spellbook Compiler
+      1 - 141 `test_*.py` modules among 143 `.py` files
+      1 - 142 `test_*.py` modules among 149 `.py` files; the others are benches and the
+      1 - 196 `.py` files in `tests/experimentation/`, 140 of them generated case packages
+      1 - ANSWERED 2026-09-26 (was: whether future external CI/docs should describe a
+      1 - Build descriptor/compiled-surface/viewer fixtures for viewer and ACL tests.
+      1 - C1 Code Map (Core)
+      1 - C2 Subcomponents Catalog
+      1 - C3 Components Catalog
+      1 - CI never shards: one pytest process per OS/Python cell runs all three tiers, and
+      1 - CI scripts loaded by file path through `tests/unit/github_workflows/conftest.py`,
+      1 - CI-script tests never import `melder`; each script is loaded as a standalone module
+      1 - CI: JUnit XML on every run; coverage XML when requested
+      1 - CI: `--report` (JUnit path), optional `--coverage-report`, and `PYTHON_GIL=0`,
+      1 - Component Template
+      1 - Concurrency/Threading
+      1 - Context / Handoff Summary
+      1 - Cover `melder/aether`, `melder/crystallizer`, `melder/mutation_research`,
+      1 - Cover repository tooling that is not `melder`: the CI scripts under `.github/scripts/`
+      1 - Created: 2026-01-22
+      1 - DO NOT ASSUME / Unknowns Gate
+      1 - Define collection through `[tool.pytest.ini_options]` in `pyproject.toml`:
+      1 - Diagrams
+      1 - Directory paths that remain in prose are written WITHOUT backticks, so a
+      1 - Doc ID: COMP-TESTS-2026-01-22
+      1 - Documentation Quality Standard
+      1 - Exercise direct API and lifecycle/error-path behavior.
+      1 - Exercise small, real slices of the system where unit tests are too narrow
+      1 - Explicit entrypoints and method-level call flows for important test behavior.
+      1 - Explicit ownership and cleanup for shared harnesses.
+      1 - Extension Points
+      1 - Failure Modes
+      1 - Hold the experiments, probes and benches that informed design decisions, plus
+      1 - In CI, `run_runtime_tests.py` `main` runs `tests/unit`, `tests/component` and
+      1 - Indexing
+      1 - Information Sources
+      1 - Inputs
+      1 - Invariants/Guarantees
+      1 - Key Files (C1)
+      1 - Lifecycle/Cleanup
+      1 - Method-Level Call Flows (C1)
+      1 - Nexus singleton and cold-start rules (a Nexus needs an Aether and publishes no
+      1 - No harness or support module of its own; the 1 test_*.py modules in
+      1 - No harness or support module of its own; the 12 test_*.py modules in
+      1 - No harness or support module of its own; the 2 test_*.py modules in
+      1 - No harness or support module of its own; the 20 test_*.py modules in
+      1 - No harness or support module of its own; the 35 test_*.py modules in
+      1 - No harness or support module of its own; the 4 test_*.py modules in
+      1 - No harness or support module of its own; the 45 test_*.py modules in
+      1 - No harness or support module of its own; the 47 test_*.py modules in
+      1 - No harness or support module of its own; the 5 test_*.py modules in
+      1 - No harness or support module of its own; the 51 test_*.py modules in
+      1 - No harness or support module of its own; the 58 test_*.py modules in
+      1 - No harness or support module of its own; the 7 test_*.py modules in
+      1 - No vague summaries. Every claim must be grounded in source evidence or marked as unknown.
+      1 - Observability
+      1 - Open Questions
+      1 - Outputs
+      1 - Owned State
+      1 - Owner:
+      1 - Prepend `src/` and the project root to `sys.path` through `tests/conftest.py`;
+      1 - Protects (added 2026-09-26: the behaviour a regression in this surface breaks,
+      1 - Provide deterministic helper modules, classes, scan-bind fixtures, and
+      1 - Provide reusable codegen/compiler doubles and phase-runner helpers for
+      1 - Provide reusable frame-posture configuration helpers for runtime-heavy
+      1 - Provide reusable runtime support surfaces so tests do not duplicate
+      1 - Provide reusable static and capability room integration benches.
+      1 - Provide reusable synthetic-module and importlib experiment runners that the
+      1 - Purpose
+      1 - RESOLVED 2026-09-26 (was UNKNOWN: external CI ownership of suite
+      1 - Reset singleton runtime surfaces around runtime-heavy files, and boot a fresh
+      1 - Resolve manifest placeholders and turn-script references for JSON-driven
+      1 - Responsibilities
+      1 - Rift constructor and frame-link guardrails, one primary space, idempotent cleanup
+      1 - Rift frame viewers after passive publication; the extended viewer method matrix
+      1 - Scope
+      1 - Spell hooks, mutation override and cleanup; SpellIndex hash/equality stability
+      1 - Start the suite from the repo root and bind test imports to `src/`; in CI, run
+      1 - Status: in_progress
+      1 - TWENTY DIRECTORY CITATIONS removed from `Key Files (C1)`. They covered whole
+      1 - The 3 test_*.py modules in tests/unit/melder/build_assets/ and the 9 package-root
+      1 - The 33 `test_*.py` modules in tests/experimentation/ are counted here rather than
+      1 - The aether tree carries 183 `test_*.py` modules beneath these; they are the
+      1 - The aether tree carries 36 `test_*.py` modules beneath these; they are the
+      1 - The live_sim tree carries 2 `test_*.py` modules beneath these; they are the
+      1 - The repository-tooling trees carry 10 `test_*.py` modules (github_workflows 8,
+      1 - The rift tree (inside the aether tree) carries 3 `test_*.py` modules over the
+      1 - The spellbook tree carries 141 `test_*.py` modules beneath these; they are the
+      1 - The spellbook tree carries 71 `test_*.py` modules beneath these; they are the
+      1 - Tier boundaries must match the real test tree.
+      1 - UNKNOWN: whether six tracked `bundle.json` files under
+      1 - UNKNOWN: whether the 140 tracked `.py` files under
+      1 - UNKNOWN: which Python minors a given CI run tested.
+      1 - Unknowns
+      1 - Updated: 2026-09-28
+      1 - Validate isolated contracts for runtime classes, descriptors, ACL surfaces,
+      1 - Validate real runtime wiring across Melder subsystems and AR surfaces.
+      1 - Whether the mocks directory needs its own canonical component doc later as
+      1 - Whether the tracked generated packages under tests/experimentation/ and the six
+      1 - `## C1 Code Map (Key Paths)` RENAMED to `## C1 Code Map (Core)` and REBUILT as
+      1 - `## Indexing` ADDED; it did not exist. Both test indexes had been STALE for an
+      2 - `.github/scripts/run_runtime_tests.py`
+      2 - `.github/workflows/test-runtime.yml`
+      1 - `AnnotationAudit(src_root, package, static=..., dynamic=...).run().findings()` returns
+      1 - `CapabilityRiftJsonBench`
+      1 - `FrameViewer` fixtures
+      1 - `RuntimeError` from the driver naming the required runtime (3.14+ free-threaded,
+      1 - `SignatureReflection` output for `TYPE_CHECKING`-only names; creation-cache
+      1 - `StaticAnnotationAudit` parses source only; `DynamicAnnotationAudit` imports every module, binds
+      1 - `StaticRiftJsonBench`
+      1 - `build_descriptor`, `build_surface`, `build_viewer`,
+      2 - `pyproject.toml`
+      1 - `pyproject.toml`; the local filesystem layout
+      1 - `src/melder/aether/spellbook/spellbook.py` (`Spellbook._aether`, the one `ClassVar` Aether cache)
+      1 - `src/melder/nexus/rift/command_system/command_system.py` (`CommandSystem._aether`)
+      1 - `src/melder/nexus/rift/frame_viewer/static_frame_viewer.py` (`StaticFrameViewer._aether`)
+      3 - `tests/_annotation_audit_support.py`
+      3 - `tests/_codegen_system_support.py`
+      3 - `tests/_frame_posture_test_support.py`
+      3 - `tests/_nexus_viewer_matrix_support.py`
+      2 - `tests/component/INFO.MD`
+      1 - `tests/component/melder/aether/conduit/test_conduit_component_scope_exit_dispose.py`
+      1 - `tests/component/melder/aether/conduit/test_spellspace_component_lease_release.py`
+      1 - `tests/component/melder/aether/test_frame_acl_component.py`
+      1 - `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
+      1 - `tests/component/melder/aether/test_nexus_viewer_extended_surface_component_matrix.py`
+      2 - `tests/component/melder/crystallizer/test_spell_crystal_component.py`
+      1 - `tests/component/melder/crystallizer/test_synthetic_module_component.py`
+      2 - `tests/component/melder/mutation_research/test_mutation_research_root_component.py`
+      5 - `tests/component/melder/spellbook/compiler_test_helpers.py`
+      1 - `tests/component/melder/spellbook/spell_compiler/test_generalized_cache_creation_component.py`
+      1 - `tests/component/melder/spellbook/spell_compiler/test_spell_codegen_pipeline_component.py`
+      5 - `tests/component/melder/spellbook/spell_compiler_runtime_test_support.py`
+      1 - `tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py`
+      1 - `tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py`
+      1 - `tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py`
+      1 - `tests/component/melder/spellbook/test_conjure_cache_restage.py` (bundle rebuilt per non-full-hit conjure, 2026-09-26)
+      1 - `tests/component/melder/spellbook/test_spell_compiler_component_system.py`
+      1 - `tests/component/melder/spellbook/test_spell_id_process_stability.py` (spell ids in two fresh interpreters, 2026-09-26)
+      1 - `tests/component/melder/spellbook/test_spellbook_component_bind.py`
+      1 - `tests/component/melder/spellbook/test_spellbook_component_caching_system.py`
+      1 - `tests/component/melder/spellbook/test_spellbook_component_configuration.py`
+      1 - `tests/component/melder/spellbook/test_spellbook_component_configuration_core.py`
+      1 - `tests/component/melder/spellbook/test_spellbook_component_contracts.py`
+      1 - `tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py` (key-set plans, 2026-09-26)
+      1 - `tests/component/melder/spellbook/test_spellbook_component_spell_index.py`
+      1 - `tests/component/melder/spellbook/test_spellbook_component_spellbook.py`
+      1 - `tests/component/melder/utilities/synchronization/test_creation_gate_component.py`
+      1 - `tests/component/melder/utilities/synchronization/test_load_gate_scheduler_cohort_component.py`
+      1 - `tests/component/melder/utilities/synchronization/test_phase_scheduler_pipeline_component.py`
+      1 - `tests/component/melder/utilities/test_agent_text_reader_component.py`
+      3 - `tests/conftest.py`
+      1 - `tests/experimentation/`: 33 `test_*.py` experiment and probe modules (cache and
+      4 - `tests/experimentation/physical_to_synthetic_module_swap_semantics_testbench.py`
+      4 - `tests/experimentation/unittest_synthetic_module_edge_cases_testbench.py`
+      1 - `tests/experiments/cprofile_testing/README.md`
+      1 - `tests/experiments/cprofile_testing/`: crystallizer and mutation-research
+      1 - `tests/experiments/cprofile_testing/profile_harness.py`
+      4 - `tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py`
+      1 - `tests/integration/melder/aether/rift/codegen_rift_json_testbench_support.py`
+      4 - `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
+      2 - `tests/integration/melder/aether/rift/test_capability_rift_json_testbench_integration.py`
+      2 - `tests/integration/melder/aether/rift/test_static_rift_json_testbench_integration.py`
+      2 - `tests/integration/melder/aether/test_aether_named_lesser_lookup.py`
+      1 - `tests/integration/melder/aether/test_frame_acl_chain_integration.py`
+      2 - `tests/integration/melder/aether/test_nexus_frame_surface_projection_integration.py`
+      2 - `tests/integration/melder/aether/test_nexus_viewer_extended_surface_integration_matrix.py`
+      1 - `tests/integration/melder/conduit/test_conduit_integration_concurrency.py`
+      1 - `tests/integration/melder/conduit/test_conduit_integration_disposal_failures.py`
+      1 - `tests/integration/melder/conduit/test_conduit_integration_disposal_ordering.py`
+      1 - `tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py`
+      1 - `tests/integration/melder/conduit/test_conduit_integration_existence.py`
+      1 - `tests/integration/melder/conduit/test_conduit_integration_lifecycle.py`
+      1 - `tests/integration/melder/conduit/test_conduit_integration_links_contracts.py`
+      1 - `tests/integration/melder/conduit/test_conduit_integration_scope_resolution_alignment.py`
+      1 - `tests/integration/melder/conduit/test_conduit_integration_spellspace_scope_safety.py`
+      1 - `tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py`
+      1 - `tests/integration/melder/conduit/test_ordered_disposal_runtime.py`
+      2 - `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
+      1 - `tests/integration/melder/crystallizer/test_synthetic_module_integration.py`
+      2 - `tests/integration/melder/live_sim/bootstrap.py`
+      2 - `tests/integration/melder/live_sim/conftest.py`
+      1 - `tests/integration/melder/live_sim/interfaces/protocols.py`
+      1 - `tests/integration/melder/live_sim/mini_application/application.py`
+      1 - `tests/integration/melder/live_sim/test_live_sim_automatic.py`
+      1 - `tests/integration/melder/live_sim/test_live_sim_dynamic.py`
+      1 - `tests/integration/melder/multithreading/test_multithreading_agent_text_reader.py`
+      1 - `tests/integration/melder/multithreading/test_multithreading_link_bind_contract_features.py`
+      1 - `tests/integration/melder/multithreading/test_multithreading_meld_lock_order_deadlock.py`
+      1 - `tests/integration/melder/multithreading/test_multithreading_spell_system_states.py`
+      1 - `tests/integration/melder/multithreading/test_multithreading_system_document_view.py`
+      2 - `tests/integration/melder/mutation_research/test_mutation_research_root_integration.py`
+      1 - `tests/integration/melder/spellbook/test_spell_compiler_system_integration.py`
+      1 - `tests/integration/melder/spellbook/test_spellbook_integration_core.py`
+      1 - `tests/integration/melder/spellbook/test_spellbook_integration_public_api.py`
+      1 - `tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py`
+      1 - `tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py`
+      1 - `tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py`
+      1 - `tests/integration/melder/spellbook/test_spellbook_integration_validation_system.py`
+      2 - `tests/integration/melder/spellbook/test_spellbook_qualified_same_name_regressions.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/__init__.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/__init__.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/feature.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/surface.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/__init__.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/aggregate.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/leaf_a.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/leaf_b.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/__init__.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/__init__.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/level2/__init__.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/level2/provider.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/provider.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/__init__.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/provider.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/reexport.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/root.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_api_feature.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_api_surface.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_branch.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_deep.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_duplicate.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_multibranch.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_package_import.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_reexport.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_with_synthetic.py`
+      1 - `tests/mocks/crystallizer/spell_crystal_demo_pkg/shared.py`
+      3 - `tests/mocks/crystallizer/spell_crystal_harness.py`
+      3 - `tests/mocks/crystallizer/synthetic_module_harness.py`
+      2 - `tests/mocks/spellbook/contract_classes.py`
+      2 - `tests/mocks/spellbook/core_classes.py`
+      1 - `tests/mocks/spellbook/deep_layers.py`
+      1 - `tests/mocks/spellbook/factories.py`
+      1 - `tests/mocks/spellbook/protocols.py`
+      1 - `tests/mocks/spellbook/scan_bind_module_bad_metadata.py`
+      2 - `tests/mocks/spellbook/scan_bind_module_core.py`
+      1 - `tests/mocks/spellbook/scan_bind_module_duplicate.py`
+      1 - `tests/mocks/spellbook/scan_bind_module_empty.py`
+      1 - `tests/mocks/spellbook/scan_bind_module_lambda.py`
+      1 - `tests/mocks/spellbook/scan_bind_module_lambda_invalid.py`
+      1 - `tests/mocks/spellbook/scan_bind_module_reexport.py`
+      1 - `tests/mocks/spellbook/scan_bind_module_wrapped.py`
+      1 - `tests/unit/architecture_and_design/test_architecture_docs_tool.py`
+      3 - `tests/unit/github_workflows/conftest.py`
+      1 - `tests/unit/github_workflows/test_candidate_publication.py`
+      1 - `tests/unit/github_workflows/test_checkout_identity.py`
+      1 - `tests/unit/github_workflows/test_ci_policy.py`
+      1 - `tests/unit/github_workflows/test_distributions.py`
+      1 - `tests/unit/github_workflows/test_python_runtime_matrix.py`
+      1 - `tests/unit/github_workflows/test_sdist_normalization.py`
+      1 - `tests/unit/github_workflows/test_source_qualification.py`
+      1 - `tests/unit/github_workflows/test_workflow_contracts.py`
+      1 - `tests/unit/llm_support/test_builder.py`
+      2 - `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py`
+      2 - `tests/unit/melder/aether/conduit/conftest.py`
+      2 - `tests/unit/melder/aether/test_command_system_direct.py`
+      2 - `tests/unit/melder/aether/test_nexus.py`
+      2 - `tests/unit/melder/aether/test_rift_runtime_contracts.py`
+      2 - `tests/unit/melder/aether/test_workstation.py`
+      1 - `tests/unit/melder/build_assets/test_agent_metadata_builder.py`
+      1 - `tests/unit/melder/build_assets/test_build_asset_runner.py`
+      1 - `tests/unit/melder/build_assets/test_system_documents_builder.py`
+      2 - `tests/unit/melder/crystallizer/test_crystallizer.py`
+      1 - `tests/unit/melder/crystallizer/test_crystallizer_configuration.py`
+      1 - `tests/unit/melder/crystallizer/test_spell_crystal.py`
+      1 - `tests/unit/melder/crystallizer/test_synthetic_module.py`
+      2 - `tests/unit/melder/mutation_research/test_mutation_research_root.py`
+      1 - `tests/unit/melder/mutation_research/test_mutation_research_root_matrix.py`
+      1 - `tests/unit/melder/spellbook/bind/test_bind.py`
+      1 - `tests/unit/melder/spellbook/bind/test_spell_index.py`
+      1 - `tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py` (address-free fingerprints, 2026-09-26)
+      1 - `tests/unit/melder/spellbook/configuration/test_configuration.py`
+      1 - `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_1.py`
+      2 - `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`
+      1 - `tests/unit/melder/spellbook/spell_compiler/phases/test_shared_compiler_executions.py`
+      1 - `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py`
+      1 - `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py` (key-set plans, 2026-09-26)
+      2 - `tests/unit/melder/spellbook/spell_compiler/support/compiler_test_support.py`
+      1 - `tests/unit/melder/spellbook/spell_compiler/test_spell_compiler.py`
+      1 - `tests/unit/melder/spellbook/spell_compiler/test_spell_compiler_system.py`
+      1 - `tests/unit/melder/spellbook/spell_crafter/dag/test_dag_index.py` (PathRegistry only since 2026-09-26)
+      1 - `tests/unit/melder/spellbook/spell_crafter/system/test_spell_system_validation_system.py`
+      2 - `tests/unit/melder/spellbook/spell_crafter/validation/strategies/test_duplicate_spell_name_strategy.py`
+      1 - `tests/unit/melder/spellbook/spell_crafter/validation/test_validation_system.py`
+      1 - `tests/unit/melder/spellbook/test_cache_runtime_verification.py`
+      1 - `tests/unit/melder/spellbook/test_scan_bind.py`
+      1 - `tests/unit/melder/spellbook/test_spell.py`
+      1 - `tests/unit/melder/spellbook/test_spellbinder.py`
+      1 - `tests/unit/melder/spellbook/test_spellbook.py`
+      3 - `tests/unit/melder/test_annotation_integrity.py`
+      2 - `tests/unit/melder/test_melder_registration_guard.py`
+      1 - `tests/unit/melder/test_package_author_metadata.py`
+      1 - `tests/unit/melder/test_package_description_metadata.py`
+      1 - `tests/unit/melder/test_package_license_metadata.py`
+      1 - `tests/unit/melder/test_package_public_surface.py`
+      1 - `tests/unit/melder/test_package_version_metadata.py`
+      2 - `tests/unit/melder/test_system_document_view.py`
+      1 - `tests/unit/melder/test_system_documents.py`
+      1 - `tests/unit/melder/utilities/ai_native_support_tools/test_agent_text_reader.py`
+      1 - `tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py`
+      1 - `tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool_multithreaded.py`
+      1 - `tests/unit/melder/utilities/general_base/test_cleanable_cleanup_contexts.py`
+      1 - `tests/unit/melder/utilities/helpers/test_signature_reflection.py`
+      1 - `tests/unit/melder/utilities/synchronization/test_creation_gate.py`
+      1 - `tests/unit/melder/utilities/synchronization/test_creation_gate_controller.py`
+      1 - `tests/unit/melder/utilities/synchronization/test_load_gate.py`
+      1 - `tests/unit/melder/utilities/synchronization/test_phase_scheduler.py`
+      1 - `tests/unit/melder/utilities/test_caching_system.py`
+      1 - a creation-gate controller drain waiting for tickets in flight; the load gate
+      1 - a new top-level tree with Python that is not in `norecursedirs` is collected
+      1 - a probe written for older behavior fails after a deliberate change; update or
+      1 - a rare race shows as an intermittent multithreading failure; it is pinned by a
+      1 - a session cleans its owned request and staged records, preserves the borrowed holder and never
+      1 - a whole application bootstrapped the way a user would, automatic and dynamic
+      1 - activation that hydrates an untouched registry from the record and never
+      1 - additional viewer/ACL matrix builders
+      1 - applies default frame posture to `SpellbookConfiguration` objects for test
+      1 - automatic bootstrap resolving the application with interface-typed
+      1 - behaviour that only exists once several real subsystems are wired: meld through
+      1 - bench-local runtime objects and manifests
+      1 - bind metadata, Protocol member enforcement and detailed profiles; configuration
+      1 - bind refusals: modules, Protocols bound as spells, existing objects and callables
+      1 - bootstrap a small application the way a user would, in automatic and dynamic
+      1 - bootstrap runs once when pytest imports the root conftest; the CI runtime check
+      1 - broken path bootstrap: import failure or a wrong-package import
+      1 - broken placeholder resolution if manifest/turn paths drift
+      1 - build a real capability-room harness with JSON-like request and turn-script
+      1 - build a real static-room harness with JSON-like request and turn-script
+      1 - build descriptor, compiled ACL surface, and `FrameViewer` fixtures
+      1 - build real Spellbook/Conduit/Nexus/Rift stacks
+      1 - byte-deterministic rendering, and source fingerprints that ignore checkout line
+      1 - candidate and source qualification: identical trees across merge SHAs, no fallback
+      1 - canonical address collisions (2026-09-28): same-name entries at distinct addresses remain valid;
+      1 - case packages the synthetic-module benches write under their own directory
+      1 - centralize automatic/dynamic frame-posture configuration helpers reused
+      1 - collection never enters a `norecursedirs` tree; the list names no `codex*` entry
+      1 - compiled ACL surface builders
+      1 - component tests drift into unit-style internals or full integration sprawl
+      1 - configuration defaults and a value-typed payload; a guaranteed default research
+      1 - configuration shared and locked across named frames; conjure registration and
+      1 - controlled fake/stub collaborators
+      1 - copied pool reads (`test_compiler_pool_snapshot_reads.py`): Phases 3, 5 and 6 and
+      1 - cover AR-facing runtime contracts, descriptors, ACLs, room surfaces, and
+      1 - cover additional integration lanes for conduit, crystallizer, live_sim,
+      1 - cover current-surface `spell_compiler` classes and the retained legacy
+      1 - cover spellbook runtime/binding/configuration surfaces such as bind,
+      1 - cover the build-time asset runner and its builders (agent metadata, system
+      1 - cover the hosted crystallizer root, configuration builder, spell-crystal
+      1 - cover the mutation-research root/configuration surface, session management,
+      1 - cover the utility layer class by class: synchronization primitives, weak and
+      1 - cover tooling that is not `melder`: the CI scripts under `.github/scripts/`, the
+      1 - cover what `import melder` publishes and pins: the root surface, the metadata
+      1 - crystallization of really bound spells (root module name and kind, targets,
+      1 - crystallizer module-graph extraction against one fixed physical package
+      1 - descriptor payload builders
+      1 - deterministic index publication (2026-09-28): an Event pauses the first mapping constructor while
+      1 - direct contract assertions with minimal external wiring
+      1 - direct coverage of the synchronization primitives (creation gate and controller,
+      1 - direct filesystem inventory of `tests/`
+      1 - direct pytest failures on contract mismatch
+      1 - distribution contents (wheel and sdist members, versions, the PEP 561 marker) and
+      1 - door-held first builds (0.2.73): concurrent first melds of one root, on one
+      1 - drift between fixture modules and the import/use cases they support
+      1 - end-to-end or near-end-to-end behavioral assertions
+      1 - every `__all__` name resolving on the root to the concrete-path object (identity,
+      1 - exception texts users read, above all the conjure validation report layout
+      1 - exercise descriptor projection and viewer matrices
+      1 - exercise room-mode harnesses and JSON-like request drivers
+      1 - existence semantics across lineages, clusters and SpellSpaces (including scope
+      1 - expensive or flaky runtime setup if singleton/reset discipline drifts
+      1 - fail-closed CI policy: forged or stage-skipping routes refused, every mandatory
+      1 - follows the same singleton reset-and-re-boot discipline when runtime objects are
+      1 - gate semantics the runtime depends on: creation gate and controller state and
+      1 - graph extraction (module targets, direct dependencies, kind mapping, paths)
+      1 - guard: `tests/unit/melder/test_annotation_integrity.py` asserts zero static and dynamic findings
+      1 - harness-local runtime objects and manifests
+      1 - harnesses explicitly cleanup owned spellbooks/conduits/rifts
+      1 - host crystallizer fixture packages and synthetic-module harnesses
+      1 - host spellbook-oriented helper classes/modules
+      1 - imported by unit/component/integration tests
+      1 - integration tests use real runtime stacks rather than hand-built shallow mocks
+      1 - internal classes refused by bind through the manifest (the test sets up its own
+      1 - key-set plan lowering (`test_site_plan_lowering.py`): demand, placement, guard
+      1 - key-set plans through real conjures: a supplied dependency and its subtree are
+      1 - link and contract transactions (a standalone add admits its own transaction;
+      1 - link, bind and contract churn under concurrent meld workers, with orchestrated
+      1 - local pytest output; profiling scripts print their timings
+      1 - local runtime classes and helper fixtures; `MagicMock` collaborators where the
+      1 - local tests target local `src/`
+      1 - locate annotations in a source tree that raise when Python 3.14 evaluates them: a string literal
+      1 - manifest and saved-turn placeholder resolution
+      1 - manifest-driven JSON dispatch helpers
+      1 - manifest/object/turn placeholder resolution
+      1 - markers or options in `pyproject.toml`; tier arguments in the driver
+      1 - matrix and harness failures expose multi-object regressions
+      1 - mocks are repo-local and deterministic
+      1 - module docstrings and test names of every file cited in a `Protects:` line (read 2026-09-26)
+      1 - namespace/event/memory doubles for codegen tests plus helper functions that
+      1 - new deterministic fixture modules for new scan/bind or spellbook cases
+      1 - new probe modules; new profiling tiers in the profiling harness
+      2 - new room-mode benches
+      1 - new slice tests for cross-object seams
+      1 - new subsystem integration lanes
+      1 - new subsystem-level direct contract tests; a new CI script gets a loader fixture
+      1 - no dedicated threading behavior
+      1 - no independent worker model; relies on runtime objects under test
+      1 - no parallel harness layer of its own; the synchronization component files start
+      1 - no threads of its own; the driver's contract is the process's threading posture
+      1 - normal Python module import lifecycle
+      1 - not in CI: the driver runs only the three tiers, and `tests/experiments/` holds
+      1 - nothing CI enforces. The probes record measured answers to design questions; a
+      1 - one Aether-owned root shared across frames and returned by dynamic conduits;
+      1 - one import path for local `melder` code; collection rooted at `tests/`
+      1 - one version truth: `__version__` is the metadata literal, generated build assets
+      1 - path: `.github/scripts/run_runtime_tests.py`
+      1 - path: `.github/workflows/test-runtime.yml`
+      1 - path: `pyproject.toml`
+      1 - path: `tests/_annotation_audit_support.py`
+      1 - path: `tests/_codegen_system_support.py`
+      1 - path: `tests/_frame_posture_test_support.py`
+      1 - path: `tests/_nexus_viewer_matrix_support.py`
+      1 - path: `tests/component/INFO.MD`
+      1 - path: `tests/component/melder/aether/conduit/test_conduit_component_scope_exit_dispose.py`
+      1 - path: `tests/component/melder/aether/conduit/test_spellspace_component_lease_release.py`
+      1 - path: `tests/component/melder/aether/test_frame_acl_component.py`
+      1 - path: `tests/component/melder/aether/test_frame_descriptor_manager_component.py`
+      1 - path: `tests/component/melder/aether/test_nexus_viewer_extended_surface_component_matrix.py`
+      1 - path: `tests/component/melder/crystallizer/test_spell_crystal_component.py`
+      1 - path: `tests/component/melder/crystallizer/test_synthetic_module_component.py`
+      1 - path: `tests/component/melder/mutation_research/test_mutation_research_root_component.py`
+      1 - path: `tests/component/melder/spellbook/compiler_test_helpers.py`
+      1 - path: `tests/component/melder/spellbook/spell_compiler/test_generalized_cache_creation_component.py`
+      1 - path: `tests/component/melder/spellbook/spell_compiler/test_spell_codegen_pipeline_component.py`
+      1 - path: `tests/component/melder/spellbook/spell_compiler_runtime_test_support.py`
+      1 - path: `tests/component/melder/spellbook/spell_crafter/dag/test_spellbook_component_dag_local_frame.py`
+      1 - path: `tests/component/melder/spellbook/spell_crafter/system/test_spellbook_component_spell_system.py`
+      1 - path: `tests/component/melder/spellbook/spell_crafter/validation/test_spellbook_component_validation_system.py`
+      1 - path: `tests/component/melder/spellbook/test_conjure_cache_restage.py`
+      1 - path: `tests/component/melder/spellbook/test_spell_compiler_component_system.py`
+      1 - path: `tests/component/melder/spellbook/test_spell_id_process_stability.py`
+      1 - path: `tests/component/melder/spellbook/test_spellbook_component_bind.py`
+      1 - path: `tests/component/melder/spellbook/test_spellbook_component_caching_system.py`
+      1 - path: `tests/component/melder/spellbook/test_spellbook_component_configuration.py`
+      1 - path: `tests/component/melder/spellbook/test_spellbook_component_configuration_core.py`
+      1 - path: `tests/component/melder/spellbook/test_spellbook_component_contracts.py`
+      1 - path: `tests/component/melder/spellbook/test_spellbook_component_override_key_set_plans.py`
+      1 - path: `tests/component/melder/spellbook/test_spellbook_component_spell_index.py`
+      1 - path: `tests/component/melder/spellbook/test_spellbook_component_spellbook.py`
+      1 - path: `tests/component/melder/utilities/synchronization/test_creation_gate_component.py`
+      1 - path: `tests/component/melder/utilities/synchronization/test_load_gate_scheduler_cohort_component.py`
+      1 - path: `tests/component/melder/utilities/synchronization/test_phase_scheduler_pipeline_component.py`
+      1 - path: `tests/component/melder/utilities/test_agent_text_reader_component.py`
+      1 - path: `tests/conftest.py`
+      1 - path: `tests/experimentation/physical_to_synthetic_module_swap_semantics_testbench.py`
+      1 - path: `tests/experimentation/unittest_synthetic_module_edge_cases_testbench.py`
+      1 - path: `tests/experiments/cprofile_testing/profile_harness.py`
+      1 - path: `tests/integration/melder/aether/rift/capability_rift_json_testbench_support.py`
+      1 - path: `tests/integration/melder/aether/rift/codegen_rift_json_testbench_support.py`
+      1 - path: `tests/integration/melder/aether/rift/static_rift_json_testbench_support.py`
+      1 - path: `tests/integration/melder/aether/rift/test_capability_rift_json_testbench_integration.py`
+      1 - path: `tests/integration/melder/aether/rift/test_static_rift_json_testbench_integration.py`
+      1 - path: `tests/integration/melder/aether/test_aether_named_lesser_lookup.py`
+      1 - path: `tests/integration/melder/aether/test_frame_acl_chain_integration.py`
+      1 - path: `tests/integration/melder/aether/test_nexus_frame_surface_projection_integration.py`
+      1 - path: `tests/integration/melder/aether/test_nexus_viewer_extended_surface_integration_matrix.py`
+      1 - path: `tests/integration/melder/conduit/test_conduit_integration_concurrency.py`
+      1 - path: `tests/integration/melder/conduit/test_conduit_integration_disposal_failures.py`
+      1 - path: `tests/integration/melder/conduit/test_conduit_integration_disposal_ordering.py`
+      1 - path: `tests/integration/melder/conduit/test_conduit_integration_door_held_first_build.py`
+      1 - path: `tests/integration/melder/conduit/test_conduit_integration_existence.py`
+      1 - path: `tests/integration/melder/conduit/test_conduit_integration_lifecycle.py`
+      1 - path: `tests/integration/melder/conduit/test_conduit_integration_links_contracts.py`
+      1 - path: `tests/integration/melder/conduit/test_conduit_integration_scope_resolution_alignment.py`
+      1 - path: `tests/integration/melder/conduit/test_conduit_integration_spellspace_scope_safety.py`
+      1 - path: `tests/integration/melder/conduit/test_conduit_integration_transfer_ownership.py`
+      1 - path: `tests/integration/melder/conduit/test_ordered_disposal_runtime.py`
+      1 - path: `tests/integration/melder/crystallizer/test_spell_crystal_integration.py`
+      1 - path: `tests/integration/melder/crystallizer/test_synthetic_module_integration.py`
+      1 - path: `tests/integration/melder/live_sim/bootstrap.py`
+      1 - path: `tests/integration/melder/live_sim/conftest.py`
+      1 - path: `tests/integration/melder/live_sim/interfaces/protocols.py`
+      1 - path: `tests/integration/melder/live_sim/mini_application/application.py`
+      1 - path: `tests/integration/melder/live_sim/test_live_sim_automatic.py`
+      1 - path: `tests/integration/melder/live_sim/test_live_sim_dynamic.py`
+      1 - path: `tests/integration/melder/multithreading/test_multithreading_agent_text_reader.py`
+      1 - path: `tests/integration/melder/multithreading/test_multithreading_link_bind_contract_features.py`
+      1 - path: `tests/integration/melder/multithreading/test_multithreading_meld_lock_order_deadlock.py`
+      1 - path: `tests/integration/melder/multithreading/test_multithreading_spell_system_states.py`
+      1 - path: `tests/integration/melder/multithreading/test_multithreading_system_document_view.py`
+      1 - path: `tests/integration/melder/mutation_research/test_mutation_research_root_integration.py`
+      1 - path: `tests/integration/melder/spellbook/test_spell_compiler_system_integration.py`
+      1 - path: `tests/integration/melder/spellbook/test_spellbook_integration_core.py`
+      1 - path: `tests/integration/melder/spellbook/test_spellbook_integration_public_api.py`
+      1 - path: `tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract.py`
+      1 - path: `tests/integration/melder/spellbook/test_spellbook_integration_scan_bind.py`
+      1 - path: `tests/integration/melder/spellbook/test_spellbook_integration_spell_crafter.py`
+      1 - path: `tests/integration/melder/spellbook/test_spellbook_qualified_same_name_regressions.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/__init__.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/__init__.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/feature.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/api/surface.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/__init__.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/aggregate.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/leaf_a.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/branch/leaf_b.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/__init__.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/__init__.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/level2/__init__.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/level2/provider.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/deep/level1/provider.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/__init__.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/provider.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/nested/reexport.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_api_feature.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_api_surface.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_branch.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_deep.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_duplicate.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_multibranch.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_package_import.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_reexport.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/root_with_synthetic.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_demo_pkg/shared.py`
+      1 - path: `tests/mocks/crystallizer/spell_crystal_harness.py`
+      1 - path: `tests/mocks/crystallizer/synthetic_module_harness.py`
+      1 - path: `tests/mocks/spellbook/contract_classes.py`
+      1 - path: `tests/mocks/spellbook/core_classes.py`
+      1 - path: `tests/mocks/spellbook/deep_layers.py`
+      1 - path: `tests/mocks/spellbook/factories.py`
+      1 - path: `tests/mocks/spellbook/protocols.py`
+      1 - path: `tests/mocks/spellbook/scan_bind_module_bad_metadata.py`
+      1 - path: `tests/mocks/spellbook/scan_bind_module_core.py`
+      1 - path: `tests/mocks/spellbook/scan_bind_module_duplicate.py`
+      1 - path: `tests/mocks/spellbook/scan_bind_module_empty.py`
+      1 - path: `tests/mocks/spellbook/scan_bind_module_lambda.py`
+      1 - path: `tests/mocks/spellbook/scan_bind_module_lambda_invalid.py`
+      1 - path: `tests/mocks/spellbook/scan_bind_module_reexport.py`
+      1 - path: `tests/mocks/spellbook/scan_bind_module_wrapped.py`
+      1 - path: `tests/unit/architecture_and_design/test_architecture_docs_tool.py`
+      1 - path: `tests/unit/github_workflows/conftest.py`
+      1 - path: `tests/unit/github_workflows/test_candidate_publication.py`
+      1 - path: `tests/unit/github_workflows/test_checkout_identity.py`
+      1 - path: `tests/unit/github_workflows/test_ci_policy.py`
+      1 - path: `tests/unit/github_workflows/test_distributions.py`
+      1 - path: `tests/unit/github_workflows/test_python_runtime_matrix.py`
+      1 - path: `tests/unit/github_workflows/test_sdist_normalization.py`
+      1 - path: `tests/unit/github_workflows/test_source_qualification.py`
+      1 - path: `tests/unit/github_workflows/test_workflow_contracts.py`
+      1 - path: `tests/unit/llm_support/test_builder.py`
+      1 - path: `tests/unit/melder/aether/aetheric_mediator/test_aetheric_mediator_unit.py`
+      1 - path: `tests/unit/melder/aether/conduit/conftest.py`
+      1 - path: `tests/unit/melder/aether/test_command_system_direct.py`
+      1 - path: `tests/unit/melder/aether/test_nexus.py`
+      1 - path: `tests/unit/melder/aether/test_rift_runtime_contracts.py`
+      1 - path: `tests/unit/melder/aether/test_workstation.py`
+      1 - path: `tests/unit/melder/build_assets/test_agent_metadata_builder.py`
+      1 - path: `tests/unit/melder/build_assets/test_build_asset_runner.py`
+      1 - path: `tests/unit/melder/build_assets/test_system_documents_builder.py`
+      1 - path: `tests/unit/melder/crystallizer/test_crystallizer.py`
+      1 - path: `tests/unit/melder/crystallizer/test_crystallizer_configuration.py`
+      1 - path: `tests/unit/melder/crystallizer/test_spell_crystal.py`
+      1 - path: `tests/unit/melder/crystallizer/test_synthetic_module.py`
+      1 - path: `tests/unit/melder/mutation_research/test_mutation_research_root.py`
+      1 - path: `tests/unit/melder/mutation_research/test_mutation_research_root_matrix.py`
+      1 - path: `tests/unit/melder/spellbook/bind/test_bind.py`
+      1 - path: `tests/unit/melder/spellbook/bind/test_spell_index.py`
+      1 - path: `tests/unit/melder/spellbook/bind/test_stable_spell_fingerprint.py`
+      1 - path: `tests/unit/melder/spellbook/configuration/test_configuration.py`
+      1 - path: `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_phase_1.py`
+      1 - path: `tests/unit/melder/spellbook/spell_compiler/phases/test_compiler_pool_snapshot_reads.py`
+      1 - path: `tests/unit/melder/spellbook/spell_compiler/phases/test_shared_compiler_executions.py`
+      1 - path: `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_door_held_root.py`
+      1 - path: `tests/unit/melder/spellbook/spell_compiler/shared_assets/test_site_plan_lowering.py`
+      1 - path: `tests/unit/melder/spellbook/spell_compiler/support/compiler_test_support.py`
+      1 - path: `tests/unit/melder/spellbook/spell_compiler/test_spell_compiler.py`
+      1 - path: `tests/unit/melder/spellbook/spell_compiler/test_spell_compiler_system.py`
+      1 - path: `tests/unit/melder/spellbook/spell_crafter/dag/test_dag_index.py`
+      1 - path: `tests/unit/melder/spellbook/spell_crafter/system/test_spell_system_validation_system.py`
+      1 - path: `tests/unit/melder/spellbook/spell_crafter/validation/test_validation_system.py`
+      1 - path: `tests/unit/melder/spellbook/test_cache_runtime_verification.py`
+      1 - path: `tests/unit/melder/spellbook/test_scan_bind.py`
+      1 - path: `tests/unit/melder/spellbook/test_spell.py`
+      1 - path: `tests/unit/melder/spellbook/test_spellbinder.py`
+      1 - path: `tests/unit/melder/spellbook/test_spellbook.py`
+      1 - path: `tests/unit/melder/test_annotation_integrity.py`
+      1 - path: `tests/unit/melder/test_melder_registration_guard.py`
+      1 - path: `tests/unit/melder/test_package_author_metadata.py`
+      1 - path: `tests/unit/melder/test_package_description_metadata.py`
+      1 - path: `tests/unit/melder/test_package_license_metadata.py`
+      1 - path: `tests/unit/melder/test_package_public_surface.py`
+      1 - path: `tests/unit/melder/test_package_version_metadata.py`
+      1 - path: `tests/unit/melder/test_system_document_view.py`
+      1 - path: `tests/unit/melder/test_system_documents.py`
+      1 - path: `tests/unit/melder/utilities/ai_native_support_tools/test_agent_text_reader.py`
+      1 - path: `tests/unit/melder/utilities/custom_exceptions/test_spellbook_validation_error.py`
+      1 - path: `tests/unit/melder/utilities/data_structures/test_abstract_elastic_pool_multithreaded.py`
+      1 - path: `tests/unit/melder/utilities/general_base/test_cleanable_cleanup_contexts.py`
+      1 - path: `tests/unit/melder/utilities/helpers/test_signature_reflection.py`
+      1 - path: `tests/unit/melder/utilities/synchronization/test_creation_gate.py`
+      1 - path: `tests/unit/melder/utilities/synchronization/test_creation_gate_controller.py`
+      1 - path: `tests/unit/melder/utilities/synchronization/test_load_gate.py`
+      1 - path: `tests/unit/melder/utilities/synchronization/test_phase_scheduler.py`
+      1 - path: `tests/unit/melder/utilities/test_caching_system.py`
+      1 - per-class contracts - returns, raises and cleanup - so a regression fails beside
+      1 - phase 3-7 records through the compiler system and direct structural phases that
+      1 - prepend `src/` to `sys.path` for test execution
+      1 - project-root and `src/` path insertion
+      1 - provide deterministic spell-crystal and synthetic-module harness data for
+      1 - provide fake classes/modules for scan/bind and spellbook behavior
+      1 - provide reusable doubles and phase-runner helpers for codegen-system and
+      1 - provide reusable synthetic-module and importlib scenario runners consumed by
+      1 - public inspection, mutation and record access begun after cleanup raise the cleaned-state error
+      1 - pytest import/collection output; the JUnit report of each CI cell
+      1 - pytest results locally; profiling timings and `.prof`/`.txt` files under
+      1 - qualified same-named classes (2026-09-28): real conjure and repeated meld by id/address return the
+      1 - race fixes, as deterministic stand-ins for the concurrent writer (see
+      1 - real room harnesses
+      1 - real runtime objects
+      1 - refusal above all: `--check` fails on a version change, a hand-edited artifact,
+      1 - repeated sequential cleanup remains harmless for the plane and its owned components
+      1 - run real threads against real runtime stacks and shared documents
+      1 - runtime objects (`Aether`, `Spellbook`, `Conduit`, `Nexus`, `Rift`)
+      1 - runtime-heavy files reset singleton surfaces and cleanup harness-owned
+      1 - runtime-heavy files use autouse fixtures that reset `AetherUtilitySystem`, `Nexus`
+      1 - scan-bind refusals and edge cases against modules of fixed shape (corrupt
+      1 - scan/bind and spellbook tests fail when mock modules drift
+      1 - scope exits (0.2.8203): `with conduit:` disposes (a lesser pooled with its objects disposed, a root torn
+      1 - seams inside one subsystem, with real objects: descriptor/ACL publication and
+      1 - several experiments measure thread behavior (cross-thread SpellSpace scope,
+      1 - shared bench support
+      1 - singleton leakage, or a SINGLETON VOID (a reset without a re-boot), makes a test
+      1 - slice-level behavioral assertions
+      1 - small real runtime slices
+      1 - spell crystals recording unknown import targets instead of skipping them
+      1 - stable experiment functions wrapped as component/integration cases instead of
+      1 - stable fake modules, helper classes, and crystallizer test harness packages
+      1 - stale cwd-relative cache directories survive between runs
+      1 - stale singleton state if reset fixtures are bypassed
+      1 - static fixture modules only
+      1 - stub or mock external collaborators where needed
+      1 - supply the two synthetic-module benches that component and integration
+      1 - support modules are deterministic and fixture-oriented, not production code
+      1 - support scan/bind import and duplicate/reexport cases
+      1 - synthetic modules that materialize, import nested package graphs, re-execute
+      1 - teardown is serialized by the owner after use stops; a public entry check is not a lifetime lease
+      1 - teardown: idempotent cleanup that blocks meld, and dependents disposed before
+      1 - test-local fixtures only, except twelve `CachingSystem` tests that write cwd-relative
+      1 - test-local slices and stubs; component cache tests write under the package
+      1 - that a CI result comes from a 3.14+ free-threaded build with the GIL off for the
+      1 - that every annotation in `src/melder` stays evaluable on 3.14
+      1 - that static and capability room behaviour is proven on real runtime stacks (the
+      1 - that tests import the workspace `src/`, never an installed `melder`
+      1 - that the driver's exit code is pytest's exit code, never masked by reporting
+      1 - that viewer and ACL tests at all three tiers assert against one descriptor and
+      1 - the Aether-owned root reachable from a real conduit, its default set ready on a
+      1 - the Cleanable cleanup contexts (0.2.8203): `using_cleanup()` and `async_using_cleanup()` clean up at
+      1 - the LLM bundle builder's deterministic build/check lifecycle and explicit
+      1 - the agent text reader against the real packaged documents rather than generated
+      1 - the benches remove their case directories in teardown with
+      1 - the compiler system's owned surfaces and phase delegation; Phase 1 building once
+      1 - the concurrency claims the unit tier cannot make: link/contract churn under
+      1 - the conduit cache bundle rebuilt from each non-full-hit conjure, and spell ids
+      1 - the crystallizer as an Aether-hosted singleton that refuses a first init without
+      1 - the densest tier: 462 `test_*.py` modules among 465 `.py` files
+      1 - the descriptor manager keeping frame, conduit and spell records coherent; one ACL
+      1 - the door-held root (0.2.73): the normal plan of a `unique_per_conduit` or
+      1 - the local runtime; for the profiling scripts, a size argument such as `small`
+      1 - the meld lock order: shapes that deadlocked while doors held the store lock now
+      1 - the multithreading directory drives real threads: orchestrated mutation lanes
+      1 - the package-root contract: every `__all__` name resolves to its concrete-path
+      1 - the release gates in the CI scripts: fail-closed routing, candidate and source
+      1 - the static/capability benches are real-runtime, not pure mocks
+      1 - the system-document views: construction imports nothing deferred, slices are
+      1 - the system-documents builder transcribing the source index rather than
+      1 - the text reader's line accounting on real documents, not generated fixtures
+      1 - thread-safe first loads, private cursors and consistent search, walk and impact
+      1 - tier intent is explicitly documented in `tests/component/INFO.MD`: real core
+      1 - two `sys.path` entries, each inserted only when absent; no runtime state
+      1 - unit tests stay close to class/method behavior
+      1 - use real core objects
+      1 - validate conduits through the real meld front door: lineage, clusters,
+      1 - validate current-surface spell compiler flows and the retained legacy
+      1 - validate descriptor/ACL/viewer and conduit/dev_ops slices with real objects
+      1 - validate end-to-end spellbook runtime behavior plus current-surface compiler
+      1 - validate internal contracts that span multiple objects
+      1 - validate real Nexus projection, viewer matrices, passive ingest, ACL chain,
+      1 - validate real bound-spell crystallization and synthetic-module import
+      1 - validate shared Aether-owned mutation-research behavior and live frame
+      1 - validate spell-crystal and synthetic-module graph extraction against real
+      1 - validate spellbook runtime/binding/configuration surfaces as small real
+      1 - validate synchronization pieces composed with real collaborators and the agent
+      1 - validate the Aether-owned mutation-research root and placeholder
+      1 - verify owner-driven mediator/session teardown and public cleaned-state boundaries
+      1 - visible through component-slice regressions
+      1 - visible through parametrized matrix and turn-script test results
+      1 1. an autouse fixture calls `AetherUtilitySystem._reset_singleton_for_tests()`,
+      1 1. harness builds `Aether`, `Spellbook`, root + lesser `Conduit`, `Nexus`,
+      1 1. harness builds two Spellbooks/conduits plus one capability Rift stack.
+      1 1. helper builds one `FrameDescriptor`.
+      1 1. pytest starts from `pyproject.toml`.
+      1 1. the regression builds a real Spellbook, binds `PoolConfig`, `PoolRepository` and
+      1 1. the workflow sets `PYTHON_GIL: "0"` and runs `run_runtime_tests.py` with
+      1 2. `main` parses its arguments, imports pytest and calls
+      1 2. collection is rooted at `tests/`.
+      1 2. harness exposes a JSON-like dispatcher.
+      1 2. harness exposes the same JSON-like surface concept over capability-room
+      1 2. helper builds one compiled ACL surface.
+      1 2. it replaces `spellbook._spell_id_pool` with `_GrowsWhileIterated`, a dict whose
+      1 2. the fixture boots `Aether()`, which builds the Nexus and the other hosted
+      1 2026-09-26 annotation integrity guard: `tests/_annotation_audit_support.py` (static AST pass plus a
+      1 2026-09-26 compiler pool reads: `test_compiler_pool_snapshot_reads.py` joined the
+      1 2026-09-26 override site-plan lane: `test_site_plan_lowering.py` (key-set plan lowering and runtime
+      1 2026-09-26 spell-id stability and cache restage tests: address-free fingerprint unit contracts, a
+      1 2026-09-27 conduit lookup coverage (0.2.79): `test_aether_named_lesser_lookup.py` joined the Aether Integration
+      1 2026-09-27 disposal failures (0.2.80): `test_conduit_integration_disposal_failures.py` joined the Conduit
+      1 2026-09-27 scope exits (0.2.8203): `test_conduit_component_scope_exit_dispose.py` and
+      1 2026-09-28 document index: eight deterministic regressions cover concurrent reads during key-map
+      1 2026-09-28 mediator teardown contract: retired the session and component tests that required eight
+      1 2026-09-28 qualified-name validation: strategy unit tests compare canonical addresses, including
+      1 3. `pytest.main(["-q", "tests/unit", "tests/component", "tests/integration",
+      1 3. `tests/conftest.py` prepends `src/` to `sys.path`.
+      1 3. each test runs one pass - a structural rerun, Phase 5 local, Phases 5 and 6
+      1 3. helper creates one `FrameViewer` around those fixtures.
+      1 3. request matrix and turn-script tests drive the live capability room.
+      1 3. request matrix and turn-script tests drive the live room.
+      1 3. test builds runtime fixtures.
+      1 4. `require_free_threading` runs again on the same process, then `main` returns
+      2 4. harness cleanup tears down owned runtime objects.
+      1 4. teardown repeats steps 1-2; `tests/unit/melder/aether/conduit/conftest.py:65-85`
+      1 4. tests import local `melder` modules from the workspace.
+      1 4. unit/component/integration tests drive viewer methods over the same shared
+      1 A renamed or deleted test file leaves a citation that still parses and points
+      1 AGAINST - `src_graph_index.md` is built from the source tree, so nothing will
+      1 Any statement that is not directly supported by evidence must be treated as UNKNOWN.
+      1 C1 Code Map; measured on the device tree it reports zero findings.
+      1 C1 ranges across this map were re-measured.
+      1 C2 clusters for the package root, build assets, utilities (unit and component),
+      1 CITE = re.compile(r"`?((?:tests|src)/[A-Za-z0-9_/.]*\.py):(\d+)(?:\s*-\s*(\d+))?`?")
+      1 Cluster (named lessers by name, anonymous and nested lessers by id, root-named lookups, returned scopes, frame
+      1 Component Cluster. `test_dag_index.py` now covers `PathRegistry` only. Tests of retired code (SpellOverrider,
+      7 Concurrency/Threading:
+      1 Consume it by slicing a named section rather than reading it whole, and verify the
+      8 Contract/Interface:
+      1 Core is the DEDUPLICATED UNION OF EVERY `Key Files (C1)` LIST in the catalogs
+      1 Covered: the three pytest tiers CI runs (`unit`, `component`, `integration`); the
+      1 DagIndex targeting, the socket-reference sanity strategy, the old override and normal emitters) are gone. Stale
+      1 EOF
+      1 Each component entry includes:
+      1 Every range was RE-MEASURED from disk on 2026-09-26 (first measured 2026-08-02);
+      7 Extension Points:
+      7 Failure Modes:
+      1 HARNESS AND SUPPORT SURFACES - conftests, benches, mock packages, shared
+      1 If not evidenced => UNKNOWN.
+      7 Inputs:
+      1 Integration Cluster (real conduit cleanup and managed SpellSpace exit run every disposal method after one
+      7 Invariants/Guarantees:
+     40 Key Files (C1):
+      1 Lifecycle boundary (owner clarified 2026-09-28):
+      7 Lifecycle/Cleanup:
+      1 Measured ranges in this repository go stale FAST - a re-verification on 2026-08-03
+      1 Next to map: the conduit integration lane per file, and the aether unit tree (183
+      7 Observability:
+      7 Outputs:
+      7 Owned State:
+      1 PATH = re.compile(r"`((?:tests|src)/[^`]+\.py)`")
+      6 Parent Component: Component Test Suite
+      7 Parent Component: Integration Runtime Suite
+      2 Parent Component: Mock Fixture Corpus
+      1 Parent Component: Pytest Runner And Path Bootstrap
+      7 Parent Component: Shared Test Support And Matrix Fixtures
+     10 Parent Component: Unit Test Suite
+     30 Protects:
+     40 Purpose:
+      1 RECOMPOSED 2026-08-02 to the Required Section Contract.
+      1 REFRESHED 2026-09-26 (paired with the `tests_architecture` refresh). Every C3 entry
+      1 REMEASURED every pass rather than carried forward.
+      1 Regenerate on mismatch; never eyeball an offset.
+      1 Required rules:
+      7 Responsibilities:
+      1 Rule: No Unverified Claims.
+      1 Run this after any pass that touches the test tree or this document:
+      1 Runtime cleanup and lock handling are unchanged; entry checks do not confer a lifetime lease.
+      1 Spellbook Compiler Unit Cluster (see `### Flow: Concurrent-Writer Stand-In`).
+      1 THIS SIDE HAS NO GRAPH. `src_graph_index.md` is built from the source tree, so
+      1 The navigable unit is the H3 `### Component: <Name>` entry.
+      1 The previous version of this section was a bare 18-path list titled
+      1 The tests layer is now mapped as a real multi-tier system with reusable
+      1 This document defines C3 components, C2 subcomponents, and C1 code references
+      1 This document is AUTHORED. Its only generated companion is its index
+      1 This document is treated as durable context. It must be deep enough to recover
+      1 This index was STALE for an extended period before 2026-08-02 - 140 recorded lines
+      1 Unit coverage of the lookup family, the Cloud listing and the snapshot ward walk sits in files this map keeps
+      1 WHAT COUNTS AS A KEY FILE ON THIS SIDE. A test component's key files are its
+      1 [CI: test-runtime.yml -> run_runtime_tests.py] (free-threaded gate before + after)
+      1 [conftest bootstrap]
+      1 [experimentation + experiments/cprofile_testing] local only; CI never runs them
+      1 [mocks] feed spellbook and crystallizer test lanes
+      1 [pytest + pyproject]
+      1 [shared helpers] ----> [unit suite]
+      1 [unit/github_workflows, llm_support, architecture_and_design] test repository tooling
+      1 `## C3 Components Catalog` is a CONTAINER - it indexes as a range spanning every
+      1 `C1 Code Map (Key Paths)`: no ranges, no LOC, no timestamps, a DIRECTORY entry
+      1 `Conduit._aether` assignments are inert), and every tree count. The index commands
+      3 ```
+      1 ```bash
+      1 ```mermaid
+      1 ```text
+      1 `src/melder` evaluable once its `TYPE_CHECKING` imports are bound. Added to Shared Test Support and the
+      1 `test_spellspace_component_lease_release.py` joined the Aether Component Cluster (`with conduit:` as a
+      1 above - 186 paths - and nothing else. Change a component's key files and this set
+      1 against a live 767 - so every range it returned was wrong while still parsing.
+      1 and every test C2 cluster now carries a `Protects:` line naming the behaviour it
+      1 below cluster level (`test_aether.py`, `test_conduit_cloud.py`, `test_conduit_ward.py`).
+      1 builders - not every `test_*.py` module beneath it. The 745 test modules of the
+      1 callers to destroy one object simultaneously. Coverage now verifies owner-serialized, repeatable
+      1 case/default normalization and pass caching. Public integration regressions verify exact classes after
+      1 component beneath it, so select a component, never the catalog.
+      1 concurrent-writer flows. Corrected: the `codex*` exclusion claim (no such entry),
+      1 conjure in both postures, discovery-only twins and genuine address refusal. Contracted tests now require
+      1 construction and recovery after a failed construction, across all four shipped views. The original
+      1 contracts: demand, placement and misses, guard order, call shape, unresolved inputs, disposal lists, lock-free
+      1 core set that lists the entire tree is not a set anyone can verify, which is the
+      1 creations and component purge tests sit in files this map keeps below cluster level.
+      1 dispose scope, finish-then-raise exits, children-first pool return, idempotent soft cleanup, the SpellSpace
+      1 distinct addresses to remain valid before and after unlink. The two Fault-A xfails are regular regressions.
+      1 docs = next(p for p in (pathlib.Path("system_docs"), pathlib.Path("."))
+      1 documentation tooling that maintains these documents. The commands live with that
+      1 each entry's `verified_at` is the pass that measured it. THIS SIDE HAS NO GRAPH TO JOIN
+      1 errors); the Aether/Nexus/Rift Unit Cluster's command-system lookups now resolve through Aether's live lookup.
+      1 even to an existence check. That is why the instructions require ranges to be
+      1 ever tell you a test path here has rotted. Existence is checked explicitly and
+      1 every source-side citation gets a free resolution check and NOTHING here does.
+      1 fails). The unit regression `test_creations_disposal_failure_aggregation_regression.py` and the updated
+      1 failures after finishing (remeasured, 142 lines); the rewritten lock and root `with` tests sit in files this
+      1 first builds) are included. C1 ranges remeasured and the core
+      1 follows; if the two ever disagree, this section is wrong, not the catalog.
+      1 for doc in docs.glob("tests_*.md"):
+      1 for tests under `tests/`. It complements `tests_architecture`, which owns the
+      1 found sixteen source-side ranges that had been green earlier the same day. A
+      1 function provider) joined the Spellbook runtime/binding clusters.
+      1 graph TD
+      1 guards, read from the tests' own docstrings and names. New: the CI driver in the
+      1 here = pathlib.Path.cwd().resolve()
+      1 hits) joined the Spellbook Compiler Unit Cluster and `test_spellbook_component_override_key_set_plans.py`
+      1 import pathlib, re
+      1 index proof (line count, line ending, content hash) before trusting a range.
+      1 layer boundaries, by describing the test components inside them, the shared
+      1 lease flag), and `test_cleanable_cleanup_contexts.py` the Utilities Unit Cluster (cleanup contexts let errors
+      1 map keeps below cluster level (`test_conduit_lifecycle.py`, `test_conduit_integration_public_api.py`).
+      1 mixed index/text/adjacency contention test is retained; readiness claims no longer treat two writes as atomic.
+      1 modules) below cluster level.
+      1 moved out of `## Indexing` (portability rule). melder_2's two 0.2.73 tests (door-held
+      1 nowhere, and a range that drifts inside a file that still exists is invisible
+      1 opt-in profiling scripts; the mock corpus; and the CI driver that runs the tiers.
+      1 propagate). `test_conduit_integration_disposal_failures.py` now expects conduit cleanup to raise its disposal
+      1 python - <<'EOF'
+      1 range here is true as of its `verified_at` stamp and no longer.
+      1 ranges are remeasured every pass rather than carried forward.
+      1 re-enterable from docs instead of only from code and board history.
+      1 repository tooling, conduit, multithreading and live-sim lanes, and the CI and
+      1 repository-tooling trees under `tests/unit/` that test the CI scripts and support
+      1 root = next((p for p in (here, *here.parents) if (p / "tests").is_dir()), here)
+      1 runner component, an Experimentation And Profiling Trees component (local only),
+      1 set rebuilt as the union of the Key Files lists. Open: the per-run CI matrix, the
+      1 static/capability Rift JSON bench layer, which makes AR room-mode behavior
+      1 subprocess dynamic pass) and `tests/unit/melder/test_annotation_integrity.py` keep every annotation in
+      1 support layers they use, and the behaviour each surface protects.
+      1 support/harness components. The most important recent addition is the
+      1 system understanding from a blank slate without handwaving.
+      1 teardown, session-owned records, borrowed-holder survival and public entry rejection after cleanup.
+      1 that cannot be remeasured, and it was NOT the union of the Key Files lists.
+      1 the singleton-reset flow (a reset boots nothing; three class-level Aether caches;
+      1 they are counted in each entry rather than cited, because a
+      1 three CI tiers (and the 33 experimentation modules) are the component's CONTENT;
+      1 tooling, not here: this document ships with the code and the tooling does not.
+      1 tools rather than `melder`; the locally collected experimentation tree and the
+      1 tracked generated experimentation packages and the six `bundle.json` leftovers.
+      1 two-interpreter id check and fresh-world cache sequences (provider change, live-set bundle, full hit,
+      1 whole reason the contract narrows it.

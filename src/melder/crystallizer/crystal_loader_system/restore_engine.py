@@ -1522,6 +1522,11 @@ class RestoreEngine(Cleanable):
               "disabled" replays enable-then-disable (both acts are the
               recorded history); a final "cleaned" skips the rebuild with
               an honest report (the world sealed AFTER its Nexus died).
+            - A Nexus that is ALREADY active (a live-world load) is
+              deactivated first: an active Nexus refuses reconfiguration
+              (0.2.8210), and a world-scope load replaces the world, so the
+              deactivation is a truthful recorded act - exactly as stage 3
+              does for MutationResearch.
 
         Returns:
             None.
@@ -1558,6 +1563,13 @@ class RestoreEngine(Cleanable):
                 ),
             )
         nexus = Nexus()
+        # Live-world loads (LoadGate authority spans make them real): an
+        # ALREADY active Nexus refuses reconfiguration, and a world-scope
+        # load REPLACES the world - deactivate first (a truthful recorded
+        # act, as stage 3 does for MutationResearch), then activate the
+        # reloaded configuration.
+        if nexus.activated:
+            nexus.deactivate()
         nexus.activate(configuration)
         if self._nexus_state_name == "disabled":
             # Recorded history: the world sealed with a disabled Nexus -

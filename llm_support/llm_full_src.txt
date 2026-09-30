@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 9864da76059687c0f521325cf12b31a0e480882aee01a397a23e263a3a51c83d
+SOURCE FINGERPRINT: 05d6f58e7c16cabd127d3efeb4c8b6ac97f1a9abee566617eab2d013aedaf9d8
 FILE COUNT: 576
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: d8cb1454d88ec3e669fb736a31d90c78de0228b6064bc416ca19b61b1b73540d
+CONTENT SHA256: 3f743ba03d4067f9433a726f81894f7ffc5d26908360645748dc2f87fb49ea1f
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8207"
+__version__ = "0.2.8212"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -3677,7 +3677,7 @@ END FILE: src/melder/_build_assets/_system_documents/system_documents.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aether.py
-CONTENT SHA256: 641584e6f8072df4222cc0e7392e82a8fa1e09c5df1ea6c63a7502e10a4a45ec
+CONTENT SHA256: 82806f809205641ee58b9c41b2301ac944df28c9894611a58450936044422e74
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -4665,15 +4665,25 @@ class Aether(Cleanable):
               unactivated configuration succeeds here and fails later at `activate()`.
             - Type-checked: a non-`AetherConfiguration` raises `TypeError`.
             - Replaces any previously installed configuration outright.
+            - SEALED REGIME (0.2.8209): while any frame exists the spell-id regime
+              was sealed when the first frame was born and is in force; a
+              configuration whose `process_wide_unique_spell_ids` differs is
+              refused and nothing is installed, so `configuration` can never
+              report a regime that does not apply. With no frame, any regime is
+              accepted and the next first frame seals it.
 
         Threading:
-            Unsynchronized read; a snapshot only.
+            The regime check and the install run under the Aether lock that frame
+            birth holds, so a concurrent first frame either seals from this
+            configuration or is seen by the check.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If the object has been cleaned.
+            RuntimeError: If the object has been cleaned, or frames exist and the
+                configuration's spell-id regime differs from the sealed one.
+            TypeError: If `configuration` is not an `AetherConfiguration`.
 
         Returns:
             None.
@@ -4681,8 +4691,10 @@ class Aether(Cleanable):
         self.check_cleaned()
         if not isinstance(configuration, AetherConfiguration):
             raise TypeError("configuration must be an AetherConfiguration instance.")
-        self._configuration = configuration
-        self._configured = True
+        with self._lock:
+            self._refuse_regime_change_while_frames_exist(configuration)
+            self._configuration = configuration
+            self._configured = True
 
     def activate(
             self,
@@ -4703,16 +4715,22 @@ class Aether(Cleanable):
               first; omitting it uses whatever is already installed.
             - Refuses when nothing is configured, so the two failure modes are
               distinct: "not configured" and "configuration not activated".
+            - Re-checks the SEALED REGIME (0.2.8209): an installed configuration
+              that was still mutable when installed can have its
+              `process_wide_unique_spell_ids` changed afterwards, so activation
+              refuses it while frames exist exactly as `configure()` would.
 
         Threading:
-            State transition applied under the Aether lock.
+            The regime check runs under the Aether lock; the rest of the state
+            transition is unchanged.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
 
         Raises:
-            RuntimeError: If Aether is not configured, or the installed
-                configuration has not been activated.
+            RuntimeError: If Aether is not configured, the installed
+                configuration has not been activated, or frames exist and its
+                spell-id regime differs from the sealed one.
             TypeError: If a supplied configuration is not an `AetherConfiguration`.
 
         Returns:
@@ -4727,9 +4745,60 @@ class Aether(Cleanable):
             raise RuntimeError(
                 "AetherConfiguration must be activated before activating Aether."
             )
+        with self._lock:
+            self._refuse_regime_change_while_frames_exist(self._configuration)
         self._configuration.validate()
         self._apply_configuration_to_utility_system()
         self._activated = True
+
+    def _refuse_regime_change_while_frames_exist(
+            self,
+            configuration: AetherConfiguration,
+    ) -> None:
+        """
+        Internal
+
+        Refuse a configuration whose spell-id regime differs from the sealed one.
+
+        Purpose:
+            The regime (`_process_wide_unique_spell_ids`) is sealed when the first
+            frame is born and never re-read while frames exist, because spell ids
+            already registered were allocated under it. A configuration saying
+            otherwise would be reported by `configuration` without ever applying.
+
+        Contract:
+            - The caller holds the Aether lock, so no frame is born or retired
+              between this check and the caller's install or activation.
+            - No frame: returns without reading anything - any regime may still
+              be installed, and the next first frame seals it.
+            - Frames exist: returns only when
+              `bool(configuration.process_wide_unique_spell_ids)` equals the
+              sealed value; otherwise raises and changes nothing.
+
+        Args:
+            configuration: The configuration about to be installed or activated.
+
+        Raises:
+            RuntimeError: Frames exist and the configuration's regime differs.
+            TypeError: The configuration's stored regime value is not a bool
+                (its defensive property refuses it).
+
+        Returns:
+            None.
+        """
+        if not self._aetheric_frames:
+            return
+        requested = bool(configuration.process_wide_unique_spell_ids)
+        sealed = self._process_wide_unique_spell_ids
+        if requested != sealed:
+            raise RuntimeError(
+                "Aether's spell-id regime is sealed while frames exist: "
+                f"process_wide_unique_spell_ids is {sealed}. A configuration with "
+                f"process_wide_unique_spell_ids={requested} would be reported without "
+                "ever applying, so it is refused. Install it before the first "
+                "Spellbook creates a frame, or keep "
+                f"process_wide_unique_spell_ids={sealed}."
+            )
 
     def _apply_configuration_to_utility_system(self) -> None:
         """
@@ -5365,6 +5434,155 @@ class Aether(Cleanable):
             self._logger.error(message, "_resolve_lookup_frame")
             raise TypeError(message)
         return self._get_existing_frame(aetheric_frame_name)
+
+    def find_frame(self, aetheric_frame_name: str) -> Optional[AethericFrame]:
+        """
+        Return the registered, live frame with this exact name, or None, without creating any frame.
+
+        Purpose:
+            Let a host that creates frames (by constructing Spellbooks) find them again without reading Aether's
+            private registry. The frame-scoped calls such as `get_conduit_cloud` and the conduit lookups resolve
+            "default" through the lazy creation path, so asking them about a missing "default" creates it and,
+            on a world with no frames yet, seals the Aether configuration. This lookup never does either.
+
+        Contract:
+            - NONCREATING, "default" included: an absent frame returns None. No frame is created, no plane claim
+              is taken, and the Aether configuration is neither installed nor frozen.
+            - Exact name match against the frame registry, which holds every frame ("default" is an ordinary
+              entry once something has created it).
+            - A registered frame that already reads `cleaned` (its cleanup has started but has not yet detached
+              it from Aether) returns None, like a detached one.
+            - Returns a borrowed reference and grants no lease. Aether owns every frame, and a Nexus removal,
+              `AethericFrame.cleanup()` or `Aether.cleanup()` may clean it at any time, after which the reference
+              must not be used. A later frame can reuse the name: compare identity (`is`) to tell them apart.
+            - `get_frame` raises instead of returning None; `list_frame_names` lists the live names.
+
+        Threading:
+            One `dict.get` on the registry, without the Aether lock: a point-in-time answer. Taking no lock keeps
+            the lookup off the Aether -> Nexus lock order used while a cleaned frame is detached.
+
+        Args:
+            aetheric_frame_name:
+                Exact frame name, for example "default" or the name a Spellbook was constructed with.
+
+        Returns:
+            Optional[AethericFrame]: The live frame, or None when no live frame has this name.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            RuntimeError: If Aether has been cleaned.
+        """
+        return self._find_registered_frame(aetheric_frame_name, "find_frame")
+
+    def get_frame(self, aetheric_frame_name: str) -> AethericFrame:
+        """
+        Return the registered, live frame with this exact name, or raise. Never creates a frame.
+
+        Purpose:
+            The raising counterpart of `find_frame`, for callers that expect the frame to exist.
+
+        Contract:
+            - Resolves exactly as `find_frame`: noncreating ("default" included), exact name, frames that read
+              `cleaned` are absent, and the reference is borrowed with no lease.
+            - The not-found message starts with "Aetheric frame '<name>' does not exist.", like the frame errors
+              of the conduit lookups, and says how to create the frame or test for it without raising.
+
+        Threading:
+            As `find_frame`: one registry read, no lock.
+
+        Args:
+            aetheric_frame_name:
+                Exact frame name.
+
+        Returns:
+            AethericFrame: The live frame.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            ValueError: If no live frame has this name.
+            RuntimeError: If Aether has been cleaned.
+        """
+        frame = self._find_registered_frame(aetheric_frame_name, "get_frame")
+        if frame is None:
+            message = (
+                f"Aetheric frame '{aetheric_frame_name}' does not exist. get_frame never creates a frame: "
+                f"constructing a Spellbook with aetheric_frame='{aetheric_frame_name}' creates it, and "
+                "find_frame(...) tests for it without raising."
+            )
+            self._logger.error(message, "get_frame")
+            raise ValueError(message)
+        return frame
+
+    def list_frame_names(self) -> tuple[str, ...]:
+        """
+        Return the names of the live frames in the order they were created, without creating any frame.
+
+        Purpose:
+            Let a host see which frames exist - for example, whether constructing a Spellbook will create its
+            frame or join an existing one - without reading Aether's private registry.
+
+        Contract:
+            - NONCREATING: an Aether with no frames returns an empty tuple, and "default" appears only once
+              something has created it.
+            - Built from one copy of the registry, so the tuple is a snapshot: frames created or cleaned later do
+              not change it, and a listed frame may be gone by the time it is used - resolve it with `find_frame`.
+            - Frames that already read `cleaned` are left out.
+            - Order is registration order.
+
+        Threading:
+            One `dict.copy()` of the registry, without the Aether lock; the copy is atomic, so a concurrent frame
+            creation cannot interrupt the listing.
+
+        Returns:
+            tuple[str, ...]: Live frame names.
+
+        Raises:
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        registry = self._aetheric_frames.copy()
+        return tuple(name for name, frame in registry.items() if not frame.cleaned)
+
+    def _find_registered_frame(
+            self,
+            aetheric_frame_name: str,
+            method_name: str,
+    ) -> Optional[AethericFrame]:
+        """
+        Internal
+
+        Validate a frame lookup's name and read the registry without creating anything.
+
+        Contract:
+            - Shared by `find_frame` and `get_frame`, so both refuse a non-string name the same way and name the
+              public call that received it.
+            - Never reaches `_get_existing_frame` or `_ensure_frame`: no creation, no plane claim, no seal.
+
+        Args:
+            aetheric_frame_name:
+                Name received by the public lookup.
+            method_name:
+                Name of the public lookup, used in the TypeError message and its log line.
+
+        Returns:
+            Optional[AethericFrame]: The live frame, or None.
+
+        Raises:
+            TypeError: If `aetheric_frame_name` is not a string.
+            RuntimeError: If Aether has been cleaned.
+        """
+        self.check_cleaned()
+        if not isinstance(aetheric_frame_name, str):
+            message = (
+                f"{method_name}: aetheric_frame_name must be a frame name string such as 'default'; "
+                f"got {type(aetheric_frame_name).__name__}."
+            )
+            self._logger.error(message, "_find_registered_frame")
+            raise TypeError(message)
+        frame = self._aetheric_frames.get(aetheric_frame_name)
+        if frame is None or frame.cleaned:
+            return None
+        return frame
 
     def list_root_conduit_ids(
             self,
@@ -6026,7 +6244,10 @@ class Aether(Cleanable):
               keeps exactly what the caller installed. This only fills the gap
               left by never configuring at all.
             - Installs `AetherConfiguration().with_defaults()` and FREEZES it, so
-              the regime cannot be changed afterwards by any path.
+              the regime cannot be changed afterwards by any path. `configure()`
+              and `activate()` refuse a configuration with a different regime
+              while frames exist (0.2.8209), so the installed configuration
+              always reports the regime in force.
             - Never raises. A failure to collapse must not stop a frame being
               born; `_process_wide_unique_spell_ids` is already initialised to
               the same default in `__init__`, so the behaviour is identical
@@ -6375,7 +6596,7 @@ END FILE: src/melder/aether/aether.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aether_configuration.py
-CONTENT SHA256: 5fa1f620d16c91b576dab8dbd13663ad1ba2a17e0f7c45fc721d05aeb1ffbf77
+CONTENT SHA256: 0a2a6c78b17d81a59d01bfbf0a14b71ce2f0e69c0db0cfa05524b15f696ee17e
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -6733,6 +6954,41 @@ class AetherConfiguration(Cleanable):
                 "process_wide_unique_spell_ids must remain a bool."
             )
         return value
+
+    def get_configuration_dictionary(self) -> dict[str, object]:
+        """
+        Return a snapshot of the properties this configuration currently holds.
+
+        Purpose:
+            Let a host compare two configurations - for example a policy it was
+            handed against the one installed on the root - without reading the
+            private property bag.
+
+        Contract:
+            - Returns a NEW dict of every property currently set, name to value.
+              Changing the returned dict never changes this configuration.
+            - Values are the stored objects BY REFERENCE (no deep copy, no
+              serialization); all four logger/regime properties are always
+              present.
+            - Never validates, freezes, activates or emits a recorded twin, and
+              works in every lifecycle state until cleanup.
+
+        Threading:
+            Taken under the configuration lock, so the snapshot never sees a
+            half-applied write.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
+        Returns:
+            dict[str, object]: Property name to stored value.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._properties)
 
     def with_defaults(self) -> AetherConfiguration:
         """
@@ -8030,7 +8286,7 @@ END FILE: src/melder/aether/aether_utility_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/aetheric_frame.py
-CONTENT SHA256: 931a037d461fe15b019e14cd38160b3e9ddb64e53465a7a51128a31144619d18
+CONTENT SHA256: 17395c9e39bbd9112f3c6e531085dc4269d753e3cb0de288ec908db9d92bc4a2
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -8623,6 +8879,41 @@ class AethericFrame(Cleanable):
         self.check_cleaned()
         return self._frame_configuration
 
+    @property
+    def shared_spellbook_configuration(self) -> Optional[SpellbookConfiguration]:
+        """
+        Return the frame-wide shared rich Spellbook configuration, when this frame shares one.
+
+        Purpose:
+            Public read of the configuration Spellbooks in this frame adopt while the frame posture shares the rich
+            configuration, so a host can compare a configuration against it without reading `_configuration`.
+
+        Contract:
+            - Returns the configuration only while `frame_configuration.shared_framewide_spellbook_configuration` is
+              True, and None otherwise: the same gate a Spellbook applies before adopting it.
+            - Also None while sharing is on but no Spellbook has bound one yet. The first conjuring Spellbook binds
+              its frozen configuration; later Spellbooks adopt that object.
+            - Returns the live object by reference. The frame owns it and cleans it with the frame; the caller must
+              not clean it.
+
+        Threading:
+            Unsynchronized reads: the posture flag (read under the posture's own lock), then the bound reference,
+            which is set once under the Aether lock and not replaced while the frame lives.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Returns:
+            Optional[SpellbookConfiguration]: The shared configuration, or None.
+
+        Raises:
+            RuntimeError: If the frame has been cleaned.
+        """
+        self.check_cleaned()
+        if not self._frame_configuration.shared_framewide_spellbook_configuration:
+            return None
+        return self._configuration
+
     def freeze_frame_configuration(
             self,
             origin_spellbook_id: Optional[str] = None,
@@ -9183,7 +9474,7 @@ END FILE: src/melder/aether/aetheric_frame/aetheric_frame.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aetheric_frame/aetheric_frame_configuration.py
-CONTENT SHA256: 88949085386a4e6b8f14f75203d2c1183e8f6bcb77c1c27b65104dbe15b14fcd
+CONTENT SHA256: 220f4df737555ddb402645285646afa2fccc7ec8f555c8aafbe68f7289e1fd6a
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -10684,6 +10975,30 @@ class AethericFrameConfiguration(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._origin_spellbook_id
+
+    @property
+    def frozen(self) -> bool:
+        """
+        Return whether this posture has been frozen (settled).
+
+        Contract:
+            - False while the posture is mutable; True once `freeze()` has succeeded. Freeze is the settlement point
+              of the frame's world: every `with_*` builder refuses after it, and conjure treats an unfrozen posture
+              as an unsettled world it may settle.
+            - Reading it changes nothing: it never freezes or validates.
+
+        Threading:
+            Reads under `self._lock`, the lock `freeze()` holds while it sets the flag.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned.
+
+        Returns:
+            bool: True when frozen.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._frozen
 
     @property
     def system_state(self) -> SystemState:
@@ -42495,7 +42810,7 @@ END FILE: src/melder/aether/aetheric_mediator/unwind_conflict_error.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/conduit.py
-CONTENT SHA256: 2b26074cf6837f3d6fddede777fd48525faba3c6c81da7a90aa9810c9961b596
+CONTENT SHA256: 224bb70be311771e8bcd8e3b5e6e8e1afe34dfa6ce2534f6e8b92ecc00322fff
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -44406,6 +44721,35 @@ class Conduit(Cleanable):
             self._logger.error("Attempt to rename conduit after name set", "name")
             raise RuntimeError("Conduit name is set.")
         self._name = name
+
+    @property
+    def spellbook(self) -> Spellbook:
+        """
+        Public API
+
+        Return the Spellbook this conduit resolves through.
+
+        Contract:
+            - A root conduit returns the Spellbook that conjured it, whose `conduit` property returns this root.
+              A lesser returns the Spellbook it was built with, its root's. `upgrade_to_normal` rebinds the upgraded
+              conduit to its new Spellbook, which this then returns.
+            - BORROWED: reading it keeps nothing alive, and the caller cleans the Spellbook only if it owns it.
+            - The mirror of `Spellbook.conduit`.
+
+        Threading:
+            Unsynchronized read; a snapshot only.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the conduit has been cleaned.
+
+        Returns:
+            Spellbook: The borrowed Spellbook.
+        """
+        self.check_cleaned()
+        return self._spellbook
 
     def get_conduit_cloud(self) -> "ConduitCloud":
         """
@@ -69768,7 +70112,7 @@ END FILE: src/melder/aether/spellbook/bind/spell_index.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/configuration/spellbook_configuration.py
-CONTENT SHA256: 8188bb298fb4b9df0c1bb2d9ab0804116edfc0cff55d7c4b09e4f4d2c08a0250
+CONTENT SHA256: 74e70a927f20c490499d2fa57b24799b7a1f1f42473bd1a4fbca0c5392ad8d72
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -69988,6 +70332,58 @@ class SpellbookConfiguration(Cleanable):
             del self._conduit_hooks
             del self._meld_hooks
             del self._bind_hooks
+
+    @property
+    def aether_frame(self) -> str:
+        """
+        Return the name of the Aether frame this configuration was built for.
+
+        Contract:
+            - The `aether_frame` given at construction ("default" when omitted); it never changes.
+            - When a Spellbook is handed a configuration and its frame has no shared configuration to adopt, it
+              refuses one whose `aether_frame` is not the Spellbook's own frame, so this is the value to compare
+              before handing a configuration over.
+
+        Threading:
+            Unsynchronized read of a value fixed at construction.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Returns:
+            str: The frame name.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+        """
+        self.check_cleaned()
+        return self._aether_frame
+
+    @property
+    def frozen(self) -> bool:
+        """
+        Return whether this configuration has been frozen.
+
+        Contract:
+            - False while properties and hooks can still change; True once `freeze()` (or `finalize()` /
+              `build()`) has succeeded. A configuration must be frozen before a Conduit is conjured from it.
+            - Reading it changes nothing: it never freezes or validates.
+
+        Threading:
+            Reads under `self._lock`, the lock `freeze()` holds while it sets the flag.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Returns:
+            bool: True when frozen.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._frozen
 
     def set_property(self, key: str, value: Any) -> None:
         """
@@ -125159,7 +125555,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: 629ea9a2e07902eb8e4c90097f8602f018cc4e7ab82991b72113dcb03c0a0eb8
+CONTENT SHA256: 836f5a1b2c21cb87613ed0978499206ad7dc25749cbb628b7e53da32a7eedc08
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -131679,6 +132075,9 @@ class Spellbook(Cleanable):
             - SETTLED world (posture frozen/explicit): every conjure
               INHERITS the world's mode; the flag never polices - dynamic-
               only operations fail later at their own gates, on purpose.
+            - `_effective_conjure_mode` predicts this result WITHOUT settling
+              so `conjure()` can refuse before settlement (0.2.8211); the two
+              must stay in lockstep.
         Args:
             dynamic (bool): The caller's requested mode (settlement input
                 on unsettled worlds; ignored in favor of the world's truth
@@ -131704,6 +132103,114 @@ class Spellbook(Cleanable):
                 frame_configuration.with_system_state(SystemState.dynamic)
             self._aetheric_frame.bind_frame_configuration(frame_configuration)
         return frame_configuration.system_state is SystemState.dynamic
+
+    def _effective_conjure_mode(self, dynamic: bool) -> bool:
+        """
+        Internal
+
+        Predict the conjure mode `_settle_or_inherit_conjure_mode(dynamic)`
+        would produce, without settling anything (0.2.8211).
+
+        Purpose:
+            `conjure()` refuses a conjure the recorded-world configuration
+            discipline forbids BEFORE the frame posture is settled, so a
+            refusal leaves the frame exactly as it was. That check needs the
+            mode settlement would produce; this is that mode.
+
+        Contract:
+            - PURE: reads the frame posture and mutates nothing.
+            - Missing posture -> the caller's flag (settlement returns it
+              unchanged and `check_system_state` refuses later).
+            - Unfrozen posture and dynamic=True -> True (settlement would
+              settle the world dynamic).
+            - Otherwise -> whether the posture's `system_state` is dynamic
+              (the world's mode is inherited, as in settlement).
+            - Mirrors `_settle_or_inherit_conjure_mode` branch for branch;
+              the two must stay in lockstep.
+
+        Threading:
+            Unsynchronized reads of the frame posture. Another Book settling
+            the same frame between this prediction and settlement can make
+            the prediction stale; the transaction window re-checks the
+            settled mode, so the discipline still holds.
+
+        Args:
+            dynamic (bool): The caller's requested mode.
+
+        Returns:
+            bool: The effective mode settlement would produce.
+        """
+        frame_configuration = self._aetheric_frame_configuration
+        if frame_configuration is None:
+            return dynamic
+        if dynamic and not frame_configuration._frozen:
+            return True
+        return frame_configuration.system_state is SystemState.dynamic
+
+    def _refuse_recorded_conjure_after_mutable_binds(self, dynamic: bool) -> None:
+        """
+        Internal
+
+        Refuse a dynamic conjure in a recorded world (active Crystallizer)
+        when binds ran while this Book's configuration was still mutable.
+
+        Contract:
+            - Raises only when `dynamic` is True, at least one bind preceded
+              configuration finalization, and the Crystallizer is active.
+              Automatic-mode worlds and worlds without an active Crystallizer
+              are exempt, so non-recorded runtimes stay byte-identical.
+            - Mutates nothing; on refusal it logs one ERROR line and raises.
+            - `conjure()` calls it with the PREDICTED mode before settlement
+              (0.2.8211), so a refusal leaves the frame posture untouched and
+              a later automatic conjure in that frame is not forced dynamic.
+              The transaction window calls it again with the SETTLED mode;
+              that second call only fires if another Book settled the shared
+              frame in between.
+
+        Threading:
+            Reads the early-bind count and the Crystallizer flag under the
+            Spellbook lock, which callers take only after the CONJURE
+            transaction claimed the Book (embargo-then-lock order); binds need
+            the spellbook INTENT that transaction excludes, so the count
+            cannot move during a conjure.
+
+        Args:
+            dynamic (bool): The effective conjure mode (predicted or settled).
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: When the discipline is violated; the message names
+                how many spells were bound early and how to fix it.
+        """
+        with self._lock:
+            # Dynamic-mode configuration discipline (crystallizer worlds):
+            # a recorded world must not be born from binds that ran while
+            # the configuration was still mutable -- the profile record and
+            # default bootstrap would durably persist config-incoherent
+            # bind truth. Automatic mode and crystallizer-off worlds are
+            # exempt so non-recorded runtimes stay byte-identical.
+            if (
+                    dynamic
+                    and self._binds_before_configuration_count > 0
+                    and self._crystallizer.activated
+            ):
+                early_bind_count = self._binds_before_configuration_count
+                self._logger.error(
+                    f"conjure refused: {early_bind_count} bind(s) preceded configuration "
+                    "finalization in a dynamic crystallizer world",
+                    "conjure",
+                )
+                raise RuntimeError(
+                    "[SPELLBOOK] Dynamic-mode conjure with an active Crystallizer requires the \n"
+                    f"SpellbookConfiguration to be finalized BEFORE the first bind. {early_bind_count} spell(s) \n"
+                    "were bound while the configuration was still mutable, so the recorded world \n"
+                    "(profiles, checkpoints, the default bootstrap) would persist binds that ran \n"
+                    "against unsettled configuration. Fix: build and finalize the configuration \n"
+                    "first, pass it to the Spellbook before binding, then conjure. Automatic-mode \n"
+                    "worlds and worlds without an active Crystallizer are not affected."
+                )
 
     def conjure(
             self,
@@ -131750,6 +132257,10 @@ class Spellbook(Cleanable):
         Raises:
             RuntimeError: If this Spellbook has already conjured a Conduit (only one is allowed).
             RuntimeError: If dynamic-only policies are used when `system_state` is "automatic" or when `dynamic` is False.
+            RuntimeError: If the conjure would run dynamic while the Crystallizer is active and spells were
+                bound before this Spellbook's configuration was finalized. Refused BEFORE the frame posture
+                is settled (0.2.8211): the frame is left as it was, so an unsettled frame stays unsettled
+                and a later automatic conjure there still runs automatic.
             ValueError: If the configuration fails validation or the policy string is invalid.
 
         Policies:
@@ -131796,6 +132307,12 @@ class Spellbook(Cleanable):
             },
         )
         try:
+            # Refuse the recorded-world configuration discipline on the mode
+            # settlement WOULD produce, before settling: a refused conjure
+            # must not leave its frame settled dynamic (0.2.8211).
+            self._refuse_recorded_conjure_after_mutable_binds(
+                self._effective_conjure_mode(dynamic)
+            )
             return self._conjure_within_transaction_window(
                 policy=policy,
                 dynamic=self._settle_or_inherit_conjure_mode(dynamic),
@@ -132066,6 +132583,10 @@ class Spellbook(Cleanable):
               Book and settled frame twins, including Rift visibility policy.
             - Passes `validation_warnings` to the creation system unchanged; only
               the public `conjure()` supplies it.
+            - Re-checks the recorded-world configuration discipline on the
+              SETTLED mode. `conjure()` already refused it on the predicted
+              mode before settlement (0.2.8211); this call only fires if
+              another Book settled the shared frame in between.
         Threading:
             - The CONJURE embargo is acquired by `conjure()` BEFORE this method
               takes the Spellbook lock, preserving embargo-then-lock ordering so
@@ -132074,32 +132595,11 @@ class Spellbook(Cleanable):
         """
         self._conjure_dynamic_hint = dynamic
         with self._lock:
-            # Dynamic-mode configuration discipline (crystallizer worlds):
-            # a recorded world must not be born from binds that ran while
-            # the configuration was still mutable -- the profile record and
-            # default bootstrap would durably persist config-incoherent
-            # bind truth. Automatic mode and crystallizer-off worlds are
-            # exempt so non-recorded runtimes stay byte-identical.
-            if (
-                    dynamic
-                    and self._binds_before_configuration_count > 0
-                    and self._crystallizer.activated
-            ):
-                early_bind_count = self._binds_before_configuration_count
-                self._logger.error(
-                    f"conjure refused: {early_bind_count} bind(s) preceded configuration "
-                    "finalization in a dynamic crystallizer world",
-                    "conjure",
-                )
-                raise RuntimeError(
-                    "[SPELLBOOK] Dynamic-mode conjure with an active Crystallizer requires the \n"
-                    f"SpellbookConfiguration to be finalized BEFORE the first bind. {early_bind_count} spell(s) \n"
-                    "were bound while the configuration was still mutable, so the recorded world \n"
-                    "(profiles, checkpoints, the default bootstrap) would persist binds that ran \n"
-                    "against unsettled configuration. Fix: build and finalize the configuration \n"
-                    "first, pass it to the Spellbook before binding, then conjure. Automatic-mode \n"
-                    "worlds and worlds without an active Crystallizer are not affected."
-                )
+            # Dynamic-mode configuration discipline (crystallizer worlds), on
+            # the SETTLED mode. conjure() refused it on the predicted mode
+            # before settlement; this only fires if another Book settled the
+            # shared frame between that prediction and settlement.
+            self._refuse_recorded_conjure_after_mutable_binds(dynamic)
             if self._conjured:
                 conduit_id = None
                 conduit_name = None
@@ -139688,7 +140188,7 @@ END FILE: src/melder/crystallizer/asset_management/mesh_interface_contract.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/configuration/crystallizer_configuration.py
-CONTENT SHA256: 774c8aeeecd5aa19008ede62e9503f991bd6be2a14834deeee9092ddd15ccc11
+CONTENT SHA256: d0d69c5dfe337267e314a03f42a08e0edaa685ac2bb7c94a52b84853befc1975
 SOURCE ENCODING: utf-8
 ================================================================================
 from collections.abc import Sequence as SequenceABC
@@ -140014,6 +140514,40 @@ class CrystallizerConfiguration(Cleanable):
         """
         self.check_cleaned()
         return self._properties[key]
+
+    def get_configuration_dictionary(self) -> Dict[str, object]:
+        """
+        Return a snapshot of the properties this configuration currently holds.
+
+        Purpose:
+            Let a host compare two configurations - for example a policy it was
+            handed against the one installed on the root - without reading the
+            private property bag.
+
+        Contract:
+            - Returns a NEW dict of every property currently set, name to value.
+              Changing the returned dict never changes this configuration.
+            - Values are the stored objects BY REFERENCE (no deep copy, no
+              serialization); a property that was never set is absent, not defaulted.
+            - Never validates, freezes, activates or emits a recorded twin, and
+              works in every lifecycle state until cleanup.
+
+        Threading:
+            Taken under the configuration lock, so the snapshot never sees a
+            half-applied write.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
+        Returns:
+            Dict[str, object]: Property name to stored value.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._properties)
 
     @property
     def retain_user_sources(self) -> bool:
@@ -151291,7 +151825,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/load_plan.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_loader_system/restore_engine.py
-CONTENT SHA256: feb5b6fdeaf61420f2208e911aa44eaa92492b8b3f31b2b9d06ef19bdc2c24da
+CONTENT SHA256: 79085ff9af3fd859a1a215cd3b85ee5ddfd35e636e0941dfdfb15599b7699ef5
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -152818,6 +153352,11 @@ class RestoreEngine(Cleanable):
               "disabled" replays enable-then-disable (both acts are the
               recorded history); a final "cleaned" skips the rebuild with
               an honest report (the world sealed AFTER its Nexus died).
+            - A Nexus that is ALREADY active (a live-world load) is
+              deactivated first: an active Nexus refuses reconfiguration
+              (0.2.8210), and a world-scope load replaces the world, so the
+              deactivation is a truthful recorded act - exactly as stage 3
+              does for MutationResearch.
 
         Returns:
             None.
@@ -152854,6 +153393,13 @@ class RestoreEngine(Cleanable):
                 ),
             )
         nexus = Nexus()
+        # Live-world loads (LoadGate authority spans make them real): an
+        # ALREADY active Nexus refuses reconfiguration, and a world-scope
+        # load REPLACES the world - deactivate first (a truthful recorded
+        # act, as stage 3 does for MutationResearch), then activate the
+        # reloaded configuration.
+        if nexus.activated:
+            nexus.deactivate()
         nexus.activate(configuration)
         if self._nexus_state_name == "disabled":
             # Recorded history: the world sealed with a disabled Nexus -
@@ -168414,7 +168960,7 @@ END FILE: src/melder/mutation_research/group_diff/strategies/member_diff_strateg
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/mutation_research/mutation_configuration.py
-CONTENT SHA256: 3ec956ed26b124ad851d5e00c711f9c85706008aa0dbc2c9583567b27727c64a
+CONTENT SHA256: 083444864f9693030807c5d3c216289312185c19dfac4e78682f0288e6d1a7b0
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -168712,6 +169258,40 @@ class MutationResearchConfiguration(Cleanable):
         """
         self.check_cleaned()
         return self._properties[key]
+
+    def get_configuration_dictionary(self) -> Dict[str, object]:
+        """
+        Return a snapshot of the properties this configuration currently holds.
+
+        Purpose:
+            Let a host compare two configurations - for example a policy it was
+            handed against the one installed on the root - without reading the
+            private property bag.
+
+        Contract:
+            - Returns a NEW dict of every property currently set, name to value.
+              Changing the returned dict never changes this configuration.
+            - Values are the stored objects BY REFERENCE (no deep copy, no
+              serialization); a property that was never set is absent, not defaulted.
+            - Never validates, freezes, activates or emits a recorded twin, and
+              works in every lifecycle state until cleanup.
+
+        Threading:
+            Taken under the configuration lock, so the snapshot never sees a
+            half-applied write.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
+        Returns:
+            Dict[str, object]: Property name to stored value.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._properties)
 
     def has_property(self, key: str) -> bool:
         """
@@ -197715,7 +198295,7 @@ END FILE: src/melder/nexus/acl/validator/profiles/view/safe_strategy.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/configuration/nexus_configuration.py
-CONTENT SHA256: 1ee4d3c9b44024979ba362719cea42654e6510ceaa9ebb540a6868f96c9893a5
+CONTENT SHA256: 74311f41840d170ac1fc1a620e9d411055e6d0a36c7948302fb20a64219632f5
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -198004,6 +198584,40 @@ class NexusConfiguration(Cleanable):
         """
         self.check_cleaned()
         return self._properties[key]
+
+    def get_configuration_dictionary(self) -> Dict[str, object]:
+        """
+        Return a snapshot of the properties this configuration currently holds.
+
+        Purpose:
+            Let a host compare two configurations - for example a policy it was
+            handed against the one installed on the root - without reading the
+            private property bag.
+
+        Contract:
+            - Returns a NEW dict of every property currently set, name to value.
+              Changing the returned dict never changes this configuration.
+            - Values are the stored objects BY REFERENCE (no deep copy, no
+              serialization); a property that was never set is absent, not defaulted.
+            - Never validates, freezes, activates or emits a recorded twin, and
+              works in every lifecycle state until cleanup.
+
+        Threading:
+            Taken under the configuration lock, so the snapshot never sees a
+            half-applied write.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If the configuration has been cleaned.
+
+        Returns:
+            Dict[str, object]: Property name to stored value.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._properties)
 
     def has_property(self, key: str) -> bool:
         """
@@ -204375,7 +204989,7 @@ END FILE: src/melder/nexus/frame_descriptor_manager.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/nexus/nexus.py
-CONTENT SHA256: f34da8d514cd7368224ea4dee037f6b10ef8c4229568aa206d939aba29c8e3c0
+CONTENT SHA256: 0b20cd437718754d975c34430bfad0442712d206ecb031819db9eec26ab09e2e
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -205189,14 +205803,19 @@ class Nexus(Cleanable):
               accepts a configuration that is still mutable. This is the
               separation `enable()` never offered: install now, settle later.
             - Type-checked: a non-`NexusConfiguration` raises `TypeError`.
-            - Replaces any previously installed configuration.
+            - Replaces any previously installed configuration - but REFUSES while
+              Nexus is active (0.2.8210): a live Nexus reads its policy at every
+              Rift validation, so a swap would change the rules under existing
+              Rifts. Deactivate first; the installed policy is kept until then.
+              Crystallizer and MutationResearch refuse the same way.
 
         Args:
             configuration:
                 Configuration object to install.
 
         Threading:
-            Applied under the Nexus lock.
+            Applied under the Nexus lock; the active check and the install are one
+            critical section.
 
         Lifecycle / Cleanup:
             Guarded by `check_cleaned()`.
@@ -205205,13 +205824,17 @@ class Nexus(Cleanable):
             None.
 
         Raises:
-            RuntimeError: If Nexus has been cleaned.
+            RuntimeError: If Nexus has been cleaned, or is active.
             TypeError: If `configuration` is not a `NexusConfiguration`.
         """
         self.check_cleaned()
         if not isinstance(configuration, NexusConfiguration):
             raise TypeError("configuration must be a NexusConfiguration.")
         with self._lock:
+            if self._activated:
+                raise RuntimeError(
+                    "Cannot reconfigure Nexus while it is active. Deactivate it first."
+                )
             self._configuration = configuration
             self._configured = True
 
@@ -205226,7 +205849,10 @@ class Nexus(Cleanable):
             Transition Nexus into its enabled state for Rift-domain operations.
 
         Contract:
-            - Optionally replaces the installed configuration before enabling.
+            - Optionally replaces the installed configuration before enabling -
+              but not while Nexus is already active (0.2.8210): passing a
+              different configuration then raises, exactly as `configure()` does.
+              Passing the installed configuration, or none, re-enables as before.
             - Finalizes the installed configuration before setting enabled.
             - Does not create a default configuration automatically when none
               is installed.
@@ -205240,11 +205866,16 @@ class Nexus(Cleanable):
 
         Raises:
             RuntimeError:
-                If Nexus has no installed configuration.
+                If Nexus has no installed configuration, or it is active and a
+                different configuration is supplied.
         """
         self.check_cleaned()
         with self._lock:
             if configuration is not None:
+                if self._activated and configuration is not self._configuration:
+                    raise RuntimeError(
+                        "Cannot reconfigure Nexus while it is active. Deactivate it first."
+                    )
                 self._configuration = configuration
                 self._configured = True
             configured = self.configuration

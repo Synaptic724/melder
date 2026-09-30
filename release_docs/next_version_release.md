@@ -1,4 +1,4 @@
-# Melder 0.2.8207
+# Melder 0.2.8212
 
 **Unreleased**
 
@@ -105,6 +105,123 @@ the section table ready before publishing its key map, so another reader could o
 the index. It now publishes the complete map before setting that ready marker. A failed map build
 also remains retryable. Loading stays deferred and reads remain lock-free.
 
+## Look up frames without creating them
+
+`Aether` can now tell you which frames exist and hand one back without creating anything. Until now every
+frame-scoped call on `Aether` - the conduit lookups, `get_conduit_cloud` - resolved "default" through the lazy
+creation path, so asking about a missing "default" created it and, on a world with no frames yet, sealed the
+Aether configuration. A host that creates frames by constructing Spellbooks and later needs to find them had
+to read Aether's private registry.
+
+- `Aether.find_frame(name)` returns the live frame with exactly that name, or `None`.
+- `Aether.get_frame(name)` returns it, or raises `ValueError` ("Aetheric frame 'name' does not exist. ...",
+  with how to create the frame or probe for it).
+- `Aether.list_frame_names()` returns the live frames' names in creation order, as a tuple snapshot.
+
+None of them creates a frame ("default" included), takes the Aether lock or freezes the Aether configuration.
+A frame whose cleanup has started reads as absent. The frame you get back is borrowed: Aether still owns it,
+and once its owner cleans it the reference must not be used; if a name may have been reused, compare with `is`.
+A name that is not a string raises `TypeError`, and a cleaned `Aether` raises `RuntimeError`.
+
+Read-only properties now expose what a host compares against:
+
+- `AethericFrame.shared_spellbook_configuration`: the frame-wide Spellbook configuration that Spellbooks in
+  the frame adopt, or `None` when the frame does not share one or no Spellbook has bound it yet.
+- `AethericFrameConfiguration.frozen` and `SpellbookConfiguration.frozen`: whether the frame posture or the
+  configuration has been frozen. Reading them changes nothing.
+- `SpellbookConfiguration.aether_frame`: the frame the configuration was built for; a Spellbook refuses a
+  supplied configuration built for another frame.
+- `Conduit.spellbook`: the Spellbook a conduit resolves through - the conjuring Spellbook for a root and the
+  lessers under it, and the new one after `upgrade_to_normal`.
+
+```python
+from melder import Aether, Spellbook
+
+aether = Aether()
+assert aether.find_frame("ops") is None          # looking creates nothing
+book = Spellbook(aetheric_frame="ops")           # constructing a Spellbook creates the frame
+frame = aether.get_frame("ops")
+root = book.conjure(name="root")
+assert root.spellbook is book
+assert frame.shared_spellbook_configuration is None   # this frame does not share one
+print(aether.list_frame_names())                 # ('ops',)
+```
+
+What stays the same: the existing frame-scoped calls still create "default" when it is missing, frames are
+created, owned and cleaned exactly as before, and no meld or conjure path does any extra work.
+
+## Aether refuses a spell-id regime it cannot apply
+
+**Breaking change:** while any frame exists, `Aether.configure(configuration)` and `Aether.activate()` refuse
+a configuration whose `process_wide_unique_spell_ids` differs from the regime in force, with a `RuntimeError`
+that names both values and the fix. The regime is sealed when the first frame is born (the first Spellbook, or
+anything else that creates a frame) and is never re-read while frames exist, because spell ids already
+registered were allocated under it. Before, such a configuration was installed anyway: `Aether().configuration`
+then reported the new regime while the old one stayed in force - with the process-wide regime in force, the
+same class bound into a second frame was still refused as a spell-id collision.
+
+```python
+from melder import Aether, AetherConfiguration, Spellbook
+
+per_frame = AetherConfiguration().with_defaults().with_process_wide_unique_spell_ids(False)
+Aether().configure(per_frame)                    # before the first frame: accepted
+Spellbook(aetheric_frame="tenant_a")             # the first frame seals the per-frame regime
+```
+
+To upgrade: install the configuration before the first Spellbook creates a frame, or keep the regime that is
+in force. Replacing the configuration with one that keeps the sealed regime - to change logging, say - is
+still accepted, and nothing changes before the first frame.
+
+## A live Nexus keeps its policy
+
+**Breaking change:** `Nexus.configure(configuration)`, and `Nexus.activate(configuration)` handed a
+configuration other than the installed one, now raise `RuntimeError("Cannot reconfigure Nexus while it is
+active. Deactivate it first.")` while Nexus is active - the rule `Crystallizer` and `MutationResearch` already
+follow. A live Nexus reads its policy at every Rift validation, so a swap changed the rules under Rifts that had
+already passed them, and the replacement was installed unfrozen. The check is on identity: a second object with
+the same values is still a replacement.
+
+To upgrade, deactivate first:
+
+```python
+nexus.deactivate()
+nexus.activate(new_configuration)
+```
+
+`nexus.activate()` and `nexus.activate(nexus.configuration)` on a live Nexus, and any configuration change on
+an inactive Nexus, work as before. Restoring a checkpoint that recorded a Nexus into a process whose Nexus is
+active still replaces the live policy with the recorded one: the restore deactivates the live Nexus first, as it
+already did for MutationResearch.
+
+## Fixed: a refused dynamic conjure no longer settles its frame dynamic
+
+With an active Crystallizer, `conjure(dynamic=True)` is refused when spells were bound before the Spellbook's
+configuration was finalized ("... requires the SpellbookConfiguration to be finalized BEFORE the first bind").
+The refusal used to happen after the conjure had settled the frame posture dynamic, so the frame stayed frozen
+dynamic and every later conjure in it inherited dynamic and was refused too - even a plain automatic conjure,
+which the rule exempts. The refusal now happens before anything is settled: the frame stays as it was, and an
+automatic conjure afterwards succeeds. The message, the exception type and the rule itself are unchanged.
+
+## Compare root configurations by value
+
+`AetherConfiguration`, `CrystallizerConfiguration`, `MutationResearchConfiguration` and `NexusConfiguration`
+gain `get_configuration_dictionary()`: a new `dict` of the property values the configuration holds, keyed by
+property name. A host that embeds Melder next to another Melder user can now compare the policy it was handed
+with the one installed on a root without reading private state:
+
+```python
+from melder import Crystallizer, CrystallizerConfiguration
+
+wanted = CrystallizerConfiguration().with_defaults().with_max_persistence_crystals(3)
+installed = Crystallizer().configuration
+same_policy = wanted.get_configuration_dictionary() == installed.get_configuration_dictionary()
+```
+
+Editing the returned dict never changes the configuration; values are the stored objects, not copies (loggers
+and resolvers by reference). Only properties that were set appear - start from `with_defaults()` for a
+complete picture. Reading it never freezes or validates, works on frozen and activated configurations, and a
+cleaned configuration raises `RuntimeError`.
+
 ## Packaging and documentation
 
 - The packaged system documents (`melder.__components__`, `melder.__architecture__`) are regenerated: the Meld
@@ -122,4 +239,8 @@ also remains retryable. Loading stays deferred and reads remain lock-free.
   regressions, including discoverable definitions, contracted bindings and genuine address collisions.
 - The system-document contracts describe readiness-last index publication and the deterministic
   concurrency/retry regressions that protect it.
-- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8207.
+- The packaged system documents describe the root configuration guards: the sealed spell-id regime, the
+  active-Nexus refusal and the restore's deactivate-first, the conjure refusal before settlement, and
+  `get_configuration_dictionary()`; line citations that moved, and four that were already stale, are
+  remeasured. `docs/advanced/nexus.md` says how to replace the policy of an active Nexus.
+- Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8212.

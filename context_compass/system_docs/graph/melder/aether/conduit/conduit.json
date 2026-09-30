@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit.py",
- "source_sha256": "c2033a58a1eaebabc41eaa5aed151cd91ed8044068d026223c4ccf3863d42cf1",
+ "source_sha256": "2a7cc7f3b78898874c115aff01272019f04f19202600ef5791375deff159a89e",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit": {
@@ -106,6 +106,7 @@
     "set_new_policy",
     "sever_link",
     "snapshot_state",
+    "spellbook",
     "transaction",
     "transfer_spell_ownership",
     "upgrade_to_normal",
@@ -114,11 +115,11 @@
     "validate_resolution"
    ],
    "shape": {
-    "method_count": 131,
+    "method_count": 132,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "3ebdc50daec4b5914caaf0a6b6eedf0be3aa6066b4b02fb2cae03319b1e333ba",
+   "span_sha256": "d798c02ed1cd841e3244fd118aac61bd1fd9e330913ec296122f7c7fcdd0a30d",
    "role": "Runtime execution scope for spell resolution.",
    "responsibilities": [
     "hosts meld execution",

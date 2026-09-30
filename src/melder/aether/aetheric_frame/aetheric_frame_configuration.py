@@ -1498,6 +1498,30 @@ class AethericFrameConfiguration(Cleanable):
             return self._origin_spellbook_id
 
     @property
+    def frozen(self) -> bool:
+        """
+        Return whether this posture has been frozen (settled).
+
+        Contract:
+            - False while the posture is mutable; True once `freeze()` has succeeded. Freeze is the settlement point
+              of the frame's world: every `with_*` builder refuses after it, and conjure treats an unfrozen posture
+              as an unsettled world it may settle.
+            - Reading it changes nothing: it never freezes or validates.
+
+        Threading:
+            Reads under `self._lock`, the lock `freeze()` holds while it sets the flag.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`; raises after the posture is cleaned.
+
+        Returns:
+            bool: True when frozen.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._frozen
+
+    @property
     def system_state(self) -> SystemState:
         """
         Return the frame system state.

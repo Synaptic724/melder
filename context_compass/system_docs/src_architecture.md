@@ -303,7 +303,13 @@ External interfaces are Python APIs:
   `__graph_details__`
 - `Aether.create_configuration()`,
   `Aether.create_configuration_builder()`, `Aether.configure(...)`, and
-  `Aether.activate(...)` for root logger-policy installation
+  `Aether.activate(...)` for root logger-policy installation; while any frame
+  exists both refuse a configuration whose `process_wide_unique_spell_ids`
+  differs from the regime the first frame sealed (0.2.8209)
+- `get_configuration_dictionary()` on `AetherConfiguration`,
+  `CrystallizerConfiguration`, `MutationResearchConfiguration` and
+  `NexusConfiguration` (0.2.8212): a snapshot of the property values a root
+  configuration holds, so a host can compare policies without private access
 - `Aether.attach_logger(...)` and `Aether.enable_logging(...)` for explicit
   post-boot root logger attachment or config-backed automatic logger enablement
 - `Crystallizer.create_configuration()`, `configure(...)`, `activate(...)`,
@@ -442,7 +448,9 @@ External interfaces are Python APIs:
 - `Conduit.link(...)` / `Conduit.sever_link(...)` for dynamic linking.
 - `SpellbookConfiguration` properties and hooks.
 - `Nexus.configure(...)`, `Nexus.activate(...)`, `Nexus.create_rift(...)`,
-  and `Nexus.create_rift_configuration(...)` for AR bootstrap.
+  and `Nexus.create_rift_configuration(...)` for AR bootstrap. While Nexus is
+  active, `configure(...)` and `activate(...)` handed another configuration
+  refuse (0.2.8210); deactivate first.
 - `Rift.get_nexus_frame(...)`, `Rift.create_nexus_frame(...)`, and the
   singular `Rift.space` / viewer helpers for live AR work.
   - Nexus-facing create/get paths both return rooted conduits, not frame
@@ -581,7 +589,10 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3695-3833.
      window (settle-then-inherit law, 2026-07-20): settle an unfrozen world
      when `dynamic=True` was asked, otherwise inherit the settled world's mode.
      A missing posture returns the caller's flag unchanged and defers to the
-     honest refusal in `SpellbookCreationSystem.check_system_state`. The
+     honest refusal in `SpellbookCreationSystem.check_system_state`. BEFORE
+     settling, conjure refuses the active-Crystallizer configuration discipline
+     on the mode settlement would produce (`_effective_conjure_mode`,
+     0.2.8211), so a refused conjure leaves the frame posture as it was. The
      EFFECTIVE mode is then threaded down the whole chain - creation system,
      blueprint dynamic/automatic mode where the conduit's state is born, the
      conjure dynamic hint, the crystallizer config-discipline guard, and cloud
@@ -596,7 +607,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:3695-3833.
    - Constructs a normal Conduit and registers it in Aether.
    - Fires pre/activated/post hooks and wires ownership into spells.
 5) `Nexus` AR path (when engaged):
-   - `Nexus.configure(...)` installs frozen process-wide AR policy.
+   - `Nexus.configure(...)` installs frozen process-wide AR policy. It refuses
+     while Nexus is active, as does `activate(...)` handed another
+     configuration (0.2.8210).
    - `Nexus.activate()` opens Rift creation.
    - `Nexus.create_rift_configuration()` builds a Rift config whose primary
      room posture is chosen through `space_type`.
@@ -882,6 +895,26 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- Root configuration guards for hosts (2026-09-30, 0.2.8209-0.2.8212): a host that embeds Melder next to another
+  Melder user gets root configuration it can trust. While any frame exists, the installed Aether configuration's
+  `process_wide_unique_spell_ids` equals the regime sealed at the first frame: `Aether.configure` and
+  `Aether.activate` refuse a configuration saying otherwise and install nothing, under the lock frame birth
+  holds. An active Nexus keeps its policy object: `configure`, and `activate` handed another object (identity,
+  not values), refuse until `deactivate()` - the rule Crystallizer and MutationResearch already had; restore
+  stage 4 deactivates an active Nexus before activating the reloaded configuration, as stage 3 does for
+  MutationResearch. A dynamic conjure refused by the active-Crystallizer configuration discipline is refused on
+  the PREDICTED effective mode before the frame posture is settled, and checked again on the settled mode in the
+  transaction window, because another Book can settle the shared frame in between. The four root
+  configurations expose `get_configuration_dictionary()`, a lock-guarded snapshot of the properties they hold
+  (values by reference; it never freezes or validates). The Aether record carries only the logger half of its
+  configuration, so a restore never meets a regime mismatch - and a world recorded under per-frame ids restores
+  under process-wide ids (known gap, unchanged).
+  EVIDENCE: `src/melder/aether/aether.py:Aether._refuse_regime_change_while_frames_exist`,
+  `src/melder/nexus/nexus.py:Nexus.configure`, `Nexus.activate`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._replay_nexus`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._effective_conjure_mode`,
+  `Spellbook._refuse_recorded_conjure_after_mutable_binds` and
+  `src/melder/aether/aether_configuration.py:AetherConfiguration.get_configuration_dictionary`.
 - Shared document-view initialization (2026-09-28): a non-None section tuple signals a complete index,
   so its key map is published first. Concurrent first reads may build equivalent immutable indexes;
   warm reads stay lock-free and failed map construction is retryable. Payload and adjacency loads each
@@ -1262,10 +1295,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6502-6542
-    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6529-6541,
-    effective-mode return :6542)
-  - src/melder/aether/spellbook/spellbook.py:6637
+  - src/melder/aether/spellbook/spellbook.py:6502-6545
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :6532-6544,
+    effective-mode return :6545; remeasured 2026-09-30)
+  - src/melder/aether/spellbook/spellbook.py:6758
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:691-752
@@ -1314,6 +1347,19 @@ each entry in `src_components.md`; this list is the set that crosses components.
   not the same thing as a Rift-level event orchestrator.
 
 ## Failure Modes and Error Paths
+- `Aether.configure(configuration)` and `Aether.activate()` raise RuntimeError while frames exist when the
+  configuration's `process_wide_unique_spell_ids` differs from the sealed regime; the message names both values
+  and the remedy (install it before the first frame, or keep the sealed value). Before 0.2.8209 the
+  configuration was installed and reported while the old regime stayed in force.
+  EVIDENCE: `src/melder/aether/aether.py:Aether._refuse_regime_change_while_frames_exist`.
+- `Nexus.configure(...)`, and `Nexus.activate(...)` handed a configuration other than the installed one, raise
+  RuntimeError "Cannot reconfigure Nexus while it is active. Deactivate it first." (0.2.8210). Before, a live
+  Nexus's policy was replaced, unfrozen, under existing Rifts.
+  EVIDENCE: `src/melder/nexus/nexus.py:Nexus.configure` and `Nexus.activate`.
+- A dynamic conjure refused by the active-Crystallizer configuration discipline no longer settles its frame
+  (0.2.8211). Before, the frame was left frozen dynamic, so every later conjure there - automatic ones included -
+  inherited dynamic and was refused too.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.conjure`.
 - A context build that raises records its cause on the spell and releases its pending claim; a meld that
   waited on it raises RuntimeError chained from that cause. A rebuild window that cannot drain within 30 s
   raises RuntimeError from the rebuilding meld and leaves the gate open. A constructor that melds its own
@@ -1714,9 +1760,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7222
-  loc: 7222
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 7327
+  loc: 7327
+  verified_at: 2026-09-30T00:28:01Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
@@ -1766,9 +1812,9 @@ Configuration and hooks:
 
 - path: `src/melder/aether/aether_configuration.py`
   start_line: 1
-  end_line: 885
-  loc: 885
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 920
+  loc: 920
+  verified_at: 2026-09-30T00:28:01Z
   note: root logger-policy configuration for Aether.
 - path: `src/melder/aether/aether_configuration_builder.py`
   start_line: 1
@@ -1778,9 +1824,9 @@ Configuration and hooks:
   note: fluent builder for Aether root configuration.
 - path: `src/melder/crystallizer/configuration/crystallizer_configuration.py`
   start_line: 1
-  end_line: 1063
-  loc: 1063
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 1097
+  loc: 1097
+  verified_at: 2026-09-30T00:28:01Z
   note: crystallizer root configuration surface.
 - path: `src/melder/crystallizer/configuration/crystallizer_configuration_builder.py`
   start_line: 1
@@ -1790,9 +1836,9 @@ Configuration and hooks:
   note: standalone builder for crystallizer root policy assembly.
 - path: `src/melder/mutation_research/mutation_configuration.py`
   start_line: 1
-  end_line: 659
-  loc: 659
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 693
+  loc: 693
+  verified_at: 2026-09-30T00:28:01Z
   note: mutation-research root configuration surface.
 - path: `src/melder/mutation_research/mutation_configuration_builder.py`
   start_line: 1
@@ -1868,9 +1914,9 @@ Aether and frames:
 
 - path: `src/melder/aether/aether.py`
   start_line: 1
-  end_line: 2690
-  loc: 2690
-  verified_at: 2026-09-27T11:46:59Z
+  end_line: 2911
+  loc: 2911
+  verified_at: 2026-09-30T00:28:01Z
   note: global singleton and frame registry.
 - path: `src/melder/aether/aether_utility_system.py`
   start_line: 1
@@ -2062,9 +2108,9 @@ Aetheric mediator plane (WIRED - FRAME_CREATE LIVE, held by Aether):
   note: admission verdict; evidence, never a bare bool.
 - path: `src/melder/nexus/nexus.py`
   start_line: 1
-  end_line: 3565
-  loc: 3565
-  verified_at: 2026-09-23T11:33:20Z
+  end_line: 3582
+  loc: 3582
+  verified_at: 2026-09-30T00:28:01Z
   note: public AR singleton root.
 - path: `src/melder/nexus/frame_descriptor_manager.py`
   start_line: 1
@@ -2857,6 +2903,8 @@ without rewriting the original record or existing live IDs.
 - `src/melder/__graph_network__.py`
 - `src/melder/__graph_details__.py`
 - `src/melder/aether/aether_configuration.py`
+- `src/melder/nexus/configuration/nexus_configuration.py`
+- `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
 - `src/melder/aether/aether_configuration_builder.py`
 - `src/melder/aether/spellbook/spellbook.py`
 - `src/melder/aether/spellbook/spellbinder.py`
@@ -2967,6 +3015,14 @@ without rewriting the original record or existing live IDs.
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+
+2026-09-30 root configuration guards (0.2.8209-0.2.8212): Aether refuses a spell-id regime other than the one its
+first frame sealed while frames exist; an active Nexus refuses another configuration (restore stage 4 deactivates
+it first); a dynamic conjure refused by the recorded-world configuration discipline no longer settles its frame;
+the four root configurations expose `get_configuration_dictionary()`. The boundary list, the boot sequence, the
+operational invariants, the failure modes and the code map carry it; the component map carries the per-root
+contracts. Still open: the Aether record does not carry the spell-id regime, so a world recorded under per-frame
+ids restores under process-wide ids. The code map's `aether.py` extent also now counts the 0.2.8208 frame lookups.
 
 2026-09-28 document-view race: publishing sections before the key map allowed a concurrent first lookup
 to receive None. The map now precedes the readiness marker, preserving deferred loading and lock-free reads.
