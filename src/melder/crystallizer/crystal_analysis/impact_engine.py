@@ -104,7 +104,8 @@ class ImpactEngine(Cleanable):
 
         Args:
             custody_payloads:
-                spell_id -> crystal describe() payload (+ the seam's
+                custody key (the spell id, or "<spell_id>@<frame>" under
+                per-frame ids) -> crystal describe() payload (+ the seam's
                 additive "custody_state"), as returned by
                 `PersistenceSystem.describe_spell_crystals()`.
 
@@ -287,6 +288,9 @@ class ImpactEngine(Cleanable):
               `blast_radius_of_module(root_module_name)` plus the spell's
               own identity row.
             - Unknown SHAs answer honestly ("unknown_spell": True).
+            - A spell id recorded under frame-scoped keys (per-frame ids,
+              0.2.8214) answers through its lowest matching key; the radius
+              lists custody keys, one per frame's copy.
 
         Args:
             spell_id:
@@ -303,6 +307,16 @@ class ImpactEngine(Cleanable):
         """
         self.check_cleaned()
         payload = self._custody_by_spell.get(str(spell_id))
+        if payload is None:
+            # Per-frame records key custody "<spell_id>@<frame>" (0.2.8214):
+            # a bare spell id answers through its lowest matching key.
+            matching_keys = [
+                custody_key
+                for custody_key, candidate in self._custody_by_spell.items()
+                if str(candidate.get("id")) == str(spell_id)
+            ]
+            if matching_keys:
+                payload = self._custody_by_spell[min(matching_keys)]
         if payload is None:
             return {
                 "spell": str(spell_id),

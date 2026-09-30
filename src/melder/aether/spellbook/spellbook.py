@@ -650,7 +650,9 @@ class Spellbook(Cleanable):
             # True removal: custody leaves the record entirely (both
             # locations) so restore never rebuilds a shed spell.
             if self._crystallizer.activated:
-                self._crystallizer.emit_spell_removed(target_spell_id)
+                self._crystallizer.emit_spell_removed(
+                    target_spell_id, frame_name=self._aetheric_frame_name
+                )
                 # The index is torn down at this verb's tail; its
                 # membership twin leaves the record with it.
                 self._crystallizer.emit_spell_index_removed(
@@ -1515,7 +1517,9 @@ class Spellbook(Cleanable):
         # world): the crystal moves to the inactive location exactly as
         # this spell just moved to _inactive_spells.
         if self._crystallizer.activated:
-            self._crystallizer.emit_spell_activity(spell_id, active=False)
+            self._crystallizer.emit_spell_activity(
+                spell_id, active=False, frame_name=self._aetheric_frame_name
+            )
 
     def _reactivate_owned_spell(self, spell: Spell) -> None:
         """
@@ -1573,7 +1577,9 @@ class Spellbook(Cleanable):
         # Mirror the promotion into the record (re-publishing the spell's
         # synthetic root module if it was unpublished while parked).
         if self._crystallizer.activated:
-            self._crystallizer.emit_spell_activity(spell_id, active=True)
+            self._crystallizer.emit_spell_activity(
+                spell_id, active=True, frame_name=self._aetheric_frame_name
+            )
 
     def _deactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
         """
@@ -4217,7 +4223,9 @@ class Spellbook(Cleanable):
                 # True removal (parked lane): custody leaves the record
                 # entirely so restore never rebuilds a shed spell.
                 if self._crystallizer.activated:
-                    self._crystallizer.emit_spell_removed(spell_id)
+                    self._crystallizer.emit_spell_removed(
+                        spell_id, frame_name=self._aetheric_frame_name
+                    )
                 index.remove_member(spell_id)
                 index_emptied = index.is_empty()
             if index_emptied:

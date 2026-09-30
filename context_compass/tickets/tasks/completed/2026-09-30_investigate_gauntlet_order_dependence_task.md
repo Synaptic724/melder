@@ -6,12 +6,20 @@
 - Task ID: TASK-2026-09-30-investigate-gauntlet-order-dependence
 - Story: none; standalone investigation of the benchmark harness (read-only until the owner picks a fix)
 - Related lane: tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md (melder_2; same gauntlet)
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p2
 - Created: 2026-09-30T12:03:51Z
-- Updated: 2026-09-30T12:51:46Z
+- Updated: 2026-09-30T15:40:12Z
+- Completed: 2026-09-30T15:40:12Z
+- Closure Basis: owner turn-in in chat (2026-09-30) of every finished lane: "yeah turn in the [lanes] you
+  finished please, go ahead".
+- Summary: The shared gauntlet ran dependency-injector, dishka and Melder one after another in one free-threaded
+  process, and each run left thread start/exit slower for the next (a later slot ran 5-12% slower in the VM),
+  so the order changed the ranking. Owner-picked option 1: the pytest wrapper runs each library in its own
+  process (runner --lib), prints medians over REAL_WORLD_GAUNTLET_ROUNDS rotated rounds, and the runner with
+  no arguments keeps the old layout; 14 contract tests. Benchmark-only; no source changed.
 
 ## Objective
 Owner report (chat, 2026-09-30): "its weird when I reorder this benchmark it changes can you look into this?",
@@ -47,6 +55,10 @@ No src change. A harness change only after the owner confirms it.
 - transition_reason: option 1 implemented and validated (2026-09-30T12:51:46Z): isolation tests red before, green after;
   wrapper, runner modes and CSV checked in the VM; LLM/asset checks OK. Earlier: draft -> in_progress
   (12:03:51Z), in_progress -> review (12:26:39Z), review -> in_progress on the owner's pick (12:39:02Z).
+- from_state: review
+- to_state: done
+- transition_reason: (2026-09-30T15:40:12Z) owner turn-in in chat; option 1 accepted as built, with the owner's own
+  30,000-iteration default kept.
 
 ## Steps / Checklist
 - [x] Note the harness structure (runner order, one child process, per-library build/measure/cleanup).
@@ -94,22 +106,22 @@ No src change. A harness change only after the owner confirms it.
   layout.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
-- [ ] No causal claim from a single run: an order claim needs repeats and the same-order noise band beside it.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
+- [x] No causal claim from a single run: an order claim needs repeats and the same-order noise band beside it.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -371,7 +383,7 @@ No src change. A harness change only after the owner confirms it.
   TYPE: DECISION
   CLAIM: Owner (chat, 2026-09-30): "do the most recommended thing please" - option 1 of the DECISION_REQUEST:
     one fresh process per library in the shared gauntlet. Benchmark-only: no src change, no notch, no release note.
-  EVIDENCE: context_compass/tickets/tasks/2026-09-30_investigate_gauntlet_order_dependence_task.md:328-360
+  EVIDENCE: context_compass/tickets/tasks/completed/2026-09-30_investigate_gauntlet_order_dependence_task.md:349-381
   IMPACT: Reopens the ticket for implementation within the files the request named; melder_0 becomes the only
     writer of them until turn-in (NOTICE to melder_2 first).
   NEXT: PLAN note with the exact symbols, then the NOTICE.
@@ -496,17 +508,49 @@ No src change. A harness change only after the owner confirms it.
   NEXT: Owner review, then turn-in.
   REREAD: HELPFUL
   SCORE_0_TO_10: 7
+- DATETIME: 2026-09-30T15:40:12Z
+  TYPE: DECISION
+  CLAIM: The owner turned this lane in (chat, 2026-09-30, every finished lane): option 1 stays as built - one
+    process per library in the pytest wrapper, rotated rounds with medians, the old one-process layout behind
+    the runner's no-argument mode - together with the owner's own DI_GAUNTLET_ITERS default of 30,000. The
+    sole-writer claim on the runner, test_real_world_gauntlet.py, test_real_world_gauntlet_isolation.py and
+    benchmarks.md (M0-123) is released to melder_2 by NOTICE M0-126. The artifacts stay as reference.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-30_investigate_gauntlet_order_dependence_task.md:382-510
+  - benchmarks/testing_other_di/test_real_world_gauntlet.py:462-462
+  IMPACT: The owner's default edit moved the LLM "other" corpus (LLM --check: STALE other source fingerprint
+    moved; src and tests OK), so that bundle is rebuilt as the last step of this turn-in pass.
+    Correction: the 12:39:02Z DECISION note cited the DECISION_REQUEST as 328-360, nine lines too early
+    (the ticket grew above it after it was written); it now names the note's real range.
+  NEXT: Rebuild the LLM bundles and run the LLM and asset checks after every closure in this pass.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+- DATETIME: 2026-09-30T15:49:07Z
+  TYPE: MEASURE
+  CLAIM: Last step of the turn-in pass: the LLM bundles were rebuilt with --include-untracked. Only the "other"
+    corpus was written (380 files; its source fingerprint had moved with the owner's DI_GAUNTLET_ITERS edit);
+    src and tests were unchanged. Both checks then print only OK lines: LLM src, tests and other; build assets
+    _agent_documentation, _bind_guard and _system_documents current at 0.2.8212. No .git/index.lock was left.
+  EVIDENCE:
+  - context_compass/artifacts/gauntlet_order_dependence_20260930/validation/llm_check_turnin_before.log:1-6
+  - context_compass/artifacts/gauntlet_order_dependence_20260930/validation/llm_build_turnin.log:1-4
+  - context_compass/artifacts/gauntlet_order_dependence_20260930/validation/llm_check_turnin.log:1-3
+  - context_compass/artifacts/gauntlet_order_dependence_20260930/validation/assets_check_turnin.log:1-3
+  IMPACT: The repository checks are green after the turn-in; the closed tickets and boards are outside what
+    the bundles and assets read.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
 
 ## Context / Handoff Summary
-Implemented and in review (2026-09-30T12:51:46Z). Cause (measured 12:26Z): the runner measured
-dependency-injector, dishka and Melder one after another in one free-threaded process; each library's run left
-thread start/exit slower (200 no-op threads: 211 us fresh, 426-619 us after one or two libraries), so a later
-library ran 5-12% slower (VM, 3000 iterations) and the order flipped the ranking. Owner picked option 1
-(12:39Z): the pytest wrapper now starts the runner once per library (--lib), prints medians over
-REAL_WORLD_GAUNTLET_ROUNDS rotated rounds, and the runner without arguments keeps the old one-process layout. 14
-new contract tests (red before, green after); in the VM Melder's three isolated runs differ 0.5% across slots;
-LLM and asset checks OK; no src change, no notch. Next: owner review, then turn-in. NOTICEs M0-122 (FYI), M0-123
-(sole writer) and M0-124 (landed) went to melder_2.
+Closed 2026-09-30T15:40:12Z on the owner's turn-in. Cause: the runner measured dependency-injector,
+dishka and Melder one after another in one free-threaded process; each library's run left thread start/exit
+slower (200 no-op threads: 211 us fresh, 426-619 us after one or two libraries), so a later library ran 5-12%
+slower in the VM and the order flipped the ranking. Fix (option 1): the pytest wrapper starts the runner once
+per library (--lib) and prints medians over REAL_WORLD_GAUNTLET_ROUNDS rotated rounds; the runner without
+arguments keeps the old one-process layout; 14 contract tests. The owner's DI_GAUNTLET_ITERS default of 30,000
+stays. No src change. melder_0's sole-writer claim (M0-123) is released by NOTICE M0-126; artifacts retained as
+reference.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

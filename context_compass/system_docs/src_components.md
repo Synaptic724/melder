@@ -1074,6 +1074,7 @@ Responsibilities:
 - Provide selected-spell registry for spell ids.
 - Privately host singleton support roots for utility logging, crystallizer
   policy/activation, and Nexus AR behavior.
+- Report the spell-id regime in force through `process_wide_unique_spell_ids` (0.2.8213).
 - Answer frame-scoped conduit lookups at three coverages (0.2.79). ROOT: `list_root_conduit_ids`,
   `list_root_conduit_names`, `count_root_conduits`, `has_root_conduit_id`, `has_root_conduit_name`,
   `find_root_conduit_id_by_name`, `get_root_conduit_by_name` and `get_root_conduit_by_id` read the frame's
@@ -1117,6 +1118,12 @@ Invariants/Guarantees:
   is not in force. With no frame any regime installs and the next first frame seals it.
   EVIDENCE: `src/melder/aether/aether.py:Aether._refuse_regime_change_while_frames_exist`, `Aether.configure`
   and `Aether.activate`.
+- Regime in force (0.2.8213): `process_wide_unique_spell_ids` answers without a lock - the sealed value once any
+  frame exists, before that the installed configuration's value (the one the next first frame seals), else
+  True. Frame birth writes the seal before it inserts the frame, both under the Aether lock, so a reader that
+  sees a frame sees the seal. The Crystallizer records it in the Aether twin and keys spell custody by it;
+  restore stage 1 reads it to tell whether a recorded regime can still be installed.
+  EVIDENCE: `src/melder/aether/aether.py:Aether.process_wide_unique_spell_ids`.
 
 Failure Modes:
 - ValueError for missing frames, duplicate registry entries, or not-found lookups. A not-found conduit
@@ -1345,8 +1352,9 @@ Named lesser structure (2026-09-23):
   after binds/selections. Both drivers share that unit. Children use public create_lesser_conduit
   with fresh IDs and empty creation stores; rollback tracks each immediately. skip_existing reports
   a lost colliding name and creates a new unnamed scope rather than borrowing a host scope.
-- RecordVersion is 3.0.0. Valid older root-only records remain readable; older major-2 readers refuse
-  new topology. Live loads require caller quiescence of ordinary scope creation/return and lineage.
+- RecordVersion was 3.0.0 for this change (4.0.0 since 0.2.8214). Valid older root-only records remain
+  readable; older major-2 readers refuse new topology. Live loads require caller quiescence of ordinary
+  scope creation/return and lineage.
 - EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit._emit_conduit_twin`,
   `src/melder/crystallizer/persistence/persistence_profile.py:PersistenceProfile._formation_conduit_ids`,
   `src/melder/crystallizer/crystal_analysis/conduit_hierarchy.py:ConduitHierarchy`,
@@ -1357,7 +1365,8 @@ Non-resolvable definitions:
   value alongside existing binding policy. No live application instance is serialized by this feature.
 - RestoreEngine forwards the bool for active and staged binds. GraftRunner does so for selected,
   parked and merged members. Legacy absence means True; malformed values reach Bind's bool validation.
-- Record major 2 introduced capability protection; current major 3 also protects named lesser topology.
+- Record major 2 introduced capability protection; major 3 also protects named lesser topology and major 4
+  frame-scoped custody keys (0.2.8214).
   Existing older record support remains; older readers reject new envelopes through the major gate.
 - Graph references reconstruct through normal compilation of restored bindings and selected versions.
   Process-wide uniqueness still requires releasing source claims before grafting detached custody.
@@ -1378,6 +1387,46 @@ Ordered capture/replay (2026-09-05):
 - EVIDENCE: `src/melder/crystallizer/crystals/spell_crystal.py`.
 - EVIDENCE: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`.
 - EVIDENCE: `src/melder/crystallizer/crystal_loader_system/graft_runner.py`.
+
+Per-frame spell worlds (2026-09-30, 0.2.8213-0.2.8214):
+- Regime: every AetherCrystal payload carries `process_wide_unique_spell_ids` - the configuration seam its own
+  value, the utility system's re-emission the Aether's regime in force (omitted when no initialized, uncleaned
+  Aether can answer). `AetherConfiguration.from_recorded_payload` applies it before its freeze or lists it
+  under "missing" (a 3.x record keeps the default, True).
+- Custody key: `SpellCrystal` captures `frame_name` from `spell.aetheric_frame` and `custody_key` - the spell
+  id, or `"<spell_id>@<frame>"` when built with `per_frame_custody` (`create_spell_crystal` passes
+  `not aether.process_wide_unique_spell_ids`); statics `compose_custody_key` / `spell_id_of_custody_key`
+  (split at the first "@"; a SHA256 id holds none). `describe()` carries both.
+- Record: both custody maps keep their names but are keyed by custody key; replace-on-emit, activity moves and
+  removal address one key, so under per-frame ids a Book touches only its own frame's copy. Journal entries,
+  checkpoint and formation payload keys and `describe_spell_crystals()` keys are custody keys; spell_activity
+  and spell_removed payloads carry "spell_id" and "custody_key". `get_spell_crystal(spell_id,
+  frame_name=None)` answers the frame's key first, then the exact key (a bare id or a full custody key), then -
+  only without a frame - the lowest `"<spell_id>@"` key, active before inactive; KeyError otherwise.
+  `capture_index_graft` takes each member's custody from the index's own Book (members stay keyed by spell id).
+- Facade: `emit_spell_removed(spell_id, frame_name=None)` and `emit_spell_activity(spell_id, active,
+  frame_name=None)` are NO-OPs while inactive; while recording they address `_custody_key_for(spell_id,
+  frame_name)` - the spell id under process-wide ids (frame ignored), the frame's key under per-frame ids, and
+  ValueError without a frame. Spellbook's removal and park/promote sites pass their frame; crystal creation and
+  transfer re-emission need none (the crystal reads its spell's frame; transfers stay in one frame).
+- Restore: stage 1 installs the recorded regime while the live one is unfixed, files
+  `recorded_per_frame_ids_restored_under_process_wide_ids` (or its mirror) when it is fixed and differs -
+  rebuilding under the live regime - and refuses before anything is built when the live regime is process-wide
+  and the folded custody binds one spell id in two frames (an entry's frame: payload "frame_name", else its
+  Book's, else "default"). Stage 6 orders each Book's binds by its bind_order mapped to its own custody keys,
+  binds with the payload's spell id, finds a member's index within its Book, and translates recorded spell ids
+  per Book (selections, staged anchors, contract details by the granting conduit's Book).
+- Analysis: a formation retarget rewrites custody `frame_name` and re-keys frame-scoped keys for the target
+  frame; `ImpactEngine.blast_radius_of_spell` falls back to the lowest key whose payload "id" is the spell id.
+- RecordVersion 4.0.0: an older reader refuses a new record instead of folding two frames' copies into one;
+  3.x records stay readable. MutationResearch stays keyed by spell id (code identity both copies share).
+- EVIDENCE: `src/melder/crystallizer/crystals/spell_crystal.py:SpellCrystal.custody_key`,
+  `src/melder/crystallizer/persistence/persistence_profile.py:PersistenceProfile.get_spell_crystal`,
+  `src/melder/crystallizer/crystallizer.py:Crystallizer._custody_key_for`,
+  `src/melder/crystallizer/crystal_loader_system/restore_engine.py:RestoreEngine._replay_aether_configuration`,
+  `RestoreEngine._book_bind_order`, `RestoreEngine._translate_spell`,
+  `src/melder/crystallizer/crystal_loader_system/load_admission.py:LoadAdmission._retarget_payloads` and
+  `src/melder/crystallizer/crystal_analysis/impact_engine.py:ImpactEngine.blast_radius_of_spell`.
 
 Responsibilities:
 - Own configured/activated crystallizer policy at the hosted root.
@@ -1453,7 +1502,8 @@ Owned State:
   `_max_persistence_crystals`. No cache slot since the S3 decomposition:
   disk custody lives on `AssetManagementSystem`.
 - `PersistenceProfile`: flat level maps (frames by name, books/conduits by
-  id, spell custody split active/inactive by spell SHA), three singleton
+  id, spell custody split active/inactive by custody key - the spell SHA, or
+  "<SHA>@<frame>" under per-frame spell ids, 0.2.8214), three singleton
   twins, `_nexus_state`/`_mutation_research_state` switches, the emission
   journal + checkpoint mark.
 - Twin family (pure-data, `describe()`-detached): `AetherCrystal`,
@@ -1533,6 +1583,9 @@ Failure Modes:
 - `create_spell_crystal(...)`/`get_spell_crystal(...)`/facades raise when
   not activated; unknown profile/checkpoint names raise `KeyError`;
   `emit(...)` of an unsupported twin type raises `TypeError`.
+- Under per-frame spell ids `emit_spell_removed` / `emit_spell_activity` raise ValueError without
+  `frame_name` while recording; a restore whose record binds one spell id in two frames raises at stage
+  'aether_configuration' when the live regime is fixed process-wide (0.2.8214).
 - `load_checkpoint` is LIVE (RestoreEngine, 2026-07-07) and MEDIATED since
   the 2026-07-10 decomposition: it routes through
   `CrystalLoaderSystem`/`LoadAdmission` with blocker-refusing admission
@@ -5116,6 +5169,10 @@ Contract/Interface:
 - `create_configuration_builder()`
 - `configure(...)` - refuses a spell-id regime other than the sealed one while frames exist (0.2.8209)
 - `activate(...)` - re-checks the sealed regime, so a mutable configuration edited after install is caught
+- `Aether.process_wide_unique_spell_ids` (0.2.8213) - the regime in force, read lock-free (the sealed value once
+  a frame exists, else the installed configuration's, else True)
+- `AetherConfiguration.emit_configured_twin_when_recording` records `process_wide_unique_spell_ids`, and
+  `from_recorded_payload` reloads it before its freeze or lists it under "missing" (0.2.8213)
 - `AetherConfiguration.get_configuration_dictionary()` (0.2.8212), shared with the Crystallizer,
   MutationResearch and Nexus configurations: a new dict of the properties the configuration holds, read under
   its lock after `check_cleaned()`; values by reference; never freezes or validates; only set properties appear.
@@ -5652,7 +5709,9 @@ Purpose:
   spells.
 Contract/Interface:
 - `create_configuration()`, `configure(...)`, `activate(...)`, `deactivate()`
-- `create_spell_crystal(...)`
+- `create_spell_crystal(...)` - keys the crystal "<spell_id>@<frame>" under per-frame spell ids (0.2.8214)
+- `get_spell_crystal(spell_id, frame_name=None)`, `emit_spell_removed(spell_id, frame_name=None)` and
+  `emit_spell_activity(spell_id, active, frame_name=None)` - address one custody key (0.2.8214)
 - `CrystallizerConfiguration.get_configuration_dictionary()` - value snapshot of the properties held (0.2.8212)
 Data Structures:
 - Installed `CrystallizerConfiguration` plus configured/activated state.
@@ -5675,9 +5734,13 @@ Contract/Interface:
 - Exposes root module identity, module/path inventories, classification
   buckets, direct-dependency maps, physical SHA256 fingerprints, export
   surfaces, and topological module load order via delegating properties.
+- Keys its record entry (0.2.8214): `frame_name` (from `spell.aetheric_frame`) and `custody_key` - the spell
+  id, or "<spell_id>@<frame>" when built with `per_frame_custody`; statics `compose_custody_key` and
+  `spell_id_of_custody_key` (split at the first "@").
 Data Structures:
 - `_analysis` (one carried `CrystalAnalysisResult`; the pre-decomposition
   per-map slots were absorbed into it).
+- `_frame_name`, `_custody_key` (0.2.8214).
 Concurrency/Threading:
 - Instance `RLock`.
 Key Files (C1):
@@ -6269,6 +6332,9 @@ Purpose:
 Contract/Interface:
 - `register_channel_logger_resolver`, `register_default_logger`,
   `resolve_safe_logger`, `resolve_channel_logger`.
+- `emit_root_twin_when_recording` - re-emits the Aether twin from live logger truth plus the Aether's regime in
+  force, read only from an initialized, uncleaned Aether (else omitted and a restore reports it missing;
+  0.2.8213).
 Data Structures:
 - `_channel_logger_resolver`, `_default_logger`.
 Concurrency/Threading:
@@ -6982,9 +7048,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T16:30:22Z
 - path: `src/melder/aether/aether_configuration.py`
   start_line: 1
-  end_line: 920
-  loc: 920
-  verified_at: 2026-09-30T00:30:14Z
+  end_line: 937
+  loc: 937
+  verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/aether/aether_configuration_builder.py`
   start_line: 1
   end_line: 286
@@ -6997,9 +7063,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-26T20:10:34Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 7327
-  loc: 7327
-  verified_at: 2026-09-30T00:30:14Z
+  end_line: 7335
+  loc: 7335
+  verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/aether/spellbook/spellbinder.py`
   start_line: 1
   end_line: 870
@@ -7062,14 +7128,14 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aether.py`
   start_line: 1
-  end_line: 2911
-  loc: 2911
-  verified_at: 2026-09-30T00:30:14Z
+  end_line: 2954
+  loc: 2954
+  verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/crystallizer/crystallizer.py`
   start_line: 1
-  end_line: 3009
-  loc: 3009
-  verified_at: 2026-09-23T11:33:20Z
+  end_line: 3089
+  loc: 3089
+  verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/mutation_research/mutation_research.py`
   start_line: 1
   end_line: 3990
@@ -7102,14 +7168,14 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/persistence/persistence_system.py`
   start_line: 1
-  end_line: 1427
-  loc: 1427
-  verified_at: 2026-09-23T11:33:20Z
+  end_line: 1437
+  loc: 1437
+  verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/crystallizer/persistence/persistence_profile.py`
   start_line: 1
-  end_line: 1544
-  loc: 1544
-  verified_at: 2026-09-23T11:33:20Z
+  end_line: 1636
+  loc: 1636
+  verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/crystallizer/persistence/persistence_crystal.py`
   start_line: 1
   end_line: 445
@@ -7647,9 +7713,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/aether/aether_utility_system.py`
   start_line: 1
-  end_line: 460
-  loc: 460
-  verified_at: 2026-09-26T20:10:34Z
+  end_line: 495
+  loc: 495
+  verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/utilities/logger/safe_logger.py`
   start_line: 1
   end_line: 699
@@ -7722,9 +7788,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-27T11:46:59Z
 - path: `src/melder/crystallizer/crystals/spell_crystal.py`
   start_line: 1
-  end_line: 1170
-  loc: 1170
-  verified_at: 2026-09-19T23:13:57Z
+  end_line: 1280
+  loc: 1280
+  verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/crystallizer/crystal_analysis/crystal_analyzer.py`
   start_line: 1
   end_line: 1445
@@ -7747,9 +7813,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T13:00:45Z
 - path: `src/melder/crystallizer/crystal_loader_system/restore_engine.py`
   start_line: 1
-  end_line: 2780
-  loc: 2780
-  verified_at: 2026-09-30T00:30:14Z
+  end_line: 3021
+  loc: 3021
+  verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/mutation_research/mutation_configuration.py`
   start_line: 1
   end_line: 693
@@ -7820,9 +7886,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-09-19T23:13:57Z
 - path: `src/melder/crystallizer/crystal_loader_system/load_admission.py`
   start_line: 1
-  end_line: 615
-  loc: 615
-  verified_at: 2026-08-02T13:00:45Z
+  end_line: 633
+  loc: 633
+  verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/crystallizer/crystal_loader_system/load_plan.py`
   start_line: 1
   end_line: 307
@@ -7928,9 +7994,9 @@ expanded into its real modules rather than given a plausible number.
   verified_at: 2026-08-02T14:28:07Z
 - path: `src/melder/crystallizer/crystal_analysis/impact_engine.py`
   start_line: 1
-  end_line: 407
-  loc: 407
-  verified_at: 2026-08-02T14:28:07Z
+  end_line: 421
+  loc: 421
+  verified_at: 2026-09-30T18:30:47Z
 - path: `src/melder/crystallizer/crystal_analysis/physical_source_cache.py`
   start_line: 1
   end_line: 231
@@ -9180,6 +9246,9 @@ service. Users talk to `Crystallizer` facades only.
   SHAs never translate). Failure = reverse-order teardown + chained
   RuntimeError. Shortfall ledger reports everything unreplayable (hooks,
   non-hydratable targets, cluster leadership, index subscriptions, MR).
+- Corrected 2026-09-30: a spell SHA changes when the receiving policy changes its bind signature, and the
+  report then maps it (2026-09-05); since 0.2.8214 that translation is per Book, and stage 1 installs,
+  reports or refuses the recorded spell-id regime (see the Crystallizer component's per-frame block).
 
 #### Configuration reload lanes (owner law: recorded truth, never defaults)
 - Every configuration has a JSON-payload load-and-freeze reload verb:
@@ -9441,7 +9510,7 @@ completed epics/stories of 2026-07-11/12).
   mid-describe) and ships AFTER (local truth leads the mirror);
   lenient + counted; untapped worlds pay one property read.
 - persistence/record_version.py - RecordVersion (static authority,
-  CURRENT "2.0.0", key "record_version"): stamps to_cached_item,
+  CURRENT "4.0.0" since 0.2.8214 ("2.0.0" when promoted), key "record_version"): stamps to_cached_item,
   capture_formation_record, and tap envelopes; check_readable refuses
   NEWER-major artifacts at from_cached_item (covers cache + external
   reloads) and load_formation_record; absent stamps read "0.0.0"
@@ -9911,6 +9980,14 @@ Companion documents:
   component and code-description patches are inputs to this document while a lane is open.
 
 ## Context / Handoff Summary
+
+2026-09-30 per-frame spell worlds (0.2.8213-0.2.8214): the Aether Singleton entry carries the regime-in-force
+read; its root configuration and utility-host subcomponents carry the regime in the Aether twin and its reload;
+the Crystallizer entry carries a dated block (custody keys, frame-aware verbs, stage 1 install / shortfall /
+refusal, per-Book replay, retarget, impact read, RecordVersion 4.0.0) and its record-version lines; the
+Crystallizer Root and SpellCrystal Manifest subcomponents list the new surface. Corrected: the promoted restore
+detail's "spell SHAs never translate" (they translate when a receiving policy changes them, per Book since
+0.2.8214) and the promoted RecordVersion "2.0.0". Remeasured: the code-map extents of the eleven touched files.
 
 2026-09-30 root configuration guards (0.2.8209-0.2.8212): the Aether Singleton entry and its root configuration
 subcomponent carry the sealed spell-id regime and its refusal; the AR Runtime Surface entry carries the active

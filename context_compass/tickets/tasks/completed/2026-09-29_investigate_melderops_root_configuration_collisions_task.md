@@ -5,12 +5,21 @@
 ## Metadata
 - Task ID: TASK-2026-09-29-investigate-melderops-root-configuration-collisions
 - Story: none; standalone investigation (advice for MelderOps, read-only there)
-- Status: review
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p2
 - Created: 2026-09-29T22:47:30Z
-- Updated: 2026-09-29T23:13:17Z
+- Updated: 2026-09-30T15:40:12Z
+- Completed: 2026-09-30T15:40:12Z
+- Closure Basis: owner turn-in in chat (2026-09-30) of every finished lane: "yeah turn in the [lanes] you
+  finished please, go ahead".
+- Summary: A per-root answer, from source reads on both sides and three probe batches in fresh processes, to
+  what MelderOps' Melder setup did when a host had already configured Melder's roots: an explicit MelderOps
+  policy over an active host root crashed prepare() with an AttributeError; configured-but-inactive host roots
+  were silently replaced or switched back on; a host's staged Aether policy was mutated; a late per-frame
+  spell-id policy was reported but not in force; a refused dynamic conjure settled its frame. The owner picked
+  every fix: F1-F6 (MelderOps) and M1-M4 (Melder), each in its own task. Read-only here; no source changed.
 
 ## Objective
 Owner question (chat, 2026-09-29): MelderOps configures Melder through `spectrum/melder_setup` and
@@ -43,16 +52,20 @@ with evidence, per root.
 - to_state: review
 - transition_reason: Per-root answer delivered with evidence (2026-09-29T23:13:17Z); awaiting owner acceptance
   and fix selection.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-09-30T15:40:12Z) owner turn-in in chat, after the fixes it picked (F1-F6, M1-M4)
+  landed in their own tasks.
 
 ## Steps / Checklist
 - [x] Read MelderConfiguration and the melder_setup package; record what MelderOps asks of each root and when.
 - [x] Read each root's configure / activate / freeze path in Melder; record the already-configured behaviour.
 - [x] Probe the non-obvious cases in VM scratch.
 - [x] Answer the owner.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - A per-root answer with evidence; probe scripts and results under artifacts/melderops_root_configuration_20260929/.
@@ -64,21 +77,21 @@ with evidence, per root.
 - Read-only; nothing to roll back.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No behaviour claim from a search hit or a document; read the code.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No behaviour claim from a search hit or a document; read the code.
+- [x] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -300,18 +313,34 @@ with evidence, per root.
     one notch each): M1 Aether.configure/activate refuses, or reports honestly, a regime change after the first
     frame; M2 Nexus.configure refuses while active, like Crystallizer and MutationResearch; M3 a refused dynamic
     conjure must not leave its frame settled dynamic; M4 optional: a common native read of policy values for hosts.
-  EVIDENCE: tickets/tasks/2026-09-29_investigate_melderops_root_configuration_collisions_task.md:105-288
+  EVIDENCE: tickets/tasks/completed/2026-09-29_investigate_melderops_root_configuration_collisions_task.md:118-301
   IMPACT: Without F1 every explicit policy over an active host root crashes MelderOps setup; F2/F3 decide whether
     MelderOps may change a host's configuration without saying so.
   NEXT: Owner accepts the answer and chooses which fix tickets to open (and in which repository).
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-30T15:40:12Z
+  TYPE: DECISION
+  CLAIM: The owner picked every fix (chat, 2026-09-29: "implement all the fixes") and turned this lane in
+    (chat, 2026-09-30, every finished lane). M1-M4 landed in Melder at 0.2.8209-0.2.8212 under the guard task;
+    F1-F6 landed in MelderOps under its honour-host-roots task, on Melder 0.2.8212 with the floor raised. Both
+    close in the same pass. These notes stay the record of the collisions as they stood on Melder 0.2.8208.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-29_guard_melder_roots_for_host_collisions_task.md:28-41
+  - priv_commandops:context_compass/tickets/tasks/completed/2026-09-29_honour_host_melder_roots_task_completed.md
+  IMPACT: Nothing in this investigation stays open; the one gap it surfaced beyond F1-F6 and M1-M4 (the Aether
+    record carries no spell-id regime) is recorded in the guard task.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-In review since 2026-09-29T23:13:17Z. Both sides read; three probe batches recorded (MEASURE notes; results
-under the artifacts folder). The answer went to the owner in chat; the DECISION_REQUEST note lists fix
-candidates F1-F6 (MelderOps) and M1-M4 (Melder). Read-only in both repositories; no notch. priv_commandops
-carries uncommitted melder_setup edits (22:59Z) that do not change the findings.
+Closed 2026-09-30T15:40:12Z on the owner's turn-in. Both sides were read and three probe batches recorded; the
+per-root answer went to the owner in chat and the notes carry its evidence. The owner picked every fix: M1-M4
+landed in Melder (0.2.8209-0.2.8212) under the guard task, F1-F6 in MelderOps under its honour-host-roots
+task; both are closed with this one. Read-only in both repositories. Guard task:
+tickets/tasks/completed/2026-09-29_guard_melder_roots_for_host_collisions_task.md
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

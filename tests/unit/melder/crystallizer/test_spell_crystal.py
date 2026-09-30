@@ -6,9 +6,11 @@ from types import ModuleType
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.synthetic_module import SyntheticModule
 from tests.mocks.crystallizer.spell_crystal_harness import (
     DummySpell,
@@ -301,3 +303,136 @@ def test_spell_crystal_uses_configured_user_source_roots() -> None:
         sys.modules.pop("demo_pkg.helper", None)
         sys.modules.pop("demo_pkg", None)
         shutil.rmtree(temp_root.parent, ignore_errors=True)
+
+
+def _keyed_service_module(module_name: str) -> SyntheticModule:
+    """Publish one trivial synthetic module for a KeyedService target; the caller cleans it and pops sys.modules."""
+    module = SyntheticModule(
+        module_name=module_name,
+        spell_crystal_id="keyed-crystal",
+        source_text="class KeyedService:\n    pass\n",
+        source_sha256="keyed-sha",
+        binding_signature="keyed-binding",
+    )
+    sys.modules[module_name] = module
+    return module
+
+
+def _keyed_spell(spell_id: str, module_name: str, frame_name: str) -> DummySpell:
+    """Build one spell double bound in `frame_name` whose target lives in the keyed synthetic module."""
+    spell = DummySpell(spell_id, type("KeyedService", (), {"__module__": module_name}))
+    spell.aetheric_frame = frame_name
+    return spell
+
+
+def _install_regime(process_wide: bool) -> None:
+    """Configure and activate the fixture's Aether with one spell-id regime before any frame exists."""
+    policy = AetherConfiguration().with_defaults().with_process_wide_unique_spell_ids(process_wide)
+    policy.activate()
+    Aether().activate(policy)
+
+
+def test_spell_crystal_default_custody_key_is_the_spell_id_and_records_the_frame() -> None:
+    """
+    Verify the process-wide key (0.2.8214): the custody key is the bare spell id, and the frame rides along.
+
+    Returns:
+        None.
+    """
+    module_name = "test.keyed_custody_default"
+    module = _keyed_service_module(module_name)
+    crystal = None
+    try:
+        crystal = SpellCrystal(_keyed_spell("sha-keyed", module_name, "tenant_a"))
+        assert crystal.custody_key == "sha-keyed"
+        assert crystal.frame_name == "tenant_a"
+        description = crystal.describe()
+        assert description["custody_key"] == "sha-keyed"
+        assert description["frame_name"] == "tenant_a"
+    finally:
+        if crystal is not None:
+            crystal.cleanup()
+        module.cleanup()
+        sys.modules.pop(module_name, None)
+
+
+def test_spell_crystal_per_frame_custody_key_composes_the_frame() -> None:
+    """
+    Verify the per-frame key: "<spell_id>@<frame>", so one spell bound in two frames records twice.
+
+    Returns:
+        None.
+    """
+    module_name = "test.keyed_custody_per_frame"
+    module = _keyed_service_module(module_name)
+    crystal = None
+    try:
+        crystal = SpellCrystal(_keyed_spell("sha-keyed", module_name, "tenant_b"), per_frame_custody=True)
+        assert crystal.id == "sha-keyed"
+        assert crystal.custody_key == "sha-keyed@tenant_b"
+        assert crystal.describe()["custody_key"] == "sha-keyed@tenant_b"
+    finally:
+        if crystal is not None:
+            crystal.cleanup()
+        module.cleanup()
+        sys.modules.pop(module_name, None)
+
+
+def test_custody_key_statics_round_trip_including_an_at_sign_in_the_frame() -> None:
+    """
+    Verify the key grammar: composition appends "@<frame>", and parsing splits at the FIRST "@", because a spell id
+    (a SHA256 hex digest) never holds one while a frame name may.
+
+    Returns:
+        None.
+    """
+    assert SpellCrystal.compose_custody_key("abc", "tenant@eu") == "abc@tenant@eu"
+    assert SpellCrystal.spell_id_of_custody_key("abc@tenant@eu") == "abc"
+    assert SpellCrystal.spell_id_of_custody_key("abc") == "abc"
+
+
+def test_facade_keys_custody_per_frame_under_per_frame_ids() -> None:
+    """
+    Verify the facade reads the regime: under per-frame ids `create_spell_crystal` builds a frame-scoped key.
+
+    Returns:
+        None.
+    """
+    _install_regime(False)
+    module_name = "test.keyed_custody_facade_per_frame"
+    module = _keyed_service_module(module_name)
+    crystal = None
+    try:
+        crystal = _create_activated_crystallizer().create_spell_crystal(
+            _keyed_spell("sha-keyed", module_name, "tenant_a")
+        )
+        assert crystal.custody_key == "sha-keyed@tenant_a"
+    finally:
+        if crystal is not None:
+            crystal.cleanup()
+        module.cleanup()
+        sys.modules.pop(module_name, None)
+
+
+def test_facade_keeps_bare_keys_under_process_wide_ids() -> None:
+    """
+    Verify default worlds keep their record keys: under process-wide ids the facade builds the bare spell id key.
+
+    Returns:
+        None.
+    """
+    _install_regime(True)
+    module_name = "test.keyed_custody_facade_process_wide"
+    module = _keyed_service_module(module_name)
+    crystal = None
+    try:
+        crystal = _create_activated_crystallizer().create_spell_crystal(
+            _keyed_spell("sha-keyed", module_name, "tenant_a")
+        )
+        assert crystal.custody_key == "sha-keyed"
+        assert crystal.frame_name == "tenant_a"
+    finally:
+        if crystal is not None:
+            crystal.cleanup()
+        module.cleanup()
+        sys.modules.pop(module_name, None)

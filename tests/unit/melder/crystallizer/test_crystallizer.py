@@ -27,6 +27,7 @@ class _DummySpell:
             None.
         """
         self.spell_id = spell_id
+        self.aetheric_frame = "default"
         self.spell = spell
         # Bind-signature fields consumed by SpellCrystal.__init__ (test doubles).
         self.spell_name = spell_id

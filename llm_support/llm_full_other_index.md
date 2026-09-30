@@ -10,8 +10,8 @@ Line numbers are 1-based and inclusive.
 | bundle | llm_full_other.txt |
 | schema_version | 1.0.0 |
 | generator_sha256 | d75f1de961817875c099e1b3bc6eaa3a6c670dc89752cd94864d977e452b88e3 |
-| source_fingerprint | f6870654254f78a049fa4b8c10a6596934864808e8fcc7f13dcf44bbce7bf1d9 |
-| bundle_sha256 | d686959396c88b05e8451854023db68f79ef47bd49acca2e4fd1e69ac48663cd |
+| source_fingerprint | d9f21619367df2178f917b9e44f5cc424466b61a5028a1457c3bea7e41f7fe31 |
+| bundle_sha256 | 2d1599f058c725956d2820ca99439677cd899c9c619bfde5d53d00ec140e4c5c |
 | bundle_line_count | 73676 |
 | bundle_line_ending | lf |
 | files | 380 |
@@ -307,7 +307,7 @@ Line numbers are 1-based and inclusive.
 | 55440-56100 | 55445-56097 | 22263 | utf-8 | abd84c14e6aff146eb58a904b94ae0be74a366f17c4ebb7f43cb058c8fa4e835 | benchmarks/testing_other_di/test_multithreading_di.py |
 | 56101-56914 | 56106-56911 | 24461 | utf-8 | c1cce89c9e01e56399999f381c9ce80cf3bfaa3afafdb6009c519080c45c84fe | benchmarks/testing_other_di/test_overrides_all.py |
 | 56915-57936 | 56920-57933 | 40853 | utf-8 | d3827be60c768eef6c53ed706f0a2b91f91b27fa5e109db272daa8f010722ddf | benchmarks/testing_other_di/test_persistent_runtime_gauntlet.py |
-| 57937-60459 | 57942-60456 | 102906 | utf-8 | 262d79a851754bbceba5eb184ab98146b7e9e347e102e8e042e5c5e2dbacff49 | benchmarks/testing_other_di/test_real_world_gauntlet.py |
+| 57937-60459 | 57942-60456 | 102907 | utf-8 | 1bf181e91343dd875412408f594fbf5db6872139f9c09164d8f0f805b076f1e0 | benchmarks/testing_other_di/test_real_world_gauntlet.py |
 | 60460-60531 | 60465-60528 | 2072 | utf-8 | 9fa0217039115330bdc6ccb77ca6c5505996ae4b869698751da4c1f6b9da0c91 | benchmarks/testing_other_di/test_real_world_gauntlet_cprofile.py |
 | 60532-60875 | 60537-60872 | 12296 | utf-8 | 417486f6a67da63ec93f8c2fdcb7d04a9ecef73d636da523d5947a59cd43c20a | benchmarks/testing_other_di/test_real_world_gauntlet_isolation.py |
 | 60876-62939 | 60881-62936 | 65601 | utf-8 | e854922e9ea33a80df7c6eeb9e0a33662f7c21a218507aceaff68a11f349c52d | benchmarks/testing_other_di/test_shallow_all.py |

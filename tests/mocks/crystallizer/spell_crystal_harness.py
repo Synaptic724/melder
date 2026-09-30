@@ -23,6 +23,8 @@ class DummySpell:
         """Mirror the native bind policy and custody fields consumed by SpellCrystal."""
         self.spell_id = spell_id
         self.resolvable = True
+        # The owning frame (0.2.8214): per-frame spell ids key custody "<spell_id>@<frame>".
+        self.aetheric_frame = "default"
         self.spell = spell
         # Bind-signature fields consumed by SpellCrystal.__init__ (test doubles).
         self.spell_name = spell_id

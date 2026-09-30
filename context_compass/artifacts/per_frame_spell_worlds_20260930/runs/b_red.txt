@@ -1,0 +1,103 @@
+................F...FFFFF..............F........FFF..................... [ 32%]
+.......................................................................F [ 64%]
+FFFF......F...................FF.....FFF.FFF............................ [ 96%]
+........                                                                 [100%]
+=================================== FAILURES ===================================
+E   AssertionError: assert {'spell_id': ...esent': False} == {'spell_id': ...esent': False}
+      
+      Omitting 3 identical items, use -vv to show
+      Right contains 1 more item:
+      {'custody_key': 'sha-a'}
+      Use -v to get more diff
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/persistence/test_persistence_profile.py:473: AssertionError: assert {'spell_id': ...esent': False} == {'spell_id': ...esent': False}
+E   assert (True is False)
+     +  where True = <test_persistence_profile._StubSpellCrystal object at 0x4e63e7a3030>.cleaned
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/persistence/test_persistence_profile.py:574: assert (True is False)
+E   TypeError: PersistenceProfile.get_spell_crystal() got an unexpected keyword argument 'frame_name'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/persistence/test_persistence_profile.py:597: TypeError: PersistenceProfile.get_spell_crystal() got an unexpected keyword argument 'frame_name'
+E   assert 0 == 1
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/persistence/test_persistence_profile.py:619: assert 0 == 1
+E   AssertionError: assert ['sha', 'sha@...sha@tenant_a'] == ['sha@tenant_...sha@tenant_a']
+      
+      At index 0 diff: 'sha' != 'sha@tenant_a'
+      Use -v to get more diff
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/persistence/test_persistence_profile.py:642: AssertionError: assert ['sha', 'sha@...sha@tenant_a'] == ['sha@tenant_...sha@tenant_a']
+E   AssertionError: assert 'book-b' == 'book-a'
+      
+      - book-a
+      ?      ^
+      + book-b
+      ?      ^
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/persistence/test_persistence_profile.py:670: AssertionError: assert 'book-b' == 'book-a'
+E   TypeError: PersistenceSystem.get_spell_crystal() got an unexpected keyword argument 'frame_name'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/persistence/test_persistence_system.py:384: TypeError: PersistenceSystem.get_spell_crystal() got an unexpected keyword argument 'frame_name'
+E   Failed: DID NOT RAISE ValueError
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/test_crystallizer_record_sinks.py:347: Failed: DID NOT RAISE ValueError
+E   TypeError: Crystallizer.emit_spell_activity() got an unexpected keyword argument 'frame_name'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/test_crystallizer_record_sinks.py:374: TypeError: Crystallizer.emit_spell_activity() got an unexpected keyword argument 'frame_name'
+E   TypeError: Crystallizer.emit_spell_activity() got an unexpected keyword argument 'frame_name'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/test_crystallizer_record_sinks.py:397: TypeError: Crystallizer.emit_spell_activity() got an unexpected keyword argument 'frame_name'
+E   AttributeError: 'SpellCrystal' object has no attribute 'custody_key'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/test_spell_crystal.py:347: AttributeError: 'SpellCrystal' object has no attribute 'custody_key'
+E   TypeError: SpellCrystal.__init__() got an unexpected keyword argument 'per_frame_custody'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/test_spell_crystal.py:370: TypeError: SpellCrystal.__init__() got an unexpected keyword argument 'per_frame_custody'
+E   AttributeError: type object 'SpellCrystal' has no attribute 'compose_custody_key'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/test_spell_crystal.py:389: AttributeError: type object 'SpellCrystal' has no attribute 'compose_custody_key'
+E   AttributeError: 'SpellCrystal' object has no attribute 'custody_key'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/test_spell_crystal.py:409: AttributeError: 'SpellCrystal' object has no attribute 'custody_key'
+E   AttributeError: 'SpellCrystal' object has no attribute 'custody_key'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/test_spell_crystal.py:432: AttributeError: 'SpellCrystal' object has no attribute 'custody_key'
+E   assert True is False
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/crystal_analysis/test_impact_engine.py:286: assert True is False
+E   AssertionError: assert ['sha-a@alpha'] == ['sha-a@beta']
+      
+      At index 0 diff: 'sha-a@alpha' != 'sha-a@beta'
+      Use -v to get more diff
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/crystal_loader_system/test_crystal_loader_system.py:752: AssertionError: assert ['sha-a@alpha'] == ['sha-a@beta']
+E   AssertionError: assert 'alpha' == 'beta'
+      
+      - beta
+      + alpha
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/crystal_loader_system/test_crystal_loader_system.py:778: AssertionError: assert 'alpha' == 'beta'
+E   Failed: DID NOT RAISE RuntimeError
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py:209: Failed: DID NOT RAISE RuntimeError
+E   AttributeError: 'RestoreEngine' object has no attribute '_map_spell_identity'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py:226: AttributeError: 'RestoreEngine' object has no attribute '_map_spell_identity'
+E   AssertionError: assert ['952a5c27a91...88f906de6050'] == ['952a5c27a91...050@tenant_b']
+      
+      At index 0 diff: '952a5c27a917bec34b0d1d8b664375aeca53aacd8030b6e0f614bf219faecc92' != '952a5c27a917bec34b0d1d8b664375aeca53aacd8030b6e0f614bf219faecc92@tenant_a'
+      Right contains 2 more items, first extra item: 'b2b35fce2877cc6342f83d1e2b22cd9e893c0027e571eeef4b2688f906de6050@tenant_a'
+      Use -v to get more diff
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py:185: AssertionError: assert ['952a5c27a91...88f906de6050'] == ['952a5c27a91...050@tenant_b']
+E   AttributeError: 'SpellCrystal' object has no attribute 'custody_key'
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py:248: AttributeError: 'SpellCrystal' object has no attribute 'custody_key'
+E   Failed: DID NOT RAISE RuntimeError
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py:269: Failed: DID NOT RAISE RuntimeError
+E   assert 0 == 1
+/sessions/rcw-01ea5tnfq1nyfhrsj4wka11q/wt2_new/tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py:292: assert 0 == 1
+=========================== short test summary info ============================
+FAILED tests/unit/melder/crystallizer/persistence/test_persistence_profile.py::test_capture_segment_payload_special_cases
+FAILED tests/unit/melder/crystallizer/persistence/test_persistence_profile.py::test_one_spell_id_in_two_frames_keeps_both_custody_entries
+FAILED tests/unit/melder/crystallizer/persistence/test_persistence_profile.py::test_frame_lookup_never_answers_another_frames_copy
+FAILED tests/unit/melder/crystallizer/persistence/test_persistence_profile.py::test_activity_and_removal_address_one_frames_copy
+FAILED tests/unit/melder/crystallizer/persistence/test_persistence_profile.py::test_segment_payloads_name_the_spell_and_its_custody_key
+FAILED tests/unit/melder/crystallizer/persistence/test_persistence_profile.py::test_index_graft_takes_each_members_custody_from_the_index_book
+FAILED tests/unit/melder/crystallizer/persistence/test_persistence_system.py::test_spell_custody_verbs_route_frame_scoped_keys_to_the_active_profile
+FAILED tests/unit/melder/crystallizer/test_crystallizer_record_sinks.py::test_per_frame_spell_verbs_require_the_frame
+FAILED tests/unit/melder/crystallizer/test_crystallizer_record_sinks.py::test_per_frame_spell_verbs_address_one_frames_copy
+FAILED tests/unit/melder/crystallizer/test_crystallizer_record_sinks.py::test_process_wide_spell_verbs_ignore_the_frame
+FAILED tests/unit/melder/crystallizer/test_spell_crystal.py::test_spell_crystal_default_custody_key_is_the_spell_id_and_records_the_frame
+FAILED tests/unit/melder/crystallizer/test_spell_crystal.py::test_spell_crystal_per_frame_custody_key_composes_the_frame
+FAILED tests/unit/melder/crystallizer/test_spell_crystal.py::test_custody_key_statics_round_trip_including_an_at_sign_in_the_frame
+FAILED tests/unit/melder/crystallizer/test_spell_crystal.py::test_facade_keys_custody_per_frame_under_per_frame_ids
+FAILED tests/unit/melder/crystallizer/test_spell_crystal.py::test_facade_keeps_bare_keys_under_process_wide_ids
+FAILED tests/unit/melder/crystallizer/crystal_analysis/test_impact_engine.py::test_spell_radius_answers_a_spell_id_through_frame_scoped_keys
+FAILED tests/unit/melder/crystallizer/crystal_loader_system/test_crystal_loader_system.py::test_retarget_rekeys_frame_scoped_custody_for_the_target_frame
+FAILED tests/unit/melder/crystallizer/crystal_loader_system/test_crystal_loader_system.py::test_retarget_keeps_process_wide_custody_keys
+FAILED tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py::test_process_wide_host_refuses_a_record_binding_one_spell_id_in_two_frames
+FAILED tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py::test_spell_translation_is_kept_per_book
+FAILED tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py::test_same_class_in_two_frames_restores_both_tenants_under_per_frame_ids
+FAILED tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py::test_process_wide_world_keeps_bare_custody_keys
+FAILED tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py::test_process_wide_host_refuses_a_same_class_per_frame_record
+FAILED tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py::test_removing_a_spell_in_one_frame_keeps_the_other_frames_custody
+24 failed, 200 passed in 5.06s

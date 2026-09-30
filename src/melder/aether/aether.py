@@ -759,6 +759,49 @@ class Aether(Cleanable):
         return self._configured
 
     @property
+    def process_wide_unique_spell_ids(self) -> bool:
+        """
+        Return the spell-id regime in force: True when one spell_id may exist only once per process.
+
+        Purpose:
+            Say which regime governs this process without reading private state. `configuration` cannot answer it:
+            before the first frame it is the policy the next first frame will seal, and after it a first frame may
+            have sealed frozen defaults without the root ever being configured. The crystallizer records this value in
+            the Aether twin and keys spell custody by it, and a restore uses it to tell whether a recorded regime can
+            still be installed.
+
+        Contract:
+            - Once any frame exists: the regime the first frame sealed. `configure()` and `activate()` refuse any other
+              while frames exist, so the answer cannot change until every frame is gone.
+            - Before the first frame: the installed configuration's value (the one the next first frame seals), or
+              True when nothing is installed (the default policy a first frame would install).
+            - Read-only: installs, freezes and creates nothing.
+
+        Threading:
+            Lock-free point-in-time read, like the frame lookups. Frame birth seals the regime before it inserts the
+            frame, both under the Aether lock, so a reader that sees a frame also sees the sealed value. The installed
+            configuration is read once into a local so a concurrent `configure()` cannot swap it between the check
+            and the read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Aether has been cleaned.
+            TypeError: If the installed configuration's stored regime is no longer a bool (its defensive read).
+
+        Returns:
+            bool: True for process-wide spell ids, False for per-frame spell ids.
+        """
+        self.check_cleaned()
+        if self._aetheric_frames:
+            return self._process_wide_unique_spell_ids
+        configuration = self._configuration
+        if configuration is None:
+            return True
+        return configuration.process_wide_unique_spell_ids
+
+    @property
     def aetheric_mediator(self) -> AethericMediator:
         """
         Return the Aether-owned admission plane.

@@ -436,6 +436,10 @@ class AetherConfiguration(Cleanable):
             - channel_logger_activation_enabled reloads from the record;
               when absent it falls to the documented default (False) and
               is reported under "missing".
+            - process_wide_unique_spell_ids (the spell-id regime, recorded
+              since record major 4) reloads the same way; when absent (an
+              older record) it keeps the default (True) and is reported
+              under "missing".
             - Callable-bearing entries can NEVER reload from a record:
               when the payload marks channel_logger_resolver_present or
               default_logger_present True, the key is reported under
@@ -469,6 +473,14 @@ class AetherConfiguration(Cleanable):
             )
         else:
             missing.append("channel_logger_activation_enabled")
+        # The regime is a plain recorded value, applied before the freeze
+        # below so the reloaded configuration cannot be flipped afterwards.
+        if "process_wide_unique_spell_ids" in recorded_payload:
+            configuration.set_process_wide_unique_spell_ids(
+                bool(recorded_payload["process_wide_unique_spell_ids"])
+            )
+        else:
+            missing.append("process_wide_unique_spell_ids")
         # Presence flags are honesty signals, not reloadable values: a
         # record can say a resolver existed, but only live code can
         # supply one.
@@ -890,6 +902,8 @@ class AetherConfiguration(Cleanable):
             - Callable-bearing entries record as PRESENCE flags only (a
               record cannot carry live callables); the reload lane reports
               them as code_participation.
+            - Records the spell-id regime (`process_wide_unique_spell_ids`)
+              so a restore can rebuild a per-frame world under per-frame ids.
             - Replace-on-emit in the profile keeps exactly one root twin.
 
         Returns:
@@ -913,6 +927,9 @@ class AetherConfiguration(Cleanable):
                             ),
                             "default_logger_present": (
                                 self._properties["default_logger"] is not None
+                            ),
+                            "process_wide_unique_spell_ids": (
+                                self._properties["process_wide_unique_spell_ids"]
                             ),
                         },
                     )

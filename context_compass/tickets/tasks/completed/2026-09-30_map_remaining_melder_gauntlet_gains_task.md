@@ -6,13 +6,21 @@
 - Task ID: TASK-2026-09-30-map-remaining-melder-gauntlet-gains
 - Story: none; discovery for the owner (read, measure, recommend; no tree edit without the owner's pick)
 - Related: tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md (melder_2's cost map and levers),
-  tickets/tasks/2026-09-30_investigate_gauntlet_order_dependence_task.md (the isolated harness)
-- Status: review
+  tickets/tasks/completed/2026-09-30_investigate_gauntlet_order_dependence_task.md (the isolated harness)
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p2
 - Created: 2026-09-30T14:02:49Z
-- Updated: 2026-09-30T15:15:54Z
+- Updated: 2026-09-30T15:27:09Z
+- Completed: 2026-09-30T15:27:09Z
+- Closure Basis: owner turn-in in chat (2026-09-30), answering "Want me to close this ticket out?": "ok
+  yeah lets drop the change, go ahead and drop it and lets move on".
+- Summary: Mapped Melder's remaining loop gap to dishka on the isolated gauntlet. No regression across the four
+  releases compared; GC is about 0.2% of the loop; about 80% of the Windows gap is thread start/exit outside
+  the timed cycles, with no single Melder cause. Option A (top-level creation-context doors) was prototyped as
+  a VM-only overlay: about -2% CPU per scope cycle in the VM, +8-11% per cycle on the owner's Windows machine
+  (the caller loses CALL_PY_EXACT_ARGS). Dropped by the owner; no source changed.
 
 ## Objective
 Owner question (chat, 2026-09-30), after the first one-process-per-library run at 30000 iterations: "how can we
@@ -57,6 +65,10 @@ are created when they are today; no unstable-API tricks; correctness first).
 - transition_reason: (2026-09-30T15:08:06Z) prototype built, tests pass under it (two introspection asserts aside), VM
   per-cycle A/B shows about -2% CPU per scope cycle and no resolvable gauntlet change; the owner runs the
   Windows A/B and decides whether to land it.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-09-30T15:27:09Z) owner turn-in in chat: option A dropped ("go ahead and drop it and lets move
+  on"); nothing reached the tree, so the lane closes on its findings (option C in effect).
 
 ## Steps / Checklist
 - [x] Note the owner's 30k run and the prior lever inventory.
@@ -68,11 +80,11 @@ are created when they are today; no unstable-API tricks; correctness first).
 - [x] Run the door-related tests under the overlay (full unit, component and integration suites).
 - [x] Interleaved A/B in fresh processes (VM); hand the A/B driver to the owner for Windows.
 - [x] Owner's Windows run of door_proto_cycles.py (door_proto_ab.py did not run): a loss, drop recommended.
-- [ ] Owner confirms dropping option A and closing the lane (turn-in).
-- [ ] Run Ticket Microcycle during execution:
+- [x] Owner confirms dropping option A and closing the lane (turn-in).
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Evidence-backed notes and a ranked lever list for the owner.
@@ -91,22 +103,22 @@ are created when they are today; no unstable-API tricks; correctness first).
 - The VM has 2 cores; Windows decides. Old trees run the current harness, which must stay API-compatible with them.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
-- [ ] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
-- [ ] No closure without acceptance confirmation and board-sync completion.
-- [ ] No lever the owner already dropped comes back without a new reason.
+- [x] No status transition without evidence-backed transition reason.
+- [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
+- [x] No closure without acceptance confirmation and board-sync completion.
+- [x] No lever the owner already dropped comes back without a new reason.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -358,8 +370,8 @@ are created when they are today; no unstable-API tricks; correctness first).
         churn; the default layout stays.
     Not options: prewarming (dropped, and measured no gain), GC tuning (nothing to gain), P3 via ctypes (dropped).
   EVIDENCE:
-  - context_compass/tickets/tasks/2026-09-30_map_remaining_melder_gauntlet_gains_task.md:175-225
-  - context_compass/tickets/tasks/2026-09-30_map_remaining_melder_gauntlet_gains_task.md:226-296
+  - context_compass/tickets/tasks/completed/2026-09-30_map_remaining_melder_gauntlet_gains_task.md:187-237
+  - context_compass/tickets/tasks/completed/2026-09-30_map_remaining_melder_gauntlet_gains_task.md:238-308
   - context_compass/artifacts/melder_gauntlet_gap_20260930/owner_run_30k_isolated_20260930.md:1-28
   - context_compass/tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md:631-652
   IMPACT: Each of A, B and D is its own task with a NOTICE to the file owner; C closes this lane. Nothing is edited
@@ -374,7 +386,7 @@ are created when they are today; no unstable-API tricks; correctness first).
     EXECUTION_BOUNDARY (runs in VM trees, code under artifacts/, no tree edit). This corrects the request's
     IMPACT line, which said every option would open its own task: only landing the change in src/ does (a
     NOTICE to the file owner, patch docs, tests, a notch).
-  EVIDENCE: context_compass/tickets/tasks/2026-09-30_map_remaining_melder_gauntlet_gains_task.md:346-369
+  EVIDENCE: context_compass/tickets/tasks/completed/2026-09-30_map_remaining_melder_gauntlet_gains_task.md:358-381
   IMPACT: Status returns to in_progress for the prototype; nothing in src/ changes.
   NEXT: Write the prototype PLAN, then build it.
   REREAD: REQUIRED
@@ -490,7 +502,7 @@ are created when they are today; no unstable-API tricks; correctness first).
     (door_proto_cycles, door_proto_ab, version and tree A/Bs) stay usable because both sides of each pair saw the
     same load, but bursts can swamp a 2% effect, and absolute levels are not comparable across the session.
   EVIDENCE:
-  - context_compass/tickets/tasks/2026-09-30_map_remaining_melder_gauntlet_gains_task.md:448-464
+  - context_compass/tickets/tasks/completed/2026-09-30_map_remaining_melder_gauntlet_gains_task.md:460-476
   - context_compass/artifacts/melder_gauntlet_gap_20260930/prototype/logs/door_proto_cycles_vm_32rounds_paired.txt:1-16
   IMPACT: The Windows A/B should run with the agents idle; if it runs under load, use more rounds (32 for
     door_proto_cycles.py) and read the paired ratios (door_proto_cycles_paired.py, wall_ns on Windows).
@@ -537,15 +549,31 @@ are created when they are today; no unstable-API tricks; correctness first).
   NEXT: Recommend closing the lane (option C); keep the prototype and its logs as reference.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-09-30T15:27:09Z
+  TYPE: DECISION
+  CLAIM: The owner dropped option A and closed the lane (chat, 2026-09-30, answering "Want me to close this ticket
+    out?"): "ok yeah lets drop the change, go ahead and drop it and lets move on". There is nothing to revert:
+    the overlay only ever ran in VM trees and lives under artifacts/.../prototype/. The prototype, its A/B
+    drivers and every log stay as reference, with the specialization finding that rules the top-level door
+    shape out; the prototype/__pycache__ left by the owner's Windows run is git-ignored and stays.
+  EVIDENCE:
+  - context_compass/tickets/tasks/completed/2026-09-30_map_remaining_melder_gauntlet_gains_task.md:512-551
+  - .gitignore:2-2
+  IMPACT: Option C is in effect: no src change, no release-note entry, no rebuild. The remaining Windows gap
+    stays where these notes put it (thread start/exit under free-threading, outside the timed cycles), with no
+    open Melder lever left in this lane.
+  NEXT: Turn in: completion summary, move to tickets/tasks/completed/, attention and artifact board sync.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Context / Handoff Summary
-In review since 2026-09-30T15:15:54Z; the owner decides whether to close. No regression since 0.2.74; GC is about 0.2%
-of the loop; about 80% of the Windows gap sits in thread start/exit costs outside the timed cycles, with no
-single Melder cause. Option A (the owner's pick: top-level doors, built as a VM-only overlay under
-artifacts/.../prototype/) passed the suites and saved about 2% CPU per scope cycle in the VM, but on the
-owner's Windows machine every cycle got 8-11% slower: giving each door its own code copy costs the caller
-(SpellSpace.meld) its CALL_PY_EXACT_ARGS specialization, and no variant keeps both specializations.
-Recommendation: drop A and close (option C). No tree edit, no notch.
+Closed 2026-09-30T15:27:09Z on the owner's turn-in: option A dropped, lane closed (option C in effect). No
+regression across the Melder releases compared; GC is about 0.2% of the loop; about 80% of the Windows gap
+sits in thread start/exit costs outside the timed cycles, with no single Melder cause. Option A (top-level
+doors, a VM-only overlay under artifacts/.../prototype/) saved about 2% CPU per scope cycle in the VM and cost
+8-11% per cycle on the owner's Windows machine, because a per-spell code copy costs the caller
+(SpellSpace.meld) its CALL_PY_EXACT_ARGS specialization; the closure shape stays. No tree edit. Artifacts
+retained as reference.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

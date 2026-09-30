@@ -257,3 +257,37 @@ def test_source_drift_still_detects_tamper_through_the_cache(tmp_path):
     finally:
         engine.cleanup()
         PhysicalSourceCache._clear_for_tests()
+
+
+def test_spell_radius_answers_a_spell_id_through_frame_scoped_keys():
+    """
+    Contract (0.2.8214): a record kept under per-frame ids keys custody "<spell_id>@<frame>"; the spell radius still
+    answers the bare spell id (first matching key in sorted order) and lists every frame's copy, while an unknown
+    id still answers unknown_spell.
+    """
+    world = {
+        "sha-alpha@tenant_a": _crystal(
+            spell_id="sha-alpha",
+            root_module="userland.alpha",
+            modules=["userland.alpha"],
+            dependencies={},
+        ),
+        "sha-alpha@tenant_b": _crystal(
+            spell_id="sha-alpha",
+            root_module="userland.alpha",
+            modules=["userland.alpha"],
+            dependencies={},
+            spellbook_id="book-2",
+        ),
+    }
+    engine = ImpactEngine(world)
+    try:
+        radius = engine.blast_radius_of_spell("sha-alpha")
+        assert radius["unknown_spell"] is False
+        assert radius["spell"] == "sha-alpha"
+        assert radius["root_module"] == "userland.alpha"
+        assert radius["affected_spells"] == ["sha-alpha@tenant_a", "sha-alpha@tenant_b"]
+        assert radius["affected_spellbooks"] == ["book-1", "book-2"]
+        assert engine.blast_radius_of_spell("sha-missing")["unknown_spell"] is True
+    finally:
+        engine.cleanup()

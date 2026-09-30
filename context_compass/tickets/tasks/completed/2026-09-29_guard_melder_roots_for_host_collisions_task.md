@@ -5,14 +5,25 @@
 ## Metadata
 - Task ID: TASK-2026-09-29-guard-melder-roots-for-host-collisions
 - Parent epic (MelderOps repository):
-  priv_commandops:context_compass/tickets/epics/2026-09-29_melder_host_configuration_collisions_epic.md
-- Source investigation: tickets/tasks/2026-09-29_investigate_melderops_root_configuration_collisions_task.md
-- Status: review
+  priv_commandops:context_compass/tickets/epics/completed/2026-09-29_melder_host_configuration_collisions_epic_completed.md
+- Source investigation: tickets/tasks/completed/2026-09-29_investigate_melderops_root_configuration_collisions_task.md
+- Status: done
 - Owner: user
 - Agent Name: melder_0
 - Priority: p1
 - Created: 2026-09-29T23:39:29Z
-- Updated: 2026-09-30T10:43:20Z
+- Updated: 2026-09-30T15:40:12Z
+- Completed: 2026-09-30T15:40:12Z
+- Closure Basis: owner turn-in in chat (2026-09-30) of every finished lane: "yeah turn in the [lanes] you
+  finished please, go ahead".
+- Summary: Melder's root configuration is honest and guarded for hosts. M1 (0.2.8209): while frames exist
+  Aether refuses a spell-id regime other than the one its first frame sealed. M2 (0.2.8210): an active Nexus
+  refuses another configuration; restore stage 4 deactivates it first. M3 (0.2.8211): a refused recorded-world
+  dynamic conjure leaves its frame unsettled. M4 (0.2.8212): get_configuration_dictionary() on the four root
+  configurations. Notched 0.2.8209-0.2.8212, one per change; release-note sections "Aether refuses a spell-id
+  regime it cannot apply", "A live Nexus keeps its policy", "Fixed: a refused dynamic conjure no longer settles
+  its frame dynamic", "Compare root configurations by value" and a Packaging bullet; docs, graph, assets, LLM
+  bundles and the verified 0.2.8212 wheel are current.
 
 ## Objective
 Owner directive (chat, 2026-09-29): "implement all the fixes". The Melder half of the fix list from the
@@ -57,6 +68,9 @@ investigation's DECISION_REQUEST note:
 - to_state: review
 - transition_reason: M1-M4 landed, notched 0.2.8212, documented, assets and LLM bundles rebuilt and checked,
   wheel verified and installed in MelderOps' environments (2026-09-30T10:43:20Z); awaiting the owner's acceptance.
+- from_state: review
+- to_state: done
+- transition_reason: (2026-09-30T15:40:12Z) owner turn-in in chat; M1-M4 accepted as landed, patch docs archived.
 
 ## Steps / Checklist
 - [x] Patch docs (architecture, per-component, conjure control flow) and read-order mapping note.
@@ -67,7 +81,7 @@ investigation's DECISION_REQUEST note:
 - [x] Touched suites green; red-then-green evidence recorded.
 - [x] Notch (one per change), release note sections, system docs, graph descriptors where wiring changed.
 - [x] Build assets and LLM bundles rebuilt last and checked; wheel built for MelderOps.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Source and tests for M1-M4; docs; release note; notch; assets; wheel. Evidence under
@@ -87,26 +101,27 @@ investigation's DECISION_REQUEST note:
   deactivate first. Rollback: revert the guard.
 
 ## Applicable Anti-Patterns
-- [ ] No behaviour claim from a document or a search hit; read the code.
-- [ ] No blanket defensive guards: each guard closes an evidenced collision.
-- [ ] No closure without acceptance confirmation and board-sync completion.
+- [x] No behaviour claim from a document or a search hit; read the code.
+- [x] No blanket defensive guards: each guard closes an evidenced collision.
+- [x] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= `workflow.ticket_microcycle.minimum_note_score`)
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
 - ARTIFACT_PATHS:
   - artifacts/root_configuration_guards_20260929/
-  - system_docs/patches/active/root_configuration_guards_2026_09_29/
-- DISPOSITION: retain_as_reference (artifacts); promote_to_documentation (patch docs)
+  - system_docs/patches/completed/root_configuration_guards_2026_09_29/
+- DISPOSITION: retain_as_reference (artifacts); promote_to_documentation (patch docs: promoted at landing,
+  archived to system_docs/patches/completed/ at turn-in)
 - CLEANUP_TRIGGER: task closure
 
 ## Context Management
@@ -155,13 +170,13 @@ investigation's DECISION_REQUEST note:
     active refuses, deactivated accepts, same object passes; conjure -> _effective_conjure_mode plus the moved
     refusal ahead of settlement -> posture unchanged after refusal, helper agrees with settlement.
   EVIDENCE:
-  - system_docs/patches/active/root_configuration_guards_2026_09_29/architecture_patch.md:1-58
-  - system_docs/patches/active/root_configuration_guards_2026_09_29/component_patch_root_configurations.md:1-24
-  - system_docs/patches/active/root_configuration_guards_2026_09_29/component_patch_aether_singleton.md:1-41
-  - system_docs/patches/active/root_configuration_guards_2026_09_29/component_patch_crystallizer_restore.md:1-24
-  - system_docs/patches/active/root_configuration_guards_2026_09_29/component_patch_nexus_root.md:1-24
-  - system_docs/patches/active/root_configuration_guards_2026_09_29/component_patch_spellbook_conjure.md:1-26
-  - system_docs/patches/active/root_configuration_guards_2026_09_29/code_description_patch_spellbook_conjure.md:1-29
+  - system_docs/patches/completed/root_configuration_guards_2026_09_29/architecture_patch.md:1-58
+  - system_docs/patches/completed/root_configuration_guards_2026_09_29/component_patch_root_configurations.md:1-24
+  - system_docs/patches/completed/root_configuration_guards_2026_09_29/component_patch_aether_singleton.md:1-41
+  - system_docs/patches/completed/root_configuration_guards_2026_09_29/component_patch_crystallizer_restore.md:1-24
+  - system_docs/patches/completed/root_configuration_guards_2026_09_29/component_patch_nexus_root.md:1-24
+  - system_docs/patches/completed/root_configuration_guards_2026_09_29/component_patch_spellbook_conjure.md:1-26
+  - system_docs/patches/completed/root_configuration_guards_2026_09_29/code_description_patch_spellbook_conjure.md:1-29
   IMPACT: Entry gate met; implementation follows the migration order.
   NEXT: Implement M4 and its tests.
   REREAD: HELPFUL
@@ -304,8 +319,8 @@ investigation's DECISION_REQUEST note:
     Crystallizer-restore patch docs and the architecture patch now match what landed.
   EVIDENCE:
   - artifacts/root_configuration_guards_20260929/full_suite_landed.log:1-11
-  - system_docs/patches/active/root_configuration_guards_2026_09_29/code_description_patch_spellbook_conjure.md:1-33
-  - system_docs/patches/active/root_configuration_guards_2026_09_29/component_patch_crystallizer_restore.md:1-54
+  - system_docs/patches/completed/root_configuration_guards_2026_09_29/code_description_patch_spellbook_conjure.md:1-33
+  - system_docs/patches/completed/root_configuration_guards_2026_09_29/component_patch_crystallizer_restore.md:1-54
   IMPACT: M1-M4 are complete and regression-free; the Melder side can be notched, documented and packaged.
   NEXT: Notch 0.2.8208 -> 0.2.8212 (one per change: M1 8209, M2 8210, M3 8211, M4 8212) and NOTICE the agents.
   REREAD: HELPFUL
@@ -365,15 +380,33 @@ investigation's DECISION_REQUEST note:
   REREAD: HELPFUL
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-09-30T15:40:12Z
+  TYPE: DECISION
+  CLAIM: The owner turned this lane in (chat, 2026-09-30, every finished lane). M1-M4 stay as landed at
+    0.2.8209-0.2.8212 with their release-note sections, docs, graph, assets, LLM bundles and the 0.2.8212 wheel.
+    The seven patch docs, promoted into src_architecture, src_components and tests_components at landing, are
+    archived unchanged to system_docs/patches/completed/root_configuration_guards_2026_09_29/ (mv). The
+    sole-writer claims M0-109..114 are released to melder_2, fable_0 and muse_0 (NOTICEs M0-126..128). Open,
+    not filed: the Aether record does not carry the spell-id regime (FACT 2026-09-29T23:55:15Z).
+  EVIDENCE:
+  - tickets/tasks/completed/2026-09-29_guard_melder_roots_for_host_collisions_task.md:202-218
+  - system_docs/patches/completed/root_configuration_guards_2026_09_29/architecture_patch.md:1-60
+  - release_docs/next_version_release.md:153-224
+  IMPACT: The Melder half of the host-collision epic is closed; the regime gap is the one follow-up left for
+    the owner to schedule or drop.
+  NEXT: Close the investigation task here and, in priv_commandops, the MelderOps task and the epic.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
+
 ## Context / Handoff Summary
-In review since 2026-09-30T10:43:20Z. M1 (0.2.8209) Aether refuses a spell-id regime other than the sealed one
-while frames exist; M2 (0.2.8210) an active Nexus refuses another configuration, restore stage 4 deactivates it
-first; M3 (0.2.8211) a refused recorded-world dynamic conjure leaves its frame unsettled; M4 (0.2.8212)
-get_configuration_dictionary() on the four root configurations. Docs, graph, release note, assets and LLM
-bundles are current; dist/ holds the verified 0.2.8212 wheel, installed in both MelderOps environments. Open:
-owner acceptance; follow-up candidate - the Aether record does not carry the spell-id regime, so a world
-recorded under per-frame ids restores under process-wide ids. Patch docs archive to patches/completed at
-turn-in.
+Closed 2026-09-30T15:40:12Z on the owner's turn-in. M1 (0.2.8209) Aether refuses a spell-id regime other than the
+sealed one while frames exist; M2 (0.2.8210) an active Nexus refuses another configuration, restore stage 4
+deactivates it first; M3 (0.2.8211) a refused recorded-world dynamic conjure leaves its frame unsettled; M4
+(0.2.8212) get_configuration_dictionary() on the four root configurations. Docs, graph, release note, assets
+and LLM bundles are current; dist/ holds the verified 0.2.8212 wheel, installed in both MelderOps environments.
+Patch docs archived to system_docs/patches/completed/root_configuration_guards_2026_09_29/. Open follow-up, not
+filed: the Aether record does not carry the spell-id regime, so a world recorded under per-frame ids restores
+under process-wide ids.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

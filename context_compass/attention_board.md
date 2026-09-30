@@ -138,25 +138,37 @@ Message alert rules
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T12:27:27Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T12:39:23Z)
 - NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T12:52:02Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T15:49:07Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-30T15:49:07Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T15:49:07Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-30T17:19:01Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T17:19:01Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T17:19:01Z)
+- NEW MESSAGE for fable_0 (from melder_0, 2026-09-30T18:23:27Z)
+- NEW MESSAGE for muse_0 (from melder_0, 2026-09-30T18:23:27Z)
+- NEW MESSAGE for melder_2 (from melder_0, 2026-09-30T18:23:27Z)
 <!-- END USER-DEFINED: alerts -->
 
 ## Active Items
 | work_item | status | mode | owner | agent_name | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: active_items -->
+| injected_dependency_direct_resolution | review | handoff | claude | melder_0 | none | Parked behind the spell-id regime lane by the owner; resumes with the owner's repair pick. | Reproduced on bare Melder; cause: the consumer's local pass stamps the provider valid without publishing its plan; three repair options. | The owner's pick opens work package C as a patch lane. | tickets/tasks/2026-09-30_reproduce_injected_provider_direct_meld_task.md | 2026-09-30T16:39:17Z | REQUIRED |
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| melderops_root_config | review | handoff | claude | melder_0 | none | Owner accepts the per-root answer; the fixes chosen (all: F1-F6, M1-M4) are in review in both repositories. | Per-root answer: what MelderOps asks and what Melder does when the root is already set. | Answer delivered with evidence; owner accepts. | tickets/tasks/2026-09-29_investigate_melderops_root_configuration_collisions_task.md | 2026-09-30T10:44:26Z | REQUIRED |
-| melder_root_guards | review | handoff | claude | melder_0 | none | Owner reviews M1-M4 and the 0.2.8212 wheel, then accepts or redirects. | Honest, guarded root configuration for hosts (M1-M4), notched and wheel-built. | M1-M4 green under tests, docs/assets current, owner accepts. | tickets/tasks/2026-09-29_guard_melder_roots_for_host_collisions_task.md | 2026-09-30T10:44:26Z | REQUIRED |
-| gauntlet_order_dependence | review | handoff | claude | melder_0 | none | Owner reviews the one-process-per-library gauntlet (optionally on Windows with REAL_WORLD_GAUNTLET_ROUNDS=3), then accepts or redirects. | Order-independent shared gauntlet: every library measured in a fresh process; old layout reproducible. | Owner accepts; turn-in. | tickets/tasks/2026-09-30_investigate_gauntlet_order_dependence_task.md | 2026-09-30T12:52:02Z | REQUIRED |
-| melder_gauntlet_gains | review | handoff | claude | melder_0 | none | Owner confirms dropping option A (Windows: 8-11% slower per scope cycle) and closes the lane. | Ranked levers for the remaining loop gap; option A measured (a loss on Windows). | Owner closes; turn-in. | tickets/tasks/2026-09-30_map_remaining_melder_gauntlet_gains_task.md | 2026-09-30T15:15:54Z | REQUIRED |
+| aether_record_spell_id_regime | review | handoff | claude | melder_0 | none | Turn in with the implementation task (owner picked A + B). | Answer and options filed; the owner's pick recorded. | The owner turns it in. | tickets/tasks/2026-09-30_investigate_aether_record_spell_id_regime_task.md | 2026-09-30T16:46:48Z | REQUIRED |
+| per_frame_spell_worlds | in_progress | implementation | claude | melder_0 | none | A (0.2.8213) and B (0.2.8214) landed and green; promote the patch docs into the system docs, then graph, release note and rebuild last. | Per-frame worlds record and restore intact (regime in the Aether twin; custody per Book); two notches. | Landed with docs, notches and rebuild; lane in review for the owner's turn-in. | tickets/tasks/2026-09-30_record_and_restore_per_frame_spell_worlds_task.md | 2026-09-30T18:23:27Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| gauntlet_order_dependence | done | melder_0 | tickets/tasks/completed/2026-09-30_investigate_gauntlet_order_dependence_task.md | The shared gauntlet measures each library in its own process (runner --lib, rotated rounds with medians; the old one-process layout kept); cause: thread start/exit residue under free-threading, 5-12% per later slot in the VM; 14 contract tests; benchmark-only; the owner's 30,000-iteration default kept. Next: none. | 2026-09-30T15:40:12Z |
+| melder_root_guards | done | melder_0 | tickets/tasks/completed/2026-09-29_guard_melder_roots_for_host_collisions_task.md | M1-M4: sealed spell-id regime, active-Nexus guard (restore stage 4 deactivates first), a refused conjure leaves its frame unsettled, get_configuration_dictionary() on the four root configurations; notched 0.2.8209-0.2.8212, release note, docs, graph, assets, bundles and wheel; patch docs archived. Next: none (open follow-up: the Aether record lacks the spell-id regime). | 2026-09-30T15:40:12Z |
+| melderops_root_config | done | melder_0 | tickets/tasks/completed/2026-09-29_investigate_melderops_root_configuration_collisions_task.md | Per-root collision answer with probes; the owner picked every fix (F1-F6 MelderOps, M1-M4 Melder), landed and turned in with it. Next: none. | 2026-09-30T15:40:12Z |
+| melder_gauntlet_gains | done | melder_0 | tickets/tasks/completed/2026-09-30_map_remaining_melder_gauntlet_gains_task.md | Remaining loop gap mapped (no regression; GC about 0.2%; about 80% of the Windows gap is thread start/exit outside the cycles); option A (top-level doors) prototyped as a VM overlay, -2% CPU per cycle in the VM but +8-11% on Windows (the caller loses CALL_PY_EXACT_ARGS), dropped by the owner; no source change. Next: none. | 2026-09-30T15:27:09Z |
 | host_read_surface | done | melder_0 | tickets/tasks/completed/2026-09-29_implement_frame_lookups_and_read_accessors_task.md | Aether.find_frame/get_frame/list_frame_names and four read accessors, 27 tests, notched 0.2.8208, release note; epic and story closed by owner directive; system docs parked in a backlog task; LLM bundles stale (rebuild waived). Next: none. | 2026-09-29T22:29:43Z |
 | melderops_wheel_0_2_8208 | done | melder_0 | tickets/tasks/completed/2026-09-29_build_0_2_8208_wheel_into_melderops_env_task.md | Wheel 0.2.8208 built (verify_wheel, smoke OK) and installed in priv_commandops/.venv314 (RECORD-verified; old files in .venv314/_to_delete/); MelderOps floor melder>=0.2.8208; VM MelderOps env passes 265 melder_setup tests. Next: none. | 2026-09-29T22:29:43Z |
 | transaction_session_cleanup_race | done | workflows_0 | tickets/tasks/completed/2026-09-28_investigate_transaction_session_cleanup_race_task.md | Unsupported simultaneous-destruction assertions retired; owned teardown/idempotence/cleaned guards covered; 189 tests pass, runtime unchanged; asset/LLM checks OK. Next: none. | 2026-09-28T11:34:15Z |
@@ -165,10 +177,6 @@ Message alert rules
 | melder_wheel | done | workflows_0 | tickets/tasks/completed/2026-09-28_build_melder_wheel_task.md | Built wheel and installed Melder 0.2.8206 in priv_commandops/.venv314; archive and isolated import verified. Next: none. | 2026-09-28T08:54:31Z |
 | probe_portability_followups | done | melder_0 | tickets/tasks/completed/2026-09-28_finish_probe_and_doc_portability_followups_task.md | ConduitMeld docstrings name each lifetime's store; src_architecture/src_components name no tooling path (both checks 0); ConduitMeld node accepted; notched 0.2.8205; waived rebuild covered by 0.2.8206 (asset/LLM checks OK). Next: none. | 2026-09-28T08:39:36Z |
 | qualified_spell_name_collisions | done | workflows_0 | tickets/tasks/completed/2026-09-28_investigate_qualified_spell_name_collisions_task.md | Canonical-address validation; 35 red checks to 147 passing, 2 pre-existing XPASS; docs/release promoted, notched 0.2.8206; asset and LLM checks OK. Next: none. | 2026-09-28T08:31:05Z |
-| spellspace_probe_many | done | melder_0 | tickets/tasks/completed/2026-09-28_count_space_held_many_in_spellspace_live_creation_probe_task.md | SpellSpace door's live-creation probe reads `many` from the space's own store ("spellspace_many", space id); 3 tests red then green; off the meld path; notched 0.2.8204, docs/graph/assets/bundles current. Next: none. | 2026-09-28T01:00:27Z |
-| scope_exit_dispose | done | melder_0 | tickets/tasks/completed/2026-09-27_make_with_dispose_scopes_and_finish_pool_returns_task.md | `with conduit:` disposes (Breaking), enter_lesser_conduit, finish-then-raise exits, children-first pool return, idempotent soft cleanup, SpellSpace lease flag; no hot-path cost; notched 0.2.8203, docs/graph/assets/bundles current. Next: none. | 2026-09-28T00:20:59Z |
-| scope_exit_cleanup | done | melder_0 | tickets/tasks/completed/2026-09-27_investigate_scope_exit_and_pool_return_cleanup_task.md | Scope-exit and pool-return path map with probes (P1-P10); every gap fixed in scope_exit_dispose (0.2.8203). Next: none. | 2026-09-28T00:20:59Z |
-| pgo_strategy_exploration | done | fable_0 | tickets/stories/completed/2026-09-27_pgo_strategy_exploration_story.md | PGO proper ~6 ns per creation on Melder shapes; the door fold landed (0.2.8201); executor-hold dropped; opt-in specializer -14% wide8 / +20% chain8 measured. Next: the probe-selected styles story under the epic. | 2026-09-27T22:34:08Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -178,19 +186,14 @@ Message alert rules
 - gauntlet_runtime_speed: SWITCH_TRIGGER is the owner's pick among the open levers, or the owner's
   answer on the SpellSpace scope RISK; P1, P4, the tail, build locks and nested slot guard are turned in. The lever-1 lifecycle is closed as measured (21:15Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md.
-- melder_root_guards: SWITCH_TRIGGER is the owner's acceptance - M1-M4 landed, 0.2.8212 rebuilt and its wheel
-  installed in MelderOps' environments (priv_commandops tickets/epics/2026-09-29_melder_host_configuration_collisions_epic.md).
-  RESUME_HIERARCHY: tickets/tasks/2026-09-29_guard_melder_roots_for_host_collisions_task.md.
-- melderops_root_config: SWITCH_TRIGGER is the owner's acceptance and fix selection (answer delivered 23:13Z);
-  read-only in both repositories.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-29_investigate_melderops_root_configuration_collisions_task.md.
-- gauntlet_order_dependence: SWITCH_TRIGGER is the owner's acceptance of option 1 as built (landed 12:51Z,
-  checks OK); melder_0 stays the only writer of the gauntlet runner, test_real_world_gauntlet.py,
-  test_real_world_gauntlet_isolation.py and benchmarks.md until turn-in (M0-123/M0-124).
-  RESUME_HIERARCHY: tickets/tasks/2026-09-30_investigate_gauntlet_order_dependence_task.md.
-- melder_gauntlet_gains: SWITCH_TRIGGER is the owner's word on closing; option A measured a loss on
-  Windows (8-11% slower per scope cycle), drop recommended. src/ untouched.
-  RESUME_HIERARCHY: tickets/tasks/2026-09-30_map_remaining_melder_gauntlet_gains_task.md.
+- per_frame_spell_worlds: SWITCH_TRIGGER is landing (docs, notches, rebuild) or a DECISION_REQUEST if the survey
+  widens the scope. RESUME_HIERARCHY:
+  tickets/tasks/2026-09-30_investigate_aether_record_spell_id_regime_task.md ->
+  tickets/tasks/2026-09-30_record_and_restore_per_frame_spell_worlds_task.md.
+- injected_dependency_direct_resolution: SWITCH_TRIGGER is the task's DECISION_REQUEST (the owner picks a
+  repair); read-only in src/ until then. RESUME_HIERARCHY:
+  tickets/epics/2026-09-30_injected_dependency_direct_resolution_epic.md ->
+  tickets/tasks/2026-09-30_reproduce_injected_provider_direct_meld_task.md.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.
