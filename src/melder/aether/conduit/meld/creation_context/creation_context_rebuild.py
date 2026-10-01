@@ -149,9 +149,13 @@ class CreationContextRebuild(Cleanable):
             - A constructed spell without a phase-11 plan (only structural
               phases ran, or resolution stopped on a validation error) is left
               unpublished; its next meld runs the normal validation path. It is
-              NOT marked resolution_required: that routes the deferred 8-11
-              lane, which cannot compile a spell without a Phase-5 blueprint.
-            - Resolution flags stay with the producers that ran the phases.
+              NOT marked resolution_required here (before 0.2.8215 that flag
+              routed a deferred 8-11 pass, which could not compile a spell
+              without a Phase-5 blueprint; the deferred lane now runs the full
+              target pass for such a spell).
+            - Resolution flags stay with the producers that ran the phases; a
+              target-local pass flags the dependencies it compiled without a
+              plan of their own (0.2.8215).
 
         Raises:
             RuntimeError:

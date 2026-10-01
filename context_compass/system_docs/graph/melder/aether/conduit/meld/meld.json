@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/meld.py",
- "source_sha256": "0c3239b0476b96a19741c13eb552da9d9f121ec5c68d793ee8ee5a424719b6f8",
+ "source_sha256": "cd91a6e97d687b5ee4aded8c06dffa69aea9e2ad9a9f23f3d44fe7572e87d777",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.meld": {
@@ -49,11 +49,11 @@
     "set_meld_hooks"
    ],
    "shape": {
-    "method_count": 36,
+    "method_count": 38,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "59d0b7ee5bbedb20d2ebf283a86535da86e6699aa7f779ff7a1edc3798343536",
+   "span_sha256": "8181c68b4c539f8f3d1552fb0b9435a184abb2120987c4099962edaa1a9b552f",
    "role": "Resolution runtime orchestrator.",
    "responsibilities": [
     "resolves target spells",
@@ -68,7 +68,8 @@
     "restores temporary map references at lease boundaries without adding work to ordinary concrete Meld execution",
     "runs a dynamic spell's structural, resolution and deferred rebuilds inside a CreationContextRebuild window entered before the spell lock (_rebuild_window)",
     "executes a dynamic meld under one spell-index ticket held from before the context read until the executor returns (_execute_admitted)",
-    "keeps the fast-door registry of (spell, captured context, door epoch, existing-object flag) entries, filled only after a successful full-lane meld; its four readers share one guard ladder"
+    "keeps the fast-door registry of (spell, captured context, door epoch, existing-object flag) entries, filled only after a successful full-lane meld; its four readers share one guard ladder",
+    "routes a spell flagged resolution_required through the deferred lane: phases 8-11 for an existing creation or its current Phase 5 root, otherwise the full target pass 5-11 followed by a resolution-validity check for the conduit (_requires_own_target_pass, _raise_unless_resolution_valid)"
    ],
    "owns_state": [
     "_input_resolution_cache",

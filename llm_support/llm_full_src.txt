@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: src
-SOURCE FINGERPRINT: 05d6f58e7c16cabd127d3efeb4c8b6ac97f1a9abee566617eab2d013aedaf9d8
+SOURCE FINGERPRINT: 06969a0325c96c4d3e1ac1d11ebdda0997131ed8a8d5f6d9794491d8281c9619
 FILE COUNT: 576
 
 ================================================================================
@@ -599,7 +599,7 @@ END FILE: src/melder/__melder_cache__/__melder_cache__.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/__version__.py
-CONTENT SHA256: 3f743ba03d4067f9433a726f81894f7ffc5d26908360645748dc2f87fb49ea1f
+CONTENT SHA256: 94aa38278b4f5db93fe51472eb69e6feeedca0876f0b6aff12492db849608b3f
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -613,7 +613,7 @@ Contract:
   negotiation or runtime compatibility checks by itself.
 """
 
-__version__ = "0.2.8212"
+__version__ = "0.2.8215"
 ================================================================================
 END FILE: src/melder/__version__.py
 ================================================================================
@@ -3677,7 +3677,7 @@ END FILE: src/melder/_build_assets/_system_documents/system_documents.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aether.py
-CONTENT SHA256: 82806f809205641ee58b9c41b2301ac944df28c9894611a58450936044422e74
+CONTENT SHA256: 4147e37fb324fe891ca6922431d6cfbc3083488ac8c7763f33479dbc6da87956
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -4439,6 +4439,49 @@ class Aether(Cleanable):
         """
         self.check_cleaned()
         return self._configured
+
+    @property
+    def process_wide_unique_spell_ids(self) -> bool:
+        """
+        Return the spell-id regime in force: True when one spell_id may exist only once per process.
+
+        Purpose:
+            Say which regime governs this process without reading private state. `configuration` cannot answer it:
+            before the first frame it is the policy the next first frame will seal, and after it a first frame may
+            have sealed frozen defaults without the root ever being configured. The crystallizer records this value in
+            the Aether twin and keys spell custody by it, and a restore uses it to tell whether a recorded regime can
+            still be installed.
+
+        Contract:
+            - Once any frame exists: the regime the first frame sealed. `configure()` and `activate()` refuse any other
+              while frames exist, so the answer cannot change until every frame is gone.
+            - Before the first frame: the installed configuration's value (the one the next first frame seals), or
+              True when nothing is installed (the default policy a first frame would install).
+            - Read-only: installs, freezes and creates nothing.
+
+        Threading:
+            Lock-free point-in-time read, like the frame lookups. Frame birth seals the regime before it inserts the
+            frame, both under the Aether lock, so a reader that sees a frame also sees the sealed value. The installed
+            configuration is read once into a local so a concurrent `configure()` cannot swap it between the check
+            and the read.
+
+        Lifecycle / Cleanup:
+            Guarded by `check_cleaned()`.
+
+        Raises:
+            RuntimeError: If Aether has been cleaned.
+            TypeError: If the installed configuration's stored regime is no longer a bool (its defensive read).
+
+        Returns:
+            bool: True for process-wide spell ids, False for per-frame spell ids.
+        """
+        self.check_cleaned()
+        if self._aetheric_frames:
+            return self._process_wide_unique_spell_ids
+        configuration = self._configuration
+        if configuration is None:
+            return True
+        return configuration.process_wide_unique_spell_ids
 
     @property
     def aetheric_mediator(self) -> AethericMediator:
@@ -6596,7 +6639,7 @@ END FILE: src/melder/aether/aether.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aether_configuration.py
-CONTENT SHA256: 0a2a6c78b17d81a59d01bfbf0a14b71ce2f0e69c0db0cfa05524b15f696ee17e
+CONTENT SHA256: b40301bb3307db1b5fc2c0f35d6b7c088a181d739a5a043339b4824229a7143e
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
@@ -7037,6 +7080,10 @@ class AetherConfiguration(Cleanable):
             - channel_logger_activation_enabled reloads from the record;
               when absent it falls to the documented default (False) and
               is reported under "missing".
+            - process_wide_unique_spell_ids (the spell-id regime, recorded
+              since record major 4) reloads the same way; when absent (an
+              older record) it keeps the default (True) and is reported
+              under "missing".
             - Callable-bearing entries can NEVER reload from a record:
               when the payload marks channel_logger_resolver_present or
               default_logger_present True, the key is reported under
@@ -7070,6 +7117,14 @@ class AetherConfiguration(Cleanable):
             )
         else:
             missing.append("channel_logger_activation_enabled")
+        # The regime is a plain recorded value, applied before the freeze
+        # below so the reloaded configuration cannot be flipped afterwards.
+        if "process_wide_unique_spell_ids" in recorded_payload:
+            configuration.set_process_wide_unique_spell_ids(
+                bool(recorded_payload["process_wide_unique_spell_ids"])
+            )
+        else:
+            missing.append("process_wide_unique_spell_ids")
         # Presence flags are honesty signals, not reloadable values: a
         # record can say a resolver existed, but only live code can
         # supply one.
@@ -7491,6 +7546,8 @@ class AetherConfiguration(Cleanable):
             - Callable-bearing entries record as PRESENCE flags only (a
               record cannot carry live callables); the reload lane reports
               them as code_participation.
+            - Records the spell-id regime (`process_wide_unique_spell_ids`)
+              so a restore can rebuild a per-frame world under per-frame ids.
             - Replace-on-emit in the profile keeps exactly one root twin.
 
         Returns:
@@ -7514,6 +7571,9 @@ class AetherConfiguration(Cleanable):
                             ),
                             "default_logger_present": (
                                 self._properties["default_logger"] is not None
+                            ),
+                            "process_wide_unique_spell_ids": (
+                                self._properties["process_wide_unique_spell_ids"]
                             ),
                         },
                     )
@@ -7818,13 +7878,13 @@ END FILE: src/melder/aether/aether_configuration_builder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/aether_utility_system.py
-CONTENT SHA256: 069986aa96944a4ffc0431a5ef11642a0d425348497869b633755535ea58881e
+CONTENT SHA256: d6b1d8e9e0fb8e4528c93b594244e5f7a43e5e74a5d3be1e0f3612a8a8df7d19
 SOURCE ENCODING: utf-8
 ================================================================================
 import logging
 import threading
 from collections.abc import Callable, Iterable
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Optional
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.ichannellogger import IChannelLogger
@@ -8045,6 +8105,11 @@ class AetherUtilitySystem(Cleanable):
               not activated.
             - Callable-bearing entries record as PRESENCE flags only; the
               reload lane reports them as code_participation.
+            - Carries the Aether's spell-id regime in force: this twin
+              REPLACES the configuration's own, so without it every logger
+              verb would erase the recorded regime. Omitted when no live
+              Aether can answer (see `_read_spell_id_regime`); a restore
+              then reports it missing.
 
         Returns:
             None.
@@ -8073,10 +8138,40 @@ class AetherUtilitySystem(Cleanable):
                             self._default_logger is not None
                         ),
                     }
+                regime = self._read_spell_id_regime()
+                if regime is not None:
+                    payload["process_wide_unique_spell_ids"] = regime
                 crystallizer.emit(
                     AetherCrystal(configuration_payload=payload)
                 )
             del crystallizer
+
+    @staticmethod
+    def _read_spell_id_regime() -> Optional[bool]:
+        """
+        Internal
+
+        Return the Aether's spell-id regime in force, or None when no live Aether can answer.
+
+        Contract:
+            - Reads `Aether.process_wide_unique_spell_ids` only while the Aether singleton is initialized and its
+              instance is not cleaned. Constructing `Aether()` without an initialized singleton would boot a new
+              world, and Aether marks itself cleaned before it tears down frames and the crystallizer while
+              `Aether()` keeps returning that instance until teardown ends - a verb called then must not read it.
+            - None tells the caller to omit the key; the reload lane then reports it missing.
+
+        Returns:
+            Optional[bool]: The regime in force, or None.
+        """
+        # Lazy import: the Aether module imports this one at module level.
+        from melder.aether.aether import Aether
+
+        if not Aether._initialized:
+            return None
+        aether = Aether()
+        if aether.cleaned:
+            return None
+        return aether.process_wide_unique_spell_ids
 
     def is_channel_logger_activation_enabled(self) -> bool:
         """
@@ -63155,7 +63250,7 @@ END FILE: src/melder/aether/conduit/meld/creation_context/creation_context_facto
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py
-CONTENT SHA256: 32b4e1de55fd9275d805ff54485cad546bc942ac6a8dfa06c98c1a2072046444
+CONTENT SHA256: 69550981be88a8a862246385554d00055e5131697868953837d5494b79cd7e0a
 SOURCE ENCODING: utf-8
 ================================================================================
 """Rare-path ownership of shared context input replacement and publication."""
@@ -63309,9 +63404,13 @@ class CreationContextRebuild(Cleanable):
             - A constructed spell without a phase-11 plan (only structural
               phases ran, or resolution stopped on a validation error) is left
               unpublished; its next meld runs the normal validation path. It is
-              NOT marked resolution_required: that routes the deferred 8-11
-              lane, which cannot compile a spell without a Phase-5 blueprint.
-            - Resolution flags stay with the producers that ran the phases.
+              NOT marked resolution_required here (before 0.2.8215 that flag
+              routed a deferred 8-11 pass, which could not compile a spell
+              without a Phase-5 blueprint; the deferred lane now runs the full
+              target pass for such a spell).
+            - Resolution flags stay with the producers that ran the phases; a
+              target-local pass flags the dependencies it compiled without a
+              plan of their own (0.2.8215).
 
         Raises:
             RuntimeError:
@@ -63343,7 +63442,7 @@ END FILE: src/melder/aether/conduit/meld/creation_context/creation_context_rebui
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/conduit/meld/meld.py
-CONTENT SHA256: bde11e6e82e6b0c672514a8cf3a9f050fdbc29ef01a82e99bfb2e1ec7f523be2
+CONTENT SHA256: a7b39a055293d208414a5b8f1230066d4f8866a0b9aa6c37726868b4f9294d38
 SOURCE ENCODING: utf-8
 ================================================================================
 from abc import ABC, abstractmethod
@@ -64317,12 +64416,19 @@ class Meld(Cleanable, ABC):
 
         Contract:
             - Fast-path no-op when `resolution_required` is False.
-            - When required, runs exactly one deferred target-local plan pass
-              (`8-11`) under the spell lock.
+            - When required, runs exactly one target-local pass under the
+              spell's rebuild window and lock: the deferred plan pass
+              (`8-11`) for an existing creation or a spell that is its
+              current Phase 5 root; otherwise the full target pass
+              (`5-11`), which must leave the spell resolution-valid for the
+              conduit (0.2.8215). A dependency first compiled only inside a
+              consumer's plan has no Phase 5 root blueprint, and the 8-11
+              pass skips such a spell.
             - On success: sets `resolution_complete=True` and
               `resolution_required=False`.
             - On failure: preserves `resolution_required=True` and
-              `resolution_complete=False`, then re-raises.
+              `resolution_complete=False`, bumps `_door_epoch`, then
+              re-raises.
             - Hard-fails when deferred resolution is required but no active
               resolution conduit id exists.
 
@@ -64331,6 +64437,8 @@ class Meld(Cleanable, ABC):
 
         Raises:
             RuntimeError: If no resolution conduit id is available.
+            SpellbookValidationError: If a full target pass leaves the spell
+                unresolved for the conduit.
             Exception: Re-raises deferred resolution failures.
         """
         # Rebuild window first (dynamic only), then the spell lock: see
@@ -64352,10 +64460,16 @@ class Meld(Cleanable, ABC):
             if spellbook is None:
                 raise RuntimeError("Spell has no owning Spellbook surface.")
             try:
-                spellbook._run_deferred_resolution_phases_for_target_spell(
-                    conduit_id,
-                    spell,
-                )
+                if self._requires_own_target_pass(spell):
+                    # No Phase 5 root blueprint: the 8-11 pass would skip this
+                    # spell, so its own full target pass (5-11) builds its plan.
+                    spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)
+                    self._raise_unless_resolution_valid(spell, conduit_id)
+                else:
+                    spellbook._run_deferred_resolution_phases_for_target_spell(
+                        conduit_id,
+                        spell,
+                    )
             except Exception:
                 spell.resolution_complete = False
                 spell.resolution_required = True
@@ -64365,6 +64479,58 @@ class Meld(Cleanable, ABC):
 
             spell.resolution_complete = True
             spell.resolution_required = False
+
+    def _requires_own_target_pass(self, spell: Spell) -> bool:
+        """
+        Decide whether a flagged spell needs its full target pass rather than
+        the deferred 8-11 pass.
+
+        Contract:
+            - True for a constructed spell that is not its current Phase 5
+              root. The 8-11 pass skips a spell without a Phase 5 root
+              blueprint (`SpellbookCreationSystem._is_spell_plan_phase_eligible`),
+              so only the full pass (5-11) builds its plan. That is the state
+              of a dependency a consumer's target-local pass compiled only
+              inside the consumer's plan and flagged
+              (`SpellbookCreationSystem.flag_dependencies_without_own_plan`).
+            - False for an existing creation (it never plans) and for a spell
+              that is its current Phase 5 root (the 8-11 pass rebuilds its
+              plan, as before 0.2.8215).
+            - Reads compiler state only; mutates nothing.
+
+        Args:
+            spell: The flagged spell, under its rebuild window and lock.
+
+        Returns:
+            bool: True when the full target pass must run.
+        """
+        if spell.is_existing_creation:
+            return False
+        return not self._get_spell_compiler_system().is_current_spell_phase5_root(spell)
+
+    def _raise_unless_resolution_valid(self, spell: Spell, conduit_id: str) -> None:
+        """
+        Confirm that a spell's own full target pass left it resolution-valid
+        for the conduit.
+
+        Contract:
+            - Reads the effective conduit-local verdict
+              (`_get_resolution_validity`) after the pass; valid returns.
+            - Anything else raises SpellbookValidationError. A visibility
+              failure records invalid verdicts and returns without raising;
+              marking that spell complete would only move the failure into the
+              CreationContext build.
+
+        Args:
+            spell: The spell whose full target pass just ran.
+            conduit_id: The resolution conduit id the pass ran for.
+
+        Raises:
+            SpellbookValidationError: When the verdict is not valid.
+        """
+        resolution_state = spell._spell_system_states.get_conduit_resolution_state(conduit_id)
+        if self._get_resolution_validity(spell, resolution_state) is not SpellValidity.valid:
+            raise SpellbookValidationError([spell])
 
     def _get_cached_change_control_manager(
             self,
@@ -125555,7 +125721,7 @@ END FILE: src/melder/aether/spellbook/spellbinder.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook.py
-CONTENT SHA256: 836f5a1b2c21cb87613ed0978499206ad7dc25749cbb628b7e53da32a7eedc08
+CONTENT SHA256: be14dd5edb5f0104da3637ae77f5664e06d32f5c685fc5fb38163693070295a9
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -126210,7 +126376,9 @@ class Spellbook(Cleanable):
             # True removal: custody leaves the record entirely (both
             # locations) so restore never rebuilds a shed spell.
             if self._crystallizer.activated:
-                self._crystallizer.emit_spell_removed(target_spell_id)
+                self._crystallizer.emit_spell_removed(
+                    target_spell_id, frame_name=self._aetheric_frame_name
+                )
                 # The index is torn down at this verb's tail; its
                 # membership twin leaves the record with it.
                 self._crystallizer.emit_spell_index_removed(
@@ -127075,7 +127243,9 @@ class Spellbook(Cleanable):
         # world): the crystal moves to the inactive location exactly as
         # this spell just moved to _inactive_spells.
         if self._crystallizer.activated:
-            self._crystallizer.emit_spell_activity(spell_id, active=False)
+            self._crystallizer.emit_spell_activity(
+                spell_id, active=False, frame_name=self._aetheric_frame_name
+            )
 
     def _reactivate_owned_spell(self, spell: Spell) -> None:
         """
@@ -127133,7 +127303,9 @@ class Spellbook(Cleanable):
         # Mirror the promotion into the record (re-publishing the spell's
         # synthetic root module if it was unpublished while parked).
         if self._crystallizer.activated:
-            self._crystallizer.emit_spell_activity(spell_id, active=True)
+            self._crystallizer.emit_spell_activity(
+                spell_id, active=True, frame_name=self._aetheric_frame_name
+            )
 
     def _deactivate_contracted_spell(self, conduit_id: str, spell: Spell) -> None:
         """
@@ -129360,9 +129532,11 @@ class Spellbook(Cleanable):
         # resolution_required=True as a side effect; bind-parity routing below sets
         # it back to False so meld's validation-required lane (the one that runs
         # the full 5-7/8-11 target pass) owns the recompile, exactly as it does for
-        # a freshly bound spell. resolution_required=True would instead route the
-        # deferred 8-11 lane, which cannot compile a member with no phase-5
-        # blueprint.
+        # a freshly bound spell. (Before 0.2.8215 resolution_required=True would
+        # have routed the deferred 8-11 lane, which could not compile a member
+        # with no phase-5 blueprint; that lane now runs the full target pass for
+        # such a spell, but the verdict-driven validation lane stays the owner of
+        # this recompile.)
         spell.invalidate_spell(change_reason=change_reason)
         spell.resolution_required = False
         # Phases 1-4 for the promoted member now run at the NOTCH transaction
@@ -129777,7 +129951,9 @@ class Spellbook(Cleanable):
                 # True removal (parked lane): custody leaves the record
                 # entirely so restore never rebuilds a shed spell.
                 if self._crystallizer.activated:
-                    self._crystallizer.emit_spell_removed(spell_id)
+                    self._crystallizer.emit_spell_removed(
+                        spell_id, frame_name=self._aetheric_frame_name
+                    )
                 index.remove_member(spell_id)
                 index_emptied = index.is_empty()
             if index_emptied:
@@ -130941,7 +131117,11 @@ class Spellbook(Cleanable):
                     )
                     # Compilation is always full/eager (AOT/JIT knob removed);
                     # post-conjure spells get compiled via the gated revalidation
-                    # paths, not via a deferred-resolution flag.
+                    # paths, not via a deferred-resolution flag. One exception
+                    # (0.2.8215): a spell first compiled only inside a consumer's
+                    # target-local pass is flagged resolution_required there
+                    # (SpellbookCreationSystem.flag_dependencies_without_own_plan),
+                    # and its first direct meld runs its own full target pass.
                     new_spell.resolution_required = False
                     if new_spell.user_created_object is not None:
                         try:
@@ -132890,7 +133070,7 @@ END FILE: src/melder/aether/spellbook/spellbook.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/aether/spellbook/spellbook_creation_system.py
-CONTENT SHA256: 6f9da6381b839819ef40e3b53e3fc5a81941297a769534d11134c17f977c620e
+CONTENT SHA256: bc17001f6cabf92a5285a6b55a47e4fdd8f8a27e3836227276b007ae07a7b647
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
@@ -134560,6 +134740,12 @@ class SpellbookCreationSystem(Cleanable):
             - Runs local foundational phases before local plan phases.
             - Converts local KeyError dependency misses into deterministic diagnostics.
             - Cleans scoped phase artifacts before returning.
+            - On success, flags each dependency in the target's Phase 5 scope
+              that this Book owns and that the pass compiled only inside the
+              target's plan (`flag_dependencies_without_own_plan`), so its
+              first direct meld runs its own full target pass (0.2.8215). The
+              failure paths (a validation error, a visibility failure) flag
+              nothing.
         Args:
             spellbook: Owning Spellbook instance.
             conduit_id: Conduit id used for resolution scope.
@@ -134646,6 +134832,11 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             spell_ids=scoped_spell_ids,
         )
+        SpellbookCreationSystem.flag_dependencies_without_own_plan(
+            spellbook=spellbook,
+            target_spell_id=target_spell_id,
+            scoped_spell_ids=scoped_spell_ids,
+        )
         return results
 
     @staticmethod
@@ -134718,6 +134909,78 @@ class SpellbookCreationSystem(Cleanable):
             spell_ids=scoped_spell_ids,
         )
         return results
+
+    @staticmethod
+    def flag_dependencies_without_own_plan(
+            spellbook: Spellbook,
+            target_spell_id: str,
+            scoped_spell_ids: Collection[str],
+    ) -> tuple[str, ...]:
+        """
+        Purpose:
+            Leave each dependency that a target-local pass compiled only inside
+            its target's plan owing its own resolution, so its first direct
+            meld resolves it instead of reaching the CreationContext builder
+            with no plan (0.2.8215).
+        Contract:
+            - Local Phase 5 publishes root blueprints only to the target
+              (2026-09-19) and local Phase 6 stamps every node of the target's
+              system index valid for the conduit. A dependency first compiled
+              in such a pass therefore reads valid yet has no plan of its own;
+              the `resolution_required` flag, which every meld door reads, is
+              what owes that work.
+            - Considers each id in `scoped_spell_ids` except the target, in
+              sorted order. Skips ids missing from `spellbook._spell_id_pool`,
+              spells this Book does not own (`spell._spellbook is not
+              spellbook`; a borrowed spell is compiled by its own Book),
+              non-resolvable definitions and existing creations (neither ever
+              plans).
+            - Under the dependency's spell lock, flags it only when it has no
+              phase-11 plan (`_compiler_artifact._spell_codegen_creation is
+              None`), no published CreationContext
+              (`_creation_context_switch.state < 2`; a context loaded from the
+              conjure cache needs no plan) and no flag yet: sets
+              `resolution_complete=False` and `resolution_required=True` and
+              bumps `_door_epoch`, so no fast-door entry survives the flag.
+            - Changes no verdict, Book flag or diagnostic. Idempotent: an
+              already flagged dependency is skipped.
+        Threading:
+            Runs inside the target pass, whose meld-time caller holds the
+            target's rebuild window and spell lock. Each dependency's lock is
+            taken after the target's - consumer before dependency, the order
+            build locks follow over the acyclic dependency graph - so the check
+            and the write are atomic against that dependency's own resolution
+            lane, which holds the dependency's lock for its whole pass.
+        Args:
+            spellbook: The Book that ran the target pass.
+            target_spell_id: The pass's target; never flagged.
+            scoped_spell_ids: The pass's scope: the target plus its Phase 5
+                system-index nodes.
+        Returns:
+            tuple[str, ...]: The flagged spell ids, in sorted order.
+        """
+        spell_id_pool = spellbook._spell_id_pool
+        flagged: list[str] = []
+        for spell_id in sorted(scoped_spell_ids):
+            if spell_id == target_spell_id:
+                continue
+            dependency = spell_id_pool.get(spell_id)
+            if dependency is None or dependency._spellbook is not spellbook:
+                continue
+            if not dependency.resolvable or dependency.is_existing_creation:
+                continue
+            with dependency._lock:
+                if (
+                        dependency.resolution_required
+                        or dependency._compiler_artifact._spell_codegen_creation is not None
+                        or dependency._creation_context_switch.state >= 2
+                ):
+                    continue
+                dependency.resolution_complete = False
+                dependency.resolution_required = True
+                dependency._door_epoch += 1
+            flagged.append(spell_id)
+        return tuple(flagged)
 
     @staticmethod
     def _register_conduit_resolution_phases(
@@ -145486,7 +145749,7 @@ END FILE: src/melder/crystallizer/crystal_analysis/custody/user_source_custody_s
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_analysis/impact_engine.py
-CONTENT SHA256: 1573466dfb0d9cfff800cfd60bf661a564a20799eda7257ba1a9b28aae8bb7b8
+CONTENT SHA256: 220021911255c3c0594ec52635429c7f20e58c9278f5097b90a156c925e0509d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -145595,7 +145858,8 @@ class ImpactEngine(Cleanable):
 
         Args:
             custody_payloads:
-                spell_id -> crystal describe() payload (+ the seam's
+                custody key (the spell id, or "<spell_id>@<frame>" under
+                per-frame ids) -> crystal describe() payload (+ the seam's
                 additive "custody_state"), as returned by
                 `PersistenceSystem.describe_spell_crystals()`.
 
@@ -145778,6 +146042,9 @@ class ImpactEngine(Cleanable):
               `blast_radius_of_module(root_module_name)` plus the spell's
               own identity row.
             - Unknown SHAs answer honestly ("unknown_spell": True).
+            - A spell id recorded under frame-scoped keys (per-frame ids,
+              0.2.8214) answers through its lowest matching key; the radius
+              lists custody keys, one per frame's copy.
 
         Args:
             spell_id:
@@ -145794,6 +146061,16 @@ class ImpactEngine(Cleanable):
         """
         self.check_cleaned()
         payload = self._custody_by_spell.get(str(spell_id))
+        if payload is None:
+            # Per-frame records key custody "<spell_id>@<frame>" (0.2.8214):
+            # a bare spell id answers through its lowest matching key.
+            matching_keys = [
+                custody_key
+                for custody_key, candidate in self._custody_by_spell.items()
+                if str(candidate.get("id")) == str(spell_id)
+            ]
+            if matching_keys:
+                payload = self._custody_by_spell[min(matching_keys)]
         if payload is None:
             return {
                 "spell": str(spell_id),
@@ -150887,7 +151164,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/graft_runner.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_loader_system/load_admission.py
-CONTENT SHA256: f6c9013e860bdf39c057f3b9ac42e64815744ee75f4d5e5d2e6831332f845b38
+CONTENT SHA256: e775143bc7cf379b0899c81c0cf88f39d030336e5b086149b3f0e19cb3ffee98
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -150913,6 +151190,7 @@ from typing import Dict, List, Optional, TYPE_CHECKING
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.crystallizer.crystal_loader_system.load_plan import LoadPlan
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
 
 if TYPE_CHECKING:
     from melder.aether.aether import Aether
@@ -151177,6 +151455,10 @@ class LoadAdmission(Cleanable):
               rewrites to the target (formations are single-frame slices;
               the engine derives conduit frames from their books, so
               conduit payloads carry no frame edge of their own).
+            - Spell custody payloads rewrite their `frame_name` too; a
+              frame-scoped custody key ("<spell_id>@<frame>", per-frame ids)
+              is rebuilt for the target and its entry re-keyed, while a
+              process-wide key (the bare spell id) stays (0.2.8214).
             - Inputs are never mutated: touched kinds are shallow-copied
               per payload before rewrite.
 
@@ -151218,6 +151500,19 @@ class LoadAdmission(Cleanable):
                 kind_payloads[key] = adjusted
             if kind_payloads:
                 rewritten[kind] = kind_payloads
+        custody = dict(rewritten.get("spell_crystal", {}))
+        if custody:
+            retargeted: Dict[str, object] = {}
+            for key, payload in custody.items():
+                adjusted = dict(payload)
+                if "frame_name" in adjusted:
+                    adjusted["frame_name"] = target_frame_name
+                spell_id = str(adjusted.get("id", SpellCrystal.spell_id_of_custody_key(key)))
+                if key != spell_id:
+                    key = SpellCrystal.compose_custody_key(spell_id, target_frame_name)
+                    adjusted["custody_key"] = key
+                retargeted[key] = adjusted
+            rewritten["spell_crystal"] = retargeted
         return rewritten
 
     # ------------------------------------------------------------------
@@ -151825,7 +152120,7 @@ END FILE: src/melder/crystallizer/crystal_loader_system/load_plan.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystal_loader_system/restore_engine.py
-CONTENT SHA256: 79085ff9af3fd859a1a215cd3b85ee5ddfd35e636e0941dfdfb15599b7699ef5
+CONTENT SHA256: 311d377d8f0ee55e5b7e7b4ba069144f5ac897d44c182703bd85464416644d20
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -151837,6 +152132,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING, cast
 
 from melder.crystallizer.crystal_analysis.conduit_hierarchy import ConduitHierarchy
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.custom_exceptions.phase_execution_error import (
@@ -152290,6 +152586,7 @@ class RestoreEngine(Cleanable):
         "_clusters",
         "_custody_active",
         "_custody_inactive",
+        "_spell_translation",
         "_live_books",
         "_live_conduits",
         "_build_lock",
@@ -152390,6 +152687,13 @@ class RestoreEngine(Cleanable):
         self._clusters: Dict[str, Dict[str, object]] = {}
         self._custody_active: Dict[str, Dict[str, object]] = {}
         self._custody_inactive: Dict[str, Dict[str, object]] = {}
+        # Recorded-to-live spell ids per Book: (recorded spellbook id,
+        # recorded spell id) -> live id, written by the binds (0.2.8214). One
+        # spell id rebuilt in two Books (per-frame ids) may bind to two new
+        # ids, so selections, parked members and contract grants translate
+        # through their own Book. Writes are per-key disjoint across the
+        # parallel driver's Book units (same law as the live-handle maps).
+        self._spell_translation: Dict[Tuple[str, str], str] = {}
         # Live handles built during replay (for wiring + rollback).
         # Parallel-driver law (S4): writes are per-key disjoint across
         # units and cross-level reads happen only behind a passed level
@@ -152454,6 +152758,7 @@ class RestoreEngine(Cleanable):
         del self._clusters
         del self._custody_active
         del self._custody_inactive
+        del self._spell_translation
         del self._live_books
         del self._live_conduits
         del self._built_stack
@@ -153173,6 +153478,20 @@ class RestoreEngine(Cleanable):
         Contract:
             - A live, already-configured Aether is respected: the recorded
               payload is reported as skipped, never force-applied.
+            - The recorded spell-id regime (record major 4) is installed while
+              the live regime can still change - no configuration installed
+              and no frame born - so the frames stage 5 births seal it.
+            - When the live regime is already fixed (a configured Aether, or a
+              live frame) and differs from the recorded one, a shortfall names
+              both; an unconfigured Aether with frames then installs the
+              recorded logger policy under the LIVE regime, so the sealed-regime
+              guard never fires from a restore.
+            - Refusal (0.2.8214): when the live regime is fixed process-wide
+              and the record, kept under per-frame ids, binds one spell id in
+              two frames, the stage raises before anything is built (the
+              second frame's bind could only collide).
+            - A payload without the regime (an older record) rebuilds the
+              default regime and reports the key missing.
             - Property failures degrade to shortfall entries (the root config
               is advisory for the world structure that follows).
         Returns:
@@ -153188,6 +153507,25 @@ class RestoreEngine(Cleanable):
         )
         if not payload:
             return
+        recorded_regime = payload.get("process_wide_unique_spell_ids")
+        if aether.configured or aether.list_frame_names():
+            # The live regime is fixed: a configured root is respected, and a
+            # frame has sealed it. Report a recorded regime that cannot be
+            # installed, and rebuild (if at all) under the live one.
+            live_regime = aether.process_wide_unique_spell_ids
+            if recorded_regime is not None and bool(recorded_regime) != live_regime:
+                if live_regime and self._record_binds_one_spell_in_two_frames():
+                    raise RuntimeError(
+                        "This record binds one spell id in two frames, which only per-frame spell ids "
+                        "allow, and the live world already runs process-wide ids (a configured Aether or "
+                        "a live frame fixed them). Restore it where the Aether is not configured and holds "
+                        "no frame, or configure process_wide_unique_spell_ids=False before the first frame "
+                        "is born. Nothing was built."
+                    )
+                self._report_recorded_regime_not_in_force(
+                    bool(recorded_regime), live_regime
+                )
+                payload["process_wide_unique_spell_ids"] = live_regime
         if aether.configured:
             self._report.add_shortfall(
                 "aether", "root",
@@ -153221,6 +153559,108 @@ class RestoreEngine(Cleanable):
         configuration.activate()
         aether.activate(configuration)
         self._report.record_built("aether_configuration")
+
+    def _report_recorded_regime_not_in_force(
+            self,
+            recorded_regime: bool,
+            live_regime: bool,
+    ) -> None:
+        """
+        Internal
+
+        File the shortfall for a recorded spell-id regime the live world cannot take.
+
+        Contract:
+            - One shortfall on ("aether", "process_wide_unique_spell_ids"), whose reason names both regimes:
+              `recorded_per_frame_ids_restored_under_process_wide_ids` or
+              `recorded_process_wide_ids_restored_under_per_frame_ids`.
+            - Called only when the live regime is fixed and differs from the recorded one.
+
+        Args:
+            recorded_regime:
+                The recorded `process_wide_unique_spell_ids`.
+            live_regime:
+                The regime in force in the live world.
+
+        Returns:
+            None.
+        """
+        reason = (
+            "recorded_per_frame_ids_restored_under_process_wide_ids"
+            if live_regime and not recorded_regime
+            else "recorded_process_wide_ids_restored_under_per_frame_ids"
+        )
+        self._report.add_shortfall(
+            "aether", "process_wide_unique_spell_ids", reason
+        )
+
+    def _record_binds_one_spell_in_two_frames(self) -> bool:
+        """
+        Internal
+
+        Say whether the folded custody binds one spell id in more than one frame.
+
+        Contract:
+            - Reads the folded custody only (both locations).
+            - An entry's frame is its payload "frame_name", else its Book's
+              recorded frame, else "default"; its spell id is the payload "id",
+              else the key's spell id.
+            - Only a record kept under per-frame ids can answer True: a
+              process-wide record holds each spell id once.
+
+        Returns:
+            bool: True when some spell id has custody in two or more frames.
+        """
+        frames_by_spell: Dict[str, Set[str]] = {}
+        for store in (self._custody_active, self._custody_inactive):
+            for custody_key, payload in store.items():
+                frames_by_spell.setdefault(
+                    self._recorded_spell_id(custody_key, payload), set()
+                ).add(self._custody_frame(payload))
+        return any(len(frames) > 1 for frames in frames_by_spell.values())
+
+    def _custody_frame(self, payload: Dict[str, object]) -> str:
+        """
+        Internal
+
+        Return the frame one folded custody entry belongs to.
+
+        Args:
+            payload:
+                The folded custody payload.
+
+        Returns:
+            str: The payload "frame_name", else its Book's recorded frame, else
+            "default" (payloads before 0.2.8214 carry no frame).
+        """
+        frame_name = payload.get("frame_name")
+        if frame_name is None:
+            book = self._books.get(str(payload.get("spellbook_id")), {})
+            frame_name = book.get("frame_name", "default")
+        return str(frame_name)
+
+    @staticmethod
+    def _recorded_spell_id(custody_key: str, payload: Dict[str, object]) -> str:
+        """
+        Internal
+
+        Return the recorded spell id of one folded custody entry.
+
+        Contract:
+            The payload's "id" answers; a payload without it (a hand-made
+            window) falls back to the key's spell id, which is the key itself
+            under process-wide ids (0.2.8214).
+
+        Args:
+            custody_key:
+                The entry's record key.
+            payload:
+                The folded custody payload.
+
+        Returns:
+            str: The recorded spell id.
+        """
+        return str(payload.get("id", SpellCrystal.spell_id_of_custody_key(custody_key)))
 
     def _replay_crystallizer_policy(self) -> None:
         """
@@ -153671,18 +154111,18 @@ class RestoreEngine(Cleanable):
         self._report.record_built("spellbook")
         self._report.map_identity(spellbook_id, spellbook._id)
         bind_order = self._book_bind_order(spellbook_id)
-        for spell_id in bind_order:
-            if spell_id in self._custody_active:
+        for custody_key in bind_order:
+            if custody_key in self._custody_active:
                 self._bind_one_active(
-                    spellbook, spell_id,
-                    self._custody_active[spell_id],
+                    spellbook_id, spellbook, custody_key,
+                    self._custody_active[custody_key],
                 )
         conduit = self._conjure_for_book(spellbook_id, spellbook)
-        for spell_id in bind_order:
-            if spell_id in self._custody_inactive:
+        for custody_key in bind_order:
+            if custody_key in self._custody_inactive:
                 self._bind_one_staged(
-                    spellbook, conduit, spell_id,
-                    self._custody_inactive[spell_id],
+                    spellbook_id, spellbook, conduit, custody_key,
+                    self._custody_inactive[custody_key],
                 )
         self._enforce_selections(spellbook_id, spellbook, conduit)
         self._replay_lesser_conduits(spellbook_id)
@@ -153785,7 +154225,12 @@ class RestoreEngine(Cleanable):
 
     def _book_bind_order(self, spellbook_id: str) -> List[str]:
         """
-        Return one book's recorded bind order, custody-filtered.
+        Return one book's recorded bind order as its custody keys.
+
+        Contract:
+            The Book's bind_order names spell ids; each maps to this Book's own
+            custody key (0.2.8214: under per-frame ids the key is
+            "<spell_id>@<frame>", and another Book may hold the same spell id).
 
         Args:
             spellbook_id:
@@ -153793,26 +154238,37 @@ class RestoreEngine(Cleanable):
 
         Returns:
             List[str]:
-                Spell SHAs in recorded bind order that still hold folded
+                Custody keys in recorded bind order that still hold folded
                 custody under this book; custody without a bind_order slot
                 appends afterwards (deterministic, sorted).
         """
         payload = self._books.get(spellbook_id, {})
         ordered = [str(entry) for entry in list(payload.get("bind_order", []))]
+        keys_by_spell: Dict[str, List[str]] = {}
+        for store in (self._custody_active, self._custody_inactive):
+            for custody_key, crystal in store.items():
+                if crystal.get("spellbook_id") == spellbook_id:
+                    keys_by_spell.setdefault(
+                        self._recorded_spell_id(custody_key, crystal), []
+                    ).append(custody_key)
+        sequence: List[str] = []
+        for spell_id in ordered:
+            for custody_key in sorted(keys_by_spell.get(spell_id, [])):
+                if custody_key not in sequence:
+                    sequence.append(custody_key)
         owned = {
-            spell_id
-            for store in (self._custody_active, self._custody_inactive)
-            for spell_id, crystal in store.items()
-            if crystal.get("spellbook_id") == spellbook_id
+            custody_key
+            for custody_keys in keys_by_spell.values()
+            for custody_key in custody_keys
         }
-        sequence = [spell_id for spell_id in ordered if spell_id in owned]
         sequence.extend(sorted(owned.difference(sequence)))
         return sequence
 
     def _bind_one_active(
             self,
+            spellbook_id: str,
             spellbook: Any,
-            spell_id: str,
+            custody_key: str,
             crystal: Dict[str, object],
     ) -> None:
         """
@@ -153822,19 +154278,25 @@ class RestoreEngine(Cleanable):
             Forward ordered disposal names through normal book composition.
             Record a changed SHA before resolving dependent staged members.
             Preserve recorded capability; only legacy absence defaults to True.
+            The spell id comes from the payload, the custody key names
+            shortfalls, and identities map per Book (0.2.8214).
 
         Args:
+            spellbook_id:
+                Recorded Book identity (translation and index owner edge).
             spellbook:
                 The live rebuilt Spellbook.
-            spell_id:
-                Recorded spell SHA; receiving policy determines the new bind ID.
+            custody_key:
+                The folded custody key (the spell id, or "<spell_id>@<frame>");
+                receiving policy determines the new bind ID.
             crystal:
                 The folded custody payload.
 
         Returns:
             None.
         """
-        target = self._hydrate_target(spell_id, crystal)
+        spell_id = self._recorded_spell_id(custody_key, crystal)
+        target = self._hydrate_target(custody_key, crystal)
         if target is None:
             return
         new_spell_id = spellbook.bind(
@@ -153850,10 +154312,9 @@ class RestoreEngine(Cleanable):
             resolvable=crystal.get("resolvable", True),
         )
         self._report.record_built("spell_active")
-        if new_spell_id != spell_id:
-            self._report.map_identity(spell_id, new_spell_id)
+        self._map_spell_identity(spellbook_id, spell_id, new_spell_id)
         live_spell = spellbook.find_spell_by_id(new_spell_id)
-        recorded_index_id = self._index_id_for_member(spell_id)
+        recorded_index_id = self._index_id_for_member(spellbook_id, spell_id)
         if recorded_index_id is not None and live_spell is not None:
             self._report.map_identity(
                 recorded_index_id, live_spell.spell_index.id
@@ -153861,9 +154322,10 @@ class RestoreEngine(Cleanable):
 
     def _bind_one_staged(
             self,
+            spellbook_id: str,
             spellbook: Any,
             conduit: Optional[Any],
-            spell_id: str,
+            custody_key: str,
             crystal: Dict[str, object],
     ) -> None:
         """
@@ -153873,37 +154335,43 @@ class RestoreEngine(Cleanable):
             Retain the ordered recorded names and map any changed bind identity
             before the selection stage resolves this exact parked member.
             Preserve the parked version's own resolution capability.
+            The anchor index is found within this Book, the custody key names
+            shortfalls, and identities map per Book (0.2.8214).
 
         Args:
+            spellbook_id:
+                Recorded Book identity (translation and index owner edge).
             spellbook:
                 The live rebuilt Spellbook.
             conduit:
                 The live conduit hosting `bind_inactive`.
-            spell_id:
-                Recorded spell SHA; receiving policy determines the new bind ID.
+            custody_key:
+                The folded custody key (the spell id, or "<spell_id>@<frame>");
+                receiving policy determines the new bind ID.
             crystal:
                 The folded custody payload.
 
         Returns:
             None.
         """
+        spell_id = self._recorded_spell_id(custody_key, crystal)
         if conduit is None:
             self._report.add_shortfall(
-                "spell_crystal", spell_id,
+                "spell_crystal", custody_key,
                 "staged_member_requires_conduit_none_recorded",
             )
             return
-        recorded_index_id = self._index_id_for_member(spell_id)
+        recorded_index_id = self._index_id_for_member(spellbook_id, spell_id)
         anchor = self._live_index_for(spellbook, recorded_index_id)
         if anchor is None:
             self._report.add_shortfall(
-                "spell_crystal", spell_id,
+                "spell_crystal", custody_key,
                 "staged_member_anchor_index_not_rebuilt: {0}".format(
                     recorded_index_id
                 ),
             )
             return
-        target = self._hydrate_target(spell_id, crystal)
+        target = self._hydrate_target(custody_key, crystal)
         if target is None:
             return
         new_spell_id = conduit.bind_inactive(
@@ -153917,8 +154385,7 @@ class RestoreEngine(Cleanable):
             profile=str(crystal.get("profile_family", "general")),
             resolvable=crystal.get("resolvable", True),
         )
-        if new_spell_id != spell_id:
-            self._report.map_identity(spell_id, new_spell_id)
+        self._map_spell_identity(spellbook_id, spell_id, new_spell_id)
         self._report.record_built("spell_staged")
 
     def _enforce_selections(
@@ -153933,6 +154400,7 @@ class RestoreEngine(Cleanable):
         Contract:
             Translate changed bind identities and resolve the exact owned member,
             including parked members, rather than the index's active projection.
+            Translation is this Book's own (0.2.8214).
 
         Args:
             spellbook_id:
@@ -153952,7 +154420,7 @@ class RestoreEngine(Cleanable):
             if selected is None:
                 continue
             # Unchanged content IDs need no translation entry.
-            live_selected_id = self._report.translate(str(selected)) or str(selected)
+            live_selected_id = self._translate_spell(spellbook_id, str(selected))
             anchor = self._live_index_for(spellbook, index_id)
             if anchor is None or anchor.selected_spell_id == live_selected_id:
                 continue
@@ -153972,11 +154440,67 @@ class RestoreEngine(Cleanable):
             conduit.notch_spell(spell_index=anchor, spell=live_spell)
             self._report.record_built("selection_notch")
 
-    def _index_id_for_member(self, spell_id: str) -> Optional[str]:
+    def _map_spell_identity(
+            self,
+            spellbook_id: str,
+            spell_id: str,
+            new_spell_id: str,
+    ) -> None:
         """
-        Find the recorded index holding one member SHA.
+        Internal
+
+        Record one Book's recorded-to-live spell identity.
+
+        Contract:
+            - A changed id goes to the report's identity map (as before) and to
+              the per-Book translation; an unchanged id needs neither.
+            - Per Book (0.2.8214): one spell id rebuilt in two Books may bind
+              to two new ids, and each Book's references must follow its own.
 
         Args:
+            spellbook_id:
+                Recorded Book the bind replayed for.
+            spell_id:
+                Recorded spell id.
+            new_spell_id:
+                Id the live bind returned.
+
+        Returns:
+            None.
+        """
+        if new_spell_id == spell_id:
+            return
+        self._report.map_identity(spell_id, new_spell_id)
+        self._spell_translation[(spellbook_id, spell_id)] = new_spell_id
+
+    def _translate_spell(self, spellbook_id: str, spell_id: str) -> str:
+        """
+        Internal
+
+        Return the live id of one recorded spell id within one Book.
+
+        Args:
+            spellbook_id:
+                Recorded Book whose rebuilt world is meant.
+            spell_id:
+                Recorded spell id.
+
+        Returns:
+            str: The live id; the recorded id when the bind kept it.
+        """
+        return self._spell_translation.get((spellbook_id, spell_id), spell_id)
+
+    def _index_id_for_member(self, spellbook_id: str, spell_id: str) -> Optional[str]:
+        """
+        Find the recorded index of one Book that holds one member SHA.
+
+        Contract:
+            Searches only the indexes the Book owns (0.2.8214: under per-frame
+            ids another Book may hold an index with the same member id).
+
+        Args:
+            spellbook_id:
+                Recorded Book identity (index owner edge).
             spell_id:
                 Member spell SHA.
 
@@ -153985,6 +154509,8 @@ class RestoreEngine(Cleanable):
                 The recorded index ULID, or None when unrecorded.
         """
         for index_id, payload in self._indexes.items():
+            if payload.get("spellbook_id") != spellbook_id:
+                continue
             if spell_id in list(payload.get("member_spell_ids", [])):
                 return index_id
             if payload.get("selected_spell_id") == spell_id:
@@ -154000,7 +154526,8 @@ class RestoreEngine(Cleanable):
         Resolve one recorded index to its live rebuilt SpellIndex.
 
         Contract:
-            Member lookup follows changed Spell IDs in the existing report map.
+            Member lookup follows changed Spell IDs within the index's own Book
+            (0.2.8214).
             Unchanged content IDs resolve directly; index identity is always translated.
 
         Args:
@@ -154019,12 +154546,13 @@ class RestoreEngine(Cleanable):
         if live_index_id is None:
             return None
         recorded = self._indexes.get(recorded_index_id, {})
+        book_id = str(recorded.get("spellbook_id"))
         selected = recorded.get("selected_spell_id")
         candidates = list(recorded.get("member_spell_ids", []))
         if selected is not None:
             candidates.insert(0, selected)
         for member_id in candidates:
-            live_member_id = self._report.translate(str(member_id)) or str(member_id)
+            live_member_id = self._translate_spell(book_id, str(member_id))
             live_spell = spellbook.find_spell_by_id(live_member_id)
             if live_spell is not None:
                 if live_spell.spell_index.id == live_index_id:
@@ -154265,8 +154793,9 @@ class RestoreEngine(Cleanable):
 
         Contract:
             - Detail Spell IDs follow recorded-to-live translation when a bind
-              changed its signature; unchanged SHAs remain direct. Conduit
-              endpoints translate through the same existing identity map.
+              changed its signature, within the granting conduit's Book
+              (0.2.8214); unchanged SHAs remain direct. Conduit endpoints
+              translate through the existing identity map.
             - Ward record truth: a plain detail lives in the map of the
               side that OWNS the lineage ("initiated" via the link-time
               bulk grant, "received" via the borrow verb, which files
@@ -154328,10 +154857,15 @@ class RestoreEngine(Cleanable):
                 "endpoint_not_rebuilt",
             )
             return
-        for granter, details_key in (
-                (side_a, "details_a"),
-                (side_b, "details_b"),
+        for granter, granter_key, details_key in (
+                (side_a, "conduit_a_id", "details_a"),
+                (side_b, "conduit_b_id", "details_b"),
         ):
+            # Detail spell ids translate within the granting side's Book
+            # (0.2.8214: one spell id may be rebuilt in several Books).
+            granter_book_id = str(
+                self._conduits.get(str(payload.get(granter_key)), {}).get("spellbook_id")
+            )
             for detail in list(payload.get(details_key, [])):
                 # The map holder OWNS the lineage (both detail labels);
                 # the peer borrowed it. The live verb is borrower-
@@ -154339,7 +154873,7 @@ class RestoreEngine(Cleanable):
                 # demands the `conduit` argument own the spell).
                 borrower = side_b if granter is side_a else side_a
                 recorded_spell_id = str(detail.get("spell_id"))
-                live_spell_id = self._report.translate(recorded_spell_id) or recorded_spell_id
+                live_spell_id = self._translate_spell(granter_book_id, recorded_spell_id)
                 with borrower.transaction(
                         "link", conduits=[borrower, granter]
                 ):
@@ -154363,7 +154897,7 @@ class RestoreEngine(Cleanable):
 
     def _hydrate_target(
             self,
-            spell_id: str,
+            custody_key: str,
             crystal: Dict[str, object],
     ) -> Optional[Any]:
         """
@@ -154375,8 +154909,9 @@ class RestoreEngine(Cleanable):
             - Import/attr failures become shortfalls, never partial binds.
 
         Args:
-            spell_id:
-                Recorded spell SHA (shortfall key).
+            custody_key:
+                The folded custody key (shortfall key); its spell id anchors
+                the module-world rebuild lanes (0.2.8214).
             crystal:
                 The folded custody payload.
 
@@ -154384,9 +154919,10 @@ class RestoreEngine(Cleanable):
             Optional[Any]:
                 The live class/function target, or None (shortfall filed).
         """
+        spell_id = self._recorded_spell_id(custody_key, crystal)
         if str(crystal.get("rebindability")) != "hydratable":
             self._report.add_shortfall(
-                "spell_crystal", spell_id,
+                "spell_crystal", custody_key,
                 "replay_required_target_kind: {0}".format(
                     crystal.get("root_target_kind")
                 ),
@@ -154414,7 +154950,7 @@ class RestoreEngine(Cleanable):
                 except Exception as retry_error:
                     error = retry_error
             self._report.add_shortfall(
-                "spell_crystal", spell_id,
+                "spell_crystal", custody_key,
                 "hydration_failed ({0}.{1}): {2}".format(
                     module_name, qualname, error
                 ),
@@ -154749,12 +155285,12 @@ END FILE: src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystallizer.py
-CONTENT SHA256: 076a3f47bbce99adb5f80fcd07c55fe9cb55ae0bbd28568d308d3bcfb826f1bc
+CONTENT SHA256: 816ba2f149aa732ce064388b7c197b58ba679a5e7c5640263fd0432d711c8096
 SOURCE ENCODING: utf-8
 ================================================================================
 import threading
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from melder.crystallizer.asset_management.asset_management_system import (
     AssetManagementSystem,
@@ -155580,7 +156116,11 @@ class Crystallizer(Cleanable):
             self._activated = False
 
 
-    def get_spell_crystal(self, spell_id: str) -> SpellCrystal:
+    def get_spell_crystal(
+            self,
+            spell_id: str,
+            frame_name: Optional[str] = None,
+    ) -> SpellCrystal:
         """
         Return the recorded custody crystal for one spell (active profile).
 
@@ -155599,10 +156139,15 @@ class Crystallizer(Cleanable):
             - RECORD SIDE: delegates to the persistence system, which owns the ledger.
             - Returns the SEALED crystal for one spell id, which is a point-in-time
               record and not a live view of the spell.
+            - Per frame (0.2.8214): under per-frame spell ids one spell id may be
+              recorded once per frame. `frame_name` selects that frame's copy;
+              without it the lowest custody key answers.
 
         Args:
             spell_id:
-                The spell's SHA256 identity.
+                The spell's SHA256 identity, or a full custody key.
+            frame_name:
+                Optional frame whose copy is wanted.
 
         Returns:
             SpellCrystal:
@@ -155616,7 +156161,9 @@ class Crystallizer(Cleanable):
         """
         self.check_cleaned()
         self._require_activated()
-        return self._persistence_system.get_spell_crystal(spell_id)
+        return self._persistence_system.get_spell_crystal(
+            spell_id, frame_name=frame_name
+        )
 
     def describe_mutation_research_record(self) -> dict[str, object] | None:
         """
@@ -155864,7 +156411,11 @@ class Crystallizer(Cleanable):
         self._persistence_system.record_spell_crystal(crystal, active=active)
         self._maybe_create_automatic_checkpoint()
 
-    def emit_spell_removed(self, spell_id: str) -> None:
+    def emit_spell_removed(
+            self,
+            spell_id: str,
+            frame_name: Optional[str] = None,
+    ) -> None:
         """
         Evict one removed spell's custody from the record.
 
@@ -155876,10 +156427,16 @@ class Crystallizer(Cleanable):
 
         Contract:
             - NO-OP while the crystallizer is not activated.
+            - Addresses one custody key (0.2.8214): the spell id under
+              process-wide ids (the frame is ignored), "<spell_id>@<frame>"
+              under per-frame ids, so only that frame's copy leaves.
 
         Args:
             spell_id:
                 The removed spell's SHA256 identity.
+            frame_name:
+                The frame of the Book removing the spell; required under
+                per-frame spell ids.
 
         Returns:
             None.
@@ -155887,11 +156444,15 @@ class Crystallizer(Cleanable):
         Raises:
             RuntimeError:
                 If the crystallizer has been cleaned.
+            ValueError:
+                Under per-frame spell ids when `frame_name` is None.
         """
         self.check_cleaned()
         if not self._activated:
             return
-        self._persistence_system.remove_spell_crystal(spell_id)
+        self._persistence_system.remove_spell_crystal(
+            self._custody_key_for(spell_id, frame_name)
+        )
         self._maybe_create_automatic_checkpoint()
 
     def emit_conduit_removed(self, conduit_id: str) -> None:
@@ -156222,7 +156783,12 @@ class Crystallizer(Cleanable):
         self._persistence_system.record_mutation_research_state(state)
         self._maybe_create_automatic_checkpoint()
 
-    def emit_spell_activity(self, spell_id: str, active: bool) -> None:
+    def emit_spell_activity(
+            self,
+            spell_id: str,
+            active: bool,
+            frame_name: Optional[str] = None,
+    ) -> None:
         """
         Mirror one runtime park/promote flip into the record and, when
         configured, into the live module world.
@@ -156244,12 +156810,18 @@ class Crystallizer(Cleanable):
             - NO-OP while the crystallizer is not activated.
             - Tolerates missing custody (activity for a spell the record
               never held is journaled without a crystal move).
+            - Addresses one custody key (0.2.8214): the spell id under
+              process-wide ids (the frame is ignored), "<spell_id>@<frame>"
+              under per-frame ids, so only that frame's copy moves.
 
         Args:
             spell_id:
                 The spell whose activity flipped.
             active:
                 True = promoted to active; False = parked inactive.
+            frame_name:
+                The frame of the Book that flipped it; required under
+                per-frame spell ids.
 
         Returns:
             None.
@@ -156257,14 +156829,17 @@ class Crystallizer(Cleanable):
         Raises:
             RuntimeError:
                 If the crystallizer has been cleaned.
+            ValueError:
+                Under per-frame spell ids when `frame_name` is None.
         """
         self.check_cleaned()
         if not self._activated:
             return
-        self._persistence_system.record_spell_activity(spell_id, active=active)
+        custody_key = self._custody_key_for(spell_id, frame_name)
+        self._persistence_system.record_spell_activity(custody_key, active=active)
         self._maybe_create_automatic_checkpoint()
         try:
-            crystal = self._persistence_system.get_spell_crystal(spell_id)
+            crystal = self._persistence_system.get_spell_crystal(custody_key)
         except KeyError:
             return
         if crystal.root_module_kind != "synthetic_module":
@@ -156292,6 +156867,44 @@ class Crystallizer(Cleanable):
                 )
             else:
                 module.unpublish_from_sys_modules()
+
+    def _custody_key_for(self, spell_id: str, frame_name: Optional[str]) -> str:
+        """
+        Internal
+
+        Return the record key a spell-level emit verb addresses.
+
+        Contract:
+            - Under process-wide spell ids the key is the spell id; the frame
+              is optional and ignored.
+            - Under per-frame spell ids the key is "<spell_id>@<frame_name>"
+              (`SpellCrystal.compose_custody_key`), so only the named frame's
+              copy is touched; a missing frame is refused (0.2.8214).
+            - Reads the regime from the hosting Aether without a lock
+              (`Aether.process_wide_unique_spell_ids`).
+
+        Args:
+            spell_id:
+                The spell's SHA256 identity.
+            frame_name:
+                The frame of the Book that emits.
+
+        Returns:
+            str: The custody key.
+
+        Raises:
+            ValueError:
+                Under per-frame spell ids when `frame_name` is None.
+        """
+        if self._aether.process_wide_unique_spell_ids:
+            return spell_id
+        if frame_name is None:
+            raise ValueError(
+                "Under per-frame spell ids a spell id can be bound in several frames and the record keeps "
+                "one copy per frame, so frame_name is required to address spell {0!r}. Pass the frame of the "
+                "Book that emits (Spellbook passes its own).".format(spell_id)
+            )
+        return SpellCrystal.compose_custody_key(spell_id, frame_name)
 
     def emit(self, twin: Cleanable) -> None:
         """
@@ -156364,7 +156977,9 @@ class Crystallizer(Cleanable):
             only its value-only `CrystalAnalysisResult`, and never owns the
             analyzer or strategy machinery. User-source text is retained only
             when the installed policy enables it; bind-time fingerprints are
-            recorded independently of that opt-in.
+            recorded independently of that opt-in. The record key follows the
+            regime in force: under per-frame spell ids the crystal is keyed
+            "<spell_id>@<frame>" (0.2.8214).
 
         Args:
             spell:
@@ -156390,6 +157005,7 @@ class Crystallizer(Cleanable):
             site_package_dependency_descent=(
                 self._configuration.site_package_dependency_descent
             ),
+            per_frame_custody=not self._aether.process_wide_unique_spell_ids,
         )
 
 
@@ -159708,7 +160324,7 @@ END FILE: src/melder/crystallizer/crystals/recorded_unit_state.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/crystals/spell_crystal.py
-CONTENT SHA256: e1f88c53a3f13c62cfa461d81fb04fd0b61134ac36fbf08975408a865e08a74b
+CONTENT SHA256: e3e799c6598796a96d37a8838549c2a044d681b2533e480f04f4b37b3a0f4dd4
 SOURCE ENCODING: utf-8
 ================================================================================
 import inspect
@@ -159752,6 +160368,10 @@ class SpellCrystal(Cleanable):
     Contract:
         - constructed from one live `Spell`
         - anchored to the spell's concrete SHA256 identity
+        - records the spell's frame and its record key (`custody_key`): the
+          spell id under process-wide ids, "<spell_id>@<frame>" under
+          per-frame ids, where one spell id may be bound in several frames
+          (0.2.8214)
         - resolves the root target module (crystal-side identity work)
         - DELEGATES the module-world analysis to `CrystalAnalyzer`
           (crystal_analysis subsystem) and CARRIES the returned
@@ -159837,6 +160457,8 @@ class SpellCrystal(Cleanable):
         "_root_target_qualname",
         "_root_target_kind",
         "_spellbook_id",
+        "_frame_name",
+        "_custody_key",
         "_spell_name",
         "_binding_name",
         "_spellframe_name",
@@ -159861,6 +160483,7 @@ class SpellCrystal(Cleanable):
             spellbook_id: Optional[str] = None,
             retain_user_sources: bool = False,
             site_package_dependency_descent: bool = True,
+            per_frame_custody: bool = False,
     ) -> None:
         """
         Initialize one spell-targeted module dependency manifest.
@@ -159883,6 +160506,9 @@ class SpellCrystal(Cleanable):
             - Captures resolved disposal names in execution order. This detached
               persistence value does not sort or reapply book policy.
             - Captures native resolution capability so replay cannot enable a definition.
+            - Captures the spell's frame (`spell.aetheric_frame`) and keys the
+              record by the spell id, or by "<spell_id>@<frame>" when
+              `per_frame_custody` is set (0.2.8214).
             - Captures the root module classification and all direct-dependency
               edges needed for later loader validation and world activation
               through the carried analysis result.
@@ -159918,6 +160544,12 @@ class SpellCrystal(Cleanable):
                 provenance-carrying leaves with no source read. The
                 crystallizer facade passes the configuration truth
                 (schema default False).
+            per_frame_custody:
+                True keys the record entry "<spell_id>@<frame>" (the
+                crystallizer facade passes True under per-frame spell ids,
+                where one spell id may be bound in several frames); False
+                (default) keys it by the spell id alone, as process-wide
+                worlds always have been.
 
         Returns:
             None.
@@ -159978,6 +160610,15 @@ class SpellCrystal(Cleanable):
         # this spell version, retained so a profile can rebind from the
         # crystal alone (or truthfully report replay_required).
         self._spellbook_id: Optional[str] = spellbook_id
+        # Record key (0.2.8214): under per-frame spell ids one spell id may
+        # be bound in several frames, so custody is keyed per frame; under
+        # process-wide ids the spell id is unique and stays the key.
+        self._frame_name: str = spell.aetheric_frame
+        self._custody_key: str = (
+            SpellCrystal.compose_custody_key(self._id, self._frame_name)
+            if per_frame_custody
+            else self._id
+        )
         self._spell_name: Optional[str] = spell.spell_name
         self._binding_name: Optional[str] = spell.binding_name
         spellframe = spell.spellframe
@@ -160101,6 +160742,8 @@ class SpellCrystal(Cleanable):
             del self._root_target_qualname
             del self._root_target_kind
             del self._spellbook_id
+            del self._frame_name
+            del self._custody_key
             del self._spell_name
             del self._binding_name
             del self._spellframe_name
@@ -160132,6 +160775,86 @@ class SpellCrystal(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._id
+
+    @property
+    def frame_name(self) -> str:
+        """
+        Return the name of the frame the spell was bound in.
+
+        Purpose:
+            Say which frame's world this custody describes. Under per-frame
+            spell ids the same spell id can be bound in several frames, and
+            each frame's copy is recorded separately.
+
+        Returns:
+            str:
+                The owning frame's name (`Spell.aetheric_frame` at capture).
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._frame_name
+
+    @property
+    def custody_key(self) -> str:
+        """
+        Return the key this crystal is recorded under.
+
+        Purpose:
+            Address one frame's copy of a spell in the record. Under
+            process-wide spell ids a spell id exists once per process, so the
+            key is the spell id itself and records of such worlds keep their
+            shape; under per-frame ids it is "<spell_id>@<frame_name>", so two
+            frames binding the same class keep one crystal each (0.2.8214).
+
+        Returns:
+            str:
+                The spell id, or "<spell_id>@<frame_name>" when built with
+                `per_frame_custody`.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._custody_key
+
+    @staticmethod
+    def compose_custody_key(spell_id: str, frame_name: str) -> str:
+        """
+        Return the per-frame record key for one spell id bound in one frame.
+
+        Contract:
+            The key is "<spell_id>@<frame_name>". A spell id is a SHA256 hex
+            digest and never holds "@", so `spell_id_of_custody_key` recovers
+            it by splitting at the first "@" even when the frame name holds one.
+
+        Args:
+            spell_id:
+                The spell's SHA256 identity.
+            frame_name:
+                The frame the spell was bound in.
+
+        Returns:
+            str: The frame-scoped custody key.
+        """
+        return f"{spell_id}@{frame_name}"
+
+    @staticmethod
+    def spell_id_of_custody_key(custody_key: str) -> str:
+        """
+        Return the spell id one custody key names.
+
+        Contract:
+            Splits at the first "@"; a key without one (a process-wide key) is
+            the spell id itself. Readers holding the crystal or its payload read
+            the spell id there ("id"); this parse serves the tombstones whose
+            crystal is already gone.
+
+        Args:
+            custody_key:
+                A record key: a spell id, or "<spell_id>@<frame_name>".
+
+        Returns:
+            str: The spell id.
+        """
+        return custody_key.split("@", 1)[0]
 
     @property
     def root_module_name(self) -> str:
@@ -160791,7 +161514,8 @@ class SpellCrystal(Cleanable):
             agent inspection without exposing the crystal's mutable containers.
 
         Contract:
-            Combines crystal-owned identity/bind-policy fields with a detached
+            Combines crystal-owned identity (spell id, frame, custody key) and
+            bind-policy fields with a detached
             `CrystalAnalysisResult` payload. Returned lists and dictionaries are
             independent of the carried manifest; no live spell, module, target,
             analyzer, strategy, or synchronization object crosses the boundary.
@@ -160812,6 +161536,8 @@ class SpellCrystal(Cleanable):
             analysis_payload = self._analysis.describe()
             return {
                 "id": self._id,
+                "frame_name": self._frame_name,
+                "custody_key": self._custody_key,
                 "root_module_name": self._root_module_name,
                 "root_module_path": self._root_module_path,
                 "root_module_kind": self._root_module_kind,
@@ -161796,7 +162522,7 @@ END FILE: src/melder/crystallizer/persistence/persistence_crystal.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/persistence/persistence_profile.py
-CONTENT SHA256: cb457d16c190b4da2dc9868bb0e0232bc932247fbd146b2508af7ab7e88fdec5
+CONTENT SHA256: a46ba722a913b20e3dc22f8f699479116e2681d9146eca8c19ebb2b8c1a391a1
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -161853,6 +162579,10 @@ class PersistenceProfile(Cleanable):
         - The L3 spell node IS the SpellCrystal: it carries both the bind
           signatures (binding_name / spellframe / existence / permissions /
           rebindability) and the module-world custody in one object.
+        - Spell custody is keyed by `SpellCrystal.custody_key`: the spell id
+          under process-wide ids, "<spell_id>@<frame>" under per-frame ids,
+          so one spell id bound in several frames keeps one crystal per frame
+          (0.2.8214).
         - Emission sequence: every record is journaled with a monotonically
           increasing sequence number; replay order derives from it.
         - L3 rule (documented for the restore engine): spell crystals replay
@@ -161963,6 +162693,9 @@ class PersistenceProfile(Cleanable):
         self._spell_index_crystals_by_index_id: Dict[str, SpellIndexCrystal] = {}
         self._contract_crystals_by_contract_id: Dict[str, ContractCrystal] = {}
         self._cluster_crystals_by_cluster_id: Dict[str, ClusterCrystal] = {}
+        # Custody maps, keyed by SpellCrystal.custody_key: the spell id under
+        # process-wide ids, "<spell_id>@<frame>" under per-frame ids (0.2.8214;
+        # the map names predate the frame-scoped key).
         self._spell_crystals_by_spell_id: Dict[str, SpellCrystal] = {}
         self._inactive_spell_crystals_by_spell_id: Dict[str, SpellCrystal] = {}
 
@@ -162142,8 +162875,9 @@ class PersistenceProfile(Cleanable):
             record into the inactive location.
 
         Contract:
-            - Replace-on-emit across BOTH locations: any prior crystal for
-              the spell_id is cleaned wherever it lived.
+            - Replace-on-emit across BOTH locations: any prior crystal under
+              the same custody key is cleaned wherever it lived; one frame's
+              copy never displaces another frame's (0.2.8214).
 
         Args:
             crystal:
@@ -162162,7 +162896,7 @@ class PersistenceProfile(Cleanable):
         with self._lock:
             self._record_spell_crystal_locked(crystal, active=active)
 
-    def record_spell_activity(self, spell_id: str, active: bool) -> None:
+    def record_spell_activity(self, custody_key: str, active: bool) -> None:
         """
         Move one spell's crystal between the active/inactive locations.
 
@@ -162171,13 +162905,15 @@ class PersistenceProfile(Cleanable):
             (`_deactivate_owned_spell` / `_reactivate_owned_spell`).
 
         Contract:
+            - Addresses one custody key, so under per-frame ids only the named
+              frame's copy moves (0.2.8214).
             - Tolerates missing custody (activity for a spell the record
               never held): the activity is journaled either way so
               checkpoints capture the transition truthfully.
 
         Args:
-            spell_id:
-                The spell whose activity flipped.
+            custody_key:
+                The flipped crystal's record key (`SpellCrystal.custody_key`).
             active:
                 True = promoted to active; False = parked inactive.
 
@@ -162191,16 +162927,16 @@ class PersistenceProfile(Cleanable):
         self.check_cleaned()
         with self._lock:
             if active:
-                crystal = self._inactive_spell_crystals_by_spell_id.pop(spell_id, None)
+                crystal = self._inactive_spell_crystals_by_spell_id.pop(custody_key, None)
                 if crystal is not None:
-                    self._spell_crystals_by_spell_id[spell_id] = crystal
+                    self._spell_crystals_by_spell_id[custody_key] = crystal
             else:
-                crystal = self._spell_crystals_by_spell_id.pop(spell_id, None)
+                crystal = self._spell_crystals_by_spell_id.pop(custody_key, None)
                 if crystal is not None:
-                    self._inactive_spell_crystals_by_spell_id[spell_id] = crystal
-            self._journal("spell_activity", spell_id)
+                    self._inactive_spell_crystals_by_spell_id[custody_key] = crystal
+            self._journal("spell_activity", custody_key)
 
-    def remove_spell_crystal(self, spell_id: str) -> None:
+    def remove_spell_crystal(self, custody_key: str) -> None:
         """
         Evict one spell's custody from the record entirely.
 
@@ -162210,11 +162946,13 @@ class PersistenceProfile(Cleanable):
             restore never over-builds a world that shed spells.
 
         Contract:
+            - Addresses one custody key, so under per-frame ids only the named
+              frame's copy leaves (0.2.8214).
             - Tolerates missing custody; journals "spell_removed" either way.
 
         Args:
-            spell_id:
-                The removed spell's SHA256 identity.
+            custody_key:
+                The removed crystal's record key (`SpellCrystal.custody_key`).
 
         Returns:
             None.
@@ -162229,10 +162967,10 @@ class PersistenceProfile(Cleanable):
                     self._spell_crystals_by_spell_id,
                     self._inactive_spell_crystals_by_spell_id,
             ):
-                crystal = location.pop(spell_id, None)
+                crystal = location.pop(custody_key, None)
                 if crystal is not None and not crystal.cleaned:
                     crystal.cleanup()
-            self._journal("spell_removed", spell_id)
+            self._journal("spell_removed", custody_key)
 
     def remove_conduit_crystal(self, conduit_id: str) -> None:
         """Retire one conduit record without evicting its shared Book or siblings.
@@ -162548,7 +163286,8 @@ class PersistenceProfile(Cleanable):
 
         Contract:
             - Caller holds `self._lock`.
-            - Displaces + cleans any prior crystal from both locations.
+            - Displaces + cleans any prior crystal under the same custody key
+              from both locations, and journals that key.
 
         Args:
             crystal:
@@ -162563,7 +163302,7 @@ class PersistenceProfile(Cleanable):
                 self._spell_crystals_by_spell_id,
                 self._inactive_spell_crystals_by_spell_id,
         ):
-            previous = location.pop(crystal.id, None)
+            previous = location.pop(crystal.custody_key, None)
             if previous is not None and not previous.cleaned:
                 previous.cleanup()
         target = (
@@ -162571,10 +163310,14 @@ class PersistenceProfile(Cleanable):
             if active
             else self._inactive_spell_crystals_by_spell_id
         )
-        target[crystal.id] = crystal
-        self._journal("spell_crystal", crystal.id)
+        target[crystal.custody_key] = crystal
+        self._journal("spell_crystal", crystal.custody_key)
 
-    def get_spell_crystal(self, spell_id: str) -> SpellCrystal:
+    def get_spell_crystal(
+            self,
+            spell_id: str,
+            frame_name: Optional[str] = None,
+    ) -> SpellCrystal:
         """
         Return the custody crystal recorded for one spell.
 
@@ -162584,9 +163327,21 @@ class PersistenceProfile(Cleanable):
             owner; replace-on-emit cleans displaced crystals, so holders
             must not retain long-lived references).
 
+        Contract (0.2.8214: custody is keyed per frame under per-frame ids):
+            - With `frame_name`, that frame's key ("<spell_id>@<frame_name>")
+              answers first.
+            - Then the exact key: a bare spell id (a process-wide record,
+              where the frame is not part of the key) or a full custody key.
+            - Without `frame_name`, a spell id recorded only under
+              frame-scoped keys answers with its lowest key, active copies
+              before inactive ones; with `frame_name`, another frame's copy
+              never answers.
+
         Args:
             spell_id:
-                The spell's SHA256 identity.
+                The spell's SHA256 identity, or a full custody key.
+            frame_name:
+                Optional frame whose copy is wanted.
 
         Returns:
             SpellCrystal:
@@ -162596,24 +163351,38 @@ class PersistenceProfile(Cleanable):
             RuntimeError:
                 If the profile has been cleaned.
             KeyError:
-                If no crystal is recorded under `spell_id`; the message
-                reports the recorded count so callers can self-correct.
+                If no crystal answers; the message reports the recorded count
+                so callers can self-correct.
         """
         self.check_cleaned()
         with self._lock:
-            crystal = self._spell_crystals_by_spell_id.get(spell_id)
-            if crystal is None:
-                crystal = self._inactive_spell_crystals_by_spell_id.get(spell_id)
-            if crystal is None:
-                raise KeyError(
-                    "No spell crystal recorded for spell_id {0!r} in "
-                    "profile {1!r} ({2} crystals recorded).".format(
-                        spell_id,
-                        self._profile_name,
-                        len(self._spell_crystals_by_spell_id),
-                    )
+            keys = [spell_id]
+            if frame_name is not None:
+                keys.insert(0, SpellCrystal.compose_custody_key(spell_id, frame_name))
+            for key in keys:
+                crystal = self._spell_crystals_by_spell_id.get(key)
+                if crystal is None:
+                    crystal = self._inactive_spell_crystals_by_spell_id.get(key)
+                if crystal is not None:
+                    return crystal
+            if frame_name is None:
+                prefix = spell_id + "@"
+                for location in (
+                        self._spell_crystals_by_spell_id,
+                        self._inactive_spell_crystals_by_spell_id,
+                ):
+                    matches = [key for key in location if key.startswith(prefix)]
+                    if matches:
+                        return location[min(matches)]
+            raise KeyError(
+                "No spell crystal recorded for spell_id {0!r}{1} in "
+                "profile {2!r} ({3} crystals recorded).".format(
+                    spell_id,
+                    "" if frame_name is None else " in frame {0!r}".format(frame_name),
+                    self._profile_name,
+                    len(self._spell_crystals_by_spell_id),
                 )
-            return crystal
+            )
 
     def describe_spell_crystals(self) -> Dict[str, Dict[str, object]]:
         """
@@ -162632,7 +163401,8 @@ class PersistenceProfile(Cleanable):
 
         Returns:
             Dict[str, Dict[str, object]]:
-                spell_id -> crystal describe() payload + custody_state.
+                custody key (the spell id, or "<spell_id>@<frame>" under
+                per-frame ids) -> crystal describe() payload + custody_state.
 
         Raises:
             RuntimeError: If the profile has been cleaned.
@@ -162670,6 +163440,9 @@ class PersistenceProfile(Cleanable):
             - Members missing custody report under "members_without_
               custody" instead of raising (shortfall honesty; the runner
               refuses those members at graft time).
+            - Each member's custody is the copy recorded for the index's own
+              Book: under per-frame ids another frame's Book may hold the same
+              spell id (0.2.8214). The members map stays keyed by spell id.
 
         Args:
             index_id:
@@ -162704,13 +163477,9 @@ class PersistenceProfile(Cleanable):
             members: Dict[str, Dict[str, object]] = {}
             missing: List[str] = []
             for spell_id in list(index_payload.get("member_spell_ids", [])):
-                crystal = self._spell_crystals_by_spell_id.get(spell_id)
-                custody_state = "active"
-                if crystal is None:
-                    crystal = self._inactive_spell_crystals_by_spell_id.get(
-                        spell_id
-                    )
-                    custody_state = "inactive"
+                crystal, custody_state = self._find_book_custody_locked(
+                    str(spell_id), index_payload.get("spellbook_id")
+                )
                 if crystal is None:
                     missing.append(str(spell_id))
                     continue
@@ -162725,6 +163494,51 @@ class PersistenceProfile(Cleanable):
                 "members": members,
                 "members_without_custody": missing,
             })
+
+    def _find_book_custody_locked(
+            self,
+            spell_id: str,
+            spellbook_id: object,
+    ) -> Tuple[Optional[SpellCrystal], str]:
+        """
+        Internal
+
+        Find the custody crystal one Book holds for a spell id, under the held lock.
+
+        Contract:
+            - Caller holds `self._lock`.
+            - Matches the crystal's spell id and parent edge, active location
+              first, so a spell id recorded in several frames (per-frame ids,
+              0.2.8214) answers the named Book's copy.
+            - Falls back to the exact key (a process-wide record keyed by the
+              spell id), whichever Book holds it.
+
+        Args:
+            spell_id:
+                The member's spell SHA.
+            spellbook_id:
+                The index's owning Book.
+
+        Returns:
+            Tuple[Optional[SpellCrystal], str]:
+                The crystal (None when absent) and its location, "active" or
+                "inactive".
+        """
+        for location_name, location in (
+                ("active", self._spell_crystals_by_spell_id),
+                ("inactive", self._inactive_spell_crystals_by_spell_id),
+        ):
+            for crystal in location.values():
+                if crystal.id == spell_id and crystal.spellbook_id == spellbook_id:
+                    return crystal, location_name
+        for location_name, location in (
+                ("active", self._spell_crystals_by_spell_id),
+                ("inactive", self._inactive_spell_crystals_by_spell_id),
+        ):
+            crystal = location.get(spell_id)
+            if crystal is not None:
+                return crystal, location_name
+        return None, "active"
 
     def describe_mutation_research_record(self) -> Optional[Dict[str, object]]:
         """
@@ -162948,8 +163762,11 @@ class PersistenceProfile(Cleanable):
                     }
                     continue
                 if kind == "spell_removed":
+                    # The key is the custody key; the crystal is gone, so the
+                    # spell id is read from the key (0.2.8214).
                     payloads.setdefault(kind, {})[key] = {
-                        "spell_id": key,
+                        "spell_id": SpellCrystal.spell_id_of_custody_key(key),
+                        "custody_key": key,
                         "removed": True,
                     }
                     continue
@@ -162957,7 +163774,8 @@ class PersistenceProfile(Cleanable):
                     # Activity transitions have no twin object; capture the
                     # CURRENT truth: which location holds custody now.
                     payloads.setdefault(kind, {})[key] = {
-                        "spell_id": key,
+                        "spell_id": SpellCrystal.spell_id_of_custody_key(key),
+                        "custody_key": key,
                         "active": key in self._spell_crystals_by_spell_id,
                         "custody_present": (
                             key in self._spell_crystals_by_spell_id
@@ -163348,7 +164166,7 @@ END FILE: src/melder/crystallizer/persistence/persistence_profile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/persistence/persistence_system.py
-CONTENT SHA256: fe1bf62bc39cf3331c96acc101098475cf3f44aaca3817d8651bffbe0803f83b
+CONTENT SHA256: 08d5e18ec20834eb10c0198b59a4e8eb6f6c80862e67a03d5d96619458b58c48
 SOURCE ENCODING: utf-8
 ================================================================================
 
@@ -163649,13 +164467,14 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         self.active_profile.record_spell_crystal(crystal, active=active)
 
-    def record_spell_activity(self, spell_id: str, active: bool) -> None:
+    def record_spell_activity(self, custody_key: str, active: bool) -> None:
         """
         Mirror one runtime park/promote flip into the ACTIVE profile.
 
         Args:
-            spell_id:
-                The spell whose activity flipped.
+            custody_key:
+                The flipped crystal's record key (the spell id, or
+                "<spell_id>@<frame>" under per-frame ids, 0.2.8214).
             active:
                 True = promoted; False = parked.
 
@@ -163667,15 +164486,16 @@ class PersistenceSystem(Cleanable):
                 If the subsystem has been cleaned.
         """
         self.check_cleaned()
-        self.active_profile.record_spell_activity(spell_id, active=active)
+        self.active_profile.record_spell_activity(custody_key, active=active)
 
-    def remove_spell_crystal(self, spell_id: str) -> None:
+    def remove_spell_crystal(self, custody_key: str) -> None:
         """
         Evict one spell's custody from the ACTIVE profile.
 
         Args:
-            spell_id:
-                The removed spell's SHA256 identity.
+            custody_key:
+                The removed crystal's record key (the spell id, or
+                "<spell_id>@<frame>" under per-frame ids, 0.2.8214).
 
         Returns:
             None.
@@ -163685,7 +164505,7 @@ class PersistenceSystem(Cleanable):
                 If the subsystem has been cleaned.
         """
         self.check_cleaned()
-        self.active_profile.remove_spell_crystal(spell_id)
+        self.active_profile.remove_spell_crystal(custody_key)
 
     def remove_conduit_crystal(self, conduit_id: str) -> None:
         """Retire one conduit twin from the active profile through its record owner.
@@ -163829,13 +164649,20 @@ class PersistenceSystem(Cleanable):
         self.check_cleaned()
         self.active_profile.record_mutation_research_state(state)
 
-    def get_spell_crystal(self, spell_id: str) -> SpellCrystal:
+    def get_spell_crystal(
+            self,
+            spell_id: str,
+            frame_name: Optional[str] = None,
+    ) -> SpellCrystal:
         """
         Return the ACTIVE profile's custody crystal for one spell.
 
         Args:
             spell_id:
-                The spell's SHA256 identity.
+                The spell's SHA256 identity, or a full custody key.
+            frame_name:
+                Optional frame whose copy is wanted (see
+                `PersistenceProfile.get_spell_crystal`, 0.2.8214).
 
         Returns:
             SpellCrystal:
@@ -163845,10 +164672,10 @@ class PersistenceSystem(Cleanable):
             RuntimeError:
                 If the subsystem has been cleaned.
             KeyError:
-                If the active profile records no crystal for `spell_id`.
+                If the active profile records no crystal that answers.
         """
         self.check_cleaned()
-        return self.active_profile.get_spell_crystal(spell_id)
+        return self.active_profile.get_spell_crystal(spell_id, frame_name=frame_name)
 
     def describe_mutation_research_record(self) -> Optional[Dict[str, object]]:
         """
@@ -163876,7 +164703,8 @@ class PersistenceSystem(Cleanable):
 
         Returns:
             Dict[str, Dict[str, object]]:
-                spell_id -> crystal describe() payload + "custody_state".
+                custody key (the spell id, or "<spell_id>@<frame>" under
+                per-frame ids) -> crystal describe() payload + "custody_state".
 
         Raises:
             RuntimeError:
@@ -164783,7 +165611,7 @@ END FILE: src/melder/crystallizer/persistence/persistence_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: src/melder/crystallizer/persistence/record_version.py
-CONTENT SHA256: 2cce1fe7baf8b3c0e3ed64743631427aaf8b1c753d20506d885e7627f581a5b8
+CONTENT SHA256: 50a7d1d968528160366153a1bac049e64750ef448efc3a3f3552e2ccc884c95a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -164863,7 +165691,9 @@ class RecordVersion:
 
     # Major 2 fenced non-resolvable capability. Major 3 additionally fences child
     # topology: older loaders would otherwise mistake a lesser row for a Book root.
-    CURRENT: ClassVar[str] = "3.0.0"
+    # Major 4 fences frame-scoped custody keys ("<spell_id>@<frame>", per-frame
+    # spell ids): an older loader would fold one frame's copy over another's.
+    CURRENT: ClassVar[str] = "4.0.0"
     KEY: ClassVar[str] = "record_version"
 
     @staticmethod

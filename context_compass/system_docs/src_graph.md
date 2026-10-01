@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `27c6fa4868ee51684a69af4eac54b2529e0e6ba5707ffa943f1d72c57a2ab19f`
+- source_sha256: `210bb61722c1cb217b1f7dc16ac745f126ea82a5190d8525371d15947f111b04`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `4e085ed4ded30a27025fee6d8f2b77782916ca08bceebddf0e2fe23609ae9973`
+- source_sha256: `2178f58c96be5a54efb7c342a47b954509684e1fa487121676cb1a018e31aebf`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `a7189630c2abb237c683bfab5ee0d069fdb5eea76c7d2a831f8347b92e8ac161`
+- source_sha256: `7d79c5d2c5fb621071e891c2d15b7382efa5d7d2b821743fef8fc264c543a146`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `6dbd756108c75315611d1781a7372268dbad2adc0846ec3e7a4d6dd2d091f850`
+- source_sha256: `baa76e08224019b403089ba11d9e81c37b8fc124f92cfd1bb35615ca808edbb5`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `0d91bddc8ada31d0e374b01b2f2498acb4eb5099e71a68dda15b2a2ce6b71187`
+- source_sha256: `0223a7cef98d33bea88bbc288e488164917ca479b16d93a9f2136ec52d8aa56b`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `989af62c6ad3ac2fbf1dc99f7e30a027c152ded04dd3778e602898fbadaa9458`
+- source_sha256: `22b891e09c6df971e2e666147d26967093151c2387c3492ff22bb25fc3df3f60`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `4590ce9bdf38c8ac7e06c14503521a199e69ebf2c9a71c21c55ed0e45b25180e`
+- source_sha256: `1216165fa5a6dbaa0be9c315eac545ebd05ede4dd0415bf16c443485d4b020a3`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `f9dfbc726fdbfea1076dfc9044e3e58505df059fb08c69d06fe6fc29f8cdd9fa`
+- source_sha256: `3ab90b115caa77a5565f0357c0ef1e6f33a19dd9a0e8d7d687c5400b8a170948`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `29aecc6a424bb359a58d481591e2649fdc7ea55833ec7d42ad43d3bb2daff957`
+- source_sha256: `f0371add58e27ada11928d544be938e05539a65abb2038dbf5fe0930d09d8b7e`
 - nodes: 1
 
 ### Nodes
@@ -606,7 +606,7 @@ descriptors and reassemble.
 
 ## src/melder/aether/aether.py
 
-- source_sha256: `a4410b3e10bf5d920b2fead0795f02eae2e673013f875f2f262833fe60944bfd`
+- source_sha256: `d9d4e77ea97558b16352686343b2db93f805ddf0546ca011c87ca2ab8d1143e5`
 - nodes: 2
 
 ### Nodes
@@ -636,9 +636,10 @@ descriptors and reassemble.
   - answers frame-scoped conduit lookups: root maps (*_root_*), the frame Cloud's named scopes (get_conduit_by_name) and every live conduit via root-ward lineage snapshots (get_conduit_by_id)
   - answers non-creating frame lookups (find_frame, get_frame, list_frame_names)
   - seals the spell-id regime at the first frame and refuses configure/activate of a configuration with a different process_wide_unique_spell_ids while frames exist
+  - reports the spell-id regime in force (process_wide_unique_spell_ids, lock-free): the sealed value once a frame exists, else the installed configuration's, else True
 - owns_state: `_aetheric_frames`, `_default_frame`, `_logger`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `acquire_load_authority`, `activate`, `activated`, `aetheric_mediator`, `attach_logger`, `cleanup`, `cleanup_aetheric_frames`, `configuration`, `configure`, `configured`, `count_root_conduits`, `create_configuration` (+23 more)
+- public methods: `acquire_load_authority`, `activate`, `activated`, `aetheric_mediator`, `attach_logger`, `cleanup`, `cleanup_aetheric_frames`, `configuration`, `configure`, `configured`, `count_root_conduits`, `create_configuration` (+24 more)
 
 ### Edges out
 
@@ -690,7 +691,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aether_configuration.py
 
-- source_sha256: `68f30e018636ed878d38fc73c8750b7d173301ca38d4c1f940d1627ccaa1d358`
+- source_sha256: `4eb3c8bd77df5421714ed145465c7cbef11c55ca7a65f9f2626c14bb05930d00`
 - nodes: 2
 
 ### Nodes
@@ -716,6 +717,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - validates, freezes, and activates the root configuration before Aether applies it
   - keeps root policy separate from frame-level AethericFrameConfiguration concerns
   - exposes a lock-guarded value snapshot of its properties (get_configuration_dictionary) for host-side policy comparison
+  - records process_wide_unique_spell_ids in the Aether root twin and reloads it in from_recorded_payload (reported missing when absent)
 - owns_state: `_id`, `_frozen`, `_activated`, `_properties`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `activate`, `activated`, `channel_logger_activation_enabled`, `channel_logger_resolver`, `cleanup`, `default_logger`, `emit_configured_twin_when_recording`, `finalize`, `freeze`, `from_recorded_payload`, `frozen`, `get_configuration_dictionary` (+12 more)
@@ -803,7 +805,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aether_utility_system.py
 
-- source_sha256: `b3e72d750ebb8b2d4a1ce8df252c1e9e0501e42a4b507899c76f8a4e92b7ac6f`
+- source_sha256: `9cb4d508b53896123560b264be380eb7a8394fc088ed85eccf0bee9d4802fea1`
 - nodes: 2
 
 ### Nodes
@@ -828,6 +830,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - stores the channel-logger resolver
   - stores the default logger fallback
   - resolves SafeLogger-compatible providers for runtime objects
+  - re-emits the Aether root twin from live logger truth plus the Aether's regime in force, read only from an initialized, uncleaned Aether
 - owns_state: `_channel_logger_resolver`, `_default_logger`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `cleanup`, `clear_channel_logger_resolver`, `clear_default_logger`, `emit_root_twin_when_recording`, `has_channel_logger_resolver`, `has_default_logger`, `is_channel_logger_activation_enabled`, `register_channel_logger_resolver`, `register_default_logger`, `resolve_channel_logger`, `resolve_safe_logger`, `set_channel_logger_activation_enabled`
@@ -838,11 +841,12 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 | --- | --- | --- | --- | --- | --- |
 | `melder.aether.aether_utility_system.AetherUtilitySystem` | specializes | `melder.utilities.general_base.cleanable.Cleanable` | - | - | derived |
 
-### Edge candidates (5, unconfirmed)
+### Edge candidates (6, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
 - `melder.aether.aether_utility_system.AetherUtilitySystem` creates `RLock`
+- `melder.aether.aether_utility_system.AetherUtilitySystem` creates `Aether`
 - `melder.aether.aether_utility_system.AetherUtilitySystem` creates `SafeLogger`
 - `melder.aether.aether_utility_system.AetherUtilitySystem` creates `TypeError`
 - `melder.aether.aether_utility_system.AetherUtilitySystem` creates `Crystallizer`
@@ -879,6 +883,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - owns the frame-local dev-ops information registry used by reporting and transaction topology
   - bridges normal-root registration into Cloud's shared name collision authority
   - logs a conduit that raises during frame teardown through the Aether logger and cleans the rest
+  - reports the frame-wide shared rich Spellbook configuration (shared_spellbook_configuration) only while its posture shares one; None otherwise or before a Book binds one
 - owns_state: `_conduits`, `_spell_registry`, `_selected_spell_registry`, `_spell_system_states`, `_dev_ops_manager`, `_devops_information_registry`, `_configuration`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `bind_frame_configuration`, `claim_lookup`, `cleanup`, `conduit_cloud`, `dev_ops_manager`, `devops_information_registry`, `find_conduit_id_for_spell`, `find_index_for_spell`, `frame_configuration`, `freeze_frame_configuration`, `get_lookup`, `get_lookup_sig_by_spell_id` (+17 more)
@@ -947,6 +952,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - stores frame-level system state, ai-native, and rift posture
   - carries provenance for the spellbook that first derived the frame posture
+  - reports whether the posture is frozen, the world's settlement point, under its lock without changing it (frozen)
 - owns_state: `_origin_spellbook_id`, `_system_state`, `_ai_native_enabled`, `_rift_enabled`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `ai_native_enabled`, `automatic_defaults`, `cleanup`, `describe_posture`, `disable_all_transactions_after_conjure`, `disable_bind`, `disable_conduit_cluster`, `disable_contract_mutation`, `disable_linking`, `disable_mutations`, `disable_transfer_of_ownership`, `dynamic_defaults` (+31 more)
@@ -4449,6 +4455,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - creates a lesser for a `with` block through enter_lesser_conduit, which returns create_lesser_conduit's result unchanged
   - returns a lesser to its pool descendants first, then SpellSpaces, then its own store, and raises the collected disposal failures after the shell is pooled; soft cleanup of a pooled lesser is a no-op
   - finishes permanent teardown when a disposal method fails and then raises the collected disposal groups
+  - returns the Spellbook it resolves through, borrowed (spellbook): the conjuring Book for a root, the root's Book for a lesser, the new Book after upgrade_to_normal
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+66 more)
@@ -5467,7 +5474,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py
 
-- source_sha256: `32b4e1de55fd9275d805ff54485cad546bc942ac6a8dfa06c98c1a2072046444`
+- source_sha256: `69550981be88a8a862246385554d00055e5131697868953837d5494b79cd7e0a`
 - nodes: 2
 
 ### Nodes
@@ -5514,7 +5521,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `0c3239b0476b96a19741c13eb552da9d9f121ec5c68d793ee8ee5a424719b6f8`
+- source_sha256: `cd91a6e97d687b5ee4aded8c06dffa69aea9e2ad9a9f23f3d44fe7572e87d777`
 - nodes: 2
 
 ### Nodes
@@ -5553,6 +5560,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - runs a dynamic spell's structural, resolution and deferred rebuilds inside a CreationContextRebuild window entered before the spell lock (_rebuild_window)
   - executes a dynamic meld under one spell-index ticket held from before the context read until the executor returns (_execute_admitted)
   - keeps the fast-door registry of (spell, captured context, door epoch, existing-object flag) entries, filled only after a successful full-lane meld; its four readers share one guard ladder
+  - routes a spell flagged resolution_required through the deferred lane: phases 8-11 for an existing creation or its current Phase 5 root, otherwise the full target pass 5-11 followed by a resolution-validity check for the conduit (_requires_own_target_pass, _raise_unless_resolution_valid)
 - owns_state: `_input_resolution_cache`, `_change_control_manager_by_frame`, `_spell_compiler_system`, `_fast_meld_doors`, `_meld_hooks`, `_baseline_meld_hooks`, `_meld_hooks_modified`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `has_live_creation`, `hooks_modified`, `meld`, `meld_existing_spell`, `purge`, `register_meld_hooks`, `set_meld_hooks`
@@ -6049,6 +6057,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - supplies immutable initial Bind callbacks for independently adjustable Book registries
   - freezes hook seeds and records effective callback presence without serializing callables
   - accepts origin Bind stage markers at freeze and re-freeze and preserves them in complete Book-twin emission
+  - reports its target frame (aether_frame, fixed at construction) and its freeze state (frozen, read under its lock) without changing either
 - owns_state: `_aether_frame`, `_properties`, `available_properties`, `_idempotent_keys`, `_conduit_hooks`, `_meld_hooks`, `_bind_hooks`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `add_disposal_methods`, `add_hook`, `add_hooks`, `aether_frame`, `build`, `cleanup`, `clear_bind_hooks`, `clear_properties`, `finalize`, `freeze`, `frozen` (+20 more)
@@ -15324,7 +15333,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `3f52b65a9f1dd1e2174c9ab16a5c12f8c35b84ff766e8de2bed844ddd50ff6a4`
+- source_sha256: `6a63e51ec649b05f474fa7b887ddfd2f0e950bc01d78fa34e0246c2b494c5a46`
 - nodes: 2
 
 ### Nodes
@@ -15426,7 +15435,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook_creation_system.py
 
-- source_sha256: `e6b809f366399aa2bb9532e66c8e449c98d99375198b6b9f352189e00a9ff1e0`
+- source_sha256: `9befa3b4a6d7c11378d45716132abf3dd2ff230ba514a9571dc938f2ab95d506`
 - nodes: 2
 
 ### Nodes
@@ -15454,9 +15463,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - on a non-full-hit conjure, rebuilds the conduit cache bundle from that compile: removes every payload and re-stages every live payload-eligible spell in sorted id order, so a full hit never hydrates a plan naming a spell id outside the live pool
   - hands the conduit resolution diagnostics to SpellbookValidationError at the conjure gate and the local-rerun gate, so a conduit-verdict refusal states its reasons (the phase artifacts are already cleaned)
   - publishes cached creation contexts from manifest packages only; any other payload is a cache miss
+  - after a successful target-local pass, flags each owned, resolvable, non-existing-creation dependency in its scope that has no phase-11 plan, no published context and no flag yet with resolution_required and a door-epoch bump, under that dependency's spell lock (flag_dependencies_without_own_plan)
 - owns_state: `_spellbook`, `_policy`, `_dynamic`, `_name`, `_conduit_logger`, `_phase_scheduler_cls`, `_validation_warnings`, `_lock`
 - phases: `runtime`, `cleanup`
-- public methods: `check_system_state`, `cleanup`, `cleanup_phase_artifacts_after_resolution`, `conjure`, `define_conduit_into_spells`, `fire_conjure_hooks`, `get_conjure_hook_map`, `phase_change_control_factory`, `phase_execution_plan_factory`, `phase_injection_plan_factory`, `phase_local_frame_factory`, `phase_occurrence_plan_factory` (+15 more)
+- public methods: `check_system_state`, `cleanup`, `cleanup_phase_artifacts_after_resolution`, `conjure`, `define_conduit_into_spells`, `fire_conjure_hooks`, `flag_dependencies_without_own_plan`, `get_conjure_hook_map`, `phase_change_control_factory`, `phase_execution_plan_factory`, `phase_injection_plan_factory`, `phase_local_frame_factory` (+16 more)
 
 ### Edges out
 
@@ -16231,7 +16241,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_analysis/impact_engine.py
 
-- source_sha256: `735cabd78e81b0cdcaf4a27f72de9d882f414cbe5e976e7f7cd17f152740d34a`
+- source_sha256: `45cbad030696cfba125d108f0c554484f3ca1febfecb59ef700334a95a0bff95`
 - nodes: 2
 
 ### Nodes
@@ -16251,6 +16261,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - indexes module->spells and module->importers from detached custody payloads
   - answers blast_radius_of_module/spell and describe_source_drift
+  - answers a bare spell id through its lowest frame-scoped custody key (by payload id)
 - owns_state: `_spells_by_module`, `_importers_by_module`, `_fingerprints_by_module`
 - phases: `runtime`
 - public methods: `blast_radius_of_module`, `blast_radius_of_spell`, `cleanup`, `describe`, `describe_source_drift`, `spells_touching_module`
@@ -17177,7 +17188,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/load_admission.py
 
-- source_sha256: `d2fe9bae071dedd0f8780e7a641ec0128f9f74c9e323a6192ae00a3345a0e1b7`
+- source_sha256: `31d105c2feb707d96ebbb299be680dea0c8d60afb1cd6a1f1cdee2c252ddbddf`
 - nodes: 2
 
 ### Nodes
@@ -17196,7 +17207,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `LoadAdmission` (class)
 
 - id: `melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission`
-- defined at: `src/melder/crystallizer/crystal_loader_system/load_admission.py:35`
+- defined at: `src/melder/crystallizer/crystal_loader_system/load_admission.py:36`
 - extends: `Cleanable`
 - role: Small admission plane for loads (owner design; renamed from BootMediator 2026-07-11): plan -> gated engine -> scope adjudication; no fold duplication.
 - responsibilities:
@@ -17204,6 +17215,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - plan_formation_load mints the canonical-kind-order synthetic window (moved from the ledger)
   - execute_plan runs the engine with refuse_on_blockers=True always
   - adjudicates conduit/frame scopes (frame_posture warnings -> expected_for_scope in the additive admission view)
+  - retargets spell custody: rewrites frame_name and re-keys frame-scoped custody keys for the target frame
 - phases: `runtime`
 - public methods: `cleanup`, `execute_plan`, `plan_checkpoint_load`, `plan_formation_load`
 
@@ -17279,7 +17291,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystal_loader_system/restore_engine.py
 
-- source_sha256: `814394093e9a606ecba6f18a398422545808bf2069a3f51cb5e6c06f4a0c65eb`
+- source_sha256: `6a15023d47a9570bb7854cdb55eedd16ba1719931672ef85216ded59ee19a33c`
 - nodes: 3
 
 ### Nodes
@@ -17299,7 +17311,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `RestoreReport` (class)
 
 - id: `melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport`
-- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:27`
+- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:28`
 - extends: `Cleanable`
 - role: Detached outcome record for one restore run, built to be judged honestly rather than trusted.
 - responsibilities:
@@ -17313,7 +17325,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `RestoreEngine` (class)
 
 - id: `melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine`
-- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:382`
+- defined at: `src/melder/crystallizer/crystal_loader_system/restore_engine.py:383`
 - extends: `Cleanable`
 - role: Single-use all-or-nothing world restorer: folds a checkpoint chain and replays it through PUBLIC runtime verbs.
 - responsibilities:
@@ -17327,6 +17339,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - folds surviving named carriers before expanding and validating supporting ancestry
   - selects each Book root explicitly and replays parent-ordered lessers in the shared per-Book unit
   - deactivates an already-active live Nexus (as it does MutationResearch) before activating the reloaded Nexus configuration
+  - stage 1 installs the recorded spell-id regime, files a shortfall when a fixed live regime differs, and refuses a record binding one spell id in two frames under process-wide ids
+  - stage 6 keys bind order, member-index lookup and recorded-to-live spell translation per Book
 - owns_state: `folded stores`, `built_stack`, `report`
 - phases: `runtime`
 - public methods: `cleanup`, `restore`
@@ -17397,7 +17411,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystallizer.py
 
-- source_sha256: `e4eee6727a3a6361862e8d200639c523532106773a5b768a43016619d44c9993`
+- source_sha256: `a4640f1240893ffe819e7474d1f4aba6062a55010fd42aa5bd5f33b46edc5c0b`
 - nodes: 2
 
 ### Nodes
@@ -17423,6 +17437,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - builds SpellCrystal manifests from live spells under installed policy
   - anchors crystallizer policy above retained and live module-world surfaces
   - facades conduit-only structural retirement without evicting a shared Book
+  - keys spell crystals per frame under per-frame spell ids; emit_spell_removed, emit_spell_activity and get_spell_crystal address one custody key through frame_name
 - owns_state: `_configuration`, `_configured`, `_activated`, `_aether`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `activate`, `activated`, `active_profile_name`, `analyze_checkpoint`, `analyze_formation`, `analyze_impact`, `apply_external_retention`, `capture_index_graft`, `checkpoint_replay_data`, `cleanup`, `clear_profile`, `configuration` (+54 more)
@@ -17833,7 +17848,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/crystals/spell_crystal.py
 
-- source_sha256: `24d389a39c7f50d6f08e7b1dd77bc12ba9916d319e9be4b008a18fbce88c3e21`
+- source_sha256: `d81740ba89cc6efda871e8c5f0f8b5d9a1e1e9197dc2e438a8b87a848756e9e3`
 - nodes: 2
 
 ### Nodes
@@ -17860,9 +17875,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - delegates the module-world walk to a single-use CrystalAnalyzer (V3 carrier law)
   - carries the returned CrystalAnalysisResult and exposes it via delegating properties
   - captures native per-version resolution capability as a detached replay value
-- owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`
+  - keys its record entry: custody_key is the spell id, or "<spell_id>@<frame>" when built with per_frame_custody (the frame read from spell.aetheric_frame)
+- owns_state: `_analysis (one carried CrystalAnalysisResult)`, `_disposal_method_names (ordered recorded values)`, `_frame_name, _custody_key (the record key)`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `binding_name`, `cleanup`, `describe`, `disposal_method_names`, `existence_name`, `id`, `module_targets`, `module_to_direct_dependencies`, `module_to_extension`, `module_to_kind`, `module_to_path`, `path_targets` (+20 more)
+- public methods: `binding_name`, `cleanup`, `compose_custody_key`, `custody_key`, `describe`, `disposal_method_names`, `existence_name`, `frame_name`, `id`, `module_targets`, `module_to_direct_dependencies`, `module_to_extension` (+24 more)
 
 ### Edges out
 
@@ -18026,7 +18042,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/persistence_profile.py
 
-- source_sha256: `f8e4573b340f29312d7dfef1e0498f1d232715230c08205222c72f2749cc762c`
+- source_sha256: `0b8677d3b38e287be539f6b89ef19f6433cf17706486d26459c5a479c443ac6d`
 - nodes: 2
 
 ### Nodes
@@ -18053,6 +18069,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - captures delta windows (capture_segment_since) with custody_location annotation
   - journals conduit-only tombstones and preserves pooled-ID chronology in captures
   - selects formation subtrees with required named/root ancestry and embedded unnamed support
+  - keys spell custody by custody key (the spell id, or "<spell_id>@<frame>" under per-frame spell ids); lookups, activity, removal and index grafts address one frame's copy
 - owns_state: `twin stores`, `emission_log`, `last_checkpoint_sequence`
 - phases: `runtime`
 - public methods: `capture_formation_slice`, `capture_index_graft`, `capture_segment_since`, `cleanup`, `clear`, `describe`, `describe_mutation_research_record`, `describe_spell_crystals`, `get_spell_crystal`, `last_checkpoint_sequence`, `mark_checkpoint`, `profile_name` (+12 more)
@@ -18081,7 +18098,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/persistence_system.py
 
-- source_sha256: `12a9df0e25520cf679191689a450ecee0a7983268e82eb0e2b1082a35d56b928`
+- source_sha256: `3407dd4765d8bdd494f7fbad20c526249d267485db406bea104372bd6cc9cad8`
 - nodes: 2
 
 ### Nodes
@@ -18110,6 +18127,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - constructs the RestoreEngine for load_checkpoint (chain detached under lock, engine runs outside it)
   - inserts cached items insert-if-absent (cache and external-manager import sinks)
   - routes conduit-only removal to the active profile without loader dependencies
+  - passes custody keys and frame-aware custody lookups through to the active profile
 - owns_state: `profiles_by_name`, `checkpoint_crystals_by_id`, `crystallizer_cache`, `max_persistence_crystals`
 - phases: `runtime`
 - public methods: `active_profile`, `active_profile_name`, `cached_item_form`, `cached_item_forms`, `capture_formation_record`, `capture_index_graft`, `checkpoint_replay_data`, `cleanup`, `clear_profile`, `create_checkpoint`, `create_profile`, `default_profile` (+27 more)
@@ -18143,7 +18161,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/crystallizer/persistence/record_version.py
 
-- source_sha256: `2ac527bc26f088098da8161abfd69196085656fc0b4ec524a9252f53f7585b4c`
+- source_sha256: `3b0da78111efd9788dd04ca6ea717dc9d303684a2175c4e951a0f913b946dd1d`
 - nodes: 2
 
 ### Nodes
@@ -18163,12 +18181,13 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 - id: `melder.crystallizer.persistence.record_version.RecordVersion`
 - defined at: `src/melder/crystallizer/persistence/record_version.py:17`
-- role: Static record-schema version authority (stamp 2.0.0; readers gate on MAJOR; absent stamps read 0.0.0).
+- role: Static record-schema version authority (stamp 4.0.0; readers gate on MAJOR; absent stamps read 0.0.0).
 - responsibilities:
   - stamps cached items, formation records, and emission-tap envelopes
   - refuses newer-major payloads at the read gates
   - uses record major 2 so older readers cannot silently ignore non-resolvable policy
   - uses major 3 to fence older readers from named lesser child topology
+  - uses major 4 to fence older readers from frame-scoped custody keys (per-frame spell ids)
 - phases: `runtime`
 - public methods: `check_readable`, `of`, `parse`, `stamp`
 

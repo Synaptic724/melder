@@ -3806,9 +3806,11 @@ class Spellbook(Cleanable):
         # resolution_required=True as a side effect; bind-parity routing below sets
         # it back to False so meld's validation-required lane (the one that runs
         # the full 5-7/8-11 target pass) owns the recompile, exactly as it does for
-        # a freshly bound spell. resolution_required=True would instead route the
-        # deferred 8-11 lane, which cannot compile a member with no phase-5
-        # blueprint.
+        # a freshly bound spell. (Before 0.2.8215 resolution_required=True would
+        # have routed the deferred 8-11 lane, which could not compile a member
+        # with no phase-5 blueprint; that lane now runs the full target pass for
+        # such a spell, but the verdict-driven validation lane stays the owner of
+        # this recompile.)
         spell.invalidate_spell(change_reason=change_reason)
         spell.resolution_required = False
         # Phases 1-4 for the promoted member now run at the NOTCH transaction
@@ -5389,7 +5391,11 @@ class Spellbook(Cleanable):
                     )
                     # Compilation is always full/eager (AOT/JIT knob removed);
                     # post-conjure spells get compiled via the gated revalidation
-                    # paths, not via a deferred-resolution flag.
+                    # paths, not via a deferred-resolution flag. One exception
+                    # (0.2.8215): a spell first compiled only inside a consumer's
+                    # target-local pass is flagged resolution_required there
+                    # (SpellbookCreationSystem.flag_dependencies_without_own_plan),
+                    # and its first direct meld runs its own full target pass.
                     new_spell.resolution_required = False
                     if new_spell.user_created_object is not None:
                         try:

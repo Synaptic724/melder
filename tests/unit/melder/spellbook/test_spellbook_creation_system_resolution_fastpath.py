@@ -95,6 +95,8 @@ class _StubSpellbook:
             - Starts with zero check_cleaned invocations.
             - Exposes minimal configuration/logging surfaces required by the
               tested orchestration paths.
+            - Exposes an empty visible spell pool: a successful target-local
+              pass reads it to flag dependencies without a plan of their own.
         Returns:
             None.
         """
@@ -102,6 +104,7 @@ class _StubSpellbook:
         self._configuration = _StubConfiguration()
         self._logger = _StubLogger()
         self._spells: Dict[Any, Any] = {}
+        self._spell_id_pool: Dict[str, Any] = {}
 
     def check_cleaned(self) -> None:
         """

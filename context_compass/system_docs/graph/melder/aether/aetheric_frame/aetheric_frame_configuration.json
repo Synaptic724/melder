@@ -78,7 +78,8 @@
    "role": "Narrow frame-level runtime posture object for AR-facing behavior.",
    "responsibilities": [
     "stores frame-level system state, ai-native, and rift posture",
-    "carries provenance for the spellbook that first derived the frame posture"
+    "carries provenance for the spellbook that first derived the frame posture",
+    "reports whether the posture is frozen, the world's settlement point, under its lock without changing it (frozen)"
    ],
    "owns_state": [
     "_origin_spellbook_id",

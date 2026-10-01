@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8212"
+BUILT_FOR_VERSION = "0.2.8215"
 NODE_COUNT = 1211
 EDGE_COUNT = 1394
 WHY_COUNT = 939
@@ -791,12 +791,12 @@ NODES = {
     'melder.crystallizer.crystal_loader_system.graft_runner': ('src/melder/crystallizer/crystal_loader_system/graft_runner.py', 'graft_runner', 'module', 1, False),
     'melder.crystallizer.crystal_loader_system.graft_runner.GraftRunner': ('src/melder/crystallizer/crystal_loader_system/graft_runner.py', 'GraftRunner', 'class', 31, False),
     'melder.crystallizer.crystal_loader_system.load_admission': ('src/melder/crystallizer/crystal_loader_system/load_admission.py', 'load_admission', 'module', 1, False),
-    'melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission': ('src/melder/crystallizer/crystal_loader_system/load_admission.py', 'LoadAdmission', 'class', 35, False),
+    'melder.crystallizer.crystal_loader_system.load_admission.LoadAdmission': ('src/melder/crystallizer/crystal_loader_system/load_admission.py', 'LoadAdmission', 'class', 36, False),
     'melder.crystallizer.crystal_loader_system.load_plan': ('src/melder/crystallizer/crystal_loader_system/load_plan.py', 'load_plan', 'module', 1, False),
     'melder.crystallizer.crystal_loader_system.load_plan.LoadPlan': ('src/melder/crystallizer/crystal_loader_system/load_plan.py', 'LoadPlan', 'class', 17, False),
     'melder.crystallizer.crystal_loader_system.restore_engine': ('src/melder/crystallizer/crystal_loader_system/restore_engine.py', 'restore_engine', 'module', 1, False),
-    'melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine': ('src/melder/crystallizer/crystal_loader_system/restore_engine.py', 'RestoreEngine', 'class', 382, False),
-    'melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport': ('src/melder/crystallizer/crystal_loader_system/restore_engine.py', 'RestoreReport', 'class', 27, False),
+    'melder.crystallizer.crystal_loader_system.restore_engine.RestoreEngine': ('src/melder/crystallizer/crystal_loader_system/restore_engine.py', 'RestoreEngine', 'class', 383, False),
+    'melder.crystallizer.crystal_loader_system.restore_engine.RestoreReport': ('src/melder/crystallizer/crystal_loader_system/restore_engine.py', 'RestoreReport', 'class', 28, False),
     'melder.crystallizer.crystal_loader_system.user_world_rebuild': ('src/melder/crystallizer/crystal_loader_system/user_world_rebuild.py', 'user_world_rebuild', 'module', 1, False),
     'melder.crystallizer.crystallizer': ('src/melder/crystallizer/crystallizer.py', 'crystallizer', 'module', 1, False),
     'melder.crystallizer.crystallizer.Crystallizer': ('src/melder/crystallizer/crystallizer.py', 'Crystallizer', 'class', 44, False),

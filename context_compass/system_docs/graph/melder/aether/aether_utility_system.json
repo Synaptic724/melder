@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aether_utility_system.py",
- "source_sha256": "b3e72d750ebb8b2d4a1ce8df252c1e9e0501e42a4b507899c76f8a4e92b7ac6f",
+ "source_sha256": "9cb4d508b53896123560b264be380eb7a8394fc088ed85eccf0bee9d4802fea1",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aether_utility_system": {
@@ -48,16 +48,17 @@
     "set_channel_logger_activation_enabled"
    ],
    "shape": {
-    "method_count": 13,
+    "method_count": 14,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c819f2b1c6001696bb6ec6101dc0cbe87cf537a224be90532e3d93ed7dba91df",
+   "span_sha256": "feed635640bc3a129070e70f601ba31b0f29081e0d4757f95771d1dae05632ae",
    "role": "Process-wide utility and logger provider host.",
    "responsibilities": [
     "stores the channel-logger resolver",
     "stores the default logger fallback",
-    "resolves SafeLogger-compatible providers for runtime objects"
+    "resolves SafeLogger-compatible providers for runtime objects",
+    "re-emits the Aether root twin from live logger truth plus the Aether's regime in force, read only from an initialized, uncleaned Aether"
    ],
    "owns_state": [
     "_channel_logger_resolver",
@@ -83,6 +84,12 @@
   {
    "from": "melder.aether.aether_utility_system.AetherUtilitySystem",
    "to_label": "RLock",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.aether_utility_system.AetherUtilitySystem",
+   "to_label": "Aether",
    "relation": "creates",
    "confidence": "candidate"
   },
@@ -117,11 +124,13 @@
   "Iterable": "collections.abc.Iterable",
   "Any": "typing.Any",
   "ClassVar": "typing.ClassVar",
+  "Optional": "typing.Optional",
   "Cleanable": "melder.utilities.general_base.cleanable.Cleanable",
   "IChannelLogger": "melder.utilities.interfaces.ichannellogger.IChannelLogger",
   "SafeLogger": "melder.utilities.logger.safe_logger.SafeLogger",
   "Crystallizer": "melder.crystallizer.crystallizer.Crystallizer",
-  "AetherCrystal": "melder.crystallizer.crystals.aether_crystal.AetherCrystal"
+  "AetherCrystal": "melder.crystallizer.crystals.aether_crystal.AetherCrystal",
+  "Aether": "melder.aether.aether.Aether"
  },
  "collapse_candidate": {
   "module": "melder.aether.aether_utility_system",

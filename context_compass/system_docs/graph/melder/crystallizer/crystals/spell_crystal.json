@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystals/spell_crystal.py",
- "source_sha256": "24d389a39c7f50d6f08e7b1dd77bc12ba9916d319e9be4b008a18fbce88c3e21",
+ "source_sha256": "d81740ba89cc6efda871e8c5f0f8b5d9a1e1e9197dc2e438a8b87a848756e9e3",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystals.spell_crystal": {
@@ -34,9 +34,12 @@
    "public_methods": [
     "binding_name",
     "cleanup",
+    "compose_custody_key",
+    "custody_key",
     "describe",
     "disposal_method_names",
     "existence_name",
+    "frame_name",
     "id",
     "module_targets",
     "module_to_direct_dependencies",
@@ -56,6 +59,7 @@
     "root_target_qualname",
     "site_package_root_paths",
     "site_package_targets",
+    "spell_id_of_custody_key",
     "spell_name",
     "spellbook_id",
     "spellframe_name",
@@ -66,29 +70,31 @@
     "walk_errors"
    ],
    "shape": {
-    "method_count": 34,
+    "method_count": 38,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "10f728167dc8490593bc4903213eb867936ac9d47781616c096a4864eab143a9",
+   "span_sha256": "da5bf2a1da8c596681e74ce5184d71bc94d600d7d8a65d73bdcf967c55b03902",
    "role": "Spell custody twin + module-dependency manifest; carries the full bind signature and, for synthetic roots, the rebuildable module SOURCES (M3); opt-in user-source TEXT rides beside them (S2).",
    "responsibilities": [
     "captures identity and the full bind signature for one live spell target",
     "captures detached disposal names in resolved execution order without sorting or reapplying book policy",
     "delegates the module-world walk to a single-use CrystalAnalyzer (V3 carrier law)",
     "carries the returned CrystalAnalysisResult and exposes it via delegating properties",
-    "captures native per-version resolution capability as a detached replay value"
+    "captures native per-version resolution capability as a detached replay value",
+    "keys its record entry: custody_key is the spell id, or \"<spell_id>@<frame>\" when built with per_frame_custody (the frame read from spell.aetheric_frame)"
    ],
    "owns_state": [
     "_analysis (one carried CrystalAnalysisResult)",
-    "_disposal_method_names (ordered recorded values)"
+    "_disposal_method_names (ordered recorded values)",
+    "_frame_name, _custody_key (the record key)"
    ],
    "phases": [
     "init",
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "1bd984746f212d8a43d10cfb0d777460dda8bb8cce42d82d202f4ccb7b07137a"
+   "semantics_authored_against": "da5bf2a1da8c596681e74ce5184d71bc94d600d7d8a65d73bdcf967c55b03902"
   }
  },
  "edges_out": [

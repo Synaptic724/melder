@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/crystallizer.py",
- "source_sha256": "e4eee6727a3a6361862e8d200639c523532106773a5b768a43016619d44c9993",
+ "source_sha256": "a4640f1240893ffe819e7474d1f4aba6062a55010fd42aa5bd5f33b46edc5c0b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.crystallizer": {
@@ -102,17 +102,18 @@
     "verify_checkpoint_chain"
    ],
    "shape": {
-    "method_count": 71,
+    "method_count": 72,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "c8030d1a739966e1a02bb6e7ba3af75a30e091bf28fef488ff0facce6bbc94cf",
+   "span_sha256": "b8ac3b89c248f6655eb892e798a82c5e1e2f4884eb54d6470a2237449136e972",
    "role": "Hosted singleton crystallizer root.",
    "responsibilities": [
     "owns installed crystallizer configuration and activation state",
     "builds SpellCrystal manifests from live spells under installed policy",
     "anchors crystallizer policy above retained and live module-world surfaces",
-    "facades conduit-only structural retirement without evicting a shared Book"
+    "facades conduit-only structural retirement without evicting a shared Book",
+    "keys spell crystals per frame under per-frame spell ids; emit_spell_removed, emit_spell_activity and get_spell_crystal address one custody key through frame_name"
    ],
    "owns_state": [
     "_configuration",
@@ -238,6 +239,7 @@
  "imports": {
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Any": "typing.Any",
+  "Optional": "typing.Optional",
   "AssetManagementSystem": "melder.crystallizer.asset_management.asset_management_system.AssetManagementSystem",
   "ExternalPersistenceManagerConfiguration": "melder.crystallizer.asset_management.external_persistence_manager_configuration.ExternalPersistenceManagerConfiguration",
   "CrystallizerConfiguration": "melder.crystallizer.configuration.crystallizer_configuration.CrystallizerConfiguration",

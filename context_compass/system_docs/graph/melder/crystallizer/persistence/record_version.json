@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/crystallizer/persistence/record_version.py",
- "source_sha256": "2ac527bc26f088098da8161abfd69196085656fc0b4ec524a9252f53f7585b4c",
+ "source_sha256": "3b0da78111efd9788dd04ca6ea717dc9d303684a2175c4e951a0f913b946dd1d",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.crystallizer.persistence.record_version": {
@@ -41,18 +41,19 @@
     "has_bases": false,
     "trivial": false
    },
-   "span_sha256": "0363aff7c29cbc59b0bf644e623bb6dfb9091a95f376d396579f53649f23d83b",
-   "role": "Static record-schema version authority (stamp 2.0.0; readers gate on MAJOR; absent stamps read 0.0.0).",
+   "span_sha256": "413d1bf3bb971e6334c0199c60a58c5ad6d12f16e679b2d2beebc014c591acb2",
+   "role": "Static record-schema version authority (stamp 4.0.0; readers gate on MAJOR; absent stamps read 0.0.0).",
    "responsibilities": [
     "stamps cached items, formation records, and emission-tap envelopes",
     "refuses newer-major payloads at the read gates",
     "uses record major 2 so older readers cannot silently ignore non-resolvable policy",
-    "uses major 3 to fence older readers from named lesser child topology"
+    "uses major 3 to fence older readers from named lesser child topology",
+    "uses major 4 to fence older readers from frame-scoped custody keys (per-frame spell ids)"
    ],
    "phases": [
     "runtime"
    ],
-   "semantics_authored_against": "f4cab9b22a9009d49140b3781f410f76985d3be0526bfdcba3c6f3fcc6c1fd69"
+   "semantics_authored_against": "413d1bf3bb971e6334c0199c60a58c5ad6d12f16e679b2d2beebc014c591acb2"
   }
  },
  "edges_out": [],

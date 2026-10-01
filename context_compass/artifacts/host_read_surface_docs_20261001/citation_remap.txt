@@ -1,0 +1,85 @@
+Citation remap for host_read_surface_docs (source lines read 2026-10-01; old -> new; text at each new line)
+
+A1 src_architecture boundary EVIDENCE notch_spell: src/melder/aether/conduit/conduit.py:5280, 5352 -> 5309, 5381
+    5309: def notch_spell(
+    5381: mediator.start_transaction(
+A1 src_architecture boundary EVIDENCE add_to_spell_index: src/melder/aether/conduit/conduit.py:5370, 5425 -> 5399, 5454
+    5399: def add_to_spell_index(self, *, spell: Any, target_index: Any) -> Any:
+    5454: mediator.start_transaction(
+A1 src_architecture boundary EVIDENCE remove_from_spell_index: src/melder/aether/conduit/conduit.py:5448, 5496 -> 5477, 5525
+    5477: def remove_from_spell_index(self, *, spell: Any, source_index: Any) -> Any:
+    5525: mediator.start_transaction(
+A2 src_architecture runtime type names link check: src/melder/aether/conduit/conduit.py:5229-5231 -> 5258, 5260
+    5258: if not isinstance(target_conduit, Conduit):
+    5260: raise TypeError(f"Expected Conduit-compatible object, got {type(target_conduit).__name__}")
+A3 src_architecture settle-then-inherit unfrozen branch: src/melder/aether/aetheric_frame/aetheric_frame.py:691-752 -> 726, 787
+    726: if not existing_frame_configuration._frozen:
+    787: return existing_frame_configuration
+C1 src_components transaction mediator reads: src/melder/aether/conduit/conduit.py:5329, 5405, 5485 -> 5358, 5434, 5514
+    5358: mediator = self._get_required_transaction_mediator()
+    5434: mediator = self._get_required_transaction_mediator()
+    5514: mediator = self._get_required_transaction_mediator()
+C2 src_components freeze contract: src/melder/aether/spellbook/configuration/spellbook_configuration.py:277-343 -> 329, 394
+    329: def freeze(
+    394: )
+C3 src_components SafeGuard pair (frame configurations): src/melder/aether/aetheric_frame/aetheric_frame_configuration.py:1984 -> 2008
+    2008: with SafeGuard(self._lock, other._lock):
+C4 src_components conflicting posture warning: src/melder/aether/aetheric_frame/aetheric_frame.py:759-770 -> 794, 805
+    794: if self._aether._logger is not None:
+    805: return existing_frame_configuration
+C5 src_components link isinstance check: src/melder/aether/conduit/conduit.py:5229-5231 -> 5258, 5260
+    5258: if not isinstance(target_conduit, Conduit):
+    5260: raise TypeError(f"Expected Conduit-compatible object, got {type(target_conduit).__name__}")
+C6 src_components notch starts transaction: src/melder/aether/conduit/conduit.py:5352 -> 5381
+    5381: mediator.start_transaction(
+C7 src_components add starts transaction: src/melder/aether/conduit/conduit.py:5425 -> 5454
+    5454: mediator.start_transaction(
+C8 src_components remove starts transaction: src/melder/aether/conduit/conduit.py:5496 -> 5525
+    5525: mediator.start_transaction(
+C9 src_components public verbs: src/melder/aether/conduit/conduit.py:5280, 5370, 5448 -> 5309, 5399, 5477
+    5309: def notch_spell(
+    5399: def add_to_spell_index(self, *, spell: Any, target_index: Any) -> Any:
+    5477: def remove_from_spell_index(self, *, spell: Any, source_index: Any) -> Any:
+C10 src_components find_index_for_spell: src/melder/aether/aetheric_frame/aetheric_frame.py:867 -> 902
+    902: def find_index_for_spell(self, spell_id: str) -> SpellIndex | None:
+X1 src_architecture boot roots (__init__ body): src/melder/aether/aether.py:174-250 -> 175, 251
+    175: if Aether._initialized:
+    251: raise
+X2 src_architecture _instance class slot: src/melder/aether/aether.py:100 -> 116
+    116: _instance: ClassVar[Aether | None] = None
+X3 src_architecture double-checked construction: src/melder/aether/aether.py:114-118 -> 130, 134
+    130: if cls._instance is None:
+    134: return cls._instance
+X4 src_architecture teardown (cleanup early return; finally reset): src/melder/aether/aether.py:201 -> 278, 282, 323, 332
+    278: if self._cleaned:
+    282: return
+    323: finally:
+    332: Aether._initialized = False
+X4b src_architecture construction-failure rollback (identity-checked): src/melder/aether/aether.py:(new) -> 245, 251
+    245: except Exception:
+    251: raise
+X5 src_components aetheric_mediator property: src/melder/aether/aether.py:762-795 -> 805, 838
+    805: def aetheric_mediator(self) -> AethericMediator:
+    838: return self._aetheric_mediator
+X6 src_components _frame_creation_transaction (x2): src/melder/aether/aether.py:1288-1333 -> 1331, 1376
+    1331: @contextmanager
+    1376: identity.cleanup()
+X7 src_components _ensure_frame plane admission block: src/melder/aether/aether.py:1243-1264 -> 1225, 1249
+    1225: # PLANE ADMISSION. This is the founding case of
+    1249: return self._ensure_frame_locked(aetheric_frame_name)
+X8 src_components _ensure_frame: src/melder/aether/aether.py:893 -> 1187
+    1187: def _ensure_frame(self, aetheric_frame_name: str = "default") -> AethericFrame:
+X9 src_components _ensure_default_frame: src/melder/aether/aether.py:323 -> 385
+    385: def _ensure_default_frame(self) -> AethericFrame:
+K1 unchanged aetheric_mediator imports: src/melder/aether/aether.py:17-19 -> 17, 19
+    17: from melder.aether.aetheric_mediator.identity import Identity
+    19: from melder.aether.aetheric_mediator.transaction_type import TransactionType
+K2 unchanged plane construction: src/melder/aether/aether.py:209-222 -> 209, 222
+    209: # AethericMediator, owner constraint 3: Aether HOLDS the plane
+    222: self._aetheric_mediator: AethericMediator = AethericMediator()
+K3 unchanged cleanup except/finally: src/melder/aether/aether.py:320-332 -> 320, 332
+    320: except Exception as e:
+    332: Aether._initialized = False
+K4 unchanged logger teardown: src/melder/aether/aether.py:334-337 -> 334, 337
+    334: if self._logger is not None:
+    337: del self._logger

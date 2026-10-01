@@ -140,7 +140,8 @@
     "is a dispose scope in `with`: __enter__ takes no lock and __exit__ runs cleanup(), so a lesser returns to its pool and a root is torn down at block exit (0.2.8203)",
     "creates a lesser for a `with` block through enter_lesser_conduit, which returns create_lesser_conduit's result unchanged",
     "returns a lesser to its pool descendants first, then SpellSpaces, then its own store, and raises the collected disposal failures after the shell is pooled; soft cleanup of a pooled lesser is a no-op",
-    "finishes permanent teardown when a disposal method fails and then raises the collected disposal groups"
+    "finishes permanent teardown when a disposal method fails and then raises the collected disposal groups",
+    "returns the Spellbook it resolves through, borrowed (spellbook): the conjuring Book for a root, the root's Book for a lesser, the new Book after upgrade_to_normal"
    ],
    "owns_state": [
     "_meld",

@@ -69,7 +69,8 @@
     "holds the frame-bound configuration snapshot",
     "owns the frame-local dev-ops information registry used by reporting and transaction topology",
     "bridges normal-root registration into Cloud's shared name collision authority",
-    "logs a conduit that raises during frame teardown through the Aether logger and cleans the rest"
+    "logs a conduit that raises during frame teardown through the Aether logger and cleans the rest",
+    "reports the frame-wide shared rich Spellbook configuration (shared_spellbook_configuration) only while its posture shares one; None otherwise or before a Book binds one"
    ],
    "owns_state": [
     "_conduits",

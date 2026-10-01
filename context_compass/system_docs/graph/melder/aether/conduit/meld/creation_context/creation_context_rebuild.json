@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/creation_context/creation_context_rebuild.py",
- "source_sha256": "32b4e1de55fd9275d805ff54485cad546bc942ac6a8dfa06c98c1a2072046444",
+ "source_sha256": "69550981be88a8a862246385554d00055e5131697868953837d5494b79cd7e0a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.creation_context.creation_context_rebuild": {
@@ -38,7 +38,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "19632f94cea23c21a95aecf07d859901fd0fbfefe29ca53a1879947b605be2dd",
+   "span_sha256": "ef0274781b6b0d841daea4117f332fbadf4871d4ad3e8a99251f2b2b1db42326",
    "include": true,
    "role": "Producer window that freezes and drains a spell's index gate while phases replace its plan and context, then publishes the rebuilt context before reopening.",
    "responsibilities": [

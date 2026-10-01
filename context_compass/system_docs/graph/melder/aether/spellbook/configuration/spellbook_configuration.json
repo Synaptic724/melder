@@ -71,7 +71,8 @@
     "owns default and per-Book hook registration for Meld, Conduit, link and contract events",
     "supplies immutable initial Bind callbacks for independently adjustable Book registries",
     "freezes hook seeds and records effective callback presence without serializing callables",
-    "accepts origin Bind stage markers at freeze and re-freeze and preserves them in complete Book-twin emission"
+    "accepts origin Bind stage markers at freeze and re-freeze and preserves them in complete Book-twin emission",
+    "reports its target frame (aether_frame, fixed at construction) and its freeze state (frozen, read under its lock) without changing either"
    ],
    "owns_state": [
     "_aether_frame",

@@ -1665,6 +1665,12 @@ class SpellbookCreationSystem(Cleanable):
             - Runs local foundational phases before local plan phases.
             - Converts local KeyError dependency misses into deterministic diagnostics.
             - Cleans scoped phase artifacts before returning.
+            - On success, flags each dependency in the target's Phase 5 scope
+              that this Book owns and that the pass compiled only inside the
+              target's plan (`flag_dependencies_without_own_plan`), so its
+              first direct meld runs its own full target pass (0.2.8215). The
+              failure paths (a validation error, a visibility failure) flag
+              nothing.
         Args:
             spellbook: Owning Spellbook instance.
             conduit_id: Conduit id used for resolution scope.
@@ -1751,6 +1757,11 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             spell_ids=scoped_spell_ids,
         )
+        SpellbookCreationSystem.flag_dependencies_without_own_plan(
+            spellbook=spellbook,
+            target_spell_id=target_spell_id,
+            scoped_spell_ids=scoped_spell_ids,
+        )
         return results
 
     @staticmethod
@@ -1823,6 +1834,78 @@ class SpellbookCreationSystem(Cleanable):
             spell_ids=scoped_spell_ids,
         )
         return results
+
+    @staticmethod
+    def flag_dependencies_without_own_plan(
+            spellbook: Spellbook,
+            target_spell_id: str,
+            scoped_spell_ids: Collection[str],
+    ) -> tuple[str, ...]:
+        """
+        Purpose:
+            Leave each dependency that a target-local pass compiled only inside
+            its target's plan owing its own resolution, so its first direct
+            meld resolves it instead of reaching the CreationContext builder
+            with no plan (0.2.8215).
+        Contract:
+            - Local Phase 5 publishes root blueprints only to the target
+              (2026-09-19) and local Phase 6 stamps every node of the target's
+              system index valid for the conduit. A dependency first compiled
+              in such a pass therefore reads valid yet has no plan of its own;
+              the `resolution_required` flag, which every meld door reads, is
+              what owes that work.
+            - Considers each id in `scoped_spell_ids` except the target, in
+              sorted order. Skips ids missing from `spellbook._spell_id_pool`,
+              spells this Book does not own (`spell._spellbook is not
+              spellbook`; a borrowed spell is compiled by its own Book),
+              non-resolvable definitions and existing creations (neither ever
+              plans).
+            - Under the dependency's spell lock, flags it only when it has no
+              phase-11 plan (`_compiler_artifact._spell_codegen_creation is
+              None`), no published CreationContext
+              (`_creation_context_switch.state < 2`; a context loaded from the
+              conjure cache needs no plan) and no flag yet: sets
+              `resolution_complete=False` and `resolution_required=True` and
+              bumps `_door_epoch`, so no fast-door entry survives the flag.
+            - Changes no verdict, Book flag or diagnostic. Idempotent: an
+              already flagged dependency is skipped.
+        Threading:
+            Runs inside the target pass, whose meld-time caller holds the
+            target's rebuild window and spell lock. Each dependency's lock is
+            taken after the target's - consumer before dependency, the order
+            build locks follow over the acyclic dependency graph - so the check
+            and the write are atomic against that dependency's own resolution
+            lane, which holds the dependency's lock for its whole pass.
+        Args:
+            spellbook: The Book that ran the target pass.
+            target_spell_id: The pass's target; never flagged.
+            scoped_spell_ids: The pass's scope: the target plus its Phase 5
+                system-index nodes.
+        Returns:
+            tuple[str, ...]: The flagged spell ids, in sorted order.
+        """
+        spell_id_pool = spellbook._spell_id_pool
+        flagged: list[str] = []
+        for spell_id in sorted(scoped_spell_ids):
+            if spell_id == target_spell_id:
+                continue
+            dependency = spell_id_pool.get(spell_id)
+            if dependency is None or dependency._spellbook is not spellbook:
+                continue
+            if not dependency.resolvable or dependency.is_existing_creation:
+                continue
+            with dependency._lock:
+                if (
+                        dependency.resolution_required
+                        or dependency._compiler_artifact._spell_codegen_creation is not None
+                        or dependency._creation_context_switch.state >= 2
+                ):
+                    continue
+                dependency.resolution_complete = False
+                dependency.resolution_required = True
+                dependency._door_epoch += 1
+            flagged.append(spell_id)
+        return tuple(flagged)
 
     @staticmethod
     def _register_conduit_resolution_phases(

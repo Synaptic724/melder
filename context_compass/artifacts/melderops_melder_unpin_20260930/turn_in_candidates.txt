@@ -1,0 +1,11 @@
+melder_0 turn-in candidates, 2026-10-01T09:46:54Z. Owner (chat): "yeah ok turn in all your shit please and close it".
+Closed now - the only active row carrying melder_0 in melder_private:
+| melderops_melder_unpin | review | handoff | claude | melder_0 | none | Owner turns the task in (pyproject requires melder unpinned; command_0 told). | MelderOps accepts any installed Melder; no floor bump per release. | The dependency reads melder and parses; the owner turns the task in. | tickets/tasks/2026-09-30_unpin_melder_in_melderops_pyproject_task.md | 2026-09-30T21:56:10Z | HELPFUL |
+
+Not closed (unfinished work; listed to the owner for a decision):
+melder_private backlog tickets with Agent Name melder_0:
+- tickets/stories/backlog/2026-09-29_atomic_frame_retirement_and_creation_attribution_story.md
+- tickets/tasks/backlog/2026-09-29_promote_host_read_surface_into_system_docs_task.md
+priv_commandops active rows with agent_name melder_0 (owner cowork, tickets dated 2026-08-16):
+| melder_as_commandops_di_substrate | blocked | discovery | cowork | melder_0 | historical design gates need reconciliation | reconcile historical design with current migration | design record; no implementation claimed | remaining design gates reconciled | tickets/stories/2026-08-16_melder_as_commandops_di_substrate_story.md | 2026-09-28T20:08:39Z | REQUIRED |
+| agentic_threading_review_findings | ready | discovery | cowork | melder_0 | none | triage six historical threading findings | findings retained for owner disposition | each finding disposition recorded | tickets/tasks/2026-08-16_agentic_threading_review_findings_task.md | 2026-09-28T20:08:39Z | REQUIRED |

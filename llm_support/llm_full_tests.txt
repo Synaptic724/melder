@@ -1,8 +1,8 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: tests
-SOURCE FINGERPRINT: d3d1d8678520b8900215e27f18b44fc8fb0065ef74ddbe762d7c48757946aa8c
-FILE COUNT: 1041
+SOURCE FINGERPRINT: b132fe002afb501dd1df52d508a04f8b23d1bca41ffe48d94ac24f6af9f97f5e
+FILE COUNT: 1047
 
 ================================================================================
 BEGIN FILE: tests/_annotation_audit_support.py
@@ -8660,6 +8660,300 @@ def test_component_fast_door_existing_object_removed_spell_fails_like_the_full_l
         conduit.permanent_cleanup()
 ================================================================================
 END FILE: tests/component/melder/aether/conduit/test_conduit_component_fast_meld_door.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_injected_provider_direct_meld.py
+CONTENT SHA256: 920eeacaa5132ac6e2ef668a97bef21c36779d4d112f0c94ad010de88111d314
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Regression contracts: a provider bound after conjure melds directly after it was injected.
+
+A service bound on a live dynamic root after conjure, and first built as a consumer's dependency, could not be
+melded directly afterwards: the direct meld raised "Cannot build CreationContext before spell_codegen_creation
+exists." The consumer's target-local resolution pass compiled the service only inside the consumer's plan and
+left it stamped valid for the conduit with no plan of its own, so nothing resolved it before its own first meld.
+These cases run that public sequence - bind after conjure, meld the consumer, meld the service directly - across
+scopes, lifetimes, a root holding a spell at conjure, system caching and the SpellSpace door, and assert the real
+result: the instance the scope already holds, as each lifetime defines it. The two controls (the provider melded
+first, the pair bound before conjure) never failed and must keep passing.
+"""
+
+import shutil
+from collections.abc import Iterator
+from pathlib import Path
+from typing import List, Union
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.conduit.spell_space.spell_space import SpellSpace
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.spellbook import Spellbook
+
+
+class NativeService:
+    """The provider: a concrete no-argument class with observable state."""
+
+    def __init__(self) -> None:
+        """Give each instance a value a caller can read back."""
+        self.value: int = 7
+
+
+class NativeConsumer:
+    """The consumer: requires a NativeService, which the graph injects."""
+
+    def __init__(self, service: NativeService) -> None:
+        """Keep the injected service so identity can be checked."""
+        self.service: NativeService = service
+
+
+class ResidentService:
+    """An unrelated spell a root already holds at conjure, as a host framework's root does."""
+
+    def __init__(self) -> None:
+        """Mark the instance ready."""
+        self.ready: bool = True
+
+
+class InjectedProviderWorld:
+    """
+    Build dynamic worlds on public APIs for the injected-provider regressions and remove the caches they write.
+
+    Contract:
+        - Every root is a dynamic conjure of its own Spellbook on its own frame. The service and consumer pair is
+          bound at spellframe "native_probe" on the live root after conjure, unless a case binds it on the Book
+          before conjure or not at all.
+        - Worlds live in the process Aether, which the `world` fixture replaces before and after each case.
+        - A cached world clears its frame's conjure cache folder first unless told to keep it (a warm start), and
+          every folder it resolved is removed at teardown.
+    """
+
+    def __init__(self) -> None:
+        """Start with no conjure cache folder to remove."""
+        self.cache_folders: List[Path] = []
+
+    @staticmethod
+    def reset_aether() -> None:
+        """Replace the process Aether with a fresh one and point the Spellbook and Conduit classes at it."""
+        Aether._reset_singleton_for_tests()
+        aether = Aether()
+        Spellbook._aether = aether
+        Conduit._aether = aether
+
+    def remove_cache_folders(self) -> None:
+        """Delete every conjure cache folder a case wrote; a missing folder is not an error."""
+        for folder in self.cache_folders:
+            shutil.rmtree(folder, ignore_errors=True)
+
+    def build(self, frame: str, *, service_existence: str = "unique_per_conduit", caching: bool = False,
+              resident: bool = False, bind_before_conjure: bool = False, bind_pair: bool = True,
+              clear_cache: bool = True) -> Conduit:
+        """
+        Conjure a dynamic root named "<frame>-root" and bind the service and consumer pair.
+
+        Args:
+            frame: The frame the Spellbook lives on; with caching it also names the conjure cache folder.
+            service_existence: The service's lifetime; the consumer is always bound `many`.
+            caching: Enable the frame's system caching (the conjure cache).
+            resident: Bind ResidentService (`many`) on the Book before conjure.
+            bind_before_conjure: Bind the pair on the Book before conjure instead of on the root after it.
+            bind_pair: Bind the pair at all (False only primes a warm cache).
+            clear_cache: With caching, empty the frame's cache folder first so the conjure starts cold.
+
+        Returns:
+            Conduit: The conjured dynamic root.
+        """
+        book = Spellbook(aetheric_frame=frame, configuration=SpellbookConfiguration(frame).with_defaults())
+        book.configure_aether_frame(system_state="dynamic", disposal=None, disposal_method_names=None,
+                                    system_caching_enabled=caching)
+        if caching:
+            self._track_cache_folder(frame, clear_cache)
+        if resident:
+            book.bind(spell=ResidentService, existence="many")
+        if bind_pair and bind_before_conjure:
+            self.bind_pair(book, service_existence)
+        root = book.conjure(name=f"{frame}-root", dynamic=True)
+        if bind_pair and not bind_before_conjure:
+            self.bind_pair(root, service_existence)
+        return root
+
+    def _track_cache_folder(self, frame: str, clear: bool) -> None:
+        """Resolve the frame's conjure cache folder, empty it when asked, and remember it for teardown."""
+        frame_configuration = Aether().get_frame(frame).frame_configuration
+        if frame_configuration is None:
+            raise RuntimeError(f"Frame {frame!r} has no posture to resolve its conjure cache folder from.")
+        folder = frame_configuration.resolve_conjure_cache_root_path() / frame
+        if clear:
+            shutil.rmtree(folder, ignore_errors=True)
+        self.cache_folders.append(folder)
+
+    @staticmethod
+    def bind_pair(target: Union[Spellbook, Conduit], service_existence: str) -> None:
+        """Bind NativeService with `service_existence` and NativeConsumer (`many`) on a Book or a normal root."""
+        target.bind(spell=NativeService, existence=service_existence, spellframe="native_probe",
+                    binding_name="NativeService", disposal_method_names=[])
+        target.bind(spell=NativeConsumer, existence="many", spellframe="native_probe",
+                    binding_name="NativeConsumer", disposal_method_names=[])
+
+    @staticmethod
+    def meld_service(owner: Union[Conduit, SpellSpace]) -> NativeService:
+        """Meld the service by spellframe and binding name through a conduit or SpellSpace door."""
+        service = owner.meld(spellframe="native_probe", binding_name="NativeService")
+        assert isinstance(service, NativeService)
+        return service
+
+    @staticmethod
+    def meld_consumer(owner: Union[Conduit, SpellSpace]) -> NativeConsumer:
+        """Meld the consumer by spellframe and binding name through a conduit or SpellSpace door."""
+        consumer = owner.meld(spellframe="native_probe", binding_name="NativeConsumer")
+        assert isinstance(consumer, NativeConsumer)
+        return consumer
+
+    def assert_direct_meld_returns_injected(self, scope: Conduit) -> NativeService:
+        """
+        Run the diagnostic sequence in one scope and return the scope's service.
+
+        The consumer is melded first and receives a working service; the direct service meld must return that
+        instance, a repeated direct meld the same one, and a later consumer must be injected with it too.
+        """
+        consumer = self.meld_consumer(scope)
+        assert consumer.service.value == 7
+        service = self.meld_service(scope)
+        assert service is consumer.service
+        assert self.meld_service(scope) is service
+        assert self.meld_consumer(scope).service is service
+        return service
+
+
+@pytest.fixture
+def world() -> Iterator[InjectedProviderWorld]:
+    """Give each case a fresh Aether, then replace it again and remove the conjure caches the case wrote."""
+    InjectedProviderWorld.reset_aether()
+    builder = InjectedProviderWorld()
+    try:
+        yield builder
+    finally:
+        InjectedProviderWorld.reset_aether()
+        builder.remove_cache_folders()
+
+
+def test_named_lesser_melds_injected_provider_directly(world: InjectedProviderWorld) -> None:
+    """The reported sequence: a named lesser melds the consumer, then the service directly, which used to raise."""
+    root = world.build("injected-provider-named")
+    scope = root.create_lesser_conduit(name="native-provider-probe")
+    world.assert_direct_meld_returns_injected(scope)
+
+
+def test_unnamed_lesser_melds_injected_provider_directly(world: InjectedProviderWorld) -> None:
+    """The same sequence in an anonymous lesser; naming the scope plays no part."""
+    root = world.build("injected-provider-unnamed")
+    scope = root.create_lesser_conduit()
+    world.assert_direct_meld_returns_injected(scope)
+
+
+def test_root_melds_injected_provider_directly(world: InjectedProviderWorld) -> None:
+    """The same sequence on the dynamic root itself, with no lesser involved."""
+    root = world.build("injected-provider-root")
+    world.assert_direct_meld_returns_injected(root)
+
+
+def test_sibling_lessers_meld_their_own_injected_provider_directly(world: InjectedProviderWorld) -> None:
+    """
+    Each sibling lesser melds its own service directly after injecting it; the siblings stay isolated.
+
+    Both lessers resolve through their root's conduit id, so the second sibling meets a consumer already
+    resolved by the first and a service whose first direct meld already happened in the other scope.
+    """
+    root = world.build("injected-provider-siblings")
+    left = root.create_lesser_conduit(name="native-provider-left")
+    right = root.create_lesser_conduit(name="native-provider-right")
+    left_service = world.assert_direct_meld_returns_injected(left)
+    right_service = world.assert_direct_meld_returns_injected(right)
+    assert left_service is not right_service
+
+
+def test_unique_provider_melds_directly_after_injection(world: InjectedProviderWorld) -> None:
+    """A `unique` service melded directly after injection is the one Book-wide instance, from any scope."""
+    root = world.build("injected-provider-unique", service_existence="unique")
+    scope = root.create_lesser_conduit(name="native-provider-probe")
+    service = world.assert_direct_meld_returns_injected(scope)
+    assert world.meld_service(root) is service
+
+
+def test_many_provider_melds_a_new_instance_directly_after_injection(world: InjectedProviderWorld) -> None:
+    """A `many` service melded directly after injection is a working new instance on every meld."""
+    root = world.build("injected-provider-many", service_existence="many")
+    scope = root.create_lesser_conduit(name="native-provider-probe")
+    consumer = world.meld_consumer(scope)
+    service = world.meld_service(scope)
+    assert service.value == 7
+    assert service is not consumer.service
+    assert world.meld_service(scope) is not service
+    assert world.meld_consumer(scope).service is not consumer.service
+
+
+def test_root_holding_a_spell_at_conjure_melds_injected_provider_directly(world: InjectedProviderWorld) -> None:
+    """A root that already holds an unrelated spell at conjure, as a host framework's root does."""
+    root = world.build("injected-provider-resident", resident=True)
+    scope = root.create_lesser_conduit(name="native-provider-probe")
+    world.assert_direct_meld_returns_injected(scope)
+
+
+@pytest.mark.parametrize("cache_state", ["cold", "warm"])
+def test_cached_world_melds_injected_provider_directly(world: InjectedProviderWorld, cache_state: str) -> None:
+    """
+    With system caching on, cold or warm, the sequence behaves as without it.
+
+    The warm case conjures the same frame and root once in an earlier world, so the second conjure loads its
+    conduit bundle; the pair is bound after conjure in both cases, so neither bundle holds it.
+    """
+    frame = f"injected-provider-cache-{cache_state}"
+    if cache_state == "warm":
+        world.build(frame, caching=True, resident=True, bind_pair=False)
+        InjectedProviderWorld.reset_aether()
+    root = world.build(frame, caching=True, resident=True, clear_cache=cache_state == "cold")
+    scope = root.create_lesser_conduit(name="native-provider-probe")
+    world.assert_direct_meld_returns_injected(scope)
+
+
+@pytest.mark.parametrize("consumer_door", ["conduit", "spellspace"])
+def test_spellspace_door_melds_injected_provider_directly(world: InjectedProviderWorld, consumer_door: str) -> None:
+    """
+    A SpellSpace melds the service directly after the consumer was injected through the conduit or the space.
+
+    A `unique_per_conduit` service melded through a space lives in its owner conduit's store, so the space,
+    the conduit and the consumer all see one instance, also after the space is released.
+    """
+    root = world.build(f"injected-provider-space-{consumer_door}")
+    scope = root.create_lesser_conduit(name="native-provider-probe")
+    with scope.enter_spellspace() as space:
+        consumer = world.meld_consumer(scope if consumer_door == "conduit" else space)
+        assert consumer.service.value == 7
+        service = world.meld_service(space)
+        assert service is consumer.service
+        assert world.meld_service(space) is service
+    assert world.meld_service(scope) is service
+
+
+def test_control_provider_melded_before_its_consumer_keeps_one_instance(world: InjectedProviderWorld) -> None:
+    """Control: melding the service first, then the consumer, always worked and keeps one instance."""
+    root = world.build("injected-provider-first")
+    scope = root.create_lesser_conduit(name="native-provider-probe")
+    service = world.meld_service(scope)
+    consumer = world.meld_consumer(scope)
+    assert consumer.service is service
+    assert world.meld_service(scope) is service
+
+
+def test_control_pair_bound_before_conjure_melds_provider_directly(world: InjectedProviderWorld) -> None:
+    """Control: with both binds on the Book before conjure, the sequence always worked."""
+    root = world.build("injected-provider-before-conjure", bind_before_conjure=True)
+    scope = root.create_lesser_conduit(name="native-provider-probe")
+    world.assert_direct_meld_returns_injected(scope)
+================================================================================
+END FILE: tests/component/melder/aether/conduit/test_conduit_component_injected_provider_direct_meld.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/aether/conduit/test_conduit_component_input_fast_door.py
@@ -26300,6 +26594,102 @@ def test_matching_activation_after_the_first_frame_still_applies() -> None:
 END FILE: tests/component/melder/aether/test_aether_sealed_regime_guard_component.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/component/melder/aether/test_aether_spell_id_regime_property_component.py
+CONTENT SHA256: a9248810f692494b8e966e54fe14789eac260802c543a13c548b4e1c49379abd
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Component tests for `Aether.process_wide_unique_spell_ids` (0.2.8213).
+
+WHY THIS EXISTS. The spell-id regime is sealed when the first frame is born, and until now it was readable only
+through private state: `Aether.configuration` may be a policy the next first frame will seal, or one a first frame
+already sealed, and nothing said which. The crystallizer records the regime in the Aether twin and keys spell custody
+by it, and a restore must know whether the live regime can still change, so the root answers the question itself.
+
+Contract under test:
+    1. a fresh Aether (no configuration, no frame) answers True;
+    2. before any frame, the answer follows the installed configuration;
+    3. the first frame seals the answer;
+    4. a frame born without a configuration seals process-wide ids;
+    5. a cleaned Aether refuses the read.
+"""
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.spellbook import Spellbook
+
+
+@pytest.fixture(autouse=True)
+def reset_aether_singleton_for_regime_property() -> None:
+    """Give each test an Aether with no frames and no configuration."""
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    yield
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+def _policy(process_wide: bool) -> AetherConfiguration:
+    """Return a mutable default Aether configuration with the given regime."""
+    configuration = AetherConfiguration().with_defaults()
+    configuration.set_process_wide_unique_spell_ids(process_wide)
+    return configuration
+
+
+def test_fresh_aether_reports_process_wide_ids() -> None:
+    """Nothing installed and no frame: the default regime (process-wide) is in force."""
+    aether = Aether()
+    assert aether.configuration is None
+    assert aether.list_frame_names() == ()
+    assert aether.process_wide_unique_spell_ids is True
+
+
+def test_before_any_frame_the_answer_follows_the_installed_configuration() -> None:
+    """The next first frame seals the installed policy, so that policy's regime is the answer, and may still change."""
+    aether = Aether()
+    aether.configure(_policy(False))
+    assert aether.process_wide_unique_spell_ids is False
+    aether.configure(_policy(True))
+    assert aether.process_wide_unique_spell_ids is True
+
+
+def test_the_first_frame_seals_the_answer() -> None:
+    """A per-frame policy installed before the first frame stays the answer once a frame exists."""
+    aether = Aether()
+    aether.configure(_policy(False))
+    Spellbook(aetheric_frame="tenant_a")
+    assert "tenant_a" in aether.list_frame_names()
+    assert aether.process_wide_unique_spell_ids is False
+    with pytest.raises(RuntimeError, match="spell-id regime is sealed while frames exist"):
+        aether.configure(_policy(True))
+    assert aether.process_wide_unique_spell_ids is False
+
+
+def test_a_frame_born_without_configuration_seals_process_wide_ids() -> None:
+    """The first frame installs frozen defaults without configuring the root; the answer is True."""
+    aether = Aether()
+    Spellbook(aetheric_frame="host")
+    assert aether.configured is False
+    assert aether.process_wide_unique_spell_ids is True
+
+
+def test_a_cleaned_aether_refuses_the_read() -> None:
+    """A torn-down root has no regime in force; reading it raises like every other guarded root read."""
+    aether = Aether()
+    aether.cleanup()
+    with pytest.raises(RuntimeError):
+        _ = aether.process_wide_unique_spell_ids
+================================================================================
+END FILE: tests/component/melder/aether/test_aether_spell_id_regime_property_component.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/component/melder/aether/test_codegen_system_component_matrix.py
 CONTENT SHA256: 714a33bc6ba7294d9ecc5f4eb262052466c5dd4ea0f7c77a9a28b59a289878b4
 SOURCE ENCODING: utf-8
@@ -29783,7 +30173,7 @@ END FILE: tests/component/melder/aether/test_nexus_viewer_general_helper_compone
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/crystallizer/test_crystallizer_cadence_soak_component.py
-CONTENT SHA256: df01ecc47f3d5033876cb5b464873eed54972d592d02024e07b5da45e8fa11b1
+CONTENT SHA256: e9db84c9a58a810cf487faed9d68d0a47e53581d567895b62558f3b21f8f0813
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -29807,6 +30197,7 @@ class _StubSpellCrystal:
 
     def __init__(self, spell_id):
         self.id = spell_id
+        self.custody_key = spell_id  # the record key (the bare spell id under process-wide ids)
         self.spellbook_id = None
         self.cleaned = False
 
@@ -29919,7 +30310,7 @@ END FILE: tests/component/melder/crystallizer/test_crystallizer_cadence_soak_com
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/crystallizer/test_crystallizer_record_component.py
-CONTENT SHA256: afbbdcba96dc0ab572aeff943d3eec62316df98a2d93c50bcb9f22a4b70db876
+CONTENT SHA256: e819a083eb74e97845cce9c5ceb78aebe9ae6db8a91dd0f6415ba6a54aa6ac99
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -29956,6 +30347,7 @@ class _StubSpellCrystal:
 
     def __init__(self, spell_id, spellbook_id=None):
         self.id = spell_id
+        self.custody_key = spell_id  # the record key (the bare spell id under process-wide ids)
         self.spellbook_id = spellbook_id
         # Real custody carries root_module_kind ("synthetic_module" /
         # "site_package" / "user_source"); emit_spell_activity reads it to
@@ -30730,7 +31122,7 @@ END FILE: tests/component/melder/crystallizer/test_disposal_configuration_transp
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/component/melder/crystallizer/test_persistence_system_component.py
-CONTENT SHA256: 9bccf09f27a316077042758c237abdb2cb4c2dbdc38214faf34c63da34141cae
+CONTENT SHA256: f3a2329805234f19ea8ce8b04877d274b29e05e037aec2e78405821221723ee9
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -30753,6 +31145,7 @@ class _StubSpellCrystal:
 
     def __init__(self, spell_id, spellbook_id=None):
         self.id = spell_id
+        self.custody_key = spell_id  # the record key (the bare spell id under process-wide ids)
         self.spellbook_id = spellbook_id
         self.cleaned = False
 
@@ -62512,6 +62905,466 @@ while FI in sys.meta_path: sys.meta_path.remove(FI)
 print("SUMMARY %d/%d green" % (sum(R), len(R))); print("DONE")
 ================================================================================
 END FILE: tests/experimentation/activation_footprint_insert_only_probe.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/experimentation/codegen_strategy_certification.py
+CONTENT SHA256: 72ea40e166e9e5b8fe510eebce35c43085dfaad8a812c65834e8d5eae4e42e81
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Codegen strategy certification: measure each concrete strategy on the REAL emitted bodies before any of it is built.
+
+WHY THIS EXISTS
+    The adaptive-creation-contexts epic lists concrete strategies (S1-S8) with predicted savings. Before a lane
+    is opened to implement any of them, this file answers whether they pay on real emitted plans: it captures
+    the plain normal plan `SitePlanLowering.emit` produces for five shapes, applies each strategy as a source
+    transform of that captured body, executes it in the same namespace (real spells, real stores, real objects)
+    and times plain vs each strategy vs all combined, with Python/C call counts.
+
+    S1  registration trim       `many_store.add_many_creations(sid, v, has_disposal_methods=True, disposal_methods=dm)`
+                                -> one append into a store that recorded the per-key methods once (stand-in store)
+    S2a existing-object constants  an existing-object site's three lines -> `v = k` (no guard: automatic posture)
+    S2b unique captures            a unique site's three lines -> `if s._door_epoch == e: v = k` else the read path
+    S4  single-door prologue       the spellspace/conduit store selection -> the conduit store read alone
+    S5  batched registration       the registration line -> `scope_list.append((sid, v))` (stand-in list)
+    S6  thread-affine append       the registration line -> a `get_ident()` compare and a per-thread bucket
+    S8  lazy instance_results      dict mode only inside the misses: the warm path builds no dict and stores nothing
+    ALL S8 + S4 + S2a + S2b + S1 ; ALL+S5 swaps S1 for S5
+
+    S1, S5 and S6 use stand-in stores written here: they show the floor of each registration shape in situ,
+    they are not store code, and they do not settle the cleaned-store refusal for a lock-free append.
+
+RUN (3.14t target; caching off, nothing is written)
+    python -X gil=0 tests/experimentation/codegen_strategy_certification.py
+"""
+
+import gc
+import os
+import re
+import statistics
+import sys
+import threading
+import time
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from melder.aether.spellbook.spell_compiler.codegen_creation_system.shared_assets.site_plan_lowering import SitePlanLowering
+
+captured: Dict[str, Tuple[str, Dict[str, Any]]] = {}
+_original_emit = SitePlanLowering.emit.__func__
+
+
+def _capturing_emit(cls: type, **kwargs: Any) -> Any:
+    """Record the normal plan's (source, namespace) per root spell id as the lowering emits it."""
+    result = _original_emit(cls, **kwargs)
+    if kwargs.get("normal_mode"):
+        captured[kwargs["root_spell_id"]] = (result[0], result[1])
+    return result
+
+
+SitePlanLowering.emit = classmethod(_capturing_emit)
+
+from melder.aether.aether import Aether
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.existence.existence import Existence
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.nexus.nexus import Nexus
+from tests._frame_posture_test_support import configure_frame_posture_for_spellbook_configuration
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# shapes
+# ---------------------------------------------------------------------------------------------------------------
+
+def _service(name: str, disposal: bool) -> type:
+    """A dependency-free class, optionally with a `cleanup` disposal method."""
+    body: Dict[str, Any] = {"__init__": lambda self: setattr(self, "state", 0)}
+    if disposal:
+        body["cleanup"] = lambda self: setattr(self, "state", -1)
+    return type(name, (), body)
+
+
+def _existing(name: str) -> type:
+    """A class whose INSTANCE is bound (an existing object)."""
+    return type(name, (), {"__init__": lambda self, n: setattr(self, "n", n)})
+
+
+def _consumer(name: str, dependencies: Sequence[type], disposal: bool) -> type:
+    """A class taking one annotated parameter per dependency, in order."""
+    params = [f"d{i}" for i in range(len(dependencies))]
+    src = "def __init__(self, " + ", ".join(f"{p}: {d.__name__}" for p, d in zip(params, dependencies)) + "):\n"
+    src += "".join(f"    self.{p} = {p}\n" for p in params) or "    pass\n"
+    ns: Dict[str, Any] = {d.__name__: d for d in dependencies}
+    exec(src, ns)
+    body: Dict[str, Any] = {"__init__": ns["__init__"]}
+    if disposal:
+        body["cleanup"] = lambda self: setattr(self, "state", -1)
+    return type(name, (), body)
+
+
+class Shape:
+    """One measured shape: bindings plus the root class melded by name."""
+
+    def __init__(self, name: str, root: type, uniques: Sequence[type], existing: Sequence[type], manys: Sequence[type]) -> None:
+        self.name = name
+        self.root = root
+        self.uniques = tuple(uniques)
+        self.existing = tuple(existing)
+        self.manys = tuple(manys)
+
+
+def shapes() -> List[Shape]:
+    """The five shapes: two from commandops' cache, three DI-heavy ones the profile is meant to find."""
+    manager = _service("Manager", True)
+    worker = _consumer("Worker", [manager], True)
+    config, builders, resources, utilities = (_existing(n) for n in ("Config", "Builders", "Resources", "Utilities"))
+    spectrum = _service("Spectrum", True)
+    context_root = _consumer("ContextRoot", [config, builders, resources, utilities, spectrum], True)
+    svc = [_service(f"Svc{i}", False) for i in range(8)]
+    wide8u = _consumer("Wide8Unique", svc, True)
+    ext = [_existing(f"Ext{i}") for i in range(8)]
+    wide8e = _consumer("Wide8Existing", ext, True)
+    chain: List[type] = [_service("Leaf", False)]
+    for i in range(7):
+        chain.append(_consumer(f"Link{i}", [chain[-1]], False))
+    chain_root = _consumer("Chain8", [chain[-1]], True)
+    return [
+        Shape("worker", worker, [manager], [], [worker]),
+        Shape("context_root", context_root, [spectrum], [config, builders, resources, utilities], [context_root]),
+        Shape("wide8_unique", wide8u, svc, [], [wide8u]),
+        Shape("wide8_existing", wide8e, [], ext, [wide8e]),
+        Shape("chain8_transient", chain_root, [chain[0]], [], chain[1:] + [chain_root]),
+    ]
+
+
+def build_world(shape: Shape, tag: str) -> Tuple[Spellbook, Conduit]:
+    """Bind one shape into a fresh automatic world with disposal on and conjure its root conduit."""
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    configuration = SpellbookConfiguration()
+    configuration.set_property("disposal", True)
+    configuration.set_property("disposal_method_names", ["cleanup"])
+    configuration.load_default_dictionary()
+    configure_frame_posture_for_spellbook_configuration(configuration, dynamic=False)
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    book = Spellbook(configuration=configuration)
+    book.configure_aether_frame(system_state=None, disposal=None, disposal_method_names=None, system_caching_enabled=False)
+    for cls in shape.uniques:
+        book.bind(spell=cls, existence=Existence.unique, permissions="create")
+    for n, cls in enumerate(shape.existing):
+        book.bind(spell=cls(n), spellframe=cls, existence=Existence.unique, permissions="create")
+    for cls in shape.manys:
+        book.bind(spell=cls, existence=Existence.many, permissions="create")
+    conduit = book.conjure(name=f"cert-{tag}-root", dynamic=False)
+    return book, conduit
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# stand-in stores for S1 / S5 / S6
+# ---------------------------------------------------------------------------------------------------------------
+
+class TrimmedStore:
+    """S1 stand-in: per-key disposal methods recorded once, the store lock kept, one append per creation."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._many: Dict[str, List[object]] = {}
+        self._methods: Dict[str, Tuple[str, ...]] = {}
+
+    def record_methods(self, key: str, methods: Tuple[str, ...]) -> None:
+        """Record the spell's disposal methods for `key` (hydration would do this once from the rows)."""
+        self._methods[key] = methods
+
+    def append_many(self, key: str, item: object) -> None:
+        """Register one creation under the lock with one append."""
+        with self._lock:
+            bucket = self._many.get(key)
+            if bucket is None:
+                bucket = self._many[key] = []
+            bucket.append(item)
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# transforms over the captured source
+# ---------------------------------------------------------------------------------------------------------------
+
+SITE_ALIAS = re.compile(r"^    c(\d+) = spells\[(\d+)\]\._owner_creations$")
+REGISTER = re.compile(r"^    many_store\.add_many_creations\(sid(\d+), v(\d+), has_disposal_methods=True, disposal_methods=dm(\d+)\)$", re.M)
+PROLOGUE = ["    many_store = meld._spellspace_creations", "    if many_store is None:", "        many_store = meld._conduit_creations"]
+
+
+def _executor_lines(source: str) -> Tuple[List[str], int]:
+    """Split the source into lines and return them with the index of the executor's `def` line."""
+    lines = source.split("\n")
+    for i, line in enumerate(lines):
+        if line.startswith("def _site_plan_executor("):
+            return lines, i
+    raise RuntimeError("no _site_plan_executor in the captured source")
+
+
+def site_groups(source: str) -> Dict[int, Tuple[int, int]]:
+    """Map a top-level shared site index to the (start, end) line span of its three-line read group."""
+    lines, start = _executor_lines(source)
+    groups: Dict[int, Tuple[int, int]] = {}
+    i = start
+    while i < len(lines):
+        m = SITE_ALIAS.match(lines[i])
+        if m and lines[i + 1] == f"    v{m.group(1)} = c{m.group(1)}._creations.get(sid{m.group(1)})" and lines[i + 2] == f"    if v{m.group(1)} is None:" and lines[i + 3].startswith(f"        v{m.group(1)} = _miss{m.group(1)}("):
+            groups[int(m.group(1))] = (i, i + 4)
+            i += 4
+            continue
+        i += 1
+    return groups
+
+
+def transform_sites(source: str, namespace: Dict[str, Any], indexes: Sequence[int], guarded: bool) -> Tuple[str, Dict[str, Any]]:
+    """S2a (guarded=False) / S2b (guarded=True): replace the read groups of `indexes` by constants."""
+    lines, _ = _executor_lines(source)
+    groups = site_groups(source)
+    extra: Dict[str, Any] = {}
+    out: List[str] = []
+    i = 0
+    while i < len(lines):
+        replaced = False
+        for index, (s, e) in groups.items():
+            if i == s and index in indexes:
+                spell = namespace["spells"][index]
+                instance = spell._owner_creations._creations.get(namespace[f"sid{index}"])
+                assert instance is not None, "site must be warm before capture"
+                extra[f"k{index}"] = instance
+                if guarded:
+                    extra[f"s{index}"] = spell
+                    extra[f"e{index}"] = spell._door_epoch
+                    out.append(f"    if s{index}._door_epoch == e{index}:")
+                    out.append(f"        v{index} = k{index}")
+                    out.append("    else:")
+                    out.extend("    " + line for line in lines[s:e])
+                else:
+                    out.append(f"    v{index} = k{index}")
+                i = e
+                replaced = True
+                break
+        if not replaced:
+            out.append(lines[i])
+            i += 1
+    return "\n".join(out), extra
+
+
+def transform_prologue(source: str) -> str:
+    """S4: the single-door prologue (conduit door)."""
+    joined = "\n".join(PROLOGUE)
+    assert source.count(joined) >= 1
+    return source.replace(joined, "    many_store = meld._conduit_creations")
+
+
+def transform_registration(source: str, namespace: Dict[str, Any], mode: str) -> Tuple[str, Dict[str, Any]]:
+    """S1 (`trim`), S5 (`batched`) or S6 (`affine`) on every top-level registration line."""
+    lines, start = _executor_lines(source)
+    extra: Dict[str, Any] = {}
+    out: List[str] = []
+    for i, line in enumerate(lines):
+        m = REGISTER.match(line) if i > start else None
+        if not m:
+            out.append(line)
+            continue
+        n = m.group(1)
+        if mode == "trim":
+            store = extra.setdefault("_trim_store", TrimmedStore())
+            store.record_methods(namespace[f"sid{n}"], tuple(namespace[f"dm{n}"]))
+            out.append(f"    _trim_store.append_many(sid{n}, v{n})")
+        elif mode == "batched":
+            extra.setdefault("_scope_list", [])
+            out.append(f"    _scope_list.append((sid{n}, v{n}))")
+        elif mode == "affine":
+            extra["_get_ident"] = threading.get_ident
+            extra["_t0"] = threading.get_ident()
+            extra.setdefault("_bucket", [])
+            out.append(f"    if _get_ident() == _t0:")
+            out.append(f"        _bucket.append(v{n})")
+            out.append("    else:")
+            out.append("    " + line)
+        else:
+            raise ValueError(mode)
+    return "\n".join(out), extra
+
+
+def transform_lazy_dict(source: str) -> str:
+    """S8: no `instance_results` on the warm path; a miss gets a fresh empty dict."""
+    lines, start = _executor_lines(source)
+    out: List[str] = []
+    for i, line in enumerate(lines):
+        if i > start:
+            if line == "    instance_results = {}":
+                continue
+            if re.match(r"^    instance_results\[key\d+\] = v\d+$", line):
+                continue
+            line = re.sub(r"_miss(\d+)\(meld, c(\d+), instance_results\)", r"_miss\1(meld, c\2, {})", line)
+        out.append(line)
+    return "\n".join(out)
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# measurement
+# ---------------------------------------------------------------------------------------------------------------
+
+def time_ns(fn: Callable[[], object], n: int = 40000, reps: int = 3, warm: int = 10000) -> float:
+    """Median ns per call over `reps` batches after warm-up."""
+    for _ in range(warm):
+        fn()
+    samples: List[float] = []
+    for _ in range(reps):
+        t0 = time.perf_counter_ns()
+        for _ in range(n):
+            fn()
+        samples.append((time.perf_counter_ns() - t0) / n)
+    return statistics.median(samples)
+
+
+def call_counts(fn: Callable[[], object]) -> Tuple[int, int]:
+    """Python and C call counts of one call, the profiler's own entry excluded."""
+    counts = {"call": 0, "c_call": 0}
+
+    def profile(frame: object, event: str, arg: object) -> None:
+        if event in counts:
+            counts[event] += 1
+
+    sys.setprofile(profile)
+    try:
+        fn()
+    finally:
+        sys.setprofile(None)
+    return counts["call"] - 1, counts["c_call"] - 1
+
+
+def compile_variant(source: str, namespace: Dict[str, Any], extra: Dict[str, Any], label: str) -> Callable[[Any], Any]:
+    """Execute a transformed body in a copy of the captured namespace and return its executor."""
+    ns = dict(namespace)
+    ns.update(extra)
+    exec(compile(source, f"<cert-{label}>", "exec"), ns)
+    return ns["_site_plan_executor"]
+
+
+def measure_shape(shape: Shape, show_source: bool) -> List[str]:
+    """Return the table rows for one shape."""
+    captured.clear()
+    book, conduit = build_world(shape, shape.name)
+    rows: List[str] = []
+    try:
+        root_name = shape.root.__name__
+        instance = conduit.meld(root_name)
+        assert type(instance) is shape.root
+        root_id: Optional[str] = None
+        for sid, (_src, ns) in captured.items():
+            if any(s.spell is shape.root and s.spell_id == ns.get("root_spell_id") for s in ns.get("spells", ())):
+                root_id = sid
+        if root_id is None:
+            raise RuntimeError(f"no captured normal plan for {root_name}")
+        source, namespace = captured[root_id]
+        if show_source:
+            print(f"\n```\n# {shape.name}\n{source}\n```")
+        meld = conduit._meld
+        plain = namespace["_site_plan_executor"]
+        for _ in range(3):
+            plain(meld)
+        spells = namespace["spells"]
+        groups = site_groups(source)
+        existing_idx = [i for i in groups if spells[i].is_existing_creation]
+        unique_idx = [i for i in groups if not spells[i].is_existing_creation]
+        dict_mode = "    instance_results = {}" in source
+        variants: List[Tuple[str, str, Dict[str, Any]]] = [("plain", source, {})]
+        if REGISTER.search(source):
+            s1, x1 = transform_registration(source, namespace, "trim"); variants.append(("S1 trim registration", s1, x1))
+        if existing_idx:
+            s2a, x2a = transform_sites(source, namespace, existing_idx, guarded=False); variants.append(("S2a existing constants", s2a, x2a))
+        if unique_idx:
+            s2b, x2b = transform_sites(source, namespace, unique_idx, guarded=True); variants.append(("S2b unique captures", s2b, x2b))
+        if "\n".join(PROLOGUE) in source:
+            variants.append(("S4 single-door prologue", transform_prologue(source), {}))
+        if REGISTER.search(source):
+            s5, x5 = transform_registration(source, namespace, "batched"); variants.append(("S5 batched registration", s5, x5))
+            s6, x6 = transform_registration(source, namespace, "affine"); variants.append(("S6 thread-affine append", s6, x6))
+        if dict_mode:
+            variants.append(("S8 lazy instance_results", transform_lazy_dict(source), {}))
+        # all combined: S8 + S4 + S2a + S2b + S1 ; and with S5 instead of S1
+        combined = transform_lazy_dict(source) if dict_mode else source
+        if "\n".join(PROLOGUE) in combined:
+            combined = transform_prologue(combined)
+        extra_all: Dict[str, Any] = {}
+        if existing_idx:
+            combined, x = transform_sites(combined, namespace, existing_idx, guarded=False); extra_all.update(x)
+        if unique_idx:
+            combined, x = transform_sites(combined, namespace, unique_idx, guarded=True); extra_all.update(x)
+        if REGISTER.search(combined):
+            all_s1, x = transform_registration(combined, namespace, "trim"); variants.append(("ALL (S8+S4+S2a+S2b+S1)", all_s1, {**extra_all, **x}))
+            all_s5, x = transform_registration(combined, namespace, "batched"); variants.append(("ALL+S5 (S5 for S1)", all_s5, {**extra_all, **x}))
+        else:
+            variants.append(("ALL (S8+S4+S2a+S2b)", combined, extra_all))
+        results: List[Tuple[str, float, int, int]] = []
+        plain_ns: Optional[float] = None
+        stores = [meld._conduit_creations]
+
+        def drain() -> None:
+            # keep the heap flat between variants: the many buckets and the stand-ins grow with every call
+            for store in stores:
+                for key, bucket in list(store._creations.items()):
+                    if isinstance(bucket, list):
+                        bucket.clear()
+                for key, bucket in list(store._disposable_creations.items()):
+                    if isinstance(bucket, list):
+                        bucket.clear()
+
+        gc.disable()
+        try:
+            for label, src, extra in variants:
+                fn = compile_variant(src, namespace, extra, label)
+                assert type(fn(meld)) is shape.root, label
+                ns_per = time_ns(lambda f=fn: f(meld))
+                py, c = call_counts(lambda f=fn: f(meld))
+                drain()
+                for value in extra.values():
+                    if isinstance(value, list):
+                        value.clear()
+                    elif isinstance(value, TrimmedStore):
+                        for bucket in value._many.values():
+                            bucket.clear()
+                gc.collect()
+                if plain_ns is None:
+                    plain_ns = ns_per
+                results.append((label, ns_per, py, c))
+            ref = time_ns(lambda: conduit.meld(root_name))
+            drain()
+        finally:
+            gc.enable()
+        for label, ns_per, py, c in results:
+            delta = "" if label == "plain" else f"{(ns_per - plain_ns) / plain_ns * 100:+.0f}%"
+            rows.append(f"| {shape.name} | {label} | {ns_per:.0f} | {delta} | {py} | {c} |")
+        rows.append(f"| {shape.name} | reference: conduit.meld(\"{root_name}\") | {ref:.0f} | | | |")
+    finally:
+        conduit.cleanup()
+        book.cleanup()
+    return rows
+
+
+def main(argv: Sequence[str]) -> int:
+    """Print the certification table for the five shapes; `--source` also prints the captured bodies."""
+    show_source = "--source" in argv
+    print("| shape | variant | ns per creation (plan direct) | vs plain | py calls | C calls |")
+    print("| --- | --- | ---: | ---: | ---: | ---: |")
+    for shape in shapes():
+        for row in measure_shape(shape, show_source):
+            print(row)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))
+================================================================================
+END FILE: tests/experimentation/codegen_strategy_certification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/experimentation/commandops_shape_probe.py
@@ -115896,7 +116749,7 @@ END FILE: tests/integration/melder/crystallizer/test_bind_hook_recording.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/crystallizer/test_crystallizer_aether_twin_integration.py
-CONTENT SHA256: 309ba99ef4933de45aeccc2a51d96366661ab995befee1bd53f738e71f511885
+CONTENT SHA256: 0eda4e3cdd889e7b926d19259983309841f8a396d70c9ec34e8c8b4c9a6cbc8d
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -115993,6 +116846,57 @@ def test_unconfigured_aether_records_no_root_twin():
     crystallizer = Crystallizer()
     crystallizer.activate(configuration)
     assert crystallizer.describe_profile()["has_aether_crystal"] is False
+
+
+def _activated_crystallizer() -> Crystallizer:
+    """Activate the Aether-hosted crystallizer with default knobs."""
+    configuration = CrystallizerConfiguration().with_defaults()
+    configuration.activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+    return crystallizer
+
+
+def _recorded_aether_payload(crystallizer: Crystallizer) -> dict:
+    """Seal one checkpoint and return the Aether twin configuration payload it captured."""
+    checkpoint_id = crystallizer.create_checkpoint()
+    replay = crystallizer.checkpoint_replay_data(checkpoint_id)
+    return dict(replay["payloads"]["aether"]["root"]["configuration_payload"])
+
+
+def test_aether_root_twin_records_the_spell_id_regime() -> None:
+    """
+    Purpose:
+        A world run under per-frame spell ids must say so in its record, or a restore rebuilds it process-wide.
+    Contract:
+        Activating a per-frame root configuration while recording puts process_wide_unique_spell_ids False in the
+        Aether twin; activating it on Aether (which re-applies the logger policy through the utility system, and the
+        utility system re-emits the twin from live truth) keeps it False.
+    Returns:
+        None.
+    """
+    crystallizer = _activated_crystallizer()
+    aether_configuration = AetherConfiguration().with_defaults().with_process_wide_unique_spell_ids(False)
+    aether_configuration.activate()
+    assert _recorded_aether_payload(crystallizer)["process_wide_unique_spell_ids"] is False
+    Aether().activate(aether_configuration)
+    assert _recorded_aether_payload(crystallizer)["process_wide_unique_spell_ids"] is False
+
+
+def test_utility_system_reemission_records_the_regime_in_force() -> None:
+    """
+    Purpose:
+        The utility system's logger verbs re-emit the Aether twin from live truth, and that twin replaces the
+        configuration's own, so it must carry the regime too or it would erase it.
+    Contract:
+        On an Aether that was never configured, a logger verb re-emits a twin carrying the default regime in force
+        (True).
+    Returns:
+        None.
+    """
+    crystallizer = _activated_crystallizer()
+    AetherUtilitySystem().set_channel_logger_activation_enabled(False)
+    assert _recorded_aether_payload(crystallizer)["process_wide_unique_spell_ids"] is True
 ================================================================================
 END FILE: tests/integration/melder/crystallizer/test_crystallizer_aether_twin_integration.py
 ================================================================================
@@ -121554,6 +122458,309 @@ def test_restore_of_a_disabled_nexus_over_an_active_live_nexus_ends_disabled(cac
     assert Nexus().configuration.get_property("max_active_rift_count") == 5
 ================================================================================
 END FILE: tests/integration/melder/crystallizer/test_restore_over_active_nexus_integration.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py
+CONTENT SHA256: 1bfe089f7569ecd162984a3021ec801ebc450d82e95fcc445f3f9fdbadf23c46
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Integration tests: per-frame spell-id worlds record and restore intact (0.2.8214).
+
+WHY THIS EXISTS. Measured on 0.2.8212: under per-frame spell ids the same class bound in two frames recorded ONE
+spell crystal - custody was keyed by the spell id alone, so the second frame's bind displaced the first frame's
+copy - and the restore reported "complete" over a frame that came back empty. Custody is now keyed
+"<spell_id>@<frame>" under per-frame ids (the bare spell id under process-wide ids), the Aether twin carries the
+regime (0.2.8213), and restore rebuilds each Book's own copy.
+
+Contract under test:
+    1. the same class in two frames records one custody entry per frame and restores both bindings, their parked
+       members and their selections in their own Books, under per-frame ids;
+    2. a per-frame world with distinct classes restores per-frame;
+    3. a process-wide world keeps bare spell-id keys and restores as before;
+    4. a host running process-wide ids refuses a same-class per-frame record before building anything;
+    5. removing a spell in one frame removes only that frame's custody.
+
+Runs only on 3.14t (melder package root import chain).
+"""
+from typing import Dict, List, Optional, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.configuration.spellbook_configuration import SpellbookConfiguration
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.crystallizer.configuration.crystallizer_configuration import CrystallizerConfiguration
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.nexus.nexus import Nexus
+
+
+class TenantService:
+    """Importable restore target bound in both tenant frames."""
+
+    def __init__(self) -> None:
+        """Initialize the marker service."""
+        self.alive: bool = True
+
+
+class TenantServiceNext:
+    """Importable second version of the tenant service, parked in each tenant's index."""
+
+    def __init__(self) -> None:
+        """Initialize the marker service."""
+        self.alive: bool = True
+
+
+class OtherService:
+    """Importable restore target bound only in tenant_b (the distinct-class world)."""
+
+    def __init__(self) -> None:
+        """Initialize the marker service."""
+        self.alive: bool = True
+
+
+def _reset_world() -> None:
+    """Reset every world singleton and rebind the static Aether references, as a new process would start."""
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def reset_world_singletons():
+    """Isolate each test behind fresh Aether/Nexus/Crystallizer singletons."""
+    _reset_world()
+    yield
+    _reset_world()
+
+
+@pytest.fixture()
+def cache_root(tmp_path, monkeypatch):
+    """Route the crystallizer cache into a per-test directory."""
+    from melder.crystallizer.asset_management import crystallizer_cache
+
+    root = tmp_path / "__melder_cache__" / "__crystallizer_cache__"
+    monkeypatch.setattr(
+        crystallizer_cache.CrystallizerCache,
+        "resolve_cache_root_path",
+        staticmethod(lambda: root),
+    )
+    return root
+
+
+def _install_regime(process_wide: bool) -> None:
+    """Configure and activate the live Aether with one spell-id regime before any frame exists."""
+    policy = AetherConfiguration().with_defaults().with_process_wide_unique_spell_ids(process_wide)
+    policy.activate()
+    Aether().activate(policy)
+
+
+def _activate_crystallizer() -> Crystallizer:
+    """Activate the Aether-hosted crystallizer with default knobs."""
+    configuration = CrystallizerConfiguration().with_defaults()
+    configuration.activate()
+    crystallizer = Crystallizer()
+    crystallizer.activate(configuration)
+    return crystallizer
+
+
+def _tenant_book(frame: str, service: type, root_name: str) -> Tuple[Spellbook, Conduit, str]:
+    """
+    Build one tenant: a Book in a frame postured dynamic before its bind, one bind, one named dynamic conjure.
+
+    configure_aether_frame is the public pre-settlement door the recorded lane needs: it settles the frame dynamic
+    and freezes the Book's configuration, so the bind records and the conjure passes the recorded-world discipline.
+    """
+    book = Spellbook(aetheric_frame=frame, configuration=SpellbookConfiguration(frame).with_defaults())
+    book.configure_aether_frame(system_state="dynamic", disposal=None, disposal_method_names=None)
+    spell_id = book.bind(spell=service, existence="many")
+    conduit = book.conjure(name=root_name, dynamic=True)
+    return book, conduit, spell_id
+
+
+def _park_next_version(book: Spellbook, conduit: Conduit, spell_id: str) -> str:
+    """Stage TenantServiceNext as a parked member of the tenant service's index; return its spell id."""
+    index = book.find_spell_by_id(spell_id).spell_index
+    return conduit.bind_inactive(spell=TenantServiceNext, spell_index=index, existence="many")
+
+
+def _record(crystallizer: Crystallizer) -> str:
+    """Seal and flush one checkpoint of the current world; return its id."""
+    checkpoint_id = crystallizer.create_checkpoint()
+    crystallizer.flush_checkpoint(checkpoint_id)
+    return checkpoint_id
+
+
+def _custody_keys(crystallizer: Crystallizer, checkpoint_id: str) -> List[str]:
+    """Return the sorted custody keys one sealed checkpoint carries."""
+    return sorted(crystallizer.checkpoint_replay_data(checkpoint_id)["payloads"]["spell_crystal"])
+
+
+def _restore_in_a_fresh_world(checkpoint_id: str) -> Tuple[Crystallizer, Dict[str, object]]:
+    """Reset the world as a new process would, reload the flushed checkpoint and restore it."""
+    _reset_world()
+    rebooted = _activate_crystallizer()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    return rebooted, rebooted.load_checkpoint(checkpoint_id)
+
+
+def _live_book(frame: str, root_name: str) -> Spellbook:
+    """Return the restored Book of one tenant through its named root conduit."""
+    return Aether().get_conduit_by_name(root_name, aetheric_frame_name=frame).spellbook
+
+
+def _messages(error: BaseException) -> List[str]:
+    """Return the messages of one exception and its chained causes."""
+    messages: List[str] = []
+    current: Optional[BaseException] = error
+    while current is not None:
+        messages.append(str(current))
+        current = current.__cause__ or current.__context__
+    return messages
+
+
+def test_same_class_in_two_frames_restores_both_tenants_under_per_frame_ids(cache_root) -> None:
+    """
+    Purpose:
+        The multi-tenant shape per-frame ids exist for survives a record and a fresh restore.
+    Contract:
+        The record keeps one custody entry per frame for each version (four keys "<spell_id>@<frame>"); the restore
+        completes with both active bindings and both parked members rebuilt in their own Books and no custody
+        shortfall; tenant_a keeps the version it notched and tenant_b its own; per-frame ids are in force; the rebuilt
+        world re-records per-frame keys.
+    """
+    _install_regime(False)
+    crystallizer = _activate_crystallizer()
+    book_a, conduit_a, tenant_id = _tenant_book("tenant_a", TenantService, "root_a")
+    book_b, conduit_b, tenant_id_b = _tenant_book("tenant_b", TenantService, "root_b")
+    assert tenant_id_b == tenant_id
+    next_id = _park_next_version(book_a, conduit_a, tenant_id)
+    assert _park_next_version(book_b, conduit_b, tenant_id) == next_id
+    conduit_a.notch_spell(
+        spell_index=book_a.find_spell_by_id(tenant_id).spell_index,
+        spell=book_a._inactive_spells[next_id],
+    )
+    checkpoint_id = _record(crystallizer)
+    assert _custody_keys(crystallizer, checkpoint_id) == sorted([
+        f"{tenant_id}@tenant_a", f"{tenant_id}@tenant_b", f"{next_id}@tenant_a", f"{next_id}@tenant_b",
+    ])
+
+    rebooted, report = _restore_in_a_fresh_world(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["spell_active"] == 2
+    assert report["built_counts"]["spell_staged"] == 2
+    assert [entry for entry in list(report["shortfalls"]) if entry["kind"] == "spell_crystal"] == []
+    assert Aether().process_wide_unique_spell_ids is False
+    index_a = _live_book("tenant_a", "root_a").find_spell_by_id(tenant_id).spell_index
+    index_b = _live_book("tenant_b", "root_b").find_spell_by_id(tenant_id).spell_index
+    assert index_a.selected_spell_id == next_id
+    assert index_b.selected_spell_id == tenant_id
+    assert rebooted.get_spell_crystal(tenant_id, frame_name="tenant_b").custody_key == f"{tenant_id}@tenant_b"
+
+
+def test_per_frame_world_with_distinct_classes_restores_per_frame(cache_root) -> None:
+    """
+    Purpose:
+        A per-frame world restored in a fresh process runs per-frame ids again (the recorded regime, 0.2.8213).
+    Contract:
+        The restore completes with both bindings; binding tenant_a's class into tenant_b afterwards is accepted, as
+        it was in the recorded world (under process-wide ids it collides).
+    """
+    _install_regime(False)
+    crystallizer = _activate_crystallizer()
+    _tenant_book("tenant_a", TenantService, "root_a")
+    _tenant_book("tenant_b", OtherService, "root_b")
+    checkpoint_id = _record(crystallizer)
+
+    _rebooted, report = _restore_in_a_fresh_world(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["spell_active"] == 2
+    assert Aether().process_wide_unique_spell_ids is False
+    follow_up = Spellbook(
+        aetheric_frame="tenant_b",
+        configuration=SpellbookConfiguration("tenant_b").with_defaults().finalize(),
+    )
+    assert follow_up.bind(spell=TenantService, existence="many")
+
+
+def test_process_wide_world_keeps_bare_custody_keys(cache_root) -> None:
+    """
+    Purpose:
+        Worlds under the default regime keep their record shape.
+    Contract:
+        Custody keys are bare spell ids; the restore completes with both bindings; the rebuilt world runs
+        process-wide ids and re-records bare keys.
+    """
+    crystallizer = _activate_crystallizer()
+    _book_a, _conduit_a, tenant_id = _tenant_book("tenant_a", TenantService, "root_a")
+    _book_b, _conduit_b, other_id = _tenant_book("tenant_b", OtherService, "root_b")
+    checkpoint_id = _record(crystallizer)
+    assert _custody_keys(crystallizer, checkpoint_id) == sorted([tenant_id, other_id])
+
+    rebooted, report = _restore_in_a_fresh_world(checkpoint_id)
+
+    assert report["status"] == "complete"
+    assert report["built_counts"]["spell_active"] == 2
+    assert Aether().process_wide_unique_spell_ids is True
+    assert rebooted.get_spell_crystal(tenant_id).custody_key == tenant_id
+
+
+def test_process_wide_host_refuses_a_same_class_per_frame_record(cache_root) -> None:
+    """
+    Purpose:
+        A record only per-frame ids can hold is refused, not half-built, by a host running process-wide ids.
+    Contract:
+        load_checkpoint raises at stage aether_configuration with a cause naming the two-frame binding; no tenant
+        frame is born.
+    """
+    _install_regime(False)
+    crystallizer = _activate_crystallizer()
+    _tenant_book("tenant_a", TenantService, "root_a")
+    _tenant_book("tenant_b", TenantService, "root_b")
+    checkpoint_id = _record(crystallizer)
+
+    _reset_world()
+    _install_regime(True)
+    rebooted = _activate_crystallizer()
+    rebooted.reload_cached_checkpoint(checkpoint_id)
+    with pytest.raises(RuntimeError) as raised:
+        rebooted.load_checkpoint(checkpoint_id)
+
+    messages = _messages(raised.value)
+    assert any("aether_configuration" in message for message in messages)
+    assert any("two frames" in message for message in messages)
+    assert "tenant_a" not in Aether().list_frame_names()
+    assert "tenant_b" not in Aether().list_frame_names()
+
+
+def test_removing_a_spell_in_one_frame_keeps_the_other_frames_custody(cache_root) -> None:
+    """
+    Purpose:
+        True removal in one tenant must not take the other tenant's recorded binding with it.
+    Contract:
+        After tenant_a removes the tenant service, the record holds tenant_b's copy and no longer tenant_a's.
+    """
+    _install_regime(False)
+    crystallizer = _activate_crystallizer()
+    book_a, _conduit_a, tenant_id = _tenant_book("tenant_a", TenantService, "root_a")
+    _tenant_book("tenant_b", TenantService, "root_b")
+    book_a.cleanup_and_remove_spell(tenant_id)
+
+    assert crystallizer.describe_profile()["spell_crystal_count"] == 1
+    assert crystallizer.get_spell_crystal(tenant_id, frame_name="tenant_b").frame_name == "tenant_b"
+    with pytest.raises(KeyError):
+        crystallizer.get_spell_crystal(tenant_id, frame_name="tenant_a")
+================================================================================
+END FILE: tests/integration/melder/crystallizer/test_restore_per_frame_spell_worlds_integration.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/integration/melder/crystallizer/test_restore_sealed_aether_regime_integration.py
@@ -151711,7 +152918,7 @@ END FILE: tests/mocks/crystallizer/spell_crystal_demo_pkg/shared.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/mocks/crystallizer/spell_crystal_harness.py
-CONTENT SHA256: 8808e75eee225ed749de40f74e034a62285aef23033c68d8ca98c8079c64c34a
+CONTENT SHA256: 1f8910c33d4ac75ed6a66fd3c356f95ec85acce89d64f2ba32ac3c5d2522632b
 SOURCE ENCODING: utf-8
 ================================================================================
 import importlib
@@ -151739,6 +152946,8 @@ class DummySpell:
         """Mirror the native bind policy and custody fields consumed by SpellCrystal."""
         self.spell_id = spell_id
         self.resolvable = True
+        # The owning frame (0.2.8214): per-frame spell ids key custody "<spell_id>@<frame>".
+        self.aetheric_frame = "default"
         self.spell = spell
         # Bind-signature fields consumed by SpellCrystal.__init__ (test doubles).
         self.spell_name = spell_id
@@ -182018,7 +183227,7 @@ END FILE: tests/unit/melder/aether/conduit/meld/test_concrete_meld_subclasses.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/conduit/meld/test_meld.py
-CONTENT SHA256: 5711e4310cd432be80122e4d3a3e2f8c7cf66e5bae0c37073d3982dd794e13d9
+CONTENT SHA256: b2e33631b79773a359c6fd342d815381687835eadfda01cd4c071bd38afaa6a3
 SOURCE ENCODING: utf-8
 ================================================================================
 """Contract tests for Meld resolution, gating, and activation flow."""
@@ -184120,6 +185329,20 @@ def test_ensure_resolution_resolvable_blocks_invalid_disabled_cleaned(
         meld._ensure_resolution_resolvable(spell)
 
 
+def _make_phase5_root(spell: _SpellStub) -> _SpellStub:
+    """
+    Give a stub spell a Phase 5 root blueprint for its selected id and return it.
+
+    The deferred lane keeps its 8-11 pass for a spell that is its current Phase 5 root; any other constructed
+    spell (a dependency compiled only inside a consumer's plan) runs the full target pass (5-11) instead.
+    """
+    spell._compiler_artifact._root_blueprint_phase5 = SimpleNamespace(
+        root_spell_id=spell.spell_index.selected_spell_id,
+        cleanup=lambda: None,
+    )
+    return spell
+
+
 def test_ensure_runtime_resolution_ready_skips_when_not_required() -> None:
     """
     Verify deferred runtime-resolution gate is a no-op when not required.
@@ -184173,22 +185396,24 @@ def test_ensure_runtime_resolution_ready_marks_not_required_when_complete() -> N
 
 def test_ensure_runtime_resolution_ready_runs_deferred_and_marks_complete() -> None:
     """
-    Verify runtime gate executes deferred phases and marks resolution complete.
+    Verify runtime gate executes deferred phases for a Phase 5 root and marks resolution complete.
 
     Contract:
-        - Deferred phase hook runs once for the active resolution conduit id.
+        - A spell that is its current Phase 5 root keeps the deferred 8-11 pass: the hook runs once for
+          the active resolution conduit id and the full target pass does not run.
         - Success flips flags to `resolution_complete=True` and
           `resolution_required=False`.
     """
     spellbook = _SpellbookStub()
     spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock()
+    spellbook._run_resolution_phases_for_target_spell = MagicMock()
     meld = _make_meld(spellbook=spellbook)
-    spell = _SpellStub(
+    spell = _make_phase5_root(_SpellStub(
         spell_id="spell-1",
         spellbook=spellbook,
         resolution_required=True,
         resolution_complete=False,
-    )
+    ))
 
     meld._ensure_runtime_resolution_ready(spell)
 
@@ -184197,6 +185422,7 @@ def test_ensure_runtime_resolution_ready_runs_deferred_and_marks_complete() -> N
         expected_conduit_id,
         spell,
     )
+    spellbook._run_resolution_phases_for_target_spell.assert_not_called()
     assert spell.resolution_complete is True
     assert spell.resolution_required is False
 
@@ -184206,7 +185432,7 @@ def test_ensure_runtime_resolution_ready_failure_reflags_and_reraises() -> None:
     Verify deferred-resolution failures keep runtime gate required and incomplete.
 
     Contract:
-        - Deferred phase exceptions propagate to caller.
+        - Deferred phase exceptions (a Phase 5 root's 8-11 pass) propagate to caller.
         - Failure preserves `resolution_required=True` and
           `resolution_complete=False`.
     """
@@ -184215,12 +185441,12 @@ def test_ensure_runtime_resolution_ready_failure_reflags_and_reraises() -> None:
         side_effect=RuntimeError("deferred resolution failed"),
     )
     meld = _make_meld(spellbook=spellbook)
-    spell = _SpellStub(
+    spell = _make_phase5_root(_SpellStub(
         spell_id="spell-1",
         spellbook=spellbook,
         resolution_required=True,
         resolution_complete=False,
-    )
+    ))
 
     with pytest.raises(RuntimeError, match="deferred resolution failed"):
         meld._ensure_runtime_resolution_ready(spell)
@@ -184261,9 +185487,141 @@ def test_ensure_runtime_resolution_ready_requires_conduit_id() -> None:
     assert spell.resolution_complete is False
 
 
+def test_ensure_runtime_resolution_ready_runs_full_target_pass_without_phase5_root() -> None:
+    """
+    Verify the runtime gate runs the full target pass for a spell that is not its Phase 5 root.
+
+    Contract:
+        - A constructed spell with no Phase 5 root blueprint - a dependency compiled only inside a
+          consumer's plan and flagged by that pass - runs `_run_resolution_phases_for_target_spell` (5-11)
+          once for the active resolution conduit id.
+        - The deferred 8-11 hook does not run: it skips a spell with no Phase 5 root blueprint.
+        - Success flips flags to `resolution_complete=True` and `resolution_required=False`.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._run_resolution_phases_for_target_spell = MagicMock()
+    spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock()
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        resolution_required=True,
+        resolution_complete=False,
+    )
+
+    meld._ensure_runtime_resolution_ready(spell)
+
+    spellbook._run_resolution_phases_for_target_spell.assert_called_once_with(
+        meld._resolution_conduit_id,
+        spell,
+    )
+    spellbook._run_deferred_resolution_phases_for_target_spell.assert_not_called()
+    assert spell.resolution_complete is True
+    assert spell.resolution_required is False
+
+
+def test_ensure_runtime_resolution_ready_keeps_deferred_pass_for_existing_creation() -> None:
+    """
+    Verify an existing-creation spell keeps the deferred pass even without a Phase 5 root blueprint.
+
+    Contract:
+        - Existing creations never plan (their context has its own executor path), so the lane keeps
+          `_run_deferred_resolution_phases_for_target_spell` for them and never runs the full target pass.
+        - Success flips flags to `resolution_complete=True` and `resolution_required=False`.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._run_resolution_phases_for_target_spell = MagicMock()
+    spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock()
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        is_existing_creation=True,
+        resolution_required=True,
+        resolution_complete=False,
+    )
+
+    meld._ensure_runtime_resolution_ready(spell)
+
+    spellbook._run_deferred_resolution_phases_for_target_spell.assert_called_once_with(
+        meld._resolution_conduit_id,
+        spell,
+    )
+    spellbook._run_resolution_phases_for_target_spell.assert_not_called()
+    assert spell.resolution_complete is True
+    assert spell.resolution_required is False
+
+
+def test_ensure_runtime_resolution_ready_full_pass_leaving_invalid_verdict_raises() -> None:
+    """
+    Verify a full target pass that leaves the spell unresolved for the conduit raises a validation error.
+
+    Contract:
+        - After the full pass the spell must read resolution-valid for the resolution conduit; a pass that
+          records an invalid verdict (a visibility failure returns without raising) raises
+          SpellbookValidationError instead of marking the spell complete.
+        - The failure keeps `resolution_required=True` and `resolution_complete=False` and bumps the door
+          epoch, like any failed deferred-lane pass.
+    """
+    resolution_state = _ResolutionStateStub()
+    spellbook = _SpellbookStub()
+
+    def _record_invalid_verdict(conduit_id: str, target_spell: _SpellStub) -> None:
+        """Stand in for a full pass that ends in a visibility failure."""
+        resolution_state._spell_validity[target_spell.spell_id] = SpellValidity.invalid
+
+    spellbook._run_resolution_phases_for_target_spell = MagicMock(side_effect=_record_invalid_verdict)
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        spell_system_states=_SpellSystemStatesStub(resolution_state),
+        resolution_required=True,
+        resolution_complete=False,
+    )
+    epoch_before = spell._door_epoch
+
+    with pytest.raises(SpellbookValidationError):
+        meld._ensure_runtime_resolution_ready(spell)
+
+    assert spell.resolution_required is True
+    assert spell.resolution_complete is False
+    assert spell._door_epoch == epoch_before + 1
+
+
+def test_ensure_runtime_resolution_ready_full_pass_failure_reflags_and_reraises() -> None:
+    """
+    Verify a failing full target pass propagates and keeps the spell owing its resolution.
+
+    Contract:
+        - Exceptions from `_run_resolution_phases_for_target_spell` propagate unchanged.
+        - Failure preserves `resolution_required=True` and `resolution_complete=False` and bumps the
+          door epoch.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._run_resolution_phases_for_target_spell = MagicMock(
+        side_effect=RuntimeError("full target pass failed"),
+    )
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        resolution_required=True,
+        resolution_complete=False,
+    )
+    epoch_before = spell._door_epoch
+
+    with pytest.raises(RuntimeError, match="full target pass failed"):
+        meld._ensure_runtime_resolution_ready(spell)
+
+    assert spell.resolution_required is True
+    assert spell.resolution_complete is False
+    assert spell._door_epoch == epoch_before + 1
+
+
 def test_meld_runs_deferred_runtime_resolution_before_context_build(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Verify meld executes deferred runtime gate before creation-context build.
+    Verify meld executes deferred runtime gate before creation-context build (a Phase 5 root: 8-11).
 
     Contract:
         - Deferred phase hook executes before context build/execution.
@@ -184298,13 +185656,13 @@ def test_meld_runs_deferred_runtime_resolution_before_context_build(monkeypatch:
         return "resolved"
 
     context.execute_no_hooks = _execute_no_hooks
-    spell = _SpellStub(
+    spell = _make_phase5_root(_SpellStub(
         spell_id="spell-1",
         owner_creations=creations,
         spellbook=spellbook,
         resolution_required=True,
         resolution_complete=False,
-    )
+    ))
     spell._get_or_build_creation_context = MagicMock(return_value=context)
 
     meld = _make_meld(creations=creations, spellbook=spellbook)
@@ -184324,7 +185682,7 @@ def test_meld_runs_deferred_runtime_resolution_before_context_build(monkeypatch:
 
 def test_meld_skips_context_build_when_deferred_runtime_resolution_fails(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Verify meld does not build context when deferred runtime gate fails.
+    Verify meld does not build context when deferred runtime gate fails (a Phase 5 root: 8-11).
 
     Contract:
         - Deferred runtime phase errors propagate from `meld`.
@@ -184336,12 +185694,12 @@ def test_meld_skips_context_build_when_deferred_runtime_resolution_fails(monkeyp
     spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock(
         side_effect=RuntimeError("deferred gate failure"),
     )
-    spell = _SpellStub(
+    spell = _make_phase5_root(_SpellStub(
         spell_id="spell-1",
         spellbook=spellbook,
         resolution_required=True,
         resolution_complete=False,
-    )
+    ))
     spell._get_or_build_creation_context = MagicMock()
 
     meld = _make_meld(spellbook=spellbook)
@@ -220196,7 +221554,7 @@ END FILE: tests/unit/melder/aether/test_configuration_read_accessors.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/aether/test_configuration_reload_lanes.py
-CONTENT SHA256: 5c092050b2cbb1f95b9a3ca0ad608b3b08ac5d62e0b3ba1cf2b1e69892917966
+CONTENT SHA256: d412d09e25c65aebd64dc49c6b45b0fc5cb9aae0372dcf8e55b866c6dc89bd3a
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -220401,17 +221759,20 @@ def test_from_recorded_posture_refuses_a_stateless_payload():
 
 def test_aether_from_recorded_payload_reloads_knob_and_reports_callables():
     """
-    Contract: the boolean knob reloads and seals; presence-flagged
-    callables report under code_participation (a record cannot carry a
-    live resolver); the returned configuration is frozen but NOT yet
-    activated (activation is the booting Aether's act).
+    Contract: the boolean knob and the spell-id regime reload and seal (a
+    full payload reports nothing missing); presence-flagged callables
+    report under code_participation (a record cannot carry a live
+    resolver); the returned configuration is frozen but NOT yet activated
+    (activation is the booting Aether's act).
     """
     configuration, report = AetherConfiguration.from_recorded_payload({
         "channel_logger_activation_enabled": True,
         "channel_logger_resolver_present": True,
         "default_logger_present": False,
+        "process_wide_unique_spell_ids": True,
     })
     assert configuration.channel_logger_activation_enabled is True
+    assert configuration.process_wide_unique_spell_ids is True
     assert report["missing"] == []
     assert report["code_participation"] == ["channel_logger_resolver"]
     assert configuration.frozen is True
@@ -220421,13 +221782,43 @@ def test_aether_from_recorded_payload_reloads_knob_and_reports_callables():
 
 def test_aether_from_recorded_payload_defaults_missing_knob_with_report():
     """
-    Contract: an absent knob falls to the documented default (False) and
-    is reported under "missing" - never silently.
+    Contract: absent keys fall to their documented defaults (logger
+    activation False, process-wide spell ids True) and each is reported
+    under "missing" - never silently. A record sealed before the regime was
+    recorded (record major 3 and older) reloads this way.
     """
     configuration, report = AetherConfiguration.from_recorded_payload({})
     assert configuration.channel_logger_activation_enabled is False
-    assert report["missing"] == ["channel_logger_activation_enabled"]
+    assert configuration.process_wide_unique_spell_ids is True
+    assert report["missing"] == [
+        "channel_logger_activation_enabled",
+        "process_wide_unique_spell_ids",
+    ]
     assert report["code_participation"] == []
+    configuration.cleanup()
+
+
+def test_aether_from_recorded_payload_reloads_a_per_frame_regime_and_seals() -> None:
+    """
+    Purpose:
+        A world recorded under per-frame spell ids must rebuild a root
+        configuration that says so, or its restore runs process-wide ids.
+    Contract:
+        A recorded `process_wide_unique_spell_ids` False reloads False, the
+        configuration comes back frozen (the regime cannot be changed after
+        the reload), and nothing is reported missing.
+    """
+    configuration, report = AetherConfiguration.from_recorded_payload({
+        "channel_logger_activation_enabled": False,
+        "channel_logger_resolver_present": False,
+        "default_logger_present": False,
+        "process_wide_unique_spell_ids": False,
+    })
+    assert configuration.process_wide_unique_spell_ids is False
+    assert configuration.frozen is True
+    assert report["missing"] == []
+    with pytest.raises(RuntimeError):
+        configuration.set_process_wide_unique_spell_ids(True)
     configuration.cleanup()
 
 
@@ -251934,7 +253325,7 @@ END FILE: tests/unit/melder/crystallizer/crystal_analysis/test_fact_strategies.p
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/crystal_analysis/test_impact_engine.py
-CONTENT SHA256: b0907c2783f0c836a57026b8638b6102280f98553642fab8f88fa61d0ee207e7
+CONTENT SHA256: ba9e42eb0f4b5efa1704ffe4d52c7c4d2a3f02a3c0473881e16dd6e8a0eabae9
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -252196,6 +253587,40 @@ def test_source_drift_still_detects_tamper_through_the_cache(tmp_path):
     finally:
         engine.cleanup()
         PhysicalSourceCache._clear_for_tests()
+
+
+def test_spell_radius_answers_a_spell_id_through_frame_scoped_keys():
+    """
+    Contract (0.2.8214): a record kept under per-frame ids keys custody "<spell_id>@<frame>"; the spell radius still
+    answers the bare spell id (first matching key in sorted order) and lists every frame's copy, while an unknown
+    id still answers unknown_spell.
+    """
+    world = {
+        "sha-alpha@tenant_a": _crystal(
+            spell_id="sha-alpha",
+            root_module="userland.alpha",
+            modules=["userland.alpha"],
+            dependencies={},
+        ),
+        "sha-alpha@tenant_b": _crystal(
+            spell_id="sha-alpha",
+            root_module="userland.alpha",
+            modules=["userland.alpha"],
+            dependencies={},
+            spellbook_id="book-2",
+        ),
+    }
+    engine = ImpactEngine(world)
+    try:
+        radius = engine.blast_radius_of_spell("sha-alpha")
+        assert radius["unknown_spell"] is False
+        assert radius["spell"] == "sha-alpha"
+        assert radius["root_module"] == "userland.alpha"
+        assert radius["affected_spells"] == ["sha-alpha@tenant_a", "sha-alpha@tenant_b"]
+        assert radius["affected_spellbooks"] == ["book-1", "book-2"]
+        assert engine.blast_radius_of_spell("sha-missing")["unknown_spell"] is True
+    finally:
+        engine.cleanup()
 ================================================================================
 END FILE: tests/unit/melder/crystallizer/crystal_analysis/test_impact_engine.py
 ================================================================================
@@ -253140,7 +254565,7 @@ END FILE: tests/unit/melder/crystallizer/crystal_analysis/test_user_source_reten
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/crystal_loader_system/test_crystal_loader_system.py
-CONTENT SHA256: 121fd4d6b392f33b024b717f06f4209067c14e4e2d6616a67385d94c13f97d89
+CONTENT SHA256: cf780c205bcbc273c7d37658bc624c5a8299ab22d77d9fa47b4e4e5a52e57175
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -253865,6 +255290,67 @@ def test_loader_cleanup_cleans_the_owned_restore_pool():
     try:
         assert pool.cleaned is True
     finally:
+        record_system.cleanup()
+
+
+def _custody_record(custody_key, spell_id):
+    """A retargetable formation holding one custody entry recorded in frame alpha under `custody_key`."""
+    record = _retargetable_record()
+    record["payloads"]["spell_crystal"] = {
+        custody_key: {
+            "id": spell_id, "spellbook_id": "book-1", "frame_name": "alpha",
+            "custody_key": custody_key, "custody_location": "active",
+        },
+    }
+    return record
+
+
+def test_retarget_rekeys_frame_scoped_custody_for_the_target_frame():
+    """
+    Contract (0.2.8214): a formation recorded under per-frame ids keys custody by frame; retargeting rebuilds each
+    frame-scoped key for the target frame, rewrites the payload's frame_name and custody_key, and the minted journal
+    names the new key. The caller's record is not mutated.
+    """
+    record_system = PersistenceSystem()
+    admission_plane = LoadAdmission(record_system)
+    formation_record = _custody_record("sha-a@alpha", "sha-a")
+    try:
+        plan = admission_plane.plan_formation_load(formation_record, target_frame_name="beta")
+        try:
+            window = plan.chain[0]
+            custody = window["payloads"]["spell_crystal"]
+            assert list(custody) == ["sha-a@beta"]
+            assert custody["sha-a@beta"]["id"] == "sha-a"
+            assert custody["sha-a@beta"]["frame_name"] == "beta"
+            assert custody["sha-a@beta"]["custody_key"] == "sha-a@beta"
+            assert [entry[2] for entry in window["journal"] if entry[1] == "spell_crystal"] == ["sha-a@beta"]
+            assert list(formation_record["payloads"]["spell_crystal"]) == ["sha-a@alpha"]
+        finally:
+            plan.cleanup()
+    finally:
+        admission_plane.cleanup()
+        record_system.cleanup()
+
+
+def test_retarget_keeps_process_wide_custody_keys():
+    """
+    Contract (0.2.8214): a formation recorded under process-wide ids keys custody by the spell id alone; retargeting
+    keeps that key and rewrites only the payload's frame_name.
+    """
+    record_system = PersistenceSystem()
+    admission_plane = LoadAdmission(record_system)
+    formation_record = _custody_record("sha-b", "sha-b")
+    try:
+        plan = admission_plane.plan_formation_load(formation_record, target_frame_name="beta")
+        try:
+            custody = plan.chain[0]["payloads"]["spell_crystal"]
+            assert list(custody) == ["sha-b"]
+            assert custody["sha-b"]["frame_name"] == "beta"
+            assert custody["sha-b"]["custody_key"] == "sha-b"
+        finally:
+            plan.cleanup()
+    finally:
+        admission_plane.cleanup()
         record_system.cleanup()
 ================================================================================
 END FILE: tests/unit/melder/crystallizer/crystal_loader_system/test_crystal_loader_system.py
@@ -255092,6 +256578,248 @@ def test_concurrent_built_stack_appends_lose_no_units():
         engine.cleanup()
 ================================================================================
 END FILE: tests/unit/melder/crystallizer/crystal_loader_system/test_restore_report_safety.py
+================================================================================
+================================================================================
+BEGIN FILE: tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py
+CONTENT SHA256: 4b4e294605e979e58863638cd1b70dae6164a754417eae2644df0902d0ef3e48
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Unit tests for restore stage 1 and the recorded spell-id regime (0.2.8213, refusal 0.2.8214).
+
+WHY THIS EXISTS. Measured on 0.2.8212: a world recorded under per-frame spell ids restored under process-wide ids,
+because the Aether record did not carry the regime and stage 1 rebuilt the default. Stage 1 now installs the recorded
+regime while the live one can still change, and otherwise says so with a named shortfall - or, when the record binds
+one spell id in two frames and cannot be rebuilt under the live regime, refuses before anything is built.
+
+The chains are hand-made replay windows in the PersistenceCrystal shape; a real Aether is reset around each test.
+
+Contract under test:
+    1. nothing fixed (no configuration, no frame): the recorded per-frame regime is installed;
+    2. a configured Aether with another regime: shortfall, the host configuration is kept;
+    3. an unconfigured Aether whose first frame sealed another regime: shortfall, the recorded logger policy is
+       installed under the live regime, and the restore completes;
+    4. the opposite direction names its own shortfall;
+    5. a record without the regime reports it missing and rebuilds the default;
+    6. a host running process-wide ids refuses, before building anything, a per-frame record that binds one spell id
+       in two frames (a payload without its own frame is placed in its Book's frame);
+    7. recorded-to-live spell translation is kept per Book.
+"""
+
+from typing import Dict, List, Optional, Tuple
+
+import pytest
+
+from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.spellbook.spellbook import Spellbook
+from melder.crystallizer.crystal_loader_system.restore_engine import RestoreEngine
+from melder.crystallizer.crystallizer import Crystallizer
+from melder.nexus.nexus import Nexus
+
+
+def _reset_world() -> None:
+    """Reset every world singleton and rebind the static Aether references."""
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+
+
+@pytest.fixture(autouse=True)
+def reset_world_singletons() -> None:
+    """Isolate each test behind fresh Aether/Nexus/Crystallizer singletons."""
+    _reset_world()
+    yield
+    _reset_world()
+
+
+def _aether_payload(regime: Optional[bool], channel_logger_activation_enabled: bool = False) -> Dict[str, object]:
+    """Build one AetherCrystal configuration payload; regime None leaves the key out (a pre-4.0 record)."""
+    payload: Dict[str, object] = {
+        "channel_logger_activation_enabled": channel_logger_activation_enabled,
+        "channel_logger_resolver_present": False,
+        "default_logger_present": False,
+    }
+    if regime is not None:
+        payload["process_wide_unique_spell_ids"] = regime
+    return payload
+
+
+def _engine(configuration_payload: Dict[str, object],
+            extra_journal: Optional[List[List[object]]] = None,
+            extra_payloads: Optional[Dict[str, Dict[str, object]]] = None) -> RestoreEngine:
+    """Build one single-window engine whose chain carries the Aether twin plus optional world rows."""
+    journal: List[List[object]] = [[1, "aether", "root"]]
+    journal.extend(extra_journal or [])
+    payloads: Dict[str, Dict[str, object]] = {
+        "aether": {"root": {"configuration_payload": configuration_payload}},
+    }
+    payloads.update(extra_payloads or {})
+    return RestoreEngine(
+        profile_name="default",
+        checkpoint_ids=["01TESTREGIME0000000000000"],
+        chain=[{"journal": journal, "payloads": payloads}],
+    )
+
+
+def _restore(engine: RestoreEngine) -> Dict[str, object]:
+    """Run the engine and return its detached report."""
+    report = engine.restore()
+    try:
+        return report.describe()
+    finally:
+        report.cleanup()
+        engine.cleanup()
+
+
+def _regime_shortfalls(report: Dict[str, object]) -> List[str]:
+    """Return the reasons of every shortfall filed against the recorded regime."""
+    return [
+        str(entry["reason"])
+        for entry in list(report["shortfalls"])
+        if entry["kind"] == "aether" and entry["key"] == "process_wide_unique_spell_ids"
+    ]
+
+
+def _install(process_wide: bool) -> AetherConfiguration:
+    """Configure and activate the live Aether with one regime, the way a host does before restoring."""
+    policy = AetherConfiguration().with_defaults().with_process_wide_unique_spell_ids(process_wide)
+    policy.activate()
+    Aether().activate(policy)
+    return policy
+
+
+def test_nothing_fixed_installs_the_recorded_per_frame_regime() -> None:
+    """A fresh process restores a per-frame record under per-frame ids, with no regime shortfall."""
+    report = _restore(_engine(_aether_payload(False)))
+    assert report["status"] == "complete"
+    assert _regime_shortfalls(report) == []
+    assert Aether().configured is True
+    assert Aether().process_wide_unique_spell_ids is False
+
+
+def test_configured_host_with_another_regime_reports_and_keeps_its_configuration() -> None:
+    """A host that configured process-wide ids keeps them, and the restore says what it could not rebuild."""
+    host_policy = _install(True)
+    report = _restore(_engine(_aether_payload(False)))
+    assert report["status"] == "complete"
+    assert _regime_shortfalls(report) == ["recorded_per_frame_ids_restored_under_process_wide_ids"]
+    assert {
+        "kind": "aether", "key": "root", "reason": "live_aether_already_configured_recorded_payload_skipped",
+    } in list(report["shortfalls"])
+    assert Aether().configuration is host_policy
+    assert Aether().process_wide_unique_spell_ids is True
+
+
+def test_sealed_frame_without_configuration_installs_the_logger_policy_under_the_live_regime() -> None:
+    """
+    A host frame sealed process-wide ids before the restore: the recorded logger policy still installs, under the
+    live regime. Installing the rebuilt per-frame configuration itself would trip the sealed-regime guard and fail
+    the whole restore; on 0.2.8212 the reload dropped the regime, so the mismatch passed silently.
+    """
+    Spellbook(aetheric_frame="host")
+    assert Aether().configured is False
+    report = _restore(_engine(_aether_payload(False, channel_logger_activation_enabled=True)))
+    assert report["status"] == "complete"
+    assert _regime_shortfalls(report) == ["recorded_per_frame_ids_restored_under_process_wide_ids"]
+    assert Aether().configured is True
+    assert Aether().configuration.channel_logger_activation_enabled is True
+    assert Aether().process_wide_unique_spell_ids is True
+
+
+def test_process_wide_record_into_a_per_frame_host_names_the_opposite_shortfall() -> None:
+    """A process-wide record restored into a per-frame host is reported with its own reason."""
+    _install(False)
+    report = _restore(_engine(_aether_payload(True)))
+    assert report["status"] == "complete"
+    assert _regime_shortfalls(report) == ["recorded_process_wide_ids_restored_under_per_frame_ids"]
+    assert Aether().process_wide_unique_spell_ids is False
+
+
+def test_record_without_the_regime_reports_it_missing_and_rebuilds_the_default() -> None:
+    """A pre-4.0 Aether twin reloads the default regime and says the key was missing."""
+    report = _restore(_engine(_aether_payload(None)))
+    assert report["status"] == "complete"
+    assert _regime_shortfalls(report) == ["root_config_key_missing_defaulted_with_report"]
+    assert Aether().configured is True
+    assert Aether().process_wide_unique_spell_ids is True
+
+
+def _one_spell_id_in_two_frames() -> Tuple[List[List[object]], Dict[str, Dict[str, object]]]:
+    """Journal rows and payloads of a per-frame world that bound one spell id in two frames (two Books)."""
+    journal: List[List[object]] = [
+        [2, "spellbook", "book-a"],
+        [3, "spellbook", "book-b"],
+        [4, "spell_crystal", "sha@tenant_a"],
+        [5, "spell_crystal", "sha@tenant_b"],
+    ]
+    payloads: Dict[str, Dict[str, object]] = {
+        "spellbook": {
+            "book-a": {"spellbook_id": "book-a", "frame_name": "tenant_a"},
+            "book-b": {"spellbook_id": "book-b", "frame_name": "tenant_b"},
+        },
+        "spell_crystal": {
+            "sha@tenant_a": {"id": "sha", "spellbook_id": "book-a", "frame_name": "tenant_a"},
+            "sha@tenant_b": {"id": "sha", "spellbook_id": "book-b"},
+        },
+    }
+    return journal, payloads
+
+
+def _messages(error: BaseException) -> List[str]:
+    """Return the messages of one exception and its chained causes."""
+    messages: List[str] = []
+    current: Optional[BaseException] = error
+    while current is not None:
+        messages.append(str(current))
+        current = current.__cause__ or current.__context__
+    return messages
+
+
+def test_process_wide_host_refuses_a_record_binding_one_spell_id_in_two_frames() -> None:
+    """
+    A per-frame record that binds one spell id in two frames cannot be rebuilt under the process-wide ids a host
+    configured - the second frame's bind would collide. Stage 1 refuses before anything is built (0.2.8214) instead
+    of rolling back half a world at stage 6. tenant_b's payload carries no frame, so its Book's frame is used.
+    """
+    _install(True)
+    journal, payloads = _one_spell_id_in_two_frames()
+    engine = _engine(_aether_payload(False), extra_journal=journal, extra_payloads=payloads)
+    try:
+        with pytest.raises(RuntimeError, match="aether_configuration") as raised:
+            engine.restore()
+        assert any("two frames" in message for message in _messages(raised.value))
+        assert "tenant_a" not in Aether().list_frame_names()
+        assert "tenant_b" not in Aether().list_frame_names()
+    finally:
+        engine.cleanup()
+
+
+def test_spell_translation_is_kept_per_book() -> None:
+    """
+    Stage 6 keys recorded-to-live spell translation by Book: one spell id rebuilt in two Books may bind to two new
+    ids (each Book applies its own receiving policy), and each Book's selections, parked members and contract
+    grants must follow its own. No public surface exposes this map, so the engine's helpers are exercised directly.
+    """
+    engine = _engine(_aether_payload(None))
+    try:
+        engine._map_spell_identity("book-a", "sha", "sha-live-a")
+        engine._map_spell_identity("book-b", "sha", "sha-live-b")
+        engine._map_spell_identity("book-c", "sha", "sha")
+        assert engine._translate_spell("book-a", "sha") == "sha-live-a"
+        assert engine._translate_spell("book-b", "sha") == "sha-live-b"
+        assert engine._translate_spell("book-c", "sha") == "sha"
+        assert engine._translate_spell("book-d", "sha") == "sha"
+    finally:
+        engine.cleanup()
+================================================================================
+END FILE: tests/unit/melder/crystallizer/crystal_loader_system/test_restore_spell_id_regime.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/persistence/test_checkpoint_chain_integrity.py
@@ -257109,7 +258837,7 @@ END FILE: tests/unit/melder/crystallizer/persistence/test_persistence_crystal_ar
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/persistence/test_persistence_profile.py
-CONTENT SHA256: 752bc9824c967b77a6d4d96e55ee134daf8f3ceb4c9c116c81fd1a76b6b72ec2
+CONTENT SHA256: 8feef0152c350cb293737ecae9df54caff229cd40928b46e27120907f4f7b1a8
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -257135,6 +258863,7 @@ from melder.crystallizer.crystals.nexus_crystal import NexusCrystal
 from melder.crystallizer.crystals.spellbook_crystal import (
     SpellbookCrystal,
 )
+from melder.crystallizer.crystals.spell_index_crystal import SpellIndexCrystal
 from melder.crystallizer.persistence.persistence_profile import PersistenceProfile
 from melder.crystallizer.crystals.recorded_unit_state import RecordedUnitState
 
@@ -257145,13 +258874,16 @@ class _StubSpellCrystal:
 
     Contract:
         - `id` is the spell SHA identity (SpellCrystal.id contract).
+        - `custody_key` is the record key (SpellCrystal.custody_key contract): the spell id, or
+          "<spell_id>@<frame>" for a crystal recorded under per-frame spell ids (0.2.8214).
         - `spellbook_id` is the parent edge the subtree sweeps match on.
         - `cleaned`/`cleanup()` mirror the Cleanable surface.
         - `describe()` returns detached plain data for segment capture.
     """
 
-    def __init__(self, spell_id, spellbook_id=None):
+    def __init__(self, spell_id, spellbook_id=None, frame_name=None):
         self.id = spell_id
+        self.custody_key = spell_id if frame_name is None else f"{spell_id}@{frame_name}"
         self.spellbook_id = spellbook_id
         self.cleaned = False
 
@@ -257581,10 +259313,10 @@ def test_capture_segment_payload_special_cases():
     profile.record_nexus_state(RecordedUnitState.disabled)
     payloads, _entries, _rng = profile.capture_segment_since(0)
     assert payloads["spell_activity"]["sha-a"] == {
-        "spell_id": "sha-a", "active": False, "custody_present": False,
+        "spell_id": "sha-a", "custody_key": "sha-a", "active": False, "custody_present": False,
     }
     assert payloads["spell_removed"]["sha-a"] == {
-        "spell_id": "sha-a", "removed": True,
+        "spell_id": "sha-a", "custody_key": "sha-a", "removed": True,
     }
     assert payloads["spellbook_removed"]["book-x"] == {
         "spellbook_id": "book-x", "removed": True,
@@ -257656,12 +259388,135 @@ def test_cleanup_is_idempotent_and_blocks_further_use():
     assert twin.cleaned is True and custody.cleaned is True
     with pytest.raises(RuntimeError):
         profile.record(AetherCrystal())
+
+
+def _record_one_class_in_two_frames(profile):
+    """Record one spell id bound in two frames (two Books) the way per-frame ids key it; return both copies."""
+    first = _StubSpellCrystal("sha", "book-a", frame_name="tenant_a")
+    second = _StubSpellCrystal("sha", "book-b", frame_name="tenant_b")
+    profile.record_spell_crystal(first, active=True)
+    profile.record_spell_crystal(second, active=True)
+    return first, second
+
+
+def test_one_spell_id_in_two_frames_keeps_both_custody_entries():
+    """
+    Purpose:
+        Verify custody keyed per frame: one spell id bound in two frames records twice (0.2.8214).
+    Contract:
+        Neither copy displaces the other; describe_spell_crystals is keyed by custody key; a lookup naming a frame
+        answers that frame's copy, a bare spell id answers the lowest key, and a full key answers exactly.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If one frame's copy displaces the other or a lookup picks the wrong copy.
+    """
+    profile = PersistenceProfile("p")
+    first, second = _record_one_class_in_two_frames(profile)
+    assert first.cleaned is False and second.cleaned is False
+    assert profile.describe()["spell_crystal_count"] == 2
+    assert sorted(profile.describe_spell_crystals()) == ["sha@tenant_a", "sha@tenant_b"]
+    assert profile.get_spell_crystal("sha", frame_name="tenant_b") is second
+    assert profile.get_spell_crystal("sha") is first
+    assert profile.get_spell_crystal("sha@tenant_b") is second
+
+
+def test_frame_lookup_never_answers_another_frames_copy():
+    """
+    Purpose:
+        Verify a lookup that names a frame is exact.
+    Contract:
+        A frame holding no copy raises KeyError although another frame holds one; a bare (process-wide) key still
+        answers a lookup that names a frame, because the frame is not part of that key.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a frame-scoped lookup falls back to another frame's copy.
+    """
+    profile = PersistenceProfile("p")
+    _record_one_class_in_two_frames(profile)
+    with pytest.raises(KeyError):
+        profile.get_spell_crystal("sha", frame_name="tenant_c")
+    bare = _StubSpellCrystal("sha-bare", "book-a")
+    profile.record_spell_crystal(bare, active=True)
+    assert profile.get_spell_crystal("sha-bare", frame_name="tenant_a") is bare
+
+
+def test_activity_and_removal_address_one_frames_copy():
+    """
+    Purpose:
+        Verify park/promote and removal move or evict one frame's copy only.
+    Contract:
+        Parking "sha@tenant_a" leaves tenant_b's copy active; removing "sha@tenant_b" cleans only that copy.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a verb reaches the other frame's copy.
+    """
+    profile = PersistenceProfile("p")
+    first, second = _record_one_class_in_two_frames(profile)
+    profile.record_spell_activity("sha@tenant_a", active=False)
+    summary = profile.describe()
+    assert summary["spell_crystal_count"] == 1
+    assert summary["inactive_spell_crystal_count"] == 1
+    profile.remove_spell_crystal("sha@tenant_b")
+    assert second.cleaned is True and first.cleaned is False
+    assert profile.get_spell_crystal("sha", frame_name="tenant_a") is first
+
+
+def test_segment_payloads_name_the_spell_and_its_custody_key():
+    """
+    Purpose:
+        Verify activity and removal tombstones carry both names.
+    Contract:
+        Entries journal under the custody key; spell_activity and spell_removed payloads carry the bare "spell_id"
+        (read from the key once the crystal is gone) and the "custody_key".
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a tombstone loses either name.
+    """
+    profile = PersistenceProfile("p")
+    profile.record_spell_crystal(_StubSpellCrystal("sha", "book-a", frame_name="tenant_a"), active=True)
+    profile.record_spell_activity("sha@tenant_a", active=False)
+    profile.remove_spell_crystal("sha@tenant_a")
+    payloads, entries, _rng = profile.capture_segment_since(0)
+    assert [entry[2] for entry in entries] == ["sha@tenant_a", "sha@tenant_a", "sha@tenant_a"]
+    assert payloads["spell_activity"]["sha@tenant_a"] == {
+        "spell_id": "sha", "custody_key": "sha@tenant_a", "active": False, "custody_present": False,
+    }
+    assert payloads["spell_removed"]["sha@tenant_a"] == {
+        "spell_id": "sha", "custody_key": "sha@tenant_a", "removed": True,
+    }
+
+
+def test_index_graft_takes_each_members_custody_from_the_index_book():
+    """
+    Purpose:
+        Verify a graft reads its members' custody from the index's own Book.
+    Contract:
+        With one spell id recorded in two frames, the graft of tenant_a's index (the copy recorded first) carries
+        tenant_a's copy; the members map stays keyed by spell id, because one index lives in one Book.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the graft picks up another Book's copy.
+    """
+    profile = PersistenceProfile("p")
+    _record_one_class_in_two_frames(profile)
+    profile.record(SpellIndexCrystal(
+        index_id="index-a", spellbook_id="book-a", selected_spell_id="sha", member_spell_ids=["sha"],
+    ))
+    record = profile.capture_index_graft("index-a")
+    assert list(record["members"]) == ["sha"]
+    assert record["members"]["sha"]["payload"]["spellbook_id"] == "book-a"
+    assert record["members_without_custody"] == []
 ================================================================================
 END FILE: tests/unit/melder/crystallizer/persistence/test_persistence_profile.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/persistence/test_persistence_system.py
-CONTENT SHA256: f7173894b66c171a3f459b4d075900e3bc6b9e7ec17217a6aac00f8d5c279c57
+CONTENT SHA256: 8e4a3705417f46ae1de6e3fbc07647f1ff007b42f82bf7a0facc757d59368d27
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -257686,6 +259541,7 @@ class _StubSpellCrystal:
 
     def __init__(self, spell_id, spellbook_id=None):
         self.id = spell_id
+        self.custody_key = spell_id  # the record key (the bare spell id under process-wide ids)
         self.spellbook_id = spellbook_id
         self.cleaned = False
 
@@ -258024,12 +259880,39 @@ def test_cleanup_is_idempotent_and_blocks_further_use():
     system.cleanup()
     with pytest.raises(RuntimeError):
         system.create_checkpoint()
+
+
+def test_spell_custody_verbs_route_frame_scoped_keys_to_the_active_profile():
+    """
+    Purpose:
+        Verify the system passes custody keys and the lookup frame through to the active profile (0.2.8214).
+    Contract:
+        Two copies of one spell id recorded under per-frame keys coexist; activity and removal address one key;
+        get_spell_crystal with a frame answers that frame's copy.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a verb loses the key or the frame on the way down.
+    """
+    system = PersistenceSystem()
+    first = _StubSpellCrystal("sha", "book-a")
+    first.custody_key = "sha@tenant_a"
+    second = _StubSpellCrystal("sha", "book-b")
+    second.custody_key = "sha@tenant_b"
+    system.record_spell_crystal(first, active=True)
+    system.record_spell_crystal(second, active=True)
+    system.record_spell_activity("sha@tenant_a", active=False)
+    assert system.get_spell_crystal("sha", frame_name="tenant_a") is first
+    system.remove_spell_crystal("sha@tenant_b")
+    assert second.cleaned is True and first.cleaned is False
+    assert sorted(system.describe_spell_crystals()) == ["sha@tenant_a"]
+    system.cleanup()
 ================================================================================
 END FILE: tests/unit/melder/crystallizer/persistence/test_persistence_system.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/persistence/test_persistence_twins.py
-CONTENT SHA256: cc3b6c9ae7f443aee19de16eb1cbde5417ee7bfde8f8b20d86b5d73e99928a73
+CONTENT SHA256: 5060a211c93cd0d2b349033c806901e869e6c95b43eaf6856327f591de666835
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -258062,6 +259945,7 @@ class _StubSpellCrystal:
 
     def __init__(self, spell_id, spellbook_id=None):
         self.id = spell_id
+        self.custody_key = spell_id  # the record key (the bare spell id under process-wide ids)
         self.spellbook_id = spellbook_id
         self.cleaned = False
 
@@ -259555,7 +261439,7 @@ END FILE: tests/unit/melder/crystallizer/persistence/test_spell_index_crystal.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/test_crystallizer.py
-CONTENT SHA256: 090159585fe93b0f6c99ddfd3717fdb0bd37cf4cb0dff057e6d7a2b523d4506a
+CONTENT SHA256: b1be9dbff3afd2a1a901d5d3b43d88984638f48d70392197c14573ec2a3c5313
 SOURCE ENCODING: utf-8
 ================================================================================
 import importlib
@@ -259587,6 +261471,7 @@ class _DummySpell:
             None.
         """
         self.spell_id = spell_id
+        self.aetheric_frame = "default"
         self.spell = spell
         # Bind-signature fields consumed by SpellCrystal.__init__ (test doubles).
         self.spell_name = spell_id
@@ -260674,7 +262559,7 @@ END FILE: tests/unit/melder/crystallizer/test_crystallizer_gates.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/test_crystallizer_profile_facades.py
-CONTENT SHA256: d7d97b47a7462b53ec9761b9675be03bd0f51d97d379424f0f918d00e6bf6517
+CONTENT SHA256: f652b8a6aa75ce723d0dde2b6c04ced268b8213a797440df59e45d86f0c61837
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -260697,6 +262582,7 @@ class _StubSpellCrystal:
 
     def __init__(self, spell_id, spellbook_id=None):
         self.id = spell_id
+        self.custody_key = spell_id  # the record key (the bare spell id under process-wide ids)
         self.spellbook_id = spellbook_id
         self.cleaned = False
 
@@ -260866,7 +262752,7 @@ END FILE: tests/unit/melder/crystallizer/test_crystallizer_profile_facades.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/test_crystallizer_record_sinks.py
-CONTENT SHA256: a3eef05aed19f71f05e50a6f15618a80e535c6fbbaa7bc65b666657a9b84a8c9
+CONTENT SHA256: 6d7cf7dbbefcd43c952fbc10c4cc091a6f04cab0e858997d7e09533dc9d25743
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -260882,6 +262768,7 @@ import pytest
 
 import melder.crystallizer.crystallizer as crystallizer_module
 from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.nexus.nexus import Nexus
 from melder.crystallizer.configuration.crystallizer_configuration import (
@@ -260896,6 +262783,7 @@ class _StubSpellCrystal:
 
     def __init__(self, spell_id, spellbook_id=None):
         self.id = spell_id
+        self.custody_key = spell_id  # the record key (the bare spell id under process-wide ids)
         self.spellbook_id = spellbook_id
         # Real custody carries root_module_kind ("synthetic_module" /
         # "site_package" / "user_source"); emit_spell_activity reads it to
@@ -261182,6 +263070,92 @@ def test_manual_and_automatic_checkpoints_share_the_retention_window(
         for checkpoint_id in ledger
     ]
     assert descriptions == ["automatic cadence checkpoint", "manual-2"]
+
+
+def _per_frame_ids():
+    """Install per-frame spell ids on the fixture Aether before any frame exists."""
+    policy = AetherConfiguration().with_defaults().with_process_wide_unique_spell_ids(False)
+    policy.activate()
+    Aether().activate(policy)
+
+
+def _frame_scoped_stub(spell_id, spellbook_id, frame_name):
+    """Build one custody stub keyed the way per-frame ids key it ("<spell_id>@<frame>")."""
+    crystal = _StubSpellCrystal(spell_id, spellbook_id)
+    crystal.custody_key = f"{spell_id}@{frame_name}"
+    return crystal
+
+
+def test_per_frame_spell_verbs_require_the_frame():
+    """
+    Purpose:
+        Verify the key-aware verbs refuse an ambiguous address under per-frame ids (0.2.8214).
+    Contract:
+        emit_spell_activity and emit_spell_removed raise ValueError naming frame_name when none is given, because a
+        spell id alone does not say which frame's copy is meant; the record is untouched.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a frameless per-frame emit is accepted.
+    """
+    _per_frame_ids()
+    crystallizer = _activated_crystallizer()
+    crystallizer.emit_spell_crystal(_frame_scoped_stub("sha", "book-a", "tenant_a"), active=True)
+    with pytest.raises(ValueError, match="frame_name"):
+        crystallizer.emit_spell_activity("sha", active=False)
+    with pytest.raises(ValueError, match="frame_name"):
+        crystallizer.emit_spell_removed("sha")
+    summary = crystallizer.describe_profile()
+    assert summary["spell_crystal_count"] == 1
+    assert summary["inactive_spell_crystal_count"] == 0
+
+
+def test_per_frame_spell_verbs_address_one_frames_copy():
+    """
+    Purpose:
+        Verify park and removal under per-frame ids touch only the named frame's copy.
+    Contract:
+        Parking in tenant_a moves tenant_a's copy to the inactive location; removing in tenant_b cleans tenant_b's
+        copy; get_spell_crystal with a frame answers that frame's copy.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a verb reaches the other frame's copy.
+    """
+    _per_frame_ids()
+    crystallizer = _activated_crystallizer()
+    first = _frame_scoped_stub("sha", "book-a", "tenant_a")
+    second = _frame_scoped_stub("sha", "book-b", "tenant_b")
+    crystallizer.emit_spell_crystal(first, active=True)
+    crystallizer.emit_spell_crystal(second, active=True)
+    crystallizer.emit_spell_activity("sha", active=False, frame_name="tenant_a")
+    summary = crystallizer.describe_profile()
+    assert summary["spell_crystal_count"] == 1
+    assert summary["inactive_spell_crystal_count"] == 1
+    crystallizer.emit_spell_removed("sha", frame_name="tenant_b")
+    assert second.cleaned is True and first.cleaned is False
+    assert crystallizer.get_spell_crystal("sha", frame_name="tenant_a") is first
+
+
+def test_process_wide_spell_verbs_ignore_the_frame():
+    """
+    Purpose:
+        Verify the frame is optional, and ignored, under process-wide ids.
+    Contract:
+        The key is the bare spell id, so a park and a removal that name a frame address the one recorded copy.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the frame changes the address under process-wide ids.
+    """
+    crystallizer = _activated_crystallizer()
+    crystal = _StubSpellCrystal("sha-a", "book-1")
+    crystallizer.emit_spell_crystal(crystal, active=True)
+    crystallizer.emit_spell_activity("sha-a", active=False, frame_name="tenant_a")
+    assert crystallizer.describe_profile()["inactive_spell_crystal_count"] == 1
+    crystallizer.emit_spell_removed("sha-a", frame_name="tenant_a")
+    assert crystal.cleaned is True
+    assert crystallizer.describe_profile()["inactive_spell_crystal_count"] == 0
 ================================================================================
 END FILE: tests/unit/melder/crystallizer/test_crystallizer_record_sinks.py
 ================================================================================
@@ -261326,7 +263300,7 @@ END FILE: tests/unit/melder/crystallizer/test_persistence_loop_residue.py
 ================================================================================
 ================================================================================
 BEGIN FILE: tests/unit/melder/crystallizer/test_spell_crystal.py
-CONTENT SHA256: 0ada7843c104137ff7ab25516e4a350dec43fd6e8ba11619eac157fc2e6c4390
+CONTENT SHA256: 874b7cb9d3562f826eb413fabbef393b70d6b37836d37e71b1bcbc4e8a6b4b06
 SOURCE ENCODING: utf-8
 ================================================================================
 import sys
@@ -261337,9 +263311,11 @@ from types import ModuleType
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.aether_configuration import AetherConfiguration
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.nexus.nexus import Nexus
 from melder.crystallizer.crystallizer import Crystallizer
+from melder.crystallizer.crystals.spell_crystal import SpellCrystal
 from melder.crystallizer.synthetic_module import SyntheticModule
 from tests.mocks.crystallizer.spell_crystal_harness import (
     DummySpell,
@@ -261632,6 +263608,139 @@ def test_spell_crystal_uses_configured_user_source_roots() -> None:
         sys.modules.pop("demo_pkg.helper", None)
         sys.modules.pop("demo_pkg", None)
         shutil.rmtree(temp_root.parent, ignore_errors=True)
+
+
+def _keyed_service_module(module_name: str) -> SyntheticModule:
+    """Publish one trivial synthetic module for a KeyedService target; the caller cleans it and pops sys.modules."""
+    module = SyntheticModule(
+        module_name=module_name,
+        spell_crystal_id="keyed-crystal",
+        source_text="class KeyedService:\n    pass\n",
+        source_sha256="keyed-sha",
+        binding_signature="keyed-binding",
+    )
+    sys.modules[module_name] = module
+    return module
+
+
+def _keyed_spell(spell_id: str, module_name: str, frame_name: str) -> DummySpell:
+    """Build one spell double bound in `frame_name` whose target lives in the keyed synthetic module."""
+    spell = DummySpell(spell_id, type("KeyedService", (), {"__module__": module_name}))
+    spell.aetheric_frame = frame_name
+    return spell
+
+
+def _install_regime(process_wide: bool) -> None:
+    """Configure and activate the fixture's Aether with one spell-id regime before any frame exists."""
+    policy = AetherConfiguration().with_defaults().with_process_wide_unique_spell_ids(process_wide)
+    policy.activate()
+    Aether().activate(policy)
+
+
+def test_spell_crystal_default_custody_key_is_the_spell_id_and_records_the_frame() -> None:
+    """
+    Verify the process-wide key (0.2.8214): the custody key is the bare spell id, and the frame rides along.
+
+    Returns:
+        None.
+    """
+    module_name = "test.keyed_custody_default"
+    module = _keyed_service_module(module_name)
+    crystal = None
+    try:
+        crystal = SpellCrystal(_keyed_spell("sha-keyed", module_name, "tenant_a"))
+        assert crystal.custody_key == "sha-keyed"
+        assert crystal.frame_name == "tenant_a"
+        description = crystal.describe()
+        assert description["custody_key"] == "sha-keyed"
+        assert description["frame_name"] == "tenant_a"
+    finally:
+        if crystal is not None:
+            crystal.cleanup()
+        module.cleanup()
+        sys.modules.pop(module_name, None)
+
+
+def test_spell_crystal_per_frame_custody_key_composes_the_frame() -> None:
+    """
+    Verify the per-frame key: "<spell_id>@<frame>", so one spell bound in two frames records twice.
+
+    Returns:
+        None.
+    """
+    module_name = "test.keyed_custody_per_frame"
+    module = _keyed_service_module(module_name)
+    crystal = None
+    try:
+        crystal = SpellCrystal(_keyed_spell("sha-keyed", module_name, "tenant_b"), per_frame_custody=True)
+        assert crystal.id == "sha-keyed"
+        assert crystal.custody_key == "sha-keyed@tenant_b"
+        assert crystal.describe()["custody_key"] == "sha-keyed@tenant_b"
+    finally:
+        if crystal is not None:
+            crystal.cleanup()
+        module.cleanup()
+        sys.modules.pop(module_name, None)
+
+
+def test_custody_key_statics_round_trip_including_an_at_sign_in_the_frame() -> None:
+    """
+    Verify the key grammar: composition appends "@<frame>", and parsing splits at the FIRST "@", because a spell id
+    (a SHA256 hex digest) never holds one while a frame name may.
+
+    Returns:
+        None.
+    """
+    assert SpellCrystal.compose_custody_key("abc", "tenant@eu") == "abc@tenant@eu"
+    assert SpellCrystal.spell_id_of_custody_key("abc@tenant@eu") == "abc"
+    assert SpellCrystal.spell_id_of_custody_key("abc") == "abc"
+
+
+def test_facade_keys_custody_per_frame_under_per_frame_ids() -> None:
+    """
+    Verify the facade reads the regime: under per-frame ids `create_spell_crystal` builds a frame-scoped key.
+
+    Returns:
+        None.
+    """
+    _install_regime(False)
+    module_name = "test.keyed_custody_facade_per_frame"
+    module = _keyed_service_module(module_name)
+    crystal = None
+    try:
+        crystal = _create_activated_crystallizer().create_spell_crystal(
+            _keyed_spell("sha-keyed", module_name, "tenant_a")
+        )
+        assert crystal.custody_key == "sha-keyed@tenant_a"
+    finally:
+        if crystal is not None:
+            crystal.cleanup()
+        module.cleanup()
+        sys.modules.pop(module_name, None)
+
+
+def test_facade_keeps_bare_keys_under_process_wide_ids() -> None:
+    """
+    Verify default worlds keep their record keys: under process-wide ids the facade builds the bare spell id key.
+
+    Returns:
+        None.
+    """
+    _install_regime(True)
+    module_name = "test.keyed_custody_facade_process_wide"
+    module = _keyed_service_module(module_name)
+    crystal = None
+    try:
+        crystal = _create_activated_crystallizer().create_spell_crystal(
+            _keyed_spell("sha-keyed", module_name, "tenant_a")
+        )
+        assert crystal.custody_key == "sha-keyed"
+        assert crystal.frame_name == "tenant_a"
+    finally:
+        if crystal is not None:
+            crystal.cleanup()
+        module.cleanup()
+        sys.modules.pop(module_name, None)
 ================================================================================
 END FILE: tests/unit/melder/crystallizer/test_spell_crystal.py
 ================================================================================
@@ -320267,8 +322376,299 @@ def test_chunk_multiplier_is_gated_off_at_one_worker():
 END FILE: tests/unit/melder/spellbook/test_spellbook_creation_system_chunking.py
 ================================================================================
 ================================================================================
+BEGIN FILE: tests/unit/melder/spellbook/test_spellbook_creation_system_dependency_flags.py
+CONTENT SHA256: 2d813096fb490c5e7b70609e7cdaae5bc95684bc17c86d34a7a5792933757091
+SOURCE ENCODING: utf-8
+================================================================================
+"""
+Contract tests for the target-local pass flag: a dependency compiled only inside its consumer's plan owes its own
+resolution, so its first direct meld resolves it.
+
+`SpellbookCreationSystem.flag_dependencies_without_own_plan` runs at the tail of a successful
+`run_resolution_phases_for_target_spell`. It flags `resolution_required` on each spell in the pass's scope that the
+Book owns, that is resolvable and not an existing creation, and that has neither a phase-11 plan nor a published
+CreationContext, writing under that spell's lock. These tests pin who is flagged, who is left alone, where the
+write happens, and that only the success path flags.
+"""
+
+import types
+from threading import RLock
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+
+import pytest
+
+from melder.aether.spellbook.spellbook_creation_system import SpellbookCreationSystem
+from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
+
+
+class _RecordingLock:
+    """
+    A spell lock that records its spell's `resolution_required` when entered and when left.
+
+    Lets a test show the flag is written while the lock is held: False on entry, True on exit.
+    """
+
+    def __init__(self) -> None:
+        """Start unbound, with an inner re-entrant lock and empty records."""
+        self.inner: RLock = RLock()
+        self.spell: Optional["_SpellStub"] = None
+        self.flag_on_enter: List[bool] = []
+        self.flag_on_exit: List[bool] = []
+
+    def __enter__(self) -> "_RecordingLock":
+        """Acquire the inner lock and record the spell's flag."""
+        self.inner.acquire()
+        assert self.spell is not None
+        self.flag_on_enter.append(self.spell.resolution_required)
+        return self
+
+    def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> None:
+        """Record the spell's flag and release the inner lock."""
+        assert self.spell is not None
+        self.flag_on_exit.append(self.spell.resolution_required)
+        self.inner.release()
+
+
+class _SpellStub:
+    """The Spell surface the flag reads and writes."""
+
+    def __init__(
+            self,
+            spell_id: str,
+            spellbook: object,
+            *,
+            has_plan: bool = False,
+            has_context: bool = False,
+            resolvable: bool = True,
+            is_existing_creation: bool = False,
+            resolution_required: bool = False,
+    ) -> None:
+        """
+        Build a spell stub.
+
+        Args:
+            spell_id: The spell id.
+            spellbook: The owning Book (identity is what the flag compares).
+            has_plan: Whether the compiler artifact holds a phase-11 plan.
+            has_context: Whether a CreationContext is published (switch state 2).
+            resolvable: The registration's resolvable capability.
+            is_existing_creation: Whether the spell wraps an existing object.
+            resolution_required: The flag's starting value.
+        """
+        self.spell_id: str = spell_id
+        self._spellbook: object = spellbook
+        self.resolvable: bool = resolvable
+        self.is_existing_creation: bool = is_existing_creation
+        self._compiler_artifact = types.SimpleNamespace(
+            _spell_codegen_creation=object() if has_plan else None,
+        )
+        self._creation_context_switch = types.SimpleNamespace(state=2 if has_context else 0)
+        self.resolution_required: bool = resolution_required
+        self.resolution_complete: bool = not resolution_required
+        self._door_epoch: int = 0
+        self._lock: _RecordingLock = _RecordingLock()
+        self._lock.spell = self
+
+
+class _SpellbookStub:
+    """The Spellbook surface the flag and the target pass read."""
+
+    def __init__(self) -> None:
+        """Start with an empty visible pool and a resolution state with no diagnostics."""
+        self._spell_id_pool: Dict[str, Any] = {}
+        self._spell_system_states = types.SimpleNamespace(
+            get_conduit_resolution_state=lambda conduit_id: types.SimpleNamespace(list_diagnostics=lambda: []),
+        )
+
+    def check_cleaned(self) -> None:
+        """Mirror Spellbook.check_cleaned for the target pass; the stub is never cleaned."""
+
+    def add(self, spell: _SpellStub) -> _SpellStub:
+        """Put one spell in the visible pool and return it."""
+        self._spell_id_pool[spell.spell_id] = spell
+        return spell
+
+
+def _flag(spellbook: _SpellbookStub, target_spell_id: str, scoped_spell_ids: Set[str]) -> Tuple[str, ...]:
+    """Run the flag over one scope and return the flagged ids."""
+    return SpellbookCreationSystem.flag_dependencies_without_own_plan(
+        spellbook=spellbook,
+        target_spell_id=target_spell_id,
+        scoped_spell_ids=scoped_spell_ids,
+    )
+
+
+def test_flags_owned_dependency_without_plan_or_context() -> None:
+    """An owned, resolvable, plan-less dependency with no context is flagged and its door epoch bumped."""
+    book = _SpellbookStub()
+    dependency = book.add(_SpellStub("dep", book))
+
+    assert _flag(book, "consumer", {"consumer", "dep"}) == ("dep",)
+    assert dependency.resolution_required is True
+    assert dependency.resolution_complete is False
+    assert dependency._door_epoch == 1
+
+
+@pytest.mark.parametrize(
+    ("case", "kwargs"),
+    [
+        ("own plan", {"has_plan": True}),
+        ("published context", {"has_context": True}),
+        ("existing creation", {"is_existing_creation": True}),
+        ("non-resolvable definition", {"resolvable": False}),
+    ],
+)
+def test_leaves_dependency_that_needs_no_pass_of_its_own(case: str, kwargs: Dict[str, bool]) -> None:
+    """A dependency with a plan or a context, an existing creation, or a non-resolvable definition stays as it was."""
+    book = _SpellbookStub()
+    dependency = book.add(_SpellStub("dep", book, **kwargs))
+
+    assert _flag(book, "consumer", {"consumer", "dep"}) == (), case
+    assert dependency.resolution_required is False
+    assert dependency.resolution_complete is True
+    assert dependency._door_epoch == 0
+
+
+def test_leaves_dependency_owned_by_another_book() -> None:
+    """A borrowed dependency belongs to its own Book's passes and is never flagged by this one."""
+    book = _SpellbookStub()
+    borrowed = book.add(_SpellStub("dep", object()))
+
+    assert _flag(book, "consumer", {"consumer", "dep"}) == ()
+    assert borrowed.resolution_required is False
+    assert borrowed._door_epoch == 0
+
+
+def test_leaves_the_target_and_ids_missing_from_the_pool() -> None:
+    """The pass's own target is never flagged, and a scoped id the pool no longer holds is skipped."""
+    book = _SpellbookStub()
+    target = book.add(_SpellStub("consumer", book))
+
+    assert _flag(book, "consumer", {"consumer", "gone"}) == ()
+    assert target.resolution_required is False
+    assert target._door_epoch == 0
+
+
+def test_already_flagged_dependency_is_not_flagged_again() -> None:
+    """Flagging is idempotent: a dependency that already owes its pass keeps its epoch and is not reported."""
+    book = _SpellbookStub()
+    dependency = book.add(_SpellStub("dep", book, resolution_required=True))
+
+    assert _flag(book, "consumer", {"consumer", "dep"}) == ()
+    assert dependency.resolution_required is True
+    assert dependency._door_epoch == 0
+
+
+def test_flags_every_plan_less_dependency_in_sorted_order() -> None:
+    """Transitive dependencies in the scope are flagged too, and the ids come back sorted."""
+    book = _SpellbookStub()
+    for spell_id in ("dep-c", "dep-a", "dep-b"):
+        book.add(_SpellStub(spell_id, book))
+    book.add(_SpellStub("dep-planned", book, has_plan=True))
+
+    assert _flag(book, "consumer", {"consumer", "dep-c", "dep-a", "dep-planned", "dep-b"}) == (
+        "dep-a", "dep-b", "dep-c",
+    )
+
+
+def test_flag_is_written_under_the_dependency_lock() -> None:
+    """The check and the write happen while the dependency's own spell lock is held."""
+    book = _SpellbookStub()
+    dependency = book.add(_SpellStub("dep", book))
+
+    _flag(book, "consumer", {"consumer", "dep"})
+
+    assert dependency._lock.flag_on_enter == [False]
+    assert dependency._lock.flag_on_exit == [True]
+
+
+def _stub_target_pass_phases(
+        monkeypatch: pytest.MonkeyPatch,
+        plan_phases: Callable[..., Dict[str, Any]],
+        has_errors: bool = False,
+) -> None:
+    """Replace the target pass's phase runners so only its orchestration and tail run."""
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_target_foundational_resolution_phases",
+        staticmethod(lambda **kwargs: {"root_blueprints_local": ["rb"]}),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_conduit_resolution_has_errors",
+        staticmethod(lambda **kwargs: has_errors),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_collect_target_resolution_scope",
+        staticmethod(lambda **kwargs: ({"consumer", "dep"}, ("consumer",))),
+    )
+    monkeypatch.setattr(SpellbookCreationSystem, "_run_target_plan_resolution_phases", staticmethod(plan_phases))
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "record_local_resolution_visibility_failure",
+        staticmethod(lambda **kwargs: None),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "cleanup_phase_artifacts_after_resolution",
+        staticmethod(lambda *, spellbook, spell_ids=None: None),
+    )
+
+
+def _run_target_pass(book: _SpellbookStub) -> Dict[str, Any]:
+    """Run the target-local pass for the consumer over the stubbed phases."""
+    return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+        spellbook=book,
+        conduit_id="cid",
+        target_spell=types.SimpleNamespace(spell_id="consumer"),
+    )
+
+
+def test_target_pass_flags_plan_less_dependencies_when_it_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A successful target pass leaves its plan-less owned dependency owing its own resolution."""
+    book = _SpellbookStub()
+    dependency = book.add(_SpellStub("dep", book))
+    _stub_target_pass_phases(monkeypatch, lambda **kwargs: {"occurrence_plan_local": ["op"]})
+
+    assert _run_target_pass(book) == {"root_blueprints_local": ["rb"], "occurrence_plan_local": ["op"]}
+    assert dependency.resolution_required is True
+    assert dependency.resolution_complete is False
+
+
+def test_target_pass_flags_nothing_after_a_visibility_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A visibility failure records invalid verdicts and returns; it flags no dependency."""
+    book = _SpellbookStub()
+    dependency = book.add(_SpellStub("dep", book))
+
+    def _missing_dependency(**kwargs: Any) -> Dict[str, Any]:
+        """Fail the plan phases on a dependency the Book cannot see."""
+        raise PhaseExecutionError("phase failed", errors=[KeyError("missing-dep")])
+
+    _stub_target_pass_phases(monkeypatch, _missing_dependency)
+
+    assert _run_target_pass(book) == {"root_blueprints_local": ["rb"]}
+    assert dependency.resolution_required is False
+    assert dependency._door_epoch == 0
+
+
+def test_target_pass_flags_nothing_when_its_foundational_phases_fail(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Foundational errors raise the validation error before any plan phase; no dependency is flagged."""
+    book = _SpellbookStub()
+    dependency = book.add(_SpellStub("dep", book))
+    _stub_target_pass_phases(monkeypatch, lambda **kwargs: {"occurrence_plan_local": ["op"]}, has_errors=True)
+
+    with pytest.raises(SpellbookValidationError):
+        _run_target_pass(book)
+    assert dependency.resolution_required is False
+    assert dependency._door_epoch == 0
+================================================================================
+END FILE: tests/unit/melder/spellbook/test_spellbook_creation_system_dependency_flags.py
+================================================================================
+================================================================================
 BEGIN FILE: tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py
-CONTENT SHA256: 08d2a2c817991c1f5feb85ae8cc9abaddec4c96e111c89fe88707f201080146a
+CONTENT SHA256: 31bc9d567076bf042e6d6147f81d3aec7e130caa3b1962be51e6cc8940a45dee
 SOURCE ENCODING: utf-8
 ================================================================================
 import types
@@ -320368,6 +322768,8 @@ class _StubSpellbook:
             - Starts with zero check_cleaned invocations.
             - Exposes minimal configuration/logging surfaces required by the
               tested orchestration paths.
+            - Exposes an empty visible spell pool: a successful target-local
+              pass reads it to flag dependencies without a plan of their own.
         Returns:
             None.
         """
@@ -320375,6 +322777,7 @@ class _StubSpellbook:
         self._configuration = _StubConfiguration()
         self._logger = _StubLogger()
         self._spells: Dict[Any, Any] = {}
+        self._spell_id_pool: Dict[str, Any] = {}
 
     def check_cleaned(self) -> None:
         """
