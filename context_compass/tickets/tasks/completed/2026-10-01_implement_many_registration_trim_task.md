@@ -1,9 +1,15 @@
 # Task: Implement the many registration trim (S1) - one append per creation, per-key disposal methods
 
+- Completed: 2026-10-02T19:09:13Z
+- Summary: S1 landed at 0.2.8216 (A3): one append per disposal-bearing many creation, `ManyDisposalBucket`
+  records the key's methods once, same disposal order and errors; plan -15..-34% and meld -7..-23% on the VM;
+  docs, graph, assets and bundles current; patch docs archived. Closed by the owner's directive; owner-run suites
+  and gauntlet: Not run.
+
 ## Metadata
 - Task ID: TASK-2026-10-01-implement-many-registration-trim
 - Story: STORY-2026-09-27-many-registration-trim
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
@@ -55,6 +61,9 @@ bumped so executors emitted with the old call are retired.
 - to_state: review
 - transition_reason: Landed at 0.2.8216 with docs, graph, patch docs, assets and bundles (2026-10-02T18:01:21Z); owner-run suites and
   gauntlet pending.
+- from_state: review
+- to_state: done
+- transition_reason: Owner's turn-in directive (2026-10-02T19:09:13Z); notch, note and rebuild recorded.
 
 ## Steps / Checklist
 - [x] Re-sync the VM copy from the tree (0.2.8215) before any run.
@@ -69,10 +78,10 @@ bumped so executors emitted with the old call are retired.
 - [x] Re-run the certification harness and `commandops_shape_probe.py`; MEASURE note (interleaved A/B).
 - [x] Land on the tree (CRLF), notch above `__version__` (0.2.8215 now), release-note section, docs, graph
       descriptors; promote and archive the patch docs; rebuild assets and LLM bundles LAST; both checks OK.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - The trimmed registry in `creations.py`; the emitted line and hydrator constants; the generation bump.
@@ -111,16 +120,16 @@ bumped so executors emitted with the old call are retired.
 - [ ] No perf claim from agent-side runs; ranking numbers are owner-run.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed (owner directive; owner-run suites and gauntlet Not run)
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -439,6 +448,21 @@ bumped so executors emitted with the old call are retired.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-10-02T19:09:13Z
+  TYPE: DECISION
+  CLAIM: Owner (2026-10-02): "turn this in and then lets move onto other things" - closed by directive. Notched 0.2.8216;
+    release-note section "Transient creations with disposal methods register faster" plus the packaging bullet
+    (bind guard 620). Owner-run full-tree suites and gauntlet: Not run at closure (the owner closed without
+    them); the VM shards on the landed bytes are the recorded validation.
+  EVIDENCE:
+  - src/melder/__version__.py:12-12
+  - release_docs/next_version_release.md:1-3
+  IMPACT: Task done; the story closes with it; the epic stays open with S8 as the next lane, unrouted until the
+    owner says so.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Context / Handoff Summary
 STATE 2026-10-01T00:59:42Z: IN_PROGRESS. Opened; nothing read or edited yet. Resume from the latest note's NEXT.
 
@@ -456,6 +480,9 @@ STATE 2026-10-02T18:01:21Z: REVIEW. S1 landed on the tree at 0.2.8216 (A3): src,
 documents and indexes, graph, patch docs archived, assets and LLM bundles rebuilt with both checks OK; shards
 green on the re-synced copy. Owner-owed: full-tree suites, gauntlet, turn-in. Then S8. Resume from the latest
 note's NEXT.
+
+STATE 2026-10-02T19:09:13Z: DONE. Closed by the owner's directive; moved to tickets/tasks/completed/. Next lane: S8, on the
+owner's word.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

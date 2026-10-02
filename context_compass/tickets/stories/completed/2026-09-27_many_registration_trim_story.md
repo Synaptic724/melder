@@ -1,10 +1,14 @@
 # Story: Many registration trim - one append per creation, disposal methods recorded once per key
 
+- Completed: 2026-10-02T19:09:13Z
+- Summary: S1 shipped at 0.2.8216 through its implementation task: the registry record replaces the per-entry
+  mirror, same disposal contract, plan -15..-34% on the VM; closed by the owner's directive, gauntlet Not run.
+
 ## Metadata
 - Story ID: STORY-2026-09-27-many-registration-trim
 - Epic: EPIC-2026-10-01-static-codegen-and-door-strategies (moved from EPIC-2026-09-27-adaptive-creation-contexts
   on the owner's split, 2026-10-01)
-- Status: review
+- Status: done
 - Owner: cowork
 - Agent Name: fable_0
 - Priority: p1
@@ -60,6 +64,9 @@ errors. It ships before any probe because it needs no data to be right.
 - to_state: in_progress
 - transition_reason: Opened on the owner's split (2026-10-01T00:56:50Z): non-PGO first, S1 is the largest
   certified lever; the implementation task is routed on the board.
+- from_state: in_progress
+- to_state: done
+- transition_reason: Owner's turn-in directive (2026-10-02T19:09:13Z); the one task is done.
 
 ## Dependencies / Related Work
 - Proof: artifacts/pgo_strategies_20260927/vm_many_registration_split_gil0_20260927.md
@@ -67,14 +74,15 @@ errors. It ships before any probe because it needs no data to be right.
 - tickets/tasks/backlog/2026-09-27_probe_creation_context_design_task.md (MEASURE notes of 2026-09-27T23:32:15Z)
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: INVESTIGATE how this idea lands in the `CreationContext` object (slot, executor variant, guard,
+- [x] Task: INVESTIGATE how this idea lands in the `CreationContext` object (slot, executor variant, guard,
       cleanup ordering) before anything else; its finding is the story's first note (owner, 2026-09-27T23:54Z).
-- [ ] Task: TASK-2026-10-01-implement-many-registration-trim - read the store and the emitter whole, patch docs
+- [x] Task: TASK-2026-10-01-implement-many-registration-trim - read the store and the emitter whole, patch docs
       (trimmed A, the cleaned-store race argument), implement, differential + deopt tests, generation bump.
       tickets/tasks/2026-10-01_implement_many_registration_trim_task.md
-- [ ] Task: TASK measure on the VM and hand the gauntlet to the owner; decide whether B is worth its race redesign.
-- [ ] Enforce Ticket Microcycle across all linked tasks.
-- [ ] Require meaningful-finding note updates during discovery/implementation.
+- [x] Task: TASK measure on the VM and hand the gauntlet to the owner; decide whether B is worth its race redesign.
+      (VM measured in the implementation task; gauntlet handed to the owner; B deferred to the catalogue.)
+- [x] Enforce Ticket Microcycle across all linked tasks.
+- [x] Require meaningful-finding note updates during discovery/implementation.
 
 ## Acceptance Criteria
 - Same disposal behaviour under cleanup, clear_all, purge and the refused late publish, proven by tests.
@@ -151,10 +159,21 @@ errors. It ships before any probe because it needs no data to be right.
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-02T19:09:13Z
+  TYPE: DECISION
+  CLAIM: Closed with the task by the owner's directive (2026-10-02). B (lock-free append, S17) is not pursued now; it
+    needs a refusal design and is filed in the epic's catalogue. Owner-run gauntlet: Not run at closure.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-10-01_implement_many_registration_trim_task.md:1-12
+  IMPACT: Story done; the epic's milestone 1 is checked as landed, with the gauntlet number owner-owed.
+  NEXT: none.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user (owner directive; gauntlet Not run)
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -174,6 +193,8 @@ active lane. Resume from its latest STATE line.
 
 STATE 2026-10-02T18:01:21Z: REVIEW. S1 landed at 0.2.8216; owner-run suites and gauntlet pending. Resume from the task's
 latest STATE line.
+
+STATE 2026-10-02T19:09:13Z: DONE. Closed with the task by the owner's directive; moved to tickets/stories/completed/.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

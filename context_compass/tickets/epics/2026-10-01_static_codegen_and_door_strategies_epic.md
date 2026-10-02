@@ -7,7 +7,7 @@
 - Agent Name: fable_0
 - Priority: p1
 - Created: 2026-10-01T00:53:45Z
-- Updated: 2026-10-02T18:01:21Z
+- Updated: 2026-10-02T19:09:13Z
 - Target Window: opened 2026-10-01 on the owner's split; one strategy lane at a time, S1 first
 - Related Program/Initiative: SpellCompiler codegen (phases 8-11, site-plan lowering), Creations, the meld doors
 - Split from: tickets/epics/2026-09-27_adaptive_creation_contexts_epic.md (now the PGO epic), on the owner's
@@ -109,15 +109,15 @@ VM numbers for direction and the owner-run gauntlet for the ranking.
 
 ## Milestones (Track Progress)
 - [x] Milestone 0: the certification table (S1-S8 measured on the emitted bodies).
-- [ ] Milestone 1: S1 shipped, turned in, measured owner-run.
+- [x] Milestone 1: S1 shipped and turned in at 0.2.8216 (VM-measured; owner-run gauntlet Not run at turn-in).
 - [ ] Milestone 2: S8 shipped and turned in.
 - [ ] Milestone 3: S2a shipped and turned in.
 - [ ] Milestone 4: the door harness table landed; the certified door set named.
 - [ ] Milestone 5: the certified door strategies shipped or dropped with numbers.
 
 ## Stories (Required to Complete)
-- [ ] Story: STORY-2026-09-27-many-registration-trim (S1) - one append per `many` creation, per-key disposal
-      methods. tickets/stories/2026-09-27_many_registration_trim_story.md
+- [x] Story: STORY-2026-09-27-many-registration-trim (S1) - one append per `many` creation, per-key disposal
+      methods. tickets/stories/completed/2026-09-27_many_registration_trim_story.md
 - [ ] Story: STORY-2026-10-01-lazy-instance-results (S8) - no instance_results dict on the warm path of a
       dict-mode root. tickets/stories/2026-10-01_lazy_instance_results_story.md
 - [ ] Story: STORY-2026-10-01-existing-object-constants (S2a) - existing-object sites bound as constants at
@@ -359,6 +359,19 @@ melds -40..-50% (predicted), dynamic melds -30..-50% (predicted).
   REREAD: REQUIRED
   SCORE_0_TO_10: 8
 
+- DATETIME: 2026-10-02T19:09:13Z
+  TYPE: DECISION
+  CLAIM: Owner (2026-10-02): S1 turned in (task and story moved to completed/, closed by directive, gauntlet Not run)
+    and "move onto other things". Milestone 1 is checked as landed; S8/S2a/doors stay drafted and unrouted; the
+    epic keeps no board row until the owner names the next lane.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-10-01_implement_many_registration_trim_task.md:1-12
+  - tickets/stories/completed/2026-09-27_many_registration_trim_story.md:1-10
+  IMPACT: No active lane in this epic; nothing is in flight on the tree.
+  NEXT: owner names the next lane (S8 per the recommendation, or other work).
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 7
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -380,6 +393,9 @@ exact edit is proposed and waits for the owner; nothing implemented. Resume from
 
 STATE 2026-10-02T18:01:21Z: IN_PROGRESS. S1 landed at 0.2.8216 and in review (owner-run suites and gauntlet pending); S8
 next. Resume from the S1 task's latest STATE line.
+
+STATE 2026-10-02T19:09:13Z: IN_PROGRESS (idle). S1 turned in; no routed lane; S8 opens on the owner's word with its patch
+docs first.
 
 ## Project-Specific Additions
 <!-- BEGIN USER-DEFINED: project_fields -->

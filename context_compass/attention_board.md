@@ -167,13 +167,13 @@ Message alert rules
 | gauntlet_runtime_speed | in_progress | discovery | claude | melder_2 | none | Owner decides whether an open lever (thread-affine pools, one-lock anonymous link, single-check fast door) is worth a task. | Per-scope-cycle cost map vs dishka and dependency-injector, with ranked and prototyped candidates. | Next lever validated and its task opened, or the owner redirects. | tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md | 2026-09-26T23:01:16Z | REQUIRED |
 | defect_hunting_spellbook | in_progress | discovery | opencode | muse_0 | none | Slice spellbook component sections then read the surface behind each claim. | Contradiction list with evidence; meaty issues flagged apart from polish. | Sweep list triaged or owner redirects to conduit/meld or arch diffs. | tickets/tasks/2026-09-27_spellbook_sweep_task.md | 2026-09-27T15:56:49Z | REQUIRED |
 | defect_hunting_fixes_1 | in_progress | implementation | opencode | muse_0 | none | Re-slice each target fresh then repair findings 1-8 in order. | Corrected blocks with verified ranges; index check clean. | Batch repaired with gates passing or owner redirects scope. | tickets/tasks/2026-09-27_sweep_fixes_batch_1_task.md | 2026-09-27T16:07:16Z | REQUIRED |
-| static_codegen_strategies | review | handoff | claude | fable_0 | none | Owner runs the full-tree suites and the gauntlet on the tree (0.2.8216, A3) and turns S1 in; then the S8 task opens with its patch docs. | S1 (registration trim) landed at 0.2.8216: one append per disposal-bearing many creation, same disposal order and errors, docs/graph/assets current; plan -15..-34% and meld -7..-23% on the VM. | Owner turns S1 in (S8 next) or reports a red suite or gauntlet number. | tickets/tasks/2026-10-01_implement_many_registration_trim_task.md | 2026-10-02T18:01:21Z | REQUIRED |
 <!-- END USER-DEFINED: active_items -->
 
 ## Recently Closed Anchors
 | work_item | status | agent_name | ticket | note | closed_at |
 | --- | --- | --- | --- | --- | --- |
 <!-- BEGIN USER-DEFINED: closed_anchors -->
+| static_codegen_strategies | done | fable_0 | tickets/tasks/completed/2026-10-01_implement_many_registration_trim_task.md | S1 landed and turned in at 0.2.8216 (A3): one append per disposal-bearing many creation, `ManyDisposalBucket` per key, same disposal contract; plan -15..-34% / meld -7..-23% on the VM; docs, graph, assets, bundles current; patch docs archived; owner-run gauntlet Not run. Next: S8 (tickets/epics/2026-10-01_static_codegen_and_door_strategies_epic.md, unrouted; the PGO epic queued behind it). | 2026-10-02T19:09:13Z |
 | system_doc_citation_audit | done | melder_0 | tickets/tasks/completed/2026-10-01_audit_remaining_system_document_citations_task.md | src_architecture and src_components: ten stale citations remapped, five confirmed, bind-guard count 619 at 0.2.8215, core set equals the Key Files union (13 entries added); assets rebuilt, both checks OK; no notch. Next: none. | 2026-10-01T11:25:53Z |
 | host_read_surface_docs | done | melder_0 | tickets/tasks/completed/2026-09-29_promote_host_read_surface_into_system_docs_task.md | src_architecture, src_components, tests_components, scopes.md, the graph and the release note describe the 0.2.8208 frame lookups and read accessors; 13 shifted and all aether.py citations remapped; assets rebuilt in the VM mirror and copied back, LLM bundles rebuilt, both checks OK; no notch; follow-ups in tickets/tasks/backlog/2026-10-01_audit_remaining_system_document_citations_task.md. Next: none. | 2026-10-01T10:53:21Z |
 | melderops_melder_unpin | done | melder_0 | tickets/tasks/completed/2026-09-30_unpin_melder_in_melderops_pyproject_task.md | MelderOps' pyproject requires melder with no version (was melder>=0.2.8212); its comment keeps the API history and says to install the melder_private dist/ wheel (PyPI's newest is 0.2.8207); command_0 told (M0-159). Next: none. | 2026-10-01T09:46:54Z |
@@ -185,7 +185,6 @@ Message alert rules
 | aether_record_spell_id_regime | done | melder_0 | tickets/tasks/completed/2026-09-30_investigate_aether_record_spell_id_regime_task.md | Two measured defects in recording per-frame worlds (regime missing from the Aether record; one frame's copy lost at record time); the owner picked A + B, landed with the per-frame task. Next: none. | 2026-09-30T18:58:51Z |
 | gauntlet_order_dependence | done | melder_0 | tickets/tasks/completed/2026-09-30_investigate_gauntlet_order_dependence_task.md | The shared gauntlet measures each library in its own process (runner --lib, rotated rounds with medians; the old one-process layout kept); cause: thread start/exit residue under free-threading, 5-12% per later slot in the VM; 14 contract tests; benchmark-only; the owner's 30,000-iteration default kept. Next: none. | 2026-09-30T15:40:12Z |
 | melder_root_guards | done | melder_0 | tickets/tasks/completed/2026-09-29_guard_melder_roots_for_host_collisions_task.md | M1-M4: sealed spell-id regime, active-Nexus guard (restore stage 4 deactivates first), a refused conjure leaves its frame unsettled, get_configuration_dictionary() on the four root configurations; notched 0.2.8209-0.2.8212, release note, docs, graph, assets, bundles and wheel; patch docs archived. Next: none (open follow-up: the Aether record lacks the spell-id regime). | 2026-09-30T15:40:12Z |
-| melderops_root_config | done | melder_0 | tickets/tasks/completed/2026-09-29_investigate_melderops_root_configuration_collisions_task.md | Per-root collision answer with probes; the owner picked every fix (F1-F6 MelderOps, M1-M4 Melder), landed and turned in with it. Next: none. | 2026-09-30T15:40:12Z |
 <!-- END USER-DEFINED: closed_anchors -->
 
 ## Notes
@@ -195,13 +194,6 @@ Message alert rules
 - gauntlet_runtime_speed: SWITCH_TRIGGER is the owner's pick among the open levers, or the owner's
   answer on the SpellSpace scope RISK; P1, P4, the tail, build locks and nested slot guard are turned in. The lever-1 lifecycle is closed as measured (21:15Z). RESUME_HIERARCHY: tickets/stories/2026-09-26_gauntlet_runtime_speed_story.md ->
   tickets/tasks/2026-09-26_measure_gauntlet_scope_cycle_costs_task.md.
-- static_codegen_strategies: SWITCH_TRIGGER is the owner's turn-in of the landed S1 (then S8, S2a, the door
-  harness), or a red owner-run suite/gauntlet on 0.2.8216. The PGO epic
-  (tickets/epics/2026-09-27_adaptive_creation_contexts_epic.md) is queued behind this one with no row.
-  RESUME_HIERARCHY:
-  tickets/epics/2026-10-01_static_codegen_and_door_strategies_epic.md ->
-  tickets/stories/2026-09-27_many_registration_trim_story.md ->
-  tickets/tasks/2026-10-01_implement_many_registration_trim_task.md.
 ### Device VM git hazard (melder_2, 2026-09-26)
 - The connected folder refuses deletes, so any git command that refreshes the index from the device VM
   (plain `git status`, `git diff`) can leave an empty .git/index.lock that blocks the owner's commits.
